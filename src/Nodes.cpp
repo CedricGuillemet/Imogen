@@ -11,6 +11,7 @@
 #include "Nodes.h"
 #include <vector>
 #include <algorithm>
+#include <assert.h>
 
 // NB: You can use math functions/operators on ImVec2 if you #define IMGUI_DEFINE_MATH_OPERATORS and #include "imgui_internal.h"
 // Here we only declare simple +/- operators so others don't leak into the demo code.
@@ -38,39 +39,95 @@ static void GetConCount(const NodeGraphDelegate::MetaNode* metaNodes, int type, 
 
 }
 
+// Dummy
+struct Node
+{
+	int     mType;
+	ImVec2  Pos, Size;
+	int     InputsCount, OutputsCount;
+
+	Node(int type, const ImVec2& pos, const NodeGraphDelegate::MetaNode* metaNodes)
+	{
+		mType = type;
+		Pos = pos;
+		GetConCount(metaNodes, type, InputsCount, OutputsCount);
+	}
+
+	ImVec2 GetInputSlotPos(int slot_no) const { return ImVec2(Pos.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
+	ImVec2 GetOutputSlotPos(int slot_no) const { return ImVec2(Pos.x + Size.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
+};
+struct NodeLink
+{
+	int     InputIdx, InputSlot, OutputIdx, OutputSlot;
+	NodeLink() {}
+	NodeLink(int input_idx, int input_slot, int output_idx, int output_slot) { InputIdx = input_idx; InputSlot = input_slot; OutputIdx = output_idx; OutputSlot = output_slot; }
+	bool operator == (const NodeLink& other) const
+	{
+		return InputIdx == other.InputIdx && InputSlot == other.InputSlot && OutputIdx == other.OutputIdx && OutputSlot == other.OutputSlot;
+	}
+};
+
+struct NodeOrder
+{
+	int mNodeIndex;
+	int mNodePriority;
+	bool operator < (const NodeOrder& other) const
+	{
+		return mNodePriority < other.mNodePriority;
+	}
+};
+
+int PickBestNode(const std::vector<NodeOrder>& orders)
+{
+	for (auto& order : orders)
+	{
+		if (order.mNodePriority == 0)
+			return order.mNodeIndex;
+	}
+	// issue!
+	assert(0);
+	return -1;
+}
+
+void RecurseSetPriority(std::vector<NodeOrder>& orders, const ImVector<NodeLink> &links, int currentIndex, int currentPriority, size_t& undeterminedNodeCount)
+{
+	if (!orders[currentIndex].mNodePriority)
+		undeterminedNodeCount--;
+
+	orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority+1);
+	for (auto & link : links)
+	{
+		if (link.OutputIdx == currentIndex)
+		{
+			RecurseSetPriority(orders, links, link.InputIdx, currentPriority + 1, undeterminedNodeCount);
+		}
+	}
+}
+
+std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, size_t nodeCount)
+{
+	std::vector<NodeOrder> orders(nodeCount);
+	for (size_t i = 0; i < nodeCount; i++)
+	{
+		orders[i].mNodeIndex = i;
+		orders[i].mNodePriority = 0;
+	}
+	size_t undeterminedNodeCount = nodeCount;
+	while (undeterminedNodeCount)
+	{
+		int currentIndex = PickBestNode(orders);
+		RecurseSetPriority(orders, links, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
+	};
+	//std::sort(orders.begin(), orders.end());
+	return orders;
+}
+
 void NodeGraph(NodeGraphDelegate *delegate)
 {
 	int metaNodeCount;
 	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
 
-	// Dummy
-	struct Node
-	{
-		int     mType;
-		ImVec2  Pos, Size;
-		int     InputsCount, OutputsCount;
-
-		Node(int type, const ImVec2& pos, const NodeGraphDelegate::MetaNode* metaNodes) 
-		{ 
-			mType = type; 
-			Pos = pos; 
-			GetConCount(metaNodes, type, InputsCount, OutputsCount); 
-		}
-
-		ImVec2 GetInputSlotPos(int slot_no) const { return ImVec2(Pos.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
-		ImVec2 GetOutputSlotPos(int slot_no) const { return ImVec2(Pos.x + Size.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
-	};
-	struct NodeLink
-	{
-		int     InputIdx, InputSlot, OutputIdx, OutputSlot;
-		NodeLink() {}
-		NodeLink(int input_idx, int input_slot, int output_idx, int output_slot) { InputIdx = input_idx; InputSlot = input_slot; OutputIdx = output_idx; OutputSlot = output_slot; }
-		bool operator == (const NodeLink& other) const
-		{
-			return InputIdx == other.InputIdx && InputSlot == other.InputSlot && OutputIdx == other.OutputIdx && OutputSlot == other.OutputSlot;
-		}
-	};
-
+	static std::vector<NodeOrder> mOrders;
 	static bool editingNode = false;
 	static ImVec2 editingNodeSource;
 	static bool editingInput = false;
@@ -148,7 +205,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		draw_list->ChannelsSetCurrent(1); // Foreground
 		bool old_any_active = ImGui::IsAnyItemActive();
 		ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-		ImGui::Text(metaNodes[node->mType].mName);
+		ImGui::Text("%s [%d]", metaNodes[node->mType].mName, mOrders[node_idx].mNodePriority);
 		ImGui::InvisibleButton("canvas", ImVec2(100, 100));
 		/*
 		ImGui::BeginGroup(); // Lock horizontal position
@@ -257,6 +314,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 							{
 								links.push_back(nl);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
+								mOrders = ComputeEvaluationOrder(links, nodes.size());
 							}
 						}
 					if (!editingNode && ImGui::GetIO().MouseDown[0])
@@ -346,6 +404,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 					{
 						nodes.push_back(Node(i, scene_pos, metaNodes));
 						delegate->AddNode(i);
+						mOrders = ComputeEvaluationOrder(links, nodes.size());
 					}
 				}
 				//ImGui::EndMenu();

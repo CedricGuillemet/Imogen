@@ -119,7 +119,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	{
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
-		const MetaNode &metaNode = metaNodes[index];
+		const MetaNode &metaNode = metaNodes[mNodes[index].mType];
 		std::string call(metaNode.mName);
 		call += "(vUV";
 

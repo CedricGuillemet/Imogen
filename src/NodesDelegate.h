@@ -86,9 +86,20 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);
 	}
 
+	virtual void DelLink(int index, int slot)
+	{
+		DelEvaluationInput(index, slot);
+	}
+
 	virtual void DeleteNode(size_t index)
 	{
-
+		DelEvaluationTarget(index);
+		mNodes.erase(mNodes.begin() + index);
+		for (auto& node : mNodes)
+		{
+			if (node.mEvaluationTexture > index)
+				node.mEvaluationTexture--;
+		}
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
@@ -154,14 +165,18 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		return call;
 	}
 
-	virtual void EditNode(size_t index)
+	void EditNode()
 	{
+		size_t index = mSelectedNodeIndex;
+
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		bool dirty = false;
-		ImGui::Begin("Edit");
+		const MetaNode& currentMeta = metaNodes[mNodes[index].mType];
+		if (!ImGui::CollapsingHeader(currentMeta.mName, 0, ImGuiTreeNodeFlags_DefaultOpen))
+			return;
 
-		const NodeGraphDelegate::Con * param = metaNodes[mNodes[index].mType].mParams;
+		const NodeGraphDelegate::Con * param = currentMeta.mParams;
 		unsigned char *paramBuffer = (unsigned char*)mNodes[index].mParams;
 		for (int i = 0; i < MaxCon; i++, param++)
 		{
@@ -185,7 +200,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
 		
-		ImGui::End();
+		//ImGui::End();
 		if (dirty)
 			SetEvaluationCall(mNodes[index].mEvaluationTexture, ComputeFunctionCall(index));
 	}
@@ -237,6 +252,11 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			break;
 		}
 		return res;
+	}
+
+	virtual void UpdateEvaluationList(const std::vector<int> nodeOrderList)
+	{
+		SetEvaluationOrder(nodeOrderList);
 	}
 };
 

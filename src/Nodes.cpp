@@ -122,20 +122,32 @@ std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, s
 	return orders;
 }
 
+static std::vector<NodeOrder> mOrders;
+static ImVector<Node> nodes;
+static ImVector<NodeLink> links;
+
+void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
+{
+	mOrders = ComputeEvaluationOrder(links, nodes.size());
+	std::vector<int> nodeOrderList(mOrders.size());
+	for (size_t i = 0; i < mOrders.size(); i++)
+		nodeOrderList[i] = mOrders[i].mNodeIndex;
+	delegate->UpdateEvaluationList(nodeOrderList);
+}
 void NodeGraph(NodeGraphDelegate *delegate)
 {
 	int metaNodeCount;
 	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
 
-	static std::vector<NodeOrder> mOrders;
+	
+
 	static bool editingNode = false;
 	static ImVec2 editingNodeSource;
 	static bool editingInput = false;
 	static int editingNodeIndex;
 	static int editingSlotIndex;
 
-	static ImVector<Node> nodes;
-	static ImVector<NodeLink> links;
+
 	static ImVec2 scrolling = ImVec2(0.0f, 0.0f);
 	static bool show_grid = true;
 	static int node_selected = -1;
@@ -153,7 +165,13 @@ void NodeGraph(NodeGraphDelegate *delegate)
 	// Create our child canvas
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	
+	//style.Colors[] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
 	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, IM_COL32(30, 30, 30, 200));
+
+	//ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(230, 80, 30, 200));
+
+
 	ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 	ImGui::PushItemWidth(120.0f);
 
@@ -194,6 +212,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		draw_list->AddBezierCurve(p1, p1 + ImVec2(editingInput ?-50.f:+50.f, 0.f), p2 + ImVec2(editingInput ?50.f:-50.f, 0.f), p2, IM_COL32(200, 200, 100, 255), 3.0f);
 	}
 
+	int nodeToDelete = -1;
 	// Display nodes
 	for (int node_idx = 0; node_idx < nodes.Size; node_idx++)
 	{
@@ -247,9 +266,11 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		if (node_moving_active && ImGui::IsMouseDragging(0))
 			node->Pos = node->Pos + ImGui::GetIO().MouseDelta;
 
-		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && node_selected == node_idx)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
+		bool currentSelectedNode = node_selected == node_idx;
+
+		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && currentSelectedNode)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
 		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
-		draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(100, 100, 100, 255), 4.0f);
+		draw_list->AddRect(node_rect_min, node_rect_max, currentSelectedNode? IM_COL32(230, 100, 10, 255):IM_COL32(100, 100, 100, 255), 4.0f);
 
 		//ImVec2 offsetImg = ImGui::GetCursorScreenPos();
 
@@ -305,7 +326,9 @@ void NodeGraph(NodeGraphDelegate *delegate)
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
 								{
+									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
+									UpdateEvaluationOrder(delegate);
 									break;
 								}
 							}
@@ -314,7 +337,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 							{
 								links.push_back(nl);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
-								mOrders = ComputeEvaluationOrder(links, nodes.size());
+								UpdateEvaluationOrder(delegate);
 							}
 						}
 					if (!editingNode && ImGui::GetIO().MouseDown[0])
@@ -332,7 +355,9 @@ void NodeGraph(NodeGraphDelegate *delegate)
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
 								{
+									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
+									UpdateEvaluationOrder(delegate);
 									break;
 								}
 							}
@@ -385,8 +410,27 @@ void NodeGraph(NodeGraphDelegate *delegate)
 			//if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
 			{
+				
+				for (int id = 0; id < links.size(); id++)
+				{
+					if (links[id].InputIdx == node_selected)
+						delegate->DelLink(links[id].OutputIdx, links[id].OutputSlot);
+					if (links[id].OutputIdx == node_selected)
+						delegate->DelLink(links[id].InputIdx, links[id].InputSlot);
+				}
+				auto iter = links.begin();// for (int id = 0; id < links.size(); id++)
+				for (; iter != links.end();)
+				{
+					if (iter->InputIdx == node_selected || iter->OutputIdx == node_selected)
+						iter = links.erase(iter);
+					else
+						iter++;
+				}
 				delegate->DeleteNode(node_selected);
+				// delete links
 				nodes.erase(nodes.begin() + node_selected);
+				UpdateEvaluationOrder(delegate);
+				node_selected = -1;
 			}
 			//if (ImGui::MenuItem("Copy", NULL, false, false)) {}
 		}
@@ -404,7 +448,8 @@ void NodeGraph(NodeGraphDelegate *delegate)
 					{
 						nodes.push_back(Node(i, scene_pos, metaNodes));
 						delegate->AddNode(i);
-						mOrders = ComputeEvaluationOrder(links, nodes.size());
+						UpdateEvaluationOrder(delegate);
+						node_selected = nodes.size() - 1;
 					}
 				}
 				//ImGui::EndMenu();
@@ -420,14 +465,10 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 	ImGui::PopItemWidth();
 	ImGui::EndChild();
-	ImGui::PopStyleColor();
+	ImGui::PopStyleColor(1);
 	ImGui::PopStyleVar(2);
 
-	ImGui::SameLine();
-
-	if (node_selected != -1)
-	delegate->EditNode(node_selected);
-
+	delegate->mSelectedNodeIndex = node_selected;
 	
 	ImGui::EndGroup();
 }

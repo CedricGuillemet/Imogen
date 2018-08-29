@@ -275,7 +275,7 @@ struct Evaluation
 };
 
 std::vector<Evaluation> mEvaluations;
-
+std::vector<int> mEvaluationOrderList;
 std::string mBaseShader;
 FullScreenTriangle mFSQuad;
 
@@ -293,6 +293,24 @@ unsigned int AddEvaluationTarget()
 	evaluation.mTarget.initBuffer(128, 128, false);
 	mEvaluations.push_back(evaluation);
 	return mEvaluations.size() - 1;
+}
+
+void DelEvaluationTarget(int target)
+{
+	Evaluation& ev = mEvaluations[target];
+	glDeleteProgram(ev.mShader);
+	ev.mTarget.destroy();
+	mEvaluations.erase(mEvaluations.begin() + target);
+
+	// shift all connections
+	for (auto& evaluation : mEvaluations)
+	{
+		for (auto& inp : evaluation.mInput.mInputs)
+		{
+			if (inp != -1 && inp >= target)
+				inp--;
+		}
+	}
 }
 
 unsigned int GetEvaluationTexture(int target)
@@ -321,10 +339,13 @@ void SetEvaluationCall(int target, const std::string& shaderCall)
 
 void RunEvaluation()
 {
-	static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3" };
-	for (size_t i = 0; i < mEvaluations.size(); i++)
+	if (mEvaluationOrderList.empty())
+		return;
+
+	static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
+	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
-		const Evaluation& evaluation = mEvaluations[i];
+		const Evaluation& evaluation = mEvaluations[mEvaluationOrderList[i]];
 
 		const Input& input = evaluation.mInput;
 		const RenderTarget &tg = evaluation.mTarget;
@@ -332,15 +353,22 @@ void RunEvaluation()
 		glUseProgram(evaluation.mShader);
 		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
 		{
-			int targetIndex = input.mInputs[inputIndex];
-			if (targetIndex == -1)
-				continue;
-
 			unsigned int parameter = glGetUniformLocation(evaluation.mShader, samplerName[inputIndex]);
+			if (parameter == 0xFFFFFFFF)
+				continue;
 			glUniform1i(parameter, inputIndex);
 			glActiveTexture(GL_TEXTURE0 + inputIndex);
+
+			int targetIndex = input.mInputs[inputIndex];
+			if (targetIndex == -1)
+			{
+				glBindTexture(GL_TEXTURE_2D, 0);
+				continue;
+			}
+
 			glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
 			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+
 
 		}
 		mFSQuad.Render();
@@ -359,4 +387,7 @@ void DelEvaluationInput(int target, int slot)
 {
 	mEvaluations[target].mInput.mInputs[slot] = -1;
 }
-
+void SetEvaluationOrder(const std::vector<int> nodeOrderList)
+{
+	mEvaluationOrderList = nodeOrderList;
+}

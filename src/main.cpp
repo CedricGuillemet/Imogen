@@ -35,11 +35,30 @@ int main(int, char**)
 
 		ImGuiIO& io = ImGui::GetIO();
 		
-		ImGui::SetNextWindowSize(ImVec2(700, 600), ImGuiSetCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(1900, 1000), ImGuiSetCond_FirstUseEver);
 		if (ImGui::Begin("Imogen"))
 		{
-			
+			ImGui::BeginChild("ImogenEdit", ImVec2(256, 0));
+
+			int selNode = nodeGraphDelegate.mSelectedNodeIndex;
+			if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
+				ImGui::Image((ImTextureID)((selNode != -1)?GetEvaluationTexture(selNode):0), ImVec2(256, 256));
+
+			if (selNode == -1)
+				ImGui::CollapsingHeader("No Selection", 0, ImGuiTreeNodeFlags_DefaultOpen);
+			else
+				nodeGraphDelegate.EditNode();
+
+			ImGui::EndChild();
+
+
+			ImGui::SameLine();
+
+
+			ImGui::BeginGroup();
 			NodeGraph(&nodeGraphDelegate);
+			ImGui::EndGroup();
+			
 			ImGui::End();
 		}
 

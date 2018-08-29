@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-
+#include <vector>
 typedef unsigned int TextureID;
 
 inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
@@ -56,9 +56,10 @@ protected:
 // simple API
 void InitEvaluation();
 unsigned int AddEvaluationTarget();
+void DelEvaluationTarget(int target);
 unsigned int GetEvaluationTexture(int target);
 void SetEvaluationCall(int target, const std::string& shaderCall);
 void AddEvaluationInput(int target, int slot, int source);
 void DelEvaluationInput(int target, int slot);
 void RunEvaluation();
-
+void SetEvaluationOrder(const std::vector<int> nodeOrderList);

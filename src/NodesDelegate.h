@@ -57,6 +57,18 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Structure,
 		Con_Any,
 	};
+	virtual unsigned char *GetParamBlock(int index, size_t& paramBlockSize)
+	{
+		const ImogenNode & node = mNodes[index];
+		paramBlockSize = ComputeParamMemSize(node.mType);
+		return (unsigned char*)node.mParams;
+	}
+	virtual void SetParamBlock(int index, unsigned char* paramBlock)
+	{
+		const ImogenNode & node = mNodes[index];
+		memcpy(node.mParams, paramBlock, ComputeParamMemSize(node.mType));
+		SetEvaluationCall(node.mEvaluationTexture, ComputeFunctionCall(index));
+	}
 
 	virtual bool AuthorizeConnexion(int typeA, int typeB)
 	{
@@ -94,6 +106,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void DeleteNode(size_t index)
 	{
 		DelEvaluationTarget(index);
+		free(mNodes[index].mParams);
 		mNodes.erase(mNodes.begin() + index);
 		for (auto& node : mNodes)
 		{

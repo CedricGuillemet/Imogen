@@ -1,4 +1,4 @@
-
+#define PI 3.14159265359
 
 #ifdef VERTEX_SHADER
 
@@ -51,6 +51,20 @@ vec4 Transform(vec2 uv, vec2 translate, float rotate, float scale)
 	vec4 tex = texture(Sampler0, nuv);
 	return tex;
 }
+
+float Sine(vec2 uv, float freq, float angle)
+{
+	uv -= vec2(0.5);
+	uv = vec2(cos(angle), sin(angle)) * (uv * freq * PI * 2.0);
+    return cos(uv.x + uv.y) * 0.5 + 0.5;
+}
+
+vec4 SmoothStep(vec2 uv, float low, float high)
+{
+	vec4 tex = texture(Sampler0, uv);
+	return smoothstep(low, high, tex);
+}
+
 
 
 void main() 

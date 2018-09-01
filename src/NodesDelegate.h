@@ -2,7 +2,7 @@
 
 #include "Nodes.h"
 #include "Evaluation.h"
-
+#if 0
 enum ComponentType
 {
 	ComponentType_Circle,
@@ -36,7 +36,7 @@ enum ComponentType
 	*/
 	ComponentType_Count,
 };
-
+#endif
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
 	struct ImogenNode
@@ -103,9 +103,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
-		metaNodeCount = ComponentType_Count;
+		metaNodeCount = 6;
 
-		static const MetaNode metaNodes[ComponentType_Count] = {
+		static const MetaNode metaNodes[6] = {
 			{
 				"Circle"
 				,{ {} }
@@ -119,7 +119,35 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Translate", (int)Con_Float2 },{ "Rotation", (int)Con_Float },{ "Scale", (int)Con_Float } }
 			}
+			,
+			{
+				"Square"
+				,{ { } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "Width", (int)Con_Float } }
+			}
+			,
+			{
+				"Checker"
+				,{ {} }
+			,{ { "Out", (int)Con_Float4 } }
+			,{  }
+			}
+			,
+			{
+				"Sine"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "Frequency", (int)Con_Float },{ "Angle", (int)Con_Float } }
+			}
 
+			,
+			{
+				"SmoothStep"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "Low", (int)Con_Float },{ "High", (int)Con_Float } }
+			}
 
 			};
 

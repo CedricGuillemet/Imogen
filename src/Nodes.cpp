@@ -122,9 +122,11 @@ std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, s
 	return orders;
 }
 
+
 static std::vector<NodeOrder> mOrders;
 static ImVector<Node> nodes;
 static ImVector<NodeLink> links;
+
 
 void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
 {
@@ -134,6 +136,106 @@ void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
 		nodeOrderList[i] = mOrders[i].mNodeIndex;
 	delegate->UpdateEvaluationList(nodeOrderList);
 }
+
+std::string encode(unsigned char* ptr, size_t size)
+{
+	std::string res = "";
+	for (size_t i = 0; i < size; i++)
+	{
+		char tmps[3];
+		sprintf(tmps, "%02x", ptr[i]);
+		res += tmps;
+	}
+	return res;
+}
+
+void decode(const std::string & str, unsigned char *output)
+{
+	for (size_t i = 0; i < str.size(); i+=2)
+	{
+		int v;
+		std::string sub;
+		sub +=str[i];
+		sub += str[i + 1];
+		sscanf(sub.c_str(), "%02x", &v);
+		*output = unsigned char(v);
+		output++;
+	}
+}
+
+void SaveNodes(const std::string &filename, NodeGraphDelegate *delegate)
+{
+	FILE * fp = fopen(filename.c_str(), "wt");
+	if (!fp)
+		return;
+
+	char tmps[512];
+	int index = 0;
+	sprintf(tmps, "%d\n", nodes.size());
+	fputs(tmps, fp);
+	for (auto& node : nodes)
+	{
+		sprintf(tmps, "%d[%d,%d]\n", node.mType, int(node.Pos.x), int(node.Pos.y));
+		fputs(tmps, fp);
+		size_t paramBlockSize;
+		unsigned char * paramBlock = delegate->GetParamBlock(index, paramBlockSize);
+		fputs((encode(paramBlock, paramBlockSize)+"\n").c_str(), fp);
+		index++;
+	}
+	sprintf(tmps, "%d\n", links.size());
+	fputs(tmps, fp);
+	for (auto& link : links)
+	{
+		sprintf(tmps, "%d:%d>%d:%d\n", link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+		fputs(tmps, fp);
+	}
+
+	fclose(fp);
+}
+
+void LoadNodes(const std::string &filename, NodeGraphDelegate *delegate)
+{
+	FILE * fp = fopen(filename.c_str(), "rt");
+	if (!fp)
+		return;
+
+	int metaNodeCount;
+	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
+
+	int count;
+	char tmps[512];
+	unsigned char decodedBuf[1024];
+	fgets(tmps, 512, fp);
+	sscanf(tmps, "%d", &count);
+	for (int i = 0; i < count; i++)
+	{
+		int nodeType, px, py;
+		fgets(tmps, 512, fp);
+		sscanf(tmps, "%d[%d,%d]", &nodeType, &px, &py);
+
+		nodes.push_back(Node(nodeType, ImVec2(px,py), metaNodes));
+		delegate->AddNode(nodeType);
+
+
+		fgets(tmps, 512, fp);
+		decode(std::string(tmps), decodedBuf);
+		delegate->SetParamBlock(i, decodedBuf);
+	}
+	fgets(tmps, 512, fp);
+	sscanf(tmps, "%d", &count);
+	for (int i = 0; i < count; i++)
+	{
+		fgets(tmps, 512, fp);
+		NodeLink lnk;
+		sscanf(tmps, "%d:%d>%d:%d", &lnk.InputIdx, &lnk.InputSlot, &lnk.OutputIdx, &lnk.OutputSlot);
+		links.push_back(lnk);
+		delegate->AddLink(lnk.InputIdx, lnk.InputSlot, lnk.OutputIdx, lnk.OutputSlot);
+	}
+
+	UpdateEvaluationOrder(delegate);
+}
+
+
 void NodeGraph(NodeGraphDelegate *delegate)
 {
 	int metaNodeCount;

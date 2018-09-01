@@ -18,6 +18,8 @@ struct NodeGraphDelegate
 	// node deleted
 	virtual void DeleteNode(size_t index) = 0;
 
+	virtual unsigned char *GetParamBlock(int index, size_t& paramBlockSize) = 0;
+	virtual void SetParamBlock(int index, unsigned char* paramBlock) = 0;
 	static const int MaxCon = 32;
 	struct Con
 	{
@@ -35,3 +37,6 @@ struct NodeGraphDelegate
 };
 
 void NodeGraph(NodeGraphDelegate *delegate);
+
+void SaveNodes(const std::string &filename, NodeGraphDelegate *delegate);
+void LoadNodes(const std::string &filename, NodeGraphDelegate *delegate);

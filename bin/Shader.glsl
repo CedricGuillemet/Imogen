@@ -65,7 +65,23 @@ vec4 SmoothStep(vec2 uv, float low, float high)
 	return smoothstep(low, high, tex);
 }
 
+vec4 Pixelize(vec2 uv, float scale)
+{
+	vec4 tex = texture(Sampler0, floor(uv*scale)/scale);
+	return tex;
+}
 
+vec4 Blur(vec2 uv, float angle, float strength)
+{
+	vec2 dir = vec2(cos(angle), sin(angle));
+	vec4 col = vec4(0.0);
+	for(float i = -5.0;i<=5.0;i += 1.0)
+	{
+		col += texture(Sampler0, uv + dir * strength * i);
+	}
+	col /= 11.0;
+	return col;
+}
 
 void main() 
 { 

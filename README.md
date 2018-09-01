@@ -17,6 +17,18 @@ Simple roadmap:
 
 - add nodes (noise, blur, voronoi, simple ops,..) and make nice textures
 
+Currently implemented nodes
+- circle and square generator
+- sine generator
+- checker transform
+- transform
+- Mul/Add
+- smoothstep
+- pixelize
+- blur
+- normal map from height map
+- sphere/plan previewer
+
 Distant roadmap when I can make some nice textures and get self confident enough 
 - undo/redo
 - bullet proof serialization
@@ -32,4 +44,5 @@ Distant roadmap when I can make some nice textures and get self confident enough
 - ease of integration in your 64k demo/tools
 - color coding of nodes depending of their type(generator, blur, transform, material, ...)
 - node group/sub node: reuse a subnode in your new texture
+- pin parameter controls and result from various nodes into one view
 - ...

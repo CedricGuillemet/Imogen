@@ -213,6 +213,29 @@ vec4 CircleSplatter(vec2 uv, vec2 distToCenter, vec2 radii, vec2 angles, float c
 	return col;
 }
 
+float GetRamp(float v, vec2 arr[8]) 
+{
+    for (int i = 0;i<(arr.length()-1);i++)
+    {
+        if (v >= arr[i].x && v <= arr[i+1].x)
+        {
+            // linear
+            //float t = (v-arr[i].x)/(arr[i+1].x-arr[i].x);
+            // smooth
+            float t = smoothstep(arr[i].x, arr[i+1].x, v);
+            return mix(arr[i].y, arr[i+1].y, t);
+        }
+    }
+    
+    return 0.0;
+}
+
+vec4 Ramp(vec2 uv, vec2 ramp[8])
+{
+	vec4 tex = texture(Sampler0, uv);
+	return tex * GetRamp(tex.x, ramp);
+}
+
 void main() 
 { 
 	outPixDiffuse = vec4(__FUNCTION__);

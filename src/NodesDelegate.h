@@ -83,14 +83,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
-		metaNodeCount = 11;
+		metaNodeCount = 14;
 
-		static const MetaNode metaNodes[11] = {
+		static const MetaNode metaNodes[14] = {
 			{
 				"Circle"
 				,{ {} }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ { "Radius", (int)Con_Float, 0.f,1.f,0.f,0.f } }
+			,{ { "Radius", (int)Con_Float, 0.f,1.f,0.f,0.f },{ "T", (int)Con_Float } }
 			}
 			,
 			{
@@ -159,7 +159,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"LambertMaterial"
 				,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ /*{ "spread", (int)Con_Float }*/ }
+			,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f } }
 			}
 
 			,
@@ -170,8 +170,30 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ { "Mul Color", (int)Con_Color4 }, {"Add Color", (int)Con_Color4} }
 			}
 			
+			,
+			{
+				"Hexagon"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{  }
+			}
 
+			,
+			{
+				"Blend"
+				,{ { "A", (int)Con_Float4 },{ "B", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 } }
+			}
 			
+
+				,
+				{
+					"Invert"
+					,{ { "In", (int)Con_Float4 } }
+				,{ { "Out", (int)Con_Float4 } }
+				,{}
+				}
 			};
 
 		return metaNodes;

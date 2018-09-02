@@ -25,9 +25,12 @@ uniform sampler2D Sampler2;
 uniform sampler2D Sampler3;
 
 
-float Circle(vec2 uv, float radius)
+float Circle(vec2 uv, float radius, float t)
 {
-    return 1.0-smoothstep(radius-0.001, radius, length(uv-vec2(0.5)));
+    float r = length(uv-vec2(0.5));
+    float h = sin(acos(r/radius));
+    
+    return mix(1.0-smoothstep(radius-0.001, radius, length(uv-vec2(0.5))), h, t);
 }
 
 float Square(vec2 uv, float width)
@@ -44,7 +47,6 @@ float Checker(vec2 uv)
 
 vec4 Transform(vec2 uv, vec2 translate, float rotate, float scale)
 {
-	//uv -= vec2(0.5);
 	vec2 rs = (uv+translate) * scale;   
     vec2 ro = vec2(rs.x*cos(rotate) - rs.y * sin(rotate), rs.x*sin(rotate) + rs.y * cos(rotate));
     vec2 nuv = fract(ro);
@@ -109,13 +111,15 @@ vec4 boxmap( sampler2D sam, in vec3 p, in vec3 n, in float k )
 	return (x*m.x + y*m.y + z*m.z)/(m.x+m.y+m.z);
 }
 
-vec4 LambertMaterial(vec2 uv)
+vec4 LambertMaterial(vec2 uv, vec2 view)
 {
 	vec2 p = uv *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
 
      // camera movement	
-	float an = 0.0;//0.2*iTime;
-	vec3 ro = vec3( 2.5*sin(an), 1.0, 2.5*cos(an) );
+	float an = view.x * PI * 2.0;
+	float dn = view.y * PI * 0.5;
+	float cdn = cos(dn);
+	vec3 ro = vec3( 2.5*sin(an)*cdn, 1.0 + sin(dn)*2.0, 2.5*cos(an)*cdn );
     vec3 ta = vec3( 0.0, 1.0, 0.0 );
     // camera matrix
     vec3 ww = normalize( ta - ro );
@@ -169,6 +173,25 @@ vec4 MADD(vec2 uv, vec4 color0, vec4 color1)
 {
     return texture(Sampler0, uv) * color0 + color1;
 }
+
+float Hexagon(vec2 uv)
+{
+	vec2 V = vec2(.866,.5);
+    vec2 v = abs ( ((uv * 2.0)-1.0) * mat2( V, -V.y, V.x) );	
+
+	return ceil( 1. - max(v.y, dot( v, V)) *1.15  );
+}
+
+vec4 Blend(vec2 uv, vec4 A, vec4 B)
+{
+    return texture(Sampler0, uv) * A + texture(Sampler1, uv) * B;
+}
+
+vec4 Invert(vec2 uv)
+{
+    return vec4(1.0) - texture(Sampler0, uv);
+}
+
 
 void main() 
 { 

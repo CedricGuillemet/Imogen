@@ -1,4 +1,6 @@
 #include "imgui.h"
+#include "imgui_internal.h"
+
 #define IMAPP_IMPL
 #include "ImApp.h"
 
@@ -35,8 +37,9 @@ int main(int, char**)
 	// Main loop
 	while (!imApp.Done())
 	{
+		
 		imApp.NewFrame();
-
+		
 		ImGuiIO& io = ImGui::GetIO();
 		
 		ImGui::SetNextWindowSize(ImVec2(1900, 1000), ImGuiSetCond_FirstUseEver);
@@ -46,7 +49,21 @@ int main(int, char**)
 
 			int selNode = nodeGraphDelegate.mSelectedNodeIndex;
 			if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
-				ImGui::Image((ImTextureID)((selNode != -1)?GetEvaluationTexture(selNode):0), ImVec2(256, 256));
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+				ImGui::ImageButton((ImTextureID)((selNode != -1) ? GetEvaluationTexture(selNode) : 0), ImVec2(256, 256));
+				ImGui::PopStyleVar(1);
+				ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+				if (rc.Contains(io.MousePos))
+				{
+					if (io.MouseDown[0])
+					{
+						ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
+						nodeGraphDelegate.SetMouseRatios(ratio.x, ratio.y);
+					}
+					
+				}
+			}
 
 			if (selNode == -1)
 				ImGui::CollapsingHeader("No Selection", 0, ImGuiTreeNodeFlags_DefaultOpen);

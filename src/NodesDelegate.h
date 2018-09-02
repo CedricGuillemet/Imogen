@@ -2,41 +2,7 @@
 
 #include "Nodes.h"
 #include "Evaluation.h"
-#if 0
-enum ComponentType
-{
-	ComponentType_Circle,
-	ComponentType_Transform,
-	/*ComponentType_Env,
-	ComponentType_Puzzle,
-	ComponentType_Prefab,
-	ComponentType_Waypoint,
-	ComponentType_Dialog,
-	ComponentType_Plant,
-	ComponentType_Sound,
-	ComponentType_Portal,
-	ComponentType_Particle,
-	ComponentType_Trigger,
-	ComponentType_Interest,
-	ComponentType_Sequence,
-	ComponentType_Decal,
-	ComponentType_Jumper,
-	ComponentType_SubMap,
-	ComponentType_Crane,
-	ComponentType_JumperVolume,
-	ComponentType_Value,
-	ComponentType_Lerp,
-	ComponentType_Input,
-	ComponentType_Output,
-	ComponentType_Threshold,
-	ComponentType_Mul,
-	ComponentType_Mesh,
-	ComponentType_Light,
-	ComponentType_Accumulator,
-	*/
-	ComponentType_Count,
-};
-#endif
+
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
 	struct ImogenNode
@@ -54,6 +20,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Float2,
 		Con_Float3,
 		Con_Float4,
+		Con_Color4,
 		Con_Structure,
 		Con_Any,
 	};
@@ -116,21 +83,21 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
-		metaNodeCount = 8;
+		metaNodeCount = 11;
 
-		static const MetaNode metaNodes[8] = {
+		static const MetaNode metaNodes[11] = {
 			{
 				"Circle"
 				,{ {} }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ { "Radius", (int)Con_Float } }
+			,{ { "Radius", (int)Con_Float, 0.f,1.f,0.f,0.f } }
 			}
 			,
 			{
 				"Transform"
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ { "Translate", (int)Con_Float2 },{ "Rotation", (int)Con_Float },{ "Scale", (int)Con_Float } }
+			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f },{ "Rotation", (int)Con_Float },{ "Scale", (int)Con_Float } }
 			}
 			,
 			{
@@ -179,6 +146,32 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ { "angle", (int)Con_Float },{ "strength", (int)Con_Float } }
 			}
 
+			,
+			{
+				"NormalMap"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "spread", (int)Con_Float } }
+			}
+
+			,
+			{
+				"LambertMaterial"
+				,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ /*{ "spread", (int)Con_Float }*/ }
+			}
+
+			,
+			{
+				"MADD"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "Mul Color", (int)Con_Color4 }, {"Add Color", (int)Con_Color4} }
+			}
+			
+
+			
 			};
 
 		return metaNodes;
@@ -206,14 +199,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				sprintf(tmps, ",%f", *(float*)paramBuffer);
 				break;
 			case Con_Float2:
-				//ImGui::InputFloat2(param->mName, (float*)paramBuffer);
 				sprintf(tmps, ",vec2(%f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]);
 				break;
 			case Con_Float3:
-				//ImGui::InputFloat3(param->mName, (float*)paramBuffer);
+				sprintf(tmps, ",vec3(%f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2]);
 				break;
+			case Con_Color4:
 			case Con_Float4:
-				//ImGui::InputFloat4(param->mName, (float*)paramBuffer);
+				sprintf(tmps, ",vec4(%f, %f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]);
 				break;
 			}
 			call += tmps;
@@ -254,6 +247,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_Float4:
 				dirty |= ImGui::InputFloat4(param->mName, (float*)paramBuffer);
 				break;
+			case Con_Color4:
+				dirty |= ImGui::ColorPicker4(param->mName, (float*)paramBuffer);
+				break;
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
@@ -277,6 +273,31 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		return res;
 	}
 	*/
+	void SetMouseRatios(float rx, float ry)
+	{
+		int metaNodeCount;
+		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
+		size_t res = 0;
+		const NodeGraphDelegate::Con * param = metaNodes[mNodes[mSelectedNodeIndex].mType].mParams;
+		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParams;
+		for (int i = 0; i < MaxCon; i++, param++)
+		{
+			if (!param->mName)
+				break;
+			float *paramFlt = (float*)paramBuffer;
+			if (param->mRangeMinX != 0.f || param->mRangeMaxX != 0.f)
+			{
+				paramFlt[0] = ImLerp(param->mRangeMinX, param->mRangeMaxX, rx);
+			}
+			if (param->mRangeMinY != 0.f || param->mRangeMaxY != 0.f)
+			{
+				paramFlt[1] = ImLerp(param->mRangeMinY, param->mRangeMaxY, ry);
+			}
+			paramBuffer += ComputeParamMemSize(param->mType);
+		}
+		SetEvaluationCall(mNodes[mSelectedNodeIndex].mEvaluationTexture, ComputeFunctionCall(mSelectedNodeIndex));
+	}
+
 	size_t ComputeParamMemSize(size_t typeIndex)
 	{
 		int metaNodeCount;
@@ -305,6 +326,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		case Con_Float3:
 			res += sizeof(float) * 3;
 			break;
+		case Con_Color4:
 		case Con_Float4:
 			res += sizeof(float) * 4;
 			break;

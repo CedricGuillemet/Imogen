@@ -83,6 +83,93 @@ vec4 Blur(vec2 uv, float angle, float strength)
 	return col;
 }
 
+vec4 NormalMap(vec2 uv, float spread)
+{
+	vec3 off = vec3(-1.0,0.0,1.0) * spread;
+
+    float s11 = texture(Sampler0, uv).x;
+    float s01 = texture(Sampler0, uv + off.xy).x;
+    float s21 = texture(Sampler0, uv + off.zy).x;
+    float s10 = texture(Sampler0, uv + off.yx).x;
+    float s12 = texture(Sampler0, uv + off.yz).x;
+    vec3 va = normalize(vec3(spread,0.0,s21-s01));
+    vec3 vb = normalize(vec3(0.0,spread,s12-s10));
+    vec4 bump = vec4( normalize(cross(va,vb))*0.5+0.5, s11 );
+	return bump;
+}
+
+//===============================================================================================
+// from Iq : https://www.shadertoy.com/view/MtsGWH
+vec4 boxmap( sampler2D sam, in vec3 p, in vec3 n, in float k )
+{
+    vec3 m = pow( abs(n), vec3(k) );
+	vec4 x = texture( sam, p.yz );
+	vec4 y = texture( sam, p.zx );
+	vec4 z = texture( sam, p.xy );
+	return (x*m.x + y*m.y + z*m.z)/(m.x+m.y+m.z);
+}
+
+vec4 LambertMaterial(vec2 uv)
+{
+	vec2 p = uv *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
+
+     // camera movement	
+	float an = 0.0;//0.2*iTime;
+	vec3 ro = vec3( 2.5*sin(an), 1.0, 2.5*cos(an) );
+    vec3 ta = vec3( 0.0, 1.0, 0.0 );
+    // camera matrix
+    vec3 ww = normalize( ta - ro );
+    vec3 uu = normalize( cross(ww,vec3(0.0,1.0,0.0) ) );
+    vec3 vv = normalize( cross(uu,ww));
+	// create view ray
+	vec3 rd = normalize( p.x*uu + p.y*vv + 1.5*ww );
+
+    // sphere center	
+	vec3 sc = vec3(0.0,1.0,0.0);
+
+    vec3 col = vec3(0.0);
+    
+	// raytrace-plane
+	float h = (0.0-ro.y)/rd.y;
+	if( h>0.0 ) 
+	{ 
+		vec3 pos = ro + h*rd;
+		vec3 nor = vec3(0.0,1.0,0.0); 
+		vec3 di = sc - pos;
+		float l = length(di);
+		float occ = 1.0 - dot(nor,di/l)*1.0*1.0/(l*l); 
+
+        col = texture( Sampler0, 0.25*pos.xz ).xyz;
+        col *= occ;
+        col *= exp(-0.1*h);
+	}
+
+	// raytrace-sphere
+	vec3  ce = ro - sc;
+	float b = dot( rd, ce );
+	float c = dot( ce, ce ) - 1.0;
+	h = b*b - c;
+	if( h>0.0 )
+	{
+		h = -b - sqrt(h);
+        vec3 pos = ro + h*rd;
+        vec3 nor = normalize(ro+h*rd-sc); 
+        float occ = 0.5 + 0.5*nor.y;
+        
+        col = boxmap( Sampler0, pos, nor, 32.0 ).xyz;
+        col *= occ;
+    }
+
+	col = sqrt( col );
+	
+	return vec4( col, 1.0 );
+}
+
+vec4 MADD(vec2 uv, vec4 color0, vec4 color1)
+{
+    return texture(Sampler0, uv) * color0 + color1;
+}
+
 void main() 
 { 
 	outPixDiffuse = vec4(__FUNCTION__);

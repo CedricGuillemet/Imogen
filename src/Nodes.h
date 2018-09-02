@@ -25,6 +25,8 @@ struct NodeGraphDelegate
 	{
 		const char *mName;
 		int mType;
+		float mRangeMinX, mRangeMaxX;
+		float mRangeMinY, mRangeMaxY;
 	};
 	struct MetaNode
 	{

@@ -290,7 +290,7 @@ void InitEvaluation()
 unsigned int AddEvaluationTarget()
 {
 	Evaluation evaluation;
-	evaluation.mTarget.initBuffer(128, 128, false);
+	evaluation.mTarget.initBuffer(256, 256, false);
 	mEvaluations.push_back(evaluation);
 	return mEvaluations.size() - 1;
 }

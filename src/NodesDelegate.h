@@ -83,9 +83,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
-		metaNodeCount = 14;
+		metaNodeCount = 15;
 
-		static const MetaNode metaNodes[14] = {
+		static const MetaNode metaNodes[15] = {
 			{
 				"Circle"
 				,{ {} }
@@ -193,6 +193,15 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{ { "In", (int)Con_Float4 } }
 				,{ { "Out", (int)Con_Float4 } }
 				,{}
+				}
+
+
+				,
+				{
+					"CircleSplatter"
+					,{ { "In", (int)Con_Float4 } }
+				,{ { "Out", (int)Con_Float4 } }
+				,{ { "Distance", (int)Con_Float2 },{ "Radius", (int)Con_Float2 },{ "Angle", (int)Con_Float2 },{ "Count", (int)Con_Float } }
 				}
 			};
 

@@ -24,6 +24,13 @@ uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
 uniform sampler2D Sampler3;
 
+vec2 Rotate2D(vec2 v, float a) 
+{
+	float s = sin(a);
+	float c = cos(a);
+	mat2 m = mat2(c, -s, s, c);
+	return m * v;
+}
 
 float Circle(vec2 uv, float radius, float t)
 {
@@ -192,6 +199,19 @@ vec4 Invert(vec2 uv)
     return vec4(1.0) - texture(Sampler0, uv);
 }
 
+vec4 CircleSplatter(vec2 uv, vec2 distToCenter, vec2 radii, vec2 angles, float count)
+{
+	vec4 col = vec4(0.0);
+	for (float i = 0.0 ; i < count ; i += 1.0)
+	{
+		float t = i/(count-0.0);
+		vec2 dist = vec2(mix(distToCenter.x, distToCenter.y, t), 0.0);
+		dist = Rotate2D(dist, mix(angles.x, angles.y, t));
+		float radius = mix(radii.x, radii.y, t);
+		col = max(col, vec4(Circle(uv-dist, radius, 0.0)));
+	}
+	return col;
+}
 
 void main() 
 { 

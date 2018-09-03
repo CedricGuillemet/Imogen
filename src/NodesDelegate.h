@@ -84,9 +84,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
-		metaNodeCount = 16;
+		metaNodeCount = 17;
 
-		static const MetaNode metaNodes[16] = {
+		static const MetaNode metaNodes[17] = {
 			{
 				"Circle"
 				,{ {} }
@@ -186,32 +186,39 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ { "Out", (int)Con_Float4 } }
 			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 } }
 			}
-			
 
-				,
-				{
-					"Invert"
-					,{ { "In", (int)Con_Float4 } }
-				,{ { "Out", (int)Con_Float4 } }
-				,{}
-				}
+			,
+			{
+				"Invert"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{}
+			}
 
+			,
+			{
+				"CircleSplatter"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "Distance", (int)Con_Float2 },{ "Radius", (int)Con_Float2 },{ "Angle", (int)Con_Float2 },{ "Count", (int)Con_Float } }
+			}
 
-				,
-				{
-					"CircleSplatter"
-					,{ { "In", (int)Con_Float4 } }
-				,{ { "Out", (int)Con_Float4 } }
-				,{ { "Distance", (int)Con_Float2 },{ "Radius", (int)Con_Float2 },{ "Angle", (int)Con_Float2 },{ "Count", (int)Con_Float } }
-				}
+			,
+			{
+				"Ramp"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "Ramp", (int)Con_Ramp } }
+			}
 
-				,
-				{
-					"Ramp"
-					,{ { "In", (int)Con_Float4 } }
-				,{ { "Out", (int)Con_Float4 } }
-				,{ { "Ramp", (int)Con_Ramp } }
-				}
+			,
+			{
+				"Tile"
+				,{ { "In", (int)Con_Float4 } }
+			,{ { "Out", (int)Con_Float4 } }
+			,{ { "Scale", (int)Con_Float },{ "Offset 0", (int)Con_Float2 },{ "Offset 1", (int)Con_Float2 },{ "Overlap", (int)Con_Float2 } }
+			}
+
 			};
 
 		return metaNodes;

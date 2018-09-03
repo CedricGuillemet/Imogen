@@ -21,6 +21,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Float3,
 		Con_Float4,
 		Con_Color4,
+		Con_Int,
 		Con_Ramp,
 		Con_Structure,
 		Con_Any,
@@ -184,7 +185,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Blend"
 				,{ { "A", (int)Con_Float4 },{ "B", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 } }
+			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Int } }
 			}
 
 			,
@@ -255,6 +256,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_Float4:
 				sprintf(tmps, ",vec4(%f, %f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]);
 				break;
+			case Con_Int:
+				sprintf(tmps, ",%d", *(int*)paramBuffer);
+				break;
 			case Con_Ramp:
 				sprintf(tmps, ",vec2[](vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f))"
 					, ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]
@@ -307,6 +311,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				break;
 			case Con_Color4:
 				dirty |= ImGui::ColorPicker4(param->mName, (float*)paramBuffer);
+				break;
+			case Con_Int:
+				dirty |= ImGui::InputInt(param->mName, (int*)paramBuffer);
 				break;
 			case Con_Ramp:
 				{
@@ -402,6 +409,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		case Con_Ramp:
 			res += sizeof(float) * 2 * 8;
 			break;
+		case Con_Int:
+			res += sizeof(int);
+			break;
+			
 		}
 		return res;
 	}

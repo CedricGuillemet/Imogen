@@ -189,9 +189,19 @@ float Hexagon(vec2 uv)
 	return ceil( 1. - max(v.y, dot( v, V)) *1.15  );
 }
 
-vec4 Blend(vec2 uv, vec4 A, vec4 B)
+vec4 Blend(vec2 uv, vec4 A, vec4 B, int op)
 {
-    return texture(Sampler0, uv) * A + texture(Sampler1, uv) * B;
+	switch (op)
+	{
+	case 0: // add
+		return texture(Sampler0, uv) * A + texture(Sampler1, uv) * B;
+	case 1: // mul
+		return texture(Sampler0, uv) * A * texture(Sampler1, uv) * B;
+	case 2: // min
+		return min(texture(Sampler0, uv) * A, texture(Sampler1, uv) * B);
+	case 3: // max
+		return max(texture(Sampler0, uv) * A, texture(Sampler1, uv) * B);
+	}
 }
 
 vec4 Invert(vec2 uv)

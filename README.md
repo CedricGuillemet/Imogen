@@ -49,7 +49,7 @@ Distant roadmap when I can make some nice textures and get self confident enough
 - misc settings like baking dimension
 - hot loading here and there
 - ease of integration in your 64k demo/tools
-- color coding of nodes depending of their type(generator, blur, transform, material, ...)
+~~- color coding of nodes depending of their type(generator, blur, transform, material, ...)~~
 - node group/sub node: reuse a subnode in your new texture
 - pin parameter controls and result from various nodes into one view
 - ...

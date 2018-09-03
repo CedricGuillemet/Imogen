@@ -43,7 +43,7 @@ Distant roadmap when I can make some nice textures and get self confident enough
 - texture baking / batch baking
 - baking for 64k demos (node parameters + baker source/sdk)
 - texture library browser
-- MOAR nodes
+- MOAR nodes: AO node
 - compute node metadata by parsing GLSL shader code
 - better parameter controls (sliders, color picker,..)
 - misc settings like baking dimension

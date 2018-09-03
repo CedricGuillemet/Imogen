@@ -27,6 +27,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Angle2,
 		Con_Angle3,
 		Con_Angle4,
+		Con_Enum,
 		Con_Structure,
 		Con_Any,
 	};
@@ -195,7 +196,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Blend", hcBlend
 				,{ { "A", (int)Con_Float4 },{ "B", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Int } }
+			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Enum, 0.f,0.f,0.f,0.f, "Add\0Mul\0Min\0Max\0" } }
 			}
 
 			,
@@ -270,6 +271,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_Float4:
 				sprintf(tmps, ",vec4(%f, %f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]);
 				break;
+			case Con_Enum:
 			case Con_Int:
 				sprintf(tmps, ",%d", *(int*)paramBuffer);
 				break;
@@ -375,6 +377,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
 				((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
 				break;
+			case Con_Enum:
+				dirty |= ImGui::Combo(param->mName, (int*)paramBuffer, param->mEnumList);
+				break;
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
@@ -462,6 +467,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		case Con_Ramp:
 			res += sizeof(float) * 2 * 8;
 			break;
+		case Con_Enum:
 		case Con_Int:
 			res += sizeof(int);
 			break;

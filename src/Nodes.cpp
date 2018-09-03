@@ -522,12 +522,10 @@ void NodeGraph(NodeGraphDelegate *delegate)
 				
 				for (int id = 0; id < links.size(); id++)
 				{
-					if (links[id].InputIdx == node_selected)
+					if (links[id].InputIdx == node_selected || links[id].OutputIdx == node_selected)
 						delegate->DelLink(links[id].OutputIdx, links[id].OutputSlot);
-					if (links[id].OutputIdx == node_selected)
-						delegate->DelLink(links[id].InputIdx, links[id].InputSlot);
 				}
-				auto iter = links.begin();// for (int id = 0; id < links.size(); id++)
+				auto iter = links.begin();
 				for (; iter != links.end();)
 				{
 					if (iter->InputIdx == node_selected || iter->OutputIdx == node_selected)

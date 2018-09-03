@@ -307,7 +307,7 @@ void DelEvaluationTarget(int target)
 	{
 		for (auto& inp : evaluation.mInput.mInputs)
 		{
-			if (inp != -1 && inp >= target)
+			if (inp >= target)
 				inp--;
 		}
 	}
@@ -318,7 +318,8 @@ unsigned int GetEvaluationTexture(int target)
 	return mEvaluations[target].mTarget.mGLTexID;
 }
 
-std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) 
+{
 	size_t start_pos = 0;
 	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
 		str.replace(start_pos, from.length(), to);
@@ -390,4 +391,9 @@ void DelEvaluationInput(int target, int slot)
 void SetEvaluationOrder(const std::vector<int> nodeOrderList)
 {
 	mEvaluationOrderList = nodeOrderList;
+}
+
+void SetTargetDirty(int target)
+{
+
 }

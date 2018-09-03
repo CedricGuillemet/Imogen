@@ -63,3 +63,4 @@ void AddEvaluationInput(int target, int slot, int source);
 void DelEvaluationInput(int target, int slot);
 void RunEvaluation();
 void SetEvaluationOrder(const std::vector<int> nodeOrderList);
+void SetTargetDirty(int target);

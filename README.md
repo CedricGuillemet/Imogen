@@ -38,6 +38,7 @@ Currently implemented nodes
 
 Distant roadmap when I can make some nice textures and get self confident enough 
 - undo/redo
+- graph dirty propagation 
 - bullet proof serialization
 - material/PBR preview
 - texture baking / batch baking

@@ -23,6 +23,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Color4,
 		Con_Int,
 		Con_Ramp,
+		Con_Angle,
+		Con_Angle2,
+		Con_Angle3,
+		Con_Angle4,
 		Con_Structure,
 		Con_Any,
 	};
@@ -99,7 +103,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Transform"
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f },{ "Rotation", (int)Con_Float },{ "Scale", (int)Con_Float } }
+			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f },{ "Rotation", (int)Con_Angle },{ "Scale", (int)Con_Float } }
 			}
 			,
 			{
@@ -120,7 +124,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Sine"
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ { "Frequency", (int)Con_Float },{ "Angle", (int)Con_Float } }
+			,{ { "Frequency", (int)Con_Float },{ "Angle", (int)Con_Angle } }
 			}
 
 			,
@@ -201,7 +205,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"CircleSplatter"
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ { "Distance", (int)Con_Float2 },{ "Radius", (int)Con_Float2 },{ "Angle", (int)Con_Float2 },{ "Count", (int)Con_Float } }
+			,{ { "Distance", (int)Con_Float2 },{ "Radius", (int)Con_Float2 },{ "Angle", (int)Con_Angle2 },{ "Count", (int)Con_Float } }
 			}
 
 			,
@@ -243,15 +247,19 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				break;
 			switch (param->mType)
 			{
+			case Con_Angle:
 			case Con_Float:
 				sprintf(tmps, ",%f", *(float*)paramBuffer);
 				break;
+			case Con_Angle2:
 			case Con_Float2:
 				sprintf(tmps, ",vec2(%f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]);
 				break;
+			case Con_Angle3:
 			case Con_Float3:
 				sprintf(tmps, ",vec3(%f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2]);
 				break;
+			case Con_Angle4:
 			case Con_Color4:
 			case Con_Float4:
 				sprintf(tmps, ",vec4(%f, %f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]);
@@ -278,6 +286,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		return call;
 	}
 
+	const float PI = 3.14159f;
+	float RadToDeg(float a) { return a * 180.f / PI; }
+	float DegToRad(float a) { return a / 180.f * PI; }
 	void EditNode()
 	{
 		size_t index = mSelectedNodeIndex;
@@ -325,6 +336,38 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					}
 				
 				}
+				break;
+			case Con_Angle:
+				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+				dirty |= ImGui::InputFloat(param->mName, (float*)paramBuffer);
+				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+				break;
+			case Con_Angle2:
+				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+				((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+				dirty |= ImGui::InputFloat2(param->mName, (float*)paramBuffer);
+				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+				((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+				break;
+			case Con_Angle3:
+				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+				((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+				((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
+				dirty |= ImGui::InputFloat3(param->mName, (float*)paramBuffer);
+				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+				((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+				((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
+				break;
+			case Con_Angle4:
+				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+				((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+				((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
+				((float*)paramBuffer)[3] = RadToDeg(((float*)paramBuffer)[3]);
+				dirty |= ImGui::InputFloat4(param->mName, (float*)paramBuffer);
+				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+				((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+				((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
+				((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
 				break;
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
@@ -393,15 +436,19 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		size_t res = 0;
 		switch (paramType)
 		{
+		case Con_Angle:
 		case Con_Float:
 			res += sizeof(float);
 			break;
+		case Con_Angle2:
 		case Con_Float2:
 			res += sizeof(float) * 2;
 			break;
+		case Con_Angle3:
 		case Con_Float3:
 			res += sizeof(float) * 3;
 			break;
+		case Con_Angle4:
 		case Con_Color4:
 		case Con_Float4:
 			res += sizeof(float) * 4;

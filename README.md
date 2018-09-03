@@ -3,7 +3,7 @@ GPU Texture Generator
 
 WIP of a GPU Texture generator using dear imgui for UI.
 
-![Image of imogen](https://i.imgur.com/zs64qO5.png)
+![Image of imogen](https://i.imgur.com/iQxLNEC.png)
 
 Simple roadmap:
 
@@ -28,6 +28,13 @@ Currently implemented nodes
 - blur
 - normal map from height map
 - sphere/plan previewer
+- Hexagon
+- Mul-Add colors
+- Blend (add, mul, min, max)
+- Invert color
+- Circle Splatter
+- Ramp
+- Tile
 
 Distant roadmap when I can make some nice textures and get self confident enough 
 - undo/redo
@@ -36,7 +43,7 @@ Distant roadmap when I can make some nice textures and get self confident enough
 - texture baking / batch baking
 - baking for 64k demos (node parameters + baker source/sdk)
 - texture library browser
-- MOAR nodes
+- MOAR nodes: AO node
 - compute node metadata by parsing GLSL shader code
 - better parameter controls (sliders, color picker,..)
 - misc settings like baking dimension

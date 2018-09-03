@@ -2,6 +2,7 @@
 #include "Evaluation.h"
 #include <vector>
 #include <algorithm>
+#include <assert.h>
 
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
@@ -272,10 +273,13 @@ struct Evaluation
 	RenderTarget mTarget;
 	unsigned int mShader;
 	Input mInput;
+	bool mbDirty;
 };
 
 std::vector<Evaluation> mEvaluations;
 std::vector<int> mEvaluationOrderList;
+int mDirtyCount = 0;
+
 std::string mBaseShader;
 FullScreenTriangle mFSQuad;
 
@@ -291,12 +295,15 @@ unsigned int AddEvaluationTarget()
 {
 	Evaluation evaluation;
 	evaluation.mTarget.initBuffer(256, 256, false);
+	evaluation.mbDirty = true;
+	mDirtyCount++;
 	mEvaluations.push_back(evaluation);
 	return mEvaluations.size() - 1;
 }
 
 void DelEvaluationTarget(int target)
 {
+	SetTargetDirty(target);
 	Evaluation& ev = mEvaluations[target];
 	glDeleteProgram(ev.mShader);
 	ev.mTarget.destroy();
@@ -336,17 +343,22 @@ void SetEvaluationCall(int target, const std::string& shaderCall)
 	if (program)
 		glDeleteProgram(program);
 	program = LoadShader(shd, "shd");
+	SetTargetDirty(target);
 }
 
 void RunEvaluation()
 {
 	if (mEvaluationOrderList.empty())
 		return;
+	if (!mDirtyCount)
+		return;
 
 	static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
 		const Evaluation& evaluation = mEvaluations[mEvaluationOrderList[i]];
+		if (!evaluation.mbDirty)
+			continue;
 
 		const Input& input = evaluation.mInput;
 		const RenderTarget &tg = evaluation.mTarget;
@@ -366,7 +378,7 @@ void RunEvaluation()
 				glBindTexture(GL_TEXTURE_2D, 0);
 				continue;
 			}
-
+			//assert(!mEvaluations[targetIndex].mbDirty);
 			glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
 			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
 
@@ -375,6 +387,15 @@ void RunEvaluation()
 		mFSQuad.Render();
 	}
 
+	for (auto& evaluation : mEvaluations)
+	{
+		if (evaluation.mbDirty)
+		{
+			evaluation.mbDirty = false;
+			mDirtyCount--;
+		}
+	}
+	assert(mDirtyCount == 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
 }
@@ -382,11 +403,13 @@ void RunEvaluation()
 void AddEvaluationInput(int target, int slot, int source)
 {
 	mEvaluations[target].mInput.mInputs[slot] = source;
+	SetTargetDirty(target);
 }
 
 void DelEvaluationInput(int target, int slot)
 {
 	mEvaluations[target].mInput.mInputs[slot] = -1;
+	SetTargetDirty(target);
 }
 void SetEvaluationOrder(const std::vector<int> nodeOrderList)
 {
@@ -395,5 +418,31 @@ void SetEvaluationOrder(const std::vector<int> nodeOrderList)
 
 void SetTargetDirty(int target)
 {
+	if (!mEvaluations[target].mbDirty)
+	{
+		mDirtyCount++;
+		mEvaluations[target].mbDirty = true;
+	}
+	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
+	{
+		if (mEvaluationOrderList[i] != target)
+			continue;
+		
+		for (i++; i < mEvaluationOrderList.size(); i++)
+		{
+			Evaluation& currentEvaluation = mEvaluations[mEvaluationOrderList[i]];
+			if (currentEvaluation.mbDirty)
+				continue;
 
+			for (auto inp : currentEvaluation.mInput.mInputs)
+			{
+				if (inp >= 0 && mEvaluations[inp].mbDirty)
+				{
+					mDirtyCount++;
+					currentEvaluation.mbDirty = true;
+					break; // at least 1 dirty
+				}
+			}
+		}
+	}
 }

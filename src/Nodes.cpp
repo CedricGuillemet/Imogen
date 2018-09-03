@@ -73,7 +73,7 @@ struct NodeOrder
 	int mNodePriority;
 	bool operator < (const NodeOrder& other) const
 	{
-		return mNodePriority < other.mNodePriority;
+		return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
 	}
 };
 
@@ -118,7 +118,7 @@ std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, s
 		int currentIndex = PickBestNode(orders);
 		RecurseSetPriority(orders, links, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
 	};
-	//std::sort(orders.begin(), orders.end());
+	//
 	return orders;
 }
 
@@ -131,6 +131,7 @@ static ImVector<NodeLink> links;
 void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
 {
 	mOrders = ComputeEvaluationOrder(links, nodes.size());
+	std::sort(mOrders.begin(), mOrders.end());
 	std::vector<int> nodeOrderList(mOrders.size());
 	for (size_t i = 0; i < mOrders.size(); i++)
 		nodeOrderList[i] = mOrders[i].mNodeIndex;

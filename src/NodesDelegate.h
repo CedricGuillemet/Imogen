@@ -89,39 +89,45 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
+		static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
+		static const uint32_t hcGenerator = IM_COL32(150, 200, 150, 255);
+		static const uint32_t hcMaterial = IM_COL32(150, 150, 200, 255);
+		static const uint32_t hcBlend = IM_COL32(200, 150, 150, 255);
+		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
+
 		metaNodeCount = 17;
 
 		static const MetaNode metaNodes[17] = {
 			{
-				"Circle"
+				"Circle", hcGenerator
 				,{ {} }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Radius", (int)Con_Float, 0.f,1.f,0.f,0.f },{ "T", (int)Con_Float } }
 			}
 			,
 			{
-				"Transform"
+				"Transform", hcTransform
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f },{ "Rotation", (int)Con_Angle },{ "Scale", (int)Con_Float } }
 			}
 			,
 			{
-				"Square"
+				"Square", hcGenerator
 				,{ { } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Width", (int)Con_Float } }
 			}
 			,
 			{
-				"Checker"
+				"Checker", hcGenerator
 				,{ {} }
 			,{ { "Out", (int)Con_Float4 } }
 			,{  }
 			}
 			,
 			{
-				"Sine"
+				"Sine", hcGenerator
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Frequency", (int)Con_Float },{ "Angle", (int)Con_Angle } }
@@ -129,7 +135,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"SmoothStep"
+				"SmoothStep", hcFilter
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Low", (int)Con_Float },{ "High", (int)Con_Float } }
@@ -137,7 +143,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"Pixelize"
+				"Pixelize", hcTransform
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "scale", (int)Con_Float } }
@@ -146,7 +152,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"Blur"
+				"Blur", hcFilter
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "angle", (int)Con_Float },{ "strength", (int)Con_Float } }
@@ -154,7 +160,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"NormalMap"
+				"NormalMap", hcFilter
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "spread", (int)Con_Float } }
@@ -162,7 +168,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"LambertMaterial"
+				"LambertMaterial", hcMaterial
 				,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f } }
@@ -170,7 +176,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"MADD"
+				"MADD", hcBlend
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Mul Color", (int)Con_Color4 }, {"Add Color", (int)Con_Color4} }
@@ -178,7 +184,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			
 			,
 			{
-				"Hexagon"
+				"Hexagon", hcGenerator
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{  }
@@ -186,7 +192,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"Blend"
+				"Blend", hcBlend
 				,{ { "A", (int)Con_Float4 },{ "B", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Int } }
@@ -194,7 +200,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"Invert"
+				"Invert", hcFilter
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{}
@@ -202,7 +208,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"CircleSplatter"
+				"CircleSplatter", hcGenerator
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Distance", (int)Con_Float2 },{ "Radius", (int)Con_Float2 },{ "Angle", (int)Con_Angle2 },{ "Count", (int)Con_Float } }
@@ -210,7 +216,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"Ramp"
+				"Ramp", hcFilter
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Ramp", (int)Con_Ramp } }
@@ -218,7 +224,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 			,
 			{
-				"Tile"
+				"Tile", hcTransform
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
 			,{ { "Scale", (int)Con_Float },{ "Offset 0", (int)Con_Float2 },{ "Offset 1", (int)Con_Float2 },{ "Overlap", (int)Con_Float2 } }

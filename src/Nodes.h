@@ -31,6 +31,7 @@ struct NodeGraphDelegate
 	struct MetaNode
 	{
 		const char *mName;
+		uint32_t mHeaderColor;
 		Con mInputs[MaxCon];
 		Con mOutputs[MaxCon];
 		Con mParams[MaxCon];

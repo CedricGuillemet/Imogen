@@ -326,8 +326,19 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		draw_list->ChannelsSetCurrent(1); // Foreground
 		bool old_any_active = ImGui::IsAnyItemActive();
 		ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-		ImGui::Text("%s [%d]", metaNodes[node->mType].mName, mOrders[node_idx].mNodePriority);
+
+
 		ImGui::InvisibleButton("canvas", ImVec2(100, 100));
+
+		// Save the size of what we have emitted and whether any of the widgets are being used
+		bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
+		node->Size = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
+		ImVec2 node_rect_max = node_rect_min + node->Size;
+
+		draw_list->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
+		draw_list->AddText(node_rect_min+ImVec2(2,2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName);
+		//ImGui::Text("%s [%d]", metaNodes[node->mType].mName, mOrders[node_idx].mNodePriority);
+		
 		/*
 		ImGui::BeginGroup(); // Lock horizontal position
 		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, 0);
@@ -348,10 +359,6 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		}
 		ImGui::EndGroup();
 		*/
-		// Save the size of what we have emitted and whether any of the widgets are being used
-		bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-		node->Size = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
-		ImVec2 node_rect_max = node_rect_min + node->Size;
 
 		// Display node box
 		draw_list->ChannelsSetCurrent(0); // Background
@@ -370,9 +377,9 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 		bool currentSelectedNode = node_selected == node_idx;
 
-		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && currentSelectedNode)) ? IM_COL32(75, 75, 75, 255) : IM_COL32(60, 60, 60, 255);
-		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 4.0f);
-		draw_list->AddRect(node_rect_min, node_rect_max, currentSelectedNode? IM_COL32(230, 100, 10, 255):IM_COL32(100, 100, 100, 255), 4.0f);
+		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && currentSelectedNode)) ? IM_COL32(85, 85, 85, 255) : IM_COL32(60, 60, 60, 255);
+		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
+		draw_list->AddRect(node_rect_min, node_rect_max, currentSelectedNode? IM_COL32(230, 230, 230, 255):IM_COL32(100, 100, 100, 0), 2.0f, 15, 2.f);
 
 		//ImVec2 offsetImg = ImGui::GetCursorScreenPos();
 
@@ -528,7 +535,18 @@ void NodeGraph(NodeGraphDelegate *delegate)
 					else
 						iter++;
 				}
+				// recompute link indices
+				for (int id = 0; id < links.size(); id++)
+				{
+					if (links[id].InputIdx > node_selected)
+						links[id].InputIdx--;
+					if (links[id].OutputIdx > node_selected)
+						links[id].OutputIdx--;
+				}
+
+				// inform delegate
 				delegate->DeleteNode(node_selected);
+
 				// delete links
 				nodes.erase(nodes.begin() + node_selected);
 				UpdateEvaluationOrder(delegate);

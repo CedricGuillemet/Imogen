@@ -131,6 +131,10 @@ int main(int, char**)
 		ImGui::SetNextWindowSize(ImVec2(1900, 1000), ImGuiSetCond_FirstUseEver);
 		if (ImGui::Begin("Imogen"))
 		{
+			if (ImGui::Button("bake"))
+			{
+				Bake("bakedTexture.png", nodeGraphDelegate.mBakeTargetIndex, 4096, 4096);
+			}
 			if (ImGui::CollapsingHeader("Logger", 0))
 			{
 				ImGui::BeginGroup();

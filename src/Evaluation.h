@@ -64,3 +64,4 @@ void DelEvaluationInput(int target, int slot);
 void RunEvaluation();
 void SetEvaluationOrder(const std::vector<int> nodeOrderList);
 void SetTargetDirty(int target);
+void Bake(const char *szFilename, int target, int width, int height);

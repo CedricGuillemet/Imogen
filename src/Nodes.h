@@ -2,10 +2,12 @@
 #include <vector>
 struct NodeGraphDelegate
 {
-	NodeGraphDelegate() : mSelectedNodeIndex(-1)
+	NodeGraphDelegate() : mSelectedNodeIndex(-1), mBakeTargetIndex(-1)
 	{}
 
 	int mSelectedNodeIndex;
+	int mBakeTargetIndex;
+
 	virtual void UpdateEvaluationList(const std::vector<int> nodeOrderList) = 0;
 	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
 	virtual void DelLink(int index, int slot) = 0;

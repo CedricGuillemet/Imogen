@@ -379,7 +379,14 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		bool currentSelectedNode = node_selected == node_idx;
 
 		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && currentSelectedNode)) ? IM_COL32(85, 85, 85, 255) : IM_COL32(60, 60, 60, 255);
-		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
+		
+		if (delegate->mBakeTargetIndex == node_idx)
+		{
+			//draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(230, 100, 30, 255) , 2.0f, 15, 4.f);
+			draw_list->AddRectFilled(node_rect_min, node_rect_max, IM_COL32(230, 100, 30, 255), 2.0f);
+		}
+		else
+			draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
 		draw_list->AddRect(node_rect_min, node_rect_max, currentSelectedNode? IM_COL32(230, 230, 230, 255):IM_COL32(100, 100, 100, 0), 2.0f, 15, 2.f);
 
 		//ImVec2 offsetImg = ImGui::GetCursorScreenPos();
@@ -520,7 +527,9 @@ void NodeGraph(NodeGraphDelegate *delegate)
 			//if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
 			{
-				
+				if (delegate->mBakeTargetIndex == node_selected)
+					delegate->mBakeTargetIndex = -1;
+
 				for (int id = 0; id < links.size(); id++)
 				{
 					if (links[id].InputIdx == node_selected || links[id].OutputIdx == node_selected)
@@ -550,6 +559,10 @@ void NodeGraph(NodeGraphDelegate *delegate)
 				nodes.erase(nodes.begin() + node_selected);
 				UpdateEvaluationOrder(delegate);
 				node_selected = -1;
+			}
+			if (ImGui::MenuItem("Set as target", NULL, false))
+			{
+				delegate->mBakeTargetIndex = node_selected;
 			}
 			//if (ImGui::MenuItem("Copy", NULL, false, false)) {}
 		}

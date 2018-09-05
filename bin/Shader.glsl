@@ -36,7 +36,6 @@ float Circle(vec2 uv, float radius, float t)
 {
     float r = length(uv-vec2(0.5));
     float h = sin(acos(r/radius));
-    
     return mix(1.0-smoothstep(radius-0.001, radius, length(uv-vec2(0.5))), h, t);
 }
 
@@ -181,6 +180,11 @@ vec4 MADD(vec2 uv, vec4 color0, vec4 color1)
     return texture(Sampler0, uv) * color0 + color1;
 }
 
+vec4 Color(vec2 uv, vec4 color)
+{
+	return color;
+}
+
 float Hexagon(vec2 uv)
 {
 	vec2 V = vec2(.866,.5);
@@ -269,6 +273,7 @@ vec4 Tile(vec2 uv, float scale, vec2 offset0, vec2 offset1, vec2 overlap)
 	
 	return col;
 }
+
 void main() 
 { 
 	outPixDiffuse = vec4(__FUNCTION__);

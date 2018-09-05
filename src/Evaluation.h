@@ -54,7 +54,8 @@ protected:
 };
 
 // simple API
-void InitEvaluation();
+void InitEvaluation(const std::string& shaderString);
+void UpdateEvaluationShader(const std::string& shaderString);
 unsigned int AddEvaluationTarget();
 void DelEvaluationTarget(int target);
 unsigned int GetEvaluationTexture(int target);

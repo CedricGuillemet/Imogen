@@ -96,9 +96,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcBlend = IM_COL32(200, 150, 150, 255);
 		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
 
-		metaNodeCount = 17;
+		metaNodeCount = 18;
 
-		static const MetaNode metaNodes[17] = {
+		static const MetaNode metaNodes[18] = {
 			{
 				"Circle", hcGenerator
 				,{ {} }
@@ -231,6 +231,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ { "Scale", (int)Con_Float },{ "Offset 0", (int)Con_Float2 },{ "Offset 1", (int)Con_Float2 },{ "Overlap", (int)Con_Float2 } }
 			}
 
+				,
+				{
+					"Color", hcGenerator
+					,{  }
+				,{ { "Out", (int)Con_Float4 } }
+				,{ { "Color", (int)Con_Color4 } }
+				}
 			};
 
 		return metaNodes;
@@ -403,6 +410,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		return res;
 	}
 	*/
+	void UpdateAllFunctionCalls()
+	{
+		for(size_t i = 0;i<mNodes.size();i++)
+			SetEvaluationCall(mNodes[i].mEvaluationTexture, ComputeFunctionCall(i));
+	}
+
 	void SetMouseRatios(float rx, float ry)
 	{
 		int metaNodeCount;

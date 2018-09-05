@@ -242,23 +242,6 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 	return programObject;
 }
 
-inline std::string ReadFile(const char *szFileName, int &bufSize)
-{
-	FILE *fp = fopen(szFileName, "rb");
-	if (fp)
-	{
-		fseek(fp, 0, SEEK_END);
-		bufSize = ftell(fp);
-		fseek(fp, 0, SEEK_SET);
-		char *buf = new char[bufSize];
-		fread(buf, bufSize, 1, fp);
-		fclose(fp);
-		std::string res(buf, bufSize);
-		return res;
-	}
-	return NULL;
-}
-
 struct Input
 {
 	Input()
@@ -283,12 +266,17 @@ int mDirtyCount = 0;
 std::string mBaseShader;
 FullScreenTriangle mFSQuad;
 
-void InitEvaluation()
+void InitEvaluation(const std::string& shaderString)
 {
 	mFSQuad.Init();
 
 	int bufSize;
-	mBaseShader = ReadFile("Shader.glsl", bufSize);
+	UpdateEvaluationShader(shaderString);
+}
+
+void UpdateEvaluationShader(const std::string& shaderString)
+{
+	mBaseShader = shaderString;
 }
 
 unsigned int AddEvaluationTarget()
@@ -411,6 +399,7 @@ void DelEvaluationInput(int target, int slot)
 	mEvaluations[target].mInput.mInputs[slot] = -1;
 	SetTargetDirty(target);
 }
+
 void SetEvaluationOrder(const std::vector<int> nodeOrderList)
 {
 	mEvaluationOrderList = nodeOrderList;

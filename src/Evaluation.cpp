@@ -3,6 +3,8 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
@@ -265,12 +267,11 @@ int mDirtyCount = 0;
 
 std::string mBaseShader;
 FullScreenTriangle mFSQuad;
+static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 
 void InitEvaluation(const std::string& shaderString)
 {
 	mFSQuad.Init();
-
-	int bufSize;
 	UpdateEvaluationShader(shaderString);
 }
 
@@ -341,7 +342,7 @@ void RunEvaluation()
 	if (!mDirtyCount)
 		return;
 
-	static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
+	
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
 		const Evaluation& evaluation = mEvaluations[mEvaluationOrderList[i]];
@@ -434,4 +435,112 @@ void SetTargetDirty(int target)
 			}
 		}
 	}
+}
+
+struct TransientTarget
+{
+	RenderTarget mTarget;
+	int mUseCount;
+};
+std::vector<TransientTarget*> mFreeTargets;
+int mTransientTextureMaxCount;
+TransientTarget* GetTransientTarget(int width, int height, int useCount)
+{
+	if (mFreeTargets.empty())
+	{
+		TransientTarget *res = new TransientTarget;
+		res->mTarget.initBuffer(width, height, false);
+		res->mUseCount = useCount;
+		mTransientTextureMaxCount++;
+		return res;
+	}
+	TransientTarget *res = mFreeTargets.back();
+	res->mUseCount = useCount;
+	mFreeTargets.pop_back();
+	return res;
+}
+
+void LoseTransientTarget(TransientTarget *transientTarget)
+{
+	transientTarget->mUseCount--;
+	if (transientTarget->mUseCount <= 0)
+		mFreeTargets.push_back(transientTarget);
+}
+
+void Bake(const char *szFilename, int target, int width, int height)
+{
+	if (mEvaluationOrderList.empty())
+		return;
+
+	if (target < 0 || target >= (int)mEvaluations.size())
+		return;
+
+	mTransientTextureMaxCount = 0;
+	std::vector<int> evaluationUseCount(mEvaluationOrderList.size(), 0); // use count of texture by others
+	std::vector<TransientTarget*> evaluationTransientTargets(mEvaluationOrderList.size(), NULL);
+	for (auto& evaluation : mEvaluations)
+	{
+		for (int targetIndex : evaluation.mInput.mInputs)
+			if (targetIndex != -1)
+				evaluationUseCount[targetIndex]++;
+	}
+	if (evaluationUseCount[target] < 1)
+		evaluationUseCount[target] = 1;
+
+	// todo : revert pass. dec use count for parent nodes whose children have 0 use count
+
+	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
+	{
+		size_t nodeIndex = mEvaluationOrderList[i];
+		if (!evaluationUseCount[nodeIndex])
+			continue;
+		const Evaluation& evaluation = mEvaluations[nodeIndex];
+
+		const Input& input = evaluation.mInput;
+
+		TransientTarget* transientTarget = GetTransientTarget(width, height, evaluationUseCount[nodeIndex]);
+		evaluationTransientTargets[nodeIndex] = transientTarget;
+		transientTarget->mTarget.bindAsTarget();
+		glUseProgram(evaluation.mShader);
+		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+		{
+			unsigned int parameter = glGetUniformLocation(evaluation.mShader, samplerName[inputIndex]);
+			if (parameter == 0xFFFFFFFF)
+				continue;
+			glUniform1i(parameter, inputIndex);
+			glActiveTexture(GL_TEXTURE0 + inputIndex);
+
+			int targetIndex = input.mInputs[inputIndex];
+			if (targetIndex == -1)
+			{
+				glBindTexture(GL_TEXTURE_2D, 0);
+				continue;
+			}
+
+			glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets[targetIndex]->mTarget.mGLTexID);
+			LoseTransientTarget(evaluationTransientTargets[targetIndex]);
+			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+		}
+		mFSQuad.Render();
+		if (nodeIndex == target)
+			break;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
+
+	// save
+	unsigned char *imgBits = new unsigned char[width * height * 4];
+	glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets[target]->mTarget.mGLTexID);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgBits);
+	stbi_write_png(szFilename, width, height, 4, imgBits, width * 4);
+	delete[] imgBits;
+	
+	// free transient textures
+	for (auto transientTarget : mFreeTargets)
+	{
+		assert(transientTarget->mUseCount <= 0);
+		transientTarget->mTarget.destroy();
+	}
+
+	Log("Texture %s saved. Using %d textures.\n", szFilename, mTransientTextureMaxCount);
 }

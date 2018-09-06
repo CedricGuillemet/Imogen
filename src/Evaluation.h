@@ -56,6 +56,7 @@ protected:
 // simple API
 void InitEvaluation(const std::string& shaderString);
 void UpdateEvaluationShader(const std::string& shaderString);
+void LoadEquiRectHDREnvLight(const std::string& filepath);
 unsigned int AddEvaluationTarget();
 void DelEvaluationTarget(int target);
 unsigned int GetEvaluationTexture(int target);

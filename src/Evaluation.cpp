@@ -5,6 +5,7 @@
 #include <assert.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#include "hdrloader.h"
 
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
@@ -268,6 +269,7 @@ int mDirtyCount = 0;
 std::string mBaseShader;
 FullScreenTriangle mFSQuad;
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
+unsigned int equiRectTexture;
 
 void InitEvaluation(const std::string& shaderString)
 {
@@ -353,14 +355,15 @@ void RunEvaluation()
 		const RenderTarget &tg = evaluation.mTarget;
 		tg.bindAsTarget();
 		glUseProgram(evaluation.mShader);
+		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
 		{
 			unsigned int parameter = glGetUniformLocation(evaluation.mShader, samplerName[inputIndex]);
 			if (parameter == 0xFFFFFFFF)
 				continue;
-			glUniform1i(parameter, inputIndex);
-			glActiveTexture(GL_TEXTURE0 + inputIndex);
-
+			glUniform1i(parameter, samplerIndex);
+			glActiveTexture(GL_TEXTURE0 + samplerIndex);
+			samplerIndex++;
 			int targetIndex = input.mInputs[inputIndex];
 			if (targetIndex == -1)
 			{
@@ -372,6 +375,14 @@ void RunEvaluation()
 			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
 
 
+		}
+		//
+		unsigned int parameter = glGetUniformLocation(evaluation.mShader, "equiRectEnvSampler");
+		if (parameter != 0xFFFFFFFF)
+		{
+			glUniform1i(parameter, samplerIndex);
+			glActiveTexture(GL_TEXTURE0 + samplerIndex);
+			glBindTexture(GL_TEXTURE_2D, equiRectTexture);
 		}
 		mFSQuad.Render();
 	}
@@ -543,4 +554,17 @@ void Bake(const char *szFilename, int target, int width, int height)
 	}
 
 	Log("Texture %s saved. Using %d textures.\n", szFilename, mTransientTextureMaxCount);
+}
+
+void LoadEquiRectHDREnvLight(const std::string& filepath)
+{
+	HDRLoaderResult result;
+	bool ret = HDRLoader::load(filepath.c_str(), result);
+
+	glGenTextures(1, &equiRectTexture);
+	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, result.width, result.height, 0, GL_RGB, GL_FLOAT, result.cols);
+	TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+
+	
 }

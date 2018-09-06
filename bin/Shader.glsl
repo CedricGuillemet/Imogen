@@ -1,4 +1,5 @@
 #define PI 3.14159265359
+#define TwoPI (PI*2)
 
 #ifdef VERTEX_SHADER
 
@@ -23,6 +24,7 @@ uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
 uniform sampler2D Sampler3;
+uniform sampler2D equiRectEnvSampler;
 
 vec2 Rotate2D(vec2 v, float a) 
 {
@@ -117,6 +119,19 @@ vec4 boxmap( sampler2D sam, in vec3 p, in vec3 n, in float k )
 	return (x*m.x + y*m.y + z*m.z)/(m.x+m.y+m.z);
 }
 
+vec2 envMapEquirect(vec3 wcNormal, float flipEnvMap) {
+  //I assume envMap texture has been flipped the WebGL way (pixel 0,0 is a the bottom)
+  //therefore we flip wcNorma.y as acos(1) = 0
+  float phi = acos(-wcNormal.y);
+  float theta = atan(flipEnvMap * wcNormal.x, wcNormal.z) + PI;
+  return vec2(theta / TwoPI, 1.0 - phi / PI);
+}
+
+vec2 envMapEquirect(vec3 wcNormal) {
+    //-1.0 for left handed coordinate system oriented texture (usual case)
+    return envMapEquirect(wcNormal, -1.0);
+}
+
 vec4 LambertMaterial(vec2 uv, vec2 view)
 {
 	vec2 p = uv *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
@@ -133,11 +148,11 @@ vec4 LambertMaterial(vec2 uv, vec2 view)
     vec3 vv = normalize( cross(uu,ww));
 	// create view ray
 	vec3 rd = normalize( p.x*uu + p.y*vv + 1.5*ww );
-
+	
     // sphere center	
 	vec3 sc = vec3(0.0,1.0,0.0);
 
-    vec3 col = vec3(0.0);
+    vec3 col = texture(equiRectEnvSampler, envMapEquirect(rd)).xyz;
     
 	// raytrace-plane
 	float h = (0.0-ro.y)/rd.y;

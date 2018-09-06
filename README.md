@@ -39,7 +39,7 @@ Currently implemented nodes
 Distant roadmap when I can make some nice textures and get self confident enough 
 - undo/redo
 
-~~- graph dirty propagation ~~
+~~graph dirty propagation~~
 
 - bullet proof serialization
 - material/PBR preview
@@ -50,7 +50,9 @@ Distant roadmap when I can make some nice textures and get self confident enough
 - compute node metadata by parsing GLSL shader code
 - better parameter controls (sliders, color picker,..)
 - misc settings like baking dimension
-- hot loading here and there
+
+~~hot loading here and there. In tool shader editor~~
+
 - ease of integration in your 64k demo/tools
 
 ~~- color coding of nodes depending of their type(generator, blur, transform, material, ...)~~

@@ -560,7 +560,8 @@ void LoadEquiRectHDREnvLight(const std::string& filepath)
 {
 	HDRLoaderResult result;
 	bool ret = HDRLoader::load(filepath.c_str(), result);
-
+	if (!ret)
+		return;
 	glGenTextures(1, &equiRectTexture);
 	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, result.width, result.height, 0, GL_RGB, GL_FLOAT, result.cols);

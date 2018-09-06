@@ -198,7 +198,7 @@ int main(int, char**)
 		InitEvaluation(str);
 	}
 	
-	LoadEquiRectHDREnvLight("Tokyo_BigSight_Env.hdr");
+	LoadEquiRectHDREnvLight("studio022.hdr");
 
 	TileNodeEditGraphDelegate nodeGraphDelegate;
 

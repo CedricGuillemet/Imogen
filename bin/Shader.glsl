@@ -132,6 +132,32 @@ vec2 envMapEquirect(vec3 wcNormal) {
     return envMapEquirect(wcNormal, -1.0);
 }
 
+
+bool castRay( const vec3 & ro, const vec3 & rd, float & resT )
+{
+    float delt = 0.01f;
+    const float mint = 0.001f;
+    const float maxt = 10.0f;
+    float lh = 0.0f;
+    float ly = 0.0f;
+    for( float t = mint; t < maxt; t += delt )
+    {
+        const vec3  p = ro + rd*t;
+        const float h = texture(Sampler0, p.xz ) * 0.1;
+        if( p.y < h )
+        {
+            // interpolate the intersection distance
+            resT = t - dt + dt*(lh-ly)/(p.y-ly-h+lh);
+            return true;
+        }
+        // allow the error to be proportinal to the distance
+        delt = 0.01f*t;
+        lh = h;
+        ly = p.y;
+    }
+    return false;
+}
+
 vec4 LambertMaterial(vec2 uv, vec2 view)
 {
 	vec2 p = uv *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
@@ -154,6 +180,13 @@ vec4 LambertMaterial(vec2 uv, vec2 view)
 
     vec3 col = texture(equiRectEnvSampler, envMapEquirect(rd)).xyz;
     
+	float resT;
+	if (castRay(ro, rd, resT))
+	{
+		col = vec3(1.0);
+	}
+	
+	/*
 	// raytrace-plane
 	float h = (0.0-ro.y)/rd.y;
 	if( h>0.0 ) 
@@ -168,7 +201,8 @@ vec4 LambertMaterial(vec2 uv, vec2 view)
         col *= occ;
         col *= exp(-0.1*h);
 	}
-
+	*/
+/*
 	// raytrace-sphere
 	vec3  ce = ro - sc;
 	float b = dot( rd, ce );
@@ -184,9 +218,8 @@ vec4 LambertMaterial(vec2 uv, vec2 view)
         col = boxmap( Sampler0, pos, nor, 32.0 ).xyz;
         col *= occ;
     }
-
+*/
 	col = sqrt( col );
-	
 	return vec4( col, 1.0 );
 }
 

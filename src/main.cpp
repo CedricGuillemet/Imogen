@@ -14,6 +14,7 @@
 #include "Evaluation.h"
 #include "TextEditor.h"
 
+static const std::vector<std::string> shaderFileNames = { "Shader.glsl", "Nodes.glsl", "Previews.glsl" };
 struct ImguiAppLog
 {
 	ImguiAppLog()
@@ -105,6 +106,12 @@ int Log(const char *szFormat, ...)
 
 void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate)
 {
+	static int currentShaderIndex = -1;
+	if (currentShaderIndex == -1)
+	{
+		currentShaderIndex = 0;
+		editor.SetText(GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+	}
 	auto cpos = editor.GetCursorPosition();
 	ImGui::Begin("Text Editor Demo", nullptr, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
 	ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
@@ -115,11 +122,15 @@ void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelega
 			if (ImGui::MenuItem("Save", "Ctrl-S", nullptr, true))
 			{
 				auto textToSave = editor.GetText();
-				UpdateEvaluationShader(textToSave);
-				nodeGraphDelegate.UpdateAllFunctionCalls();
-				std::ofstream t("Shader.glsl", std::ofstream::out);
+
+				std::ofstream t(shaderFileNames[currentShaderIndex], std::ofstream::out);
 				t << textToSave;
 				t.close();
+
+
+				SetEvaluationGLSL(shaderFileNames);
+				nodeGraphDelegate.UpdateAllFunctionCalls();
+
 			}
 			ImGui::EndMenu();
 		}
@@ -170,6 +181,21 @@ void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelega
 		editor.CanUndo() ? "*" : " ",
 		editor.GetLanguageDefinition().mName.c_str());
 
+	
+
+	
+	for (size_t i = 0; i < shaderFileNames.size(); i++)
+	{
+		if (i)
+			ImGui::SameLine();
+		if (ImGui::Button(shaderFileNames[i].c_str()))
+		{
+			currentShaderIndex = i;
+			editor.SetText(GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+		}
+
+	}
+
 	editor.Render("TextEditor");
 	ImGui::End();
 }
@@ -186,19 +212,21 @@ int main(int, char**)
 	ImguiAppLog logger;
 
 	
+	InitEvaluation();
 	
 	TextEditor editor;
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-	AddEvaluationGLSL({ "Shader.glsl", "Nodes.glsl", "Previews.glsl" });
+	SetEvaluationGLSL(shaderFileNames);
+	/*
 	static const char* fileToEdit = "Shader.glsl";
 	std::ifstream t(fileToEdit);
 	if (t.good())
 	{
 		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 		editor.SetText(str);
-		InitEvaluation(str);
+		
 	}
-	
+	*/
 	LoadEquiRectHDREnvLight("studio022.hdr");
 
 	TileNodeEditGraphDelegate nodeGraphDelegate;

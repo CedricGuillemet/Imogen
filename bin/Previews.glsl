@@ -109,5 +109,6 @@ vec4 LambertMaterial(vec2 uv, vec2 view)
     }
 */
 	col = sqrt( col );
+//col *= 0.1;
 	return vec4( col, 1.0 );
 }

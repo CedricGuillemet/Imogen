@@ -54,9 +54,13 @@ protected:
 };
 
 // simple API
-void AddEvaluationGLSL(const std::vector<std::string>& filenames);
-//void InitEvaluation(const std::string& shaderString);
-//void UpdateEvaluationShader(const std::string& shaderString);
+
+void InitEvaluation();
+
+void SetEvaluationGLSL(const std::vector<std::string>& filenames);
+std::string GetEvaluationGLSL(const std::string& filename);
+
+
 void LoadEquiRectHDREnvLight(const std::string& filepath);
 unsigned int AddEvaluationTarget();
 void DelEvaluationTarget(int target);

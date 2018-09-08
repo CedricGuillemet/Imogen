@@ -156,7 +156,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Blur", hcFilter
 				,{ { "In", (int)Con_Float4 } }
 			,{ { "Out", (int)Con_Float4 } }
-			,{ { "angle", (int)Con_Angle },{ "strength", (int)Con_Float } }
+			,{ { "angle", (int)Con_Float },{ "strength", (int)Con_Float } }
 			}
 
 			,

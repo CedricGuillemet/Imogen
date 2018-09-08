@@ -1,9 +1,20 @@
+Bugs:
 - fix tile node
+- move node broken
+- env sampler dans le baking
 
+Architecture:
+- use cmake and separate 3rd party and source
+- use a struct for Evaluation stack
+
+UI/UX:
+- undo/redo
+- material library
+
+Nodes:
+- pbr preview
+- displacement factor in lambert
 - tex size preview
 - tex size baking
 - load hdr
 
-- move node broken
-- displacement factor in lambert
-- env sampler dans le baking

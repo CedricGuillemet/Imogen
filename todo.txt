@@ -1,0 +1,9 @@
+- fix tile node
+
+- tex size preview
+- tex size baking
+- load hdr
+
+- move node broken
+- displacement factor in lambert
+- env sampler dans le baking

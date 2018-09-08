@@ -132,8 +132,7 @@ vec2 envMapEquirect(vec3 wcNormal) {
     return envMapEquirect(wcNormal, -1.0);
 }
 
-
-bool castRay( const vec3 & ro, const vec3 & rd, float & resT )
+float castRay( vec3 ro, vec3 rd )
 {
     float delt = 0.01f;
     const float mint = 0.001f;
@@ -142,20 +141,20 @@ bool castRay( const vec3 & ro, const vec3 & rd, float & resT )
     float ly = 0.0f;
     for( float t = mint; t < maxt; t += delt )
     {
-        const vec3  p = ro + rd*t;
-        const float h = texture(Sampler0, p.xz ) * 0.1;
+        vec3  p = ro + rd*t;
+        float h = texture(Sampler0, p.xz ).x * 0.1;
         if( p.y < h )
         {
             // interpolate the intersection distance
-            resT = t - dt + dt*(lh-ly)/(p.y-ly-h+lh);
-            return true;
+            float resT = t - delt + delt*(lh-ly)/(p.y-ly-h+lh);
+            return resT;
         }
         // allow the error to be proportinal to the distance
         delt = 0.01f*t;
         lh = h;
         ly = p.y;
     }
-    return false;
+    return 999;
 }
 
 vec4 LambertMaterial(vec2 uv, vec2 view)
@@ -180,8 +179,7 @@ vec4 LambertMaterial(vec2 uv, vec2 view)
 
     vec3 col = texture(equiRectEnvSampler, envMapEquirect(rd)).xyz;
     
-	float resT;
-	if (castRay(ro, rd, resT))
+	if (castRay(ro, rd)<10.0)
 	{
 		col = vec3(1.0);
 	}

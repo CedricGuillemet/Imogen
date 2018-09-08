@@ -189,6 +189,7 @@ int main(int, char**)
 	
 	TextEditor editor;
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
+	AddEvaluationGLSL({ "Shader.glsl", "Nodes.glsl", "Previews.glsl" });
 	static const char* fileToEdit = "Shader.glsl";
 	std::ifstream t(fileToEdit);
 	if (t.good())

@@ -6,6 +6,10 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include "hdrloader.h"
+#include <map>
+#include <fstream>
+#include <streambuf>
+
 
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
@@ -270,6 +274,21 @@ std::string mBaseShader;
 FullScreenTriangle mFSQuad;
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 unsigned int equiRectTexture;
+
+std::map<std::string, std::string> mGLSLs;
+
+void AddEvaluationGLSL(const std::vector<std::string>& filenames)
+{
+	for (auto& filename : filenames)
+	{
+		std::ifstream t(filename);
+		if (t.good())
+		{
+			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+			mGLSLs[filename] = str;
+		}
+	}
+}
 
 void InitEvaluation(const std::string& shaderString)
 {

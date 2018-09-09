@@ -1,9 +1,8 @@
 * bugs
-- crash on release build
 - moving node is broken
+- crash on release build (?)
 
 * repo
-- cmake/solution cleaning
 - move evaluation in a class
 
 * nodes
@@ -12,15 +11,13 @@
 - splatter with imput shape
 
 * UI/UX
+- right click menu over node to bake it
+- ramp imgui control
+- undo/redo
 - tex size preview config
 - tex size baking config
 - load hdr 
-- undo/redo
 - library + browser
-- bigger node connection dots
-- move connection names out of the node rectangle, remove "in" and "out"
-- right click menu over node to bake it
-- ramp imgui control
 
 * Material preview
 - displacement factor in lambert

@@ -217,7 +217,7 @@ void LoadNodes(const std::string &filename, NodeGraphDelegate *delegate)
 		fgets(tmps, 512, fp);
 		sscanf(tmps, "%d[%d,%d]", &nodeType, &px, &py);
 
-		nodes.push_back(Node(nodeType, ImVec2(px,py), metaNodes));
+		nodes.push_back(Node(nodeType, ImVec2(float(px), float(py)), metaNodes));
 		delegate->AddNode(nodeType);
 
 
@@ -273,7 +273,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	
 	//style.Colors[] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
-	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, IM_COL32(30, 30, 30, 200));
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
 
 	//ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(230, 80, 30, 200));
 
@@ -507,7 +507,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 	draw_list->ChannelsMerge();
 
 	// Open context menu
-	if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1))
+	if (!ImGui::IsAnyItemHovered() && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ImGui::IsMouseClicked(1))
 	{
 		node_selected = node_hovered_in_list = node_hovered_in_scene = -1;
 		open_context_menu = true;

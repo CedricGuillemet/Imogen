@@ -173,9 +173,9 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 		const char ** strings = (const char**)malloc(sizeof(char*) * stringsCount); //new const char*[stringsCount];
 		int * stringLength = (int*)malloc(sizeof(int) * stringsCount); //new int[stringsCount];
 		strings[0] = shaderTypeStrings[i];
-		stringLength[0] = strlen(shaderTypeStrings[i]);
+		stringLength[0] = int(strlen(shaderTypeStrings[i]));
 		strings[stringsCount - 1] = shaderString.c_str();
-		stringLength[stringsCount - 1] = shaderString.length();
+		stringLength[stringsCount - 1] = int(shaderString.length());
 
 		// Load and compile the shader source
 		glShaderSource(shader, stringsCount, strings, stringLength);
@@ -321,7 +321,7 @@ void InitEvaluation()
 	mFSQuad.Init();
 }
 
-unsigned int AddEvaluationTarget()
+size_t AddEvaluationTarget()
 {
 	Evaluation evaluation;
 	evaluation.mTarget.initBuffer(256, 256, false);

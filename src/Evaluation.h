@@ -64,7 +64,7 @@ std::string GetEvaluationGLSL(const std::string& filename);
 void LoadEquiRectHDREnvLight(const std::string& filepath);
 void LoadEquiRect(const std::string& filepath);
 
-unsigned int AddEvaluationTarget();
+size_t AddEvaluationTarget();
 void DelEvaluationTarget(int target);
 unsigned int GetEvaluationTexture(int target);
 void SetEvaluationCall(int target, const std::string& shaderCall);

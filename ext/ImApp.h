@@ -2775,7 +2775,7 @@ namespace ImApp
 			ERRCHECK(system->update());
 #endif
 #ifdef IMGUI_API
-			ImGui::Render();
+			ImGui_RenderDrawLists(ImGui::GetDrawData());
 #endif
 			SwapBuffers(wininfo.hDC);
 		}
@@ -3450,7 +3450,7 @@ namespace ImApp
 			io.KeyMap[ImGuiKey_Z] = 'Z';
 
 			io.ImeWindowHandle = this->wininfo.hWnd;
-			io.RenderDrawListsFn = ImGui_RenderDrawLists;       // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
+			//io.RenderDrawListsFn = ImGui_RenderDrawLists;       // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
 			/*
 			io.SetClipboardTextFn = ImGui_SetClipboardText;
 			io.GetClipboardTextFn = ImGui_GetClipboardText;

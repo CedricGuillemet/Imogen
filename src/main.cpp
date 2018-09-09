@@ -245,7 +245,7 @@ int main(int, char**)
 		
 		ImGuiIO& io = ImGui::GetIO();
 		
-		ImGui::SetNextWindowSize(ImVec2(1100, 900), ImGuiSetCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(1100, 900), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Imogen"))
 		{
 			if (ImGui::Button("bake"))

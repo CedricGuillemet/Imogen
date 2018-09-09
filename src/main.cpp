@@ -104,100 +104,62 @@ int Log(const char *szFormat, ...)
 	return 0;
 }
 
-void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate)
+bool PushTabButton(const char *szText, bool selected)
+{
+	int i = selected ? 0 : 1;
+	ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(i / 7.0f, 0.6f, 0.6f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(i / 7.0f, 0.7f, 0.7f));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
+	bool res = ImGui::Button(szText);
+	ImGui::PopStyleColor(3);
+	return res;
+}
+
+void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	static int currentShaderIndex = -1;
 	if (currentShaderIndex == -1)
 	{
 		currentShaderIndex = 0;
-		editor.SetText(GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+		editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
 	}
 	auto cpos = editor.GetCursorPosition();
-	ImGui::Begin("Text Editor Demo", nullptr, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
 	ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-	if (ImGui::BeginMenuBar())
+
+	// save
+	if (ImGui::IsKeyReleased(VK_F5))
 	{
-		if (ImGui::BeginMenu("File"))
-		{
-			if (ImGui::MenuItem("Save", "Ctrl-S", nullptr, true))
-			{
-				auto textToSave = editor.GetText();
+		auto textToSave = editor.GetText();
 
-				std::ofstream t(shaderFileNames[currentShaderIndex], std::ofstream::out);
-				t << textToSave;
-				t.close();
+		std::ofstream t(shaderFileNames[currentShaderIndex], std::ofstream::out);
+		t << textToSave;
+		t.close();
 
+		evaluation.SetEvaluationGLSL(shaderFileNames);
+		nodeGraphDelegate.UpdateAllFunctionCalls();
 
-				SetEvaluationGLSL(shaderFileNames);
-				nodeGraphDelegate.UpdateAllFunctionCalls();
-
-			}
-			ImGui::EndMenu();
-		}
-		if (ImGui::BeginMenu("Edit"))
-		{
-			bool ro = editor.IsReadOnly();
-			if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
-				editor.SetReadOnly(ro);
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr, !ro && editor.CanUndo()))
-				editor.Undo();
-			if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !ro && editor.CanRedo()))
-				editor.Redo();
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr, editor.HasSelection()))
-				editor.Copy();
-			if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr, !ro && editor.HasSelection()))
-				editor.Cut();
-			if (ImGui::MenuItem("Delete", "Del", nullptr, !ro && editor.HasSelection()))
-				editor.Delete();
-			if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr, !ro && ImGui::GetClipboardText() != nullptr))
-				editor.Paste();
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("Select all", nullptr, nullptr))
-				editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates(editor.GetTotalLines(), 0));
-
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("View"))
-		{
-			if (ImGui::MenuItem("Dark palette"))
-				editor.SetPalette(TextEditor::GetDarkPalette());
-			if (ImGui::MenuItem("Light palette"))
-				editor.SetPalette(TextEditor::GetLightPalette());
-			ImGui::EndMenu();
-		}
-		ImGui::EndMenuBar();
 	}
-
+	
 	ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
 		editor.IsOverwrite() ? "Ovr" : "Ins",
 		editor.CanUndo() ? "*" : " ",
 		editor.GetLanguageDefinition().mName.c_str());
 
-	
-
-	
 	for (size_t i = 0; i < shaderFileNames.size(); i++)
 	{
 		if (i)
 			ImGui::SameLine();
-		if (ImGui::Button(shaderFileNames[i].c_str()))
-		{
-			currentShaderIndex = i;
-			editor.SetText(GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
-		}
 
+		if (PushTabButton(shaderFileNames[i].c_str(), currentShaderIndex == int(i)) && currentShaderIndex != int(i))
+		{
+			currentShaderIndex = int(i);
+			editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+		}
 	}
+	ImGui::SameLine();
+	ImGui::Text("F5 to save and update nodes");
 
 	editor.Render("TextEditor");
-	ImGui::End();
 }
 
 int main(int, char**)
@@ -207,30 +169,18 @@ int main(int, char**)
 	ImApp::Config config;
 	config.mWidth = 1280;
 	config.mHeight = 720;
-	//config.mFullscreen = true;
 	imApp.Init(config);
 	ImguiAppLog logger;
 
 	
-	InitEvaluation();
+	Evaluation evaluation;
 	
 	TextEditor editor;
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-	SetEvaluationGLSL(shaderFileNames);
-	/*
-	static const char* fileToEdit = "Shader.glsl";
-	std::ifstream t(fileToEdit);
-	if (t.good())
-	{
-		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-		editor.SetText(str);
-		
-	}
-	*/
-	//LoadEquiRectHDREnvLight("studio022.hdr");
-	LoadEquiRect("studio017PoT.png");
+	evaluation.SetEvaluationGLSL(shaderFileNames);
+	evaluation.LoadEquiRect("studio017PoT.png");
 
-	TileNodeEditGraphDelegate nodeGraphDelegate;
+	TileNodeEditGraphDelegate nodeGraphDelegate(evaluation);
 
 	static const char* MaterialFilename = "Materials.txt";
 	Log("Loading nodes...\n");
@@ -245,26 +195,16 @@ int main(int, char**)
 		
 		ImGuiIO& io = ImGui::GetIO();
 		
-		ImGui::SetNextWindowSize(ImVec2(1100, 900), ImGuiCond_FirstUseEver);
+		//ImGui::SetNextWindowSize(ImVec2(1100, 900), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Imogen"))
 		{
-			if (ImGui::Button("bake"))
-			{
-				Bake("bakedTexture.png", nodeGraphDelegate.mBakeTargetIndex, 4096, 4096);
-			}
-			if (ImGui::CollapsingHeader("Logger", 0))
-			{
-				ImGui::BeginGroup();
-				ImguiAppLog::Log->DrawEmbedded();
-				ImGui::EndGroup();
-			}
 			ImGui::BeginChild("ImogenEdit", ImVec2(256, 0));
 
 			int selNode = nodeGraphDelegate.mSelectedNodeIndex;
 			if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-				ImGui::ImageButton((ImTextureID)((selNode != -1) ? GetEvaluationTexture(selNode) : 0), ImVec2(256, 256));
+				ImGui::ImageButton(ImTextureID((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(256, 256));
 				ImGui::PopStyleVar(1);
 				ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 				if (rc.Contains(io.MousePos))
@@ -275,7 +215,6 @@ int main(int, char**)
 						ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
 						nodeGraphDelegate.SetMouseRatios(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y);
 					}
-					
 				}
 			}
 
@@ -291,15 +230,34 @@ int main(int, char**)
 
 
 			ImGui::BeginGroup();
-			NodeGraph(&nodeGraphDelegate);
+			static int editorMode = 0;
+			if (PushTabButton("Nodes", editorMode == 0))
+				editorMode = 0;
+			ImGui::SameLine();
+			if (PushTabButton("Shaders", editorMode == 1))
+				editorMode = 1;
+			ImGui::SameLine();
+			if (PushTabButton("Logs", editorMode == 2))
+				editorMode = 2;
+
+			switch (editorMode)
+			{
+			case 0:
+				NodeGraph(&nodeGraphDelegate);
+				break;
+			case 1:
+				HandleEditor(editor, nodeGraphDelegate, evaluation);
+				break;
+			case 2:
+				ImguiAppLog::Log->DrawEmbedded();
+				break;
+			}
 			ImGui::EndGroup();
 			
 			
 			ImGui::End();
 		}
-
-		HandleEditor(editor, nodeGraphDelegate);
-		RunEvaluation();
+		evaluation.RunEvaluation();
 
 		// render everything
 		glClearColor(0.45f, 0.4f, 0.4f, 1.f);

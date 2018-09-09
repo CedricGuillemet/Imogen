@@ -3,7 +3,7 @@
 - crash on release build (?)
 
 * repo
-- move evaluation in a class
+
 
 * nodes
 - fix tile node
@@ -11,8 +11,7 @@
 - splatter with imput shape
 
 * UI/UX
-- right click menu over node to bake it
-- ramp imgui control
+- ramp imgui control WIP
 - undo/redo
 - tex size preview config
 - tex size baking config

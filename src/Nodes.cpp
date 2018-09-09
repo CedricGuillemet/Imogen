@@ -20,6 +20,7 @@ UndoRedoHandler undoRedoHandler;
 // Here we only declare simple +/- operators so others don't leak into the demo code.
 static inline ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y); }
 static inline ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x - rhs.x, lhs.y - rhs.y); }
+static inline ImVec2 operator*(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x * rhs.x, lhs.y * rhs.y); }
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
 static void GetConCount(const NodeGraphDelegate::MetaNode* metaNodes, int type, int &input, int &output)
@@ -72,15 +73,15 @@ struct NodeLink
 
 struct NodeOrder
 {
-	int mNodeIndex;
-	int mNodePriority;
+	size_t mNodeIndex;
+	size_t mNodePriority;
 	bool operator < (const NodeOrder& other) const
 	{
 		return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
 	}
 };
 
-int PickBestNode(const std::vector<NodeOrder>& orders)
+size_t PickBestNode(const std::vector<NodeOrder>& orders)
 {
 	for (auto& order : orders)
 	{
@@ -92,7 +93,7 @@ int PickBestNode(const std::vector<NodeOrder>& orders)
 	return -1;
 }
 
-void RecurseSetPriority(std::vector<NodeOrder>& orders, const ImVector<NodeLink> &links, int currentIndex, int currentPriority, size_t& undeterminedNodeCount)
+void RecurseSetPriority(std::vector<NodeOrder>& orders, const ImVector<NodeLink> &links, size_t currentIndex, size_t currentPriority, size_t& undeterminedNodeCount)
 {
 	if (!orders[currentIndex].mNodePriority)
 		undeterminedNodeCount--;
@@ -118,7 +119,7 @@ std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, s
 	size_t undeterminedNodeCount = nodeCount;
 	while (undeterminedNodeCount)
 	{
-		int currentIndex = PickBestNode(orders);
+		size_t currentIndex = PickBestNode(orders);
 		RecurseSetPriority(orders, links, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
 	};
 	//
@@ -135,7 +136,7 @@ void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
 {
 	mOrders = ComputeEvaluationOrder(links, nodes.size());
 	std::sort(mOrders.begin(), mOrders.end());
-	std::vector<int> nodeOrderList(mOrders.size());
+	std::vector<size_t> nodeOrderList(mOrders.size());
 	for (size_t i = 0; i < mOrders.size(); i++)
 		nodeOrderList[i] = mOrders[i].mNodeIndex;
 	delegate->UpdateEvaluationList(nodeOrderList);
@@ -397,7 +398,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		ImVec2 imgPos = node_rect_min + ImVec2(5, 25);
 		ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
 		float imgSizeComp = std::min(imgSize.x, imgSize.y);
-		draw_list->AddImage((ImTextureID)delegate->GetNodeTexture(node_idx), imgPos, imgPos + ImVec2(imgSizeComp, imgSizeComp));
+		draw_list->AddImage(ImTextureID(delegate->GetNodeTexture(size_t(node_idx))), imgPos, imgPos + ImVec2(imgSizeComp, imgSizeComp));
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
 		for (int i = 0; i < 2; i++)
@@ -567,11 +568,16 @@ void NodeGraph(NodeGraphDelegate *delegate)
 				UpdateEvaluationOrder(delegate);
 				node_selected = -1;
 			}
+			if (ImGui::MenuItem("Bake", NULL, false))
+			{
+				delegate->Bake(node_selected);
+			}
+			/*
 			if (ImGui::MenuItem("Set as target", NULL, false))
 			{
 				delegate->mBakeTargetIndex = node_selected;
 			}
-			//if (ImGui::MenuItem("Copy", NULL, false, false)) {}
+			*/
 		}
 		else
 		{

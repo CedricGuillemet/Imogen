@@ -8,7 +8,8 @@ struct NodeGraphDelegate
 	int mSelectedNodeIndex;
 	int mBakeTargetIndex;
 
-	virtual void UpdateEvaluationList(const std::vector<int> nodeOrderList) = 0;
+	virtual void Bake(size_t index) = 0;
+	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
 	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
 	virtual void DelLink(int index, int slot) = 0;
 	//virtual void EditNode(size_t index) = 0;

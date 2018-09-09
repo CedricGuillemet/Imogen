@@ -2,13 +2,18 @@
 
 #include "Nodes.h"
 #include "Evaluation.h"
+#include "curve.h"
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
+	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation)
+	{}
+
+	Evaluation& mEvaluation;
 	struct ImogenNode
 	{
 		size_t mType;
-		unsigned int mEvaluationTexture;
+		size_t mEvaluationTexture;
 		void *mParams;
 	};
 
@@ -41,7 +46,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	{
 		const ImogenNode & node = mNodes[index];
 		memcpy(node.mParams, paramBlock, ComputeParamMemSize(node.mType));
-		SetEvaluationCall(node.mEvaluationTexture, ComputeFunctionCall(index));
+		mEvaluation.SetEvaluationCall(node.mEvaluationTexture, ComputeFunctionCall(index));
 	}
 
 	virtual bool AuthorizeConnexion(int typeA, int typeB)
@@ -51,35 +56,35 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	virtual unsigned int GetNodeTexture(size_t index)
 	{
-		return GetEvaluationTexture(mNodes[index].mEvaluationTexture);
+		return mEvaluation.GetEvaluationTexture(mNodes[index].mEvaluationTexture);
 	}
 	virtual void AddNode(size_t type)
 	{
 		size_t index = mNodes.size();
 		ImogenNode node;
-		node.mEvaluationTexture = AddEvaluationTarget();
+		node.mEvaluationTexture = mEvaluation.AddEvaluationTarget();
 		node.mType = type;
 		size_t paramsSize = ComputeParamMemSize(type);
 		node.mParams = malloc(paramsSize);
 		memset(node.mParams, 0, paramsSize);
 		mNodes.push_back(node);
 
-		SetEvaluationCall(node.mEvaluationTexture, ComputeFunctionCall(index));
+		mEvaluation.SetEvaluationCall(node.mEvaluationTexture, ComputeFunctionCall(index));
 	}
 
 	void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
 	{
-		AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);
+		mEvaluation.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);
 	}
 
 	virtual void DelLink(int index, int slot)
 	{
-		DelEvaluationInput(index, slot);
+		mEvaluation.DelEvaluationInput(index, slot);
 	}
 
 	virtual void DeleteNode(size_t index)
 	{
-		DelEvaluationTarget(index);
+		mEvaluation.DelEvaluationTarget(index);
 		free(mNodes[index].mParams);
 		mNodes.erase(mNodes.begin() + index);
 		for (auto& node : mNodes)
@@ -370,12 +375,32 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				break;
 			case Con_Ramp:
 				{
-					char tmps[512];
+					ImVec2 points[8];
+					
+					for (int k = 0; k < 8; k++)
+					{
+						points[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
+						if (k && points[k - 1].x > points[k].x)
+							points[k] = ImVec2(1.f, 1.f);
+					}
+
+					if (ImGui::Curve("Ramp", ImVec2(250, 150), 8, points))
+					{
+						for (int k = 0; k < 8; k++)
+						{
+							((float*)paramBuffer)[k * 2] = points[k].x;
+							((float*)paramBuffer)[k * 2 + 1] = points[k].y;
+							//points[k] = ImVec2(, ((float*)paramBuffer)[k * 2 + 1]);
+						}
+						dirty = true;
+					}
+					/*char tmps[512];
 					for (int k = 0; k < 8; k++)
 					{
 						sprintf(tmps, "Ramp %d", k);
-						dirty |= ImGui::InputFloat2(tmps, &((float*)paramBuffer)[k * 2]);
+						dirty |= ImGui::InputFloat2(tmps, &);
 					}
+					*/
 				
 				}
 				break;
@@ -420,7 +445,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		
 		//ImGui::End();
 		if (dirty)
-			SetEvaluationCall(mNodes[index].mEvaluationTexture, ComputeFunctionCall(index));
+			mEvaluation.SetEvaluationCall(mNodes[index].mEvaluationTexture, ComputeFunctionCall(index));
 	}
 
 	// helpers
@@ -440,7 +465,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	void UpdateAllFunctionCalls()
 	{
 		for(size_t i = 0;i<mNodes.size();i++)
-			SetEvaluationCall(mNodes[i].mEvaluationTexture, ComputeFunctionCall(i));
+			mEvaluation.SetEvaluationCall(mNodes[i].mEvaluationTexture, ComputeFunctionCall(i));
 	}
 
 	void SetMouseRatios(float rx, float ry, float dx, float dy)
@@ -482,7 +507,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
-		SetEvaluationCall(mNodes[mSelectedNodeIndex].mEvaluationTexture, ComputeFunctionCall(mSelectedNodeIndex));
+		mEvaluation.SetEvaluationCall(mNodes[mSelectedNodeIndex].mEvaluationTexture, ComputeFunctionCall(mSelectedNodeIndex));
 	}
 
 	size_t ComputeParamMemSize(size_t typeIndex)
@@ -533,9 +558,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		return res;
 	}
 
-	virtual void UpdateEvaluationList(const std::vector<int> nodeOrderList)
+	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList)
 	{
-		SetEvaluationOrder(nodeOrderList);
+		mEvaluation.SetEvaluationOrder(nodeOrderList);
+	}
+
+	virtual void Bake(size_t index)
+	{
+		mEvaluation.Bake("bakedTexture.png", index, 4096, 4096);
 	}
 };
 

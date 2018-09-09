@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <map>
+
 typedef unsigned int TextureID;
 
 inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
@@ -38,39 +40,53 @@ public:
 	void checkFBO();
 };
 
-class FullScreenTriangle
-{
-public:
-	FullScreenTriangle() : mGLFullScreenVertexArrayName(-1)
-	{
-	}
-	~FullScreenTriangle()
-	{
-	}
-	void Init();
-	void Render();
-protected:
-	TextureID mGLFullScreenVertexArrayName;
-};
 
 // simple API
+struct Evaluation
+{
+	Evaluation();
 
-void InitEvaluation();
-
-void SetEvaluationGLSL(const std::vector<std::string>& filenames);
-std::string GetEvaluationGLSL(const std::string& filename);
+	void SetEvaluationGLSL(const std::vector<std::string>& filenames);
+	std::string GetEvaluationGLSL(const std::string& filename);
 
 
-void LoadEquiRectHDREnvLight(const std::string& filepath);
-void LoadEquiRect(const std::string& filepath);
+	void LoadEquiRectHDREnvLight(const std::string& filepath);
+	void LoadEquiRect(const std::string& filepath);
 
-size_t AddEvaluationTarget();
-void DelEvaluationTarget(int target);
-unsigned int GetEvaluationTexture(int target);
-void SetEvaluationCall(int target, const std::string& shaderCall);
-void AddEvaluationInput(int target, int slot, int source);
-void DelEvaluationInput(int target, int slot);
-void RunEvaluation();
-void SetEvaluationOrder(const std::vector<int> nodeOrderList);
-void SetTargetDirty(int target);
-void Bake(const char *szFilename, int target, int width, int height);
+	size_t AddEvaluationTarget();
+	void DelEvaluationTarget(size_t target);
+	unsigned int GetEvaluationTexture(size_t target);
+	void SetEvaluationCall(size_t target, const std::string& shaderCall);
+	void AddEvaluationInput(size_t target, int slot, int source);
+	void DelEvaluationInput(size_t target, int slot);
+	void RunEvaluation();
+	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
+	void SetTargetDirty(size_t target);
+	void Bake(const char *szFilename, size_t target, int width, int height);
+
+protected:
+	std::string mBaseShader;
+	unsigned int equiRectTexture;
+	int mDirtyCount;
+	std::map<std::string, std::string> mGLSLs;
+
+	struct Input
+	{
+		Input()
+		{
+			memset(mInputs, -1, sizeof(int) * 8);
+		}
+		int mInputs[8];
+	};
+
+	struct EvaluationStage
+	{
+		RenderTarget mTarget;
+		unsigned int mShader;
+		Input mInput;
+		bool mbDirty;
+	};
+
+	std::vector<EvaluationStage> mEvaluations;
+	std::vector<size_t> mEvaluationOrderList;
+};

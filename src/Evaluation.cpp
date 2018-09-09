@@ -12,7 +12,6 @@
 #include <fstream>
 #include <streambuf>
 
-
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
 
@@ -123,6 +122,21 @@ void RenderTarget::checkFBO()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+class FullScreenTriangle
+{
+public:
+	FullScreenTriangle() : mGLFullScreenVertexArrayName(-1)
+	{
+	}
+	~FullScreenTriangle()
+	{
+	}
+	void Init();
+	void Render();
+protected:
+	TextureID mGLFullScreenVertexArrayName;
+};
 
 void FullScreenTriangle::Init()
 {
@@ -251,34 +265,8 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 	return programObject;
 }
 
-struct Input
-{
-	Input()
-	{
-		memset(mInputs, -1, sizeof(int) * 8);
-	}
-	int mInputs[8];
-};
-
-struct Evaluation
-{
-	RenderTarget mTarget;
-	unsigned int mShader;
-	Input mInput;
-	bool mbDirty;
-};
-
-std::vector<Evaluation> mEvaluations;
-std::vector<int> mEvaluationOrderList;
-int mDirtyCount = 0;
-
-std::string mBaseShader;
 FullScreenTriangle mFSQuad;
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
-unsigned int equiRectTexture;
-
-std::map<std::string, std::string> mGLSLs;
-
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
 {
@@ -291,7 +279,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 }
 
 
-void SetEvaluationGLSL(const std::vector<std::string>& filenames)
+void Evaluation::SetEvaluationGLSL(const std::vector<std::string>& filenames)
 {
 	for (auto& filename : filenames)
 	{
@@ -311,19 +299,19 @@ void SetEvaluationGLSL(const std::vector<std::string>& filenames)
 	}
 }
 
-std::string GetEvaluationGLSL(const std::string& filename)
+std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
 {
 	return mGLSLs[filename];
 }
 
-void InitEvaluation()
+Evaluation::Evaluation() : mDirtyCount(0)
 {
 	mFSQuad.Init();
 }
 
-size_t AddEvaluationTarget()
+size_t Evaluation::AddEvaluationTarget()
 {
-	Evaluation evaluation;
+	EvaluationStage evaluation;
 	evaluation.mTarget.initBuffer(256, 256, false);
 	evaluation.mbDirty = true;
 	mDirtyCount++;
@@ -331,10 +319,10 @@ size_t AddEvaluationTarget()
 	return mEvaluations.size() - 1;
 }
 
-void DelEvaluationTarget(int target)
+void Evaluation::DelEvaluationTarget(size_t target)
 {
 	SetTargetDirty(target);
-	Evaluation& ev = mEvaluations[target];
+	EvaluationStage& ev = mEvaluations[target];
 	glDeleteProgram(ev.mShader);
 	ev.mTarget.destroy();
 	mEvaluations.erase(mEvaluations.begin() + target);
@@ -350,14 +338,12 @@ void DelEvaluationTarget(int target)
 	}
 }
 
-unsigned int GetEvaluationTexture(int target)
+unsigned int Evaluation::GetEvaluationTexture(size_t target)
 {
 	return mEvaluations[target].mTarget.mGLTexID;
 }
 
-
-
-void SetEvaluationCall(int target, const std::string& shaderCall)
+void Evaluation::SetEvaluationCall(size_t target, const std::string& shaderCall)
 {
 	std::string shd = mBaseShader;
 	shd = ReplaceAll(shd, std::string("__FUNCTION__"), shaderCall);
@@ -368,7 +354,7 @@ void SetEvaluationCall(int target, const std::string& shaderCall)
 	SetTargetDirty(target);
 }
 
-void RunEvaluation()
+void Evaluation::RunEvaluation()
 {
 	if (mEvaluationOrderList.empty())
 		return;
@@ -378,7 +364,7 @@ void RunEvaluation()
 	
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
-		const Evaluation& evaluation = mEvaluations[mEvaluationOrderList[i]];
+		const EvaluationStage& evaluation = mEvaluations[mEvaluationOrderList[i]];
 		if (!evaluation.mbDirty)
 			continue;
 
@@ -431,24 +417,24 @@ void RunEvaluation()
 	glUseProgram(0);
 }
 
-void AddEvaluationInput(int target, int slot, int source)
+void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
 	mEvaluations[target].mInput.mInputs[slot] = source;
 	SetTargetDirty(target);
 }
 
-void DelEvaluationInput(int target, int slot)
+void Evaluation::DelEvaluationInput(size_t target, int slot)
 {
 	mEvaluations[target].mInput.mInputs[slot] = -1;
 	SetTargetDirty(target);
 }
 
-void SetEvaluationOrder(const std::vector<int> nodeOrderList)
+void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 {
 	mEvaluationOrderList = nodeOrderList;
 }
 
-void SetTargetDirty(int target)
+void Evaluation::SetTargetDirty(size_t target)
 {
 	if (!mEvaluations[target].mbDirty)
 	{
@@ -462,7 +448,7 @@ void SetTargetDirty(int target)
 		
 		for (i++; i < mEvaluationOrderList.size(); i++)
 		{
-			Evaluation& currentEvaluation = mEvaluations[mEvaluationOrderList[i]];
+			EvaluationStage& currentEvaluation = mEvaluations[mEvaluationOrderList[i]];
 			if (currentEvaluation.mbDirty)
 				continue;
 
@@ -486,7 +472,7 @@ struct TransientTarget
 };
 std::vector<TransientTarget*> mFreeTargets;
 int mTransientTextureMaxCount;
-TransientTarget* GetTransientTarget(int width, int height, int useCount)
+static TransientTarget* GetTransientTarget(int width, int height, int useCount)
 {
 	if (mFreeTargets.empty())
 	{
@@ -502,14 +488,14 @@ TransientTarget* GetTransientTarget(int width, int height, int useCount)
 	return res;
 }
 
-void LoseTransientTarget(TransientTarget *transientTarget)
+static void LoseTransientTarget(TransientTarget *transientTarget)
 {
 	transientTarget->mUseCount--;
 	if (transientTarget->mUseCount <= 0)
 		mFreeTargets.push_back(transientTarget);
 }
 
-void Bake(const char *szFilename, int target, int width, int height)
+void Evaluation::Bake(const char *szFilename, size_t target, int width, int height)
 {
 	if (mEvaluationOrderList.empty())
 		return;
@@ -536,7 +522,7 @@ void Bake(const char *szFilename, int target, int width, int height)
 		size_t nodeIndex = mEvaluationOrderList[i];
 		if (!evaluationUseCount[nodeIndex])
 			continue;
-		const Evaluation& evaluation = mEvaluations[nodeIndex];
+		const EvaluationStage& evaluation = mEvaluations[nodeIndex];
 
 		const Input& input = evaluation.mInput;
 
@@ -596,7 +582,7 @@ void Bake(const char *szFilename, int target, int width, int height)
 	Log("Texture %s saved. Using %d textures.\n", szFilename, mTransientTextureMaxCount);
 }
 
-void LoadEquiRectHDREnvLight(const std::string& filepath)
+void Evaluation::LoadEquiRectHDREnvLight(const std::string& filepath)
 {
 	HDRLoaderResult result;
 	bool ret = HDRLoader::load(filepath.c_str(), result);
@@ -610,7 +596,7 @@ void LoadEquiRectHDREnvLight(const std::string& filepath)
 	
 }
 
-void LoadEquiRect(const std::string& filepath)
+void Evaluation::LoadEquiRect(const std::string& filepath)
 {
 	int x, y, comp;
 	stbi_uc * uc = stbi_load(filepath.c_str(), &x, &y, &comp, 3);

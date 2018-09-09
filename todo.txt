@@ -7,3 +7,10 @@
 - move node broken
 - displacement factor in lambert
 - env sampler dans le baking
+
+
+- use uniform parameter block instead of recompiling the shader
+- bigger node connection dots
+- move connection names out of the node rectangle, remove "in" and "out"
+- lambert : diffuse, normal, specular, displacement
+- pbr/lambert : sphere, cube, gizmo + moduler les fonctions

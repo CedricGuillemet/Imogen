@@ -180,3 +180,165 @@ vec4 Tile(vec2 uv, float scale, vec2 offset0, vec2 offset1, vec2 overlap)
 	
 	return col;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////
+// Normal map blending by ZigguratVertigo https://www.shadertoy.com/view/4t2SzR
+
+#define TECHNIQUE_RNM 				 0
+#define TECHNIQUE_PartialDerivatives 1
+#define TECHNIQUE_Whiteout 			 2
+#define TECHNIQUE_UDN				 3
+#define TECHNIQUE_Unity				 4
+#define TECHNIQUE_Linear		     5
+#define TECHNIQUE_Overlay		     6
+
+// RNM
+vec3 NormalBlend_RNM(vec3 n1, vec3 n2)
+{
+    // Unpack (see article on why it's not just n*2-1)
+	n1 = n1*vec3( 2,  2, 2) + vec3(-1, -1,  0);
+    n2 = n2*vec3(-2, -2, 2) + vec3( 1,  1, -1);
+    
+    // Blend
+    return n1*dot(n1, n2)/n1.z - n2;
+}
+
+// RNM - Already unpacked
+vec3 NormalBlend_UnpackedRNM(vec3 n1, vec3 n2)
+{
+	n1 += vec3(0, 0, 1);
+	n2 *= vec3(-1, -1, 1);
+	
+    return n1*dot(n1, n2)/n1.z - n2;
+}
+
+// Partial Derivatives
+vec3 NormalBlend_PartialDerivatives(vec3 n1, vec3 n2)
+{	
+    // Unpack
+	n1 = n1*2.0 - 1.0;
+    n2 = n2*2.0 - 1.0;
+    
+    return normalize(vec3(n1.xy*n2.z + n2.xy*n1.z, n1.z*n2.z));
+}
+
+// Whiteout
+vec3 NormalBlend_Whiteout(vec3 n1, vec3 n2)
+{
+    // Unpack
+	n1 = n1*2.0 - 1.0;
+    n2 = n2*2.0 - 1.0;
+    
+	return normalize(vec3(n1.xy + n2.xy, n1.z*n2.z));    
+}
+
+// UDN
+vec3 NormalBlend_UDN(vec3 n1, vec3 n2)
+{
+    // Unpack
+	n1 = n1*2.0 - 1.0;
+    n2 = n2*2.0 - 1.0;    
+    
+	return normalize(vec3(n1.xy + n2.xy, n1.z));
+}
+
+// Unity
+vec3 NormalBlend_Unity(vec3 n1, vec3 n2)
+{
+    // Unpack
+	n1 = n1*2.0 - 1.0;
+    n2 = n2*2.0 - 1.0;
+    
+    mat3 nBasis = mat3(vec3(n1.z, n1.y, -n1.x), // +90 degree rotation around y axis
+        			   vec3(n1.x, n1.z, -n1.y), // -90 degree rotation around x axis
+        			   vec3(n1.x, n1.y,  n1.z));
+	
+    return normalize(n2.x*nBasis[0] + n2.y*nBasis[1] + n2.z*nBasis[2]);
+}
+
+// Linear Blending
+vec3 NormalBlend_Linear(vec3 n1, vec3 n2)
+{
+    // Unpack
+	n1 = n1*2.0 - 1.0;
+    n2 = n2*2.0 - 1.0;
+    
+	return normalize(n1 + n2);    
+}
+
+// Overlay
+float overlay(float x, float y)
+{
+    if (x < 0.5)
+        return 2.0*x*y;
+    else
+        return 1.0 - 2.0*(1.0 - x)*(1.0 - y);
+}
+vec3 NormalBlend_Overlay(vec3 n1, vec3 n2)
+{
+    vec3 n;
+    n.x = overlay(n1.x, n2.x);
+    n.y = overlay(n1.y, n2.y);
+    n.z = overlay(n1.z, n2.z);
+
+    return normalize(n*2.0 - 1.0);
+}
+
+// Combine normals
+vec3 CombineNormal(vec3 n1, vec3 n2, int technique)
+{
+ 	if (technique == TECHNIQUE_RNM)
+        return NormalBlend_RNM(n1, n2);
+    else if (technique == TECHNIQUE_PartialDerivatives)
+        return NormalBlend_PartialDerivatives(n1, n2);
+    else if (technique == TECHNIQUE_Whiteout)
+        return NormalBlend_Whiteout(n1, n2);
+    else if (technique == TECHNIQUE_UDN)
+        return NormalBlend_UDN(n1, n2);
+    else if (technique == TECHNIQUE_Unity)
+        return NormalBlend_Unity(n1, n2);
+    else if (technique == TECHNIQUE_Linear)
+        return NormalBlend_Linear(n1, n2);
+    else
+        return NormalBlend_Overlay(n1, n2);
+}
+
+vec4 NormalMapBlending(vec2 uv, int technique)
+{
+	vec3 n1 = texture(Sampler0, uv).xyz;
+	vec3 n2 = texture(Sampler1, uv).xyz;
+	return vec4(CombineNormal(n1, n2, technique) * 0.5 + 0.5, 0.0);
+}
+
+// Voronoise, by iq https://www.shadertoy.com/view/Xd23Dh
+vec3 hash3( vec2 p )
+{
+    vec3 q = vec3( dot(p,vec2(127.1,311.7)), 
+				   dot(p,vec2(269.5,183.3)), 
+				   dot(p,vec2(419.2,371.9)) );
+	return fract(sin(q)*43758.5453);
+}
+
+float iqnoise(vec2 uv, float size, float u, float v )
+{
+    vec2 p = floor(uv*size);
+    vec2 f = fract(uv*size);
+		
+	float k = 1.0+63.0*pow(1.0-v,4.0);
+	
+	float va = 0.0;
+	float wt = 0.0;
+    for( int j=-2; j<=2; j++ )
+    for( int i=-2; i<=2; i++ )
+    {
+        vec2 g = vec2( float(i),float(j) );
+		vec3 o = hash3( p + g )*vec3(u,u,1.0);
+		vec2 r = g - f + o.xy;
+		float d = dot(r,r);
+		float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), k );
+		va += o.z*ww;
+		wt += ww;
+    }
+	
+    return va/wt;
+}

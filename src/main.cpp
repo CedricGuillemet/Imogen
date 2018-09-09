@@ -227,7 +227,8 @@ int main(int, char**)
 		
 	}
 	*/
-	LoadEquiRectHDREnvLight("studio022.hdr");
+	//LoadEquiRectHDREnvLight("studio022.hdr");
+	LoadEquiRect("studio017PoT.png");
 
 	TileNodeEditGraphDelegate nodeGraphDelegate;
 
@@ -271,7 +272,8 @@ int main(int, char**)
 					if (io.MouseDown[0])
 					{
 						ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
-						nodeGraphDelegate.SetMouseRatios(ratio.x, ratio.y);
+						ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
+						nodeGraphDelegate.SetMouseRatios(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y);
 					}
 					
 				}

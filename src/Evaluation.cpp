@@ -3,6 +3,8 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include "hdrloader.h"
@@ -603,5 +605,21 @@ void LoadEquiRectHDREnvLight(const std::string& filepath)
 	glGenTextures(1, &equiRectTexture);
 	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, result.width, result.height, 0, GL_RGB, GL_FLOAT, result.cols);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+	
+}
+
+void LoadEquiRect(const std::string& filepath)
+{
+	int x, y, comp;
+	stbi_uc * uc = stbi_load(filepath.c_str(), &x, &y, &comp, 3);
+
+	glGenTextures(1, &equiRectTexture);
+	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, uc);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+
+	stbi_image_free(uc);
 }

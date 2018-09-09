@@ -3,9 +3,15 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include "hdrloader.h"
+#include <map>
+#include <fstream>
+#include <streambuf>
+
 
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
@@ -167,9 +173,9 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 		const char ** strings = (const char**)malloc(sizeof(char*) * stringsCount); //new const char*[stringsCount];
 		int * stringLength = (int*)malloc(sizeof(int) * stringsCount); //new int[stringsCount];
 		strings[0] = shaderTypeStrings[i];
-		stringLength[0] = strlen(shaderTypeStrings[i]);
+		stringLength[0] = int(strlen(shaderTypeStrings[i]));
 		strings[stringsCount - 1] = shaderString.c_str();
-		stringLength[stringsCount - 1] = shaderString.length();
+		stringLength[stringsCount - 1] = int(shaderString.length());
 
 		// Load and compile the shader source
 		glShaderSource(shader, stringsCount, strings, stringLength);
@@ -271,18 +277,51 @@ FullScreenTriangle mFSQuad;
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 unsigned int equiRectTexture;
 
-void InitEvaluation(const std::string& shaderString)
+std::map<std::string, std::string> mGLSLs;
+
+
+std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
+{
+	size_t start_pos = 0;
+	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+		str.replace(start_pos, from.length(), to);
+		start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+	}
+	return str;
+}
+
+
+void SetEvaluationGLSL(const std::vector<std::string>& filenames)
+{
+	for (auto& filename : filenames)
+	{
+		std::ifstream t(filename);
+		if (t.good())
+		{
+			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+			mGLSLs[filename] = str;
+		}
+	}
+
+	mBaseShader = mGLSLs["Shader.glsl"];
+	for (auto& filename : filenames)
+	{
+		std::string include = std::string("#include \"") + filename + "\"";
+		mBaseShader = ReplaceAll(mBaseShader, include, mGLSLs[filename]);
+	}
+}
+
+std::string GetEvaluationGLSL(const std::string& filename)
+{
+	return mGLSLs[filename];
+}
+
+void InitEvaluation()
 {
 	mFSQuad.Init();
-	UpdateEvaluationShader(shaderString);
 }
 
-void UpdateEvaluationShader(const std::string& shaderString)
-{
-	mBaseShader = shaderString;
-}
-
-unsigned int AddEvaluationTarget()
+size_t AddEvaluationTarget()
 {
 	Evaluation evaluation;
 	evaluation.mTarget.initBuffer(256, 256, false);
@@ -316,15 +355,7 @@ unsigned int GetEvaluationTexture(int target)
 	return mEvaluations[target].mTarget.mGLTexID;
 }
 
-std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) 
-{
-	size_t start_pos = 0;
-	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-		str.replace(start_pos, from.length(), to);
-		start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-	}
-	return str;
-}
+
 
 void SetEvaluationCall(int target, const std::string& shaderCall)
 {
@@ -513,14 +544,15 @@ void Bake(const char *szFilename, int target, int width, int height)
 		evaluationTransientTargets[nodeIndex] = transientTarget;
 		transientTarget->mTarget.bindAsTarget();
 		glUseProgram(evaluation.mShader);
+		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
 		{
 			unsigned int parameter = glGetUniformLocation(evaluation.mShader, samplerName[inputIndex]);
 			if (parameter == 0xFFFFFFFF)
 				continue;
-			glUniform1i(parameter, inputIndex);
-			glActiveTexture(GL_TEXTURE0 + inputIndex);
-
+			glUniform1i(parameter, samplerIndex);
+			glActiveTexture(GL_TEXTURE0 + samplerIndex);
+			samplerIndex++;
 			int targetIndex = input.mInputs[inputIndex];
 			if (targetIndex == -1)
 			{
@@ -531,6 +563,14 @@ void Bake(const char *szFilename, int target, int width, int height)
 			glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets[targetIndex]->mTarget.mGLTexID);
 			LoseTransientTarget(evaluationTransientTargets[targetIndex]);
 			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+		}
+		//
+		unsigned int parameter = glGetUniformLocation(evaluation.mShader, "equiRectEnvSampler");
+		if (parameter != 0xFFFFFFFF)
+		{
+			glUniform1i(parameter, samplerIndex);
+			glActiveTexture(GL_TEXTURE0 + samplerIndex);
+			glBindTexture(GL_TEXTURE_2D, equiRectTexture);
 		}
 		mFSQuad.Render();
 		if (nodeIndex == target)
@@ -564,8 +604,22 @@ void LoadEquiRectHDREnvLight(const std::string& filepath)
 		return;
 	glGenTextures(1, &equiRectTexture);
 	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, result.width, result.height, 0, GL_RGB, GL_FLOAT, result.cols);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, result.width, result.height, 0, GL_RGB, GL_FLOAT, result.cols);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
-
 	
+}
+
+void LoadEquiRect(const std::string& filepath)
+{
+	int x, y, comp;
+	stbi_uc * uc = stbi_load(filepath.c_str(), &x, &y, &comp, 3);
+
+	glGenTextures(1, &equiRectTexture);
+	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, uc);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+
+	stbi_image_free(uc);
 }

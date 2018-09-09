@@ -217,7 +217,7 @@ void LoadNodes(const std::string &filename, NodeGraphDelegate *delegate)
 		fgets(tmps, 512, fp);
 		sscanf(tmps, "%d[%d,%d]", &nodeType, &px, &py);
 
-		nodes.push_back(Node(nodeType, ImVec2(px,py), metaNodes));
+		nodes.push_back(Node(nodeType, ImVec2(float(px), float(py)), metaNodes));
 		delegate->AddNode(nodeType);
 
 
@@ -264,7 +264,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 	ImGui::BeginGroup();
 
-	const float NODE_SLOT_RADIUS = 4.0f;
+	const float NODE_SLOT_RADIUS = 8.0f;
 	const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
 	ImGuiIO& io = ImGui::GetIO();
@@ -273,7 +273,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	
 	//style.Colors[] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
-	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, IM_COL32(30, 30, 30, 200));
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
 
 	//ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(230, 80, 30, 200));
 
@@ -307,7 +307,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		Node* node_out = &nodes[link->OutputIdx];
 		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot);
 		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot);
-		draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0), p2 + ImVec2(-50, 0), p2, IM_COL32(200, 200, 100, 255), 3.0f);
+		draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0), p2 + ImVec2(-50, 0), p2, IM_COL32(200, 200, 150, 255), 3.0f);
 	}
 
 	// edit node
@@ -413,13 +413,15 @@ void NodeGraph(NodeGraphDelegate *delegate)
 				const char *conText = con[slot_idx].mName;
 				ImVec2 textSize;
 				textSize = ImGui::CalcTextSize(conText);
-				ImVec2 textPos = p + ImVec2(NODE_SLOT_RADIUS*(i ? -1.f : 1.f)*(overCon ? 3.f : 2.f) - (i ? textSize.x : 0), -textSize.y / 2);
+				ImVec2 textPos = p + ImVec2(-NODE_SLOT_RADIUS*(i ? -1.f : 1.f)*(overCon ? 3.f : 2.f) - (i ? 0:textSize.x ), -textSize.y / 2);
 
 				if (overCon)
 				{
 					hoverSlot = true;
-					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*2.f, IM_COL32(200, 200, 200, 200));
-					draw_list->AddText(textPos, IM_COL32(200, 200, 200, 200), conText);
+					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*2.f, IM_COL32(0, 0, 0, 200));
+					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*1.5f, IM_COL32(200, 200, 200, 200));
+					draw_list->AddText(io.FontDefault, 16, textPos+ImVec2(1,1), IM_COL32(0, 0, 0, 255), conText);
+					draw_list->AddText(io.FontDefault, 16, textPos, IM_COL32(250, 250, 250, 255), conText);
 					bool inputToOutput = (!editingInput && !i) || (editingInput&& i);
 					if (editingNode && !ImGui::GetIO().MouseDown[0])
 						if (inputToOutput)
@@ -486,8 +488,10 @@ void NodeGraph(NodeGraphDelegate *delegate)
 				}
 				else
 				{
-					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS, IM_COL32(150, 150, 150, 150));
-					draw_list->AddText(textPos, IM_COL32(150, 150, 150, 150), conText);
+					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*1.2f, IM_COL32(0, 0, 0, 200));
+					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75*1.2f, IM_COL32(160, 160, 160, 200));
+					draw_list->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
+					draw_list->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
 					
 				}
 			}
@@ -503,7 +507,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 	draw_list->ChannelsMerge();
 
 	// Open context menu
-	if (!ImGui::IsAnyItemHovered() && ImGui::IsMouseHoveringWindow() && ImGui::IsMouseClicked(1))
+	if (!ImGui::IsAnyItemHovered() && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ImGui::IsMouseClicked(1))
 	{
 		node_selected = node_hovered_in_list = node_hovered_in_scene = -1;
 		open_context_menu = true;

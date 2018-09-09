@@ -1,20 +1,31 @@
-Bugs:
+* bugs
+- moving node is broken
+- crash on release build (?)
+
+* repo
+- move evaluation in a class
+
+* nodes
 - fix tile node
-- move node broken
-- env sampler dans le baking
+- ao node
+- splatter with imput shape
 
-Architecture:
-- use cmake and separate 3rd party and source
-- use a struct for Evaluation stack
-
-UI/UX:
+* UI/UX
+- right click menu over node to bake it
+- ramp imgui control
 - undo/redo
-- material library
+- tex size preview config
+- tex size baking config
+- load hdr 
+- library + browser
 
-Nodes:
-- pbr preview
+* Material preview
 - displacement factor in lambert
-- tex size preview
-- tex size baking
-- load hdr
+- lambert : diffuse, normal, specular, displacement
+- pbr/lambert : sphere, cube, gizmo + moduler les fonctions
+- displacement factor in PBR parameter
+
+* improvements
+- use uniform parameter block instead of recompiling the shader
+- generate meta data from .glsl parsing
 

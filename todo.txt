@@ -1,23 +1,28 @@
 * bugs
 - moving node is broken
-- crash on release build (?)
 
 * repo
-
+- move imgui/ui code from main to a Imogem.cpp/.h files
 
 * nodes
 - fix tile node
-- ao node
-- splatter with imput shape
+- iterative nodes: use previous pass/loop. add pass number as parameter/uniform (ie:distance field)
+- distance field (iterative : 2 passes)
+	- road generator
+	- ao node
+	- shadow node (use iterative?)
+	- splatter with imput shape
+	- use picoC ?
+	
 
 * UI/UX
-- ramp imgui control WIP
 - node creation context menu with colored categories 
-- undo/redo
-- tex size preview config
-- tex size baking config
-- load hdr 
 - library + browser
+	- undo/redo
+	- ramp imgui control WIP
+	- tex size preview config
+	- tex size baking config
+	- load hdr 
 
 * Material preview
 - displacement factor in lambert
@@ -26,8 +31,9 @@
 - displacement factor in PBR parameter
 
 * improvements
-- use uniform parameter block instead of recompiling the shader
-- generate meta data from .glsl parsing
-- select multiple nodes
-- move/delete selected nodes
-- evaluate some nodes without baking in texture (see color node)
+- use uniform parameter block instead of recompiling the shader : if struct name is provided, don't recompile the shader; use the uniform block
+	- generate meta data from .glsl parsing
+	- select multiple nodes
+	- move/delete selected nodes
+	- evaluate some nodes without baking in texture (see color node)
+	- allow texture repeat/clamping setting per input (like non repeating tranform node)

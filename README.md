@@ -1,19 +1,13 @@
 # Imogen
 GPU Texture Generator
 
-WIP of a GPU Texture generator using dear imgui for UI.
+WIP of a GPU Texture generator using dear imgui for UI. Not production ready. You can only edit the "default" material. I do it for fun and to learn a couple things.
 
+screen from 2018-09-02
 ![Image of imogen](https://i.imgur.com/iQxLNEC.png)
-
+screen from 2018-09-09
+![Image of imogen](https://i.imgur.com/RQGHOfj.png)
 Simple roadmap:
-
-~~node edit~~
-
-~~node evaluation list~~
-
-~~basic load/save~~
-
-~~node parameters with preview~~
 
 - add nodes (noise, blur, voronoi, simple ops,..) and make nice textures
 
@@ -36,11 +30,8 @@ Currently implemented nodes
 - Ramp
 - Tile
 
-Distant roadmap when I can make some nice textures and get self confident enough 
+Roadmap/todo
 - undo/redo
-
-~~graph dirty propagation~~
-
 - bullet proof serialization
 - material/PBR preview
 - texture baking / batch baking
@@ -50,13 +41,7 @@ Distant roadmap when I can make some nice textures and get self confident enough
 - compute node metadata by parsing GLSL shader code
 - better parameter controls (sliders, color picker,..)
 - misc settings like baking dimension
-
-~~hot loading here and there. In tool shader editor~~
-
 - ease of integration in your 64k demo/tools
-
-~~- color coding of nodes depending of their type(generator, blur, transform, material, ...)~~
-
 - node group/sub node: reuse a subnode in your new texture
 - pin parameter controls and result from various nodes into one view
 - ...

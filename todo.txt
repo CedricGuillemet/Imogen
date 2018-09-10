@@ -12,6 +12,7 @@
 
 * UI/UX
 - ramp imgui control WIP
+- node creation context menu with colored categories 
 - undo/redo
 - tex size preview config
 - tex size baking config
@@ -27,4 +28,6 @@
 * improvements
 - use uniform parameter block instead of recompiling the shader
 - generate meta data from .glsl parsing
-
+- select multiple nodes
+- move/delete selected nodes
+- evaluate some nodes without baking in texture (see color node)

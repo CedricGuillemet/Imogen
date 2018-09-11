@@ -50,9 +50,9 @@ float castRay( vec3 ro, vec3 rd )
     return 999;
 }
 
-vec4 LambertMaterial(vec2 uv, vec2 view)
+vec4 LambertMaterial(vec2 view)
 {
-	vec2 p = uv *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
+	vec2 p = vUV *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
 
      // camera movement	
 	float an = view.x * PI * 2.0;
@@ -331,9 +331,9 @@ float SceneAO( vec3 p, vec3 n, mat3 localToWorld )
 }
 
 
-vec4 PBR(vec2 uv, vec2 view)
+vec4 PBR(vec2 view)
 {
-	vec2 p = uv *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
+	vec2 p = vUV *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
 
      // camera movement	
 	float an = view.x * PI * 2.0;

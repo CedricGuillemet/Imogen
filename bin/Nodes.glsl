@@ -14,67 +14,72 @@ float Circle(vec2 uv, float radius, float t)
     return mix(1.0-smoothstep(radius-0.001, radius, length(uv-vec2(0.5))), h, t);
 }
 
-float Square(vec2 uv, float width)
+float Circle(float radius, float t)
 {
-	uv -= vec2(0.5);
-    return 1.0-smoothstep(width-0.001, width, max(abs(uv.x), abs(uv.y)));
+    return Circle(vUV, radius, t);
 }
 
-float Checker(vec2 uv)
+float Square(float width)
 {
-	uv -= vec2(0.5);
-    return mod(floor(uv.x)+floor(uv.y),2.0);
+	vec2 nuv = vUV - vec2(0.5);
+    return 1.0-smoothstep(width-0.001, width, max(abs(nuv.x), abs(nuv.y)));
 }
 
-vec4 Transform(vec2 uv, vec2 translate, float rotate, float scale)
+float Checker()
 {
-	vec2 rs = (uv+translate) * scale;   
+	vec2 nuv = vUV - vec2(0.5);
+    return mod(floor(nuv.x)+floor(nuv.y),2.0);
+}
+
+vec4 Transform(vec2 translate, float rotate, float scale)
+{
+	vec2 rs = (vUV+translate) * scale;   
     vec2 ro = vec2(rs.x*cos(rotate) - rs.y * sin(rotate), rs.x*sin(rotate) + rs.y * cos(rotate));
     vec2 nuv = fract(ro);
 	vec4 tex = texture(Sampler0, nuv);
 	return tex;
 }
 
-float Sine(vec2 uv, float freq, float angle)
+float Sine(float freq, float angle)
 {
-	uv -= vec2(0.5);
-	uv = vec2(cos(angle), sin(angle)) * (uv * freq * PI * 2.0);
-    return cos(uv.x + uv.y) * 0.5 + 0.5;
+	vec2 nuv = vUV - vec2(0.5);
+	nuv = vec2(cos(angle), sin(angle)) * (nuv * freq * PI * 2.0);
+    return cos(nuv.x + nuv.y) * 0.5 + 0.5;
 }
 
-vec4 SmoothStep(vec2 uv, float low, float high)
+vec4 SmoothStep(float low, float high)
 {
-	vec4 tex = texture(Sampler0, uv);
+	vec4 tex = texture(Sampler0, vUV);
 	return smoothstep(low, high, tex);
 }
 
-vec4 Pixelize(vec2 uv, float scale)
+vec4 Pixelize(float scale)
 {
-	vec4 tex = texture(Sampler0, floor(uv*scale)/scale);
+	vec4 tex = texture(Sampler0, floor(vUV*scale)/scale);
 	return tex;
 }
 
-vec4 Blur(vec2 uv, float angle, float strength)
+vec4 Blur(float angle, float strength)
 {
 	vec2 dir = vec2(cos(angle), sin(angle));
 	vec4 col = vec4(0.0);
 	for(float i = -5.0;i<=5.0;i += 1.0)
 	{
-		col += texture(Sampler0, uv + dir * strength * i);
+		col += texture(Sampler0, vUV + dir * strength * i);
 	}
 	col /= 11.0;
 	return col;
 }
 
-vec4 NormalMap(vec2 uv, float spread)
+vec4 NormalMap(float spread)
 {
 	vec3 off = vec3(-1.0,0.0,1.0) * spread;
 
-    float s11 = texture(Sampler0, uv).x;
-    float s01 = texture(Sampler0, uv + off.xy).x;
-    float s21 = texture(Sampler0, uv + off.zy).x;
-    float s10 = texture(Sampler0, uv + off.yx).x;
-    float s12 = texture(Sampler0, uv + off.yz).x;
+    float s11 = texture(Sampler0, vUV).x;
+    float s01 = texture(Sampler0, vUV + off.xy).x;
+    float s21 = texture(Sampler0, vUV + off.zy).x;
+    float s10 = texture(Sampler0, vUV + off.yx).x;
+    float s12 = texture(Sampler0, vUV + off.yz).x;
     vec3 va = normalize(vec3(spread,0.0,s21-s01));
     vec3 vb = normalize(vec3(0.0,spread,s12-s10));
     vec4 bump = vec4( normalize(cross(va,vb))*0.5+0.5, s11 );
@@ -82,44 +87,44 @@ vec4 NormalMap(vec2 uv, float spread)
 }
 
 
-vec4 MADD(vec2 uv, vec4 color0, vec4 color1)
+vec4 MADD(vec4 color0, vec4 color1)
 {
-    return texture(Sampler0, uv) * color0 + color1;
+    return texture(Sampler0, vUV) * color0 + color1;
 }
 
-vec4 Color(vec2 uv, vec4 color)
+vec4 Color(vec4 color)
 {
 	return color;
 }
 
-float Hexagon(vec2 uv)
+float Hexagon()
 {
 	vec2 V = vec2(.866,.5);
-    vec2 v = abs ( ((uv * 2.0)-1.0) * mat2( V, -V.y, V.x) );	
+    vec2 v = abs ( ((vUV * 2.0)-1.0) * mat2( V, -V.y, V.x) );	
 	return ceil( 1. - max(v.y, dot( v, V)) *1.15  );
 }
 
-vec4 Blend(vec2 uv, vec4 A, vec4 B, int op)
+vec4 Blend(vec4 A, vec4 B, int op)
 {
 	switch (op)
 	{
 	case 0: // add
-		return texture(Sampler0, uv) * A + texture(Sampler1, uv) * B;
+		return texture(Sampler0, vUV) * A + texture(Sampler1, vUV) * B;
 	case 1: // mul
-		return texture(Sampler0, uv) * A * texture(Sampler1, uv) * B;
+		return texture(Sampler0, vUV) * A * texture(Sampler1, vUV) * B;
 	case 2: // min
-		return min(texture(Sampler0, uv) * A, texture(Sampler1, uv) * B);
+		return min(texture(Sampler0, vUV) * A, texture(Sampler1, vUV) * B);
 	case 3: // max
-		return max(texture(Sampler0, uv) * A, texture(Sampler1, uv) * B);
+		return max(texture(Sampler0, vUV) * A, texture(Sampler1, vUV) * B);
 	}
 }
 
-vec4 Invert(vec2 uv)
+vec4 Invert()
 {
-    return vec4(1.0) - texture(Sampler0, uv);
+    return vec4(1.0) - texture(Sampler0, vUV);
 }
 
-vec4 CircleSplatter(vec2 uv, vec2 distToCenter, vec2 radii, vec2 angles, float count)
+vec4 CircleSplatter(vec2 distToCenter, vec2 radii, vec2 angles, float count)
 {
 	vec4 col = vec4(0.0);
 	for (float i = 0.0 ; i < count ; i += 1.0)
@@ -128,7 +133,7 @@ vec4 CircleSplatter(vec2 uv, vec2 distToCenter, vec2 radii, vec2 angles, float c
 		vec2 dist = vec2(mix(distToCenter.x, distToCenter.y, t), 0.0);
 		dist = Rotate2D(dist, mix(angles.x, angles.y, t));
 		float radius = mix(radii.x, radii.y, t);
-		col = max(col, vec4(Circle(uv-dist, radius, 0.0)));
+		col = max(col, vec4(Circle(vUV-dist, radius, 0.0)));
 	}
 	return col;
 }
@@ -150,9 +155,9 @@ float GetRamp(float v, vec2 arr[8])
     return 0.0;
 }
 
-vec4 Ramp(vec2 uv, vec2 ramp[8])
+vec4 Ramp(vec2 ramp[8])
 {
-	vec4 tex = texture(Sampler0, uv);
+	vec4 tex = texture(Sampler0, vUV);
 	return tex * GetRamp(tex.x, ramp);
 }
 
@@ -168,9 +173,9 @@ vec4 GetTile(vec2 uv)
     return texture(Sampler0, uv);
 }
 
-vec4 Tile(vec2 uv, float scale, vec2 offset0, vec2 offset1, vec2 overlap)
+vec4 Tile(float scale, vec2 offset0, vec2 offset1, vec2 overlap)
 {
-	vec2 nuv = uv*scale;
+	vec2 nuv = vUV*scale;
 
     vec4 col = GetTile(nuv+offset0);
     col += GetTile(nuv + vec2(0.95, 0.0)+offset0);
@@ -302,10 +307,10 @@ vec3 CombineNormal(vec3 n1, vec3 n2, int technique)
         return NormalBlend_Overlay(n1, n2);
 }
 
-vec4 NormalMapBlending(vec2 uv, int technique)
+vec4 NormalMapBlending(int technique)
 {
-	vec3 n1 = texture(Sampler0, uv).xyz;
-	vec3 n2 = texture(Sampler1, uv).xyz;
+	vec3 n1 = texture(Sampler0, vUV).xyz;
+	vec3 n2 = texture(Sampler1, vUV).xyz;
 	return vec4(CombineNormal(n1, n2, technique) * 0.5 + 0.5, 0.0);
 }
 
@@ -318,10 +323,10 @@ vec3 hash3( vec2 p )
 	return fract(sin(q)*43758.5453);
 }
 
-float iqnoise(vec2 uv, float size, float u, float v )
+float iqnoise(float size, float u, float v )
 {
-    vec2 p = floor(uv*size);
-    vec2 f = fract(uv*size);
+    vec2 p = floor(vUV*size);
+    vec2 f = fract(vUV*size);
 		
 	float k = 1.0+63.0*pow(1.0-v,4.0);
 	

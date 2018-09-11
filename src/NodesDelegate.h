@@ -281,9 +281,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		const MetaNode &metaNode = metaNodes[mNodes[index].mType];
 		std::string call(metaNode.mName);
-		call += "(vUV";
-
-
+		call += "(";
 		const NodeGraphDelegate::Con * param = metaNodes[mNodes[index].mType].mParams;
 		unsigned char *paramBuffer = (unsigned char*)mNodes[index].mParams;
 		char tmps[512];
@@ -291,31 +289,35 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		{
 			if (!param->mName)
 				break;
+
+			if (i)
+				call += ",";
+
 			switch (param->mType)
 			{
 			case Con_Angle:
 			case Con_Float:
-				sprintf(tmps, ",%f", *(float*)paramBuffer);
+				sprintf(tmps, "%f", *(float*)paramBuffer);
 				break;
 			case Con_Angle2:
 			case Con_Float2:
-				sprintf(tmps, ",vec2(%f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]);
+				sprintf(tmps, "vec2(%f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]);
 				break;
 			case Con_Angle3:
 			case Con_Float3:
-				sprintf(tmps, ",vec3(%f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2]);
+				sprintf(tmps, "vec3(%f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2]);
 				break;
 			case Con_Angle4:
 			case Con_Color4:
 			case Con_Float4:
-				sprintf(tmps, ",vec4(%f, %f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]);
+				sprintf(tmps, "vec4(%f, %f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]);
 				break;
 			case Con_Enum:
 			case Con_Int:
-				sprintf(tmps, ",%d", *(int*)paramBuffer);
+				sprintf(tmps, "%d", *(int*)paramBuffer);
 				break;
 			case Con_Ramp:
-				sprintf(tmps, ",vec2[](vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f))"
+				sprintf(tmps, "vec2[](vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f))"
 					, ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]
 					, ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]
 					, ((float*)paramBuffer)[4], ((float*)paramBuffer)[5]

@@ -53,10 +53,10 @@ struct Evaluation
 	void LoadEquiRectHDREnvLight(const std::string& filepath);
 	void LoadEquiRect(const std::string& filepath);
 
-	size_t AddEvaluationTarget();
+	size_t AddEvaluationTarget(const std::string& nodeName);
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
-	void SetEvaluationCall(size_t target, const std::string& shaderCall);
+	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
 	void RunEvaluation();
@@ -65,10 +65,16 @@ struct Evaluation
 	void Bake(const char *szFilename, size_t target, int width, int height);
 
 protected:
-	std::string mBaseShader;
+	
 	unsigned int equiRectTexture;
 	int mDirtyCount;
-	std::map<std::string, std::string> mGLSLs;
+	struct Shader
+	{
+		std::string mShaderText;
+		unsigned int mProgram;
+		unsigned int mParameterBlockIndex;
+	};
+	std::map<std::string, Shader> mGLSLs;
 
 	struct Input
 	{
@@ -82,7 +88,11 @@ protected:
 	struct EvaluationStage
 	{
 		RenderTarget mTarget;
-		unsigned int mShader;
+		unsigned int mProgram;
+		unsigned int mParameterBlockIndex;
+		unsigned int mParametersBuffer;
+		void *mParameters;
+		size_t mParametersSize;
 		Input mInput;
 		bool mbDirty;
 	};

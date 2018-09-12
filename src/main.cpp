@@ -14,7 +14,24 @@
 #include "Evaluation.h"
 #include "TextEditor.h"
 
-static const std::vector<std::string> shaderFileNames = { "Shader.glsl", "Nodes.glsl", "Previews.glsl" };
+std::vector<std::string> shaderFileNames;
+
+void DiscoverShaders()
+{
+	HANDLE hFind;
+	WIN32_FIND_DATA FindFileData;
+
+	if ((hFind = FindFirstFile("GLSL/*.glsl", &FindFileData)) != INVALID_HANDLE_VALUE) 
+	{
+		do 
+		{
+			//printf("%s\n", FindFileData.cFileName);
+			shaderFileNames.push_back(std::string(FindFileData.cFileName));
+		} 
+		while (FindNextFile(hFind, &FindFileData));
+		FindClose(hFind);
+	}
+}
 struct ImguiAppLog
 {
 	ImguiAppLog()
@@ -131,13 +148,11 @@ void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelega
 	{
 		auto textToSave = editor.GetText();
 
-		std::ofstream t(shaderFileNames[currentShaderIndex], std::ofstream::out);
+		std::ofstream t("GLSL/"+shaderFileNames[currentShaderIndex], std::ofstream::out);
 		t << textToSave;
 		t.close();
 
 		evaluation.SetEvaluationGLSL(shaderFileNames);
-		nodeGraphDelegate.UpdateAllFunctionCalls();
-
 	}
 	
 	ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
@@ -171,6 +186,8 @@ int main(int, char**)
 	config.mHeight = 720;
 	imApp.Init(config);
 	ImguiAppLog logger;
+
+	DiscoverShaders();
 
 	
 	Evaluation evaluation;

@@ -13,8 +13,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	struct ImogenNode
 	{
 		size_t mType;
-		size_t mEvaluationTexture;
-		void *mParams;
+		size_t mEvaluationTarget;
+		void *mParameters;
+		size_t mParametersSize;
 	};
 
 	std::vector<ImogenNode> mNodes;
@@ -40,13 +41,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	{
 		const ImogenNode & node = mNodes[index];
 		paramBlockSize = ComputeParamMemSize(node.mType);
-		return (unsigned char*)node.mParams;
+		return (unsigned char*)node.mParameters;
 	}
-	virtual void SetParamBlock(int index, unsigned char* paramBlock)
+	virtual void SetParamBlock(int index, unsigned char* parameters)
 	{
 		const ImogenNode & node = mNodes[index];
-		memcpy(node.mParams, paramBlock, ComputeParamMemSize(node.mType));
-		mEvaluation.SetEvaluationCall(node.mEvaluationTexture, ComputeFunctionCall(index));
+		memcpy(node.mParameters, parameters, ComputeParamMemSize(node.mType));
+		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, parameters, node.mParametersSize);
 	}
 
 	virtual bool AuthorizeConnexion(int typeA, int typeB)
@@ -56,20 +57,24 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	virtual unsigned int GetNodeTexture(size_t index)
 	{
-		return mEvaluation.GetEvaluationTexture(mNodes[index].mEvaluationTexture);
+		return mEvaluation.GetEvaluationTexture(mNodes[index].mEvaluationTarget);
 	}
 	virtual void AddNode(size_t type)
 	{
+		int metaNodeCount;
+		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
+
 		size_t index = mNodes.size();
 		ImogenNode node;
-		node.mEvaluationTexture = mEvaluation.AddEvaluationTarget();
+		node.mEvaluationTarget = mEvaluation.AddEvaluationTarget(metaNodes[type].mName);
 		node.mType = type;
 		size_t paramsSize = ComputeParamMemSize(type);
-		node.mParams = malloc(paramsSize);
-		memset(node.mParams, 0, paramsSize);
+		node.mParameters = malloc(paramsSize);
+		node.mParametersSize = paramsSize;
+		memset(node.mParameters, 0, paramsSize);
 		mNodes.push_back(node);
 
-		mEvaluation.SetEvaluationCall(node.mEvaluationTexture, ComputeFunctionCall(index));
+		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
 	}
 
 	void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
@@ -85,12 +90,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void DeleteNode(size_t index)
 	{
 		mEvaluation.DelEvaluationTarget(index);
-		free(mNodes[index].mParams);
+		free(mNodes[index].mParameters);
 		mNodes.erase(mNodes.begin() + index);
 		for (auto& node : mNodes)
 		{
-			if (node.mEvaluationTexture > index)
-				node.mEvaluationTexture--;
+			if (node.mEvaluationTarget > index)
+				node.mEvaluationTarget--;
 		}
 	}
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
@@ -274,67 +279,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 		return metaNodes;
 	}
-
-	std::string ComputeFunctionCall(size_t index)
-	{
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
-		const MetaNode &metaNode = metaNodes[mNodes[index].mType];
-		std::string call(metaNode.mName);
-		call += "(";
-		const NodeGraphDelegate::Con * param = metaNodes[mNodes[index].mType].mParams;
-		unsigned char *paramBuffer = (unsigned char*)mNodes[index].mParams;
-		char tmps[512];
-		for (int i = 0; i < MaxCon; i++, param++)
-		{
-			if (!param->mName)
-				break;
-
-			if (i)
-				call += ",";
-
-			switch (param->mType)
-			{
-			case Con_Angle:
-			case Con_Float:
-				sprintf(tmps, "%f", *(float*)paramBuffer);
-				break;
-			case Con_Angle2:
-			case Con_Float2:
-				sprintf(tmps, "vec2(%f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]);
-				break;
-			case Con_Angle3:
-			case Con_Float3:
-				sprintf(tmps, "vec3(%f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2]);
-				break;
-			case Con_Angle4:
-			case Con_Color4:
-			case Con_Float4:
-				sprintf(tmps, "vec4(%f, %f, %f, %f)", ((float*)paramBuffer)[0], ((float*)paramBuffer)[1], ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]);
-				break;
-			case Con_Enum:
-			case Con_Int:
-				sprintf(tmps, "%d", *(int*)paramBuffer);
-				break;
-			case Con_Ramp:
-				sprintf(tmps, "vec2[](vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f),vec2(%f,%f))"
-					, ((float*)paramBuffer)[0], ((float*)paramBuffer)[1]
-					, ((float*)paramBuffer)[2], ((float*)paramBuffer)[3]
-					, ((float*)paramBuffer)[4], ((float*)paramBuffer)[5]
-					, ((float*)paramBuffer)[6], ((float*)paramBuffer)[7]
-					, ((float*)paramBuffer)[8], ((float*)paramBuffer)[9]
-					, ((float*)paramBuffer)[10], ((float*)paramBuffer)[11]
-					, ((float*)paramBuffer)[12], ((float*)paramBuffer)[13]
-					, ((float*)paramBuffer)[14], ((float*)paramBuffer)[15]);
-			break;
-			}
-			call += tmps;
-			paramBuffer += ComputeParamMemSize(param->mType);
-		}
-		call += ")";
-		return call;
-	}
-
+	
 	const float PI = 3.14159f;
 	float RadToDeg(float a) { return a * 180.f / PI; }
 	float DegToRad(float a) { return a / 180.f * PI; }
@@ -350,7 +295,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			return;
 
 		const NodeGraphDelegate::Con * param = currentMeta.mParams;
-		unsigned char *paramBuffer = (unsigned char*)mNodes[index].mParams;
+		unsigned char *paramBuffer = (unsigned char*)mNodes[index].mParameters;
 		for (int i = 0; i < MaxCon; i++, param++)
 		{
 			if (!param->mName)
@@ -392,18 +337,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 						{
 							((float*)paramBuffer)[k * 2] = points[k].x;
 							((float*)paramBuffer)[k * 2 + 1] = points[k].y;
-							//points[k] = ImVec2(, ((float*)paramBuffer)[k * 2 + 1]);
 						}
 						dirty = true;
 					}
-					/*char tmps[512];
-					for (int k = 0; k < 8; k++)
-					{
-						sprintf(tmps, "Ramp %d", k);
-						dirty |= ImGui::InputFloat2(tmps, &);
-					}
-					*/
-				
 				}
 				break;
 			case Con_Angle:
@@ -447,27 +383,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		
 		//ImGui::End();
 		if (dirty)
-			mEvaluation.SetEvaluationCall(mNodes[index].mEvaluationTexture, ComputeFunctionCall(index));
-	}
-
-	// helpers
-	/*
-	size_t ComputeParamsMemSize()
-	{
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
-		size_t res = 0;
-		for (size_t typeIndex = 0; typeIndex < metaNodeCount; typeIndex++)
-		{
-			res += ComputeParamMemSize(typeIndex);
-		}
-		return res;
-	}
-	*/
-	void UpdateAllFunctionCalls()
-	{
-		for(size_t i = 0;i<mNodes.size();i++)
-			mEvaluation.SetEvaluationCall(mNodes[i].mEvaluationTexture, ComputeFunctionCall(i));
+			mEvaluation.SetEvaluationParameters(mNodes[index].mEvaluationTarget, mNodes[index].mParameters, mNodes[index].mParametersSize);
 	}
 
 	void SetMouseRatios(float rx, float ry, float dx, float dy)
@@ -476,7 +392,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		size_t res = 0;
 		const NodeGraphDelegate::Con * param = metaNodes[mNodes[mSelectedNodeIndex].mType].mParams;
-		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParams;
+		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParameters;
 		for (int i = 0; i < MaxCon; i++, param++)
 		{
 			if (!param->mName)
@@ -509,7 +425,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
-		mEvaluation.SetEvaluationCall(mNodes[mSelectedNodeIndex].mEvaluationTexture, ComputeFunctionCall(mSelectedNodeIndex));
+		mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
 	}
 
 	size_t ComputeParamMemSize(size_t typeIndex)

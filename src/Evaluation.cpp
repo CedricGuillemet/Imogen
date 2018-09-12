@@ -171,7 +171,7 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 		return 0;
 
 	GLint compiled;
-	const char *shaderTypeStrings[] = { "\n#version 330 core\n#define VERTEX_SHADER\n", "\n#version 330 core\n#define FRAGMENT_SHADER\n" };
+	const char *shaderTypeStrings[] = { "\n#version 430 core\n#define VERTEX_SHADER\n", "\n#version 430 core\n#define FRAGMENT_SHADER\n" };
 	TextureID shaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER };
 	TextureID compiledShader[2];
 
@@ -231,13 +231,7 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 	// Link the program
 	glLinkProgram(programObject);
 
-	//glBindAttribLocation(programObject, SemPosition, "inPosition");
-	//glBindAttribLocation(programObject, SemNormal, "inNormal");
 	glBindAttribLocation(programObject, SemUV0, "inUV");
-
-	//glBindAttribLocation(programObject, SemInstanceMatrix, "inInstanceMatrix");
-	//glBindAttribLocation(programObject, SemInstanceColor, "inInstanceColor");
-
 
 	// Check the link status
 	glGetProgramiv(programObject, GL_LINK_STATUS, &linked);
@@ -281,27 +275,43 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 void Evaluation::SetEvaluationGLSL(const std::vector<std::string>& filenames)
 {
+	// clear
+	for (auto& glslShader : mGLSLs)
+	{
+		if (glslShader.second.mProgram)
+			glDeleteProgram(glslShader.second.mProgram);
+	}
+
 	for (auto& filename : filenames)
 	{
-		std::ifstream t(filename);
+		std::ifstream t(std::string("GLSL/")+filename);
 		if (t.good())
 		{
 			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-			mGLSLs[filename] = str;
+			mGLSLs[filename] = { str, 0, 0 };
 		}
 	}
 
-	mBaseShader = mGLSLs["Shader.glsl"];
+	std::string baseShader = mGLSLs["Shader.glsl"].mShaderText;
 	for (auto& filename : filenames)
 	{
-		std::string include = std::string("#include \"") + filename + "\"";
-		mBaseShader = ReplaceAll(mBaseShader, include, mGLSLs[filename]);
+		if (filename == "Shader.glsl")
+			continue;
+		//std::string include = std::string("#include \"") + filename + "\"";
+		std::string shaderText = ReplaceAll(baseShader, "__NODE__", mGLSLs[filename].mShaderText);
+		std::string nodeName = ReplaceAll(filename, ".glsl", "");
+		shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName +"()");
+		Shader& shader = mGLSLs[filename];
+		shader.mProgram = LoadShader(shaderText, filename.c_str());
+		shader.mParameterBlockIndex = glGetUniformBlockIndex(shader.mProgram, (nodeName +"Block").c_str());
+		glUniformBlockBinding(shader.mProgram, shader.mParameterBlockIndex, 1);
+		
 	}
 }
 
 std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
 {
-	return mGLSLs[filename];
+	return mGLSLs[filename].mShaderText;
 }
 
 Evaluation::Evaluation() : mDirtyCount(0)
@@ -309,11 +319,21 @@ Evaluation::Evaluation() : mDirtyCount(0)
 	mFSQuad.Init();
 }
 
-size_t Evaluation::AddEvaluationTarget()
+size_t Evaluation::AddEvaluationTarget(const std::string& nodeName)
 {
+	auto iter = mGLSLs.find(nodeName+".glsl");
+	if (iter == mGLSLs.end())
+	{
+		Log("Could not find node name \"%s\" \n", nodeName.c_str());
+		return -1;
+	}
 	EvaluationStage evaluation;
 	evaluation.mTarget.initBuffer(256, 256, false);
 	evaluation.mbDirty = true;
+	evaluation.mProgram = iter->second.mProgram;
+	evaluation.mParameterBlockIndex = iter->second.mParameterBlockIndex;
+	evaluation.mParametersBuffer = 0;
+
 	mDirtyCount++;
 	mEvaluations.push_back(evaluation);
 	return mEvaluations.size() - 1;
@@ -323,8 +343,9 @@ void Evaluation::DelEvaluationTarget(size_t target)
 {
 	SetTargetDirty(target);
 	EvaluationStage& ev = mEvaluations[target];
-	glDeleteProgram(ev.mShader);
+	glDeleteProgram(ev.mProgram);
 	ev.mTarget.destroy();
+	glDeleteBuffers(1, &ev.mParametersBuffer);
 	mEvaluations.erase(mEvaluations.begin() + target);
 
 	// shift all connections
@@ -343,14 +364,27 @@ unsigned int Evaluation::GetEvaluationTexture(size_t target)
 	return mEvaluations[target].mTarget.mGLTexID;
 }
 
-void Evaluation::SetEvaluationCall(size_t target, const std::string& shaderCall)
+void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)
 {
-	std::string shd = mBaseShader;
-	shd = ReplaceAll(shd, std::string("__FUNCTION__"), shaderCall);
-	unsigned int& program = mEvaluations[target].mShader;
-	if (program)
-		glDeleteProgram(program);
-	program = LoadShader(shd, "shd");
+	EvaluationStage& stage = mEvaluations[target];
+	stage.mParameters = parameters;
+	stage.mParametersSize = parametersSize;
+
+	if (!stage.mParametersBuffer)
+	{
+		glGenBuffers(1, &stage.mParametersBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+
+		glBufferData(GL_UNIFORM_BUFFER, parametersSize, parameters, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, stage.mParametersBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+	else
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, parametersSize, parameters);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
 	SetTargetDirty(target);
 }
 
@@ -371,11 +405,14 @@ void Evaluation::RunEvaluation()
 		const Input& input = evaluation.mInput;
 		const RenderTarget &tg = evaluation.mTarget;
 		tg.bindAsTarget();
-		glUseProgram(evaluation.mShader);
+		glUseProgram(evaluation.mProgram);
+
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluation.mParametersBuffer);
+
 		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
 		{
-			unsigned int parameter = glGetUniformLocation(evaluation.mShader, samplerName[inputIndex]);
+			unsigned int parameter = glGetUniformLocation(evaluation.mProgram, samplerName[inputIndex]);
 			if (parameter == 0xFFFFFFFF)
 				continue;
 			glUniform1i(parameter, samplerIndex);
@@ -394,7 +431,7 @@ void Evaluation::RunEvaluation()
 
 		}
 		//
-		unsigned int parameter = glGetUniformLocation(evaluation.mShader, "equiRectEnvSampler");
+		unsigned int parameter = glGetUniformLocation(evaluation.mProgram, "equiRectEnvSampler");
 		if (parameter != 0xFFFFFFFF)
 		{
 			glUniform1i(parameter, samplerIndex);
@@ -529,11 +566,11 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 		TransientTarget* transientTarget = GetTransientTarget(width, height, evaluationUseCount[nodeIndex]);
 		evaluationTransientTargets[nodeIndex] = transientTarget;
 		transientTarget->mTarget.bindAsTarget();
-		glUseProgram(evaluation.mShader);
+		glUseProgram(evaluation.mProgram);
 		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
 		{
-			unsigned int parameter = glGetUniformLocation(evaluation.mShader, samplerName[inputIndex]);
+			unsigned int parameter = glGetUniformLocation(evaluation.mProgram, samplerName[inputIndex]);
 			if (parameter == 0xFFFFFFFF)
 				continue;
 			glUniform1i(parameter, samplerIndex);
@@ -551,7 +588,7 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
 		}
 		//
-		unsigned int parameter = glGetUniformLocation(evaluation.mShader, "equiRectEnvSampler");
+		unsigned int parameter = glGetUniformLocation(evaluation.mProgram, "equiRectEnvSampler");
 		if (parameter != 0xFFFFFFFF)
 		{
 			glUniform1i(parameter, samplerIndex);

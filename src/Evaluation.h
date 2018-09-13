@@ -53,7 +53,7 @@ struct Evaluation
 	void LoadEquiRectHDREnvLight(const std::string& filepath);
 	void LoadEquiRect(const std::string& filepath);
 
-	size_t AddEvaluationTarget(const std::string& nodeName);
+	size_t AddEvaluationTarget(size_t nodeType, const std::string& nodeName);
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
@@ -68,11 +68,12 @@ protected:
 	
 	unsigned int equiRectTexture;
 	int mDirtyCount;
+	std::vector<unsigned int> mProgramPerNodeType;
 	struct Shader
 	{
 		std::string mShaderText;
 		unsigned int mProgram;
-		unsigned int mParameterBlockIndex;
+		int mNodeType;
 	};
 	std::map<std::string, Shader> mGLSLs;
 
@@ -88,8 +89,7 @@ protected:
 	struct EvaluationStage
 	{
 		RenderTarget mTarget;
-		unsigned int mProgram;
-		unsigned int mParameterBlockIndex;
+		size_t mNodeType;
 		unsigned int mParametersBuffer;
 		void *mParameters;
 		size_t mParametersSize;

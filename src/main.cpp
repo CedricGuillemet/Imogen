@@ -153,6 +153,7 @@ void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelega
 		t.close();
 
 		evaluation.SetEvaluationGLSL(shaderFileNames);
+		nodeGraphDelegate.InvalidateParameters();
 	}
 	
 	ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),

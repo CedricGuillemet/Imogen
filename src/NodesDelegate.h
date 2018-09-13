@@ -66,7 +66,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 		size_t index = mNodes.size();
 		ImogenNode node;
-		node.mEvaluationTarget = mEvaluation.AddEvaluationTarget(metaNodes[type].mName);
+		node.mEvaluationTarget = mEvaluation.AddEvaluationTarget(type, metaNodes[type].mName);
 		node.mType = type;
 		size_t paramsSize = ComputeParamMemSize(type);
 		node.mParameters = malloc(paramsSize);
@@ -384,6 +384,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		//ImGui::End();
 		if (dirty)
 			mEvaluation.SetEvaluationParameters(mNodes[index].mEvaluationTarget, mNodes[index].mParameters, mNodes[index].mParametersSize);
+	}
+
+	void InvalidateParameters()
+	{
+		for (auto& node : mNodes)
+			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
 	}
 
 	void SetMouseRatios(float rx, float ry, float dx, float dy)

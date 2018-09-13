@@ -1,8 +1,9 @@
 * bugs
 - moving node is broken
+- shader file list has a bad layout
+
 
 * repo
-- move imgui/ui code from main to a Imogem.cpp/.h files
 
 * nodes
 - fix tile node
@@ -16,7 +17,8 @@
 	
 
 * UI/UX
-- node creation context menu with colored categories 
+- move imgui/ui code from main to a Imogem.cpp/.h files
+- imgui dock - needs workspace save
 - library + browser
 	- undo/redo
 	- ramp imgui control WIP
@@ -31,7 +33,6 @@
 - displacement factor in PBR parameter
 
 * improvements
-- use uniform parameter block instead of recompiling the shader : if struct name is provided, don't recompile the shader; use the uniform block
 	- generate meta data from .glsl parsing
 	- select multiple nodes
 	- move/delete selected nodes

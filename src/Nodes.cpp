@@ -395,9 +395,10 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 		//ImVec2 offsetImg = ImGui::GetCursorScreenPos();
 
-		ImVec2 imgPos = node_rect_min + ImVec2(5, 25);
+		ImVec2 imgPos = node_rect_min + ImVec2(14, 25);
 		ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
 		float imgSizeComp = std::min(imgSize.x, imgSize.y);
+		
 		draw_list->AddImage(ImTextureID(delegate->GetNodeTexture(size_t(node_idx))), imgPos, imgPos + ImVec2(imgSizeComp, imgSizeComp));
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
@@ -490,7 +491,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 				else
 				{
 					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*1.2f, IM_COL32(0, 0, 0, 200));
-					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75*1.2f, IM_COL32(160, 160, 160, 200));
+					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75f*1.2f, IM_COL32(160, 160, 160, 200));
 					draw_list->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
 					draw_list->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
 					
@@ -581,24 +582,59 @@ void NodeGraph(NodeGraphDelegate *delegate)
 		}
 		else
 		{
+			auto AddNode = [&](int i)
+			{
+				nodes.push_back(Node(i, scene_pos, metaNodes));
+				delegate->AddNode(i);
+				UpdateEvaluationOrder(delegate);
+				node_selected = nodes.size() - 1;
+			};
+
 			static char inputText[64] = { 0 };
 			ImGui::InputText("", inputText, sizeof(inputText));
 			{ 
-				//nodes.push_back(Node(nodes.Size, "New node", scene_pos, 0.5f, ImColor(100, 100, 200), 2, 2)); 
-				for (int i = 0; i < metaNodeCount; i++)
+				if (strlen(inputText))
 				{
-					const char *nodeName = metaNodes[i].mName;
-					bool displayNode = !strlen(inputText) || ImStristr(nodeName, nodeName + strlen(nodeName), inputText, inputText + strlen(inputText));
-					if (displayNode && ImGui::MenuItem(nodeName, NULL, false))
+					for (int i = 0; i < metaNodeCount; i++)
 					{
-						nodes.push_back(Node(i, scene_pos, metaNodes));
-						delegate->AddNode(i);
-						UpdateEvaluationOrder(delegate);
-						node_selected = nodes.size() - 1;
+						const char *nodeName = metaNodes[i].mName;
+						bool displayNode = !strlen(inputText) || ImStristr(nodeName, nodeName + strlen(nodeName), inputText, inputText + strlen(inputText));
+						if (displayNode && ImGui::MenuItem(nodeName, NULL, false))
+						{
+							AddNode(i);
+						}
 					}
 				}
-				//ImGui::EndMenu();
+				else
+				{
+					for (int i = 0; i < metaNodeCount; i++)
+					{
+						const char *nodeName = metaNodes[i].mName;
+						if (metaNodes[i].mCategory == -1 && ImGui::MenuItem(nodeName, NULL, false))
+						{
+							AddNode(i);
+						}
+					}
+
+					for (int iCateg = 0; iCateg < delegate->mCategoriesCount; iCateg++)
+					{
+						if (ImGui::BeginMenu(delegate->mCategories[iCateg]))
+						{
+							for (int i = 0; i < metaNodeCount; i++)
+							{
+								const char *nodeName = metaNodes[i].mName;
+								if (metaNodes[i].mCategory == iCateg && ImGui::MenuItem(nodeName, NULL, false))
+								{
+									AddNode(i);
+								}
+							}
+							ImGui::EndMenu();
+						}
+					}
+				}
+				
 			}
+			
 		}
 		ImGui::EndPopup();
 	}

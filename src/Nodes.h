@@ -1,12 +1,15 @@
 #pragma once
 #include <vector>
+#include <stdint.h>
 struct NodeGraphDelegate
 {
-	NodeGraphDelegate() : mSelectedNodeIndex(-1), mBakeTargetIndex(-1)
+	NodeGraphDelegate() : mSelectedNodeIndex(-1), mBakeTargetIndex(-1), mCategoriesCount(0), mCategories(0)
 	{}
 
 	int mSelectedNodeIndex;
 	int mBakeTargetIndex;
+	int mCategoriesCount;
+	const char ** mCategories;
 
 	virtual void Bake(size_t index) = 0;
 	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
@@ -37,6 +40,7 @@ struct NodeGraphDelegate
 	{
 		const char *mName;
 		uint32_t mHeaderColor;
+		int mCategory;
 		Con mInputs[MaxCon];
 		Con mOutputs[MaxCon];
 		Con mParams[MaxCon];

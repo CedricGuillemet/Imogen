@@ -3,7 +3,7 @@
 #include <string>
 #include <regex>
 #include <cmath>
-
+#include <stdio.h>
 #include "TextEditor.h"
 
 static const int cTextStart = 7;
@@ -637,7 +637,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				}
 			}
 
-			auto chars = snprintf(buf, 16, "%6d", lineNo + 1);
+			auto chars = sprintf(buf, "%6d", lineNo + 1);
 			assert(chars >= 0 && chars < 16);
 			drawList->AddText(ImVec2(lineStartScreenPos.x /*+ mCharAdvance.x * 1*/, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], buf);
 
@@ -1075,7 +1075,7 @@ void TextEditor::MoveTop(bool aSelect)
 	}
 }
 
-void TextEditor::TextEditor::MoveBottom(bool aSelect)
+void TextEditor::MoveBottom(bool aSelect)
 {
 	auto oldPos = GetCursorPosition();
 	auto newPos = Coordinates((int)mLines.size() - 1, 0);

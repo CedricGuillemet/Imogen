@@ -99,7 +99,7 @@ bool HDRLoader::load(const char *fileName, HDRLoaderResult &res)
 float convertComponent(int expo, int val)
 {
 	float v = val / 256.0f;
-	float d = (float) pow(2, expo);
+	float d = (float) powf(2.f, float(expo));
 	return v * d;
 }
 

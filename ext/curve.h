@@ -11,15 +11,9 @@
 
 #include "imgui.h"
 
-#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui_internal.h"
 
 #include <cmath>
-
-static inline ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y); }
-static inline ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x - rhs.x, lhs.y - rhs.y); }
-static inline ImVec2 operator*(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x * rhs.x, lhs.y * rhs.y); }
-static inline ImVec2 operator/(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x / rhs.x, lhs.y / rhs.y); }
 
 /* To use, add this prototype somewhere.. 
 
@@ -396,7 +390,7 @@ namespace ImGui
     // key format (for dim == 1) is (t0,x0,t1,x1 ...)
     // key format (for dim == 2) is (t0,x0,y0,t1,x1,y1 ...)
     // key format (for dim == 3) is (t0,x0,y0,z0,t1,x1,y1,z1 ...)
-    void spline( const float *key, int num, int dim, float t, float *v )
+    inline void spline( const float *key, int num, int dim, float t, float *v )
     {
         static signed char coefs[16] = {
             -1, 2,-1, 0,
@@ -428,7 +422,7 @@ namespace ImGui
         }
     }
 
-    float CurveValueSmooth(float p, int maxpoints, const ImVec2 *points)
+	inline float CurveValueSmooth(float p, int maxpoints, const ImVec2 *points)
     {
         if (maxpoints < 2 || points == 0)
             return 0;
@@ -448,7 +442,7 @@ namespace ImGui
         return output[0];
     }
 
-    float CurveValue(float p, int maxpoints, const ImVec2 *points)
+	inline float CurveValue(float p, int maxpoints, const ImVec2 *points)
     {
         if (maxpoints < 2 || points == 0)
             return 0;
@@ -466,7 +460,7 @@ namespace ImGui
         return points[left].y + (points[left + 1].y - points[left].y) * d;
     }
 
-    int Curve(const char *label, const ImVec2& size, const int maxpoints, ImVec2 *points)
+	inline int Curve(const char *label, const ImVec2& size, const int maxpoints, ImVec2 *points)
     {
         int modified = 0;
         int i;

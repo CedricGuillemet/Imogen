@@ -1,7 +1,5 @@
 * bugs
-- moving node is broken
 - shader file list has a bad layout
-
 
 * repo
 
@@ -14,17 +12,15 @@
 	- shadow node (use iterative?)
 	- splatter with imput shape
 	- use picoC ?
-	
 
 * UI/UX
-- move imgui/ui code from main to a Imogem.cpp/.h files
-- imgui dock - needs workspace save
 - library + browser
 	- undo/redo
 	- ramp imgui control WIP
 	- tex size preview config
 	- tex size baking config
 	- load hdr 
+	- imgui dock - needs workspace save
 
 * Material preview
 - displacement factor in lambert

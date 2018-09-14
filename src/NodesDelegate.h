@@ -402,6 +402,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
 	}
 
+	template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? lhs : rhs; }
 	void SetMouseRatios(float rx, float ry, float dx, float dy)
 	{
 		int metaNodeCount;
@@ -424,7 +425,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				{
 					paramFlt[0] = ImLerp(param->mRangeMinX, param->mRangeMaxX, rx);
 				}
-				paramFlt[0] = fmodf(paramFlt[0], fabsf(param->mRangeMaxX - param->mRangeMinX)) + min(param->mRangeMinX, param->mRangeMaxX);
+				paramFlt[0] = fmodf(paramFlt[0], fabsf(param->mRangeMaxX - param->mRangeMinX)) + nmin(param->mRangeMinX, param->mRangeMaxX);
 			}
 			if (param->mRangeMinY != 0.f || param->mRangeMaxY != 0.f)
 			{
@@ -437,7 +438,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					paramFlt[1] = ImLerp(param->mRangeMinY, param->mRangeMaxY, ry);
 				}
 
-				paramFlt[1] = fmodf(paramFlt[1], fabsf(param->mRangeMaxY - param->mRangeMinY)) + min(param->mRangeMinY, param->mRangeMaxY);
+				paramFlt[1] = fmodf(paramFlt[1], fabsf(param->mRangeMaxY - param->mRangeMinY)) + nmin(param->mRangeMinY, param->mRangeMaxY);
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}

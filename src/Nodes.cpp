@@ -16,11 +16,6 @@
 
 UndoRedoHandler undoRedoHandler;
 
-// NB: You can use math functions/operators on ImVec2 if you #define IMGUI_DEFINE_MATH_OPERATORS and #include "imgui_internal.h"
-// Here we only declare simple +/- operators so others don't leak into the demo code.
-static inline ImVec2 operator+(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x + rhs.x, lhs.y + rhs.y); }
-static inline ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x - rhs.x, lhs.y - rhs.y); }
-static inline ImVec2 operator*(const ImVec2& lhs, const ImVec2& rhs) { return ImVec2(lhs.x * rhs.x, lhs.y * rhs.y); }
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
 static void GetConCount(const NodeGraphDelegate::MetaNode* metaNodes, int type, int &input, int &output)
@@ -126,11 +121,9 @@ std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, s
 	return orders;
 }
 
-
 static std::vector<NodeOrder> mOrders;
 static ImVector<Node> nodes;
 static ImVector<NodeLink> links;
-
 
 void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
 {
@@ -240,21 +233,16 @@ void LoadNodes(const std::string &filename, NodeGraphDelegate *delegate)
 	UpdateEvaluationOrder(delegate);
 }
 
-
 void NodeGraph(NodeGraphDelegate *delegate)
 {
 	int metaNodeCount;
 	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
-
-	
 
 	static bool editingNode = false;
 	static ImVec2 editingNodeSource;
 	static bool editingInput = false;
 	static int editingNodeIndex;
 	static int editingSlotIndex;
-
-
 	static ImVec2 scrolling = ImVec2(0.0f, 0.0f);
 	static bool show_grid = true;
 	static int node_selected = -1;
@@ -275,9 +263,6 @@ void NodeGraph(NodeGraphDelegate *delegate)
 	
 	//style.Colors[] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
-
-	//ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(230, 80, 30, 200));
-
 
 	ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 	ImGui::PushItemWidth(120.0f);
@@ -334,6 +319,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 
 		ImGui::InvisibleButton("canvas", ImVec2(100, 100));
+		bool node_moving_active = ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
 
 		// Save the size of what we have emitted and whether any of the widgets are being used
 		bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
@@ -342,28 +328,6 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 		draw_list->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
 		draw_list->AddText(node_rect_min+ImVec2(2,2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName);
-		//ImGui::Text("%s [%d]", metaNodes[node->mType].mName, mOrders[node_idx].mNodePriority);
-		
-		/*
-		ImGui::BeginGroup(); // Lock horizontal position
-		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, 0);
-		ImGui::PushStyleColor(ImGuiCol_HeaderActive, 0);
-		ImGui::PushStyleColor(ImGuiCol_Border, node_selected?0xFF1040FF:0);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2.0f);
-		if (ImGui::TreeNodeEx(metaNodes[node->mType].mName))
-		{
-			ImGui::PopStyleColor(3);
-			ImGui::PopStyleVar();
-			delegate->EditNode(node_idx);
-			ImGui::TreePop();
-		}
-		else
-		{
-			ImGui::PopStyleColor(3);
-			ImGui::PopStyleVar();
-		}
-		ImGui::EndGroup();
-		*/
 
 		// Display node box
 		draw_list->ChannelsSetCurrent(0); // Background
@@ -374,7 +338,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 			node_hovered_in_scene = node_idx;
 			open_context_menu |= ImGui::IsMouseClicked(1);
 		}
-		bool node_moving_active = ImGui::IsItemActive();
+		
 		if (node_widgets_active || node_moving_active)
 			node_selected = node_idx;
 		if (node_moving_active && ImGui::IsMouseDragging(0))

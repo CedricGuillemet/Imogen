@@ -15,6 +15,14 @@
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
 
+inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
+{
+	glTexParameteri(texMode, GL_TEXTURE_MIN_FILTER, MinFilter);
+	glTexParameteri(texMode, GL_TEXTURE_MAG_FILTER, MagFilter);
+	glTexParameteri(texMode, GL_TEXTURE_WRAP_S, WrapS);
+	glTexParameteri(texMode, GL_TEXTURE_WRAP_T, WrapT);
+}
+
 void RenderTarget::bindAsTarget() const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);

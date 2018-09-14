@@ -29,8 +29,9 @@
 - displacement factor in PBR parameter
 
 * improvements
+- allow texture repeat/clamping setting per input (like non repeating tranform node)
 	- generate meta data from .glsl parsing
 	- select multiple nodes
 	- move/delete selected nodes
 	- evaluate some nodes without baking in texture (see color node)
-	- allow texture repeat/clamping setting per input (like non repeating tranform node)
+	

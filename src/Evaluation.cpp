@@ -14,6 +14,8 @@
 
 extern int Log(const char *szFormat, ...);
 static const int SemUV0 = 0;
+static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
+static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
 
 inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {
@@ -55,8 +57,6 @@ void RenderTarget::initBuffer(int width, int height, bool hasZBuffer)
 
 	mWidth = width;
 	mHeight = height;
-
-	//LOG("New Target %dx%d\n", width, height);
 
 	glGenFramebuffers(1, &fbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -451,9 +451,9 @@ void Evaluation::RunEvaluation()
 			}
 			//assert(!mEvaluations[targetIndex].mbDirty);
 			glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
-			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
 
-
+			const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
+			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
 		}
 		//
 		unsigned int parameter = glGetUniformLocation(program, "equiRectEnvSampler");
@@ -477,6 +477,12 @@ void Evaluation::RunEvaluation()
 	assert(mDirtyCount == 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
+}
+
+void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
+{
+	mEvaluations[target].mInputSamplers = inputSamplers;
+	SetTargetDirty(target);
 }
 
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
@@ -611,7 +617,8 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 
 			glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets[targetIndex]->mTarget.mGLTexID);
 			LoseTransientTarget(evaluationTransientTargets[targetIndex]);
-			TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
+			const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
+			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
 		}
 		//
 		unsigned int parameter = glGetUniformLocation(program, "equiRectEnvSampler");

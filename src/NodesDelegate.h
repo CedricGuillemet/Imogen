@@ -3,6 +3,7 @@
 #include "Nodes.h"
 #include "Evaluation.h"
 #include "curve.h"
+#include "Library.h"
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
@@ -26,6 +27,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		size_t mEvaluationTarget;
 		void *mParameters;
 		size_t mParametersSize;
+		std::vector<InputSampler> mInputSamplers;
 	};
 
 	std::vector<ImogenNode> mNodes;
@@ -58,6 +60,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		const ImogenNode & node = mNodes[index];
 		memcpy(node.mParameters, parameters, ComputeParamMemSize(node.mType));
 		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, parameters, node.mParametersSize);
+		mEvaluation.SetEvaluationSampler(node.mEvaluationTarget, node.mInputSamplers);
 	}
 
 	virtual bool AuthorizeConnexion(int typeA, int typeB)
@@ -82,9 +85,15 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		node.mParameters = malloc(paramsSize);
 		node.mParametersSize = paramsSize;
 		memset(node.mParameters, 0, paramsSize);
+		size_t inputCount = 0;
+		for (int i = 0; i < MaxCon; i++)
+			if (metaNodes[type].mInputs[i].mName != NULL)
+				inputCount++;
+		node.mInputSamplers.resize(inputCount);
 		mNodes.push_back(node);
 
 		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+		mEvaluation.SetEvaluationSampler(node.mEvaluationTarget, node.mInputSamplers);
 	}
 
 	void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
@@ -300,12 +309,36 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		bool dirty = false;
-		const MetaNode& currentMeta = metaNodes[mNodes[index].mType];
+		bool samplerDirty = false;
+		ImogenNode& node = mNodes[index];
+		const MetaNode& currentMeta = metaNodes[node.mType];
+		
+		if (ImGui::CollapsingHeader("Samplers", 0))
+		{
+			for (size_t i = 0; i < node.mInputSamplers.size();i++)
+			{
+				InputSampler& inputSampler = node.mInputSamplers[i];
+				static const char *wrapModes = { "REPEAT\0CLAMP_TO_EDGE\0CLAMP_TO_BORDER\0MIRRORED_REPEAT" };
+				static const char *filterModes = { "LINEAR\0NEAREST" };
+				ImGui::PushItemWidth(150);
+				ImGui::Text("Sampler %d", i);
+				samplerDirty |= ImGui::Combo("Wrap U", (int*)&inputSampler.mWrapU, wrapModes);
+				samplerDirty |= ImGui::Combo("Wrap V", (int*)&inputSampler.mWrapV, wrapModes);
+				samplerDirty |= ImGui::Combo("Filter Min", (int*)&inputSampler.mFilterMin, filterModes);
+				samplerDirty |= ImGui::Combo("Filter Mag", (int*)&inputSampler.mFilterMag, filterModes);
+				ImGui::PopItemWidth();
+			}
+			if (samplerDirty)
+			{
+				mEvaluation.SetEvaluationSampler(node.mEvaluationTarget, node.mInputSamplers);
+			}
+
+		}
 		if (!ImGui::CollapsingHeader(currentMeta.mName, 0, ImGuiTreeNodeFlags_DefaultOpen))
 			return;
 
 		const NodeGraphDelegate::Con * param = currentMeta.mParams;
-		unsigned char *paramBuffer = (unsigned char*)mNodes[index].mParameters;
+		unsigned char *paramBuffer = (unsigned char*)node.mParameters;
 		for (int i = 0; i < MaxCon; i++, param++)
 		{
 			if (!param->mName)
@@ -393,7 +426,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		
 		//ImGui::End();
 		if (dirty)
-			mEvaluation.SetEvaluationParameters(mNodes[index].mEvaluationTarget, mNodes[index].mParameters, mNodes[index].mParametersSize);
+			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
 	}
 
 	void InvalidateParameters()

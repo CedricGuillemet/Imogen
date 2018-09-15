@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "Library.h"
 
 typedef unsigned int TextureID;
 
@@ -49,6 +50,7 @@ struct Evaluation
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
+	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
 	void RunEvaluation();
@@ -86,6 +88,7 @@ protected:
 		void *mParameters;
 		size_t mParametersSize;
 		Input mInput;
+		std::vector<InputSampler> mInputSamplers;
 		bool mbDirty;
 	};
 

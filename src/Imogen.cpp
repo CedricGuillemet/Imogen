@@ -96,7 +96,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		bool selected = i == currentShaderIndex;
 		if (ImGui::Selectable(shaderFileNames[i].c_str(), &selected))
 		{
-			currentShaderIndex = i;
+			currentShaderIndex = int(i);
 			editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
 		}
 	}
@@ -126,7 +126,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 
 }
 
-void NodeEdit(TileNodeEditGraphDelegate nodeGraphDelegate, Evaluation& evaluation)
+void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluation)
 {
 	ImGuiIO& io = ImGui::GetIO();
 

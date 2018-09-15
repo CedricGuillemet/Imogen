@@ -20,6 +20,7 @@ struct MaterialNode
 	uint32_t mPosX;
 	uint32_t mPosY;
 	std::vector<InputSampler> mInputSamplers;
+	std::vector<uint8_t> mParameters;
 };
 struct MaterialConnection
 {
@@ -33,7 +34,6 @@ struct Material
 	std::string mName;
 	std::vector<MaterialNode> mMaterialNodes;
 	std::vector<MaterialConnection> mMaterialConnections;
-	std::vector<uint8_t> mParameters;
 };
 struct Library
 {

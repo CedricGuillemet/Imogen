@@ -49,13 +49,19 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Structure,
 		Con_Any,
 	};
-	virtual unsigned char *GetParamBlock(int index, size_t& paramBlockSize)
+
+	void Clear()
+	{
+		mNodes.clear();
+	}
+
+	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize)
 	{
 		const ImogenNode & node = mNodes[index];
 		paramBlockSize = ComputeParamMemSize(node.mType);
 		return (unsigned char*)node.mParameters;
 	}
-	virtual void SetParamBlock(int index, unsigned char* parameters)
+	virtual void SetParamBlock(size_t index, unsigned char* parameters)
 	{
 		const ImogenNode & node = mNodes[index];
 		memcpy(node.mParameters, parameters, ComputeParamMemSize(node.mType));
@@ -147,7 +153,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Square", hcGenerator, 1
 				,{ { } }
 			,{ { "", (int)Con_Float4 } }
-			,{ { "Width", (int)Con_Float } }
+			,{ { "Width", (int)Con_Float, -.5f,0.5f,0.f,0.f } }
 			}
 			,
 			{

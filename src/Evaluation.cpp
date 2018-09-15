@@ -679,3 +679,9 @@ void Evaluation::LoadEquiRect(const std::string& filepath)
 
 	stbi_image_free(uc);
 }
+
+void Evaluation::Clear()
+{
+	mEvaluations.clear();
+	mEvaluationOrderList.clear();
+}

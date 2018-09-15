@@ -1,7 +1,7 @@
 * bugs
-- shader file list has a bad layout
 
 * repo
+- clear evaluation : delete texture target
 
 * nodes
 - fix tile node
@@ -29,7 +29,6 @@
 - displacement factor in PBR parameter
 
 * improvements
-- allow texture repeat/clamping setting per input (like non repeating tranform node)
 	- generate meta data from .glsl parsing
 	- select multiple nodes
 	- move/delete selected nodes

@@ -189,6 +189,19 @@ std::string GetGroup(const std::string &name)
 	}
 	return "";
 }
+
+std::string GetName(const std::string &name)
+{
+	for (int i = int(name.length()) - 1; i >= 0; i--)
+	{
+		if (name[i] == '/')
+		{
+			return name.substr(i+1);
+		}
+	}
+	return name;
+}
+
 template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, int *deletedItem = NULL)
 {
 	bool ret = false;
@@ -239,7 +252,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 		else if (currentGroupIsSkipped)
 			continue;
 
-		ImGui::TreeNodeEx(res[indexInRes].mName.c_str(), node_flags);
+		ImGui::TreeNodeEx(GetName(res[indexInRes].mName).c_str(), node_flags);
 
 		if (ImGui::IsItemClicked())
 		{
@@ -290,23 +303,79 @@ inline void GuiString(const char*label, std::string* str, int stringId)
 	ImGui::PopID();
 }
 
+static int selectedMaterial = -1;
 
-void LibraryEdit(Library& library)
+void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
-	static int selection = -1;
 	int deletedItem = -1;
 	ImGui::BeginChild("TV", ImVec2(250, -1));
-	if (TVRes(library.mMaterials, "Materials", selection, 0, &deletedItem))
+	int previousSelection = selectedMaterial;
+	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0, &deletedItem))
 	{
+		nodeGraphDelegate.mSelectedNodeIndex = -1;
+		// save previous
+		if (previousSelection != -1)
+		{
+			Material& material = library.mMaterials[previousSelection];
+			material.mMaterialNodes.resize(nodeGraphDelegate.mNodes.size());
+			for (size_t i = 0; i < nodeGraphDelegate.mNodes.size(); i++)
+			{
+				TileNodeEditGraphDelegate::ImogenNode srcNode = nodeGraphDelegate.mNodes[i];
+				MaterialNode &dstNode = material.mMaterialNodes[i];
 
+				dstNode.mType = uint32_t(srcNode.mType);
+				dstNode.mParameters.resize(srcNode.mParametersSize);
+				if (srcNode.mParametersSize)
+					memcpy(&dstNode.mParameters[0], srcNode.mParameters, srcNode.mParametersSize);
+				dstNode.mInputSamplers = srcNode.mInputSamplers;
+				ImVec2 nodePos = NodeGraphGetNodePos(i);
+				dstNode.mPosX = uint32_t(nodePos.x);
+				dstNode.mPosY = uint32_t(nodePos.y);
+			}
+			auto links = NodeGraphGetLinks();
+			material.mMaterialConnections.resize(links.size());
+			for (size_t i = 0; i < links.size(); i++)
+			{
+				MaterialConnection& materialConnection = material.mMaterialConnections[i];
+				materialConnection.mInputNode = links[i].InputIdx;
+				materialConnection.mInputSlot = links[i].InputSlot;
+				materialConnection.mOutputNode = links[i].OutputIdx;
+				materialConnection.mOutputSlot = links[i].OutputSlot;
+			}
+		}
+		// set new
+		if (selectedMaterial != -1)
+		{
+			nodeGraphDelegate.Clear();
+			evaluation.Clear();
+			NodeGraphClear();
+			Material& material = library.mMaterials[selectedMaterial];
+			for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
+			{
+				MaterialNode& node = material.mMaterialNodes[i];
+				NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY);
+			}
+			for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
+			{
+				MaterialConnection& materialConnection = material.mMaterialConnections[i];
+				NodeGraphAddLink(&nodeGraphDelegate, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
+			}
+			NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
+		}
 	}
 	ImGui::EndChild();
 	ImGui::SameLine();
 	ImGui::BeginChild("Mat");
-	if (selection != -1)
+	if (selectedMaterial != -1)
 	{
-		Material& material = library.mMaterials[selection];
+		Material& material = library.mMaterials[selectedMaterial];
 		GuiString("Name", &material.mName, 100);
+		/* to add:
+		- bake dir
+		- bake size
+		- preview size
+		- load equirect ibl
+		*/
 	}
 	ImGui::EndChild();
 }
@@ -328,16 +397,16 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::EndDock();
 		if (ImGui::BeginDock("Nodes"))
 		{
-			NodeGraph(&nodeGraphDelegate);
+			NodeGraph(&nodeGraphDelegate, selectedMaterial!= -1);
 		}
 		ImGui::EndDock();
 
+		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Left);
 		if (ImGui::BeginDock("Library"))
 		{
-			LibraryEdit(library);
+			LibraryEdit(library, nodeGraphDelegate, evaluation);
 		}
 		ImGui::EndDock();
-
 
 		ImGui::SetWindowSize(ImVec2(300, 300));
 		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Left);

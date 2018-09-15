@@ -87,6 +87,7 @@ template<bool doWrite> struct Serialize
 		ADD(v_initial, materialNode->mPosX);
 		ADD(v_initial, materialNode->mPosY);
 		ADD(v_initial, materialNode->mInputSamplers);
+		ADD(v_initial, materialNode->mParameters);
 	}
 	void Ser(MaterialConnection *materialConnection)
 	{
@@ -100,7 +101,6 @@ template<bool doWrite> struct Serialize
 		ADD(v_initial, material->mName);
 		ADD(v_initial, material->mMaterialNodes);
 		ADD(v_initial, material->mMaterialConnections);
-		ADD(v_initial, material->mParameters);
 	}
 	bool Ser(Library *library)
 	{

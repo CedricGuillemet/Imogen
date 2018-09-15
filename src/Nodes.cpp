@@ -38,33 +38,12 @@ static void GetConCount(const NodeGraphDelegate::MetaNode* metaNodes, int type, 
 
 }
 
-// Dummy
-struct Node
+Node::Node(int type, const ImVec2& pos, const NodeGraphDelegate::MetaNode* metaNodes)
 {
-	int     mType;
-	ImVec2  Pos, Size;
-	int     InputsCount, OutputsCount;
-
-	Node(int type, const ImVec2& pos, const NodeGraphDelegate::MetaNode* metaNodes)
-	{
-		mType = type;
-		Pos = pos;
-		GetConCount(metaNodes, type, InputsCount, OutputsCount);
-	}
-
-	ImVec2 GetInputSlotPos(int slot_no) const { return ImVec2(Pos.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
-	ImVec2 GetOutputSlotPos(int slot_no) const { return ImVec2(Pos.x + Size.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
-};
-struct NodeLink
-{
-	int     InputIdx, InputSlot, OutputIdx, OutputSlot;
-	NodeLink() {}
-	NodeLink(int input_idx, int input_slot, int output_idx, int output_slot) { InputIdx = input_idx; InputSlot = input_slot; OutputIdx = output_idx; OutputSlot = output_slot; }
-	bool operator == (const NodeLink& other) const
-	{
-		return InputIdx == other.InputIdx && InputSlot == other.InputSlot && OutputIdx == other.OutputIdx && OutputSlot == other.OutputSlot;
-	}
-};
+	mType = type;
+	Pos = pos;
+	GetConCount(metaNodes, type, InputsCount, OutputsCount);
+}
 
 struct NodeOrder
 {
@@ -88,7 +67,7 @@ size_t PickBestNode(const std::vector<NodeOrder>& orders)
 	return -1;
 }
 
-void RecurseSetPriority(std::vector<NodeOrder>& orders, const ImVector<NodeLink> &links, size_t currentIndex, size_t currentPriority, size_t& undeterminedNodeCount)
+void RecurseSetPriority(std::vector<NodeOrder>& orders, const std::vector<NodeLink> &links, size_t currentIndex, size_t currentPriority, size_t& undeterminedNodeCount)
 {
 	if (!orders[currentIndex].mNodePriority)
 		undeterminedNodeCount--;
@@ -103,7 +82,7 @@ void RecurseSetPriority(std::vector<NodeOrder>& orders, const ImVector<NodeLink>
 	}
 }
 
-std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, size_t nodeCount)
+std::vector<NodeOrder> ComputeEvaluationOrder(const std::vector<NodeLink> &links, size_t nodeCount)
 {
 	std::vector<NodeOrder> orders(nodeCount);
 	for (size_t i = 0; i < nodeCount; i++)
@@ -122,10 +101,21 @@ std::vector<NodeOrder> ComputeEvaluationOrder(const ImVector<NodeLink> &links, s
 }
 
 static std::vector<NodeOrder> mOrders;
-static ImVector<Node> nodes;
-static ImVector<NodeLink> links;
+static std::vector<Node> nodes;
+static std::vector<NodeLink> links;
 
-void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
+void NodeGraphClear()
+{
+	nodes.clear();
+	links.clear();
+}
+
+const std::vector<NodeLink> NodeGraphGetLinks()
+{
+	return links;
+}
+
+void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 {
 	mOrders = ComputeEvaluationOrder(links, nodes.size());
 	std::sort(mOrders.begin(), mOrders.end());
@@ -133,6 +123,28 @@ void UpdateEvaluationOrder(NodeGraphDelegate *delegate)
 	for (size_t i = 0; i < mOrders.size(); i++)
 		nodeOrderList[i] = mOrders[i].mNodeIndex;
 	delegate->UpdateEvaluationList(nodeOrderList);
+}
+
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy)
+{
+	int metaNodeCount;
+	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
+	size_t index = nodes.size();
+	nodes.push_back(Node(type, ImVec2(float(posx), float(posy)), metaNodes));
+	delegate->AddNode(type);
+
+	delegate->SetParamBlock(index, (unsigned char*)parameters);
+}
+
+void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
+{
+	NodeLink nl;
+	nl.InputIdx = InputIdx;
+	nl.InputSlot = InputSlot;
+	nl.OutputIdx = OutputIdx;
+	nl.OutputSlot = OutputSlot;
+	links.push_back(nl);
+	delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 }
 
 std::string encode(unsigned char* ptr, size_t size)
@@ -169,7 +181,7 @@ void SaveNodes(const std::string &filename, NodeGraphDelegate *delegate)
 
 	char tmps[512];
 	int index = 0;
-	sprintf(tmps, "%d\n", nodes.size());
+	sprintf(tmps, "%d\n", int(nodes.size()));
 	fputs(tmps, fp);
 	for (auto& node : nodes)
 	{
@@ -180,7 +192,7 @@ void SaveNodes(const std::string &filename, NodeGraphDelegate *delegate)
 		fputs((encode(paramBlock, paramBlockSize)+"\n").c_str(), fp);
 		index++;
 	}
-	sprintf(tmps, "%d\n", links.size());
+	sprintf(tmps, "%d\n", int(links.size()));
 	fputs(tmps, fp);
 	for (auto& link : links)
 	{
@@ -230,10 +242,15 @@ void LoadNodes(const std::string &filename, NodeGraphDelegate *delegate)
 		delegate->AddLink(lnk.InputIdx, lnk.InputSlot, lnk.OutputIdx, lnk.OutputSlot);
 	}
 
-	UpdateEvaluationOrder(delegate);
+	NodeGraphUpdateEvaluationOrder(delegate);
 }
 
-void NodeGraph(NodeGraphDelegate *delegate)
+ImVec2 NodeGraphGetNodePos(size_t index)
+{
+	return nodes[index].Pos;
+}
+
+void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 {
 	int metaNodeCount;
 	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
@@ -245,7 +262,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 	static int editingSlotIndex;
 	static ImVec2 scrolling = ImVec2(0.0f, 0.0f);
 	static bool show_grid = true;
-	static int node_selected = -1;
+	int node_selected = delegate->mSelectedNodeIndex;
 
 	int node_hovered_in_list = -1;
 	int node_hovered_in_scene = -1;
@@ -283,10 +300,21 @@ void NodeGraph(NodeGraphDelegate *delegate)
 			draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
 	}
 
+	if (!enabled)
+	{
+		ImGui::PopItemWidth();
+		ImGui::EndChild();
+		ImGui::PopStyleColor(1);
+		ImGui::PopStyleVar(2);
+
+		ImGui::EndGroup();
+		return;
+	}
+
 	// Display links
 	draw_list->ChannelsSplit(2);
 	draw_list->ChannelsSetCurrent(0); // Background
-	for (int link_idx = 0; link_idx < links.Size; link_idx++)
+	for (int link_idx = 0; link_idx < links.size(); link_idx++)
 	{
 		NodeLink* link = &links[link_idx];
 		Node* node_inp = &nodes[link->InputIdx];
@@ -306,7 +334,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 	int nodeToDelete = -1;
 	// Display nodes
-	for (int node_idx = 0; node_idx < nodes.Size; node_idx++)
+	for (int node_idx = 0; node_idx < nodes.size(); node_idx++)
 	{
 		Node* node = &nodes[node_idx];
 		ImGui::PushID(node_idx);
@@ -416,7 +444,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 								{
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
-									UpdateEvaluationOrder(delegate);
+									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
 							}
@@ -425,7 +453,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 							{
 								links.push_back(nl);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
-								UpdateEvaluationOrder(delegate);
+								NodeGraphUpdateEvaluationOrder(delegate);
 							}
 						}
 					if (!editingNode && ImGui::GetIO().MouseDown[0])
@@ -445,7 +473,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 								{
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
-									UpdateEvaluationOrder(delegate);
+									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
 							}
@@ -530,7 +558,7 @@ void NodeGraph(NodeGraphDelegate *delegate)
 
 				// delete links
 				nodes.erase(nodes.begin() + node_selected);
-				UpdateEvaluationOrder(delegate);
+				NodeGraphUpdateEvaluationOrder(delegate);
 				node_selected = -1;
 			}
 			if (ImGui::MenuItem("Bake", NULL, false))
@@ -550,8 +578,8 @@ void NodeGraph(NodeGraphDelegate *delegate)
 			{
 				nodes.push_back(Node(i, scene_pos, metaNodes));
 				delegate->AddNode(i);
-				UpdateEvaluationOrder(delegate);
-				node_selected = nodes.size() - 1;
+				NodeGraphUpdateEvaluationOrder(delegate);
+				node_selected = int(nodes.size()) - 1;
 			};
 
 			static char inputText[64] = { 0 };

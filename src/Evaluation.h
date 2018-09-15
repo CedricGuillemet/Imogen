@@ -58,6 +58,7 @@ struct Evaluation
 	void SetTargetDirty(size_t target);
 	void Bake(const char *szFilename, size_t target, int width, int height);
 
+	void Clear();
 protected:
 	
 	unsigned int equiRectTexture;

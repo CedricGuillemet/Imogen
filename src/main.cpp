@@ -36,6 +36,10 @@ int main(int, char**)
 	config.mWidth = 1280;
 	config.mHeight = 720;
 	imApp.Init(config);
+
+	static const char* libraryFilename = "library.dat";
+	Library library;
+	LoadLib(&library, libraryFilename);
 	
 	Evaluation evaluation;
 	Imogen imogen;
@@ -45,7 +49,6 @@ int main(int, char**)
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(evaluation);
 
-	//
 	static const char* MaterialFilename = "Materials.txt";
 	LoadNodes(MaterialFilename, &nodeGraphDelegate);
 
@@ -54,7 +57,7 @@ int main(int, char**)
 	{
 		imApp.NewFrame();
 
-		imogen.Show(nodeGraphDelegate, evaluation);
+		imogen.Show(library, nodeGraphDelegate, evaluation);
 
 		evaluation.RunEvaluation();
 
@@ -67,6 +70,7 @@ int main(int, char**)
 	}
 	
 	SaveNodes(MaterialFilename, &nodeGraphDelegate);
+	SaveLib(&library, libraryFilename);
 	imApp.Finish();
 
 	return 0;

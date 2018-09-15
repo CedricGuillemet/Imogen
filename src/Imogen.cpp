@@ -7,6 +7,7 @@
 #include "Evaluation.h"
 #include "NodesDelegate.h"
 #include "ImApp.h"
+#include "Library.h"
 
 struct ImguiAppLog
 {
@@ -154,7 +155,163 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		nodeGraphDelegate.EditNode();
 }
 
-void Imogen::Show(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+
+template <typename T, typename Ty> struct SortedResource
+{
+	SortedResource() {}
+	SortedResource(unsigned int index, const std::vector<T, Ty>* res) : mIndex(index), mRes(res) {}
+	SortedResource(const SortedResource& other) : mIndex(other.mIndex), mRes(other.mRes) {}
+	void operator = (const SortedResource& other) { mIndex = other.mIndex; mRes = other.mRes; }
+	unsigned int mIndex;
+	const std::vector<T, Ty>* mRes;
+	bool operator < (const SortedResource& other) const
+	{
+		return (*mRes)[mIndex].mName<(*mRes)[other.mIndex].mName;
+	}
+
+	static void ComputeSortedResources(const std::vector<T, Ty>& res, std::vector<SortedResource>& sortedResources)
+	{
+		sortedResources.resize(res.size());
+		for (unsigned int i = 0; i < res.size(); i++)
+			sortedResources[i] = SortedResource<T, Ty>(i, &res);
+		std::sort(sortedResources.begin(), sortedResources.end());
+	}
+};
+
+std::string GetGroup(const std::string &name)
+{
+	for (int i = int(name.length()) - 1; i >= 0; i--)
+	{
+		if (name[i] == '/')
+		{
+			return name.substr(0, i);
+		}
+	}
+	return "";
+}
+template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, int *deletedItem = NULL)
+{
+	bool ret = false;
+	if (!ImGui::TreeNodeEx(szName, ImGuiTreeNodeFlags_FramePadding /*| ImGuiTreeNodeFlags_DefaultOpen*/))
+		return ret;
+
+	ImGui::SameLine(0.0f, 30);
+	if (ImGui::Button("New"))
+	{
+		res.push_back(T());
+		selection = (int(res.size()) - 1) + (index << 16);
+		res.back().mName = "New";
+		ret = true;
+	}
+	int duplicate = -1;
+	int del = -1;
+	std::string currentGroup = "";
+	bool currentGroupIsSkipped = false;
+
+	std::vector<SortedResource<T, Ty>> sortedResources;
+	SortedResource<T, Ty>::ComputeSortedResources(res, sortedResources);
+
+	for (const auto& sortedRes : sortedResources) //unsigned int i = 0; i < res.size(); i++)
+	{
+		unsigned int indexInRes = sortedRes.mIndex;
+		bool selected = ((selection >> 16) == index) && (selection & 0xFFFF) == (int)indexInRes;
+		ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | (selected ? ImGuiTreeNodeFlags_Selected : 0);
+
+		std::string grp = GetGroup(res[indexInRes].mName);
+
+		if ( grp != currentGroup)
+		{
+			if (currentGroup.length() && !currentGroupIsSkipped)
+				ImGui::TreePop();
+
+			currentGroup = grp;
+
+			if (currentGroup.length())
+			{
+				if (!ImGui::TreeNode(currentGroup.c_str()))
+				{
+					currentGroupIsSkipped = true;
+					continue;
+				}
+			}
+			currentGroupIsSkipped = false;
+		}
+		else if (currentGroupIsSkipped)
+			continue;
+
+		ImGui::TreeNodeEx(res[indexInRes].mName.c_str(), node_flags);
+
+		if (ImGui::IsItemClicked())
+		{
+			selection = (index << 16) + indexInRes;
+			ret = true;
+		}
+		if (((int)indexInRes == (selection & 0xFFFF)) && (selection >> 16) == (int)index)
+		{
+			ImGui::SameLine(-1);
+			if (ImGui::Button("X"))
+				del = indexInRes;
+			ImGui::SameLine(0, 3);
+			if (ImGui::Button("Dup"))
+				duplicate = indexInRes;
+		}
+	}
+
+	if (currentGroup.length() && !currentGroupIsSkipped)
+		ImGui::TreePop();
+
+	ImGui::TreePop();
+	if (del != -1)
+	{
+		if (deletedItem)
+			*deletedItem = del;
+		res.erase(res.begin() + del);
+		selection = (min(del, (int)res.size() - 1)) + (index << 16);
+		ret = true;
+	}
+	if (duplicate != -1)
+	{
+		res.push_back(res[duplicate]);
+		res.back().mName += "_Copy";
+		selection = (int(res.size()) - 1) + (index << 16);
+		ret = true;
+	}
+	return ret;
+}
+
+inline void GuiString(const char*label, std::string* str, int stringId)
+{
+	//static int guiStringId = 47414;
+	ImGui::PushID(stringId);
+	char eventStr[512];
+	strcpy(eventStr, str->c_str());
+	if (ImGui::InputText(label, eventStr, 512))
+		*str = eventStr;
+	ImGui::PopID();
+}
+
+
+void LibraryEdit(Library& library)
+{
+	static int selection = -1;
+	int deletedItem = -1;
+	ImGui::BeginChild("TV", ImVec2(250, -1));
+	if (TVRes(library.mMaterials, "Materials", selection, 0, &deletedItem))
+	{
+
+	}
+	ImGui::EndChild();
+	ImGui::SameLine();
+	ImGui::BeginChild("Mat");
+	if (selection != -1)
+	{
+		Material& material = library.mMaterials[selection];
+		GuiString("Name", &material.mName, 100);
+	}
+	ImGui::EndChild();
+}
+
+void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -175,6 +332,12 @@ void Imogen::Show(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& eval
 		}
 		ImGui::EndDock();
 
+		if (ImGui::BeginDock("Library"))
+		{
+			LibraryEdit(library);
+		}
+		ImGui::EndDock();
+
 
 		ImGui::SetWindowSize(ImVec2(300, 300));
 		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Left);
@@ -190,8 +353,6 @@ void Imogen::Show(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& eval
 			ImguiAppLog::Log->DrawEmbedded();
 		}
 		ImGui::EndDock();
-
-
 
 
 		ImGui::EndDockspace();

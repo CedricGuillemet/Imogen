@@ -37,7 +37,7 @@ template<bool doWrite> struct Serialize
 	{
 		if (doWrite)
 		{
-			uint32_t len = data.length() + 1;
+			uint32_t len = uint32_t(data.length() + 1);
 			fwrite(&len, sizeof(uint32_t), 1, fp);
 			fwrite(data.c_str(), len, 1, fp);
 		}
@@ -51,7 +51,7 @@ template<bool doWrite> struct Serialize
 	}
 	template<typename T> void Ser(std::vector<T>& data)
 	{
-		uint32_t count = data.size();
+		uint32_t count = uint32_t(data.size());
 		Ser(count);
 		data.resize(count);
 		for (auto& item : data)
@@ -59,8 +59,10 @@ template<bool doWrite> struct Serialize
 	}
 	void Ser(std::vector<uint8_t>& data)
 	{
-		uint32_t count = data.size();
+		uint32_t count = uint32_t(data.size());
 		Ser(count);
+		if (!count)
+			return;
 		if (doWrite)
 		{
 			fwrite(data.data(), count, 1, fp);
@@ -102,6 +104,8 @@ template<bool doWrite> struct Serialize
 	}
 	bool Ser(Library *library)
 	{
+		if (!fp)
+			return false;
 		if (doWrite)
 			dataVersion = v_lastVersion;
 		Ser(dataVersion);
@@ -113,6 +117,16 @@ template<bool doWrite> struct Serialize
 	FILE *fp;
 	uint32_t dataVersion;
 };
+
 typedef Serialize<true> SerializeWrite;
 typedef Serialize<false> SerializeRead;
-Library mLibrary;
+
+void LoadLib(Library *library, const char *szFilename)
+{
+	SerializeRead(szFilename).Ser(library);
+}
+
+void SaveLib(Library *library, const char *szFilename)
+{
+	SerializeWrite(szFilename).Ser(library);
+}

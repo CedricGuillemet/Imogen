@@ -39,3 +39,6 @@ struct Library
 {
 	std::vector<Material> mMaterials;
 };
+
+void LoadLib(Library *library, const char *szFilename);
+void SaveLib(Library *library, const char *szFilename);

@@ -4,13 +4,14 @@
 struct TileNodeEditGraphDelegate;
 struct Evaluation;
 class TextEditor;
+struct Library;
 
 struct Imogen
 {
 	Imogen();
 	~Imogen();
 	
-	void Show(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+	void Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
 	void DiscoverShaders();
 
 	std::vector<std::string> shaderFileNames;

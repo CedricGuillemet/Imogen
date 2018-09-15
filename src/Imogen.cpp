@@ -81,14 +81,6 @@ void DebugLogText(const char *szText)
 	imguiLog.AddLog(szText);
 }
 
-
-static bool shaderFilesGetter(void* data, int idx, const char** out_text)
-{
-	std::vector<std::string> *shaders = (std::vector<std::string>*)data;
-	*out_text = shaders->at(idx).c_str();
-	return true;
-}
-
 void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	static int currentShaderIndex = -1;
@@ -98,9 +90,16 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
 	}
 	auto cpos = editor.GetCursorPosition();
-	//ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
 	ImGui::BeginChild(13, ImVec2(250, 800));
-	ImGui::ListBox("", &currentShaderIndex, shaderFilesGetter, (void*)&shaderFileNames, (int)shaderFileNames.size(), (int)shaderFileNames.size());
+	for (size_t i = 0; i < shaderFileNames.size(); i++)
+	{
+		bool selected = i == currentShaderIndex;
+		if (ImGui::Selectable(shaderFileNames[i].c_str(), &selected))
+		{
+			currentShaderIndex = i;
+			editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+		}
+	}
 	ImGui::EndChild();
 	ImGui::SameLine();
 	ImGui::BeginChild(14);

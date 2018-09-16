@@ -3,6 +3,7 @@
 enum : uint32_t
 {
 	v_initial,
+	v_materialComment,
 	v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -99,6 +100,7 @@ template<bool doWrite> struct Serialize
 	void Ser(Material *material)
 	{
 		ADD(v_initial, material->mName);
+		ADD(v_materialComment, material->mComment);
 		ADD(v_initial, material->mMaterialNodes);
 		ADD(v_initial, material->mMaterialConnections);
 	}
@@ -107,7 +109,7 @@ template<bool doWrite> struct Serialize
 		if (!fp)
 			return false;
 		if (doWrite)
-			dataVersion = v_lastVersion;
+			dataVersion = v_lastVersion-1;
 		Ser(dataVersion);
 		if (dataVersion > v_lastVersion)
 			return false; // no forward compatibility

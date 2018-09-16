@@ -120,5 +120,4 @@ ImVec2 NodeGraphGetNodePos(size_t index);
 void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy);
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
 void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);
-void SaveNodes(const std::string &filename, NodeGraphDelegate *delegate);
-void LoadNodes(const std::string &filename, NodeGraphDelegate *delegate);
+void NodeGraphUpdateScrolling();

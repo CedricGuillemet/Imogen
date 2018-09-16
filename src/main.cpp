@@ -49,9 +49,6 @@ int main(int, char**)
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(evaluation);
 
-	//static const char* MaterialFilename = "Materials.txt";
-	//LoadNodes(MaterialFilename, &nodeGraphDelegate);
-
 	// Main loop
 	while (!imApp.Done())
 	{
@@ -69,7 +66,6 @@ int main(int, char**)
 		imApp.EndFrame();
 	}
 	
-	//SaveNodes(MaterialFilename, &nodeGraphDelegate);
 	SaveLib(&library, libraryFilename);
 	imApp.Finish();
 

@@ -1,7 +1,7 @@
 * bugs
+- ramp node behaves strangely until node is selected
 
 * repo
-- clear evaluation : delete texture target
 
 * nodes
 - fix tile node
@@ -14,7 +14,6 @@
 	- use picoC ?
 
 * UI/UX
-- library + browser
 	- undo/redo
 	- ramp imgui control WIP
 	- tex size preview config

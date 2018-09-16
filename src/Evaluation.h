@@ -91,6 +91,8 @@ protected:
 		Input mInput;
 		std::vector<InputSampler> mInputSamplers;
 		bool mbDirty;
+
+		void Clear();
 	};
 
 	std::vector<EvaluationStage> mEvaluations;

@@ -362,13 +362,17 @@ size_t Evaluation::AddEvaluationTarget(size_t nodeType, const std::string& nodeN
 	return mEvaluations.size() - 1;
 }
 
+void Evaluation::EvaluationStage::Clear()
+{
+	glDeleteBuffers(1, &mParametersBuffer);
+	mTarget.destroy();
+}
+
 void Evaluation::DelEvaluationTarget(size_t target)
 {
 	SetTargetDirty(target);
 	EvaluationStage& ev = mEvaluations[target];
-	glDeleteBuffers(1, &ev.mParametersBuffer);
-	ev.mTarget.destroy();
-	glDeleteBuffers(1, &ev.mParametersBuffer);
+	ev.Clear();
 	mEvaluations.erase(mEvaluations.begin() + target);
 
 	// shift all connections
@@ -376,7 +380,7 @@ void Evaluation::DelEvaluationTarget(size_t target)
 	{
 		for (auto& inp : evaluation.mInput.mInputs)
 		{
-			if (inp >= target)
+			if (inp >= int(target))
 				inp--;
 		}
 	}
@@ -444,7 +448,7 @@ void Evaluation::RunEvaluation()
 			glActiveTexture(GL_TEXTURE0 + samplerIndex);
 			samplerIndex++;
 			int targetIndex = input.mInputs[inputIndex];
-			if (targetIndex == -1)
+			if (targetIndex < 0)
 			{
 				glBindTexture(GL_TEXTURE_2D, 0);
 				continue;
@@ -474,7 +478,7 @@ void Evaluation::RunEvaluation()
 			mDirtyCount--;
 		}
 	}
-	assert(mDirtyCount == 0);
+//	assert(mDirtyCount == 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
 }
@@ -609,7 +613,7 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 			glActiveTexture(GL_TEXTURE0 + samplerIndex);
 			samplerIndex++;
 			int targetIndex = input.mInputs[inputIndex];
-			if (targetIndex == -1)
+			if (targetIndex < 0)
 			{
 				glBindTexture(GL_TEXTURE_2D, 0);
 				continue;
@@ -682,6 +686,9 @@ void Evaluation::LoadEquiRect(const std::string& filepath)
 
 void Evaluation::Clear()
 {
+	for (auto& ev : mEvaluations)
+		ev.Clear();
+
 	mEvaluations.clear();
 	mEvaluationOrderList.clear();
 }

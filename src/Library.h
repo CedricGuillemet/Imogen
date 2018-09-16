@@ -32,6 +32,7 @@ struct MaterialConnection
 struct Material
 {
 	std::string mName;
+	std::string mComment;
 	std::vector<MaterialNode> mMaterialNodes;
 	std::vector<MaterialConnection> mMaterialConnections;
 };

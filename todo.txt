@@ -1,10 +1,18 @@
+PBR
+- displacement factor
+- mesh : plan +, none, sphere, cube, gizmo,...
+
 * bugs
+- bad connection when plugin from input to output
+- bake is broken
+- tile node is broken
 - ramp node behaves strangely until node is selected
 
+
 * repo
+- handling parameter size changing for serialization
 
 * nodes
-- fix tile node
 - iterative nodes: use previous pass/loop. add pass number as parameter/uniform (ie:distance field)
 - distance field (iterative : 2 passes)
 	- road generator

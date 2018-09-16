@@ -1,15 +1,25 @@
 # Imogen
 GPU Texture Generator
 
-WIP of a GPU Texture generator using dear imgui for UI. Not production ready. You can only edit the "default" material. I do it for fun and to learn a couple things.
+WIP of a GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.
+
+Funny to see how it progresses:
 
 screen from 2018-09-02
 ![Image of imogen](https://i.imgur.com/iQxLNEC.png)
 screen from 2018-09-09
 ![Image of imogen](https://i.imgur.com/RQGHOfj.png)
-Simple roadmap:
+screen from 2018-09-15
+![Image of imogen](https://i.imgur.com/BJre6MN.png)
 
-- add nodes (noise, blur, voronoi, simple ops,..) and make nice textures
+Use CMake and VisualStudio to build it. Only Windows system supported for now.
+
+Features:
+- Node based texture editing
+- material library browser
+- edit/change node shaders inside the app
+- bake textures to .png
+- PBR preview
 
 Currently implemented nodes
 - circle and square generator
@@ -32,16 +42,14 @@ Currently implemented nodes
 
 Roadmap/todo
 - undo/redo
-- bullet proof serialization
-- material/PBR preview
 - texture baking / batch baking
-- baking for 64k demos (node parameters + baker source/sdk)
-- texture library browser
-- MOAR nodes: AO node
+- more nodes: AO node, distance field,...
+- multiple pass nodes
+- misc parameters like baking directory,...
 - compute node metadata by parsing GLSL shader code
 - better parameter controls (sliders, color picker,..)
-- misc settings like baking dimension
-- ease of integration in your 64k demo/tools
 - node group/sub node: reuse a subnode in your new texture
 - pin parameter controls and result from various nodes into one view
+- Vulkan port
+- Port to Linux (with SDL)
 - ...

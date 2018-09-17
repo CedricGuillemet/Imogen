@@ -1,20 +1,27 @@
-PBR
+This week:
 - displacement factor
 - mesh : plan +, none, sphere, cube, gizmo,...
-
-* bugs
 - bad connection when plugin from input to output
 - bake is broken
-- tile node is broken
-- ramp node behaves strangely until node is selected
+- resize parameter view properly
+- right click node -> make thumbnail
 
+* PBR
+
+* bugs
+- tile node is broken
+	- ramp node behaves strangely until node is selected
 
 * repo
 - handling parameter size changing for serialization
 
 * nodes
-- iterative nodes: use previous pass/loop. add pass number as parameter/uniform (ie:distance field)
-- distance field (iterative : 2 passes)
+- remove bake in favor of imagewriter (channels to write checker, file path)
+- blend overlay
+- add mask for blends
+- clamp node
+	- iterative nodes: use previous pass/loop. add pass number as parameter/uniform (ie:distance field)
+	- distance field (iterative : 2 passes)
 	- road generator
 	- ao node
 	- shadow node (use iterative?)
@@ -22,6 +29,8 @@ PBR
 	- use picoC ?
 
 * UI/UX
+- right click on node and 'Make preview' -> create a new dockable window with the preview
+	- TAB key for popping new node menu
 	- undo/redo
 	- ramp imgui control WIP
 	- tex size preview config
@@ -40,4 +49,6 @@ PBR
 	- select multiple nodes
 	- move/delete selected nodes
 	- evaluate some nodes without baking in texture (see color node)
+	- Job based evaluation system. distribute computation/updates accross multiple frames
+	- jauge for multipass nodes
 	

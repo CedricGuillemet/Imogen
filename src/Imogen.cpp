@@ -102,6 +102,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		{
 			currentShaderIndex = int(i);
 			editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+			editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates());
 		}
 	}
 	ImGui::EndChild();

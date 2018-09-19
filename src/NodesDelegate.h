@@ -132,9 +132,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
 		static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
 
-		metaNodeCount = 21;
+		metaNodeCount = 22;
 
-		static const MetaNode metaNodes[21] = {
+		static const MetaNode metaNodes[22] = {
 			{
 				"Circle", hcGenerator, 1
 				,{ {} }
@@ -300,6 +300,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f, true } }
 				}
 
+				,
+				{
+					"Clamp", hcFilter, 4
+					,{ { "", (int)Con_Float4 } }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "Min", (int)Con_Float4}, { "Max", (int)Con_Float4 } }
+				}
 			};
 
 		return metaNodes;

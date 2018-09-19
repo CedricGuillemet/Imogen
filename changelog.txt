@@ -1,7 +1,14 @@
 Imogen 0.1.1 - codename Pegasus Seiya
 
 WIP
-- SDL 2 instead of custom Windows only ImApp.h
+
+New:
+- SDL 2 instead of custom Windows only ImApp.h (one big step toward Linux port)
+- Clamp node
+- More blending option in the blend node (Thanks Jari Komppa)
+
+Fixed:
+- clear text selection when switching file in shaders edit
 
 -------------------------------------------------------------------------------
 Imogen 0.1 - codename Saint Seiya

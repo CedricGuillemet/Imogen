@@ -9,6 +9,7 @@ New:
 
 Fixed:
 - clear text selection when switching file in shaders edit
+- clear nodegraph/selection when clicking new material
 
 -------------------------------------------------------------------------------
 Imogen 0.1 - codename Saint Seiya

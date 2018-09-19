@@ -52,6 +52,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	void Clear()
 	{
+		mSelectedNodeIndex = -1;
 		mNodes.clear();
 	}
 

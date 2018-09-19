@@ -322,7 +322,15 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	{
 		library.mMaterials.push_back(Material());
 		library.mMaterials.back().mName = "New";
+		if (previousSelection != -1)
+		{
+			ValidateMaterial(library, nodeGraphDelegate, previousSelection);
+		}
 		selectedMaterial = int(library.mMaterials.size()) - 1;
+
+		nodeGraphDelegate.Clear();
+		evaluation.Clear();
+		NodeGraphClear();
 	}
 	ImGui::BeginChild("TV", ImVec2(250, -1));
 	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0))
@@ -388,14 +396,14 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::BeginDockspace();
 
 		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Tab);
+		if (ImGui::BeginDock("Nodes"))
+		{
+			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);
+		}
+		ImGui::EndDock();
 		if (ImGui::BeginDock("Shaders"))
 		{
 			HandleEditor(editor, nodeGraphDelegate, evaluation);
-		}
-		ImGui::EndDock();
-		if (ImGui::BeginDock("Nodes"))
-		{
-			NodeGraph(&nodeGraphDelegate, selectedMaterial!= -1);
 		}
 		ImGui::EndDock();
 

@@ -1,0 +1,11 @@
+Imogen 0.1.1 - codename Pegasus Seiya
+
+WIP
+- SDL 2 instead of custom Windows only ImApp.h
+
+-------------------------------------------------------------------------------
+Imogen 0.1 - codename Saint Seiya
+2018-09-16
+https://github.com/CedricGuillemet/Imogen/releases/tag/0.1
+
+* Initial version

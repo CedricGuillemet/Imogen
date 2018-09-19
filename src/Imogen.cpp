@@ -1,3 +1,4 @@
+#include <SDL.h>
 #include "imgui.h"
 #include "Imogen.h"
 #include "TextEditor.h"
@@ -6,9 +7,11 @@
 #include <streambuf>
 #include "Evaluation.h"
 #include "NodesDelegate.h"
-#include "ImApp.h"
 #include "Library.h"
-
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
 struct ImguiAppLog
 {
 	ImguiAppLog()
@@ -105,7 +108,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 	ImGui::SameLine();
 	ImGui::BeginChild(14);
 	// save
-	if (ImGui::IsKeyReleased(VK_F5))
+	if (ImGui::IsKeyReleased(SDL_SCANCODE_F5))
 	{
 		auto textToSave = editor.GetText();
 
@@ -367,7 +370,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		if (ImGui::Button("Delete Material"))
 		{
 			library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
-			selectedMaterial = library.mMaterials.size() - 1;
+			selectedMaterial = int(library.mMaterials.size()) - 1;
 		}
 
 	}
@@ -427,6 +430,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 void Imogen::DiscoverShaders()
 {
+#ifdef WIN32
 	HANDLE hFind;
 	WIN32_FIND_DATA FindFileData;
 
@@ -439,6 +443,7 @@ void Imogen::DiscoverShaders()
 		} while (FindNextFile(hFind, &FindFileData));
 		FindClose(hFind);
 	}
+#endif
 }
 
 Imogen::Imogen()

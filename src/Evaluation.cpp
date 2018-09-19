@@ -1,4 +1,4 @@
-#include "ImApp.h"
+#include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include "Evaluation.h"
 #include <vector>
 #include <algorithm>
@@ -65,7 +65,7 @@ void RenderTarget::initBuffer(int width, int height, bool hasZBuffer)
 	glGenTextures(1, &mGLTexID);
 	glBindTexture(GL_TEXTURE_2D, mGLTexID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP, GL_TEXTURE_2D);
+	TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mGLTexID, 0);
 	/*
 	if (hasZBuffer)

@@ -72,3 +72,5 @@ namespace ImGui
 */
 
 #define IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_IMPL_API
+#define IMGUI_IMPL_OPENGL_LOADER_GL3W

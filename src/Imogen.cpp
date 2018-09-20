@@ -437,19 +437,19 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 	ValidateMaterial(library, nodeGraphDelegate, selectedMaterial);
 }
 
-void Imogen::DiscoverShaders()
+void Imogen::DiscoverNodes(const char *dir, std::vector<std::string>& files)
 {
 #ifdef WIN32
 	HANDLE hFind;
 	WIN32_FIND_DATA FindFileData;
 
-	if ((hFind = FindFirstFile("GLSL/*.glsl", &FindFileData)) != INVALID_HANDLE_VALUE)
+	if ((hFind = FindFirstFile(dir, &FindFileData)) != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
-			//printf("%s\n", FindFileData.cFileName);
-			shaderFileNames.push_back(std::string(FindFileData.cFileName));
-		} while (FindNextFile(hFind, &FindFileData));
+			files.push_back(std::string(FindFileData.cFileName));
+		} 
+		while (FindNextFile(hFind, &FindFileData));
 		FindClose(hFind);
 	}
 #endif
@@ -459,7 +459,9 @@ Imogen::Imogen()
 {
 	ImGui::InitDock();
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-	DiscoverShaders();
+
+	DiscoverNodes("GLSL/*.glsl", shaderFileNames);
+	DiscoverNodes("C/*.c", cFileNames);
 }
 
 Imogen::~Imogen()

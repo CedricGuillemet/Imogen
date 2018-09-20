@@ -86,7 +86,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 		size_t index = mNodes.size();
 		ImogenNode node;
-		node.mEvaluationTarget = mEvaluation.AddEvaluationTarget(type, metaNodes[type].mName);
+		node.mEvaluationTarget = mEvaluation.AddEvaluationGLSL(type, metaNodes[type].mName);
 		node.mType = type;
 		size_t paramsSize = ComputeParamMemSize(type);
 		node.mParameters = malloc(paramsSize);

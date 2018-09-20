@@ -33,12 +33,6 @@ int Log(const char *szFormat, ...)
 
 int main(int, char**)
 {
-	TCCState *s;
-
-	s = tcc_new();
-
-
-
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{
@@ -107,6 +101,8 @@ int main(int, char**)
 	Imogen imogen;
 	
 	evaluation.SetEvaluationGLSL(imogen.shaderFileNames);
+	evaluation.SetEvaluationC(imogen.cFileNames);
+
 	evaluation.LoadEquiRect("studio017PoT.png");
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(evaluation);

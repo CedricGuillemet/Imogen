@@ -324,11 +324,6 @@ void Evaluation::SetEvaluationGLSL(const std::vector<std::string>& filenames)
 		if (shader.mNodeType != -1)
 			mProgramPerNodeType[shader.mNodeType] = program;
 	}
-/*	// refresh stages
-	for (auto& evaluation : mEvaluations)
-	{
-		evaluation.m
-	}*/
 }
 
 std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
@@ -336,12 +331,64 @@ std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
 	return mGLSLs[filename].mShaderText;
 }
 
+void Evaluation::SetEvaluationC(const std::vector<std::string>& filenames)
+{
+	for (auto& filename : filenames)
+	{
+		std::ifstream t(std::string("C/") + filename);
+		if (!t.good())
+			continue; // TODO : log message
+
+		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+		if (mCPrograms.find(filename) == mCPrograms.end())
+			mCPrograms[filename] = { str, 0 };
+		else
+			mCPrograms[filename].mCText = str;
+
+		CProgram& program = mCPrograms[filename];
+		TCCState *s = tcc_new();
+		tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
+
+
+		char my_program[] =
+			"int fonction(int n) "
+			"{"
+			"    printf(\"Hello World! (%d)\\n\",n);"
+			"    return 0; "
+			"}";
+
+
+		if (tcc_compile_string(s, my_program/*program.mCText.c_str()*/) != 0)
+		{
+			Log("Compilation error!\n");
+			continue;
+		}
+
+		int size = tcc_relocate(s, NULL);
+		if (size == -1)
+			continue;
+
+		program.mMem = malloc(size);
+		tcc_relocate(s, program.mMem);
+
+		*(void**)(&program.mFunction) = tcc_get_symbol(s, "main");
+
+		tcc_delete(s);
+	}
+}
+
+std::string Evaluation::GetEvaluationC(const std::string& filename)
+{
+	return mCPrograms[filename].mCText;
+}
+
+
 Evaluation::Evaluation() : mDirtyCount(0)
 {
 	mFSQuad.Init();
 }
 
-size_t Evaluation::AddEvaluationTarget(size_t nodeType, const std::string& nodeName)
+size_t Evaluation::AddEvaluationGLSL(size_t nodeType, const std::string& nodeName)
 {
 	auto iter = mGLSLs.find(nodeName+".glsl");
 	if (iter == mGLSLs.end())

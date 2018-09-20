@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include "Library.h"
+#include "libtcc/libtcc.h"
 
 typedef unsigned int TextureID;
 
@@ -42,11 +43,15 @@ struct Evaluation
 	void SetEvaluationGLSL(const std::vector<std::string>& filenames);
 	std::string GetEvaluationGLSL(const std::string& filename);
 
+	void SetEvaluationC(const std::vector<std::string>& filenames);
+	std::string GetEvaluationC(const std::string& filename);
 
 	void LoadEquiRectHDREnvLight(const std::string& filepath);
 	void LoadEquiRect(const std::string& filepath);
 
-	size_t AddEvaluationTarget(size_t nodeType, const std::string& nodeName);
+	size_t AddEvaluationGLSL(size_t nodeType, const std::string& nodeName);
+	size_t AddEvaluationC(size_t nodeType, const std::string& nodeName);
+
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
@@ -71,6 +76,14 @@ protected:
 		int mNodeType;
 	};
 	std::map<std::string, Shader> mGLSLs;
+
+	struct CProgram
+	{
+		std::string mCText;
+		void *mMem;
+		int(*mFunction)(void *parameters);
+	};
+	std::map<std::string, CProgram> mCPrograms;
 
 	struct Input
 	{

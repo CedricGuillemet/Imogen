@@ -25,10 +25,12 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/include
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/gl3w
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/
 )
 
 link_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/lib/x64
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc
 )
 find_package(OpenGL)
 
@@ -48,7 +50,7 @@ IF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 ENDIF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 
 set(SDL2_LIBS "SDL2" "SDL2main")
-
+set(LIBTCCDEF "libtcc")
 #######################################################################################
 
 foreach(f ${SRC_FILES})
@@ -81,9 +83,9 @@ endif()
 SET(LINK_OPTIONS " ")
 SET(EXE_NAME "Imogen")
 
-ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} )
+ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES})
 
-TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES})
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${LIBTCCDEF})
 
 #--------------------------------------------------------------------
 # preproc

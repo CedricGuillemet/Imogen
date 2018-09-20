@@ -11,7 +11,7 @@
 #include "NodesDelegate.h"
 #include "Evaluation.h"
 #include "Imogen.h"
-
+#include "libtcc/libtcc.h"
 int Log(const char *szFormat, ...)
 {
 	va_list ptr_arg;
@@ -33,6 +33,12 @@ int Log(const char *szFormat, ...)
 
 int main(int, char**)
 {
+	TCCState *s;
+
+	s = tcc_new();
+
+
+
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{

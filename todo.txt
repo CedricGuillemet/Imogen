@@ -1,7 +1,6 @@
 This week:
 - displacement factor
 - mesh : plan +, none, sphere, cube, gizmo,...
-- bad connection when plugin from input to output
 - bake is broken
 - resize parameter view properly
 - right click node -> make thumbnail
@@ -17,9 +16,7 @@ This week:
 
 * nodes
 - remove bake in favor of imagewriter (channels to write checker, file path)
-- blend overlay
 - add mask for blends
-- clamp node
 	- iterative nodes: use previous pass/loop. add pass number as parameter/uniform (ie:distance field)
 	- distance field (iterative : 2 passes)
 	- road generator

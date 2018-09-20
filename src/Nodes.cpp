@@ -358,7 +358,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
 							{
 								NodeLink& link = links[linkIndex];
-								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
+								if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
 								{
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);

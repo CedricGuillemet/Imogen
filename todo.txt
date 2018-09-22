@@ -1,4 +1,34 @@
-This week:
+
+- separate scaleX and scaleY in transform node
+- swirl node
+
+- remove hdr loader for stb_image
+- mirror H/V in transform
+- merge polar
+- fix loopback
+
+- findfirst/opendir Linux
+- fileopen dialog
+
+- load/save
+- set thumbnail
+- thumbnail
+
+- update project roadmap/todo
+
+- equirect pbr/lambert input 
+- PBR/lambert
+
+- multithread/job based evaluation
+
+- Linux port
+- emscripten port
+
+- manhattan distance voronoi
+- virtual evaluate method in evaluation stage
+- struct in glsl/C for evaluation info (target size, pass number,...). put mouse/time info in there too?
+
+
 - displacement factor
 - mesh : plan +, none, sphere, cube, gizmo,...
 - bake is broken

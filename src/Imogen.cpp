@@ -1,3 +1,4 @@
+#include <SDL.h>
 #include "imgui.h"
 #include "Imogen.h"
 #include "TextEditor.h"
@@ -6,9 +7,11 @@
 #include <streambuf>
 #include "Evaluation.h"
 #include "NodesDelegate.h"
-#include "ImApp.h"
 #include "Library.h"
-
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
 struct ImguiAppLog
 {
 	ImguiAppLog()
@@ -99,13 +102,14 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		{
 			currentShaderIndex = int(i);
 			editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+			editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates());
 		}
 	}
 	ImGui::EndChild();
 	ImGui::SameLine();
 	ImGui::BeginChild(14);
 	// save
-	if (ImGui::IsKeyReleased(VK_F5))
+	if (ImGui::IsKeyReleased(SDL_SCANCODE_F5))
 	{
 		auto textToSave = editor.GetText();
 
@@ -318,7 +322,15 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	{
 		library.mMaterials.push_back(Material());
 		library.mMaterials.back().mName = "New";
+		if (previousSelection != -1)
+		{
+			ValidateMaterial(library, nodeGraphDelegate, previousSelection);
+		}
 		selectedMaterial = int(library.mMaterials.size()) - 1;
+
+		nodeGraphDelegate.Clear();
+		evaluation.Clear();
+		NodeGraphClear();
 	}
 	ImGui::BeginChild("TV", ImVec2(250, -1));
 	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0))
@@ -367,7 +379,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		if (ImGui::Button("Delete Material"))
 		{
 			library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
-			selectedMaterial = library.mMaterials.size() - 1;
+			selectedMaterial = int(library.mMaterials.size()) - 1;
 		}
 
 	}
@@ -384,14 +396,14 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::BeginDockspace();
 
 		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Tab);
+		if (ImGui::BeginDock("Nodes"))
+		{
+			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);
+		}
+		ImGui::EndDock();
 		if (ImGui::BeginDock("Shaders"))
 		{
 			HandleEditor(editor, nodeGraphDelegate, evaluation);
-		}
-		ImGui::EndDock();
-		if (ImGui::BeginDock("Nodes"))
-		{
-			NodeGraph(&nodeGraphDelegate, selectedMaterial!= -1);
 		}
 		ImGui::EndDock();
 
@@ -427,6 +439,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 void Imogen::DiscoverShaders()
 {
+#ifdef WIN32
 	HANDLE hFind;
 	WIN32_FIND_DATA FindFileData;
 
@@ -439,6 +452,7 @@ void Imogen::DiscoverShaders()
 		} while (FindNextFile(hFind, &FindFileData));
 		FindClose(hFind);
 	}
+#endif
 }
 
 Imogen::Imogen()

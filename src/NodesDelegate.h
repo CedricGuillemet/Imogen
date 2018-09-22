@@ -52,6 +52,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	void Clear()
 	{
+		mSelectedNodeIndex = -1;
 		mNodes.clear();
 	}
 
@@ -132,9 +133,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
 		static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
 
-		metaNodeCount = 21;
+		metaNodeCount = 23;
 
-		static const MetaNode metaNodes[21] = {
+		static const MetaNode metaNodes[23] = {
 			{
 				"Circle", hcGenerator, 1
 				,{ {} }
@@ -186,7 +187,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ { "scale", (int)Con_Float } }
 			}
 
-
 			,
 			{
 				"Blur", hcFilter, 4
@@ -232,7 +232,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Blend", hcBlend, 3
 				,{ { "", (int)Con_Float4 },{ "", (int)Con_Float4 } }
 			,{ { "", (int)Con_Float4 } }
-			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "Add\0Mul\0Min\0Max\0" } }
+			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "Add\0Multiply\0Darken\0Lighten\0Average\0Screen\0Color Burn\0Color Dodge\0Soft Light\0Subtract\0Difference\0Inverse Difference\0Exclusion\0" } }
 			}
 
 			,
@@ -298,6 +298,23 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 },{ "Roughness", (int)Con_Float4 },{ "Displacement", (int)Con_Float4 } }
 				,{ { "", (int)Con_Float4 } }
 				,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f, true } }
+				}
+
+				,
+
+			{
+				"PolarCoords", hcTransform, 0
+				,{ { "", (int)Con_Float4 } }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "Type", (int)Con_Enum, 0.f,0.f,0.f,0.f,false,"Linear to polar\0Polar to linear\0" } }
+			}
+
+      ,
+				{
+					"Clamp", hcFilter, 4
+					,{ { "", (int)Con_Float4 } }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "Min", (int)Con_Float4}, { "Max", (int)Con_Float4 } }
 				}
 
 			};

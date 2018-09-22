@@ -15,6 +15,7 @@
 
 
 UndoRedoHandler undoRedoHandler;
+int Log(const char *szFormat, ...);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
@@ -113,6 +114,22 @@ void NodeGraphClear()
 const std::vector<NodeLink> NodeGraphGetLinks()
 {
 	return links;
+}
+
+bool RecurseIsLinked(int from, int to)
+{
+	for (auto& link : links)
+	{
+		if (link.InputIdx == from)
+		{
+			if (link.OutputIdx == to)
+				return true;
+
+			if (RecurseIsLinked(link.OutputIdx, to))
+				return true;
+		}
+	}
+	return false;
 }
 
 void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
@@ -339,12 +356,20 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 						if (inputToOutput)
 						{
 							editingNode = false;
+
+							// check loopback
+							
 							NodeLink nl;
 							if (editingInput)
 								nl = NodeLink(node_idx, slot_idx, editingNodeIndex, editingSlotIndex);
 							else
 								nl = NodeLink(editingNodeIndex, editingSlotIndex, node_idx, slot_idx);
 
+							if (RecurseIsLinked(nl.OutputIdx, nl.InputIdx))
+							{
+								Log("Acyclic graph. Loop is not allowed.\n");
+								break;
+							}
 							bool alreadyExisting = false;
 							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
 							{
@@ -358,7 +383,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
 							{
 								NodeLink& link = links[linkIndex];
-								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
+								if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
 								{
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);

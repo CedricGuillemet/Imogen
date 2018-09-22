@@ -246,7 +246,7 @@ float camHeight = -0.2;
     vec3 lightColor = vec3( 2. );
     vec3 lightDir = normalize( vec3( .7, .9, -.2 ) );
 
-    vec3 col = texture(equiRectEnvSampler, envMapEquirect(rd)).xyz;
+    vec3 col = texture(Sampler4, envMapEquirect(rd)).xyz;
 	float t = CastRay( ro, rd, localToWorld );
     if ( t > 0.0 )
     {
@@ -274,7 +274,7 @@ float camHeight = -0.2;
 
         vec3 envSpecularColor = EnvBRDFApprox( specularColor, roughnessE, ndotv );
 
-        vec3 env       = textureLod(equiRectEnvSampler, envMapEquirect(refl),roughnessE*12.0).xyz;
+        vec3 env       = textureLod(Sampler4, envMapEquirect(refl),roughnessE*12.0).xyz;
         
         diffuse += diffuseColor * EnvRemap(env);
         specular += envSpecularColor * env;

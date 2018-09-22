@@ -280,7 +280,6 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 	return str;
 }
 
-
 void Evaluation::SetEvaluationGLSL(const std::vector<std::string>& filenames)
 {
 	// clear
@@ -331,6 +330,11 @@ std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
 	return mGLSLs[filename].mShaderText;
 }
 
+static void libtccErrorFunc(void *opaque, const char *msg)
+{
+	Log(msg);
+}
+
 void Evaluation::SetEvaluationC(const std::vector<std::string>& filenames)
 {
 	for (auto& filename : filenames)
@@ -347,32 +351,36 @@ void Evaluation::SetEvaluationC(const std::vector<std::string>& filenames)
 
 		CProgram& program = mCPrograms[filename];
 		TCCState *s = tcc_new();
+		
+		int *noLib = (int*)s;
+		noLib[2] = 1; // no stdlib
+
+		tcc_set_error_func(s, 0, libtccErrorFunc);
+		tcc_add_include_path(s, "C\\");
 		tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
 
-
-		char my_program[] =
-			"int fonction(int n) "
-			"{"
-			"    printf(\"Hello World! (%d)\\n\",n);"
-			"    return 0; "
-			"}";
-
-
-		if (tcc_compile_string(s, my_program/*program.mCText.c_str()*/) != 0)
+		if (tcc_compile_string(s, program.mCText.c_str()) != 0)
 		{
-			Log("Compilation error!\n");
+			Log("%s - Compilation error!\n", filename.c_str());
 			continue;
 		}
 
+		tcc_add_symbol(s, "Log", Log);
+
 		int size = tcc_relocate(s, NULL);
 		if (size == -1)
+		{
+			Log("%s - Libtcc unable to relocate program!\n", filename.c_str());
 			continue;
-
+		}
 		program.mMem = malloc(size);
 		tcc_relocate(s, program.mMem);
 
 		*(void**)(&program.mFunction) = tcc_get_symbol(s, "main");
-
+		if (!program.mFunction)
+		{
+			Log("%s - No main function!\n", filename.c_str());
+		}
 		tcc_delete(s);
 	}
 }
@@ -381,7 +389,6 @@ std::string Evaluation::GetEvaluationC(const std::string& filename)
 {
 	return mCPrograms[filename].mCText;
 }
-
 
 Evaluation::Evaluation() : mDirtyCount(0)
 {
@@ -404,6 +411,27 @@ size_t Evaluation::AddEvaluationGLSL(size_t nodeType, const std::string& nodeNam
 
 	iter->second.mNodeType = int(nodeType);
 	mProgramPerNodeType[nodeType] = iter->second.mProgram;
+	mDirtyCount++;
+	mEvaluations.push_back(evaluation);
+	return mEvaluations.size() - 1;
+}
+
+size_t Evaluation::AddEvaluationC(size_t nodeType, const std::string& nodeName)
+{
+	auto iter = mCPrograms.find(nodeName + ".c");
+	if (iter == mCPrograms.end())
+	{
+		Log("Could not find node name \"%s\" \n", nodeName.c_str());
+		return -1;
+	}
+	EvaluationStage evaluation;
+	evaluation.mTarget.initBuffer(256, 256, false);
+	evaluation.mbDirty = true;
+	evaluation.mNodeType = nodeType;
+	evaluation.mParametersBuffer = 0;
+
+	iter->second.mNodeType = int(nodeType);
+	//mProgramPerNodeType[nodeType] = iter->second.mProgram;
 	mDirtyCount++;
 	mEvaluations.push_back(evaluation);
 	return mEvaluations.size() - 1;
@@ -507,13 +535,6 @@ void Evaluation::RunEvaluation()
 			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
 		}
 		//
-		unsigned int parameter = glGetUniformLocation(program, "equiRectEnvSampler");
-		if (parameter != 0xFFFFFFFF)
-		{
-			glUniform1i(parameter, samplerIndex);
-			glActiveTexture(GL_TEXTURE0 + samplerIndex);
-			glBindTexture(GL_TEXTURE_2D, equiRectTexture);
-		}
 		mFSQuad.Render();
 	}
 
@@ -671,14 +692,6 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 			const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
 			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
 		}
-		//
-		unsigned int parameter = glGetUniformLocation(program, "equiRectEnvSampler");
-		if (parameter != 0xFFFFFFFF)
-		{
-			glUniform1i(parameter, samplerIndex);
-			glActiveTexture(GL_TEXTURE0 + samplerIndex);
-			glBindTexture(GL_TEXTURE_2D, equiRectTexture);
-		}
 		mFSQuad.Render();
 		if (nodeIndex == target)
 			break;
@@ -702,7 +715,7 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 
 	Log("Texture %s saved. Using %d textures.\n", szFilename, mTransientTextureMaxCount);
 }
-
+/*
 void Evaluation::LoadEquiRectHDREnvLight(const std::string& filepath)
 {
 	HDRLoaderResult result;
@@ -730,7 +743,7 @@ void Evaluation::LoadEquiRect(const std::string& filepath)
 
 	stbi_image_free(uc);
 }
-
+*/
 void Evaluation::Clear()
 {
 	for (auto& ev : mEvaluations)

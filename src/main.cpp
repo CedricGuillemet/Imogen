@@ -12,6 +12,7 @@
 #include "Evaluation.h"
 #include "Imogen.h"
 #include "libtcc/libtcc.h"
+
 int Log(const char *szFormat, ...)
 {
 	va_list ptr_arg;
@@ -103,8 +104,6 @@ int main(int, char**)
 	evaluation.SetEvaluationGLSL(imogen.shaderFileNames);
 	evaluation.SetEvaluationC(imogen.cFileNames);
 
-	evaluation.LoadEquiRect("studio017PoT.png");
-
 	TileNodeEditGraphDelegate nodeGraphDelegate(evaluation);
 
 	// Main loop
@@ -131,14 +130,12 @@ int main(int, char**)
 		evaluation.RunEvaluation();
 
 		// render everything
-		glClearColor(0.45f, 0.4f, 0.4f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		ImGui::Render();
-
-		SDL_GL_MakeCurrent(window, gl_context);
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-		glClearColor(0.,0.,0.,0.);
+		glClearColor(0., 0., 0., 0.);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		ImGui::Render();
+		SDL_GL_MakeCurrent(window, gl_context);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(window);
 	}

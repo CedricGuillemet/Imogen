@@ -46,9 +46,6 @@ struct Evaluation
 	void SetEvaluationC(const std::vector<std::string>& filenames);
 	std::string GetEvaluationC(const std::string& filename);
 
-	void LoadEquiRectHDREnvLight(const std::string& filepath);
-	void LoadEquiRect(const std::string& filepath);
-
 	size_t AddEvaluationGLSL(size_t nodeType, const std::string& nodeName);
 	size_t AddEvaluationC(size_t nodeType, const std::string& nodeName);
 
@@ -82,6 +79,7 @@ protected:
 		std::string mCText;
 		void *mMem;
 		int(*mFunction)(void *parameters);
+		int mNodeType;
 	};
 	std::map<std::string, CProgram> mCPrograms;
 

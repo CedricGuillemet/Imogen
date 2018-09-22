@@ -479,10 +479,6 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				NodeGraphUpdateEvaluationOrder(delegate);
 				node_selected = -1;
 			}
-			if (ImGui::MenuItem("Bake", NULL, false))
-			{
-				delegate->Bake(node_selected);
-			}
 			/*
 			if (ImGui::MenuItem("Set as target", NULL, false))
 			{

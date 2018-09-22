@@ -24,7 +24,10 @@ uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
 uniform sampler2D Sampler3;
-uniform sampler2D equiRectEnvSampler;
+uniform sampler2D Sampler4;
+uniform sampler2D Sampler5;
+uniform sampler2D Sampler6;
+uniform sampler2D Sampler7;
 
 vec2 Rotate2D(vec2 v, float a) 
 {

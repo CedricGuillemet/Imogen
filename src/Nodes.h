@@ -11,7 +11,6 @@ struct NodeGraphDelegate
 	int mCategoriesCount;
 	const char ** mCategories;
 
-	virtual void Bake(size_t index) = 0;
 	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
 	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
 	virtual void DelLink(int index, int slot) = 0;
@@ -39,6 +38,7 @@ struct NodeGraphDelegate
 	struct MetaNode
 	{
 		const char *mName;
+		int mEvaluationMode; //glsl, c
 		uint32_t mHeaderColor;
 		int mCategory;
 		Con mInputs[MaxCon];

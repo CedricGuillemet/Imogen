@@ -144,9 +144,11 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
 		static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
 
-		metaNodeCount = 24;
 
-		static const MetaNode metaNodes[24] = {
+		metaNodeCount = 25;
+
+		static const MetaNode metaNodes[25] = {
+
 			{
 				"Circle", 0, hcGenerator, 1
 				,{ {} }
@@ -197,7 +199,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ { "", (int)Con_Float4 } }
 			,{ { "scale", (int)Con_Float } }
 			}
-
 
 			,
 			{
@@ -313,6 +314,15 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				}
 
 				,
+
+			{
+				"PolarCoords", hcTransform, 0
+				,{ { "", (int)Con_Float4 } }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "Type", (int)Con_Enum, 0.f,0.f,0.f,0.f,false,"Linear to polar\0Polar to linear\0" } }
+			}
+
+      ,
 				{
 					"Clamp", 0, hcFilter, 4
 					,{ { "", (int)Con_Float4 } }

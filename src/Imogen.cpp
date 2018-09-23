@@ -119,6 +119,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 
 		// TODO
 		//evaluation.SetEvaluationGLSL(shaderFileNames);
+		evaluation.SetEvaluators(shaderFileNames, cFileNames);
 		nodeGraphDelegate.InvalidateParameters();
 	}
 

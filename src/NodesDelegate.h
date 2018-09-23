@@ -4,6 +4,7 @@
 #include "Evaluation.h"
 #include "curve.h"
 #include "Library.h"
+#include "nfd.h"
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
@@ -48,7 +49,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Angle4,
 		Con_Enum,
 		Con_Structure,
-		Con_Filename,
+		Con_FilenameRead,
+		Con_FilenameWrite,
 		Con_Any,
 	};
 
@@ -327,7 +329,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageRead", hcFilter, 6
 					,{  }
 				,{ { "", (int)Con_Float4 } }
-				,{ { "File name", (int)Con_Filename } }
+				,{ { "File name", (int)Con_FilenameRead } }
 				}
 
 				,
@@ -335,7 +337,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageWrite", hcFilter, 6
 					,{ { "", (int)Con_Float4 } }
 				,{  }
-				,{ { "File name", (int)Con_Filename },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int } }
+				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int } }
 				}
 			};
 
@@ -460,8 +462,22 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
 				((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
 				break;
-			case Con_Filename:
-				dirty |= ImGui::InputText("Filename", (char*)paramBuffer, 1024);
+			case Con_FilenameWrite:
+			case Con_FilenameRead:
+				dirty |= ImGui::InputText("", (char*)paramBuffer, 1024);
+				ImGui::SameLine();
+				if (ImGui::Button("..."))
+				{
+					nfdchar_t *outPath = NULL;
+					nfdresult_t result = (param->mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath) : NFD_SaveDialog(NULL, NULL, &outPath);
+
+					if (result == NFD_OKAY) 
+					{
+						strcpy((char*)paramBuffer, outPath);
+						free(outPath);
+						dirty = true;
+					}
+				}
 				break;
 			case Con_Enum:
 				dirty |= ImGui::Combo(param->mName, (int*)paramBuffer, param->mEnumList);
@@ -566,7 +582,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		case Con_Int:
 			res += sizeof(int);
 			break;
-		case Con_Filename:
+		case Con_FilenameRead:
+		case Con_FilenameWrite:
 			res += 1024;
 			break;
 		}

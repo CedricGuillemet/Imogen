@@ -6,6 +6,8 @@
 #include "libtcc/libtcc.h"
 #include "Imogen.h"
 
+extern int Log(const char *szFormat, ...);
+
 typedef unsigned int TextureID;
 
 typedef struct Image_t
@@ -65,7 +67,7 @@ struct Evaluation
 	void RunEvaluation();
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
 	void SetTargetDirty(size_t target);
-	void Bake(const char *szFilename, size_t target, int width, int height);
+	//void Bake(const char *szFilename, size_t target, int width, int height);
 
 	void Clear();
 
@@ -78,7 +80,9 @@ struct Evaluation
 	static int FreeImage(Image *image);
 
 protected:
+	void APIInit();
 	
+
 	unsigned int equiRectTexture;
 	int mDirtyCount;
 
@@ -132,4 +136,8 @@ protected:
 	std::vector<EvaluationStage> mEvaluations;
 	std::vector<size_t> mEvaluationOrderList;
 
+	void BindGLSLParameters(EvaluationStage& stage);
+	void EvaluateGLSL(const EvaluationStage& evaluation);
+	void EvaluateC(const EvaluationStage& evaluation, size_t index);
+	void FinishEvaluation();
 };

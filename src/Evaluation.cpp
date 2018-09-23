@@ -7,7 +7,6 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#include "hdrloader.h"
 #include <map>
 #include <fstream>
 #include <streambuf>
@@ -268,6 +267,92 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 }
 
 FullScreenTriangle mFSQuad;
+
+static void libtccErrorFunc(void *opaque, const char *msg)
+{
+	Log(msg);
+	Log("\n");
+}
+
+struct EValuationFunction
+{
+	const char *szFunctionName;
+	void *function;
+};
+
+/*
+typedef struct Evaluation_t
+{
+int targetIndex;
+int inputIndices[8];
+int forcedDirty;
+} Evaluation;
+*/
+enum EvaluationStatus
+{
+	EVAL_OK,
+	EVAL_ERR,
+};
+
+extern Evaluation gEvaluation;
+
+int Evaluation::ReadImage(char *filename, Image *image)
+{
+	unsigned char *data = stbi_load(filename, &image->width, &image->height, &image->components, 0);
+	if (!data)
+		return EVAL_ERR;
+	image->bits = data;
+	return EVAL_OK;
+}
+int Evaluation::WriteImage(char *filename, Image *image, int format, int quality)
+{
+	return EVAL_OK;
+}
+int Evaluation::GetEvaluationImage(int target, Image *image)
+{
+	return EVAL_OK;
+}
+
+int Evaluation::SetEvaluationImage(int target, Image *image)
+{
+	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluations[target];
+	evaluation.mTarget.initBuffer(image->width, image->height, false);
+	glBindTexture(GL_TEXTURE_2D, evaluation.mTarget.mGLTexID);
+	switch (image->components)
+	{
+	case 3:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, GL_RGB, GL_UNSIGNED_BYTE, image->bits);
+		break;
+	case 4:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->width, image->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->bits);
+		break;
+	default:
+		Log("SetEvaluationImage: unsupported component format.\n");
+		return EVAL_ERR;
+	}
+
+	return EVAL_OK;
+}
+int Evaluation::AllocateImage(Image *image)
+{
+	return EVAL_OK;
+}
+int Evaluation::FreeImage(Image *image)
+{
+	free(image->bits);
+	return EVAL_OK;
+}
+
+static const EValuationFunction evaluationFunctions[] = {
+	{ "Log", Log },
+	{ "ReadImage", Evaluation::ReadImage },
+	{ "WriteImage", Evaluation::WriteImage },
+	{ "GetEvaluationImage", Evaluation::GetEvaluationImage },
+	{ "SetEvaluationImage", Evaluation::SetEvaluationImage },
+	{ "AllocateImage", Evaluation::AllocateImage },
+	{ "FreeImage", Evaluation::FreeImage },
+};
+
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
@@ -280,19 +365,26 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 	return str;
 }
 
-void Evaluation::SetEvaluationGLSL(const std::vector<std::string>& filenames)
+void Evaluation::ClearEvaluators()
 {
 	// clear
-	for (auto& glslShader : mProgramPerNodeType)
+	for (auto& program : mProgramPerNodeType)
 	{
-		if (glslShader)
-			glDeleteProgram(glslShader);
+		if (program.mGLSLProgram)
+			glDeleteProgram(program.mGLSLProgram);
+		if (program.mMem)
+			free(program.mMem);
 	}
+}
+
+void Evaluation::SetEvaluators(const std::vector<std::string>& GLSLfilenames, const std::vector<std::string>& Cfilenames)
+{
+	ClearEvaluators();
 
 	mProgramPerNodeType.clear();
-	mProgramPerNodeType.resize(filenames.size(), 0);
+	mProgramPerNodeType.resize(GLSLfilenames.size() + Cfilenames.size(), Evaluator());
 
-	for (auto& filename : filenames)
+	for (auto& filename : GLSLfilenames)
 	{
 		std::ifstream t(std::string("GLSL/")+filename);
 		if (t.good())
@@ -306,7 +398,7 @@ void Evaluation::SetEvaluationGLSL(const std::vector<std::string>& filenames)
 	}
 
 	std::string baseShader = mGLSLs["Shader.glsl"].mShaderText;
-	for (auto& filename : filenames)
+	for (auto& filename : GLSLfilenames)
 	{
 		if (filename == "Shader.glsl")
 			continue;
@@ -321,28 +413,17 @@ void Evaluation::SetEvaluationGLSL(const std::vector<std::string>& filenames)
 		glUniformBlockBinding(program, parameterBlockIndex, 1);
 		shader.mProgram = program;
 		if (shader.mNodeType != -1)
-			mProgramPerNodeType[shader.mNodeType] = program;
+			mProgramPerNodeType[shader.mNodeType].mGLSLProgram = program;
 	}
-}
 
-std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
-{
-	return mGLSLs[filename].mShaderText;
-}
-
-static void libtccErrorFunc(void *opaque, const char *msg)
-{
-	Log(msg);
-}
-
-void Evaluation::SetEvaluationC(const std::vector<std::string>& filenames)
-{
-	for (auto& filename : filenames)
+	for (auto& filename : Cfilenames)
 	{
 		std::ifstream t(std::string("C/") + filename);
 		if (!t.good())
-			continue; // TODO : log message
-
+		{
+			Log("%s - Unable to load file.\n", filename.c_str());
+			continue;
+		}
 		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 		if (mCPrograms.find(filename) == mCPrograms.end())
 			mCPrograms[filename] = { str, 0 };
@@ -351,7 +432,7 @@ void Evaluation::SetEvaluationC(const std::vector<std::string>& filenames)
 
 		CProgram& program = mCPrograms[filename];
 		TCCState *s = tcc_new();
-		
+
 		int *noLib = (int*)s;
 		noLib[2] = 1; // no stdlib
 
@@ -365,7 +446,8 @@ void Evaluation::SetEvaluationC(const std::vector<std::string>& filenames)
 			continue;
 		}
 
-		tcc_add_symbol(s, "Log", Log);
+		for (auto& evaluationFunction : evaluationFunctions)
+			tcc_add_symbol(s, evaluationFunction.szFunctionName, evaluationFunction.function);
 
 		int size = tcc_relocate(s, NULL);
 		if (size == -1)
@@ -376,13 +458,18 @@ void Evaluation::SetEvaluationC(const std::vector<std::string>& filenames)
 		program.mMem = malloc(size);
 		tcc_relocate(s, program.mMem);
 
-		*(void**)(&program.mFunction) = tcc_get_symbol(s, "main");
-		if (!program.mFunction)
+		*(void**)(&program.mCFunction) = tcc_get_symbol(s, "main");
+		if (!program.mCFunction)
 		{
 			Log("%s - No main function!\n", filename.c_str());
 		}
 		tcc_delete(s);
 	}
+}
+
+std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
+{
+	return mGLSLs[filename].mShaderText;
 }
 
 std::string Evaluation::GetEvaluationC(const std::string& filename)
@@ -392,7 +479,17 @@ std::string Evaluation::GetEvaluationC(const std::string& filename)
 
 Evaluation::Evaluation() : mDirtyCount(0)
 {
+	
+}
+
+void Evaluation::Init()
+{
 	mFSQuad.Init();
+}
+
+void Evaluation::Finish()
+{
+
 }
 
 size_t Evaluation::AddEvaluationGLSL(size_t nodeType, const std::string& nodeName)
@@ -408,9 +505,9 @@ size_t Evaluation::AddEvaluationGLSL(size_t nodeType, const std::string& nodeNam
 	evaluation.mbDirty = true;
 	evaluation.mNodeType = nodeType;
 	evaluation.mParametersBuffer = 0;
-
+	evaluation.mEvaluationType = 0;
 	iter->second.mNodeType = int(nodeType);
-	mProgramPerNodeType[nodeType] = iter->second.mProgram;
+	mProgramPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
 	mDirtyCount++;
 	mEvaluations.push_back(evaluation);
 	return mEvaluations.size() - 1;
@@ -425,13 +522,14 @@ size_t Evaluation::AddEvaluationC(size_t nodeType, const std::string& nodeName)
 		return -1;
 	}
 	EvaluationStage evaluation;
-	evaluation.mTarget.initBuffer(256, 256, false);
+	//evaluation.mTarget.initBuffer(256, 256, false);
 	evaluation.mbDirty = true;
 	evaluation.mNodeType = nodeType;
 	evaluation.mParametersBuffer = 0;
-
+	evaluation.mEvaluationType = 1;
 	iter->second.mNodeType = int(nodeType);
-	//mProgramPerNodeType[nodeType] = iter->second.mProgram;
+	mProgramPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
+	mProgramPerNodeType[nodeType].mMem = iter->second.mMem;
 	mDirtyCount++;
 	mEvaluations.push_back(evaluation);
 	return mEvaluations.size() - 1;
@@ -500,42 +598,65 @@ void Evaluation::RunEvaluation()
 	
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
-		const EvaluationStage& evaluation = mEvaluations[mEvaluationOrderList[i]];
+		size_t index = mEvaluationOrderList[i];
+		const EvaluationStage& evaluation = mEvaluations[index];
 		if (!evaluation.mbDirty)
 			continue;
 
 		const Input& input = evaluation.mInput;
-		const RenderTarget &tg = evaluation.mTarget;
-		tg.bindAsTarget();
-		unsigned int program = mProgramPerNodeType[evaluation.mNodeType];
-
-		glUseProgram(program);
-
-		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluation.mParametersBuffer);
-
-		int samplerIndex = 0;
-		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+		switch (evaluation.mEvaluationType)
 		{
-			unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
-			if (parameter == 0xFFFFFFFF)
-				continue;
-			glUniform1i(parameter, samplerIndex);
-			glActiveTexture(GL_TEXTURE0 + samplerIndex);
-			samplerIndex++;
-			int targetIndex = input.mInputs[inputIndex];
-			if (targetIndex < 0)
+		case 0: // GLSL
 			{
-				glBindTexture(GL_TEXTURE_2D, 0);
-				continue;
-			}
-			//assert(!mEvaluations[targetIndex].mbDirty);
-			glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
+				const RenderTarget &tg = evaluation.mTarget;
+				tg.bindAsTarget();
+				unsigned int program = mProgramPerNodeType[evaluation.mNodeType].mGLSLProgram;
 
-			const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
-			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+				glUseProgram(program);
+
+				glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluation.mParametersBuffer);
+
+				int samplerIndex = 0;
+				for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+				{
+					unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
+					if (parameter == 0xFFFFFFFF)
+						continue;
+					glUniform1i(parameter, samplerIndex);
+					glActiveTexture(GL_TEXTURE0 + samplerIndex);
+					samplerIndex++;
+					int targetIndex = input.mInputs[inputIndex];
+					if (targetIndex < 0)
+					{
+						glBindTexture(GL_TEXTURE_2D, 0);
+						continue;
+					}
+					//assert(!mEvaluations[targetIndex].mbDirty);
+					glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
+
+					const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
+					TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+				}
+				//
+				mFSQuad.Render();
+			}
+			break;
+		case 1: // C
+			{
+				struct EvaluationInfo
+				{
+					int targetIndex;
+					int inputIndices[8];
+					int forcedDirty;
+				};
+				EvaluationInfo evaluationInfo;
+				evaluationInfo.targetIndex = int(index);
+				memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
+				evaluationInfo.forcedDirty = 0;
+				mProgramPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
+			}
+			break;
 		}
-		//
-		mFSQuad.Render();
 	}
 
 	for (auto& evaluation : mEvaluations)
@@ -669,7 +790,7 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 		TransientTarget* transientTarget = GetTransientTarget(width, height, evaluationUseCount[nodeIndex]);
 		evaluationTransientTargets[nodeIndex] = transientTarget;
 		transientTarget->mTarget.bindAsTarget();
-		unsigned int program = mProgramPerNodeType[evaluation.mNodeType];
+		unsigned int program = mProgramPerNodeType[evaluation.mNodeType].mGLSLProgram;
 		glUseProgram(program);
 		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -715,35 +836,7 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 
 	Log("Texture %s saved. Using %d textures.\n", szFilename, mTransientTextureMaxCount);
 }
-/*
-void Evaluation::LoadEquiRectHDREnvLight(const std::string& filepath)
-{
-	HDRLoaderResult result;
-	bool ret = HDRLoader::load(filepath.c_str(), result);
-	if (!ret)
-		return;
-	glGenTextures(1, &equiRectTexture);
-	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, result.width, result.height, 0, GL_RGB, GL_FLOAT, result.cols);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	TexParam(GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
-	
-}
 
-void Evaluation::LoadEquiRect(const std::string& filepath)
-{
-	int x, y, comp;
-	stbi_uc * uc = stbi_load(filepath.c_str(), &x, &y, &comp, 3);
-
-	glGenTextures(1, &equiRectTexture);
-	glBindTexture(GL_TEXTURE_2D, equiRectTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, x, y, 0, GL_RGB, GL_UNSIGNED_BYTE, uc);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_LINEAR, GL_REPEAT, GL_REPEAT, GL_TEXTURE_2D);
-
-	stbi_image_free(uc);
-}
-*/
 void Evaluation::Clear()
 {
 	for (auto& ev : mEvaluations)

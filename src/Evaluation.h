@@ -7,6 +7,13 @@
 
 typedef unsigned int TextureID;
 
+typedef struct Image_t
+{
+	int width, height;
+	int components;
+	void *bits;
+} Image;
+
 class RenderTarget
 {
 
@@ -40,10 +47,12 @@ struct Evaluation
 {
 	Evaluation();
 
-	void SetEvaluationGLSL(const std::vector<std::string>& filenames);
+	void Init();
+	void Finish();
+
+	void SetEvaluators(const std::vector<std::string>& GLSLfilenames, const std::vector<std::string>& Cfilenames);
 	std::string GetEvaluationGLSL(const std::string& filename);
 
-	void SetEvaluationC(const std::vector<std::string>& filenames);
 	std::string GetEvaluationC(const std::string& filename);
 
 	size_t AddEvaluationGLSL(size_t nodeType, const std::string& nodeName);
@@ -61,11 +70,30 @@ struct Evaluation
 	void Bake(const char *szFilename, size_t target, int width, int height);
 
 	void Clear();
+
+	// API
+	static int ReadImage(char *filename, Image *image);
+	static int WriteImage(char *filename, Image *image, int format, int quality);
+	static int GetEvaluationImage(int target, Image *image);
+	static int SetEvaluationImage(int target, Image *image);
+	static int AllocateImage(Image *image);
+	static int FreeImage(Image *image);
+
 protected:
 	
 	unsigned int equiRectTexture;
 	int mDirtyCount;
-	std::vector<unsigned int> mProgramPerNodeType;
+
+	void ClearEvaluators();
+	struct Evaluator
+	{
+		Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0) {}
+		unsigned int mGLSLProgram;
+		int(*mCFunction)(void *parameters, void *evaluationInfo);
+		void *mMem;
+	};
+
+	std::vector<Evaluator> mProgramPerNodeType;
 	struct Shader
 	{
 		std::string mShaderText;
@@ -77,8 +105,8 @@ protected:
 	struct CProgram
 	{
 		std::string mCText;
+		int(*mCFunction)(void *parameters, void *evaluationInfo);
 		void *mMem;
-		int(*mFunction)(void *parameters);
 		int mNodeType;
 	};
 	std::map<std::string, CProgram> mCPrograms;
@@ -102,10 +130,11 @@ protected:
 		Input mInput;
 		std::vector<InputSampler> mInputSamplers;
 		bool mbDirty;
-
+		int mEvaluationType; // 0 = GLSL. 1 = CPU C
 		void Clear();
 	};
 
 	std::vector<EvaluationStage> mEvaluations;
 	std::vector<size_t> mEvaluationOrderList;
+
 };

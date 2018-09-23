@@ -32,6 +32,8 @@ int Log(const char *szFormat, ...)
 	return 0;
 }
 
+Evaluation gEvaluation;
+
 int main(int, char**)
 {
 	// Setup SDL
@@ -98,13 +100,12 @@ int main(int, char**)
 	Library library;
 	LoadLib(&library, libraryFilename);
 	
-	Evaluation evaluation;
-	Imogen imogen;
 	
-	evaluation.SetEvaluationGLSL(imogen.shaderFileNames);
-	evaluation.SetEvaluationC(imogen.cFileNames);
+	Imogen imogen;
+	gEvaluation.Init();
+	gEvaluation.SetEvaluators(imogen.shaderFileNames, imogen.cFileNames);
 
-	TileNodeEditGraphDelegate nodeGraphDelegate(evaluation);
+	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
 
 	// Main loop
 	bool done = false;
@@ -125,9 +126,9 @@ int main(int, char**)
 		ImGui_ImplSDL2_NewFrame(window);
 		ImGui::NewFrame();
 
-		imogen.Show(library, nodeGraphDelegate, evaluation);
+		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 
-		evaluation.RunEvaluation();
+		gEvaluation.RunEvaluation();
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -141,6 +142,8 @@ int main(int, char**)
 	}
 	
 	SaveLib(&library, libraryFilename);
+	gEvaluation.Finish();
+
 	// Cleanup
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();

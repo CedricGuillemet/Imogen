@@ -1,12 +1,20 @@
 #include "Imogen.h"
 
-struct ImageRead
+typedef struct ImageRead_t
 {
 	char filename[1024];
-};
+} ImageRead;
 
-int main(ImageRead *param)
+int main(ImageRead *param, Evaluation *evaluation)
 {
-	Log("Hhahahahahh\n");
-	return 1;
+	Image image;
+	if (ReadImage(param->filename, &image) == EVAL_OK)
+	{
+		if (SetEvaluationImage(evaluation->targetIndex, &image) == EVAL_OK)
+		{
+			FreeImage(&image);
+			return EVAL_OK;
+		}
+	}
+	return EVAL_ERR;
 }

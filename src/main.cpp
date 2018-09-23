@@ -103,7 +103,7 @@ int main(int, char**)
 	
 	Imogen imogen;
 	gEvaluation.Init();
-	gEvaluation.SetEvaluators(imogen.shaderFileNames, imogen.cFileNames);
+	gEvaluation.SetEvaluators(imogen.mEvaluatorFiles);
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
 

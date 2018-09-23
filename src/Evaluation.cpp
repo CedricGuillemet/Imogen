@@ -368,7 +368,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 void Evaluation::ClearEvaluators()
 {
 	// clear
-	for (auto& program : mProgramPerNodeType)
+	for (auto& program : mEvaluatorPerNodeType)
 	{
 		if (program.mGLSLProgram)
 			glDeleteProgram(program.mGLSLProgram);
@@ -377,34 +377,42 @@ void Evaluation::ClearEvaluators()
 	}
 }
 
-void Evaluation::SetEvaluators(const std::vector<std::string>& GLSLfilenames, const std::vector<std::string>& Cfilenames)
+void Evaluation::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames)
 {
 	ClearEvaluators();
 
-	mProgramPerNodeType.clear();
-	mProgramPerNodeType.resize(GLSLfilenames.size() + Cfilenames.size(), Evaluator());
+	mEvaluatorPerNodeType.clear();
+	mEvaluatorPerNodeType.resize(evaluatorfilenames.size(), Evaluator());
 
-	for (auto& filename : GLSLfilenames)
+	for (auto& file : evaluatorfilenames)
 	{
-		std::ifstream t(std::string("GLSL/")+filename);
+		if (file.mEvaluatorType != EVALUATOR_GLSL)
+			continue;
+		const std::string filename = file.mFilename;
+
+		std::ifstream t(file.mDirectory + filename);
 		if (t.good())
 		{
 			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-			if (mGLSLs.find(filename) == mGLSLs.end())
-				mGLSLs[filename] = { str, 0, -1 };
+			if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
+				mEvaluatorScripts[filename] = EvaluatorScript(str);
 			else
-				mGLSLs[filename].mShaderText = str;
+				mEvaluatorScripts[filename].mText = str;
 		}
 	}
 
-	std::string baseShader = mGLSLs["Shader.glsl"].mShaderText;
-	for (auto& filename : GLSLfilenames)
+	std::string baseShader = mEvaluatorScripts["Shader.glsl"].mText;
+	for (auto& file : evaluatorfilenames)
 	{
+		if (file.mEvaluatorType != EVALUATOR_GLSL)
+			continue;
+		const std::string filename = file.mFilename;
+
 		if (filename == "Shader.glsl")
 			continue;
 
-		Shader& shader = mGLSLs[filename];
-		std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mShaderText);
+		EvaluatorScript& shader = mEvaluatorScripts[filename];
+		std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mText);
 		std::string nodeName = ReplaceAll(filename, ".glsl", "");
 		shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName +"()");
 		
@@ -413,24 +421,28 @@ void Evaluation::SetEvaluators(const std::vector<std::string>& GLSLfilenames, co
 		glUniformBlockBinding(program, parameterBlockIndex, 1);
 		shader.mProgram = program;
 		if (shader.mNodeType != -1)
-			mProgramPerNodeType[shader.mNodeType].mGLSLProgram = program;
+			mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
 	}
 
-	for (auto& filename : Cfilenames)
+	for (auto& file : evaluatorfilenames)
 	{
-		std::ifstream t(std::string("C/") + filename);
+		if (file.mEvaluatorType != EVALUATOR_C)
+			continue;
+		const std::string filename = file.mFilename;
+
+		std::ifstream t(file.mDirectory + filename);
 		if (!t.good())
 		{
 			Log("%s - Unable to load file.\n", filename.c_str());
 			continue;
 		}
 		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-		if (mCPrograms.find(filename) == mCPrograms.end())
-			mCPrograms[filename] = { str, 0 };
+		if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
+			mEvaluatorScripts[filename] = EvaluatorScript(str);
 		else
-			mCPrograms[filename].mCText = str;
+			mEvaluatorScripts[filename].mText = str;
 
-		CProgram& program = mCPrograms[filename];
+		EvaluatorScript& program = mEvaluatorScripts[filename];
 		TCCState *s = tcc_new();
 
 		int *noLib = (int*)s;
@@ -440,7 +452,7 @@ void Evaluation::SetEvaluators(const std::vector<std::string>& GLSLfilenames, co
 		tcc_add_include_path(s, "C\\");
 		tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
 
-		if (tcc_compile_string(s, program.mCText.c_str()) != 0)
+		if (tcc_compile_string(s, program.mText.c_str()) != 0)
 		{
 			Log("%s - Compilation error!\n", filename.c_str());
 			continue;
@@ -464,17 +476,19 @@ void Evaluation::SetEvaluators(const std::vector<std::string>& GLSLfilenames, co
 			Log("%s - No main function!\n", filename.c_str());
 		}
 		tcc_delete(s);
+
+		if (program.mNodeType != -1)
+		{
+			mEvaluatorPerNodeType[program.mNodeType].mCFunction = program.mCFunction;
+			mEvaluatorPerNodeType[program.mNodeType].mMem = program.mMem;
+		}
+
 	}
 }
 
-std::string Evaluation::GetEvaluationGLSL(const std::string& filename)
+std::string Evaluation::GetEvaluator(const std::string& filename)
 {
-	return mGLSLs[filename].mShaderText;
-}
-
-std::string Evaluation::GetEvaluationC(const std::string& filename)
-{
-	return mCPrograms[filename].mCText;
+	return mEvaluatorScripts[filename].mText;
 }
 
 Evaluation::Evaluation() : mDirtyCount(0)
@@ -492,47 +506,41 @@ void Evaluation::Finish()
 
 }
 
-size_t Evaluation::AddEvaluationGLSL(size_t nodeType, const std::string& nodeName)
+size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 {
-	auto iter = mGLSLs.find(nodeName+".glsl");
-	if (iter == mGLSLs.end())
+	auto iter = mEvaluatorScripts.find(nodeName+".glsl");
+	if (iter != mEvaluatorScripts.end())
 	{
-		Log("Could not find node name \"%s\" \n", nodeName.c_str());
-		return -1;
+		EvaluationStage evaluation;
+		evaluation.mTarget.initBuffer(256, 256, false);
+		evaluation.mbDirty = true;
+		evaluation.mNodeType = nodeType;
+		evaluation.mParametersBuffer = 0;
+		evaluation.mEvaluationType = 0;
+		iter->second.mNodeType = int(nodeType);
+		mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
+		mDirtyCount++;
+		mEvaluations.push_back(evaluation);
+		return mEvaluations.size() - 1;
 	}
-	EvaluationStage evaluation;
-	evaluation.mTarget.initBuffer(256, 256, false);
-	evaluation.mbDirty = true;
-	evaluation.mNodeType = nodeType;
-	evaluation.mParametersBuffer = 0;
-	evaluation.mEvaluationType = 0;
-	iter->second.mNodeType = int(nodeType);
-	mProgramPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
-	mDirtyCount++;
-	mEvaluations.push_back(evaluation);
-	return mEvaluations.size() - 1;
-}
-
-size_t Evaluation::AddEvaluationC(size_t nodeType, const std::string& nodeName)
-{
-	auto iter = mCPrograms.find(nodeName + ".c");
-	if (iter == mCPrograms.end())
+	iter = mEvaluatorScripts.find(nodeName + ".c");
+	if (iter != mEvaluatorScripts.end())
 	{
-		Log("Could not find node name \"%s\" \n", nodeName.c_str());
-		return -1;
+		EvaluationStage evaluation;
+		//evaluation.mTarget.initBuffer(256, 256, false);
+		evaluation.mbDirty = true;
+		evaluation.mNodeType = nodeType;
+		evaluation.mParametersBuffer = 0;
+		evaluation.mEvaluationType = 1;
+		iter->second.mNodeType = int(nodeType);
+		mEvaluatorPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
+		mEvaluatorPerNodeType[nodeType].mMem = iter->second.mMem;
+		mDirtyCount++;
+		mEvaluations.push_back(evaluation);
+		return mEvaluations.size() - 1;
 	}
-	EvaluationStage evaluation;
-	//evaluation.mTarget.initBuffer(256, 256, false);
-	evaluation.mbDirty = true;
-	evaluation.mNodeType = nodeType;
-	evaluation.mParametersBuffer = 0;
-	evaluation.mEvaluationType = 1;
-	iter->second.mNodeType = int(nodeType);
-	mProgramPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
-	mProgramPerNodeType[nodeType].mMem = iter->second.mMem;
-	mDirtyCount++;
-	mEvaluations.push_back(evaluation);
-	return mEvaluations.size() - 1;
+	Log("Could not find node name \"%s\" \n", nodeName.c_str());
+	return -1;
 }
 
 void Evaluation::EvaluationStage::Clear()
@@ -610,7 +618,7 @@ void Evaluation::RunEvaluation()
 			{
 				const RenderTarget &tg = evaluation.mTarget;
 				tg.bindAsTarget();
-				unsigned int program = mProgramPerNodeType[evaluation.mNodeType].mGLSLProgram;
+				unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
 
 				glUseProgram(program);
 
@@ -653,7 +661,7 @@ void Evaluation::RunEvaluation()
 				evaluationInfo.targetIndex = int(index);
 				memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
 				evaluationInfo.forcedDirty = 0;
-				mProgramPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
+				mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
 			}
 			break;
 		}
@@ -790,7 +798,7 @@ void Evaluation::Bake(const char *szFilename, size_t target, int width, int heig
 		TransientTarget* transientTarget = GetTransientTarget(width, height, evaluationUseCount[nodeIndex]);
 		evaluationTransientTargets[nodeIndex] = transientTarget;
 		transientTarget->mTarget.bindAsTarget();
-		unsigned int program = mProgramPerNodeType[evaluation.mNodeType].mGLSLProgram;
+		unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
 		glUseProgram(program);
 		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)

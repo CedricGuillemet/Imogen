@@ -4,6 +4,7 @@
 #include <map>
 #include "Library.h"
 #include "libtcc/libtcc.h"
+#include "Imogen.h"
 
 typedef unsigned int TextureID;
 
@@ -50,13 +51,10 @@ struct Evaluation
 	void Init();
 	void Finish();
 
-	void SetEvaluators(const std::vector<std::string>& GLSLfilenames, const std::vector<std::string>& Cfilenames);
-	std::string GetEvaluationGLSL(const std::string& filename);
+	void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
+	std::string GetEvaluator(const std::string& filename);
 
-	std::string GetEvaluationC(const std::string& filename);
-
-	size_t AddEvaluationGLSL(size_t nodeType, const std::string& nodeName);
-	size_t AddEvaluationC(size_t nodeType, const std::string& nodeName);
+	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
 
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
@@ -93,23 +91,20 @@ protected:
 		void *mMem;
 	};
 
-	std::vector<Evaluator> mProgramPerNodeType;
-	struct Shader
-	{
-		std::string mShaderText;
-		unsigned int mProgram;
-		int mNodeType;
-	};
-	std::map<std::string, Shader> mGLSLs;
+	std::vector<Evaluator> mEvaluatorPerNodeType;
 
-	struct CProgram
+	struct EvaluatorScript
 	{
-		std::string mCText;
+		EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
+		EvaluatorScript(const std::string & text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
+		std::string mText;
+		unsigned int mProgram;
 		int(*mCFunction)(void *parameters, void *evaluationInfo);
 		void *mMem;
 		int mNodeType;
 	};
-	std::map<std::string, CProgram> mCPrograms;
+
+	std::map<std::string, EvaluatorScript> mEvaluatorScripts;
 
 	struct Input
 	{

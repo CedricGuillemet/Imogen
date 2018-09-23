@@ -91,17 +91,17 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 	if (currentShaderIndex == -1)
 	{
 		currentShaderIndex = 0;
-		editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+		editor.SetText(evaluation.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
 	}
 	auto cpos = editor.GetCursorPosition();
 	ImGui::BeginChild(13, ImVec2(250, 800));
-	for (size_t i = 0; i < shaderFileNames.size(); i++)
+	for (size_t i = 0; i < mEvaluatorFiles.size(); i++)
 	{
 		bool selected = i == currentShaderIndex;
-		if (ImGui::Selectable(shaderFileNames[i].c_str(), &selected))
+		if (ImGui::Selectable(mEvaluatorFiles[i].mFilename.c_str(), &selected))
 		{
 			currentShaderIndex = int(i);
-			editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+			editor.SetText(evaluation.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
 			editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates());
 		}
 	}
@@ -113,13 +113,12 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 	{
 		auto textToSave = editor.GetText();
 
-		std::ofstream t("GLSL/" + shaderFileNames[currentShaderIndex], std::ofstream::out);
+		std::ofstream t(mEvaluatorFiles[currentShaderIndex].mDirectory + mEvaluatorFiles[currentShaderIndex].mFilename, std::ofstream::out);
 		t << textToSave;
 		t.close();
 
 		// TODO
-		//evaluation.SetEvaluationGLSL(shaderFileNames);
-		evaluation.SetEvaluators(shaderFileNames, cFileNames);
+		evaluation.SetEvaluators(mEvaluatorFiles);
 		nodeGraphDelegate.InvalidateParameters();
 	}
 
@@ -439,17 +438,17 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 	ValidateMaterial(library, nodeGraphDelegate, selectedMaterial);
 }
 
-void Imogen::DiscoverNodes(const char *dir, std::vector<std::string>& files)
+void Imogen::DiscoverNodes(const char *wildcard, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)
 {
 #ifdef WIN32
 	HANDLE hFind;
 	WIN32_FIND_DATA FindFileData;
 
-	if ((hFind = FindFirstFile(dir, &FindFileData)) != INVALID_HANDLE_VALUE)
+	if ((hFind = FindFirstFile(wildcard, &FindFileData)) != INVALID_HANDLE_VALUE)
 	{
 		do
 		{
-			files.push_back(std::string(FindFileData.cFileName));
+			files.push_back({ directory, FindFileData.cFileName, evaluatorType });
 		} 
 		while (FindNextFile(hFind, &FindFileData));
 		FindClose(hFind);
@@ -462,8 +461,8 @@ Imogen::Imogen()
 	ImGui::InitDock();
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 
-	DiscoverNodes("GLSL/*.glsl", shaderFileNames);
-	DiscoverNodes("C/*.c", cFileNames);
+	DiscoverNodes("GLSL/*.glsl", "GLSL/", EVALUATOR_GLSL,  mEvaluatorFiles);
+	DiscoverNodes("C/*.c", "C/", EVALUATOR_C, mEvaluatorFiles);
 }
 
 Imogen::~Imogen()

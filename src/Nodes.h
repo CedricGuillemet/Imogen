@@ -38,7 +38,6 @@ struct NodeGraphDelegate
 	struct MetaNode
 	{
 		const char *mName;
-		int mEvaluationMode; //glsl, c
 		uint32_t mHeaderColor;
 		int mCategory;
 		Con mInputs[MaxCon];

@@ -1,13 +1,31 @@
-// Creating a node graph editor for ImGui
-// Quick demo, not production code! This is more of a demo of how to use ImGui to create custom stuff.
-// Better version by @daniel_collin here https://gist.github.com/emoon/b8ff4b4ce4f1b43e79f2
-// See https://github.com/ocornut/imgui/issues/306
-// v0.03: fixed grid offset issue, inverted sign of 'scrolling'
-// Animated gif: https://cloud.githubusercontent.com/assets/8225057/9472357/c0263c04-4b4c-11e5-9fdf-2cd4f33f6582.gif
+// https://github.com/CedricGuillemet/Imogen
+//
+// The MIT License(MIT)
+// 
+// Copyright(c) 2018 Cedric Guillemet
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
 
 #include "imgui.h"
 #include "imgui_internal.h"
-#include <math.h> // fmodf
+#include <math.h>
 #include "Nodes.h"
 #include <vector>
 #include <algorithm>
@@ -504,12 +522,6 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				NodeGraphUpdateEvaluationOrder(delegate);
 				node_selected = -1;
 			}
-			/*
-			if (ImGui::MenuItem("Set as target", NULL, false))
-			{
-				delegate->mBakeTargetIndex = node_selected;
-			}
-			*/
 		}
 		else
 		{

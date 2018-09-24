@@ -1,3 +1,28 @@
+// https://github.com/CedricGuillemet/Imogen
+//
+// The MIT License(MIT)
+// 
+// Copyright(c) 2018 Cedric Guillemet
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 #include "Evaluation.h"
 #include <vector>
 #include <algorithm>
@@ -227,88 +252,7 @@ static void LoseTransientTarget(TransientTarget *transientTarget)
 	if (transientTarget->mUseCount <= 0)
 		mFreeTargets.push_back(transientTarget);
 }
-/*
-void Evaluation::Bake(const char *szFilename, size_t target, int width, int height)
-{
-	if (mEvaluationOrderList.empty())
-		return;
 
-	if (target < 0 || target >= (int)mEvaluations.size())
-		return;
-
-	mTransientTextureMaxCount = 0;
-	std::vector<int> evaluationUseCount(mEvaluationOrderList.size(), 0); // use count of texture by others
-	std::vector<TransientTarget*> evaluationTransientTargets(mEvaluationOrderList.size(), NULL);
-	for (auto& evaluation : mEvaluations)
-	{
-		for (int targetIndex : evaluation.mInput.mInputs)
-			if (targetIndex != -1)
-				evaluationUseCount[targetIndex]++;
-	}
-	if (evaluationUseCount[target] < 1)
-		evaluationUseCount[target] = 1;
-
-	// todo : revert pass. dec use count for parent nodes whose children have 0 use count
-
-	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
-	{
-		size_t nodeIndex = mEvaluationOrderList[i];
-		if (!evaluationUseCount[nodeIndex])
-			continue;
-		const EvaluationStage& evaluation = mEvaluations[nodeIndex];
-
-		const Input& input = evaluation.mInput;
-
-		TransientTarget* transientTarget = GetTransientTarget(width, height, evaluationUseCount[nodeIndex]);
-		evaluationTransientTargets[nodeIndex] = transientTarget;
-		transientTarget->mTarget.bindAsTarget();
-		unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
-		glUseProgram(program);
-		int samplerIndex = 0;
-		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
-		{
-			unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
-			if (parameter == 0xFFFFFFFF)
-				continue;
-			glUniform1i(parameter, samplerIndex);
-			glActiveTexture(GL_TEXTURE0 + samplerIndex);
-			samplerIndex++;
-			int targetIndex = input.mInputs[inputIndex];
-			if (targetIndex < 0)
-			{
-				glBindTexture(GL_TEXTURE_2D, 0);
-				continue;
-			}
-
-			glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets[targetIndex]->mTarget.mGLTexID);
-			LoseTransientTarget(evaluationTransientTargets[targetIndex]);
-			const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
-			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
-		}
-		mFSQuad.Render();
-		if (nodeIndex == target)
-			break;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glUseProgram(0);
-
-	// save
-	unsigned char *imgBits = new unsigned char[width * height * 4];
-	glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets[target]->mTarget.mGLTexID);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, imgBits);
-	stbi_write_png(szFilename, width, height, 4, imgBits, width * 4);
-	delete[] imgBits;
-	
-	// free transient textures
-	for (auto transientTarget : mFreeTargets)
-	{
-		assert(transientTarget->mUseCount <= 0);
-		transientTarget->mTarget.destroy();
-	}
-
-	Log("Texture %s saved. Using %d textures.\n", szFilename, mTransientTextureMaxCount);
-}
-*/
 void Evaluation::Clear()
 {
 	for (auto& ev : mEvaluations)

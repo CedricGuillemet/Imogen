@@ -61,6 +61,7 @@ struct Evaluation
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
+	void ForceEvaluation(size_t target);
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
@@ -129,6 +130,7 @@ protected:
 		Input mInput;
 		std::vector<InputSampler> mInputSamplers;
 		bool mbDirty;
+		bool mbForceEval;
 		int mEvaluationType; // 0 = GLSL. 1 = CPU C
 		void Clear();
 	};

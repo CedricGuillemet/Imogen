@@ -32,6 +32,7 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 		EvaluationStage evaluation;
 		evaluation.mTarget.initBuffer(256, 256, false);
 		evaluation.mbDirty = true;
+		evaluation.mbForceEval = false;
 		evaluation.mNodeType = nodeType;
 		evaluation.mParametersBuffer = 0;
 		evaluation.mEvaluationType = 0;
@@ -47,6 +48,7 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 		EvaluationStage evaluation;
 		//evaluation.mTarget.initBuffer(256, 256, false);
 		evaluation.mbDirty = true;
+		evaluation.mbForceEval = false;
 		evaluation.mNodeType = nodeType;
 		evaluation.mParametersBuffer = 0;
 		evaluation.mEvaluationType = 1;
@@ -96,6 +98,13 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 	SetTargetDirty(target);
 }
 
+void Evaluation::ForceEvaluation(size_t target)
+{
+	EvaluationStage& stage = mEvaluations[target];
+	stage.mbForceEval = true;
+	SetTargetDirty(target);
+}
+
 void Evaluation::RunEvaluation()
 {
 	if (mEvaluationOrderList.empty())
@@ -127,6 +136,7 @@ void Evaluation::RunEvaluation()
 		if (evaluation.mbDirty)
 		{
 			evaluation.mbDirty = false;
+			evaluation.mbForceEval = false;
 			mDirtyCount--;
 		}
 	}

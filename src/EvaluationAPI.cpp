@@ -315,19 +315,19 @@ int Evaluation::WriteImage(char *filename, Image *image, int format, int quality
 	switch (format)
 	{
 	case 0:
-		if (stbi_write_jpg(filename, image->width, image->height, image->components, image->bits, quality))
+		if (!stbi_write_jpg(filename, image->width, image->height, image->components, image->bits, quality))
 			return EVAL_ERR;
 		break;
 	case 1:
-		if (stbi_write_png(filename, image->width, image->height, image->components, image->bits, image->width * image->components))
+		if (!stbi_write_png(filename, image->width, image->height, image->components, image->bits, image->width * image->components))
 			return EVAL_ERR;
 		break;
 	case 2:
-		if (stbi_write_tga(filename, image->width, image->height, image->components, image->bits))
+		if (!stbi_write_tga(filename, image->width, image->height, image->components, image->bits))
 			return EVAL_ERR;
 		break;
 	case 3:
-		if (stbi_write_bmp(filename, image->width, image->height, image->components, image->bits))
+		if (!stbi_write_bmp(filename, image->width, image->height, image->components, image->bits))
 			return EVAL_ERR;
 		break;
 	case 4:
@@ -601,7 +601,7 @@ void Evaluation::EvaluateC(const EvaluationStage& evaluation, size_t index)
 	EvaluationInfo evaluationInfo;
 	evaluationInfo.targetIndex = int(index);
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	evaluationInfo.forcedDirty = 0;
+	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
 	mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
 }
 

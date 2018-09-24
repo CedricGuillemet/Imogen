@@ -51,6 +51,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Structure,
 		Con_FilenameRead,
 		Con_FilenameWrite,
+		Con_ForceEvaluate,
 		Con_Any,
 	};
 
@@ -337,7 +338,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageWrite", hcFilter, 6
 					,{ { "", (int)Con_Float4 } }
 				,{  }
-				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int } }
+				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int },{ "Export", (int)Con_ForceEvaluate } }
 				}
 			};
 
@@ -354,6 +355,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		bool dirty = false;
+		bool forceEval = false;
 		bool samplerDirty = false;
 		ImogenNode& node = mNodes[index];
 		const MetaNode& currentMeta = metaNodes[node.mType];
@@ -482,6 +484,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_Enum:
 				dirty |= ImGui::Combo(param->mName, (int*)paramBuffer, param->mEnumList);
 				break;
+			case Con_ForceEvaluate:
+				if (ImGui::Button(param->mName))
+				{
+					dirty = true;
+					forceEval = true;
+				}
+				break;
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
@@ -489,6 +498,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		//ImGui::End();
 		if (dirty)
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+		if (forceEval)
+			mEvaluation.ForceEvaluation(node.mEvaluationTarget);
+
 	}
 
 	void InvalidateParameters()
@@ -585,6 +597,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		case Con_FilenameRead:
 		case Con_FilenameWrite:
 			res += 1024;
+			break;
+		case Con_ForceEvaluate:
+			res += 0;
 			break;
 		}
 		return res;

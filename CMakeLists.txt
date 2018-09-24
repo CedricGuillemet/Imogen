@@ -21,6 +21,7 @@ file(GLOB_RECURSE EXT_FILES
 	${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
 	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
+	${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
 )
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -29,6 +30,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/gl3w
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
 )
 
 link_directories(

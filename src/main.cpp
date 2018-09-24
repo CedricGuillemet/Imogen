@@ -27,16 +27,13 @@
 #include "imgui_internal.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
-#include <stdio.h>
 #include <SDL.h>
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
-#include <math.h>
-#include <vector>
+#include <GL/gl3w.h>
 #include "Nodes.h"
 #include "NodesDelegate.h"
 #include "Evaluation.h"
 #include "Imogen.h"
-#include "libtcc/libtcc.h"
+#include "TaskScheduler.h"
 
 int Log(const char *szFormat, ...)
 {
@@ -63,6 +60,9 @@ Imogen imogen;
 
 int main(int, char**)
 {
+	enki::TaskScheduler g_TS;
+	g_TS.Initialize();
+
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{
@@ -181,5 +181,6 @@ int main(int, char**)
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 
+	g_TS.WaitforAllAndShutdown();
 	return 0;
 }

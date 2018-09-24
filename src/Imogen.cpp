@@ -237,7 +237,7 @@ std::string GetName(const std::string &name)
 	return name;
 }
 
-template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index)
+template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, Evaluation& evaluation)
 {
 	bool ret = false;
 	if (!ImGui::TreeNodeEx(szName, ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
@@ -276,7 +276,9 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 		}
 		else if (currentGroupIsSkipped)
 			continue;
-
+		ImGui::BeginGroup();
+		ImGui::Image((ImTextureID)evaluation.GetTexture("Stock/thumbnail-icon.png"), ImVec2(64, 64));
+		ImGui::SameLine();
 		ImGui::TreeNodeEx(GetName(res[indexInRes].mName).c_str(), node_flags);
 
 		if (ImGui::IsItemClicked())
@@ -284,6 +286,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 			selection = (index << 16) + indexInRes;
 			ret = true;
 		}
+		ImGui::EndGroup();
 	}
 
 	if (currentGroup.length() && !currentGroupIsSkipped)
@@ -364,7 +367,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		NodeGraphClear();
 	}
 	ImGui::BeginChild("TV", ImVec2(250, -1));
-	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0))
+	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0, evaluation))
 	{
 		nodeGraphDelegate.mSelectedNodeIndex = -1;
 		// save previous

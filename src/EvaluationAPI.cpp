@@ -318,15 +318,10 @@ int inputIndices[8];
 int forcedDirty;
 } Evaluation;
 */
-enum EvaluationStatus
-{
-	EVAL_OK,
-	EVAL_ERR,
-};
 
 extern Evaluation gEvaluation;
 
-int Evaluation::ReadImage(char *filename, Image *image)
+int Evaluation::ReadImage(const char *filename, Image *image)
 {
 	unsigned char *data = stbi_load(filename, &image->width, &image->height, &image->components, 0);
 	if (!data)
@@ -335,7 +330,7 @@ int Evaluation::ReadImage(char *filename, Image *image)
 	return EVAL_OK;
 }
 
-int Evaluation::WriteImage(char *filename, Image *image, int format, int quality)
+int Evaluation::WriteImage(const char *filename, Image *image, int format, int quality)
 {
 	switch (format)
 	{
@@ -657,4 +652,35 @@ void Evaluation::FinishEvaluation()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
+}
+
+unsigned int Evaluation::GetTexture(const std::string& filename)
+{
+	auto iter = mSynchronousTextureCache.find(filename);
+	if (iter != mSynchronousTextureCache.end())
+		return iter->second;
+
+	Image image;
+	unsigned int textureId = 0;
+	if (ReadImage(filename.c_str(), &image) == EVAL_OK)
+	{
+		glGenTextures(1, &textureId);
+		glBindTexture(GL_TEXTURE_2D, textureId);
+		switch (image.components)
+		{
+		case 3:
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.bits);
+			break;
+		case 4:
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits);
+			break;
+		default:
+			Log("Texture cache : unsupported component format.\n");
+			return EVAL_ERR;
+		}
+		TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+	}
+
+	mSynchronousTextureCache[filename] = textureId;
+	return textureId;
 }

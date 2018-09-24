@@ -56,6 +56,7 @@ struct Imogen
 
 	std::vector<EvaluatorFile> mEvaluatorFiles;
 	int GetCurrentMaterialIndex();
+
 protected:
 	void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
 };

@@ -34,6 +34,11 @@
 extern int Log(const char *szFormat, ...);
 
 typedef unsigned int TextureID;
+enum EvaluationStatus
+{
+	EVAL_OK,
+	EVAL_ERR,
+};
 
 typedef struct Image_t
 {
@@ -97,16 +102,20 @@ struct Evaluation
 	void Clear();
 
 	// API
-	static int ReadImage(char *filename, Image *image);
-	static int WriteImage(char *filename, Image *image, int format, int quality);
+	static int ReadImage(const char *filename, Image *image);
+	static int WriteImage(const char *filename, Image *image, int format, int quality);
 	static int GetEvaluationImage(int target, Image *image);
 	static int SetEvaluationImage(int target, Image *image);
 	static int SetThumbnailImage(Image *image);
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
 
+	// synchronous texture cache
+	// use for simple textures(stock) or to replace with a more efficient one
+	unsigned int GetTexture(const std::string& filename);
 protected:
 	void APIInit();
+	std::map<std::string, unsigned int> mSynchronousTextureCache;
 	
 
 	unsigned int equiRectTexture;

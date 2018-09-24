@@ -261,3 +261,4 @@ void Evaluation::Clear()
 	mEvaluations.clear();
 	mEvaluationOrderList.clear();
 }
+

@@ -60,6 +60,7 @@ struct Material
 	std::string mComment;
 	std::vector<MaterialNode> mMaterialNodes;
 	std::vector<MaterialConnection> mMaterialConnections;
+	std::vector<uint8_t> mThumbnail;
 };
 struct Library
 {

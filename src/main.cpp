@@ -58,6 +58,8 @@ int Log(const char *szFormat, ...)
 }
 
 Evaluation gEvaluation;
+Library library;
+Imogen imogen;
 
 int main(int, char**)
 {
@@ -122,11 +124,11 @@ int main(int, char**)
 	ImGui::StyleColorsDark();
 
 	static const char* libraryFilename = "library.dat";
-	Library library;
+	
 	LoadLib(&library, libraryFilename);
 	
+	imogen.Init();
 	
-	Imogen imogen;
 	gEvaluation.Init();
 	gEvaluation.SetEvaluators(imogen.mEvaluatorFiles);
 
@@ -168,6 +170,7 @@ int main(int, char**)
 	
 	SaveLib(&library, libraryFilename);
 	gEvaluation.Finish();
+	imogen.Finish();
 
 	// Cleanup
 	ImGui_ImplOpenGL3_Shutdown();

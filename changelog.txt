@@ -5,6 +5,12 @@ New:
 - C CPU nodes. edit and run C code on the fly
 - image reader/writer with jpg, png, tga, bmp, partial HDR support
 
+Changed:
+
+WIP:
+- fix separate scale X and Y values
+- thumbnail: node, library, display
+
 -------------------------------------------------------------------------------
 Imogen 0.1.1 - codename Pegasus Seiya
 

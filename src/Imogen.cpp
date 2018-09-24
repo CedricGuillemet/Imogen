@@ -110,9 +110,14 @@ void DebugLogText(const char *szText)
 	imguiLog.AddLog(szText);
 }
 
+static int currentShaderIndex = -1;
+int Imogen::GetCurrentMaterialIndex()
+{
+	return currentShaderIndex;
+}
 void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
-	static int currentShaderIndex = -1;
+	
 	if (currentShaderIndex == -1)
 	{
 		currentShaderIndex = 0;
@@ -483,14 +488,23 @@ void Imogen::DiscoverNodes(const char *wildcard, const char *directory, EVALUATO
 
 Imogen::Imogen()
 {
-	ImGui::InitDock();
-	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-
-	DiscoverNodes("GLSL/*.glsl", "GLSL/", EVALUATOR_GLSL,  mEvaluatorFiles);
-	DiscoverNodes("C/*.c", "C/", EVALUATOR_C, mEvaluatorFiles);
 }
 
 Imogen::~Imogen()
+{
+
+}
+
+void Imogen::Init()
+{
+	ImGui::InitDock();
+	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
+
+	DiscoverNodes("GLSL/*.glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+	DiscoverNodes("C/*.c", "C/", EVALUATOR_C, mEvaluatorFiles);
+}
+
+void Imogen::Finish()
 {
 	ImGui::ShutdownDock();
 }

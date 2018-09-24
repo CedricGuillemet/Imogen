@@ -29,6 +29,7 @@ int FreeImage(Image *image);
 
 // Image resize
 // Image thumbnail
+int SetThumbnailImage(Image *image);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

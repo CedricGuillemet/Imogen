@@ -413,6 +413,21 @@ int Evaluation::FreeImage(Image *image)
 	return EVAL_OK;
 }
 
+int Evaluation::SetThumbnailImage(Image *image)
+{
+	int outlen;
+	unsigned char *bits = stbi_write_png_to_mem((unsigned char*)image->bits, image->width * image->components, image->width, image->height, image->components, &outlen);
+	if (!bits)
+		return EVAL_ERR;
+	std::vector<unsigned char> pngImage(outlen);
+	memcpy(pngImage.data(), bits, outlen);
+
+	extern Library library;
+	extern Imogen imogen;
+	library.mMaterials[imogen.GetCurrentMaterialIndex()].mThumbnail = pngImage;
+	return EVAL_OK;
+}
+
 static const EValuationFunction evaluationFunctions[] = {
 	{ "Log", Log },
 	{ "ReadImage", Evaluation::ReadImage },
@@ -421,6 +436,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "SetEvaluationImage", Evaluation::SetEvaluationImage },
 	{ "AllocateImage", Evaluation::AllocateImage },
 	{ "FreeImage", Evaluation::FreeImage },
+	{ "SetThumbnailImage", Evaluation::SetThumbnailImage },
 };
 
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };

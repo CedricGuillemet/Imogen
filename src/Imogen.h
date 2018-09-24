@@ -47,12 +47,15 @@ struct Imogen
 {
 	Imogen();
 	~Imogen();
+
+	void Init();
+	void Finish();
 	
 	void Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
 	void DiscoverNodes(const char *wildcard, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
 	std::vector<EvaluatorFile> mEvaluatorFiles;
-
+	int GetCurrentMaterialIndex();
 protected:
 	void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
 };

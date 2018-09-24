@@ -101,6 +101,7 @@ struct Evaluation
 	static int WriteImage(char *filename, Image *image, int format, int quality);
 	static int GetEvaluationImage(int target, Image *image);
 	static int SetEvaluationImage(int target, Image *image);
+	static int SetThumbnailImage(Image *image);
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
 

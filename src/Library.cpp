@@ -29,6 +29,7 @@ enum : uint32_t
 {
 	v_initial,
 	v_materialComment,
+	v_thumbnail,
 	v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -128,6 +129,7 @@ template<bool doWrite> struct Serialize
 		ADD(v_materialComment, material->mComment);
 		ADD(v_initial, material->mMaterialNodes);
 		ADD(v_initial, material->mMaterialConnections);
+		ADD(v_thumbnail, material->mThumbnail);
 	}
 	bool Ser(Library *library)
 	{

@@ -165,9 +165,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
 
 
-		metaNodeCount = 25;
+		metaNodeCount = 26;
 
-		static const MetaNode metaNodes[25] = {
+		static const MetaNode metaNodes[26] = {
 
 			{
 				"Circle", hcGenerator, 1
@@ -180,7 +180,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Transform", hcTransform, 0
 				,{ { "", (int)Con_Float4 } }
 			,{ { "", (int)Con_Float4 } }
-			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f, true },{ "Rotation", (int)Con_Angle },{ "Scale", (int)Con_Float } }
+			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f, true },{ "Rotation", (int)Con_Angle },{ "Scale", (int)Con_Float2 } }
 			}
 			,
 			{
@@ -364,6 +364,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{ { "", (int)Con_Float4 } }
 				,{  }
 				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int },{ "Export", (int)Con_ForceEvaluate } }
+				}
+
+				,
+				{
+					"Thumbnail", hcFilter, 6
+					,{ { "", (int)Con_Float4 } }
+				,{}
+				,{ { "Make", (int)Con_ForceEvaluate } }
 				}
 			};
 

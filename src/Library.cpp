@@ -153,9 +153,21 @@ typedef Serialize<false> SerializeRead;
 void LoadLib(Library *library, const char *szFilename)
 {
 	SerializeRead(szFilename).Ser(library);
+
+	for (auto& material : library->mMaterials)
+	{
+		material.mThumbnailTextureId = 0;
+		material.mRuntimeUniqueId = GetRuntimeId();
+	}
 }
 
 void SaveLib(Library *library, const char *szFilename)
 {
 	SerializeWrite(szFilename).Ser(library);
+}
+
+unsigned int GetRuntimeId()
+{
+	static unsigned int runtimeId = 0;
+	return ++runtimeId;
 }

@@ -4,12 +4,10 @@ Imogen 0.2 - codename Dragon Shiryu
 New:
 - C CPU nodes. edit and run C code on the fly
 - image reader/writer with jpg, png, tga, bmp, partial HDR support
+- thumbnail node: node, library, display
 
 Changed:
-
-WIP:
-- fix separate scale X and Y values
-- thumbnail: node, library, display
+- Separate scale X and Y values
 
 -------------------------------------------------------------------------------
 Imogen 0.1.1 - codename Pegasus Seiya

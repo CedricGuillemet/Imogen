@@ -37,6 +37,11 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
+#include "TaskScheduler.h"
+#include "stb_image.h"
+
+extern enki::TaskScheduler g_TS;
+
 struct ImguiAppLog
 {
 	ImguiAppLog()
@@ -110,14 +115,10 @@ void DebugLogText(const char *szText)
 	imguiLog.AddLog(szText);
 }
 
-static int currentShaderIndex = -1;
-int Imogen::GetCurrentMaterialIndex()
-{
-	return currentShaderIndex;
-}
 void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
-	
+	static int currentShaderIndex = -1;
+
 	if (currentShaderIndex == -1)
 	{
 		currentShaderIndex = 0;
@@ -237,6 +238,62 @@ std::string GetName(const std::string &name)
 	return name;
 }
 
+struct PinnedTaskUploadImage : enki::IPinnedTask
+{
+	PinnedTaskUploadImage(Image image, std::pair<size_t, unsigned int> identifier)
+		: enki::IPinnedTask(0) // set pinned thread to 0
+		, mImage(image)
+		, mIdentifier(identifier)
+	{
+	}
+	virtual void Execute()
+	{
+		unsigned int textureId = Evaluation::UploadImage(&mImage);
+		if (library.mMaterials.size() > mIdentifier.first && library.mMaterials[mIdentifier.first].mRuntimeUniqueId == mIdentifier.second)
+		{
+			library.mMaterials[mIdentifier.first].mThumbnailTextureId = textureId;
+		}
+		else
+		{
+			// find identifier
+			for (auto& material : library.mMaterials)
+			{
+				if (material.mRuntimeUniqueId == mIdentifier.second)
+				{
+					material.mThumbnailTextureId = textureId;
+					break;
+				}
+			}
+		}
+
+	}
+	Image mImage;
+	std::pair<size_t, unsigned int> mIdentifier;
+};
+
+struct DecodeThumbnailTaskSet : enki::ITaskSet
+{
+	DecodeThumbnailTaskSet(std::vector<uint8_t> *src, std::pair<size_t, unsigned int> identifier) : enki::ITaskSet(), mIdentifier(identifier), mSrc(src)
+	{
+	}
+	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+	{
+		Image image;
+		unsigned char *data = stbi_load_from_memory(mSrc->data(), mSrc->size(), &image.width, &image.height, &image.components, 0);
+		if (data)
+		{
+			image.bits = data;
+			PinnedTaskUploadImage uploadTexTask(image, mIdentifier);
+			g_TS.AddPinnedTask(&uploadTexTask);
+			g_TS.WaitforTask(&uploadTexTask);
+			Evaluation::FreeImage(&image);
+		}
+		delete this;
+	}
+	std::pair<size_t, unsigned int> mIdentifier;
+	std::vector<uint8_t> *mSrc;
+};
+
 template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, Evaluation& evaluation)
 {
 	bool ret = false;
@@ -248,6 +305,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
 	std::vector<SortedResource<T, Ty>> sortedResources;
 	SortedResource<T, Ty>::ComputeSortedResources(res, sortedResources);
+	unsigned int defaultTextureId = evaluation.GetTexture("Stock/thumbnail-icon.png");
 
 	for (const auto& sortedRes : sortedResources) //unsigned int i = 0; i < res.size(); i++)
 	{
@@ -277,11 +335,19 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 		else if (currentGroupIsSkipped)
 			continue;
 		ImGui::BeginGroup();
-		ImGui::Image((ImTextureID)evaluation.GetTexture("Stock/thumbnail-icon.png"), ImVec2(64, 64));
-		ImGui::SameLine();
-		ImGui::TreeNodeEx(GetName(res[indexInRes].mName).c_str(), node_flags);
 
-		if (ImGui::IsItemClicked())
+		T& resource = res[indexInRes];
+		if (!resource.mThumbnailTextureId)
+		{
+			resource.mThumbnailTextureId = defaultTextureId;
+			g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&resource.mThumbnail, std::make_pair(indexInRes,resource.mRuntimeUniqueId)));
+		}
+		ImGui::Image(ImTextureID(resource.mThumbnailTextureId), ImVec2(64, 64));
+		bool clicked = ImGui::IsItemClicked();
+		ImGui::SameLine();
+		ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
+		clicked |= ImGui::IsItemClicked();
+		if (clicked)
 		{
 			selection = (index << 16) + indexInRes;
 			ret = true;
@@ -316,7 +382,10 @@ inline void GuiString(const char*label, std::string* str, int stringId, bool mul
 }
 
 static int selectedMaterial = -1;
-
+int Imogen::GetCurrentMaterialIndex()
+{
+	return selectedMaterial;
+}
 void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, int materialIndex)
 {
 	if (materialIndex == -1)
@@ -355,7 +424,11 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	if (ImGui::Button("New Material"))
 	{
 		library.mMaterials.push_back(Material());
-		library.mMaterials.back().mName = "New";
+		Material& back = library.mMaterials.back();
+		back.mName = "New";
+		back.mThumbnailTextureId = 0;
+		back.mRuntimeUniqueId = GetRuntimeId();
+		
 		if (previousSelection != -1)
 		{
 			ValidateMaterial(library, nodeGraphDelegate, previousSelection);

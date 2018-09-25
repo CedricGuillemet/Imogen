@@ -419,7 +419,11 @@ int Evaluation::SetThumbnailImage(Image *image)
 
 	extern Library library;
 	extern Imogen imogen;
-	library.mMaterials[imogen.GetCurrentMaterialIndex()].mThumbnail = pngImage;
+
+	int materialIndex = imogen.GetCurrentMaterialIndex();
+	Material & material = library.mMaterials[materialIndex];
+	material.mThumbnail = pngImage;
+	material.mThumbnailTextureId = 0;
 	return EVAL_OK;
 }
 
@@ -654,6 +658,27 @@ void Evaluation::FinishEvaluation()
 	glUseProgram(0);
 }
 
+unsigned int Evaluation::UploadImage(Image *image)
+{
+	unsigned int textureId;
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	switch (image->components)
+	{
+	case 3:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, GL_RGB, GL_UNSIGNED_BYTE, image->bits);
+		break;
+	case 4:
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->width, image->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->bits);
+		break;
+	default:
+		Log("Texture cache : unsupported component format.\n");
+		return EVAL_ERR;
+	}
+	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+	return textureId;
+}
+
 unsigned int Evaluation::GetTexture(const std::string& filename)
 {
 	auto iter = mSynchronousTextureCache.find(filename);
@@ -664,21 +689,7 @@ unsigned int Evaluation::GetTexture(const std::string& filename)
 	unsigned int textureId = 0;
 	if (ReadImage(filename.c_str(), &image) == EVAL_OK)
 	{
-		glGenTextures(1, &textureId);
-		glBindTexture(GL_TEXTURE_2D, textureId);
-		switch (image.components)
-		{
-		case 3:
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.bits);
-			break;
-		case 4:
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits);
-			break;
-		default:
-			Log("Texture cache : unsupported component format.\n");
-			return EVAL_ERR;
-		}
-		TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+		textureId = UploadImage(&image);
 	}
 
 	mSynchronousTextureCache[filename] = textureId;

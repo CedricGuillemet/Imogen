@@ -61,6 +61,10 @@ struct Material
 	std::vector<MaterialNode> mMaterialNodes;
 	std::vector<MaterialConnection> mMaterialConnections;
 	std::vector<uint8_t> mThumbnail;
+
+	//run time
+	unsigned int mThumbnailTextureId;
+	unsigned int mRuntimeUniqueId;
 };
 struct Library
 {
@@ -69,3 +73,6 @@ struct Library
 
 void LoadLib(Library *library, const char *szFilename);
 void SaveLib(Library *library, const char *szFilename);
+
+unsigned int GetRuntimeId();
+extern Library library;

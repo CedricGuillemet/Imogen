@@ -109,6 +109,7 @@ struct Evaluation
 	static int SetThumbnailImage(Image *image);
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
+	static unsigned int UploadImage(Image *image);
 
 	// synchronous texture cache
 	// use for simple textures(stock) or to replace with a more efficient one

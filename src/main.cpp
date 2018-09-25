@@ -57,10 +57,10 @@ int Log(const char *szFormat, ...)
 Evaluation gEvaluation;
 Library library;
 Imogen imogen;
+enki::TaskScheduler g_TS;
 
 int main(int, char**)
 {
-	enki::TaskScheduler g_TS;
 	g_TS.Initialize();
 
 	// Setup SDL
@@ -165,6 +165,7 @@ int main(int, char**)
 		ImGui::Render();
 		SDL_GL_MakeCurrent(window, gl_context);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		g_TS.RunPinnedTasks();
 		SDL_GL_SwapWindow(window);
 	}
 	

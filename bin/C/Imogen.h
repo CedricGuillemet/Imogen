@@ -31,5 +31,9 @@ int FreeImage(Image *image);
 // Image thumbnail
 int SetThumbnailImage(Image *image);
 
+// force evaluation of a target with a specified size
+// no guarantee that the resulting Image will have that size.
+void Evaluate(int target, int width, int height);
+
 #define EVAL_OK 0
 #define EVAL_ERR 1

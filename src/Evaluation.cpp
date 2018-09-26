@@ -148,7 +148,7 @@ void Evaluation::RunEvaluation()
 		switch (evaluation.mEvaluationType)
 		{
 		case 0: // GLSL
-			EvaluateGLSL(evaluation);
+			EvaluateGLSL(evaluation, evaluation.mTarget);
 			break;
 		case 1: // C
 			EvaluateC(evaluation, index);
@@ -223,14 +223,10 @@ void Evaluation::SetTargetDirty(size_t target)
 	}
 }
 
-struct TransientTarget
-{
-	RenderTarget mTarget;
-	int mUseCount;
-};
-std::vector<TransientTarget*> mFreeTargets;
-int mTransientTextureMaxCount;
-static TransientTarget* GetTransientTarget(int width, int height, int useCount)
+std::vector<Evaluation::TransientTarget*> Evaluation::mFreeTargets;
+int Evaluation::mTransientTextureMaxCount;
+
+Evaluation::TransientTarget* Evaluation::GetTransientTarget(int width, int height, int useCount)
 {
 	if (mFreeTargets.empty())
 	{
@@ -246,7 +242,7 @@ static TransientTarget* GetTransientTarget(int width, int height, int useCount)
 	return res;
 }
 
-static void LoseTransientTarget(TransientTarget *transientTarget)
+ void Evaluation::LoseTransientTarget(TransientTarget *transientTarget)
 {
 	transientTarget->mUseCount--;
 	if (transientTarget->mUseCount <= 0)

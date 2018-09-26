@@ -96,6 +96,7 @@ struct Evaluation
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
 	void RunEvaluation();
+	void RunEvaluation(int target, int width, int height);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
 	void SetTargetDirty(size_t target);
 
@@ -110,6 +111,7 @@ struct Evaluation
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
 	static unsigned int UploadImage(Image *image);
+	static void Evaluate(int target, int width, int height);
 
 	// synchronous texture cache
 	// use for simple textures(stock) or to replace with a more efficient one
@@ -174,7 +176,18 @@ protected:
 	std::vector<size_t> mEvaluationOrderList;
 
 	void BindGLSLParameters(EvaluationStage& stage);
-	void EvaluateGLSL(const EvaluationStage& evaluation);
+	void EvaluateGLSL(const EvaluationStage& evaluation, const RenderTarget &tg);
 	void EvaluateC(const EvaluationStage& evaluation, size_t index);
 	void FinishEvaluation();
+
+	// Transient textures
+	struct TransientTarget
+	{
+		RenderTarget mTarget;
+		int mUseCount;
+	};
+	static std::vector<TransientTarget*> mFreeTargets;
+	static int mTransientTextureMaxCount;
+	static TransientTarget* GetTransientTarget(int width, int height, int useCount);
+	static void LoseTransientTarget(TransientTarget *transientTarget);
 };

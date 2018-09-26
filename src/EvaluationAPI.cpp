@@ -427,6 +427,86 @@ int Evaluation::SetThumbnailImage(Image *image)
 	return EVAL_OK;
 }
 
+void Evaluation::Evaluate(int target, int width, int height)
+{
+	gEvaluation.RunEvaluation(target, width, height);
+}
+
+void Evaluation::RunEvaluation(int target, int width, int height)
+{
+	if (mEvaluationOrderList.empty())
+		return;
+	if (!mDirtyCount)
+		return;
+
+	mTransientTextureMaxCount = 0;
+	std::vector<int> evaluationUseCount(mEvaluationOrderList.size(), 0); // use count of texture by others
+	std::vector<TransientTarget*> evaluationTransientTargets(mEvaluationOrderList.size(), NULL);
+	for (auto& evaluation : mEvaluations)
+	{
+		for (int targetIndex : evaluation.mInput.mInputs)
+			if (targetIndex != -1)
+				evaluationUseCount[targetIndex]++;
+	}
+	if (evaluationUseCount[target] < 1)
+		evaluationUseCount[target] = 1;
+
+	// todo : revert pass. dec use count for parent nodes whose children have 0 use count
+
+	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
+	{
+		size_t nodeIndex = mEvaluationOrderList[i];
+		if (!evaluationUseCount[nodeIndex])
+			continue;
+		EvaluationStage& evaluation = mEvaluations[nodeIndex];
+		TransientTarget* transientTarget = GetTransientTarget(width, height, evaluationUseCount[nodeIndex]);
+		evaluationTransientTargets[nodeIndex] = transientTarget;
+		const Input& input = evaluation.mInput;
+
+		switch (evaluation.mEvaluationType)
+		{
+		case 0: // GLSL
+			if (nodeIndex == target)
+			{
+				evaluation.mTarget.initBuffer(width, height, false);
+				EvaluateGLSL(evaluation, evaluation.mTarget);
+			}
+			else
+			{
+				EvaluateGLSL(evaluation, transientTarget->mTarget);
+			}
+
+			for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+			{
+				int targetIndex = input.mInputs[inputIndex];
+				if (targetIndex >= 0)
+					LoseTransientTarget(evaluationTransientTargets[targetIndex]);
+			}
+			break;
+		case 1: // C
+			EvaluateC(evaluation, nodeIndex);
+			break;
+		}
+
+
+		if (nodeIndex == target)
+			break;
+	}
+
+
+	for (auto& evaluation : mEvaluations)
+	{
+		if (evaluation.mbDirty)
+		{
+			evaluation.mbDirty = false;
+			evaluation.mbForceEval = false;
+			mDirtyCount--;
+		}
+	}
+
+	FinishEvaluation();
+}
+
 static const EValuationFunction evaluationFunctions[] = {
 	{ "Log", Log },
 	{ "ReadImage", Evaluation::ReadImage },
@@ -436,6 +516,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "AllocateImage", Evaluation::AllocateImage },
 	{ "FreeImage", Evaluation::FreeImage },
 	{ "SetThumbnailImage", Evaluation::SetThumbnailImage },
+	{ "Evaluate", Evaluation::Evaluate}
 };
 
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
@@ -593,10 +674,9 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	}
 }
 
-void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation)
+void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation, const RenderTarget &tg)
 {
 	const Input& input = evaluation.mInput;
-	const RenderTarget &tg = evaluation.mTarget;
 	tg.bindAsTarget();
 	unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
 

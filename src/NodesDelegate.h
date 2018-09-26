@@ -363,7 +363,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageWrite", hcFilter, 6
 					,{ { "", (int)Con_Float4 } }
 				,{  }
-				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int },{ "Export", (int)Con_ForceEvaluate } }
+				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int }
+						,{ "Width", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+						,{ "Height", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+						,{ "Export", (int)Con_ForceEvaluate } }
 				}
 
 				,

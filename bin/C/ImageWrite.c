@@ -6,6 +6,7 @@ typedef struct ImageWrite_t
 	char filename[1024];
 	int format;
 	int quality;
+	int width, height;
 }ImageWrite;
 
 int main(ImageWrite *param, Evaluation *evaluation)
@@ -24,6 +25,8 @@ int main(ImageWrite *param, Evaluation *evaluation)
 		
 	if (!evaluation->forcedDirty)
 		return EVAL_OK;
+	
+	Evaluate(evaluation->inputIndices[0], 256<<param->width, 256<<param->height);
 	
 	if (GetEvaluationImage(evaluation->inputIndices[0], &image) == EVAL_OK)
 	{

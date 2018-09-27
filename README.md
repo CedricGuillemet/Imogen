@@ -38,3 +38,16 @@ Currently implemented nodes
 - ...
 
 Check the project page for roadmap.
+
+-----------
+.This software uses the following projects:
+
+Dear ImGui - Omar Cornut https://github.com/ocornut/imgui
+ImGuiColorTextEdit - Balazs Jako https://github.com/BalazsJako/ImGuiColorTextEdit
+stb_image, stb_image_write - Sean T. Barett https://github.com/nothings/stb
+imguiDock - Bentley Blanks https://github.com/BentleyBlanks/imguiDock
+EnkiTS - Doug Binks https://github.com/dougbinks/enkiTS
+Tiny C Compiler - Fabrice Bellard https://bellard.org/tcc/
+SDL2 - https://www.libsdl.org/
+NativeFileDialog - Michael Labbe https://github.com/mlabbe/nativefiledialog
+gl3w - Slavomir Kaslev https://github.com/skaslev/gl3w

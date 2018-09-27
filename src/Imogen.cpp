@@ -477,12 +477,6 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		Material& material = library.mMaterials[selectedMaterial];
 		GuiString("Name", &material.mName, 100, false);
 		GuiString("Comment", &material.mComment, 101, true);
-		/* to add:
-		- bake dir
-		- bake size
-		- preview size
-		- load equirect ibl
-		*/
 		if (ImGui::Button("Delete Material"))
 		{
 			library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
@@ -505,6 +499,15 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Tab);
 		if (ImGui::BeginDock("Nodes"))
 		{
+			ImGui::PushItemWidth(60);
+			static int previewSize = 0;
+			ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
+			ImGui::SameLine();
+			if (ImGui::Button("Export"))
+			{
+
+			}
+			ImGui::PopItemWidth();
 			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);
 		}
 		ImGui::EndDock();

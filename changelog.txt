@@ -5,6 +5,7 @@ New:
 - C CPU nodes. edit and run C code on the fly
 - image reader/writer with jpg, png, tga, bmp, partial HDR support
 - thumbnail node: node, library, display
+- save and restore docking layout
 
 Changed:
 - Separate scale X and Y values in Transform node

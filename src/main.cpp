@@ -171,12 +171,13 @@ int main(int, char**)
 	
 	SaveLib(&library, libraryFilename);
 	gEvaluation.Finish();
-	imogen.Finish();
 
 	// Cleanup
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
+
+	imogen.Finish(); // keep dock being saved
 
 	SDL_GL_DeleteContext(gl_context);
 	SDL_DestroyWindow(window);

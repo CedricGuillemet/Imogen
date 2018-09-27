@@ -7,7 +7,7 @@ New:
 - thumbnail node: node, library, display
 
 Changed:
-- Separate scale X and Y values
+- Separate scale X and Y values in Transform node
 
 -------------------------------------------------------------------------------
 Imogen 0.1.1 - codename Pegasus Seiya

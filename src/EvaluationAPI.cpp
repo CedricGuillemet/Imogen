@@ -469,11 +469,11 @@ void Evaluation::RunEvaluation(int target, int width, int height)
 			if (nodeIndex == target)
 			{
 				evaluation.mTarget.initBuffer(width, height, false);
-				EvaluateGLSL(evaluation, evaluation.mTarget);
+				EvaluateGLSL(evaluation, evaluation.mTarget, &evaluationTransientTargets);
 			}
 			else
 			{
-				EvaluateGLSL(evaluation, transientTarget->mTarget);
+				EvaluateGLSL(evaluation, transientTarget->mTarget, &evaluationTransientTargets);
 			}
 
 			for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -504,6 +504,12 @@ void Evaluation::RunEvaluation(int target, int width, int height)
 		}
 	}
 
+	// free transient textures
+	for (auto transientTarget : mFreeTargets)
+	{
+		assert(transientTarget->mUseCount <= 0);
+		transientTarget->mTarget.destroy();
+	}
 	FinishEvaluation();
 }
 
@@ -674,7 +680,7 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	}
 }
 
-void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation, const RenderTarget &tg)
+void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation, const RenderTarget &tg, std::vector<TransientTarget*> *evaluationTransientTargets)
 {
 	const Input& input = evaluation.mInput;
 	tg.bindAsTarget();
@@ -700,7 +706,10 @@ void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation, const RenderTar
 			continue;
 		}
 		//assert(!mEvaluations[targetIndex].mbDirty);
-		glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
+		if (evaluationTransientTargets)
+			glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets->at(targetIndex)->mTarget.mGLTexID);
+		else
+			glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
 
 		const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
 		TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);

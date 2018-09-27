@@ -148,7 +148,7 @@ void Evaluation::RunEvaluation()
 		switch (evaluation.mEvaluationType)
 		{
 		case 0: // GLSL
-			EvaluateGLSL(evaluation, evaluation.mTarget);
+			EvaluateGLSL(evaluation, evaluation.mTarget, NULL);
 			break;
 		case 1: // C
 			EvaluateC(evaluation, index);

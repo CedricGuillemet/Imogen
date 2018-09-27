@@ -172,20 +172,21 @@ protected:
 		void Clear();
 	};
 
-	std::vector<EvaluationStage> mEvaluations;
-	std::vector<size_t> mEvaluationOrderList;
-
-	void BindGLSLParameters(EvaluationStage& stage);
-	void EvaluateGLSL(const EvaluationStage& evaluation, const RenderTarget &tg);
-	void EvaluateC(const EvaluationStage& evaluation, size_t index);
-	void FinishEvaluation();
-
 	// Transient textures
 	struct TransientTarget
 	{
 		RenderTarget mTarget;
 		int mUseCount;
 	};
+
+	std::vector<EvaluationStage> mEvaluations;
+	std::vector<size_t> mEvaluationOrderList;
+
+	void BindGLSLParameters(EvaluationStage& stage);
+	void EvaluateGLSL(const EvaluationStage& evaluation, const RenderTarget &tg, std::vector<TransientTarget*> *evaluationTransientTargets);
+	void EvaluateC(const EvaluationStage& evaluation, size_t index);
+	void FinishEvaluation();
+
 	static std::vector<TransientTarget*> mFreeTargets;
 	static int mTransientTextureMaxCount;
 	static TransientTarget* GetTransientTarget(int width, int height, int useCount);

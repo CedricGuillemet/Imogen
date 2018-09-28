@@ -23,13 +23,11 @@ file(GLOB EXT_FILES
 ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
 )
 
-if(WINDOWS)
-set(NFD_FILES
-	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/*.cpp)
+if(WIN32)
+set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_win.cpp)
 set(PLATFORM_LIBS "libtcc")
 else()
-set(NFD_FILES
-	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_gtk.c
+set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_gtk.c
 )
 # Use the package PkgConfig to detect GTK+ headers/library files
 FIND_PACKAGE(PkgConfig REQUIRED)

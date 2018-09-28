@@ -26,6 +26,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 struct TileNodeEditGraphDelegate;
 struct Evaluation;
 class TextEditor;

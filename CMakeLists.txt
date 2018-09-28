@@ -15,14 +15,36 @@ file(GLOB_RECURSE SRC_FILES
     ${CMAKE_SOURCE_DIR}/src/*.h
     ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
-file(GLOB_RECURSE EXT_FILES
+file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
-	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/*.cpp
-	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
 	${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
+${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
 )
+
+if(WINDOWS)
+set(NFD_FILES
+	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/*.cpp)
+set(PLATFORM_LIBS "libtcc")
+else()
+set(NFD_FILES
+	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_gtk.c
+)
+# Use the package PkgConfig to detect GTK+ headers/library files
+FIND_PACKAGE(PkgConfig REQUIRED)
+PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
+
+# Setup CMake to use GTK+, tell the compiler where to look for headers
+# and to the linker where to look for libraries
+INCLUDE_DIRECTORIES(${GTK3_INCLUDE_DIRS})
+LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
+
+# Add other flags to the compiler
+ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
+set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES} libtcc.a)
+endif()
+
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
@@ -55,7 +77,7 @@ IF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 ENDIF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 
 set(SDL2_LIBS "SDL2" "SDL2main")
-set(LIBTCCDEF "libtcc")
+
 #######################################################################################
 
 foreach(f ${SRC_FILES})
@@ -88,9 +110,9 @@ endif()
 SET(LINK_OPTIONS " ")
 SET(EXE_NAME "Imogen")
 
-ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES})
+ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES})
 
-TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${LIBTCCDEF})
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS})
 
 #--------------------------------------------------------------------
 # preproc
@@ -101,8 +123,10 @@ add_definitions(-DBX_CONFIG_ENABLE_MSVC_LEVEL4_WARNINGS=1)
 add_definitions(-D__STDC_LIMIT_MACROS)
 add_definitions(-D__STDC_CONSTANT_MACROS)
 add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+if(WINDOWS)
 add_definitions(-DWIN32)
 add_definitions(-D_WIN32)
+endif()
 add_definitions(-DUSE_DL_PREFIX)
 #--------------------------------------------------------------------
 # output dirs

@@ -514,15 +514,15 @@ void Evaluation::RunEvaluation(int target, int width, int height)
 }
 
 static const EValuationFunction evaluationFunctions[] = {
-	{ "Log", Log },
-	{ "ReadImage", Evaluation::ReadImage },
-	{ "WriteImage", Evaluation::WriteImage },
-	{ "GetEvaluationImage", Evaluation::GetEvaluationImage },
-	{ "SetEvaluationImage", Evaluation::SetEvaluationImage },
-	{ "AllocateImage", Evaluation::AllocateImage },
-	{ "FreeImage", Evaluation::FreeImage },
-	{ "SetThumbnailImage", Evaluation::SetThumbnailImage },
-	{ "Evaluate", Evaluation::Evaluate}
+	{ "Log", (void*)Log },
+	{ "ReadImage", (void*)Evaluation::ReadImage },
+	{ "WriteImage", (void*)Evaluation::WriteImage },
+	{ "GetEvaluationImage", (void*)Evaluation::GetEvaluationImage },
+	{ "SetEvaluationImage", (void*)Evaluation::SetEvaluationImage },
+	{ "AllocateImage", (void*)Evaluation::AllocateImage },
+	{ "FreeImage", (void*)Evaluation::FreeImage },
+	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
+	{ "Evaluate", (void*)Evaluation::Evaluate}
 };
 
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };

@@ -30,6 +30,8 @@
 #include "Library.h"
 #include "libtcc/libtcc.h"
 #include "Imogen.h"
+#include <string.h>
+#include <stdio.h>
 
 extern int Log(const char *szFormat, ...);
 

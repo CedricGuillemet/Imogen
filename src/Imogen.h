@@ -52,7 +52,7 @@ struct Imogen
 	void Finish();
 	
 	void Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
-	void DiscoverNodes(const char *wildcard, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
+	void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
 	std::vector<EvaluatorFile> mEvaluatorFiles;
 	int GetCurrentMaterialIndex();

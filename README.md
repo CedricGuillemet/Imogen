@@ -13,7 +13,7 @@ Features:
 - Node based texture editing
 - material library browser
 - edit/change node shaders inside the app
-- bake textures to .png
+- bake textures to .png, .jpg, .tga, .bmp, .hdr
 - PBR preview
 
 Currently implemented nodes
@@ -59,3 +59,5 @@ SDL2 - https://www.libsdl.org/
 NativeFileDialog - Michael Labbe https://github.com/mlabbe/nativefiledialog
 
 gl3w - Slavomir Kaslev https://github.com/skaslev/gl3w
+
+TinyDir - https://github.com/cxong/tinydir

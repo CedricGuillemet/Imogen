@@ -33,12 +33,9 @@
 #include "Evaluation.h"
 #include "NodesDelegate.h"
 #include "Library.h"
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#endif
 #include "TaskScheduler.h"
 #include "stb_image.h"
+#include "tinydir.h"
 
 extern enki::TaskScheduler g_TS;
 
@@ -547,22 +544,25 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 	ValidateMaterial(library, nodeGraphDelegate, selectedMaterial);
 }
 
-void Imogen::DiscoverNodes(const char *wildcard, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)
+void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)
 {
-#ifdef WIN32
-	HANDLE hFind;
-	WIN32_FIND_DATA FindFileData;
+	tinydir_dir dir;
+	tinydir_open(&dir, directory);
 
-	if ((hFind = FindFirstFile(wildcard, &FindFileData)) != INVALID_HANDLE_VALUE)
+	while (dir.has_next)
 	{
-		do
+		tinydir_file file;
+		tinydir_readfile(&dir, &file);
+
+		if (!file.is_dir && !strcmp(file.extension, extension))
 		{
-			files.push_back({ directory, FindFileData.cFileName, evaluatorType });
-		} 
-		while (FindNextFile(hFind, &FindFileData));
-		FindClose(hFind);
+			files.push_back({ directory, file.name, evaluatorType });
+		}
+
+		tinydir_next(&dir);
 	}
-#endif
+
+	tinydir_close(&dir);
 }
 
 Imogen::Imogen()
@@ -579,8 +579,8 @@ void Imogen::Init()
 	ImGui::InitDock();
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 
-	DiscoverNodes("GLSL/*.glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
-	DiscoverNodes("C/*.c", "C/", EVALUATOR_C, mEvaluatorFiles);
+	DiscoverNodes("glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+	DiscoverNodes("c", "C/", EVALUATOR_C, mEvaluatorFiles);
 }
 
 void Imogen::Finish()

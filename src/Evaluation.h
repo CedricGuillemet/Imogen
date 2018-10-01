@@ -192,10 +192,6 @@ protected:
 	void EvaluateC(EvaluationStage& evaluation, size_t index);
 	void FinishEvaluation();
 
-	std::vector<RenderTarget*> mAvailableTargets;
-	RenderTarget* GetRenderTarget(int width, int height);
-	void UnreferenceRenderTarget(RenderTarget *renderTarget);
-
 	std::vector<RenderTarget*> mAllocatedRenderTargets;
 	void SetEvaluationMemoryMode(int mode);
 	void RecurseGetUse(size_t target, std::vector<size_t>& usedNodes);

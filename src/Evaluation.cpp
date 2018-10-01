@@ -34,7 +34,7 @@ std::string Evaluation::GetEvaluator(const std::string& filename)
 	return mEvaluatorScripts[filename].mText;
 }
 
-Evaluation::Evaluation() : mDirtyCount(0)/*, mbEvaluating(false)*/, mEvaluationMode(-1) //, mAllocatedTargets(0)
+Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1)
 {
 	
 }
@@ -223,7 +223,7 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 		}
 		
 	}
-	Log("Using %d allocated buffers.\n", mAllocatedRenderTargets.size());
+	//Log("Using %d allocated buffers.\n", mAllocatedRenderTargets.size());
 }
 
 void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
@@ -315,50 +315,7 @@ void Evaluation::SetTargetDirty(size_t target)
 		}
 	}
 }
-#if 0
-RenderTarget* Evaluation::GetRenderTarget(int width, int height)
-{
-	size_t idx = 0;
-	for (auto rt : mAvailableTargets)
-	{
-		if (rt->mWidth == width && rt->mHeight == height)
-		{
-			mAvailableTargets.erase(mAvailableTargets.begin() + idx);
-			rt->mRefCount = 1;
-			return rt;
-		}
-		idx++;
-	}
-	mAllocatedTargets++;
-	RenderTarget *res = new RenderTarget;
-	res->initBuffer(width, height, false);
-	res->mRefCount = 1;
-	return res;
-}
 
- void Evaluation::UnreferenceRenderTarget(RenderTarget **renderTarget)
-{
-	 if (!renderTarget || !(*renderTarget))
-		 return;
-	 /*
-	 if ((*renderTarget)->mRefCount == 0)
-	 {
-		 return;
-	 }
-	 */
-	(*renderTarget)->mRefCount--;
-	
-	if ((*renderTarget)->mRefCount == 0)
-	{
-		if (std::find(mAvailableTargets.begin(), mAvailableTargets.end(), *renderTarget) != mAvailableTargets.end())
-		{
-			int a = 1;
-		}
-		mAvailableTargets.push_back(*renderTarget);
-		(*renderTarget) = NULL;
-	}
-}
-#endif
 void Evaluation::Clear()
 {
 	for (auto& ev : mEvaluations)

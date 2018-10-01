@@ -40,6 +40,7 @@
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
+static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 
 inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {
@@ -364,13 +365,12 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 		return EVAL_ERR;
 
 	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluations[target];
-	//evaluation.mTarget.initBuffer(image->width, image->height, false);
-	RenderTarget& tgt = evaluation.mTarget;
+	RenderTarget& tgt = *evaluation.mTarget;
 	image->components = 4;
 	image->width = tgt.mWidth;
 	image->height = tgt.mHeight;
 	image->bits = malloc(tgt.mWidth * tgt.mHeight * 4);
-	glBindTexture(GL_TEXTURE_2D, evaluation.mTarget.mGLTexID);
+	glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->bits);
 
 	return EVAL_OK;
@@ -379,8 +379,14 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
 	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluations[target];
-	evaluation.mTarget.initBuffer(image->width, image->height, false);
-	glBindTexture(GL_TEXTURE_2D, evaluation.mTarget.mGLTexID);
+	//gEvaluation.UnreferenceRenderTarget(&evaluation.mTarget);
+	if (!evaluation.mTarget)
+	{
+		evaluation.mTarget = new RenderTarget;
+	}
+	evaluation.mTarget->initBuffer(image->width, image->height, false);
+
+	glBindTexture(GL_TEXTURE_2D, evaluation.mTarget->mGLTexID);
 	switch (image->components)
 	{
 	case 3:
@@ -393,7 +399,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 		Log("SetEvaluationImage: unsupported component format.\n");
 		return EVAL_ERR;
 	}
-
+	//gEvaluation.UnreferenceRenderTarget(&evaluation.mTarget);
 	return EVAL_OK;
 }
 
@@ -427,90 +433,41 @@ int Evaluation::SetThumbnailImage(Image *image)
 	return EVAL_OK;
 }
 
-void Evaluation::Evaluate(int target, int width, int height)
+void Evaluation::RecurseGetUse(size_t target, std::vector<size_t>& usedNodes)
 {
-	gEvaluation.RunEvaluation(target, width, height);
+	EvaluationStage& evaluation = mEvaluations[target];
+	const Input& input = evaluation.mInput;
+
+	std::vector<RenderTarget*> usingTargets;
+	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+	{
+		int targetIndex = input.mInputs[inputIndex];
+		if (targetIndex == -1)
+			continue;
+		RecurseGetUse(targetIndex, usedNodes);
+	}
+
+	if (std::find(usedNodes.begin(), usedNodes.end(), target) == usedNodes.end())
+		usedNodes.push_back(target);
 }
 
-void Evaluation::RunEvaluation(int target, int width, int height)
+int Evaluation::Evaluate(int target, int width, int height, Image *image)
 {
-	if (mEvaluationOrderList.empty())
-		return;
-	if (!mDirtyCount)
-		return;
+	std::vector<size_t> svgEvalList = gEvaluation.mEvaluationOrderList;
+	gEvaluation.mEvaluationOrderList.clear();
 
-	mTransientTextureMaxCount = 0;
-	std::vector<int> evaluationUseCount(mEvaluationOrderList.size(), 0); // use count of texture by others
-	std::vector<TransientTarget*> evaluationTransientTargets(mEvaluationOrderList.size(), NULL);
-	for (auto& evaluation : mEvaluations)
-	{
-		for (int targetIndex : evaluation.mInput.mInputs)
-			if (targetIndex != -1)
-				evaluationUseCount[targetIndex]++;
-	}
-	if (evaluationUseCount[target] < 1)
-		evaluationUseCount[target] = 1;
+	gEvaluation.RecurseGetUse(target, gEvaluation.mEvaluationOrderList);
 
-	// todo : revert pass. dec use count for parent nodes whose children have 0 use count
+	gEvaluation.SetEvaluationMemoryMode(1);
 
-	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
-	{
-		size_t nodeIndex = mEvaluationOrderList[i];
-		if (!evaluationUseCount[nodeIndex])
-			continue;
-		EvaluationStage& evaluation = mEvaluations[nodeIndex];
-		TransientTarget* transientTarget = GetTransientTarget(width, height, evaluationUseCount[nodeIndex]);
-		evaluationTransientTargets[nodeIndex] = transientTarget;
-		const Input& input = evaluation.mInput;
+	gEvaluation.RunEvaluation(width, height, true);
+	GetEvaluationImage(target, image);
+	gEvaluation.SetEvaluationMemoryMode(0);
 
-		switch (evaluation.mEvaluationType)
-		{
-		case 0: // GLSL
-			if (nodeIndex == target)
-			{
-				evaluation.mTarget.initBuffer(width, height, false);
-				EvaluateGLSL(evaluation, evaluation.mTarget, &evaluationTransientTargets);
-			}
-			else
-			{
-				EvaluateGLSL(evaluation, transientTarget->mTarget, &evaluationTransientTargets);
-			}
+	gEvaluation.mEvaluationOrderList = svgEvalList;
 
-			for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
-			{
-				int targetIndex = input.mInputs[inputIndex];
-				if (targetIndex >= 0)
-					LoseTransientTarget(evaluationTransientTargets[targetIndex]);
-			}
-			break;
-		case 1: // C
-			EvaluateC(evaluation, nodeIndex);
-			break;
-		}
-
-
-		if (nodeIndex == target)
-			break;
-	}
-
-
-	for (auto& evaluation : mEvaluations)
-	{
-		if (evaluation.mbDirty)
-		{
-			evaluation.mbDirty = false;
-			evaluation.mbForceEval = false;
-			mDirtyCount--;
-		}
-	}
-
-	// free transient textures
-	for (auto transientTarget : mFreeTargets)
-	{
-		assert(transientTarget->mUseCount <= 0);
-		transientTarget->mTarget.destroy();
-	}
-	FinishEvaluation();
+	gEvaluation.RunEvaluation(256, 256, true);
+	return EVAL_OK;
 }
 
 static const EValuationFunction evaluationFunctions[] = {
@@ -524,8 +481,6 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
 	{ "Evaluate", (void*)Evaluation::Evaluate}
 };
-
-static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
 {
@@ -680,10 +635,11 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	}
 }
 
-void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation, const RenderTarget &tg, std::vector<TransientTarget*> *evaluationTransientTargets)
+void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 {
 	const Input& input = evaluation.mInput;
-	tg.bindAsTarget();
+
+	evaluation.mTarget->bindAsTarget();
 	unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
 
 	glUseProgram(program);
@@ -706,10 +662,7 @@ void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation, const RenderTar
 			continue;
 		}
 		//assert(!mEvaluations[targetIndex].mbDirty);
-		if (evaluationTransientTargets)
-			glBindTexture(GL_TEXTURE_2D, evaluationTransientTargets->at(targetIndex)->mTarget.mGLTexID);
-		else
-			glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget.mGLTexID);
+		glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget->mGLTexID);
 
 		const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
 		TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
@@ -718,27 +671,29 @@ void Evaluation::EvaluateGLSL(const EvaluationStage& evaluation, const RenderTar
 	mFSQuad.Render();
 }
 
-void Evaluation::EvaluateC(const EvaluationStage& evaluation, size_t index)
+void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index)
 {
 	const Input& input = evaluation.mInput;
-	struct EvaluationInfo
-	{
-		int targetIndex;
-		int inputIndices[8];
-		int forcedDirty;
-	};
+
 	EvaluationInfo evaluationInfo;
 	evaluationInfo.targetIndex = int(index);
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
 	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
-	mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
+	try // todo: find a better solution than a try catch
+	{
+		mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
+	}
+	catch (...)
+	{
+
+	}
 }
 
 void Evaluation::EvaluationStage::Clear()
 {
 	if (mEvaluationType == EVALUATOR_GLSL)
 		glDeleteBuffers(1, &mParametersBuffer);
-	mTarget.destroy();
+	//gEvaluation.UnreferenceRenderTarget(&mTarget);
 }
 
 void Evaluation::FinishEvaluation()

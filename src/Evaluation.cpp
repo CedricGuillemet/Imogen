@@ -34,7 +34,7 @@ std::string Evaluation::GetEvaluator(const std::string& filename)
 	return mEvaluatorScripts[filename].mText;
 }
 
-Evaluation::Evaluation() : mDirtyCount(0)
+Evaluation::Evaluation() : mDirtyCount(0)/*, mbEvaluating(false)*/, mEvaluationMode(-1) //, mAllocatedTargets(0)
 {
 	
 }
@@ -55,7 +55,9 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	if (iter != mEvaluatorScripts.end())
 	{
 		EvaluationStage evaluation;
-		evaluation.mTarget.initBuffer(256, 256, false);
+		evaluation.mTarget = new RenderTarget;
+		mAllocatedRenderTargets.push_back(evaluation.mTarget);
+		evaluation.mUseCountByOthers = 0;
 		evaluation.mbDirty = true;
 		evaluation.mbForceEval = false;
 		evaluation.mNodeType = nodeType;
@@ -71,7 +73,8 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	if (iter != mEvaluatorScripts.end())
 	{
 		EvaluationStage evaluation;
-		//evaluation.mTarget.initBuffer(256, 256, false);
+		evaluation.mTarget = NULL;
+		evaluation.mUseCountByOthers = 0;
 		evaluation.mbDirty = true;
 		evaluation.mbForceEval = false;
 		evaluation.mNodeType = nodeType;
@@ -108,7 +111,7 @@ void Evaluation::DelEvaluationTarget(size_t target)
 
 unsigned int Evaluation::GetEvaluationTexture(size_t target)
 {
-	return mEvaluations[target].mTarget.mGLTexID;
+	return mEvaluations[target].mTarget->mGLTexID;
 }
 
 void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)
@@ -123,37 +126,125 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 	SetTargetDirty(target);
 }
 
-void Evaluation::ForceEvaluation(size_t target)
+void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, bool force)
 {
-	EvaluationStage& stage = mEvaluations[target];
-	stage.mbForceEval = true;
-	SetTargetDirty(target);
+	EvaluationStage& evaluation = mEvaluations[index];
+	
+	if (force)
+	{
+		evaluation.mbForceEval = true;
+		SetTargetDirty(index);
+	}
+
+	switch (evaluation.mEvaluationType)
+	{
+	case 0: // GLSL
+		EvaluateGLSL(evaluation);
+		break;
+	case 1: // C
+		EvaluateC(evaluation, index);
+		break;
+	}
 }
 
-void Evaluation::RunEvaluation()
+void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
+{
+	if (evaluationMode == mEvaluationMode)
+		return;
+
+	mEvaluationMode = evaluationMode;
+	// free previously allocated RT
+
+	for (auto* rt : mAllocatedRenderTargets)
+	{
+		rt->destroy();
+		delete rt;
+	}
+	mAllocatedRenderTargets.clear();
+
+	if (evaluationMode == 0) // edit mode
+	{
+		for (size_t i = 0; i < mEvaluations.size(); i++)
+		{
+			EvaluationStage& evaluation = mEvaluations[i];
+			switch (evaluation.mEvaluationType)
+			{
+			case 0: // glsl
+				evaluation.mTarget = new RenderTarget;
+				mAllocatedRenderTargets.push_back(evaluation.mTarget);
+				break;
+			case 1: // C
+				evaluation.mTarget = 0;
+				break;
+			}
+		}
+	}
+	else // baking mode
+	{
+		std::vector<RenderTarget*> freeRenderTargets;
+		std::vector<int> useCount(mEvaluations.size(), 0);
+		for (size_t i = 0; i < mEvaluations.size(); i++)
+		{
+			useCount[i] = mEvaluations[i].mUseCountByOthers;
+		}
+
+		for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
+		{
+			size_t index = mEvaluationOrderList[i];
+
+			EvaluationStage& evaluation = mEvaluations[index];
+			if (!evaluation.mUseCountByOthers)
+				continue;
+
+			if (freeRenderTargets.empty())
+			{
+				evaluation.mTarget = new RenderTarget();
+				mAllocatedRenderTargets.push_back(evaluation.mTarget);
+			}
+			else
+			{
+				evaluation.mTarget = freeRenderTargets.back();
+				freeRenderTargets.pop_back();
+			}
+
+			const Input& input = evaluation.mInput;
+			for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+			{
+				int targetIndex = input.mInputs[inputIndex];
+				if (targetIndex == -1)
+					continue;
+				
+				useCount[targetIndex]--;
+				if (!useCount[targetIndex])
+				{
+					freeRenderTargets.push_back(mEvaluations[targetIndex].mTarget);
+				}
+			}
+		}
+		
+	}
+	Log("Using %d allocated buffers.\n", mAllocatedRenderTargets.size());
+}
+
+void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 {
 	if (mEvaluationOrderList.empty())
 		return;
-	if (!mDirtyCount)
+	if (!mDirtyCount && !forceEvaluation)
 		return;
 
-	
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
 		size_t index = mEvaluationOrderList[i];
-		const EvaluationStage& evaluation = mEvaluations[index];
-		if (!evaluation.mbDirty)
+
+		EvaluationStage& evaluation = mEvaluations[index];
+		if (!evaluation.mbDirty && !forceEvaluation)
 			continue;
 
-		switch (evaluation.mEvaluationType)
-		{
-		case 0: // GLSL
-			EvaluateGLSL(evaluation, evaluation.mTarget, NULL);
-			break;
-		case 1: // C
-			EvaluateC(evaluation, index);
-			break;
-		}
+		if (evaluation.mTarget && !evaluation.mTarget->mGLTexID)
+			evaluation.mTarget->initBuffer(width, height, false);
+
+		PerformEvaluationForNode(index, width, height, false);
 	}
 
 	for (auto& evaluation : mEvaluations)
@@ -178,11 +269,13 @@ void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSamp
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
 	mEvaluations[target].mInput.mInputs[slot] = source;
+	mEvaluations[source].mUseCountByOthers++;
 	SetTargetDirty(target);
 }
 
 void Evaluation::DelEvaluationInput(size_t target, int slot)
 {
+	mEvaluations[mEvaluations[target].mInput.mInputs[slot]].mUseCountByOthers--;
 	mEvaluations[target].mInput.mInputs[slot] = -1;
 	SetTargetDirty(target);
 }
@@ -222,33 +315,50 @@ void Evaluation::SetTargetDirty(size_t target)
 		}
 	}
 }
-
-std::vector<Evaluation::TransientTarget*> Evaluation::mFreeTargets;
-int Evaluation::mTransientTextureMaxCount;
-
-Evaluation::TransientTarget* Evaluation::GetTransientTarget(int width, int height, int useCount)
+#if 0
+RenderTarget* Evaluation::GetRenderTarget(int width, int height)
 {
-	if (mFreeTargets.empty())
+	size_t idx = 0;
+	for (auto rt : mAvailableTargets)
 	{
-		TransientTarget *res = new TransientTarget;
-		res->mTarget.initBuffer(width, height, false);
-		res->mUseCount = useCount;
-		mTransientTextureMaxCount++;
-		return res;
+		if (rt->mWidth == width && rt->mHeight == height)
+		{
+			mAvailableTargets.erase(mAvailableTargets.begin() + idx);
+			rt->mRefCount = 1;
+			return rt;
+		}
+		idx++;
 	}
-	TransientTarget *res = mFreeTargets.back();
-	res->mUseCount = useCount;
-	mFreeTargets.pop_back();
+	mAllocatedTargets++;
+	RenderTarget *res = new RenderTarget;
+	res->initBuffer(width, height, false);
+	res->mRefCount = 1;
 	return res;
 }
 
- void Evaluation::LoseTransientTarget(TransientTarget *transientTarget)
+ void Evaluation::UnreferenceRenderTarget(RenderTarget **renderTarget)
 {
-	transientTarget->mUseCount--;
-	if (transientTarget->mUseCount <= 0)
-		mFreeTargets.push_back(transientTarget);
+	 if (!renderTarget || !(*renderTarget))
+		 return;
+	 /*
+	 if ((*renderTarget)->mRefCount == 0)
+	 {
+		 return;
+	 }
+	 */
+	(*renderTarget)->mRefCount--;
+	
+	if ((*renderTarget)->mRefCount == 0)
+	{
+		if (std::find(mAvailableTargets.begin(), mAvailableTargets.end(), *renderTarget) != mAvailableTargets.end())
+		{
+			int a = 1;
+		}
+		mAvailableTargets.push_back(*renderTarget);
+		(*renderTarget) = NULL;
+	}
 }
-
+#endif
 void Evaluation::Clear()
 {
 	for (auto& ev : mEvaluations)

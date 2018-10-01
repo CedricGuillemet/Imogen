@@ -33,7 +33,7 @@ int SetThumbnailImage(Image *image);
 
 // force evaluation of a target with a specified size
 // no guarantee that the resulting Image will have that size.
-void Evaluate(int target, int width, int height);
+int Evaluate(int target, int width, int height, Image *image);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

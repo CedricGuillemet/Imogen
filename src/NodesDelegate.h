@@ -535,7 +535,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		if (dirty)
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
 		if (forceEval)
-			mEvaluation.ForceEvaluation(node.mEvaluationTarget);
+			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true);
 
 	}
 

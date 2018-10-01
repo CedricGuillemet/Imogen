@@ -26,9 +26,7 @@ int main(ImageWrite *param, Evaluation *evaluation)
 	if (!evaluation->forcedDirty)
 		return EVAL_OK;
 	
-	Evaluate(evaluation->inputIndices[0], 256<<param->width, 256<<param->height);
-	
-	if (GetEvaluationImage(evaluation->inputIndices[0], &image) == EVAL_OK)
+	if (Evaluate(evaluation->inputIndices[0], 256<<param->width, 256<<param->height, &image) == EVAL_OK)
 	{
 		if (WriteImage(param->filename, &image, param->format, param->quality) == EVAL_OK)
 		{	

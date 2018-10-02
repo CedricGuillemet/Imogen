@@ -1,3 +1,28 @@
+// https://github.com/CedricGuillemet/Imogen
+//
+// The MIT License(MIT)
+// 
+// Copyright(c) 2018 Cedric Guillemet
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 #include <SDL.h>
 #include "imgui.h"
 #include "Imogen.h"
@@ -8,10 +33,12 @@
 #include "Evaluation.h"
 #include "NodesDelegate.h"
 #include "Library.h"
-#ifdef WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#endif
+#include "TaskScheduler.h"
+#include "stb_image.h"
+#include "tinydir.h"
+
+extern enki::TaskScheduler g_TS;
+
 struct ImguiAppLog
 {
 	ImguiAppLog()
@@ -88,20 +115,21 @@ void DebugLogText(const char *szText)
 void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	static int currentShaderIndex = -1;
+
 	if (currentShaderIndex == -1)
 	{
 		currentShaderIndex = 0;
-		editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+		editor.SetText(evaluation.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
 	}
 	auto cpos = editor.GetCursorPosition();
 	ImGui::BeginChild(13, ImVec2(250, 800));
-	for (size_t i = 0; i < shaderFileNames.size(); i++)
+	for (size_t i = 0; i < mEvaluatorFiles.size(); i++)
 	{
 		bool selected = i == currentShaderIndex;
-		if (ImGui::Selectable(shaderFileNames[i].c_str(), &selected))
+		if (ImGui::Selectable(mEvaluatorFiles[i].mFilename.c_str(), &selected))
 		{
 			currentShaderIndex = int(i);
-			editor.SetText(evaluation.GetEvaluationGLSL(shaderFileNames[currentShaderIndex]));
+			editor.SetText(evaluation.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
 			editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates());
 		}
 	}
@@ -113,11 +141,12 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 	{
 		auto textToSave = editor.GetText();
 
-		std::ofstream t("GLSL/" + shaderFileNames[currentShaderIndex], std::ofstream::out);
+		std::ofstream t(mEvaluatorFiles[currentShaderIndex].mDirectory + mEvaluatorFiles[currentShaderIndex].mFilename, std::ofstream::out);
 		t << textToSave;
 		t.close();
 
-		evaluation.SetEvaluationGLSL(shaderFileNames);
+		// TODO
+		evaluation.SetEvaluators(mEvaluatorFiles);
 		nodeGraphDelegate.InvalidateParameters();
 	}
 
@@ -206,7 +235,63 @@ std::string GetName(const std::string &name)
 	return name;
 }
 
-template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index)
+struct PinnedTaskUploadImage : enki::IPinnedTask
+{
+	PinnedTaskUploadImage(Image image, std::pair<size_t, unsigned int> identifier)
+		: enki::IPinnedTask(0) // set pinned thread to 0
+		, mImage(image)
+		, mIdentifier(identifier)
+	{
+	}
+	virtual void Execute()
+	{
+		unsigned int textureId = Evaluation::UploadImage(&mImage);
+		if (library.mMaterials.size() > mIdentifier.first && library.mMaterials[mIdentifier.first].mRuntimeUniqueId == mIdentifier.second)
+		{
+			library.mMaterials[mIdentifier.first].mThumbnailTextureId = textureId;
+		}
+		else
+		{
+			// find identifier
+			for (auto& material : library.mMaterials)
+			{
+				if (material.mRuntimeUniqueId == mIdentifier.second)
+				{
+					material.mThumbnailTextureId = textureId;
+					break;
+				}
+			}
+		}
+
+	}
+	Image mImage;
+	std::pair<size_t, unsigned int> mIdentifier;
+};
+
+struct DecodeThumbnailTaskSet : enki::ITaskSet
+{
+	DecodeThumbnailTaskSet(std::vector<uint8_t> *src, std::pair<size_t, unsigned int> identifier) : enki::ITaskSet(), mIdentifier(identifier), mSrc(src)
+	{
+	}
+	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+	{
+		Image image;
+		unsigned char *data = stbi_load_from_memory(mSrc->data(), mSrc->size(), &image.width, &image.height, &image.components, 0);
+		if (data)
+		{
+			image.bits = data;
+			PinnedTaskUploadImage uploadTexTask(image, mIdentifier);
+			g_TS.AddPinnedTask(&uploadTexTask);
+			g_TS.WaitforTask(&uploadTexTask);
+			Evaluation::FreeImage(&image);
+		}
+		delete this;
+	}
+	std::pair<size_t, unsigned int> mIdentifier;
+	std::vector<uint8_t> *mSrc;
+};
+
+template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, Evaluation& evaluation)
 {
 	bool ret = false;
 	if (!ImGui::TreeNodeEx(szName, ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
@@ -217,6 +302,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
 	std::vector<SortedResource<T, Ty>> sortedResources;
 	SortedResource<T, Ty>::ComputeSortedResources(res, sortedResources);
+	unsigned int defaultTextureId = evaluation.GetTexture("Stock/thumbnail-icon.png");
 
 	for (const auto& sortedRes : sortedResources) //unsigned int i = 0; i < res.size(); i++)
 	{
@@ -245,14 +331,25 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 		}
 		else if (currentGroupIsSkipped)
 			continue;
+		ImGui::BeginGroup();
 
-		ImGui::TreeNodeEx(GetName(res[indexInRes].mName).c_str(), node_flags);
-
-		if (ImGui::IsItemClicked())
+		T& resource = res[indexInRes];
+		if (!resource.mThumbnailTextureId)
+		{
+			resource.mThumbnailTextureId = defaultTextureId;
+			g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&resource.mThumbnail, std::make_pair(indexInRes,resource.mRuntimeUniqueId)));
+		}
+		ImGui::Image(ImTextureID(resource.mThumbnailTextureId), ImVec2(64, 64));
+		bool clicked = ImGui::IsItemClicked();
+		ImGui::SameLine();
+		ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
+		clicked |= ImGui::IsItemClicked();
+		if (clicked)
 		{
 			selection = (index << 16) + indexInRes;
 			ret = true;
 		}
+		ImGui::EndGroup();
 	}
 
 	if (currentGroup.length() && !currentGroupIsSkipped)
@@ -282,7 +379,10 @@ inline void GuiString(const char*label, std::string* str, int stringId, bool mul
 }
 
 static int selectedMaterial = -1;
-
+int Imogen::GetCurrentMaterialIndex()
+{
+	return selectedMaterial;
+}
 void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, int materialIndex)
 {
 	if (materialIndex == -1)
@@ -321,7 +421,11 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	if (ImGui::Button("New Material"))
 	{
 		library.mMaterials.push_back(Material());
-		library.mMaterials.back().mName = "New";
+		Material& back = library.mMaterials.back();
+		back.mName = "New";
+		back.mThumbnailTextureId = 0;
+		back.mRuntimeUniqueId = GetRuntimeId();
+		
 		if (previousSelection != -1)
 		{
 			ValidateMaterial(library, nodeGraphDelegate, previousSelection);
@@ -333,7 +437,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		NodeGraphClear();
 	}
 	ImGui::BeginChild("TV", ImVec2(250, -1));
-	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0))
+	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0, evaluation))
 	{
 		nodeGraphDelegate.mSelectedNodeIndex = -1;
 		// save previous
@@ -370,12 +474,6 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		Material& material = library.mMaterials[selectedMaterial];
 		GuiString("Name", &material.mName, 100, false);
 		GuiString("Comment", &material.mComment, 101, true);
-		/* to add:
-		- bake dir
-		- bake size
-		- preview size
-		- load equirect ibl
-		*/
 		if (ImGui::Button("Delete Material"))
 		{
 			library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
@@ -398,6 +496,15 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Tab);
 		if (ImGui::BeginDock("Nodes"))
 		{
+			ImGui::PushItemWidth(60);
+			static int previewSize = 0;
+			//ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
+			//ImGui::SameLine();
+			if (ImGui::Button("Export"))
+			{
+				nodeGraphDelegate.DoForce();
+			}
+			ImGui::PopItemWidth();
 			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);
 		}
 		ImGui::EndDock();
@@ -437,32 +544,46 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 	ValidateMaterial(library, nodeGraphDelegate, selectedMaterial);
 }
 
-void Imogen::DiscoverShaders()
+void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)
 {
-#ifdef WIN32
-	HANDLE hFind;
-	WIN32_FIND_DATA FindFileData;
+	tinydir_dir dir;
+	tinydir_open(&dir, directory);
 
-	if ((hFind = FindFirstFile("GLSL/*.glsl", &FindFileData)) != INVALID_HANDLE_VALUE)
+	while (dir.has_next)
 	{
-		do
+		tinydir_file file;
+		tinydir_readfile(&dir, &file);
+
+		if (!file.is_dir && !strcmp(file.extension, extension))
 		{
-			//printf("%s\n", FindFileData.cFileName);
-			shaderFileNames.push_back(std::string(FindFileData.cFileName));
-		} while (FindNextFile(hFind, &FindFileData));
-		FindClose(hFind);
+			files.push_back({ directory, file.name, evaluatorType });
+		}
+
+		tinydir_next(&dir);
 	}
-#endif
+
+	tinydir_close(&dir);
 }
 
 Imogen::Imogen()
 {
-	ImGui::InitDock();
-	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-	DiscoverShaders();
 }
 
 Imogen::~Imogen()
+{
+
+}
+
+void Imogen::Init()
+{
+	ImGui::InitDock();
+	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
+
+	DiscoverNodes("glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+	DiscoverNodes("c", "C/", EVALUATOR_C, mEvaluatorFiles);
+}
+
+void Imogen::Finish()
 {
 	ImGui::ShutdownDock();
 }

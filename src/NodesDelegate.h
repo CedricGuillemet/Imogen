@@ -1,22 +1,49 @@
+// https://github.com/CedricGuillemet/Imogen
+//
+// The MIT License(MIT)
+// 
+// Copyright(c) 2018 Cedric Guillemet
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 #pragma once
 
 #include "Nodes.h"
 #include "Evaluation.h"
 #include "curve.h"
 #include "Library.h"
+#include "nfd.h"
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
 	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation)
 	{
-		mCategoriesCount = 6;
+		mCategoriesCount = 7;
 		static const char *categories[] = {
 			"Transform",
 			"Generator",
 			"Material",
 			"Blend",
 			"Filter",
-			"Noise" };
+			"Noise",
+			"File"};
 		mCategories = categories;
 	}
 
@@ -47,6 +74,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_Angle4,
 		Con_Enum,
 		Con_Structure,
+		Con_FilenameRead,
+		Con_FilenameWrite,
+		Con_ForceEvaluate,
 		Con_Any,
 	};
 
@@ -86,7 +116,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 		size_t index = mNodes.size();
 		ImogenNode node;
-		node.mEvaluationTarget = mEvaluation.AddEvaluationTarget(type, metaNodes[type].mName);
+		node.mEvaluationTarget = mEvaluation.AddEvaluation(type, metaNodes[type].mName);
+
 		node.mType = type;
 		size_t paramsSize = ComputeParamMemSize(type);
 		node.mParameters = malloc(paramsSize);
@@ -124,6 +155,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				node.mEvaluationTarget--;
 		}
 	}
+
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
 		static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
@@ -133,9 +165,11 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
 		static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
 
-		metaNodeCount = 23;
 
-		static const MetaNode metaNodes[23] = {
+		metaNodeCount = 26;
+
+		static const MetaNode metaNodes[26] = {
+
 			{
 				"Circle", hcGenerator, 1
 				,{ {} }
@@ -147,7 +181,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Transform", hcTransform, 0
 				,{ { "", (int)Con_Float4 } }
 			,{ { "", (int)Con_Float4 } }
-			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f, true },{ "Rotation", (int)Con_Angle },{ "Scale", (int)Con_Float } }
+			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f, true },{ "Scale", (int)Con_Float2 },{ "Rotation", (int)Con_Angle } }
 			}
 			,
 			{
@@ -206,7 +240,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,
 			{
 				"LambertMaterial", hcMaterial, 2
-				,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 } }
+				,{ { "Diffuse", (int)Con_Float4 },{ "Equirect sky", (int)Con_Float4 } }
 			,{ { "", (int)Con_Float4 } }
 			,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f } }
 			}
@@ -295,7 +329,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				,
 				{
 					"PBR", hcMaterial, 2
-					,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 },{ "Roughness", (int)Con_Float4 },{ "Displacement", (int)Con_Float4 } }
+					,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 },{ "Roughness", (int)Con_Float4 },{ "Displacement", (int)Con_Float4 }, { "Equirect sky", (int)Con_Float4 } }
 				,{ { "", (int)Con_Float4 } }
 				,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f, true } }
 				}
@@ -317,6 +351,32 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				,{ { "Min", (int)Con_Float4}, { "Max", (int)Con_Float4 } }
 				}
 
+				,
+				{
+					"ImageRead", hcFilter, 6
+					,{  }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "File name", (int)Con_FilenameRead } }
+				}
+
+				,
+				{
+					"ImageWrite", hcFilter, 6
+					,{ { "", (int)Con_Float4 } }
+				,{  }
+				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int }
+						,{ "Width", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+						,{ "Height", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+						,{ "Export", (int)Con_ForceEvaluate } }
+				}
+
+				,
+				{
+					"Thumbnail", hcFilter, 6
+					,{ { "", (int)Con_Float4 } }
+				,{}
+				,{ { "Make", (int)Con_ForceEvaluate } }
+				}
 			};
 
 		return metaNodes;
@@ -332,6 +392,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		bool dirty = false;
+		bool forceEval = false;
 		bool samplerDirty = false;
 		ImogenNode& node = mNodes[index];
 		const MetaNode& currentMeta = metaNodes[node.mType];
@@ -440,8 +501,32 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
 				((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
 				break;
+			case Con_FilenameWrite:
+			case Con_FilenameRead:
+				dirty |= ImGui::InputText("", (char*)paramBuffer, 1024);
+				ImGui::SameLine();
+				if (ImGui::Button("..."))
+				{
+					nfdchar_t *outPath = NULL;
+					nfdresult_t result = (param->mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath) : NFD_SaveDialog(NULL, NULL, &outPath);
+
+					if (result == NFD_OKAY) 
+					{
+						strcpy((char*)paramBuffer, outPath);
+						free(outPath);
+						dirty = true;
+					}
+				}
+				break;
 			case Con_Enum:
 				dirty |= ImGui::Combo(param->mName, (int*)paramBuffer, param->mEnumList);
+				break;
+			case Con_ForceEvaluate:
+				if (ImGui::Button(param->mName))
+				{
+					dirty = true;
+					forceEval = true;
+				}
 				break;
 			}
 			paramBuffer += ComputeParamMemSize(param->mType);
@@ -450,6 +535,38 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		//ImGui::End();
 		if (dirty)
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+		if (forceEval)
+			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true);
+
+	}
+
+	virtual void DoForce()
+	{
+		int metaNodeCount;
+		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
+		bool dirty = false;
+		bool forceEval = false;
+		bool samplerDirty = false;
+		for (size_t index = 0; index < mNodes.size(); index++)
+		{
+			ImogenNode& node = mNodes[index];
+			const MetaNode& currentMeta = metaNodes[node.mType];
+
+			const NodeGraphDelegate::Con * param = currentMeta.mParams;
+			unsigned char *paramBuffer = (unsigned char*)node.mParameters;
+			for (int i = 0; i < MaxCon; i++, param++)
+			{
+				if (!param->mName)
+					break;
+				if (param->mType == Con_ForceEvaluate)
+				{
+					dirty = true;
+					forceEval = true;
+				}
+			}
+			if (forceEval)
+				mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true);
+		}
 	}
 
 	void InvalidateParameters()
@@ -543,7 +660,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		case Con_Int:
 			res += sizeof(int);
 			break;
-			
+		case Con_FilenameRead:
+		case Con_FilenameWrite:
+			res += 1024;
+			break;
+		case Con_ForceEvaluate:
+			res += 0;
+			break;
 		}
 		return res;
 	}
@@ -551,11 +674,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList)
 	{
 		mEvaluation.SetEvaluationOrder(nodeOrderList);
-	}
-
-	virtual void Bake(size_t index)
-	{
-		mEvaluation.Bake("bakedTexture.png", index, 4096, 4096);
 	}
 };
 

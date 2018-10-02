@@ -52,7 +52,7 @@ vec4 LambertMaterial()
     // sphere center	
 	vec3 sc = vec3(0.0,1.0,0.0);
 
-    vec3 col = texture(equiRectEnvSampler, envMapEquirect(rd)).xyz;
+    vec3 col = texture(Sampler1, envMapEquirect(rd)).xyz;
     
 	if (castRay(ro, rd)<10.0)
 	{

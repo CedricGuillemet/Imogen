@@ -1,16 +1,39 @@
+// https://github.com/CedricGuillemet/Imogen
+//
+// The MIT License(MIT)
+// 
+// Copyright(c) 2018 Cedric Guillemet
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+// 
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
-#include <stdio.h>
 #include <SDL.h>
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
-#include <math.h>
-#include <vector>
+#include <GL/gl3w.h>
 #include "Nodes.h"
 #include "NodesDelegate.h"
 #include "Evaluation.h"
 #include "Imogen.h"
+#include "TaskScheduler.h"
 
 int Log(const char *szFormat, ...)
 {
@@ -31,8 +54,15 @@ int Log(const char *szFormat, ...)
 	return 0;
 }
 
+Evaluation gEvaluation;
+Library library;
+Imogen imogen;
+enki::TaskScheduler g_TS;
+
 int main(int, char**)
 {
+	g_TS.Initialize();
+
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{
@@ -94,16 +124,15 @@ int main(int, char**)
 	ImGui::StyleColorsDark();
 
 	static const char* libraryFilename = "library.dat";
-	Library library;
+	
 	LoadLib(&library, libraryFilename);
 	
-	Evaluation evaluation;
-	Imogen imogen;
+	imogen.Init();
 	
-	evaluation.SetEvaluationGLSL(imogen.shaderFileNames);
-	evaluation.LoadEquiRect("studio017PoT.png");
+	gEvaluation.Init();
+	gEvaluation.SetEvaluators(imogen.mEvaluatorFiles);
 
-	TileNodeEditGraphDelegate nodeGraphDelegate(evaluation);
+	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
 
 	// Main loop
 	bool done = false;
@@ -124,32 +153,36 @@ int main(int, char**)
 		ImGui_ImplSDL2_NewFrame(window);
 		ImGui::NewFrame();
 
-		imogen.Show(library, nodeGraphDelegate, evaluation);
+		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 
-		evaluation.RunEvaluation();
+		gEvaluation.RunEvaluation(256, 256, false);
 
 		// render everything
-		glClearColor(0.45f, 0.4f, 0.4f, 1.f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		ImGui::Render();
-
-		SDL_GL_MakeCurrent(window, gl_context);
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-		glClearColor(0.,0.,0.,0.);
+		glClearColor(0., 0., 0., 0.);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		ImGui::Render();
+		SDL_GL_MakeCurrent(window, gl_context);
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		g_TS.RunPinnedTasks();
 		SDL_GL_SwapWindow(window);
 	}
 	
 	SaveLib(&library, libraryFilename);
+	gEvaluation.Finish();
+
 	// Cleanup
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 
+	imogen.Finish(); // keep dock being saved
+
 	SDL_GL_DeleteContext(gl_context);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 
+	g_TS.WaitforAllAndShutdown();
 	return 0;
 }

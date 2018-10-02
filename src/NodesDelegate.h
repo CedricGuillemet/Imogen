@@ -155,6 +155,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				node.mEvaluationTarget--;
 		}
 	}
+
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
 	{
 		static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
@@ -537,6 +538,35 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		if (forceEval)
 			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true);
 
+	}
+
+	virtual void DoForce()
+	{
+		int metaNodeCount;
+		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
+		bool dirty = false;
+		bool forceEval = false;
+		bool samplerDirty = false;
+		for (size_t index = 0; index < mNodes.size(); index++)
+		{
+			ImogenNode& node = mNodes[index];
+			const MetaNode& currentMeta = metaNodes[node.mType];
+
+			const NodeGraphDelegate::Con * param = currentMeta.mParams;
+			unsigned char *paramBuffer = (unsigned char*)node.mParameters;
+			for (int i = 0; i < MaxCon; i++, param++)
+			{
+				if (!param->mName)
+					break;
+				if (param->mType == Con_ForceEvaluate)
+				{
+					dirty = true;
+					forceEval = true;
+				}
+			}
+			if (forceEval)
+				mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true);
+		}
 	}
 
 	void InvalidateParameters()

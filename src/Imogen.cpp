@@ -498,11 +498,11 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		{
 			ImGui::PushItemWidth(60);
 			static int previewSize = 0;
-			ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
-			ImGui::SameLine();
+			//ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
+			//ImGui::SameLine();
 			if (ImGui::Button("Export"))
 			{
-
+				nodeGraphDelegate.DoForce();
 			}
 			ImGui::PopItemWidth();
 			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);

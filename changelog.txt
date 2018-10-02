@@ -6,6 +6,7 @@ New:
 - image reader/writer with jpg, png, tga, bmp, partial HDR support
 - thumbnail node: node, library, display
 - save and restore docking layout
+- Export button in node graph dock that force every export in the graph
 
 Changed:
 - Separate scale X and Y values in Transform node

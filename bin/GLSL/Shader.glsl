@@ -1,4 +1,6 @@
 #define PI 3.14159265359
+#define SQRT2 1.414213562373095
+
 #define TwoPI (PI*2)
 
 #ifdef VERTEX_SHADER

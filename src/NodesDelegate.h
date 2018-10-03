@@ -168,9 +168,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
 
 
-		metaNodeCount = 27;
+		metaNodeCount = 28;
 
-		static const MetaNode metaNodes[27] = {
+		static const MetaNode metaNodes[28] = {
 
 			{
 				"Circle", hcGenerator, 1
@@ -386,6 +386,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{  }
 				,{{ "", (int)Con_Float4 }}
 				,{ { "pos", (int)Con_Float2, 0.f,1.f,0.f,1.f, false } }
+				}
+				,
+				{
+					"Swirl", hcTransform, 0
+					,{ { "", (int)Con_Float4 } }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "Angles", (int)Con_Angle2 } }
 				}
 			};
 

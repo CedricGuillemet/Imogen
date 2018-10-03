@@ -51,38 +51,38 @@ void Evaluation::Finish()
 
 size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 {
+	EvaluationStage evaluation;
+	evaluation.mTarget = NULL;
+	evaluation.mUseCountByOthers = 0;
+	evaluation.mbDirty = true;
+	evaluation.mbForceEval = false;
+	evaluation.mNodeType = nodeType;
+	evaluation.mParametersBuffer = 0;
+	evaluation.mEvaluationMask = 0;
+	
+	bool valid(false);
 	auto iter = mEvaluatorScripts.find(nodeName+".glsl");
 	if (iter != mEvaluatorScripts.end())
 	{
-		EvaluationStage evaluation;
+		evaluation.mEvaluationMask |= EvaluationGLSL;
+		iter->second.mNodeType = int(nodeType);
 		evaluation.mTarget = new RenderTarget;
 		mAllocatedRenderTargets.push_back(evaluation.mTarget);
-		evaluation.mUseCountByOthers = 0;
-		evaluation.mbDirty = true;
-		evaluation.mbForceEval = false;
-		evaluation.mNodeType = nodeType;
-		evaluation.mParametersBuffer = 0;
-		evaluation.mEvaluationType = 0;
-		iter->second.mNodeType = int(nodeType);
 		mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
-		mDirtyCount++;
-		mEvaluations.push_back(evaluation);
-		return mEvaluations.size() - 1;
+		valid = true;
 	}
 	iter = mEvaluatorScripts.find(nodeName + ".c");
 	if (iter != mEvaluatorScripts.end())
 	{
-		EvaluationStage evaluation;
-		evaluation.mTarget = NULL;
-		evaluation.mUseCountByOthers = 0;
-		evaluation.mbDirty = true;
-		evaluation.mbForceEval = false;
-		evaluation.mNodeType = nodeType;
-		evaluation.mParametersBuffer = 0;
-		evaluation.mEvaluationType = 1;
+		evaluation.mEvaluationMask |= EvaluationC;
 		iter->second.mNodeType = int(nodeType);
 		mEvaluatorPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
 		mEvaluatorPerNodeType[nodeType].mMem = iter->second.mMem;
+		valid = true;
+	}
+
+	if (valid)
+	{
 		mDirtyCount++;
 		mEvaluations.push_back(evaluation);
 		return mEvaluations.size() - 1;
@@ -120,7 +120,7 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 	stage.mParameters = parameters;
 	stage.mParametersSize = parametersSize;
 
-	if (stage.mEvaluationType == EVALUATOR_GLSL)
+	if (stage.mEvaluationMask&EvaluationGLSL)
 		BindGLSLParameters(stage);
 
 	SetTargetDirty(target);
@@ -136,15 +136,10 @@ void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, b
 		SetTargetDirty(index);
 	}
 
-	switch (evaluation.mEvaluationType)
-	{
-	case 0: // GLSL
+	if (evaluation.mEvaluationMask&EvaluationGLSL)
 		EvaluateGLSL(evaluation);
-		break;
-	case 1: // C
+	if (evaluation.mEvaluationMask&EvaluationC)
 		EvaluateC(evaluation, index);
-		break;
-	}
 }
 
 void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
@@ -167,15 +162,14 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 		for (size_t i = 0; i < mEvaluations.size(); i++)
 		{
 			EvaluationStage& evaluation = mEvaluations[i];
-			switch (evaluation.mEvaluationType)
+			if (evaluation.mEvaluationMask&EvaluationGLSL)
 			{
-			case 0: // glsl
 				evaluation.mTarget = new RenderTarget;
 				mAllocatedRenderTargets.push_back(evaluation.mTarget);
-				break;
-			case 1: // C
+			}
+			if (evaluation.mEvaluationMask&EvaluationC)
+			{
 				evaluation.mTarget = 0;
-				break;
 			}
 		}
 	}

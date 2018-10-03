@@ -559,60 +559,65 @@ void Evaluation::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 		if (file.mEvaluatorType != EVALUATOR_C)
 			continue;
 		const std::string filename = file.mFilename;
-
-		std::ifstream t(file.mDirectory + filename);
-		if (!t.good())
+		try
 		{
-			Log("%s - Unable to load file.\n", filename.c_str());
-			continue;
+			std::ifstream t(file.mDirectory + filename);
+			if (!t.good())
+			{
+				Log("%s - Unable to load file.\n", filename.c_str());
+				continue;
+			}
+			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+			if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
+				mEvaluatorScripts[filename] = EvaluatorScript(str);
+			else
+				mEvaluatorScripts[filename].mText = str;
+
+			EvaluatorScript& program = mEvaluatorScripts[filename];
+			TCCState *s = tcc_new();
+
+			int *noLib = (int*)s;
+			noLib[2] = 1; // no stdlib
+
+			tcc_set_error_func(s, 0, libtccErrorFunc);
+			tcc_add_include_path(s, "C\\");
+			tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
+
+			if (tcc_compile_string(s, program.mText.c_str()) != 0)
+			{
+				Log("%s - Compilation error!\n", filename.c_str());
+				continue;
+			}
+
+			for (auto& evaluationFunction : evaluationFunctions)
+				tcc_add_symbol(s, evaluationFunction.szFunctionName, evaluationFunction.function);
+
+			int size = tcc_relocate(s, NULL);
+			if (size == -1)
+			{
+				Log("%s - Libtcc unable to relocate program!\n", filename.c_str());
+				continue;
+			}
+			program.mMem = malloc(size);
+			tcc_relocate(s, program.mMem);
+
+			*(void**)(&program.mCFunction) = tcc_get_symbol(s, "main");
+			if (!program.mCFunction)
+			{
+				Log("%s - No main function!\n", filename.c_str());
+			}
+			tcc_delete(s);
+
+			if (program.mNodeType != -1)
+			{
+				mEvaluatorPerNodeType[program.mNodeType].mCFunction = program.mCFunction;
+				mEvaluatorPerNodeType[program.mNodeType].mMem = program.mMem;
+			}
 		}
-		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-		if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
-			mEvaluatorScripts[filename] = EvaluatorScript(str);
-		else
-			mEvaluatorScripts[filename].mText = str;
-
-		EvaluatorScript& program = mEvaluatorScripts[filename];
-		TCCState *s = tcc_new();
-
-		int *noLib = (int*)s;
-		noLib[2] = 1; // no stdlib
-
-		tcc_set_error_func(s, 0, libtccErrorFunc);
-		tcc_add_include_path(s, "C\\");
-		tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
-
-		if (tcc_compile_string(s, program.mText.c_str()) != 0)
+		catch (...)
 		{
-			Log("%s - Compilation error!\n", filename.c_str());
-			continue;
+			Log("Error at compiling %s", filename.c_str());
 		}
-
-		for (auto& evaluationFunction : evaluationFunctions)
-			tcc_add_symbol(s, evaluationFunction.szFunctionName, evaluationFunction.function);
-
-		int size = tcc_relocate(s, NULL);
-		if (size == -1)
-		{
-			Log("%s - Libtcc unable to relocate program!\n", filename.c_str());
-			continue;
-		}
-		program.mMem = malloc(size);
-		tcc_relocate(s, program.mMem);
-
-		*(void**)(&program.mCFunction) = tcc_get_symbol(s, "main");
-		if (!program.mCFunction)
-		{
-			Log("%s - No main function!\n", filename.c_str());
-		}
-		tcc_delete(s);
-
-		if (program.mNodeType != -1)
-		{
-			mEvaluatorPerNodeType[program.mNodeType].mCFunction = program.mCFunction;
-			mEvaluatorPerNodeType[program.mNodeType].mMem = program.mMem;
-		}
-
 	}
 }
 
@@ -691,7 +696,7 @@ void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index)
 
 void Evaluation::EvaluationStage::Clear()
 {
-	if (mEvaluationType == EVALUATOR_GLSL)
+	if (mEvaluationMask&EvaluationGLSL)
 		glDeleteBuffers(1, &mParametersBuffer);
 	//gEvaluation.UnreferenceRenderTarget(&mTarget);
 }

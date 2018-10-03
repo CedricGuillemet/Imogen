@@ -167,6 +167,11 @@ protected:
 		int mInputs[8];
 	};
 
+	enum EvaluationMask
+	{
+		EvaluationC    = 1 << 0,
+		EvaluationGLSL = 1 << 1,
+	};
 	struct EvaluationStage
 	{
 		RenderTarget *mTarget;
@@ -178,7 +183,7 @@ protected:
 		std::vector<InputSampler> mInputSamplers;
 		bool mbDirty;
 		bool mbForceEval;
-		int mEvaluationType; // 0 = GLSL. 1 = CPU C
+		int mEvaluationMask; // see EvaluationMask
 		int mUseCountByOthers;
 		void Clear();
 	};

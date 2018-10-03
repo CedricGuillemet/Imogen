@@ -35,7 +35,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
 	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation)
 	{
-		mCategoriesCount = 7;
+		mCategoriesCount = 8;
 		static const char *categories[] = {
 			"Transform",
 			"Generator",
@@ -43,7 +43,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			"Blend",
 			"Filter",
 			"Noise",
-			"File"};
+			"File",
+			"Paint"};
 		mCategories = categories;
 	}
 
@@ -164,11 +165,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcBlend = IM_COL32(200, 150, 150, 255);
 		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
 		static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
+		static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
 
 
-		metaNodeCount = 26;
+		metaNodeCount = 27;
 
-		static const MetaNode metaNodes[26] = {
+		static const MetaNode metaNodes[27] = {
 
 			{
 				"Circle", hcGenerator, 1
@@ -376,6 +378,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{ { "", (int)Con_Float4 } }
 				,{}
 				,{ { "Make", (int)Con_ForceEvaluate } }
+				}
+
+				,
+				{
+					"Paint2D", hcPaint, 7
+					,{  }
+				,{{ "", (int)Con_Float4 }}
+				,{ { "pos", (int)Con_Float2, 0.f,1.f,0.f,1.f, false } }
 				}
 			};
 

@@ -54,6 +54,57 @@ int Log(const char *szFormat, ...)
 	return 0;
 }
 
+
+void APIENTRY openglCallbackFunction(GLenum /*source*/,
+	GLenum type,
+	GLuint id,
+	GLenum severity,
+	GLsizei /*length*/,
+	const GLchar* message,
+	const void* /*userParam*/)
+{
+	const char *typeStr = "";
+	const char *severityStr = "";
+
+	switch (type)
+	{
+	case GL_DEBUG_TYPE_ERROR:
+		typeStr = "ERROR";
+		break;
+	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+		typeStr = "DEPRECATED_BEHAVIOR";
+		break;
+	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+		typeStr = "UNDEFINED_BEHAVIOR";
+		break;
+	case GL_DEBUG_TYPE_PORTABILITY:
+		typeStr = "PORTABILITY";
+		break;
+	case GL_DEBUG_TYPE_PERFORMANCE:
+		typeStr = "PERFORMANCE";
+		break;
+	case GL_DEBUG_TYPE_OTHER:
+		typeStr = "OTHER";
+		// skip
+		return;
+		break;
+	}
+
+	switch (severity)
+	{
+	case GL_DEBUG_SEVERITY_LOW:
+		severityStr = "LOW";
+		break;
+	case GL_DEBUG_SEVERITY_MEDIUM:
+		severityStr = "MEDIUM";
+		break;
+	case GL_DEBUG_SEVERITY_HIGH:
+		severityStr = "HIGH";
+		break;
+	}
+	Log("GL Debug (%s - %s) %s \n", typeStr, severityStr, message);
+}
+
 Evaluation gEvaluation;
 Library library;
 Imogen imogen;
@@ -81,7 +132,7 @@ int main(int, char**)
 #else
 	// GL 3.0 + GLSL 130
 	const char* glsl_version = "#version 130";
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
@@ -119,6 +170,18 @@ int main(int, char**)
 
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL3_Init(glsl_version);
+
+	// opengl debug
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+	glDebugMessageCallback((GLDEBUGPROCARB)openglCallbackFunction, NULL);
+	GLuint unusedIds = 0;
+	glDebugMessageControl(GL_DONT_CARE,
+		GL_DONT_CARE,
+		GL_DONT_CARE,
+		0,
+		&unusedIds,
+		true);
+
 
 	// Setup style
 	ImGui::StyleColorsDark();

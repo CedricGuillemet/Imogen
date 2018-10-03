@@ -75,7 +75,6 @@ __NODE__
 void main() 
 { 
 	outPixDiffuse = vec4(__FUNCTION__);
-	outPixDiffuse.a = 1.0;
 }
 
 #endif

@@ -59,7 +59,9 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	evaluation.mNodeType = nodeType;
 	evaluation.mParametersBuffer = 0;
 	evaluation.mEvaluationMask = 0;
-	
+	evaluation.mBlendingSrc = ONE;
+	evaluation.mBlendingDst = ZERO;
+
 	bool valid(false);
 	auto iter = mEvaluatorScripts.find(nodeName+".glsl");
 	if (iter != mEvaluatorScripts.end())
@@ -236,7 +238,9 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 			continue;
 
 		if (evaluation.mTarget && !evaluation.mTarget->mGLTexID)
+		{
 			evaluation.mTarget->initBuffer(width, height, false);
+		}
 
 		PerformEvaluationForNode(index, width, height, false);
 	}

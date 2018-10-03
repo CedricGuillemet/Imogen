@@ -41,6 +41,8 @@ static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
+static const unsigned int GLBlends[] = { GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
+	GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_SRC_ALPHA_SATURATE };
 
 inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {
@@ -67,11 +69,6 @@ void RenderTarget::destroy()
 	fbo = depthbuffer = 0;
 	mWidth = mHeight = 0;
 	mGLTexID = 0;
-}
-
-void RenderTarget::clear()
-{
-	glClear(GL_COLOR_BUFFER_BIT | (depthbuffer ? GL_DEPTH_BUFFER_BIT : 0));
 }
 
 void RenderTarget::initBuffer(int width, int height, bool hasZBuffer)
@@ -107,6 +104,11 @@ void RenderTarget::initBuffer(int width, int height, bool hasZBuffer)
 	glDrawBuffers(sizeof(DrawBuffers) / sizeof(GLenum), DrawBuffers);
 
 	checkFBO();
+	bindAsTarget();
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 }
 
 void RenderTarget::checkFBO()
@@ -479,8 +481,17 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "AllocateImage", (void*)Evaluation::AllocateImage },
 	{ "FreeImage", (void*)Evaluation::FreeImage },
 	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
-	{ "Evaluate", (void*)Evaluation::Evaluate}
+	{ "Evaluate", (void*)Evaluation::Evaluate},
+	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
 };
+
+void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
+{
+	EvaluationStage& evaluation = gEvaluation.mEvaluations[target];
+
+	evaluation.mBlendingSrc = blendSrc;
+	evaluation.mBlendingDst = blendDst;
+}
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
 {
@@ -491,7 +502,6 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 	}
 	return str;
 }
-
 
 void Evaluation::ClearEvaluators()
 {
@@ -646,6 +656,17 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 
 	evaluation.mTarget->bindAsTarget();
 	unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
+	const int blendOps[] = { evaluation.mBlendingSrc, evaluation.mBlendingDst };
+	unsigned int blend[] = { GL_ONE, GL_ZERO };
+
+
+	for (int i = 0; i < 2; i++)
+	{
+		if (blendOps[i] < BLEND_LAST)
+			blend[i] = GLBlends[blendOps[i]];
+	}
+	glEnable(GL_BLEND);
+	glBlendFunc(blend[0], blend[1]);
 
 	glUseProgram(program);
 
@@ -674,6 +695,7 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 	}
 	//
 	mFSQuad.Render();
+	glDisable(GL_BLEND);
 }
 
 void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index)

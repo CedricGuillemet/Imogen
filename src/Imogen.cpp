@@ -168,7 +168,11 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 	if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
 	{
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0xFF000000);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
+		ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
 		ImGui::ImageButton(ImTextureID((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(256, 256));
+		ImGui::PopStyleColor(3);
 		ImGui::PopStyleVar(1);
 		ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 		if (rc.Contains(io.MousePos))
@@ -187,7 +191,6 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 	else
 		nodeGraphDelegate.EditNode();
 }
-
 
 template <typename T, typename Ty> struct SortedResource
 {
@@ -276,7 +279,7 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
 	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
 	{
 		Image image;
-		unsigned char *data = stbi_load_from_memory(mSrc->data(), mSrc->size(), &image.width, &image.height, &image.components, 0);
+		unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.width, &image.height, &image.components, 0);
 		if (data)
 		{
 			image.bits = data;

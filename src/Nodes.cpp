@@ -344,7 +344,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
 		float imgSizeComp = std::min(imgSize.x, imgSize.y);
 		
-		draw_list->AddImage(ImTextureID(delegate->GetNodeTexture(size_t(node_idx))), imgPos, imgPos + ImVec2(imgSizeComp, imgSizeComp));
+		ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
+		draw_list->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
+		draw_list->AddImage(ImTextureID(delegate->GetNodeTexture(size_t(node_idx))), imgPos, imgPosMax);
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
 		for (int i = 0; i < 2; i++)

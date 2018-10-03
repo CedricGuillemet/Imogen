@@ -14,6 +14,26 @@ typedef struct Evaluation_t
 	int forcedDirty;
 } Evaluation;
 
+enum BlendOp
+{
+	ZERO,
+	ONE, 
+	SRC_COLOR,
+	ONE_MINUS_SRC_COLOR, 
+	DST_COLOR, 
+	ONE_MINUS_DST_COLOR, 
+	SRC_ALPHA, 
+	ONE_MINUS_SRC_ALPHA, 
+	DST_ALPHA, 
+	ONE_MINUS_DST_ALPHA, 
+	CONSTANT_COLOR, 
+	ONE_MINUS_CONSTANT_COLOR, 
+	CONSTANT_ALPHA, 
+	ONE_MINUS_CONSTANT_ALPHA, 
+	SRC_ALPHA_SATURATE,
+	BLEND_LAST
+};
+
 // call FreeImage when done
 int ReadImage(char *filename, Image *image);
 // writes an allocated image
@@ -34,6 +54,8 @@ int SetThumbnailImage(Image *image);
 // force evaluation of a target with a specified size
 // no guarantee that the resulting Image will have that size.
 int Evaluate(int target, int width, int height, Image *image);
+
+void SetBlendingMode(int target, int blendSrc, int blendDst);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

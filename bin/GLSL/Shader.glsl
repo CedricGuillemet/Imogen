@@ -19,6 +19,15 @@ void main()
 
 #ifdef FRAGMENT_SHADER
 
+layout (std140) uniform EvaluationBlock
+{
+	int targetIndex;
+	int inputIndices[8];
+	int forcedDirty;
+	int uiPass;
+} EvaluationParam;
+
+
 layout(location=0) out vec4 outPixDiffuse;
 in vec2 vUV;
 

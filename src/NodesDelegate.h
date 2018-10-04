@@ -168,9 +168,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
 
 
-		metaNodeCount = 28;
+		metaNodeCount = 29;
 
-		static const MetaNode metaNodes[28] = {
+		static const MetaNode metaNodes[29] = {
 
 			{
 				"Circle", hcGenerator, 1
@@ -393,6 +393,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{ { "", (int)Con_Float4 } }
 				,{ { "", (int)Con_Float4 } }
 				,{ { "Angles", (int)Con_Angle2 } }
+				}
+				,
+				{
+					"Crop", hcTransform, 0
+					,{ { "", (int)Con_Float4 } }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "Quad", (int)Con_Float4 } }
+				, true
 				}
 			};
 
@@ -648,6 +656,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		}
 		return res;
 	}
+	bool NodeHasUI(size_t nodeIndex)
+	{
+		int metaNodeCount;
+		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
+		return metaNodes[mNodes[nodeIndex].mType].mbHasUI;
+	}
+
 	size_t ComputeParamMemSize(int paramType)
 	{
 		size_t res = 0;

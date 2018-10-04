@@ -103,6 +103,17 @@ struct ImguiAppLog
 	}
 };
 
+std::vector<ImogenDrawCallback> mCallbackRects;
+void InitCallbackRects()
+{
+	mCallbackRects.clear();
+}
+size_t AddNodeUICallbackRect(const ImRect& rect, size_t nodeIndex)
+{
+	mCallbackRects.push_back({ rect, nodeIndex });
+	return mCallbackRects.size() - 1;
+}
+
 ImguiAppLog *ImguiAppLog::Log = NULL;
 ImguiAppLog logger;
 TextEditor editor;
@@ -175,6 +186,16 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		ImGui::PopStyleColor(3);
 		ImGui::PopStyleVar(1);
 		ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+
+		if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+		{
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			float w = ImGui::GetWindowContentRegionWidth();
+			float h = w * 9.f / 16.f;
+			ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+			//ImGui::InvisibleButton("previewCallback", ImVec2(w, h));
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, selNode)));// ImRect(p, ImVec2(p.x + w, p.y + h)))));
+		}
 		if (rc.Contains(io.MousePos))
 		{
 			if (io.MouseDown[0])

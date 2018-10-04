@@ -51,6 +51,7 @@ struct NodeGraphDelegate
 	virtual void DoForce() = 0;
 	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize) = 0;
 	virtual void SetParamBlock(size_t index, unsigned char* paramBlock) = 0;
+	virtual bool NodeHasUI(size_t nodeIndex) = 0;
 	static const int MaxCon = 32;
 	struct Con
 	{
@@ -69,6 +70,7 @@ struct NodeGraphDelegate
 		Con mInputs[MaxCon];
 		Con mOutputs[MaxCon];
 		Con mParams[MaxCon];
+		bool mbHasUI;
 	};
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount) = 0;
 };

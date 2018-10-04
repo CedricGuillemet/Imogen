@@ -36,6 +36,8 @@
 extern int Log(const char *szFormat, ...);
 
 typedef unsigned int TextureID;
+struct ImDrawList;
+struct ImDrawCmd;
 
 enum BlendOp
 {
@@ -68,6 +70,7 @@ struct EvaluationInfo
 	int targetIndex;
 	int inputIndices[8];
 	int forcedDirty;
+	int uiPass;
 };
 
 typedef struct Image_t
@@ -142,6 +145,8 @@ struct Evaluation
 	static int Evaluate(int target, int width, int height, Image *image);
 	static void SetBlendingMode(int target, int blendSrc, int blendDst);
 
+
+	static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
 	// synchronous texture cache
 	// use for simple textures(stock) or to replace with a more efficient one
 	unsigned int GetTexture(const std::string& filename);
@@ -210,7 +215,7 @@ protected:
 		void Clear();
 	};
 
-
+	unsigned int mEvaluationStateGLSLBuffer;
 	std::vector<EvaluationStage> mEvaluations;
 	std::vector<size_t> mEvaluationOrderList;
 

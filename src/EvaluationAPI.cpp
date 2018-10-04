@@ -35,7 +35,8 @@
 #include "stb_image_write.h"
 #include <fstream>
 #include <streambuf>
-
+#include "imgui.h"
+#include "imgui_internal.h"
 
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
@@ -665,12 +666,38 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 		if (blendOps[i] < BLEND_LAST)
 			blend[i] = GLBlends[blendOps[i]];
 	}
+
+	EvaluationInfo evaluationInfo;
+	evaluationInfo.targetIndex = 0;
+	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
+	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
+	evaluationInfo.uiPass = true;
+
+
+	if (!mEvaluationStateGLSLBuffer)
+	{
+		glGenBuffers(1, &mEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, mEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+	else
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(EvaluationInfo), &evaluationInfo);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
+
 	glEnable(GL_BLEND);
 	glBlendFunc(blend[0], blend[1]);
 
 	glUseProgram(program);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluation.mParametersBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 	int samplerIndex = 0;
 	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -706,6 +733,7 @@ void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index)
 	evaluationInfo.targetIndex = int(index);
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
 	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
+	evaluationInfo.uiPass = false;
 	try // todo: find a better solution than a try catch
 	{
 		mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
@@ -765,4 +793,120 @@ unsigned int Evaluation::GetTexture(const std::string& filename)
 
 	mSynchronousTextureCache[filename] = textureId;
 	return textureId;
+}
+
+
+void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
+{
+	// Backup GL state
+	GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
+	glActiveTexture(GL_TEXTURE0);
+	GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+	GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+#ifdef GL_SAMPLER_BINDING
+	GLint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
+#endif
+	GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
+	GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#ifdef GL_POLYGON_MODE
+	GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
+	GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
+	GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
+	GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
+	GLenum last_blend_dst_rgb; glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
+	GLenum last_blend_src_alpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
+	GLenum last_blend_dst_alpha; glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
+	GLenum last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
+	GLenum last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
+	GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
+	GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
+	GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
+	GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+	ImGuiIO& io = ImGui::GetIO();
+
+	const ImogenDrawCallback& cb = mCallbackRects[int(cmd->UserCallbackData)];
+	ImRect cbRect = cb.mRect;
+	float h = cbRect.Max.y - cbRect.Min.y;
+	float w = cbRect.Max.x - cbRect.Min.x;
+	glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
+
+	cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
+
+	glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
+	glEnable(GL_SCISSOR_BOX);
+	/*
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	struct PassBuffer
+	{
+		float ViewProj[16];
+	};
+	PassBuffer passBuffer;
+	static unsigned int meshDisplayShader = 0;
+	static unsigned int parametersBuffer = 0;
+	if (meshDisplayShader == 0)
+	{
+		std::string meshShader = { ""
+			"#ifdef VERTEX_SHADER\n"
+			"out vec3 vNormal;"
+			"		void main()\n"
+			"		{\n"
+			"			mat4 transformViewProj = ViewProjection;\n"
+			"			gl_Position = transformViewProj * vec4(inPosition.xyz, 1.0);\n"
+			"vNormal = inNormal.xyz;"
+			"		}\n"
+			"#endif\n"
+			"#ifdef FRAGMENT_SHADER\n"
+			"in vec3 vNormal;"
+			"layout(location = 0) out vec4 outPixDiffuse;"
+			"		void main()\n"
+			"		{\n"
+			//"			outPixDiffuse = vec4(1.0,0.0,1.0,1.0);\n"
+			"			outPixDiffuse = vec4(max(dot(vNormal, vec3(0.6, 0.3, 0.1)), 0.3));\n"
+			"		}\n"
+			"#endif\n"
+		};
+		meshDisplayShader = LoadShader(meshShader, "shaderMesh");
+		glGenBuffers(1, &parametersBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, parametersBuffer);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(passBuffer), &passBuffer, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, parametersBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+	float perspectiveMat[16], viewMat[16];
+	Perspective(53.f, w / h, 0.01f, 1000.f, perspectiveMat);
+	float eye[3] = { 2.f, 2.f, 2.f };
+	float tgt[3] = { 0.f, 0.f, 0.f };
+	float up[3] = { 0.f, 1.f, 0.f };
+	//LookAt(eye, tgt, up, viewMat);
+	LookAt(defMesh.cameraPos, defMesh.cameraTarget, up, viewMat);
+	FPU_MatrixF_x_MatrixF(viewMat, perspectiveMat, passBuffer.ViewProj);
+	glUseProgram(meshDisplayShader);
+	glBindBuffer(GL_UNIFORM_BUFFER, parametersBuffer);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(passBuffer), &passBuffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	RenderMesh(&mOGLMeshes.begin()->second);
+	*/
+	// Restore modified GL state
+	glUseProgram(last_program);
+	glBindTexture(GL_TEXTURE_2D, last_texture);
+#ifdef GL_SAMPLER_BINDING
+	glBindSampler(0, last_sampler);
+#endif
+	glActiveTexture(last_active_texture);
+	glBindVertexArray(last_vertex_array);
+	glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
+	glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
+	glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
+	if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+	if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+	if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+	if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+#ifdef GL_POLYGON_MODE
+	glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
+#endif
+	glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+	glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
 }

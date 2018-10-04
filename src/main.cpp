@@ -215,6 +215,7 @@ int main(int, char**)
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(window);
 		ImGui::NewFrame();
+		InitCallbackRects();
 
 		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 

@@ -34,7 +34,7 @@ std::string Evaluation::GetEvaluator(const std::string& filename)
 	return mEvaluatorScripts[filename].mText;
 }
 
-Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1)
+Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0)
 {
 	
 }
@@ -113,6 +113,8 @@ void Evaluation::DelEvaluationTarget(size_t target)
 
 unsigned int Evaluation::GetEvaluationTexture(size_t target)
 {
+	if (!mEvaluations[target].mTarget)
+		return 0;
 	return mEvaluations[target].mTarget->mGLTexID;
 }
 

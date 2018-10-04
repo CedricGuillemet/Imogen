@@ -12,6 +12,7 @@ typedef struct Evaluation_t
 	int targetIndex;
 	int inputIndices[8];
 	int forcedDirty;
+	int uiPass;
 } Evaluation;
 
 enum BlendOp

@@ -67,10 +67,12 @@ enum EvaluationStatus
 
 struct EvaluationInfo
 {
-	int inputIndices[8];
 	int targetIndex;
 	int forcedDirty;
 	int uiPass;
+	int padding;
+
+	int inputIndices[8];
 };
 
 typedef struct Image_t

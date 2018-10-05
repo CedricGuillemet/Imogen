@@ -33,7 +33,7 @@
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
-	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation)
+	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false)
 	{
 		mCategoriesCount = 8;
 		static const char *categories[] = {
@@ -399,7 +399,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"Crop", hcTransform, 0
 					,{ { "", (int)Con_Float4 } }
 				,{ { "", (int)Con_Float4 } }
-				,{ { "Quad", (int)Con_Float4 } }
+				,{ { "Quad", (int)Con_Float4, 0.f,1.f,0.f,1.f, false, true } }
 				, true
 				}
 			};
@@ -611,6 +611,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 
 	template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? rhs : lhs; }
+
+	bool mbMouseDragging;
+	void SetMouseNone() { mbMouseDragging = false; }
 	void SetMouseRatios(float rx, float ry, float dx, float dy)
 	{
 		if (mSelectedNodeIndex == -1)
@@ -625,6 +628,23 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			if (!param->mName)
 				break;
 			float *paramFlt = (float*)paramBuffer;
+
+			if (param->mbQuadSelect && param->mType == Con_Float4)
+			{
+				if (!mbMouseDragging)
+				{
+					paramFlt[0] = rx;
+					paramFlt[1] = ry;
+					mbMouseDragging = true;
+				}
+				else
+				{
+					paramFlt[2] = rx;
+					paramFlt[3] = ry;
+				}
+				continue;
+			}
+			
 			if (param->mRangeMinX != 0.f || param->mRangeMaxX != 0.f)
 			{
 				if (param->mbRelative)

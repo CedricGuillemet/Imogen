@@ -561,6 +561,16 @@ void Evaluation::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 			mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
 	}
 
+	if (!gEvaluation.mEvaluationStateGLSLBuffer)
+	{
+		glGenBuffers(1, &mEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+
 	// C
 	for (auto& file : evaluatorfilenames)
 	{
@@ -643,7 +653,7 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	else
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, stage.mParametersSize, stage.mParameters);
+		glBufferData(GL_UNIFORM_BUFFER, stage.mParametersSize, stage.mParameters, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 }
@@ -652,7 +662,8 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evalu
 {
 	const Input& input = evaluation.mInput;
 
-	evaluation.mTarget->bindAsTarget();
+	if (!evaluationInfo.uiPass)
+		evaluation.mTarget->bindAsTarget();
 	unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
 	const int blendOps[] = { evaluation.mBlendingSrc, evaluation.mBlendingDst };
 	unsigned int blend[] = { GL_ONE, GL_ZERO };
@@ -668,24 +679,10 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evalu
 	evaluationInfo.targetIndex = 0;
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
 	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
-	evaluationInfo.uiPass = 0;
-
-
-	if (!mEvaluationStateGLSLBuffer)
-	{
-		glGenBuffers(1, &mEvaluationStateGLSLBuffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(EvaluationInfo), &evaluationInfo);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	//evaluationInfo.uiPass = 1;
+	glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
 	glEnable(GL_BLEND);
@@ -838,60 +835,6 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	evaluationInfo.uiPass = 1;
 	gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
 
-	/*
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	struct PassBuffer
-	{
-		float ViewProj[16];
-	};
-	PassBuffer passBuffer;
-	static unsigned int meshDisplayShader = 0;
-	static unsigned int parametersBuffer = 0;
-	if (meshDisplayShader == 0)
-	{
-		std::string meshShader = { ""
-			"#ifdef VERTEX_SHADER\n"
-			"out vec3 vNormal;"
-			"		void main()\n"
-			"		{\n"
-			"			mat4 transformViewProj = ViewProjection;\n"
-			"			gl_Position = transformViewProj * vec4(inPosition.xyz, 1.0);\n"
-			"vNormal = inNormal.xyz;"
-			"		}\n"
-			"#endif\n"
-			"#ifdef FRAGMENT_SHADER\n"
-			"in vec3 vNormal;"
-			"layout(location = 0) out vec4 outPixDiffuse;"
-			"		void main()\n"
-			"		{\n"
-			//"			outPixDiffuse = vec4(1.0,0.0,1.0,1.0);\n"
-			"			outPixDiffuse = vec4(max(dot(vNormal, vec3(0.6, 0.3, 0.1)), 0.3));\n"
-			"		}\n"
-			"#endif\n"
-		};
-		meshDisplayShader = LoadShader(meshShader, "shaderMesh");
-		glGenBuffers(1, &parametersBuffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, parametersBuffer);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(passBuffer), &passBuffer, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, parametersBuffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
-	float perspectiveMat[16], viewMat[16];
-	Perspective(53.f, w / h, 0.01f, 1000.f, perspectiveMat);
-	float eye[3] = { 2.f, 2.f, 2.f };
-	float tgt[3] = { 0.f, 0.f, 0.f };
-	float up[3] = { 0.f, 1.f, 0.f };
-	//LookAt(eye, tgt, up, viewMat);
-	LookAt(defMesh.cameraPos, defMesh.cameraTarget, up, viewMat);
-	FPU_MatrixF_x_MatrixF(viewMat, perspectiveMat, passBuffer.ViewProj);
-	glUseProgram(meshDisplayShader);
-	glBindBuffer(GL_UNIFORM_BUFFER, parametersBuffer);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(passBuffer), &passBuffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	RenderMesh(&mOGLMeshes.begin()->second);
-	*/
 	// Restore modified GL state
 	glUseProgram(last_program);
 	glBindTexture(GL_TEXTURE_2D, last_texture);

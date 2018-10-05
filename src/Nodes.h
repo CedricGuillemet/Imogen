@@ -60,6 +60,7 @@ struct NodeGraphDelegate
 		float mRangeMinX, mRangeMaxX;
 		float mRangeMinY, mRangeMaxY;
 		bool mbRelative;
+		bool mbQuadSelect;
 		const char* mEnumList;
 	};
 	struct MetaNode

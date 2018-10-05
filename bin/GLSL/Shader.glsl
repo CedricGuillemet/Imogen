@@ -21,10 +21,12 @@ void main()
 
 layout (std140) uniform EvaluationBlock
 {
-	int inputIndices[8];
 	int targetIndex;
 	int forcedDirty;
-	int uiPass;
+	int	uiPass;
+	int padding;
+	int inputIndices[8];
+	
 } EvaluationParam;
 
 

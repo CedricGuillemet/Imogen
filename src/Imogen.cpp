@@ -182,7 +182,12 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0xFF000000);
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
 		ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
-		ImGui::ImageButton(ImTextureID((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(256, 256));
+		float w = ImGui::GetWindowContentRegionWidth();
+		float ratio = 1.f;
+		float h = w * ratio;
+		ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+
+		ImGui::ImageButton(ImTextureID((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(w, h));
 		ImGui::PopStyleColor(3);
 		ImGui::PopStyleVar(1);
 		ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
@@ -190,10 +195,6 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
 		{
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
-			float w = ImGui::GetWindowContentRegionWidth();
-			float h = w * 9.f / 16.f;
-			ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
-			//ImGui::InvisibleButton("previewCallback", ImVec2(w, h));
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, selNode)));// ImRect(p, ImVec2(p.x + w, p.y + h)))));
 		}
 		if (rc.Contains(io.MousePos))
@@ -203,6 +204,10 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 				ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
 				ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
 				nodeGraphDelegate.SetMouseRatios(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y);
+			}
+			else
+			{
+				nodeGraphDelegate.SetMouseNone();
 			}
 		}
 	}

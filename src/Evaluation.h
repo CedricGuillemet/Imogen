@@ -67,8 +67,8 @@ enum EvaluationStatus
 
 struct EvaluationInfo
 {
-	int targetIndex;
 	int inputIndices[8];
+	int targetIndex;
 	int forcedDirty;
 	int uiPass;
 };
@@ -123,7 +123,7 @@ struct Evaluation
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
-	void PerformEvaluationForNode(size_t index, int width, int height, bool force);
+	void PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo);
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
@@ -220,8 +220,8 @@ protected:
 	std::vector<size_t> mEvaluationOrderList;
 
 	void BindGLSLParameters(EvaluationStage& stage);
-	void EvaluateGLSL(EvaluationStage& evaluation);
-	void EvaluateC(EvaluationStage& evaluation, size_t index);
+	void EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evaluationInfo);
+	void EvaluateC(EvaluationStage& evaluation, size_t index, EvaluationInfo& evaluationInfo);
 	void FinishEvaluation();
 
 	std::vector<RenderTarget*> mAllocatedRenderTargets;

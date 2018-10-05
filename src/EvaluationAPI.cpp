@@ -314,15 +314,6 @@ struct EValuationFunction
 	void *function;
 };
 
-/*
-typedef struct Evaluation_t
-{
-int targetIndex;
-int inputIndices[8];
-int forcedDirty;
-} Evaluation;
-*/
-
 extern Evaluation gEvaluation;
 
 int Evaluation::ReadImage(const char *filename, Image *image)
@@ -557,8 +548,14 @@ void Evaluation::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 		shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
 
 		unsigned int program = LoadShader(shaderText, filename.c_str());
-		unsigned int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
-		glUniformBlockBinding(program, parameterBlockIndex, 1);
+
+		int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
+		if (parameterBlockIndex != -1)
+			glUniformBlockBinding(program, parameterBlockIndex, 1);
+
+		parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
+		if (parameterBlockIndex != -1)
+			glUniformBlockBinding(program, parameterBlockIndex, 2);
 		shader.mProgram = program;
 		if (shader.mNodeType != -1)
 			mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
@@ -640,7 +637,7 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
 
 		glBufferData(GL_UNIFORM_BUFFER, stage.mParametersSize, stage.mParameters, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, stage.mParametersBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 	else
@@ -651,7 +648,7 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	}
 }
 
-void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
+void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evaluationInfo)
 {
 	const Input& input = evaluation.mInput;
 
@@ -667,11 +664,11 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 			blend[i] = GLBlends[blendOps[i]];
 	}
 
-	EvaluationInfo evaluationInfo;
+	;
 	evaluationInfo.targetIndex = 0;
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
 	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
-	evaluationInfo.uiPass = true;
+	evaluationInfo.uiPass = 0;
 
 
 	if (!mEvaluationStateGLSLBuffer)
@@ -680,7 +677,7 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
 
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, mEvaluationStateGLSLBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 	else
@@ -725,15 +722,15 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 	glDisable(GL_BLEND);
 }
 
-void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index)
+void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index, EvaluationInfo& evaluationInfo)
 {
 	const Input& input = evaluation.mInput;
 
-	EvaluationInfo evaluationInfo;
+	//EvaluationInfo evaluationInfo;
 	evaluationInfo.targetIndex = int(index);
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
-	evaluationInfo.uiPass = false;
+	//evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
+	//evaluationInfo.uiPass = false;
 	try // todo: find a better solution than a try catch
 	{
 		mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
@@ -834,7 +831,13 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
 
 	glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
-	glEnable(GL_SCISSOR_BOX);
+	glEnable(GL_SCISSOR_TEST);
+
+	EvaluationInfo evaluationInfo;
+	evaluationInfo.forcedDirty = 1;
+	evaluationInfo.uiPass = 1;
+	gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
+
 	/*
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -909,4 +912,5 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 #endif
 	glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 	glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

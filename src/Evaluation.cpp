@@ -130,7 +130,7 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 	SetTargetDirty(target);
 }
 
-void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, bool force)
+void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo)
 {
 	EvaluationStage& evaluation = mEvaluations[index];
 	
@@ -141,9 +141,9 @@ void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, b
 	}
 
 	if (evaluation.mEvaluationMask&EvaluationGLSL)
-		EvaluateGLSL(evaluation);
+		EvaluateGLSL(evaluation, evaluationInfo);
 	if (evaluation.mEvaluationMask&EvaluationC)
-		EvaluateC(evaluation, index);
+		EvaluateC(evaluation, index, evaluationInfo);
 }
 
 void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
@@ -231,6 +231,9 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 	if (!mDirtyCount && !forceEvaluation)
 		return;
 
+	EvaluationInfo evaluationInfo;
+	evaluationInfo.forcedDirty = forceEvaluation ? 1 : 0;
+	evaluationInfo.uiPass = 0;
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
 		size_t index = mEvaluationOrderList[i];
@@ -244,7 +247,7 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 			evaluation.mTarget->initBuffer(width, height, false);
 		}
 
-		PerformEvaluationForNode(index, width, height, false);
+		PerformEvaluationForNode(index, width, height, false, evaluationInfo);
 	}
 
 	for (auto& evaluation : mEvaluations)

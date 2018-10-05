@@ -9,8 +9,8 @@ typedef struct Image_t
 
 typedef struct Evaluation_t
 {
-	int targetIndex;
 	int inputIndices[8];
+	int targetIndex;
 	int forcedDirty;
 	int uiPass;
 } Evaluation;

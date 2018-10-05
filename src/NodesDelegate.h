@@ -561,7 +561,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		if (dirty)
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
 		if (forceEval)
-			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true);
+		{
+			EvaluationInfo evaluationInfo;
+			evaluationInfo.forcedDirty = 1;
+			evaluationInfo.uiPass = 0;
+			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+		}
 
 	}
 
@@ -590,7 +595,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				}
 			}
 			if (forceEval)
-				mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true);
+			{
+				EvaluationInfo evaluationInfo;
+				evaluationInfo.forcedDirty = 1;
+				evaluationInfo.uiPass = 0;
+				mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+			}
 		}
 	}
 
@@ -603,6 +613,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? rhs : lhs; }
 	void SetMouseRatios(float rx, float ry, float dx, float dy)
 	{
+		if (mSelectedNodeIndex == -1)
+			return;
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		size_t res = 0;

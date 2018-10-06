@@ -13,7 +13,7 @@ typedef struct Evaluation_t
 	int forcedDirty;
 	int uiPass;
 	int padding;
-	
+	float mouse[4];
 	int inputIndices[8];	
 } Evaluation;
 

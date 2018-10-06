@@ -203,6 +203,10 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 			ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
 			nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1]);
 		}
+		else
+		{
+			nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false);
+		}
 	}
 
 	if (selNode == -1)

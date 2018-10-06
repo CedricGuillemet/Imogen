@@ -339,7 +339,7 @@ void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rB
 	}
 	auto& ev = mEvaluationStages[target];
 	ev.mRx = rx;
-	ev.mRy = ry;
+	ev.mRy = 1.f - ry; // inverted for UI
 	ev.mLButDown = lButDown;
 	ev.mRButDown = rButDown;
 }

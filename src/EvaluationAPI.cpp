@@ -708,7 +708,6 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 			blend[i] = GLBlends[blendOps[i]];
 	}
 
-	;
 	evaluationInfo.targetIndex = 0;
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
 	evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;

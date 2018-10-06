@@ -386,7 +386,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{  }
 				,{{ "", (int)Con_Float4 }}
 				,{ { "pos", (int)Con_Float2, 0.f,1.f,0.f,1.f, false } }
-				, false
+				, true
 				, true
 				}
 				,
@@ -559,7 +559,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
 		
-		//ImGui::End();
 		if (dirty)
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
 		if (forceEval)
@@ -569,7 +568,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			evaluationInfo.uiPass = 0;
 			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
 		}
-
 	}
 
 	virtual void DoForce()
@@ -639,8 +637,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				{
 					if (!mbMouseDragging)
 					{
-						paramFlt[0] = rx;
-						paramFlt[1] = ry;
+						paramFlt[2] = paramFlt[0] = rx;
+						paramFlt[3] = paramFlt[1] = ry;
 						mbMouseDragging = true;
 					}
 					else

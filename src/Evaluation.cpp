@@ -86,8 +86,8 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	if (valid)
 	{
 		mDirtyCount++;
-		mEvaluations.push_back(evaluation);
-		return mEvaluations.size() - 1;
+		mEvaluationStages.push_back(evaluation);
+		return mEvaluationStages.size() - 1;
 	}
 	Log("Could not find node name \"%s\" \n", nodeName.c_str());
 	return -1;
@@ -96,12 +96,12 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 void Evaluation::DelEvaluationTarget(size_t target)
 {
 	SetTargetDirty(target);
-	EvaluationStage& ev = mEvaluations[target];
+	EvaluationStage& ev = mEvaluationStages[target];
 	ev.Clear();
-	mEvaluations.erase(mEvaluations.begin() + target);
+	mEvaluationStages.erase(mEvaluationStages.begin() + target);
 
 	// shift all connections
-	for (auto& evaluation : mEvaluations)
+	for (auto& evaluation : mEvaluationStages)
 	{
 		for (auto& inp : evaluation.mInput.mInputs)
 		{
@@ -113,14 +113,14 @@ void Evaluation::DelEvaluationTarget(size_t target)
 
 unsigned int Evaluation::GetEvaluationTexture(size_t target)
 {
-	if (!mEvaluations[target].mTarget)
+	if (!mEvaluationStages[target].mTarget)
 		return 0;
-	return mEvaluations[target].mTarget->mGLTexID;
+	return mEvaluationStages[target].mTarget->mGLTexID;
 }
 
 void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)
 {
-	EvaluationStage& stage = mEvaluations[target];
+	EvaluationStage& stage = mEvaluationStages[target];
 	stage.mParameters = parameters;
 	stage.mParametersSize = parametersSize;
 
@@ -132,7 +132,7 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 
 void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo)
 {
-	EvaluationStage& evaluation = mEvaluations[index];
+	EvaluationStage& evaluation = mEvaluationStages[index];
 	
 	if (force)
 	{
@@ -163,9 +163,9 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 
 	if (evaluationMode == 0) // edit mode
 	{
-		for (size_t i = 0; i < mEvaluations.size(); i++)
+		for (size_t i = 0; i < mEvaluationStages.size(); i++)
 		{
-			EvaluationStage& evaluation = mEvaluations[i];
+			EvaluationStage& evaluation = mEvaluationStages[i];
 			if (evaluation.mEvaluationMask&EvaluationGLSL)
 			{
 				evaluation.mTarget = new RenderTarget;
@@ -180,17 +180,17 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 	else // baking mode
 	{
 		std::vector<RenderTarget*> freeRenderTargets;
-		std::vector<int> useCount(mEvaluations.size(), 0);
-		for (size_t i = 0; i < mEvaluations.size(); i++)
+		std::vector<int> useCount(mEvaluationStages.size(), 0);
+		for (size_t i = 0; i < mEvaluationStages.size(); i++)
 		{
-			useCount[i] = mEvaluations[i].mUseCountByOthers;
+			useCount[i] = mEvaluationStages[i].mUseCountByOthers;
 		}
 
 		for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 		{
 			size_t index = mEvaluationOrderList[i];
 
-			EvaluationStage& evaluation = mEvaluations[index];
+			EvaluationStage& evaluation = mEvaluationStages[index];
 			if (!evaluation.mUseCountByOthers)
 				continue;
 
@@ -215,7 +215,7 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 				useCount[targetIndex]--;
 				if (!useCount[targetIndex])
 				{
-					freeRenderTargets.push_back(mEvaluations[targetIndex].mTarget);
+					freeRenderTargets.push_back(mEvaluationStages[targetIndex].mTarget);
 				}
 			}
 		}
@@ -238,7 +238,7 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 	{
 		size_t index = mEvaluationOrderList[i];
 
-		EvaluationStage& evaluation = mEvaluations[index];
+		EvaluationStage& evaluation = mEvaluationStages[index];
 		if (!evaluation.mbDirty && !forceEvaluation)
 			continue;
 
@@ -250,7 +250,7 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 		PerformEvaluationForNode(index, width, height, false, evaluationInfo);
 	}
 
-	for (auto& evaluation : mEvaluations)
+	for (auto& evaluation : mEvaluationStages)
 	{
 		if (evaluation.mbDirty)
 		{
@@ -265,21 +265,21 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 
 void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
 {
-	mEvaluations[target].mInputSamplers = inputSamplers;
+	mEvaluationStages[target].mInputSamplers = inputSamplers;
 	SetTargetDirty(target);
 }
 
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
-	mEvaluations[target].mInput.mInputs[slot] = source;
-	mEvaluations[source].mUseCountByOthers++;
+	mEvaluationStages[target].mInput.mInputs[slot] = source;
+	mEvaluationStages[source].mUseCountByOthers++;
 	SetTargetDirty(target);
 }
 
 void Evaluation::DelEvaluationInput(size_t target, int slot)
 {
-	mEvaluations[mEvaluations[target].mInput.mInputs[slot]].mUseCountByOthers--;
-	mEvaluations[target].mInput.mInputs[slot] = -1;
+	mEvaluationStages[mEvaluationStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
+	mEvaluationStages[target].mInput.mInputs[slot] = -1;
 	SetTargetDirty(target);
 }
 
@@ -290,10 +290,10 @@ void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 
 void Evaluation::SetTargetDirty(size_t target)
 {
-	if (!mEvaluations[target].mbDirty)
+	if (!mEvaluationStages[target].mbDirty)
 	{
 		mDirtyCount++;
-		mEvaluations[target].mbDirty = true;
+		mEvaluationStages[target].mbDirty = true;
 	}
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
 	{
@@ -302,13 +302,13 @@ void Evaluation::SetTargetDirty(size_t target)
 		
 		for (i++; i < mEvaluationOrderList.size(); i++)
 		{
-			EvaluationStage& currentEvaluation = mEvaluations[mEvaluationOrderList[i]];
+			EvaluationStage& currentEvaluation = mEvaluationStages[mEvaluationOrderList[i]];
 			if (currentEvaluation.mbDirty)
 				continue;
 
 			for (auto inp : currentEvaluation.mInput.mInputs)
 			{
-				if (inp >= 0 && mEvaluations[inp].mbDirty)
+				if (inp >= 0 && mEvaluationStages[inp].mbDirty)
 				{
 					mDirtyCount++;
 					currentEvaluation.mbDirty = true;
@@ -321,10 +321,25 @@ void Evaluation::SetTargetDirty(size_t target)
 
 void Evaluation::Clear()
 {
-	for (auto& ev : mEvaluations)
+	for (auto& ev : mEvaluationStages)
 		ev.Clear();
 
-	mEvaluations.clear();
+	mEvaluationStages.clear();
 	mEvaluationOrderList.clear();
 }
 
+void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown)
+{
+	for (auto& ev : mEvaluationStages)
+	{
+		ev.mRx = -9999.f;
+		ev.mRy = -9999.f;
+		ev.mLButDown = false;
+		ev.mRButDown = false;
+	}
+	auto& ev = mEvaluationStages[target];
+	ev.mRx = rx;
+	ev.mRy = ry;
+	ev.mLButDown = lButDown;
+	ev.mRButDown = rButDown;
+}

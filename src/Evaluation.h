@@ -71,7 +71,7 @@ struct EvaluationInfo
 	int forcedDirty;
 	int uiPass;
 	int padding;
-
+	float mouse[4];
 	int inputIndices[8];
 };
 
@@ -132,7 +132,7 @@ struct Evaluation
 	void RunEvaluation(int width, int height, bool forceEvaluation);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
 	void SetTargetDirty(size_t target);
-
+	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();
 
 	// API
@@ -215,16 +215,22 @@ protected:
 		int mUseCountByOthers;
 		int mBlendingSrc;
 		int mBlendingDst;
+		// mouse
+		float mRx;
+		float mRy;
+		bool mLButDown;
+		bool mRButDown;
 		void Clear();
 	};
 
 	unsigned int mEvaluationStateGLSLBuffer;
-	std::vector<EvaluationStage> mEvaluations;
+	std::vector<EvaluationStage> mEvaluationStages;
 	std::vector<size_t> mEvaluationOrderList;
 
-	void BindGLSLParameters(EvaluationStage& stage);
-	void EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evaluationInfo);
-	void EvaluateC(EvaluationStage& evaluation, size_t index, EvaluationInfo& evaluationInfo);
+	void SetMouseInfos(EvaluationInfo &evaluationInfo, EvaluationStage &evaluationStage) const;
+	void BindGLSLParameters(EvaluationStage& evaluationStage);
+	void EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& evaluationInfo);
+	void EvaluateC(EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void FinishEvaluation();
 
 	std::vector<RenderTarget*> mAllocatedRenderTargets;

@@ -355,10 +355,10 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 
 int Evaluation::GetEvaluationImage(int target, Image *image)
 {
-	if (target == -1 || target >= gEvaluation.mEvaluations.size())
+	if (target == -1 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
 
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluations[target];
+	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
 	RenderTarget& tgt = *evaluation.mTarget;
 	image->components = 4;
 	image->width = tgt.mWidth;
@@ -372,7 +372,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluations[target];
+	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
 	//gEvaluation.UnreferenceRenderTarget(&evaluation.mTarget);
 	if (!evaluation.mTarget)
 	{
@@ -455,7 +455,7 @@ int Evaluation::SetNodeImage(int target, Image *image)
 
 void Evaluation::RecurseGetUse(size_t target, std::vector<size_t>& usedNodes)
 {
-	EvaluationStage& evaluation = mEvaluations[target];
+	EvaluationStage& evaluation = mEvaluationStages[target];
 	const Input& input = evaluation.mInput;
 
 	std::vector<RenderTarget*> usingTargets;
@@ -505,7 +505,7 @@ static const EValuationFunction evaluationFunctions[] = {
 
 void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
 {
-	EvaluationStage& evaluation = gEvaluation.mEvaluations[target];
+	EvaluationStage& evaluation = gEvaluation.mEvaluationStages[target];
 
 	evaluation.mBlendingSrc = blendSrc;
 	evaluation.mBlendingDst = blendDst;
@@ -684,14 +684,21 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	}
 }
 
-void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evaluationInfo)
+void Evaluation::SetMouseInfos(EvaluationInfo &evaluationInfo, EvaluationStage &evaluationStage) const
 {
-	const Input& input = evaluation.mInput;
+	evaluationInfo.mouse[0] = evaluationStage.mRx;
+	evaluationInfo.mouse[1] = evaluationStage.mRy;
+	evaluationInfo.mouse[2] = evaluationStage.mLButDown ? 1.f : 0.f;
+	evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
+}
+void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& evaluationInfo)
+{
+	const Input& input = evaluationStage.mInput;
 
 	if (!evaluationInfo.uiPass)
-		evaluation.mTarget->bindAsTarget();
-	unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
-	const int blendOps[] = { evaluation.mBlendingSrc, evaluation.mBlendingDst };
+		evaluationStage.mTarget->bindAsTarget();
+	unsigned int program = mEvaluatorPerNodeType[evaluationStage.mNodeType].mGLSLProgram;
+	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
 	unsigned int blend[] = { GL_ONE, GL_ZERO };
 
 
@@ -704,7 +711,8 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evalu
 	;
 	evaluationInfo.targetIndex = 0;
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
+	evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;
+	SetMouseInfos(evaluationInfo, evaluationStage);
 	//evaluationInfo.uiPass = 1;
 	glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
@@ -716,7 +724,7 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evalu
 
 	glUseProgram(program);
 
-	glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluation.mParametersBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 	int samplerIndex = 0;
@@ -735,9 +743,9 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evalu
 			continue;
 		}
 		//assert(!mEvaluations[targetIndex].mbDirty);
-		glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget->mGLTexID);
+		glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
 
-		const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
+		const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
 		TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
 	}
 	//
@@ -745,18 +753,19 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation, EvaluationInfo& evalu
 	glDisable(GL_BLEND);
 }
 
-void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index, EvaluationInfo& evaluationInfo)
+void Evaluation::EvaluateC(EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
 {
-	const Input& input = evaluation.mInput;
+	const Input& input = evaluationStage.mInput;
 
 	//EvaluationInfo evaluationInfo;
 	evaluationInfo.targetIndex = int(index);
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
+	SetMouseInfos(evaluationInfo, evaluationStage);
 	//evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
 	//evaluationInfo.uiPass = false;
 	try // todo: find a better solution than a try catch
 	{
-		mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
+		mEvaluatorPerNodeType[evaluationStage.mNodeType].mCFunction(evaluationStage.mParameters, &evaluationInfo);
 	}
 	catch (...)
 	{

@@ -615,64 +615,70 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? rhs : lhs; }
 
 	bool mbMouseDragging;
-	void SetMouseNone() { mbMouseDragging = false; }
-	void SetMouseRatios(float rx, float ry, float dx, float dy)
+	void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown)
 	{
 		if (mSelectedNodeIndex == -1)
 			return;
+
+		if (!lButDown)
+			mbMouseDragging = false;
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		size_t res = 0;
 		const NodeGraphDelegate::Con * param = metaNodes[mNodes[mSelectedNodeIndex].mType].mParams;
 		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParameters;
-		for (int i = 0; i < MaxCon; i++, param++)
+		if (lButDown)
 		{
-			if (!param->mName)
-				break;
-			float *paramFlt = (float*)paramBuffer;
+			for (int i = 0; i < MaxCon; i++, param++)
+			{
+				if (!param->mName)
+					break;
+				float *paramFlt = (float*)paramBuffer;
 
-			if (param->mbQuadSelect && param->mType == Con_Float4)
-			{
-				if (!mbMouseDragging)
+				if (param->mbQuadSelect && param->mType == Con_Float4)
 				{
-					paramFlt[0] = rx;
-					paramFlt[1] = ry;
-					mbMouseDragging = true;
+					if (!mbMouseDragging)
+					{
+						paramFlt[0] = rx;
+						paramFlt[1] = ry;
+						mbMouseDragging = true;
+					}
+					else
+					{
+						paramFlt[2] = rx;
+						paramFlt[3] = ry;
+					}
+					continue;
 				}
-				else
+
+				if (param->mRangeMinX != 0.f || param->mRangeMaxX != 0.f)
 				{
-					paramFlt[2] = rx;
-					paramFlt[3] = ry;
+					if (param->mbRelative)
+					{
+						paramFlt[0] += ImLerp(param->mRangeMinX, param->mRangeMaxX, dx);
+						paramFlt[0] = fmodf(paramFlt[0], fabsf(param->mRangeMaxX - param->mRangeMinX)) + nmin(param->mRangeMinX, param->mRangeMaxX);
+					}
+					else
+					{
+						paramFlt[0] = ImLerp(param->mRangeMinX, param->mRangeMaxX, rx);
+					}
 				}
-				continue;
+				if (param->mRangeMinY != 0.f || param->mRangeMaxY != 0.f)
+				{
+					if (param->mbRelative)
+					{
+						paramFlt[1] += ImLerp(param->mRangeMinY, param->mRangeMaxY, dy);
+						paramFlt[1] = fmodf(paramFlt[1], fabsf(param->mRangeMaxY - param->mRangeMinY)) + nmin(param->mRangeMinY, param->mRangeMaxY);
+					}
+					else
+					{
+						paramFlt[1] = ImLerp(param->mRangeMinY, param->mRangeMaxY, ry);
+					}
+				}
+				paramBuffer += ComputeParamMemSize(param->mType);
 			}
-			
-			if (param->mRangeMinX != 0.f || param->mRangeMaxX != 0.f)
-			{
-				if (param->mbRelative)
-				{
-					paramFlt[0] += ImLerp(param->mRangeMinX, param->mRangeMaxX, dx);
-					paramFlt[0] = fmodf(paramFlt[0], fabsf(param->mRangeMaxX - param->mRangeMinX)) + nmin(param->mRangeMinX, param->mRangeMaxX);
-				}
-				else
-				{
-					paramFlt[0] = ImLerp(param->mRangeMinX, param->mRangeMaxX, rx);
-				}
-			}
-			if (param->mRangeMinY != 0.f || param->mRangeMaxY != 0.f)
-			{
-				if (param->mbRelative)
-				{
-					paramFlt[1] += ImLerp(param->mRangeMinY, param->mRangeMaxY, dy);
-					paramFlt[1] = fmodf(paramFlt[1], fabsf(param->mRangeMaxY - param->mRangeMinY)) + nmin(param->mRangeMinY, param->mRangeMaxY);
-				}
-				else
-				{
-					paramFlt[1] = ImLerp(param->mRangeMinY, param->mRangeMaxY, ry);
-				}
-			}
-			paramBuffer += ComputeParamMemSize(param->mType);
 		}
+		mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
 		mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
 	}
 

@@ -408,14 +408,24 @@ int Evaluation::FreeImage(Image *image)
 	return EVAL_OK;
 }
 
-int Evaluation::SetThumbnailImage(Image *image)
+int Evaluation::EncodePng(Image *image, std::vector<unsigned char> &pngImage)
 {
 	int outlen;
 	unsigned char *bits = stbi_write_png_to_mem((unsigned char*)image->bits, image->width * image->components, image->width, image->height, image->components, &outlen);
 	if (!bits)
 		return EVAL_ERR;
-	std::vector<unsigned char> pngImage(outlen);
+	pngImage.resize(outlen);
 	memcpy(pngImage.data(), bits, outlen);
+
+	free(bits);
+	return EVAL_OK;
+}
+
+int Evaluation::SetThumbnailImage(Image *image)
+{
+	std::vector<unsigned char> pngImage;
+	if (EncodePng(image, pngImage) == EVAL_ERR)
+		return EVAL_ERR;
 
 	extern Library library;
 	extern Imogen imogen;
@@ -424,6 +434,22 @@ int Evaluation::SetThumbnailImage(Image *image)
 	Material & material = library.mMaterials[materialIndex];
 	material.mThumbnail = pngImage;
 	material.mThumbnailTextureId = 0;
+	return EVAL_OK;
+}
+
+int Evaluation::SetNodeImage(int target, Image *image)
+{
+	std::vector<unsigned char> pngImage;
+	if (EncodePng(image, pngImage) == EVAL_ERR)
+		return EVAL_ERR;
+
+	extern Library library;
+	extern Imogen imogen;
+
+	int materialIndex = imogen.GetCurrentMaterialIndex();
+	Material & material = library.mMaterials[materialIndex];
+	material.mMaterialNodes[target].mImage = pngImage;
+
 	return EVAL_OK;
 }
 

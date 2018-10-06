@@ -160,7 +160,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 	delegate->UpdateEvaluationList(nodeOrderList);
 }
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy)
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, std::vector<uint8_t>& image, void *parameters, int posx, int posy)
 {
 	int metaNodeCount;
 	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);

@@ -46,6 +46,7 @@ struct MaterialNode
 	uint32_t mPosY;
 	std::vector<InputSampler> mInputSamplers;
 	std::vector<uint8_t> mParameters;
+	std::vector<uint8_t> mImage;
 };
 struct MaterialConnection
 {

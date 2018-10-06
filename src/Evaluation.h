@@ -146,7 +146,8 @@ struct Evaluation
 	static unsigned int UploadImage(Image *image);
 	static int Evaluate(int target, int width, int height, Image *image);
 	static void SetBlendingMode(int target, int blendSrc, int blendDst);
-
+	static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);
+	static int SetNodeImage(int target, Image *image);
 
 	static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
 	// synchronous texture cache

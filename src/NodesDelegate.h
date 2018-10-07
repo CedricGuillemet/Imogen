@@ -268,7 +268,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"Blend", hcBlend, 3
 				,{ { "", (int)Con_Float4 },{ "", (int)Con_Float4 } }
 			,{ { "", (int)Con_Float4 } }
-			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "Add\0Multiply\0Darken\0Lighten\0Average\0Screen\0Color Burn\0Color Dodge\0Soft Light\0Subtract\0Difference\0Inverse Difference\0Exclusion\0" } }
+			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Add\0Multiply\0Darken\0Lighten\0Average\0Screen\0Color Burn\0Color Dodge\0Soft Light\0Subtract\0Difference\0Inverse Difference\0Exclusion\0" } }
 			}
 
 			,
@@ -317,7 +317,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"NormalMapBlending", hcBlend, 3
 					,{ { "", (int)Con_Float4 },{ "", (int)Con_Float4 } }
 				,{ { "Out", (int)Con_Float4 } }
-				,{ { "Technique", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "RNM\0Partial Derivatives\0Whiteout\0UDN\0Unity\0Linear\0Overlay\0" } }
+				,{ { "Technique", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "RNM\0Partial Derivatives\0Whiteout\0UDN\0Unity\0Linear\0Overlay\0" } }
 				}
 
 				,
@@ -342,7 +342,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				"PolarCoords", hcTransform, 0
 				,{ { "", (int)Con_Float4 } }
 				,{ { "", (int)Con_Float4 } }
-				,{ { "Type", (int)Con_Enum, 0.f,0.f,0.f,0.f,false,"Linear to polar\0Polar to linear\0" } }
+				,{ { "Type", (int)Con_Enum, 0.f,0.f,0.f,0.f,false, false, "Linear to polar\0Polar to linear\0" } }
 			}
 
       ,
@@ -366,9 +366,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageWrite", hcFilter, 6
 					,{ { "", (int)Con_Float4 } }
 				,{  }
-				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int }
-						,{ "Width", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
-						,{ "Height", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"},{ "Quality", (int)Con_Int }
+						,{ "Width", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+						,{ "Height", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
 						,{ "Export", (int)Con_ForceEvaluate } }
 				}
 
@@ -383,9 +383,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				,
 				{
 					"Paint2D", hcPaint, 7
-					,{  }
-				,{{ "", (int)Con_Float4 }}
-				,{ { "pos", (int)Con_Float2, 0.f,1.f,0.f,1.f, false } }
+					,{ { "Brush", (int)Con_Float4 } }
+				,{ { "", (int)Con_Float4 } }
+				,{ { "Size", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
 				, true
 				, true
 				}

@@ -146,7 +146,7 @@ void NodeGraphClear(); // delegate is not called
 const std::vector<NodeLink> NodeGraphGetLinks();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, std::vector<uint8_t>& image, void *parameters, int posx, int posy);
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy);
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
 void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);
 void NodeGraphUpdateScrolling();

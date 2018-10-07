@@ -137,6 +137,7 @@ struct Evaluation
 
 	// API
 	static int ReadImage(const char *filename, Image *image);
+	static int ReadImageMem(unsigned char *data, size_t dataSize, Image *image);
 	static int WriteImage(const char *filename, Image *image, int format, int quality);
 	static int GetEvaluationImage(int target, Image *image);
 	static int SetEvaluationImage(int target, Image *image);

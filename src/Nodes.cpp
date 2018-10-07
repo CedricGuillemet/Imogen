@@ -160,7 +160,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 	delegate->UpdateEvaluationList(nodeOrderList);
 }
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, std::vector<uint8_t>& image, void *parameters, int posx, int posy)
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy)
 {
 	int metaNodeCount;
 	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
@@ -221,6 +221,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	int node_hovered_in_scene = -1;
 	bool open_context_menu = false;
 
+	static const float factor = 1.0f;
+
 	ImGui::BeginGroup();
 
 	const float NODE_SLOT_RADIUS = 8.0f;
@@ -244,7 +246,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	if (show_grid)
 	{
 		ImU32 GRID_COLOR = IM_COL32(100, 100, 100, 40);
-		float GRID_SZ = 64.0f;
+		float GRID_SZ = 64.0f * factor;
 		ImVec2 win_pos = ImGui::GetCursorScreenPos();
 		ImVec2 canvas_sz = ImGui::GetWindowSize();
 		for (float x = fmodf(scrolling.x, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
@@ -274,7 +276,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		Node* node_out = &nodes[link->OutputIdx];
 		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot);
 		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot);
-		draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0), p2 + ImVec2(-50, 0), p2, IM_COL32(200, 200, 150, 255), 3.0f);
+		draw_list->AddBezierCurve(p1 * factor, (p1 + ImVec2(+50, 0)) * factor, (p2 + ImVec2(-50, 0)) * factor, p2 * factor, IM_COL32(200, 200, 150, 255), 3.0f * factor);
 	}
 
 	// edit node
@@ -291,7 +293,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	{
 		Node* node = &nodes[node_idx];
 		ImGui::PushID(node_idx);
-		ImVec2 node_rect_min = offset + node->Pos;
+		ImVec2 node_rect_min = (offset + node->Pos) * factor;
 
 		// Display node contents first
 		draw_list->ChannelsSetCurrent(1); // Foreground
@@ -299,7 +301,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 
 
-		ImGui::InvisibleButton("canvas", ImVec2(100, 100));
+		ImGui::InvisibleButton("canvas", ImVec2(100, 100) * factor);
 		bool node_moving_active = ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
 
 		// Save the size of what we have emitted and whether any of the widgets are being used
@@ -355,7 +357,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			GetConCount(metaNodes, node->mType, slotCount[0], slotCount[1]);
 			for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
 			{
-				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx):node->GetInputSlotPos(slot_idx));
+				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx):node->GetInputSlotPos(slot_idx)) * factor;
+				
 				bool overCon = !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
 
 				const NodeGraphDelegate::Con *con = i ? metaNodes[node->mType].mOutputs:metaNodes[node->mType].mInputs;

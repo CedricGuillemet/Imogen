@@ -498,7 +498,16 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 			for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
 			{
 				MaterialNode& node = material.mMaterialNodes[i];
-				NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mImage, node.mParameters.data(), node.mPosX, node.mPosY);
+				NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY);
+				if (!node.mImage.empty())
+				{
+					Image image;
+					if (Evaluation::ReadImageMem(node.mImage.data(), node.mImage.size(), &image) == EVAL_OK)
+					{
+						Evaluation::SetEvaluationImage(i, &image);
+						Evaluation::WriteImage("./testwrite2.png", &image, 0, 0);
+					}
+				}
 			}
 			for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
 			{

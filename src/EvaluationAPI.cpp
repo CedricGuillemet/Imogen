@@ -318,8 +318,17 @@ extern Evaluation gEvaluation;
 
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
-	unsigned char *data = stbi_load(filename, &image->width, &image->height, &image->components, 0);
-	if (!data)
+	unsigned char *bits = stbi_load(filename, &image->width, &image->height, &image->components, 0);
+	if (!bits)
+		return EVAL_ERR;
+	image->bits = bits;
+	return EVAL_OK;
+}
+
+int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
+{
+	unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->width, &image->height, &image->components, 0);
+	if (!bits)
 		return EVAL_ERR;
 	image->bits = data;
 	return EVAL_OK;

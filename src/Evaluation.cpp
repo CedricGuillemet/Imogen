@@ -140,10 +140,10 @@ void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, b
 		SetTargetDirty(index);
 	}
 
-	if (evaluation.mEvaluationMask&EvaluationGLSL)
-		EvaluateGLSL(evaluation, evaluationInfo);
 	if (evaluation.mEvaluationMask&EvaluationC)
 		EvaluateC(evaluation, index, evaluationInfo);
+	if (evaluation.mEvaluationMask&EvaluationGLSL)
+		EvaluateGLSL(evaluation, evaluationInfo);
 }
 
 void Evaluation::SetEvaluationMemoryMode(int evaluationMode)

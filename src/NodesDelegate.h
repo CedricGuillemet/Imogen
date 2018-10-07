@@ -745,5 +745,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	{
 		mEvaluation.SetEvaluationOrder(nodeOrderList);
 	}
+
+	virtual ImVec2 GetImageSize(size_t nodeIndex)
+	{
+		int imageWidth(1), imageHeight(1);
+		mEvaluation.GetImageSize(int(nodeIndex), &imageWidth, &imageHeight);
+		return ImVec2(float(imageWidth), float(imageHeight));
+	}
 };
 

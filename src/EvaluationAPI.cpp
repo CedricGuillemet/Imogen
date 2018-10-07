@@ -330,7 +330,7 @@ int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
 	unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->width, &image->height, &image->components, 0);
 	if (!bits)
 		return EVAL_ERR;
-	image->bits = data;
+	image->bits = bits;
 	return EVAL_OK;
 }
 
@@ -510,6 +510,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
 	{ "Evaluate", (void*)Evaluation::Evaluate},
 	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
+	{ "GetImageSize", (void*)Evaluation::GetImageSize},
 };
 
 void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
@@ -899,4 +900,16 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 	glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+int Evaluation::GetImageSize(int target, int *imageWidth, int *imageHeight)
+{
+	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+		return EVAL_ERR;
+	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	if (!renderTarget)
+		return EVAL_ERR;
+	*imageWidth = renderTarget->mWidth;
+	*imageHeight = renderTarget->mHeight;
+	return EVAL_OK;
 }

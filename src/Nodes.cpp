@@ -348,7 +348,20 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		
 		ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
 		draw_list->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
-		draw_list->AddImage(ImTextureID(delegate->GetNodeTexture(size_t(node_idx))), imgPos, imgPosMax);
+
+		ImVec2 imageSize = delegate->GetImageSize(node_idx);
+		float imageRatio = imageSize.y / imageSize.x;
+		ImVec2 quadSize = imgPosMax - imgPos;
+		ImVec2 marge(0.f, 0.f);
+		if (imageRatio > 1.f)
+		{
+			marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
+		}
+		else
+		{
+			marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
+		}
+		draw_list->AddImage(ImTextureID(delegate->GetNodeTexture(size_t(node_idx))), imgPos + marge, imgPosMax - marge);
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
 		for (int i = 0; i < 2; i++)

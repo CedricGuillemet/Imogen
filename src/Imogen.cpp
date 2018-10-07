@@ -183,7 +183,9 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
 		ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
 		float w = ImGui::GetWindowContentRegionWidth();
-		float ratio = 1.f;
+		int imageWidth(1), imageHeight(1);
+		Evaluation::GetImageSize(selNode, &imageWidth, &imageHeight);
+		float ratio = float(imageHeight)/float(imageWidth);
 		float h = w * ratio;
 		ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
 
@@ -425,10 +427,12 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		if (metaNodes[srcNode.mType].mbSaveTexture)
 		{
 			Image image;
-			Evaluation::GetEvaluationImage(i, &image);
-			if (Evaluation::SetNodeImage(i, &image) != EVAL_OK)
+			if (Evaluation::GetEvaluationImage(int(i), &image) == EVAL_OK)
 			{
-				Log("Error while saving node image\n");
+				if (Evaluation::SetNodeImage(int(i), &image) != EVAL_OK)
+				{
+					Log("Error while saving node image\n");
+				}
 			}
 		}
 		MaterialNode &dstNode = material.mMaterialNodes[i];
@@ -504,8 +508,8 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 					Image image;
 					if (Evaluation::ReadImageMem(node.mImage.data(), node.mImage.size(), &image) == EVAL_OK)
 					{
-						Evaluation::SetEvaluationImage(i, &image);
-						Evaluation::WriteImage("./testwrite2.png", &image, 0, 0);
+						Evaluation::SetEvaluationImage(int(i), &image);
+						Evaluation::FreeImage(&image);
 					}
 				}
 			}

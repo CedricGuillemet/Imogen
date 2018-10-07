@@ -160,6 +160,10 @@ void LoadLib(Library *library, const char *szFilename)
 	{
 		material.mThumbnailTextureId = 0;
 		material.mRuntimeUniqueId = GetRuntimeId();
+		for (auto& node : material.mMaterialNodes)
+		{
+			node.mRuntimeUniqueId = GetRuntimeId();
+		}
 	}
 }
 

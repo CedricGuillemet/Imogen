@@ -59,7 +59,8 @@ int SetThumbnailImage(Image *image);
 int Evaluate(int target, int width, int height, Image *image);
 
 void SetBlendingMode(int target, int blendSrc, int blendDst);
-int GetImageSize(int target, int *imageWidth, int *imageHeight);
+int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
+int SetEvaluationSize(int target, int imageWidth, int imageHeight);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

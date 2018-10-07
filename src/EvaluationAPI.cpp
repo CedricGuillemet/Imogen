@@ -510,7 +510,8 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
 	{ "Evaluate", (void*)Evaluation::Evaluate},
 	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
-	{ "GetImageSize", (void*)Evaluation::GetImageSize},
+	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
+	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
 };
 
 void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
@@ -863,7 +864,8 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 	ImGuiIO& io = ImGui::GetIO();
 
-	const ImogenDrawCallback& cb = mCallbackRects[int(cmd->UserCallbackData)];
+	const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
+
 	ImRect cbRect = cb.mRect;
 	float h = cbRect.Max.y - cbRect.Min.y;
 	float w = cbRect.Max.x - cbRect.Min.x;
@@ -902,7 +904,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-int Evaluation::GetImageSize(int target, int *imageWidth, int *imageHeight)
+int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
@@ -911,5 +913,16 @@ int Evaluation::GetImageSize(int target, int *imageWidth, int *imageHeight)
 		return EVAL_ERR;
 	*imageWidth = renderTarget->mWidth;
 	*imageHeight = renderTarget->mHeight;
+	return EVAL_OK;
+}
+
+int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
+{
+	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+		return EVAL_ERR;
+	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	if (!renderTarget)
+		return EVAL_ERR;
+	renderTarget->initBuffer(imageWidth, imageHeight, false);
 	return EVAL_OK;
 }

@@ -34,6 +34,7 @@
 #include "Evaluation.h"
 #include "Imogen.h"
 #include "TaskScheduler.h"
+#include "stb_image.h"
 
 int Log(const char *szFormat, ...)
 {
@@ -113,6 +114,7 @@ enki::TaskScheduler g_TS;
 int main(int, char**)
 {
 	g_TS.Initialize();
+	stbi_set_flip_vertically_on_load(1);
 
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
@@ -233,6 +235,7 @@ int main(int, char**)
 		SDL_GL_SwapWindow(window);
 	}
 	
+	imogen.ValidateCurrentMaterial(library, nodeGraphDelegate);
 	SaveLib(&library, libraryFilename);
 	gEvaluation.Finish();
 

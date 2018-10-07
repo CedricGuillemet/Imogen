@@ -47,7 +47,7 @@ struct NodeGraphDelegate
 	virtual void AddNode(size_t type) = 0;
 	// node deleted
 	virtual void DeleteNode(size_t index) = 0;
-	virtual ImVec2 GetImageSize(size_t index) = 0;
+	virtual ImVec2 GetEvaluationSize(size_t index) = 0;
 	virtual void DoForce() = 0;
 	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize) = 0;
 	virtual void SetParamBlock(size_t index, unsigned char* paramBlock) = 0;

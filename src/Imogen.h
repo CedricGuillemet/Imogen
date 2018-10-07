@@ -57,6 +57,7 @@ struct Imogen
 	void Finish();
 	
 	void Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+	void ValidateCurrentMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
 	void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
 	std::vector<EvaluatorFile> mEvaluatorFiles;

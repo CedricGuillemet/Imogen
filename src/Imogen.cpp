@@ -38,6 +38,7 @@
 #include "tinydir.h"
 #include "stb_image.h"
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
+extern Evaluation gEvaluation;
 
 extern enki::TaskScheduler g_TS;
 
@@ -291,6 +292,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 			{
 				node->mbProcessing = false;
 				Evaluation::SetEvaluationImage(int(node->mEvaluationTarget), &mImage);
+				gEvaluation.SetEvaluationParameters(node->mEvaluationTarget, node->mParameters, node->mParametersSize);
 			}
 			Evaluation::FreeImage(&mImage);
 		}

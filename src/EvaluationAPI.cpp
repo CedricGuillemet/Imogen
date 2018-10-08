@@ -923,7 +923,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 		}
 		glUseProgram(waitingShader);
 		static float gGlobalTime = 0.f;
-		gGlobalTime += 0.01f;
+		gGlobalTime += 0.03f;
 		glUniform1f(glGetUniformLocation(waitingShader, "time"), gGlobalTime);
 		mFSQuad.Render();
 	}

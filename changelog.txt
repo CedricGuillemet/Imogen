@@ -2,8 +2,10 @@
 Imogen 0.4 - codename Andromeda Shun
 
 New:
+- Node graph zoom with mouse wheel
 
 Changed:
+- node graph clips nodes and connexions
 
 Fixed:
 

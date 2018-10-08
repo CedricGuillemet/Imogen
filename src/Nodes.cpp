@@ -61,6 +61,7 @@ Node::Node(int type, const ImVec2& pos, const NodeGraphDelegate::MetaNode* metaN
 {
 	mType = type;
 	Pos = pos;
+	Size = ImVec2(100, 100);
 	GetConCount(metaNodes, type, InputsCount, OutputsCount);
 }
 
@@ -221,37 +222,43 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	int node_hovered_in_scene = -1;
 	bool open_context_menu = false;
 
-	static float factor = 1.0f;
-	static float factorTarget = 1.0f;
-
 	ImGui::BeginGroup();
 
 	const float NODE_SLOT_RADIUS = 8.0f;
 	const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
 	ImGuiIO& io = ImGui::GetIO();
+	const ImVec2 win_pos = ImGui::GetCursorScreenPos();
+	const ImVec2 canvas_sz = ImGui::GetWindowSize();
+	ImRect regionRect(win_pos, win_pos + canvas_sz);
 
-	if (io.MouseWheel < -FLT_EPSILON)
-		factorTarget *= 0.9f;
+	// zoom factor handling
+	static float factor = 1.0f;
+	static float factorTarget = 1.0f;
 
-	if (io.MouseWheel > FLT_EPSILON)
-		factorTarget *= 1.1f;
+	if (regionRect.Contains(io.MousePos))
+	{
+		if (io.MouseWheel < -FLT_EPSILON)
+			factorTarget *= 0.9f;
 
+		if (io.MouseWheel > FLT_EPSILON)
+			factorTarget *= 1.1f;
+	}
+	ImVec2 mouseWPosPre = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
 	factorTarget = ImClamp(factorTarget, 0.2f, 3.f);
 	factor = ImLerp(factor, factorTarget, 0.15f);
+	ImVec2 mouseWPosPost = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
+	scrolling += mouseWPosPost - mouseWPosPre;
 
 	// Create our child canvas
-
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	
-	//style.Colors[] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
 
 	ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 	ImGui::PushItemWidth(120.0f);
 
-	ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling;
+	ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling * factor;
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
 	// Display grid
@@ -259,11 +266,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	{
 		ImU32 GRID_COLOR = IM_COL32(100, 100, 100, 40);
 		float GRID_SZ = 64.0f * factor;
-		ImVec2 win_pos = ImGui::GetCursorScreenPos();
-		ImVec2 canvas_sz = ImGui::GetWindowSize();
-		for (float x = fmodf(scrolling.x, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
+		for (float x = fmodf(scrolling.x*factor, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
 			draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, GRID_COLOR);
-		for (float y = fmodf(scrolling.y, GRID_SZ); y < canvas_sz.y; y += GRID_SZ)
+		for (float y = fmodf(scrolling.y*factor, GRID_SZ); y < canvas_sz.y; y += GRID_SZ)
 			draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
 	}
 
@@ -286,9 +291,14 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		NodeLink* link = &links[link_idx];
 		Node* node_inp = &nodes[link->InputIdx];
 		Node* node_out = &nodes[link->OutputIdx];
-		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot);
-		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot);
-		draw_list->AddBezierCurve(p1 * factor, (p1 + ImVec2(+50, 0)) * factor, (p2 + ImVec2(-50, 0)) * factor, p2 * factor, IM_COL32(200, 200, 150, 255), 3.0f * factor);
+		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot, factor);
+		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot, factor);
+
+		// con. view clipping
+		if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
+			(p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
+			continue;
+		draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, IM_COL32(200, 200, 150, 255), 3.0f * factor);
 	}
 
 	// edit node
@@ -304,8 +314,16 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	for (int node_idx = 0; node_idx < nodes.size(); node_idx++)
 	{
 		Node* node = &nodes[node_idx];
+		ImVec2 node_rect_min = offset + node->Pos * factor;
+
+		// node view clipping
+		ImVec2 p1 = node_rect_min;
+		ImVec2 p2 = node_rect_min + ImVec2(100, 100) * factor;
+		if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
+			(p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
+			continue;
+
 		ImGui::PushID(node_idx);
-		ImVec2 node_rect_min = (offset + node->Pos) * factor;
 
 		// Display node contents first
 		draw_list->ChannelsSetCurrent(1); // Foreground
@@ -337,7 +355,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		if (node_widgets_active || node_moving_active)
 			node_selected = node_idx;
 		if (node_moving_active && ImGui::IsMouseDragging(0))
-			node->Pos = node->Pos + ImGui::GetIO().MouseDelta;
+			node->Pos = node->Pos + ImGui::GetIO().MouseDelta / factor;
 
 		bool currentSelectedNode = node_selected == node_idx;
 
@@ -385,7 +403,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			GetConCount(metaNodes, node->mType, slotCount[0], slotCount[1]);
 			for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
 			{
-				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx):node->GetInputSlotPos(slot_idx)) * factor;
+				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx, factor):node->GetInputSlotPos(slot_idx, factor));
 				
 				bool overCon = !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
 
@@ -618,7 +636,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 	// Scrolling
 	if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f))
-		scrolling = scrolling + ImGui::GetIO().MouseDelta;
+		scrolling += ImGui::GetIO().MouseDelta / factor;
 
 	ImGui::PopItemWidth();
 	ImGui::EndChild();

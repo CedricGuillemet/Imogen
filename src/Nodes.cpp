@@ -221,7 +221,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	int node_hovered_in_scene = -1;
 	bool open_context_menu = false;
 
-	static const float factor = 1.0f;
+	static float factor = 1.0f;
+	static float factorTarget = 1.0f;
 
 	ImGui::BeginGroup();
 
@@ -229,7 +230,18 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
 	ImGuiIO& io = ImGui::GetIO();
+
+	if (io.MouseWheel < -FLT_EPSILON)
+		factorTarget *= 0.9f;
+
+	if (io.MouseWheel > FLT_EPSILON)
+		factorTarget *= 1.1f;
+
+	factorTarget = ImClamp(factorTarget, 0.2f, 3.f);
+	factor = ImLerp(factor, factorTarget, 0.15f);
+
 	// Create our child canvas
+
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	

@@ -5,10 +5,6 @@ SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Configuration types" FORCE)
 
-
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/ext)
-
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 
 file(GLOB_RECURSE SRC_FILES
@@ -51,6 +47,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/gli
 )
 
 link_directories(

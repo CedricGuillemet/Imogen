@@ -17,6 +17,7 @@ vec4 Crop()
 		return texture(Sampler0, vUV) * max(colFactor, 0.5);
 	}
 	
-	vec2 uv = vec2(mix(CropParam.quad.x, CropParam.quad.z, vUV.x), mix(CropParam.quad.y, CropParam.quad.w, vUV.y));
+	vec4 q = CropParam.quad;
+	vec2 uv = vec2(mix(min(q.x, q.z), max(q.x, q.z), vUV.x), mix(min(q.y, q.w), max(q.y, q.w), vUV.y));
 	return texture(Sampler0, uv);
 }

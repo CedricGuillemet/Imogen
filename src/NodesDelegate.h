@@ -645,13 +645,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					if (!mbMouseDragging)
 					{
 						paramFlt[2] = paramFlt[0] = rx;
-						paramFlt[3] = paramFlt[1] = ry;
+						paramFlt[3] = paramFlt[1] = 1.f - ry;
 						mbMouseDragging = true;
 					}
 					else
 					{
 						paramFlt[2] = rx;
-						paramFlt[3] = ry;
+						paramFlt[3] = 1.f - ry;
 					}
 					continue;
 				}

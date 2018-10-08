@@ -27,10 +27,14 @@
 
 #include <vector>
 #include <string>
+#include "imgui.h"
+#include "imgui_internal.h"
+
 struct TileNodeEditGraphDelegate;
 struct Evaluation;
 class TextEditor;
 struct Library;
+
 
 enum EVALUATOR_TYPE
 {
@@ -53,6 +57,7 @@ struct Imogen
 	void Finish();
 	
 	void Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+	void ValidateCurrentMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
 	void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
 	std::vector<EvaluatorFile> mEvaluatorFiles;
@@ -63,3 +68,11 @@ protected:
 };
 
 void DebugLogText(const char *szText);
+struct ImogenDrawCallback
+{
+	ImRect mRect;
+	size_t mNodeIndex;
+};
+extern std::vector<ImogenDrawCallback> mCallbackRects;
+void InitCallbackRects();
+size_t AddNodeUICallbackRect(const ImRect& rect, size_t nodeIndex);

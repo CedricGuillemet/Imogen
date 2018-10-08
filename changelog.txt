@@ -1,4 +1,32 @@
 -------------------------------------------------------------------------------
+Imogen 0.4 - Andromeda Shun
+
+New:
+
+Changed:
+
+Fixed:
+
+-------------------------------------------------------------------------------
+Imogen 0.3 - codename Cygnus Hyoga
+
+New:
+- C nodes can change the size and blending mode of the texture target
+- Nodes can mix C and GLSL
+- Paint2D node
+- Swirl node
+- Crop node
+- UI mode for nodes : nodes can display user information
+- Nodes can handle mouse pos and buttons
+- openGL debug output in the console
+- image ratio support
+- better image resize in the NodeEdit panel
+
+Changed:
+- more consistent texV management
+- Threaded decoding and loading of node textures (paint2d Surface)
+
+-------------------------------------------------------------------------------
 Imogen 0.2 - codename Dragon Shiryu
 
 New:

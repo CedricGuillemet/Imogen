@@ -1,4 +1,6 @@
 #define PI 3.14159265359
+#define SQRT2 1.414213562373095
+
 #define TwoPI (PI*2)
 
 #ifdef VERTEX_SHADER
@@ -16,6 +18,18 @@ void main()
 
 
 #ifdef FRAGMENT_SHADER
+
+layout (std140) uniform EvaluationBlock
+{
+	int targetIndex;
+	int forcedDirty;
+	int	uiPass;
+	int padding;
+	vec4 mouse; // x,y, lbut down, rbut down
+	int inputIndices[8];
+	
+} EvaluationParam;
+
 
 layout(location=0) out vec4 outPixDiffuse;
 in vec2 vUV;
@@ -75,7 +89,6 @@ __NODE__
 void main() 
 { 
 	outPixDiffuse = vec4(__FUNCTION__);
-	outPixDiffuse.a = 1.0;
 }
 
 #endif

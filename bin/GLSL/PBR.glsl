@@ -222,7 +222,7 @@ layout (std140) uniform PBRBlock
 
 vec4 PBR()
 {
-	vec2 p = vUV *vec2(2.0,-2.0) +vec2(- 1.0, 1.0);
+	vec2 p = vUV * 2.0 - 1.0;
 
      // camera movement	
 	float an = PBRParam.view.x * PI * 2.0;

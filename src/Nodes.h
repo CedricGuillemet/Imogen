@@ -47,10 +47,12 @@ struct NodeGraphDelegate
 	virtual void AddNode(size_t type) = 0;
 	// node deleted
 	virtual void DeleteNode(size_t index) = 0;
-
+	virtual ImVec2 GetEvaluationSize(size_t index) = 0;
 	virtual void DoForce() = 0;
 	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize) = 0;
 	virtual void SetParamBlock(size_t index, unsigned char* paramBlock) = 0;
+	virtual bool NodeHasUI(size_t nodeIndex) = 0;
+	virtual bool NodeIsProcesing(size_t nodeIndex) = 0;
 	static const int MaxCon = 32;
 	struct Con
 	{
@@ -59,6 +61,7 @@ struct NodeGraphDelegate
 		float mRangeMinX, mRangeMaxX;
 		float mRangeMinY, mRangeMaxY;
 		bool mbRelative;
+		bool mbQuadSelect;
 		const char* mEnumList;
 	};
 	struct MetaNode
@@ -69,6 +72,8 @@ struct NodeGraphDelegate
 		Con mInputs[MaxCon];
 		Con mOutputs[MaxCon];
 		Con mParams[MaxCon];
+		bool mbHasUI;
+		bool mbSaveTexture;
 	};
 	virtual const MetaNode* GetMetaNodes(int &metaNodeCount) = 0;
 };

@@ -30,7 +30,7 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
-
+#include "Evaluation.h"
 
 UndoRedoHandler undoRedoHandler;
 int Log(const char *szFormat, ...);
@@ -221,6 +221,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	int node_hovered_in_scene = -1;
 	bool open_context_menu = false;
 
+	static const float factor = 1.0f;
+
 	ImGui::BeginGroup();
 
 	const float NODE_SLOT_RADIUS = 8.0f;
@@ -244,7 +246,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	if (show_grid)
 	{
 		ImU32 GRID_COLOR = IM_COL32(100, 100, 100, 40);
-		float GRID_SZ = 64.0f;
+		float GRID_SZ = 64.0f * factor;
 		ImVec2 win_pos = ImGui::GetCursorScreenPos();
 		ImVec2 canvas_sz = ImGui::GetWindowSize();
 		for (float x = fmodf(scrolling.x, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
@@ -274,7 +276,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		Node* node_out = &nodes[link->OutputIdx];
 		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot);
 		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot);
-		draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0), p2 + ImVec2(-50, 0), p2, IM_COL32(200, 200, 150, 255), 3.0f);
+		draw_list->AddBezierCurve(p1 * factor, (p1 + ImVec2(+50, 0)) * factor, (p2 + ImVec2(-50, 0)) * factor, p2 * factor, IM_COL32(200, 200, 150, 255), 3.0f * factor);
 	}
 
 	// edit node
@@ -291,7 +293,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	{
 		Node* node = &nodes[node_idx];
 		ImGui::PushID(node_idx);
-		ImVec2 node_rect_min = offset + node->Pos;
+		ImVec2 node_rect_min = (offset + node->Pos) * factor;
 
 		// Display node contents first
 		draw_list->ChannelsSetCurrent(1); // Foreground
@@ -299,7 +301,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 
 
-		ImGui::InvisibleButton("canvas", ImVec2(100, 100));
+		ImGui::InvisibleButton("canvas", ImVec2(100, 100) * factor);
 		bool node_moving_active = ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
 
 		// Save the size of what we have emitted and whether any of the widgets are being used
@@ -344,7 +346,25 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
 		float imgSizeComp = std::min(imgSize.x, imgSize.y);
 		
-		draw_list->AddImage(ImTextureID(delegate->GetNodeTexture(size_t(node_idx))), imgPos, imgPos + ImVec2(imgSizeComp, imgSizeComp));
+		ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
+		draw_list->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
+
+		ImVec2 imageSize = delegate->GetEvaluationSize(node_idx);
+		float imageRatio = imageSize.y / imageSize.x;
+		ImVec2 quadSize = imgPosMax - imgPos;
+		ImVec2 marge(0.f, 0.f);
+		if (imageRatio > 1.f)
+		{
+			marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
+		}
+		else
+		{
+			marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
+		}
+		draw_list->AddImage((ImTextureID)(int64_t)(delegate->GetNodeTexture(size_t(node_idx))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
+		if (delegate->NodeIsProcesing(node_idx))
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(ImRect(imgPos + marge, imgPosMax - marge), -1)));
+
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
 		for (int i = 0; i < 2; i++)
@@ -353,7 +373,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			GetConCount(metaNodes, node->mType, slotCount[0], slotCount[1]);
 			for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
 			{
-				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx):node->GetInputSlotPos(slot_idx));
+				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx):node->GetInputSlotPos(slot_idx)) * factor;
+				
 				bool overCon = !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
 
 				const NodeGraphDelegate::Con *con = i ? metaNodes[node->mType].mOutputs:metaNodes[node->mType].mInputs;

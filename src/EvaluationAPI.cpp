@@ -35,12 +35,15 @@
 #include "stb_image_write.h"
 #include <fstream>
 #include <streambuf>
-
+#include "imgui.h"
+#include "imgui_internal.h"
 
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
+static const unsigned int GLBlends[] = { GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
+	GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_SRC_ALPHA_SATURATE };
 
 inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {
@@ -67,11 +70,6 @@ void RenderTarget::destroy()
 	fbo = depthbuffer = 0;
 	mWidth = mHeight = 0;
 	mGLTexID = 0;
-}
-
-void RenderTarget::clear()
-{
-	glClear(GL_COLOR_BUFFER_BIT | (depthbuffer ? GL_DEPTH_BUFFER_BIT : 0));
 }
 
 void RenderTarget::initBuffer(int width, int height, bool hasZBuffer)
@@ -107,6 +105,11 @@ void RenderTarget::initBuffer(int width, int height, bool hasZBuffer)
 	glDrawBuffers(sizeof(DrawBuffers) / sizeof(GLenum), DrawBuffers);
 
 	checkFBO();
+	bindAsTarget();
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 }
 
 void RenderTarget::checkFBO()
@@ -311,23 +314,23 @@ struct EValuationFunction
 	void *function;
 };
 
-/*
-typedef struct Evaluation_t
-{
-int targetIndex;
-int inputIndices[8];
-int forcedDirty;
-} Evaluation;
-*/
-
 extern Evaluation gEvaluation;
 
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
-	unsigned char *data = stbi_load(filename, &image->width, &image->height, &image->components, 0);
-	if (!data)
+	unsigned char *bits = stbi_load(filename, &image->width, &image->height, &image->components, 0);
+	if (!bits)
 		return EVAL_ERR;
-	image->bits = data;
+	image->bits = bits;
+	return EVAL_OK;
+}
+
+int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
+{
+	unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->width, &image->height, &image->components, 0);
+	if (!bits)
+		return EVAL_ERR;
+	image->bits = bits;
 	return EVAL_OK;
 }
 
@@ -361,10 +364,10 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 
 int Evaluation::GetEvaluationImage(int target, Image *image)
 {
-	if (target == -1 || target >= gEvaluation.mEvaluations.size())
+	if (target == -1 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
 
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluations[target];
+	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
 	RenderTarget& tgt = *evaluation.mTarget;
 	image->components = 4;
 	image->width = tgt.mWidth;
@@ -378,7 +381,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluations[target];
+	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
 	//gEvaluation.UnreferenceRenderTarget(&evaluation.mTarget);
 	if (!evaluation.mTarget)
 	{
@@ -414,14 +417,24 @@ int Evaluation::FreeImage(Image *image)
 	return EVAL_OK;
 }
 
-int Evaluation::SetThumbnailImage(Image *image)
+int Evaluation::EncodePng(Image *image, std::vector<unsigned char> &pngImage)
 {
 	int outlen;
 	unsigned char *bits = stbi_write_png_to_mem((unsigned char*)image->bits, image->width * image->components, image->width, image->height, image->components, &outlen);
 	if (!bits)
 		return EVAL_ERR;
-	std::vector<unsigned char> pngImage(outlen);
+	pngImage.resize(outlen);
 	memcpy(pngImage.data(), bits, outlen);
+
+	free(bits);
+	return EVAL_OK;
+}
+
+int Evaluation::SetThumbnailImage(Image *image)
+{
+	std::vector<unsigned char> pngImage;
+	if (EncodePng(image, pngImage) == EVAL_ERR)
+		return EVAL_ERR;
 
 	extern Library library;
 	extern Imogen imogen;
@@ -433,9 +446,25 @@ int Evaluation::SetThumbnailImage(Image *image)
 	return EVAL_OK;
 }
 
+int Evaluation::SetNodeImage(int target, Image *image)
+{
+	std::vector<unsigned char> pngImage;
+	if (EncodePng(image, pngImage) == EVAL_ERR)
+		return EVAL_ERR;
+
+	extern Library library;
+	extern Imogen imogen;
+
+	int materialIndex = imogen.GetCurrentMaterialIndex();
+	Material & material = library.mMaterials[materialIndex];
+	material.mMaterialNodes[target].mImage = pngImage;
+
+	return EVAL_OK;
+}
+
 void Evaluation::RecurseGetUse(size_t target, std::vector<size_t>& usedNodes)
 {
-	EvaluationStage& evaluation = mEvaluations[target];
+	EvaluationStage& evaluation = mEvaluationStages[target];
 	const Input& input = evaluation.mInput;
 
 	std::vector<RenderTarget*> usingTargets;
@@ -479,8 +508,19 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "AllocateImage", (void*)Evaluation::AllocateImage },
 	{ "FreeImage", (void*)Evaluation::FreeImage },
 	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
-	{ "Evaluate", (void*)Evaluation::Evaluate}
+	{ "Evaluate", (void*)Evaluation::Evaluate},
+	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
+	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
+	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
 };
+
+void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
+{
+	EvaluationStage& evaluation = gEvaluation.mEvaluationStages[target];
+
+	evaluation.mBlendingSrc = blendSrc;
+	evaluation.mBlendingDst = blendDst;
+}
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
 {
@@ -491,7 +531,6 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 	}
 	return str;
 }
-
 
 void Evaluation::ClearEvaluators()
 {
@@ -546,11 +585,27 @@ void Evaluation::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 		shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
 
 		unsigned int program = LoadShader(shaderText, filename.c_str());
-		unsigned int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
-		glUniformBlockBinding(program, parameterBlockIndex, 1);
+
+		int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
+		if (parameterBlockIndex != -1)
+			glUniformBlockBinding(program, parameterBlockIndex, 1);
+
+		parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
+		if (parameterBlockIndex != -1)
+			glUniformBlockBinding(program, parameterBlockIndex, 2);
 		shader.mProgram = program;
 		if (shader.mNodeType != -1)
 			mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
+	}
+
+	if (!gEvaluation.mEvaluationStateGLSLBuffer)
+	{
+		glGenBuffers(1, &mEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
 	// C
@@ -559,60 +614,65 @@ void Evaluation::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 		if (file.mEvaluatorType != EVALUATOR_C)
 			continue;
 		const std::string filename = file.mFilename;
-
-		std::ifstream t(file.mDirectory + filename);
-		if (!t.good())
+		try
 		{
-			Log("%s - Unable to load file.\n", filename.c_str());
-			continue;
+			std::ifstream t(file.mDirectory + filename);
+			if (!t.good())
+			{
+				Log("%s - Unable to load file.\n", filename.c_str());
+				continue;
+			}
+			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+			if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
+				mEvaluatorScripts[filename] = EvaluatorScript(str);
+			else
+				mEvaluatorScripts[filename].mText = str;
+
+			EvaluatorScript& program = mEvaluatorScripts[filename];
+			TCCState *s = tcc_new();
+
+			int *noLib = (int*)s;
+			noLib[2] = 1; // no stdlib
+
+			tcc_set_error_func(s, 0, libtccErrorFunc);
+			tcc_add_include_path(s, "C\\");
+			tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
+
+			if (tcc_compile_string(s, program.mText.c_str()) != 0)
+			{
+				Log("%s - Compilation error!\n", filename.c_str());
+				continue;
+			}
+
+			for (auto& evaluationFunction : evaluationFunctions)
+				tcc_add_symbol(s, evaluationFunction.szFunctionName, evaluationFunction.function);
+
+			int size = tcc_relocate(s, NULL);
+			if (size == -1)
+			{
+				Log("%s - Libtcc unable to relocate program!\n", filename.c_str());
+				continue;
+			}
+			program.mMem = malloc(size);
+			tcc_relocate(s, program.mMem);
+
+			*(void**)(&program.mCFunction) = tcc_get_symbol(s, "main");
+			if (!program.mCFunction)
+			{
+				Log("%s - No main function!\n", filename.c_str());
+			}
+			tcc_delete(s);
+
+			if (program.mNodeType != -1)
+			{
+				mEvaluatorPerNodeType[program.mNodeType].mCFunction = program.mCFunction;
+				mEvaluatorPerNodeType[program.mNodeType].mMem = program.mMem;
+			}
 		}
-		std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-		if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
-			mEvaluatorScripts[filename] = EvaluatorScript(str);
-		else
-			mEvaluatorScripts[filename].mText = str;
-
-		EvaluatorScript& program = mEvaluatorScripts[filename];
-		TCCState *s = tcc_new();
-
-		int *noLib = (int*)s;
-		noLib[2] = 1; // no stdlib
-
-		tcc_set_error_func(s, 0, libtccErrorFunc);
-		tcc_add_include_path(s, "C\\");
-		tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
-
-		if (tcc_compile_string(s, program.mText.c_str()) != 0)
+		catch (...)
 		{
-			Log("%s - Compilation error!\n", filename.c_str());
-			continue;
+			Log("Error at compiling %s", filename.c_str());
 		}
-
-		for (auto& evaluationFunction : evaluationFunctions)
-			tcc_add_symbol(s, evaluationFunction.szFunctionName, evaluationFunction.function);
-
-		int size = tcc_relocate(s, NULL);
-		if (size == -1)
-		{
-			Log("%s - Libtcc unable to relocate program!\n", filename.c_str());
-			continue;
-		}
-		program.mMem = malloc(size);
-		tcc_relocate(s, program.mMem);
-
-		*(void**)(&program.mCFunction) = tcc_get_symbol(s, "main");
-		if (!program.mCFunction)
-		{
-			Log("%s - No main function!\n", filename.c_str());
-		}
-		tcc_delete(s);
-
-		if (program.mNodeType != -1)
-		{
-			mEvaluatorPerNodeType[program.mNodeType].mCFunction = program.mCFunction;
-			mEvaluatorPerNodeType[program.mNodeType].mMem = program.mMem;
-		}
-
 	}
 }
 
@@ -624,27 +684,58 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
 
 		glBufferData(GL_UNIFORM_BUFFER, stage.mParametersSize, stage.mParameters, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, stage.mParametersBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 	else
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, stage.mParametersSize, stage.mParameters);
+		glBufferData(GL_UNIFORM_BUFFER, stage.mParametersSize, stage.mParameters, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 }
 
-void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
+void Evaluation::SetMouseInfos(EvaluationInfo &evaluationInfo, EvaluationStage &evaluationStage) const
 {
-	const Input& input = evaluation.mInput;
+	evaluationInfo.mouse[0] = evaluationStage.mRx;
+	evaluationInfo.mouse[1] = evaluationStage.mRy;
+	evaluationInfo.mouse[2] = evaluationStage.mLButDown ? 1.f : 0.f;
+	evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
+}
+void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& evaluationInfo)
+{
+	const Input& input = evaluationStage.mInput;
 
-	evaluation.mTarget->bindAsTarget();
-	unsigned int program = mEvaluatorPerNodeType[evaluation.mNodeType].mGLSLProgram;
+	if (!evaluationInfo.uiPass)
+		evaluationStage.mTarget->bindAsTarget();
+	unsigned int program = mEvaluatorPerNodeType[evaluationStage.mNodeType].mGLSLProgram;
+	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
+	unsigned int blend[] = { GL_ONE, GL_ZERO };
+
+
+	for (int i = 0; i < 2; i++)
+	{
+		if (blendOps[i] < BLEND_LAST)
+			blend[i] = GLBlends[blendOps[i]];
+	}
+
+	evaluationInfo.targetIndex = 0;
+	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
+	evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;
+	SetMouseInfos(evaluationInfo, evaluationStage);
+	//evaluationInfo.uiPass = 1;
+	glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
+	glEnable(GL_BLEND);
+	glBlendFunc(blend[0], blend[1]);
 
 	glUseProgram(program);
 
-	glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluation.mParametersBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 	int samplerIndex = 0;
 	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -662,26 +753,29 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluation)
 			continue;
 		}
 		//assert(!mEvaluations[targetIndex].mbDirty);
-		glBindTexture(GL_TEXTURE_2D, mEvaluations[targetIndex].mTarget->mGLTexID);
+		glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
 
-		const InputSampler& inputSampler = evaluation.mInputSamplers[inputIndex];
+		const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
 		TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
 	}
 	//
 	mFSQuad.Render();
+	glDisable(GL_BLEND);
 }
 
-void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index)
+void Evaluation::EvaluateC(EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
 {
-	const Input& input = evaluation.mInput;
+	const Input& input = evaluationStage.mInput;
 
-	EvaluationInfo evaluationInfo;
+	//EvaluationInfo evaluationInfo;
 	evaluationInfo.targetIndex = int(index);
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
+	SetMouseInfos(evaluationInfo, evaluationStage);
+	//evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
+	//evaluationInfo.uiPass = false;
 	try // todo: find a better solution than a try catch
 	{
-		mEvaluatorPerNodeType[evaluation.mNodeType].mCFunction(evaluation.mParameters, &evaluationInfo);
+		mEvaluatorPerNodeType[evaluationStage.mNodeType].mCFunction(evaluationStage.mParameters, &evaluationInfo);
 	}
 	catch (...)
 	{
@@ -691,7 +785,7 @@ void Evaluation::EvaluateC(EvaluationStage& evaluation, size_t index)
 
 void Evaluation::EvaluationStage::Clear()
 {
-	if (mEvaluationType == EVALUATOR_GLSL)
+	if (mEvaluationMask&EvaluationGLSL)
 		glDeleteBuffers(1, &mParametersBuffer);
 	//gEvaluation.UnreferenceRenderTarget(&mTarget);
 }
@@ -738,4 +832,151 @@ unsigned int Evaluation::GetTexture(const std::string& filename)
 
 	mSynchronousTextureCache[filename] = textureId;
 	return textureId;
+}
+
+
+void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
+{
+	// Backup GL state
+	GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
+	glActiveTexture(GL_TEXTURE0);
+	GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+	GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+#ifdef GL_SAMPLER_BINDING
+	GLint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
+#endif
+	GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
+	GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#ifdef GL_POLYGON_MODE
+	GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
+	GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
+	GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
+	GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
+	GLenum last_blend_dst_rgb; glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
+	GLenum last_blend_src_alpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
+	GLenum last_blend_dst_alpha; glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
+	GLenum last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
+	GLenum last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
+	GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
+	GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
+	GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
+	GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+	ImGuiIO& io = ImGui::GetIO();
+
+	const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
+
+	ImRect cbRect = cb.mRect;
+	float h = cbRect.Max.y - cbRect.Min.y;
+	float w = cbRect.Max.x - cbRect.Min.x;
+	glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
+
+	cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
+
+	glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
+	glEnable(GL_SCISSOR_TEST);
+
+	if (cb.mNodeIndex == -1)
+	{
+		// processing UI
+		static int waitingShader = 0;
+		if (waitingShader == 0)
+		{
+			static const char *waitinShaderScript = {
+"#ifdef VERTEX_SHADER\n"
+"layout(location = 0)in vec2 inUV;\n"
+"out vec2 vUV;\n"
+"void main(){ gl_Position = vec4(inUV.xy*2.0 - 1.0,0.5,1.0); vUV = inUV; }\n"
+"#endif\n"
+"#ifdef FRAGMENT_SHADER\n"
+"uniform float time;\n"
+"#define PI 3.1415926\n"
+"layout(location = 0) out vec4 outPixDiffuse;\n"
+"in vec2 vUV;\n"
+"void main() {\n"
+//"float time = 0.0;\n"
+"vec2 npos = vUV-0.5;\n"
+"float mixcontrol = sin(time);\n"
+"if (mixcontrol < 0.0) { mixcontrol = pow(1.0 - abs(mixcontrol), 3.0) - 1.0; } \n"
+"else { mixcontrol = 1.0 - pow(1.0 - mixcontrol, 3.0); }\n"
+"mixcontrol = mixcontrol * 0.5 + 0.5;\n"
+"float c1time = time * 2.0;\n"
+"vec2 c1pos = npos + vec2(sin(c1time), cos(c1time)) * 0.24;\n"
+"float c1size = 0.05;\n"
+"float c2time = time * 2.0 + PI;\n"
+"vec2 c2pos = npos + vec2(sin(c2time), cos(c2time)) * 0.24;\n"
+"float c2size = 0.05;\n"
+"c1pos = mix(npos, c1pos, mixcontrol);\n"
+"c1size = mix(0.18, c1size, mixcontrol);\n"
+"c2pos = mix(npos, c2pos, 1.0 - mixcontrol);\n"
+"c2size = mix(0.18, c2size, 1.0 - mixcontrol);\n"
+"vec3 colorbg = vec3(32.0 / 255.0);\n"
+"vec3 colorfg = vec3(250.0 / 255.0);\n"
+"vec4 col = vec4(colorbg, 1.0);\n"
+"if (length(npos) < 0.3) { col = vec4(colorfg, 1.0); }\n"
+"if (length(c1pos) < c1size) { col = vec4(colorbg, 1.0); }\n"
+"if (length(c2pos) < c2size) { col = vec4(colorbg, 1.0); }\n"
+"outPixDiffuse = vec4(col.rgb, 1.0); }\n"
+"#endif\n"
+			};
+			waitingShader = LoadShader(waitinShaderScript, "WaitingShader");
+		}
+		glUseProgram(waitingShader);
+		static float gGlobalTime = 0.f;
+		gGlobalTime += 0.03f;
+		glUniform1f(glGetUniformLocation(waitingShader, "time"), gGlobalTime);
+		mFSQuad.Render();
+	}
+	else
+	{
+		EvaluationInfo evaluationInfo;
+		evaluationInfo.forcedDirty = 1;
+		evaluationInfo.uiPass = 1;
+		gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
+	}
+
+	// Restore modified GL state
+	glUseProgram(last_program);
+	glBindTexture(GL_TEXTURE_2D, last_texture);
+#ifdef GL_SAMPLER_BINDING
+	glBindSampler(0, last_sampler);
+#endif
+	glActiveTexture(last_active_texture);
+	glBindVertexArray(last_vertex_array);
+	glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
+	glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
+	glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
+	if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+	if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+	if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+	if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+#ifdef GL_POLYGON_MODE
+	glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
+#endif
+	glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+	glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
+{
+	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+		return EVAL_ERR;
+	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	if (!renderTarget)
+		return EVAL_ERR;
+	*imageWidth = renderTarget->mWidth;
+	*imageHeight = renderTarget->mHeight;
+	return EVAL_OK;
+}
+
+int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
+{
+	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+		return EVAL_ERR;
+	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	if (!renderTarget)
+		return EVAL_ERR;
+	renderTarget->initBuffer(imageWidth, imageHeight, false);
+	return EVAL_OK;
 }

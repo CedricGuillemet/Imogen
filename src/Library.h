@@ -29,6 +29,31 @@
 #include <vector>
 #include <stdint.h>
 #include <string>
+
+// used to retrieve structure in library. left is index. right is uniqueId
+// if item at index doesn't correspond to uniqueid, then a search is done
+// based on the unique id
+typedef std::pair<size_t, unsigned int> ASyncId;
+template<typename T> T* GetByAsyncId(ASyncId id, std::vector<T>& items)
+{
+	if (items.size() > id.first && items[id.first].mRuntimeUniqueId == id.second)
+	{
+		return &items[id.first];
+	}
+	else
+	{
+		// find identifier
+		for (auto& item : items)
+		{
+			if (item.mRuntimeUniqueId == id.second)
+			{
+				return &item;
+			}
+		}
+	}
+	return NULL;
+}
+
 struct InputSampler
 {
 	InputSampler() : mWrapU(0), mWrapV(0), mFilterMin(0), mFilterMag(0) 
@@ -46,6 +71,10 @@ struct MaterialNode
 	uint32_t mPosY;
 	std::vector<InputSampler> mInputSamplers;
 	std::vector<uint8_t> mParameters;
+	std::vector<uint8_t> mImage;
+
+	// runtime
+	unsigned int mRuntimeUniqueId;
 };
 struct MaterialConnection
 {
@@ -62,6 +91,8 @@ struct Material
 	std::vector<MaterialConnection> mMaterialConnections;
 	std::vector<uint8_t> mThumbnail;
 
+	MaterialNode* Get(ASyncId id) { return GetByAsyncId(id, mMaterialNodes); }
+
 	//run time
 	unsigned int mThumbnailTextureId;
 	unsigned int mRuntimeUniqueId;
@@ -69,6 +100,7 @@ struct Material
 struct Library
 {
 	std::vector<Material> mMaterials;
+	Material* Get(ASyncId id) { return GetByAsyncId(id, mMaterials); }
 };
 
 void LoadLib(Library *library, const char *szFilename);
@@ -76,3 +108,4 @@ void SaveLib(Library *library, const char *szFilename);
 
 unsigned int GetRuntimeId();
 extern Library library;
+

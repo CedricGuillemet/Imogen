@@ -52,6 +52,7 @@ struct NodeGraphDelegate
 	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize) = 0;
 	virtual void SetParamBlock(size_t index, unsigned char* paramBlock) = 0;
 	virtual bool NodeHasUI(size_t nodeIndex) = 0;
+	virtual bool NodeIsProcesing(size_t nodeIndex) = 0;
 	static const int MaxCon = 32;
 	struct Con
 	{

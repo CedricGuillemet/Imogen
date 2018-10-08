@@ -199,7 +199,7 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
 		{
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, selNode)));// ImRect(p, ImVec2(p.x + w, p.y + h)))));
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, selNode)));
 		}
 		if (rc.Contains(io.MousePos))
 		{
@@ -289,6 +289,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 			TileNodeEditGraphDelegate::ImogenNode *node = TileNodeEditGraphDelegate::GetInstance()->Get(mIdentifier);
 			if (node)
 			{
+				node->mbProcessing = false;
 				Evaluation::SetEvaluationImage(int(node->mEvaluationTarget), &mImage);
 			}
 			Evaluation::FreeImage(&mImage);
@@ -421,7 +422,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 			resource.mThumbnailTextureId = defaultTextureId;
 			g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&resource.mThumbnail, std::make_pair(indexInRes,resource.mRuntimeUniqueId)));
 		}
-		ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64));
+		ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
 		bool clicked = ImGui::IsItemClicked();
 		ImGui::SameLine();
 		ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
@@ -574,16 +575,9 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 				NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY);
 				if (!node.mImage.empty())
 				{
-					/*
-					Image image;
-					if (Evaluation::ReadImageMem(node.mImage.data(), node.mImage.size(), &image) == EVAL_OK)
-					{
-						Evaluation::SetEvaluationImage(int(i), &image);
-						Evaluation::FreeImage(&image);
-					}
-					*/
-					
-					g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, nodeGraphDelegate.mNodes.back().mRuntimeUniqueId)));
+					TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
+					lastNode.mbProcessing = true;
+					g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
 				}
 			}
 			for (size_t i = 0; i < material.mMaterialConnections.size(); i++)

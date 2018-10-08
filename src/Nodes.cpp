@@ -30,7 +30,7 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
-
+#include "Evaluation.h"
 
 UndoRedoHandler undoRedoHandler;
 int Log(const char *szFormat, ...);
@@ -362,6 +362,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
 		}
 		draw_list->AddImage((ImTextureID)(int64_t)(delegate->GetNodeTexture(size_t(node_idx))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
+		if (delegate->NodeIsProcesing(node_idx))
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(ImRect(imgPos + marge, imgPosMax - marge), -1)));
+
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
 		for (int i = 0; i < 2; i++)

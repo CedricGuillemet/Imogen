@@ -60,6 +60,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		size_t mParametersSize;
 		unsigned int mRuntimeUniqueId;
 		std::vector<InputSampler> mInputSamplers;
+		bool mbProcessing;
 	};
 
 	std::vector<ImogenNode> mNodes;
@@ -123,6 +124,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		ImogenNode node;
 		node.mEvaluationTarget = mEvaluation.AddEvaluation(type, metaNodes[type].mName);
 		node.mRuntimeUniqueId = GetRuntimeId();
+		node.mbProcessing = false;
 		node.mType = type;
 		size_t paramsSize = ComputeParamMemSize(type);
 		node.mParameters = malloc(paramsSize);
@@ -704,6 +706,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		return metaNodes[mNodes[nodeIndex].mType].mbHasUI;
+	}
+	virtual bool NodeIsProcesing(size_t nodeIndex)
+	{
+		return mNodes[nodeIndex].mbProcessing;
 	}
 
 	size_t ComputeParamMemSize(int paramType)

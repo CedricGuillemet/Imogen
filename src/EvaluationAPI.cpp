@@ -876,10 +876,64 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
 	glEnable(GL_SCISSOR_TEST);
 
-	EvaluationInfo evaluationInfo;
-	evaluationInfo.forcedDirty = 1;
-	evaluationInfo.uiPass = 1;
-	gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
+	if (cb.mNodeIndex == -1)
+	{
+		// processing UI
+		static int waitingShader = 0;
+		if (waitingShader == 0)
+		{
+			static const char *waitinShaderScript = {
+"#ifdef VERTEX_SHADER\n"
+"layout(location = 0)in vec2 inUV;\n"
+"out vec2 vUV;\n"
+"void main(){ gl_Position = vec4(inUV.xy*2.0 - 1.0,0.5,1.0); vUV = inUV; }\n"
+"#endif\n"
+"#ifdef FRAGMENT_SHADER\n"
+"uniform float time;\n"
+"#define PI 3.1415926\n"
+"layout(location = 0) out vec4 outPixDiffuse;\n"
+"in vec2 vUV;\n"
+"void main() {\n"
+//"float time = 0.0;\n"
+"vec2 npos = vUV-0.5;\n"
+"float mixcontrol = sin(time);\n"
+"if (mixcontrol < 0.0) { mixcontrol = pow(1.0 - abs(mixcontrol), 3.0) - 1.0; } \n"
+"else { mixcontrol = 1.0 - pow(1.0 - mixcontrol, 3.0); }\n"
+"mixcontrol = mixcontrol * 0.5 + 0.5;\n"
+"float c1time = time * 2.0;\n"
+"vec2 c1pos = npos + vec2(sin(c1time), cos(c1time)) * 0.24;\n"
+"float c1size = 0.05;\n"
+"float c2time = time * 2.0 + PI;\n"
+"vec2 c2pos = npos + vec2(sin(c2time), cos(c2time)) * 0.24;\n"
+"float c2size = 0.05;\n"
+"c1pos = mix(npos, c1pos, mixcontrol);\n"
+"c1size = mix(0.18, c1size, mixcontrol);\n"
+"c2pos = mix(npos, c2pos, 1.0 - mixcontrol);\n"
+"c2size = mix(0.18, c2size, 1.0 - mixcontrol);\n"
+"vec3 colorbg = vec3(32.0 / 255.0);\n"
+"vec3 colorfg = vec3(250.0 / 255.0);\n"
+"vec4 col = vec4(colorbg, 1.0);\n"
+"if (length(npos) < 0.3) { col = vec4(colorfg, 1.0); }\n"
+"if (length(c1pos) < c1size) { col = vec4(colorbg, 1.0); }\n"
+"if (length(c2pos) < c2size) { col = vec4(colorbg, 1.0); }\n"
+"outPixDiffuse = vec4(col.rgb, 1.0); }\n"
+"#endif\n"
+			};
+			waitingShader = LoadShader(waitinShaderScript, "WaitingShader");
+		}
+		glUseProgram(waitingShader);
+		static float gGlobalTime = 0.f;
+		gGlobalTime += 0.01f;
+		glUniform1f(glGetUniformLocation(waitingShader, "time"), gGlobalTime);
+		mFSQuad.Render();
+	}
+	else
+	{
+		EvaluationInfo evaluationInfo;
+		evaluationInfo.forcedDirty = 1;
+		evaluationInfo.uiPass = 1;
+		gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
+	}
 
 	// Restore modified GL state
 	glUseProgram(last_program);

@@ -35,6 +35,9 @@
 #include "Imogen.h"
 #include "TaskScheduler.h"
 #include "stb_image.h"
+#include "stb_image_write.h"
+
+TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 
 int Log(const char *szFormat, ...)
 {
@@ -115,7 +118,7 @@ int main(int, char**)
 {
 	g_TS.Initialize();
 	stbi_set_flip_vertically_on_load(1);
-
+	stbi_flip_vertically_on_write(1);
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{

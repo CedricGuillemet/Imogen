@@ -34,7 +34,7 @@
 // if item at index doesn't correspond to uniqueid, then a search is done
 // based on the unique id
 typedef std::pair<size_t, unsigned int> ASyncId;
-template<typename T> T* GetByAsyncId(ASyncId id, std::vector<T> items)
+template<typename T> T* GetByAsyncId(ASyncId id, std::vector<T>& items)
 {
 	if (items.size() > id.first && items[id.first].mRuntimeUniqueId == id.second)
 	{
@@ -108,3 +108,4 @@ void SaveLib(Library *library, const char *szFilename);
 
 unsigned int GetRuntimeId();
 extern Library library;
+

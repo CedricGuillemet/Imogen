@@ -267,43 +267,35 @@ std::string GetName(const std::string &name)
 
 struct PinnedTaskUploadImage : enki::IPinnedTask
 {
-	PinnedTaskUploadImage(Image image, ASyncId identifier)
+	PinnedTaskUploadImage(Image image, ASyncId identifier, bool isThumbnail)
 		: enki::IPinnedTask(0) // set pinned thread to 0
 		, mImage(image)
-		, mMaterialIdentifier(identifier)
-		, mbIsThumbnail(true)
-	{
-	}
-	PinnedTaskUploadImage(Image image, ASyncId materialIdentifier, ASyncId nodeIdentifier)
-		: enki::IPinnedTask(0) // set pinned thread to 0
-		, mImage(image)
-		, mMaterialIdentifier(materialIdentifier)
-		, mNodeIdentifier(nodeIdentifier)
-		, mbIsThumbnail(false)
+		, mIdentifier(identifier)
+		, mbIsThumbnail(isThumbnail)
 	{
 	}
 
 	virtual void Execute()
 	{
 		unsigned int textureId = Evaluation::UploadImage(&mImage);
-		Material* material = library.Get(mMaterialIdentifier);
-		if (material)
+		if (mbIsThumbnail)
 		{
-			if (mbIsThumbnail)
+			Material* material = library.Get(mIdentifier);
+			if (material)
 				material->mThumbnailTextureId = textureId;
-			else
+		}
+		else
+		{
+			TileNodeEditGraphDelegate::ImogenNode *node = TileNodeEditGraphDelegate::GetInstance()->Get(mIdentifier);
+			if (node)
 			{
-				MaterialNode *node = material->Get(mNodeIdentifier);
-				if (node)
-				{
-					
-				}
+				Evaluation::SetEvaluationImage(int(node->mEvaluationTarget), &mImage);
 			}
+			Evaluation::FreeImage(&mImage);
 		}
 	}
 	Image mImage;
-	ASyncId mMaterialIdentifier;
-	ASyncId mNodeIdentifier;
+	ASyncId mIdentifier;
 	bool mbIsThumbnail;
 };
 
@@ -319,7 +311,7 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
 		if (data)
 		{
 			image.bits = data;
-			PinnedTaskUploadImage uploadTexTask(image, mIdentifier);
+			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, true);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);
 			Evaluation::FreeImage(&image);
@@ -361,7 +353,7 @@ struct EncodeImageTaskSet : enki::ITaskSet
 
 struct DecodeImageTaskSet : enki::ITaskSet
 {
-	DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId materialIdentifier, ASyncId nodeIdentifier) : enki::ITaskSet(), mMaterialIdentifier(materialIdentifier), mNodeIdentifier(nodeIdentifier), mSrc(src)
+	DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier) : enki::ITaskSet(), mIdentifier(identifier), mSrc(src)
 	{
 	}
 	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
@@ -371,15 +363,13 @@ struct DecodeImageTaskSet : enki::ITaskSet
 		if (data)
 		{
 			image.bits = data;
-			PinnedTaskUploadImage uploadTexTask(image, mMaterialIdentifier, mNodeIdentifier);
+			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, false);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);
-			Evaluation::FreeImage(&image);
 		}
 		delete this;
 	}
-	ASyncId mMaterialIdentifier;
-	ASyncId mNodeIdentifier;
+	ASyncId mIdentifier;
 	std::vector<uint8_t> *mSrc;
 };
 
@@ -488,7 +478,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 	{
 		TileNodeEditGraphDelegate::ImogenNode srcNode = nodeGraphDelegate.mNodes[i];
 		MaterialNode &dstNode = material.mMaterialNodes[i];
-
+		dstNode.mRuntimeUniqueId = GetRuntimeId();
 		if (metaNodes[srcNode.mType].mbSaveTexture)
 		{
 			Image image;
@@ -584,12 +574,16 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 				NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY);
 				if (!node.mImage.empty())
 				{
+					/*
 					Image image;
 					if (Evaluation::ReadImageMem(node.mImage.data(), node.mImage.size(), &image) == EVAL_OK)
 					{
 						Evaluation::SetEvaluationImage(int(i), &image);
 						Evaluation::FreeImage(&image);
 					}
+					*/
+					
+					g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, nodeGraphDelegate.mNodes.back().mRuntimeUniqueId)));
 				}
 			}
 			for (size_t i = 0; i < material.mMaterialConnections.size(); i++)

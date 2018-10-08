@@ -46,7 +46,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			"File",
 			"Paint"};
 		mCategories = categories;
+		assert(!mInstance);
+		mInstance = this;
 	}
+	
 
 	Evaluation& mEvaluation;
 	struct ImogenNode
@@ -55,6 +58,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		size_t mEvaluationTarget;
 		void *mParameters;
 		size_t mParametersSize;
+		unsigned int mRuntimeUniqueId;
 		std::vector<InputSampler> mInputSamplers;
 	};
 
@@ -118,7 +122,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		size_t index = mNodes.size();
 		ImogenNode node;
 		node.mEvaluationTarget = mEvaluation.AddEvaluation(type, metaNodes[type].mName);
-
+		node.mRuntimeUniqueId = GetRuntimeId();
 		node.mType = type;
 		size_t paramsSize = ComputeParamMemSize(type);
 		node.mParameters = malloc(paramsSize);
@@ -753,5 +757,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		mEvaluation.GetEvaluationSize(int(nodeIndex), &imageWidth, &imageHeight);
 		return ImVec2(float(imageWidth), float(imageHeight));
 	}
+	static TileNodeEditGraphDelegate *GetInstance() { return mInstance; }
+	ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }
+protected:
+	static TileNodeEditGraphDelegate *mInstance;
 };
 

@@ -2,9 +2,13 @@ int Log(const char *szFormat, ...);
 
 typedef struct Image_t
 {
-	int width, height;
-	int components;
 	void *bits;
+	int width, height;
+	//int components;
+	int mDataSize;
+	unsigned char mNumMips;
+	unsigned char mNumFaces;
+	unsigned char mFormat;
 } Image;
 
 typedef struct Evaluation_t
@@ -35,6 +39,26 @@ enum BlendOp
 	ONE_MINUS_CONSTANT_ALPHA, 
 	SRC_ALPHA_SATURATE,
 	BLEND_LAST
+};
+
+enum ImageFormat
+{
+	BGR8,
+	RGB8,
+	RGB16,
+	RGB16F,
+	RGB32F,
+	RGBE,
+
+	BGRA8,
+	RGBA8,
+	RGBA16,
+	RGBA16F,
+	RGBA32F,
+
+	RGBM,
+
+	ImageFormatCount
 };
 
 // call FreeImage when done

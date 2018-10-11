@@ -37,38 +37,8 @@
 #include <streambuf>
 #include "imgui.h"
 #include "imgui_internal.h"
-/*
-#include <gli/gli.hpp>
+#include "cmft/image.h"
 
-GLuint CreateTexture(char const* Filename)
-{
-	gli::texture Texture = gli::load(Filename);
-	if (Texture.empty())
-		return 0;
-
-	gli::gl GL(gli::gl::PROFILE_GL33);
-	gli::gl::format const Format = GL.translate(Texture.format(), Texture.swizzles());
-	GLenum Target = GL.translate(Texture.target());
-	assert(gli::is_compressed(Texture.format()) && Target == gli::TARGET_2D);
-
-	GLuint TextureName = 0;
-	glGenTextures(1, &TextureName);
-	glBindTexture(Target, TextureName);
-	glTexParameteri(Target, GL_TEXTURE_BASE_LEVEL, 0);
-	glTexParameteri(Target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(Texture.levels() - 1));
-	glTexParameteriv(Target, GL_TEXTURE_SWIZZLE_RGBA, &Format.Swizzles[0]);
-	glTexStorage2D(Target, static_cast<GLint>(Texture.levels()), Format.Internal, Extent.x, Extent.y);
-	for (std::size_t Level = 0; Level < Texture.levels(); ++Level)
-	{
-		glm::tvec3<GLsizei> Extent(Texture.extent(Level));
-		glCompressedTexSubImage2D(
-			Target, static_cast<GLint>(Level), 0, 0, Extent.x, Extent.y,
-			Format.Internal, static_cast<GLsizei>(Texture.size(Level)), Texture.data(0, 0, Level));
-	}
-
-	return TextureName;
-}
-*/
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
@@ -349,16 +319,31 @@ extern Evaluation gEvaluation;
 
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
-	unsigned char *bits = stbi_load(filename, &image->width, &image->height, &image->components, 0);
-	if (!bits)
-		return EVAL_ERR;
-	image->bits = bits;
+	////unsigned char *bits = stbi_load(filename, &image->width, &image->height, &image->components, 0);
+	//if (!bits)
+	//{
+		cmft::Image img;
+		if (!cmft::imageLoad(img, filename))
+			return EVAL_ERR;
+		cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
+		//return EVAL_OK;
+	//}
+
+	image->bits = img.m_data;
+	image->width = img.m_width;
+	image->height = img.m_height;
+	//int components;
+	image->mDataSize = img.m_dataSize;
+	image->mNumMips = img.m_numMips;
+	image->mNumFaces = img.m_numFaces;
+	image->mFormat = img.m_format;
 	return EVAL_OK;
 }
 
 int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
 {
-	unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->width, &image->height, &image->components, 0);
+	int components;
+	unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->width, &image->height, &components, 0);
 	if (!bits)
 		return EVAL_ERR;
 	image->bits = bits;
@@ -367,22 +352,23 @@ int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
 
 int Evaluation::WriteImage(const char *filename, Image *image, int format, int quality)
 {
+	int components = 3; // TODO
 	switch (format)
 	{
 	case 0:
-		if (!stbi_write_jpg(filename, image->width, image->height, image->components, image->bits, quality))
+		if (!stbi_write_jpg(filename, image->width, image->height, components, image->bits, quality))
 			return EVAL_ERR;
 		break;
 	case 1:
-		if (!stbi_write_png(filename, image->width, image->height, image->components, image->bits, image->width * image->components))
+		if (!stbi_write_png(filename, image->width, image->height, components, image->bits, image->width * components))
 			return EVAL_ERR;
 		break;
 	case 2:
-		if (!stbi_write_tga(filename, image->width, image->height, image->components, image->bits))
+		if (!stbi_write_tga(filename, image->width, image->height, components, image->bits))
 			return EVAL_ERR;
 		break;
 	case 3:
-		if (!stbi_write_bmp(filename, image->width, image->height, image->components, image->bits))
+		if (!stbi_write_bmp(filename, image->width, image->height, components, image->bits))
 			return EVAL_ERR;
 		break;
 	case 4:
@@ -400,7 +386,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
 	RenderTarget& tgt = *evaluation.mTarget;
-	image->components = 4;
+	//image->components = 4; TODO
 	image->width = tgt.mWidth;
 	image->height = tgt.mHeight;
 	image->bits = malloc(tgt.mWidth * tgt.mHeight * 4);
@@ -420,20 +406,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	}
 	evaluation.mTarget->initBuffer(image->width, image->height, false);
 
-	glBindTexture(GL_TEXTURE_2D, evaluation.mTarget->mGLTexID);
-	switch (image->components)
-	{
-	case 3:
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, GL_RGB, GL_UNSIGNED_BYTE, image->bits);
-		break;
-	case 4:
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->width, image->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->bits);
-		break;
-	default:
-		Log("SetEvaluationImage: unsupported component format.\n");
-		return EVAL_ERR;
-	}
-	//gEvaluation.UnreferenceRenderTarget(&evaluation.mTarget);
+	UploadImage(image, evaluation.mTarget->mGLTexID);
 	return EVAL_OK;
 }
 
@@ -451,7 +424,8 @@ int Evaluation::FreeImage(Image *image)
 int Evaluation::EncodePng(Image *image, std::vector<unsigned char> &pngImage)
 {
 	int outlen;
-	unsigned char *bits = stbi_write_png_to_mem((unsigned char*)image->bits, image->width * image->components, image->width, image->height, image->components, &outlen);
+	int components = 4; // TODO
+	unsigned char *bits = stbi_write_png_to_mem((unsigned char*)image->bits, image->width * components, image->width, image->height, components, &outlen);
 	if (!bits)
 		return EVAL_ERR;
 	pngImage.resize(outlen);
@@ -827,23 +801,48 @@ void Evaluation::FinishEvaluation()
 	glUseProgram(0);
 }
 
-unsigned int Evaluation::UploadImage(Image *image)
+unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId)
 {
-	unsigned int textureId;
-	glGenTextures(1, &textureId);
+	if (!textureId)
+		glGenTextures(1, &textureId);
+
 	glBindTexture(GL_TEXTURE_2D, textureId);
-	switch (image->components)
-	{
-	case 3:
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image->width, image->height, 0, GL_RGB, GL_UNSIGNED_BYTE, image->bits);
-		break;
-	case 4:
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->width, image->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->bits);
-		break;
-	default:
-		Log("Texture cache : unsupported component format.\n");
-		return EVAL_ERR;
-	}
+	static const unsigned int glInputFormats[] = {
+		GL_BGR,
+		GL_RGB8,
+		GL_RGB16,
+		GL_RGB16F,
+		GL_RGB32F,
+		GL_RGBA, // RGBE
+
+		GL_BGRA,
+		GL_RGBA8,
+		GL_RGBA16,
+		GL_RGBA16F,
+		GL_RGBA32F,
+
+		GL_RGBA, // RGBM
+	};
+	static const unsigned int glInternalFormats[] = {
+		GL_RGB,
+		GL_RGB8,
+		GL_RGB16,
+		GL_RGB16F,
+		GL_RGB32F,
+		GL_RGBA, // RGBE
+
+		GL_RGBA,
+		GL_RGBA8,
+		GL_RGBA16,
+		GL_RGBA16F,
+		GL_RGBA32F,
+
+		GL_RGBA, // RGBM
+	};
+
+	unsigned int inputFormat = glInputFormats[image->mFormat];
+	unsigned int internalFormat = glInternalFormats[image->mFormat];
+	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, image->width, image->height, 0, inputFormat, GL_UNSIGNED_BYTE, image->bits);
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
 	return textureId;
 }
@@ -858,7 +857,7 @@ unsigned int Evaluation::GetTexture(const std::string& filename)
 	unsigned int textureId = 0;
 	if (ReadImage(filename.c_str(), &image) == EVAL_OK)
 	{
-		textureId = UploadImage(&image);
+		textureId = UploadImage(&image, 0);
 	}
 
 	mSynchronousTextureCache[filename] = textureId;

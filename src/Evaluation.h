@@ -75,11 +75,40 @@ struct EvaluationInfo
 	int inputIndices[8];
 };
 
+struct TextureFormat
+{
+	enum Enum
+	{
+		BGR8,
+		RGB8,
+		RGB16,
+		RGB16F,
+		RGB32F,
+		RGBE,
+
+		BGRA8,
+		RGBA8,
+		RGBA16,
+		RGBA16F,
+		RGBA32F,
+
+		RGBM,
+
+		Count,
+		Null = -1,
+	};
+};
+
 typedef struct Image_t
 {
-	int width, height;
-	int components;
 	void *bits;
+	int width, height;
+	//int components;
+	uint32_t mDataSize;
+	uint8_t mNumMips;
+	uint8_t mNumFaces;
+	uint8_t mFormat;
+	//int components;
 } Image;
 
 class RenderTarget
@@ -144,7 +173,7 @@ struct Evaluation
 	static int SetThumbnailImage(Image *image);
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
-	static unsigned int UploadImage(Image *image);
+	static unsigned int UploadImage(Image *image, unsigned int textureId);
 	static int Evaluate(int target, int width, int height, Image *image);
 	static void SetBlendingMode(int target, int blendSrc, int blendDst);
 	static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);

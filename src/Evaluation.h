@@ -101,40 +101,34 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-	void *bits;
-	int width, height;
-	//int components;
+	void *mBits;
+	int mWidth, mHeight;
 	uint32_t mDataSize;
 	uint8_t mNumMips;
 	uint8_t mNumFaces;
 	uint8_t mFormat;
-	//int components;
 } Image;
 
 class RenderTarget
 {
 
 public:
-	RenderTarget() : mGLTexID(0)
+	RenderTarget() : mGLTexID(0), mFbo(0), mRefCount(0)
 	{
-		fbo = 0;
-		depthbuffer = 0;
-		mWidth = mHeight = 0;
-		mRefCount = 0;
+		memset(&mImage, 0, sizeof(Image_t));
 	}
 
-	void initBuffer(int width, int height, bool hasZBuffer);
-	void bindAsTarget() const;
+	void InitBuffer(int width, int height);
+	void InitCube(int width, int height);
+	void BindAsTarget() const;
+	void Destroy();
+	void CheckFBO();
 
-	TextureID txDepth;
+
+	Image_t mImage;
 	unsigned int mGLTexID;
-	int mWidth, mHeight;
-	TextureID fbo;
-	TextureID depthbuffer;
+	TextureID mFbo;
 	int mRefCount;
-	void destroy();
-
-	void checkFBO();
 };
 
 

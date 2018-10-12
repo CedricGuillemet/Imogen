@@ -640,7 +640,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		int metaNodeCount;
 		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		size_t res = 0;
-		const NodeGraphDelegate::Con * param = metaNodes[mNodes[mSelectedNodeIndex].mType].mParams;
+		const MetaNode& metaNode = metaNodes[mNodes[mSelectedNodeIndex].mType];
+		const NodeGraphDelegate::Con * param = metaNode.mParams;
 		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParameters;
 		if (lButDown)
 		{
@@ -693,8 +694,11 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				paramBuffer += ComputeParamMemSize(param->mType);
 			}
 		}
-		mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
-		mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
+		if (metaNode.mbHasUI)
+		{
+			mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
+			mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
+		}
 	}
 
 	size_t ComputeParamMemSize(size_t typeIndex)
@@ -723,7 +727,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual bool NodeIsCubemap(size_t nodeIndex)
 	{
-		return mEvaluation.GetRenderTarget(nodeIndex)->mImage.mNumFaces == 6;
+		RenderTarget *target = mEvaluation.GetRenderTarget(nodeIndex);
+		if (target)
+			return target->mImage.mNumFaces == 6;
+		return false;
 	}
 	size_t ComputeParamMemSize(int paramType)
 	{

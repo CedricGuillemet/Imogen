@@ -197,9 +197,13 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		ImGui::PopStyleVar(1);
 		ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
-		if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
 		{
-			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, -2)));
+		}
+		else if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+		{
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, selNode)));
 		}
 		if (rc.Contains(io.MousePos))

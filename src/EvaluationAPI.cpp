@@ -1026,11 +1026,13 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 "layout(location = 0) out vec4 outPixDiffuse;\n"
 "in vec2 vUV;\n"
 "void main() {\n"
- "vec2 a = vUV * vec2(3.14159265, 1.57079633)*2.0;"
-"vec2 c = cos(a), s = sin(a);"
+"vec2 uv = (vUV - 0.5) * 2.0;"
+"vec2 ng = uv * vec2(3.14159265, 1.57079633);"
+"vec2 a = cos(ng);"
+"vec2 b = sin(ng);"
 			//Color = sampler(Texture, vec3(vec2(s.x, c.x) * c.y, s.y));
 				//"outPixDiffuse = texture(sampler, vec3(vec2(s.x, c.x) * c.y, s.y)); }\n"
-				"outPixDiffuse = texture(sampler, normalize(vec3(vUV.x, 1.0, vUV.y))); }\n"
+				"outPixDiffuse = texture(sampler, normalize(vec3(a.x*a.y, b.y, b.x*a.y))); }\n"
 //"outPixDiffuse = vec4(1.0,0.0,1.0, 1.0); }\n"
 "#endif\n"
 			};

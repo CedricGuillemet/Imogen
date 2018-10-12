@@ -37,38 +37,8 @@
 #include <streambuf>
 #include "imgui.h"
 #include "imgui_internal.h"
-/*
 #include <gli/gli.hpp>
 
-GLuint CreateTexture(char const* Filename)
-{
-	gli::texture Texture = gli::load(Filename);
-	if (Texture.empty())
-		return 0;
-
-	gli::gl GL(gli::gl::PROFILE_GL33);
-	gli::gl::format const Format = GL.translate(Texture.format(), Texture.swizzles());
-	GLenum Target = GL.translate(Texture.target());
-	assert(gli::is_compressed(Texture.format()) && Target == gli::TARGET_2D);
-
-	GLuint TextureName = 0;
-	glGenTextures(1, &TextureName);
-	glBindTexture(Target, TextureName);
-	glTexParameteri(Target, GL_TEXTURE_BASE_LEVEL, 0);
-	glTexParameteri(Target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(Texture.levels() - 1));
-	glTexParameteriv(Target, GL_TEXTURE_SWIZZLE_RGBA, &Format.Swizzles[0]);
-	glTexStorage2D(Target, static_cast<GLint>(Texture.levels()), Format.Internal, Extent.x, Extent.y);
-	for (std::size_t Level = 0; Level < Texture.levels(); ++Level)
-	{
-		glm::tvec3<GLsizei> Extent(Texture.extent(Level));
-		glCompressedTexSubImage2D(
-			Target, static_cast<GLint>(Level), 0, 0, Extent.x, Extent.y,
-			Format.Internal, static_cast<GLsizei>(Texture.size(Level)), Texture.data(0, 0, Level));
-	}
-
-	return TextureName;
-}
-*/
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
@@ -925,7 +895,6 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 "layout(location = 0) out vec4 outPixDiffuse;\n"
 "in vec2 vUV;\n"
 "void main() {\n"
-//"float time = 0.0;\n"
 "vec2 npos = vUV-0.5;\n"
 "float mixcontrol = sin(time);\n"
 "if (mixcontrol < 0.0) { mixcontrol = pow(1.0 - abs(mixcontrol), 3.0) - 1.0; } \n"

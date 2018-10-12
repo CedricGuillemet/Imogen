@@ -5,6 +5,6 @@ layout (std140) uniform PixelizeBlock
 
 vec4 Pixelize()
 {
-	vec4 tex = texture(Sampler0, floor(vUV*PixelizeParam.scale+0.5)/PixelizeParam.scale);
+	vec4 tex = texture(Sampler0, floor(vUV*PixelizeParam.scale)/PixelizeParam.scale);
 	return tex;
 }

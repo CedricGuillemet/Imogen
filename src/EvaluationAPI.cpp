@@ -1009,6 +1009,40 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 		glUniform1f(glGetUniformLocation(waitingShader, "time"), gGlobalTime);
 		mFSQuad.Render();
 	}
+	else if (cb.mNodeIndex == -2)
+	{
+		// cubemap
+		// processing UI
+		static int waitingShader = 0;
+		if (waitingShader == 0)
+		{
+			static const char *waitinShaderScript = {
+"#ifdef VERTEX_SHADER\n"
+"layout(location = 0)in vec2 inUV;\n"
+"out vec2 vUV;\n"
+"void main(){ gl_Position = vec4(inUV.xy*2.0 - 1.0,0.5,1.0); vUV = inUV; }\n"
+"#endif\n"
+"#ifdef FRAGMENT_SHADER\n"
+"uniform samplerCube sampler;"
+"layout(location = 0) out vec4 outPixDiffuse;\n"
+"in vec2 vUV;\n"
+"void main() {\n"
+ "vec2 a = vUV * vec2(3.14159265, 1.57079633)*2.0;"
+"vec2 c = cos(a), s = sin(a);"
+			//Color = sampler(Texture, vec3(vec2(s.x, c.x) * c.y, s.y));
+				//"outPixDiffuse = texture(sampler, vec3(vec2(s.x, c.x) * c.y, s.y)); }\n"
+				"outPixDiffuse = texture(sampler, normalize(vec3(vUV.x, 1.0, vUV.y))); }\n"
+//"outPixDiffuse = vec4(1.0,0.0,1.0, 1.0); }\n"
+"#endif\n"
+			};
+			waitingShader = LoadShader(waitinShaderScript, "WaitingShader");
+		}
+		glUseProgram(waitingShader);
+		static float gGlobalTime = 0.f;
+		gGlobalTime += 0.03f;
+		glUniform1f(glGetUniformLocation(waitingShader, "time"), gGlobalTime);
+		mFSQuad.Render();
+	}
 	else
 	{
 		EvaluationInfo evaluationInfo;

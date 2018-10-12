@@ -144,7 +144,7 @@ struct Evaluation
 	std::string GetEvaluator(const std::string& filename);
 
 	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
-
+	RenderTarget *GetRenderTarget(size_t target) { return mEvaluationStages[target].mTarget; }
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);

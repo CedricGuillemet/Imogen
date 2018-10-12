@@ -156,7 +156,7 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 
 	for (auto* rt : mAllocatedRenderTargets)
 	{
-		rt->destroy();
+		rt->Destroy();
 		delete rt;
 	}
 	mAllocatedRenderTargets.clear();
@@ -244,7 +244,7 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 
 		if (evaluation.mTarget && !evaluation.mTarget->mGLTexID)
 		{
-			evaluation.mTarget->initBuffer(width, height, false);
+			evaluation.mTarget->InitBuffer(width, height);
 		}
 
 		PerformEvaluationForNode(index, width, height, false, evaluationInfo);

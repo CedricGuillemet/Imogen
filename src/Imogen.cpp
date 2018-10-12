@@ -278,7 +278,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 
 	virtual void Execute()
 	{
-		unsigned int textureId = Evaluation::UploadImage(&mImage);
+		unsigned int textureId = Evaluation::UploadImage(&mImage, 0);
 		if (mbIsThumbnail)
 		{
 			Material* material = library.Get(mIdentifier);
@@ -310,10 +310,11 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
 	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
 	{
 		Image image;
-		unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.width, &image.height, &image.components, 0);
+		int components;
+		unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
 		if (data)
 		{
-			image.bits = data;
+			image.mBits = data;
 			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, true);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);
@@ -333,7 +334,8 @@ struct EncodeImageTaskSet : enki::ITaskSet
 	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
 	{
 		int outlen;
-		unsigned char *bits = stbi_write_png_to_mem((unsigned char*)mImage.bits, mImage.width * mImage.components, mImage.width, mImage.height, mImage.components, &outlen);
+		int components = 4;
+		unsigned char *bits = stbi_write_png_to_mem((unsigned char*)mImage.mBits, mImage.mWidth * components, mImage.mWidth, mImage.mHeight, components, &outlen);
 		if (bits)
 		{
 			Material *material = library.Get(mMaterialIdentifier);
@@ -362,10 +364,11 @@ struct DecodeImageTaskSet : enki::ITaskSet
 	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
 	{
 		Image image;
-		unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.width, &image.height, &image.components, 0);
+		int components;
+		unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
 		if (data)
 		{
-			image.bits = data;
+			image.mBits = data;
 			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, false);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);

@@ -15,6 +15,8 @@ file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
+	${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
+	${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
 ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
 )

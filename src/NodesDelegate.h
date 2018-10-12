@@ -364,7 +364,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageRead", hcFilter, 6
 					,{  }
 				,{ { "", (int)Con_Float4 } }
-				,{ { "File name", (int)Con_FilenameRead } }
+				,{ { "File name", (int)Con_FilenameRead }
+			,{ "+X File name", (int)Con_FilenameRead }
+			,{ "-X File name", (int)Con_FilenameRead }
+			,{ "+Y File name", (int)Con_FilenameRead }
+			,{ "-Y File name", (int)Con_FilenameRead }
+			,{ "+Z File name", (int)Con_FilenameRead }
+			,{ "-ZFile name", (int)Con_FilenameRead }}
 				}
 
 				,
@@ -461,6 +467,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		{
 			if (!param->mName)
 				break;
+			ImGui::PushID(667889 + i);
 			switch (param->mType)
 			{
 			case Con_Float:
@@ -551,6 +558,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 						dirty = true;
 					}
 				}
+				ImGui::SameLine();
+				ImGui::Text(param->mName);
 				break;
 			case Con_Enum:
 				dirty |= ImGui::Combo(param->mName, (int*)paramBuffer, param->mEnumList);
@@ -563,6 +572,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				}
 				break;
 			}
+			ImGui::PopID();
 			paramBuffer += ComputeParamMemSize(param->mType);
 		}
 		
@@ -711,7 +721,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	{
 		return mNodes[nodeIndex].mbProcessing;
 	}
-
+	virtual bool NodeIsCubemap(size_t nodeIndex)
+	{
+		return mEvaluation.GetRenderTarget(nodeIndex)->mImage.mNumFaces == 6;
+	}
 	size_t ComputeParamMemSize(int paramType)
 	{
 		size_t res = 0;

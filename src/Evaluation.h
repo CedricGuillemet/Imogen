@@ -75,37 +75,60 @@ struct EvaluationInfo
 	int inputIndices[8];
 };
 
+struct TextureFormat
+{
+	enum Enum
+	{
+		BGR8,
+		RGB8,
+		RGB16,
+		RGB16F,
+		RGB32F,
+		RGBE,
+
+		BGRA8,
+		RGBA8,
+		RGBA16,
+		RGBA16F,
+		RGBA32F,
+
+		RGBM,
+
+		Count,
+		Null = -1,
+	};
+};
+
 typedef struct Image_t
 {
-	int width, height;
-	int components;
-	void *bits;
+	void *mBits;
+	int mWidth, mHeight;
+	uint32_t mDataSize;
+	uint8_t mNumMips;
+	uint8_t mNumFaces;
+	uint8_t mFormat;
 } Image;
 
 class RenderTarget
 {
 
 public:
-	RenderTarget() : mGLTexID(0)
+	RenderTarget() : mGLTexID(0), mFbo(0), mRefCount(0)
 	{
-		fbo = 0;
-		depthbuffer = 0;
-		mWidth = mHeight = 0;
-		mRefCount = 0;
+		memset(&mImage, 0, sizeof(Image_t));
 	}
 
-	void initBuffer(int width, int height, bool hasZBuffer);
-	void bindAsTarget() const;
+	void InitBuffer(int width, int height);
+	void InitCube(int width, int height);
+	void BindAsTarget() const;
+	void Destroy();
+	void CheckFBO();
 
-	TextureID txDepth;
+
+	Image_t mImage;
 	unsigned int mGLTexID;
-	int mWidth, mHeight;
-	TextureID fbo;
-	TextureID depthbuffer;
+	TextureID mFbo;
 	int mRefCount;
-	void destroy();
-
-	void checkFBO();
 };
 
 
@@ -121,7 +144,7 @@ struct Evaluation
 	std::string GetEvaluator(const std::string& filename);
 
 	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
-
+	RenderTarget *GetRenderTarget(size_t target) { return mEvaluationStages[target].mTarget; }
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
@@ -141,10 +164,11 @@ struct Evaluation
 	static int WriteImage(const char *filename, Image *image, int format, int quality);
 	static int GetEvaluationImage(int target, Image *image);
 	static int SetEvaluationImage(int target, Image *image);
+	static int SetEvaluationImageCube(int target, Image *image, int cubeFace);
 	static int SetThumbnailImage(Image *image);
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
-	static unsigned int UploadImage(Image *image);
+	static unsigned int UploadImage(Image *image, unsigned int textureId, int cubeFace = -1);
 	static int Evaluate(int target, int width, int height, Image *image);
 	static void SetBlendingMode(int target, int blendSrc, int blendDst);
 	static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);

@@ -2,9 +2,13 @@ int Log(const char *szFormat, ...);
 
 typedef struct Image_t
 {
-	int width, height;
-	int components;
 	void *bits;
+	int width, height;
+	//int components;
+	int mDataSize;
+	unsigned char mNumMips;
+	unsigned char mNumFaces;
+	unsigned char mFormat;
 } Image;
 
 typedef struct Evaluation_t
@@ -37,6 +41,36 @@ enum BlendOp
 	BLEND_LAST
 };
 
+enum ImageFormat
+{
+	BGR8,
+	RGB8,
+	RGB16,
+	RGB16F,
+	RGB32F,
+	RGBE,
+
+	BGRA8,
+	RGBA8,
+	RGBA16,
+	RGBA16F,
+	RGBA32F,
+
+	RGBM,
+
+	ImageFormatCount
+};
+
+enum CubeMapFace
+{
+	CUBEMAP_POSX,
+	CUBEMAP_NEGX,
+	CUBEMAP_POSY,
+	CUBEMAP_NEGY,
+	CUBEMAP_POSZ,
+	CUBEMAP_NEGZ,
+};
+
 // call FreeImage when done
 int ReadImage(char *filename, Image *image);
 // writes an allocated image
@@ -45,6 +79,7 @@ int WriteImage(char *filename, Image *image, int format, int quality);
 int GetEvaluationImage(int target, Image *image);
 // 
 int SetEvaluationImage(int target, Image *image);
+int SetEvaluationImageCube(int target, Image *image, int cubeFace);
 // call FreeImage when done
 // set the bits pointer with an allocated memory
 int AllocateImage(Image *image);

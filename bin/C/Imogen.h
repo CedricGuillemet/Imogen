@@ -61,6 +61,16 @@ enum ImageFormat
 	ImageFormatCount
 };
 
+enum CubeMapFace
+{
+	CUBEMAP_POSX,
+	CUBEMAP_NEGX,
+	CUBEMAP_POSY,
+	CUBEMAP_NEGY,
+	CUBEMAP_POSZ,
+	CUBEMAP_NEGZ,
+};
+
 // call FreeImage when done
 int ReadImage(char *filename, Image *image);
 // writes an allocated image
@@ -69,6 +79,7 @@ int WriteImage(char *filename, Image *image, int format, int quality);
 int GetEvaluationImage(int target, Image *image);
 // 
 int SetEvaluationImage(int target, Image *image);
+int SetEvaluationImageCube(int target, Image *image, int cubeFace);
 // call FreeImage when done
 // set the bits pointer with an allocated memory
 int AllocateImage(Image *image);

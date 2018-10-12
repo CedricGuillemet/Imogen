@@ -164,10 +164,11 @@ struct Evaluation
 	static int WriteImage(const char *filename, Image *image, int format, int quality);
 	static int GetEvaluationImage(int target, Image *image);
 	static int SetEvaluationImage(int target, Image *image);
+	static int SetEvaluationImageCube(int target, Image *image, int cubeFace);
 	static int SetThumbnailImage(Image *image);
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
-	static unsigned int UploadImage(Image *image, unsigned int textureId);
+	static unsigned int UploadImage(Image *image, unsigned int textureId, int cubeFace = -1);
 	static int Evaluate(int target, int width, int height, Image *image);
 	static void SetBlendingMode(int target, int blendSrc, int blendDst);
 	static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);

@@ -364,7 +364,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageRead", hcFilter, 6
 					,{  }
 				,{ { "", (int)Con_Float4 } }
-				,{ { "File name", (int)Con_FilenameRead } }
+				,{ { "File name", (int)Con_FilenameRead }
+			,{ "+X File name", (int)Con_FilenameRead }
+			,{ "-X File name", (int)Con_FilenameRead }
+			,{ "+Y File name", (int)Con_FilenameRead }
+			,{ "-Y File name", (int)Con_FilenameRead }
+			,{ "+Z File name", (int)Con_FilenameRead }
+			,{ "-ZFile name", (int)Con_FilenameRead }}
 				}
 
 				,
@@ -551,6 +557,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 						dirty = true;
 					}
 				}
+				ImGui::SameLine();
+				ImGui::Text(param->mName);
 				break;
 			case Con_Enum:
 				dirty |= ImGui::Combo(param->mName, (int*)paramBuffer, param->mEnumList);

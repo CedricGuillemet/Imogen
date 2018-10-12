@@ -79,6 +79,9 @@ void RenderTarget::InitBuffer(int width, int height)
 
 	mImage.mWidth = width;
 	mImage.mHeight = height;
+	mImage.mNumMips = 1;
+	mImage.mNumFaces = 1;
+	mImage.mFormat = TextureFormat::RGBA8;
 
 	glGenFramebuffers(1, &mFbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
@@ -109,6 +112,12 @@ void RenderTarget::InitCube(int width, int height)
 
 	mImage.mWidth = width;
 	mImage.mHeight = height;
+	mImage.mWidth = width;
+	mImage.mHeight = height;
+	mImage.mNumMips = 1;
+	mImage.mNumFaces = 6;
+	mImage.mFormat = TextureFormat::RGBA8;
+
 
 	glGenFramebuffers(1, &mFbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
@@ -419,7 +428,6 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
 	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
-	//gEvaluation.UnreferenceRenderTarget(&evaluation.mTarget);
 	if (!evaluation.mTarget)
 	{
 		evaluation.mTarget = new RenderTarget;
@@ -427,6 +435,21 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	evaluation.mTarget->InitBuffer(image->mWidth, image->mHeight);
 
 	UploadImage(image, evaluation.mTarget->mGLTexID);
+	return EVAL_OK;
+}
+
+int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
+{
+	if (image->mNumFaces != 1)
+		return EVAL_ERR;
+	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
+	if (!evaluation.mTarget)
+	{
+		evaluation.mTarget = new RenderTarget;
+	}
+	evaluation.mTarget->InitCube(image->mWidth, image->mHeight);
+
+	UploadImage(image, evaluation.mTarget->mGLTexID, cubeFace);
 	return EVAL_OK;
 }
 
@@ -531,6 +554,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "WriteImage", (void*)Evaluation::WriteImage },
 	{ "GetEvaluationImage", (void*)Evaluation::GetEvaluationImage },
 	{ "SetEvaluationImage", (void*)Evaluation::SetEvaluationImage },
+	{ "SetEvaluationImageCube", (void*)Evaluation::SetEvaluationImageCube },
 	{ "AllocateImage", (void*)Evaluation::AllocateImage },
 	{ "FreeImage", (void*)Evaluation::FreeImage },
 	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
@@ -822,7 +846,7 @@ void Evaluation::FinishEvaluation()
 	glUseProgram(0);
 }
 
-unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId)
+unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int cubeFace)
 {
 	if (!textureId)
 		glGenTextures(1, &textureId);
@@ -860,10 +884,18 @@ unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId)
 
 		GL_RGBA, // RGBM
 	};
+	static const unsigned int glCubeFace[] = {
+		GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+		GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+		GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+	};
 
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
-	glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->mBits);
+	glTexImage2D((cubeFace==-1)? GL_TEXTURE_2D: glCubeFace[cubeFace], 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->mBits);
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
 	return textureId;
 }

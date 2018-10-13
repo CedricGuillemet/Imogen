@@ -128,6 +128,9 @@ static std::vector<Node> nodes;
 static std::vector<NodeLink> links;
 static std::vector<NodeRug> rugs;
 static NodeRug *editRug = NULL;
+static NodeRug* movingRug = NULL;
+static NodeRug* sizingRug = NULL;
+
 void NodeGraphClear()
 {
 	nodes.clear();
@@ -146,13 +149,11 @@ const std::vector<NodeRug>& NodeGraphRugs()
 	return rugs;
 }
 
-NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, float factor)
+NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, float factor, bool editingNodeAndConnexions)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	NodeRug *ret = editRug;
 	int id = 900;
-	static NodeRug* movingRug = NULL;
-	static NodeRug* sizingRug = NULL;
 	for (NodeRug& rug : rugs)
 	{
 		if (&rug == editRug)
@@ -175,12 +176,12 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 			ret = &rug;
 		}
 
-		if (!sizingRug && !movingRug && insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
+		if (!editingNodeAndConnexions && !sizingRug && !movingRug && insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
 			sizingRug = &rug;
 		if (sizingRug && !io.MouseDown[0])
 			sizingRug = NULL;
 
-		if (!movingRug && !sizingRug && rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
+		if (!editingNodeAndConnexions && !movingRug && !sizingRug && rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
 			movingRug = &rug;
 		if (movingRug && !io.MouseDown[0])
 			movingRug = NULL;
@@ -212,7 +213,7 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 	
 
-	draw_list->AddRectFilled(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xFF000000, 10.0f, 15);
+	draw_list->AddRectFilled(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xE0000000, 10.0f, 15);
 	draw_list->AddRect(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xFF000000, 10.0f, 15, 2.f);
 
 	ImGui::SetCursorScreenPos(node_rect_min + ImVec2(5, 5));
@@ -342,6 +343,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	static int editingSlotIndex;
 	
 	static bool show_grid = true;
+
 	int node_selected = delegate->mSelectedNodeIndex;
 
 	int node_hovered_in_list = -1;
@@ -390,12 +392,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		return;
 	}
 
-	// rugs
-	editRug = DisplayRugs(editRug, draw_list, offset, factor);
-
 	// Display links
-	draw_list->ChannelsSplit(2);
-	draw_list->ChannelsSetCurrent(0); // Background
+	draw_list->ChannelsSplit(3);
+	draw_list->ChannelsSetCurrent(1); // Background
 	for (int link_idx = 0; link_idx < links.size(); link_idx++)
 	{
 		NodeLink* link = &links[link_idx];
@@ -415,7 +414,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	}
 
 	int nodeToDelete = -1;
-	
+	bool editingNodeAndConnexions = false;
+	static bool isMovingNode = false;
+
 	// Display nodes
 	for (int node_idx = 0; node_idx < nodes.size(); node_idx++)
 	{
@@ -424,13 +425,13 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImVec2 node_rect_min = (offset + node->Pos) * factor;
 
 		// Display node contents first
-		draw_list->ChannelsSetCurrent(1); // Foreground
+		draw_list->ChannelsSetCurrent(2); // Foreground
 		bool old_any_active = ImGui::IsAnyItemActive();
 		ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 
-
 		ImGui::InvisibleButton("canvas", ImVec2(100, 100) * factor);
 		bool node_moving_active = ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
+		editingNodeAndConnexions |= node_moving_active;
 
 		// Save the size of what we have emitted and whether any of the widgets are being used
 		bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
@@ -441,7 +442,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		draw_list->AddText(node_rect_min+ImVec2(2,2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName);
 
 		// Display node box
-		draw_list->ChannelsSetCurrent(0); // Background
+		draw_list->ChannelsSetCurrent(1); // Background
 		ImGui::SetCursorScreenPos(node_rect_min);
 		ImGui::InvisibleButton("node", node->Size);
 		if (ImGui::IsItemHovered())
@@ -452,8 +453,15 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		
 		if (node_widgets_active || node_moving_active)
 			node_selected = node_idx;
+
 		if (node_moving_active && ImGui::IsMouseDragging(0))
-			node->Pos = node->Pos + ImGui::GetIO().MouseDelta;
+		{
+			node->Pos += ImGui::GetIO().MouseDelta;
+			isMovingNode = true;
+		}
+
+		if (!io.MouseDown[0])
+			isMovingNode = false;
 
 		bool currentSelectedNode = node_selected == node_idx;
 
@@ -503,7 +511,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			{
 				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx):node->GetInputSlotPos(slot_idx)) * factor;
 				
-				bool overCon = !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
+				bool overCon = (!isMovingNode) && (movingRug == NULL && sizingRug == NULL) && !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
 
 				const NodeGraphDelegate::Con *con = i ? metaNodes[node->mType].mOutputs:metaNodes[node->mType].mInputs;
 				const char *conText = con[slot_idx].mName;
@@ -520,12 +528,13 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 					draw_list->AddText(io.FontDefault, 16, textPos, IM_COL32(250, 250, 250, 255), conText);
 					bool inputToOutput = (!editingInput && !i) || (editingInput&& i);
 					if (editingNode && !ImGui::GetIO().MouseDown[0])
+					{
 						if (inputToOutput)
 						{
 							editingNode = false;
 
 							// check loopback
-							
+
 							NodeLink nl;
 							if (editingInput)
 								nl = NodeLink(node_idx, slot_idx, editingNodeIndex, editingSlotIndex);
@@ -566,6 +575,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 								NodeGraphUpdateEvaluationOrder(delegate);
 							}
 						}
+					}
 					if (!editingNode && ImGui::GetIO().MouseDown[0])
 					{
 						editingNode = true;
@@ -600,6 +610,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				}
 			}
 		}
+		editingNodeAndConnexions |= editingNode || hoverSlot;
 		ImGui::PopID();
 	}
 
@@ -608,6 +619,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	{
 		editingNode = false;
 	}
+	// rugs
+	draw_list->ChannelsSetCurrent(0);
+	editRug = DisplayRugs(editRug, draw_list, offset, factor, editingNodeAndConnexions);
+
 	draw_list->ChannelsMerge();
 
 	if (editRug)

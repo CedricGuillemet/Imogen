@@ -27,7 +27,6 @@
 #include "imgui.h"
 #include "Imogen.h"
 #include "TextEditor.h"
-#include "imgui_dock.h"
 #include <fstream>
 #include <streambuf>
 #include "Evaluation.h"
@@ -98,13 +97,82 @@ struct ImguiAppLog
 			ImGui::TextUnformatted(Buf.begin());
 		}
 
-		if (ScrollToBottom)
-			ImGui::SetScrollHere(1.0f);
+//		if (ScrollToBottom)
+//			ImGui::SetScrollHere(1.0f);
 		ScrollToBottom = false;
 		ImGui::PopStyleVar();
 		ImGui::EndChild();
 	}
 };
+
+void SetStyle()
+{
+	ImGuiStyle &st = ImGui::GetStyle();
+st.FrameBorderSize = 1.0f;
+st.FramePadding = ImVec2(4.0f,2.0f);
+st.ItemSpacing = ImVec2(8.0f,2.0f);
+st.WindowBorderSize = 1.0f;
+st.TabBorderSize = 1.0f;
+st.WindowRounding = 1.0f;
+st.ChildRounding = 1.0f;
+st.FrameRounding = 1.0f;
+st.ScrollbarRounding = 1.0f;
+st.GrabRounding = 1.0f;
+st.TabRounding = 1.0f;
+
+// Setup style
+ImVec4* colors = ImGui::GetStyle().Colors;
+colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 0.95f);
+colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+colors[ImGuiCol_WindowBg] = ImVec4(0.13f, 0.12f, 0.12f, 1.00f);
+colors[ImGuiCol_ChildBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.00f);
+colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.94f);
+colors[ImGuiCol_Border] = ImVec4(0.53f, 0.53f, 0.53f, 0.46f);
+colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+colors[ImGuiCol_FrameBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.85f);
+colors[ImGuiCol_FrameBgHovered] = ImVec4(0.22f, 0.22f, 0.22f, 0.40f);
+colors[ImGuiCol_FrameBgActive] = ImVec4(0.16f, 0.16f, 0.16f, 0.53f);
+colors[ImGuiCol_TitleBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+colors[ImGuiCol_MenuBarBg] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
+colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.48f, 0.48f, 0.48f, 1.00f);
+colors[ImGuiCol_CheckMark] = ImVec4(0.79f, 0.79f, 0.79f, 1.00f);
+colors[ImGuiCol_SliderGrab] = ImVec4(0.48f, 0.47f, 0.47f, 0.91f);
+colors[ImGuiCol_SliderGrabActive] = ImVec4(0.56f, 0.55f, 0.55f, 0.62f);
+colors[ImGuiCol_Button] = ImVec4(0.50f, 0.50f, 0.50f, 0.63f);
+colors[ImGuiCol_ButtonHovered] = ImVec4(0.67f, 0.67f, 0.68f, 0.63f);
+colors[ImGuiCol_ButtonActive] = ImVec4(0.26f, 0.26f, 0.26f, 0.63f);
+colors[ImGuiCol_Header] = ImVec4(0.54f, 0.54f, 0.54f, 0.58f);
+colors[ImGuiCol_HeaderHovered] = ImVec4(0.64f, 0.65f, 0.65f, 0.80f);
+colors[ImGuiCol_HeaderActive] = ImVec4(0.25f, 0.25f, 0.25f, 0.80f);
+colors[ImGuiCol_Separator] = ImVec4(0.58f, 0.58f, 0.58f, 0.50f);
+colors[ImGuiCol_SeparatorHovered] = ImVec4(0.81f, 0.81f, 0.81f, 0.64f);
+colors[ImGuiCol_SeparatorActive] = ImVec4(0.81f, 0.81f, 0.81f, 0.64f);
+colors[ImGuiCol_ResizeGrip] = ImVec4(0.87f, 0.87f, 0.87f, 0.53f);
+colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
+colors[ImGuiCol_ResizeGripActive] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
+colors[ImGuiCol_Tab] = ImVec4(0.01f, 0.01f, 0.01f, 0.86f);
+colors[ImGuiCol_TabHovered] = ImVec4(0.29f, 0.29f, 0.29f, 1.00f);
+colors[ImGuiCol_TabActive] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+colors[ImGuiCol_TabUnfocused] = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.19f, 0.19f, 0.19f, 1.00f);
+colors[ImGuiCol_DockingPreview] = ImVec4(0.38f, 0.48f, 0.60f, 1.00f);
+colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.68f, 0.68f, 0.68f, 1.00f);
+colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.77f, 0.33f, 1.00f);
+colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.87f, 0.55f, 0.08f, 1.00f);
+colors[ImGuiCol_TextSelectedBg] = ImVec4(0.47f, 0.60f, 0.76f, 0.47f);
+colors[ImGuiCol_DragDropTarget] = ImVec4(0.58f, 0.58f, 0.58f, 0.90f);
+colors[ImGuiCol_NavHighlight] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+}
 
 std::vector<ImogenDrawCallback> mCallbackRects;
 void InitCallbackRects()
@@ -504,8 +572,8 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 			memcpy(&dstNode.mParameters[0], srcNode.mParameters, srcNode.mParametersSize);
 		dstNode.mInputSamplers = srcNode.mInputSamplers;
 		ImVec2 nodePos = NodeGraphGetNodePos(i);
-		dstNode.mPosX = uint32_t(nodePos.x);
-		dstNode.mPosY = uint32_t(nodePos.y);
+		dstNode.mPosX = int32_t(nodePos.x);
+		dstNode.mPosY = int32_t(nodePos.y);
 	}
 	auto links = NodeGraphGetLinks();
 	material.mMaterialConnections.resize(links.size());
@@ -516,6 +584,18 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		materialConnection.mInputSlot = links[i].InputSlot;
 		materialConnection.mOutputNode = links[i].OutputIdx;
 		materialConnection.mOutputSlot = links[i].OutputSlot;
+	}
+	auto rugs = NodeGraphRugs();
+	material.mMaterialRugs.resize(rugs.size());
+	for (size_t i = 0; i < rugs.size(); i++)
+	{
+		MaterialNodeRug& rug = material.mMaterialRugs[i];
+		rug.mPosX = int32_t(rugs[i].mPos.x);
+		rug.mPosY = int32_t(rugs[i].mPos.y);
+		rug.mSizeX = int32_t(rugs[i].mSize.x);
+		rug.mSizeY = int32_t(rugs[i].mSize.y);
+		rug.mColor = rugs[i].mColor;
+		rug.mComment = rugs[i].mText;
 	}
 }
 
@@ -594,24 +674,14 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 				MaterialConnection& materialConnection = material.mMaterialConnections[i];
 				NodeGraphAddLink(&nodeGraphDelegate, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
 			}
+			for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
+			{
+				MaterialNodeRug& rug = material.mMaterialRugs[i];
+				NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
+			}
 			NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
 			NodeGraphUpdateScrolling();
 		}
-	}
-	ImGui::EndChild();
-	ImGui::SameLine();
-	ImGui::BeginChild("Mat");
-	if (selectedMaterial != -1)
-	{
-		Material& material = library.mMaterials[selectedMaterial];
-		GuiString("Name", &material.mName, 100, false);
-		GuiString("Comment", &material.mComment, 101, true);
-		if (ImGui::Button("Delete Material"))
-		{
-			library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
-			selectedMaterial = int(library.mMaterials.size()) - 1;
-		}
-
 	}
 	ImGui::EndChild();
 }
@@ -623,69 +693,82 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 	ImGui::SetNextWindowSize(io.DisplaySize);
 	if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::BeginDockspace();
+		static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
+		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), opt_flags);
 
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Tab);
-		if (ImGui::BeginDock("Nodes"))
+		if (ImGui::Begin("Nodes"))
 		{
-			ImGui::PushItemWidth(60);
-			static int previewSize = 0;
-			//ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
-			//ImGui::SameLine();
-			if (ImGui::Button("Export"))
+			if (selectedMaterial != -1)
 			{
-				nodeGraphDelegate.DoForce();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Save Graph"))
-			{
-				nfdchar_t *outPath = NULL;
-				nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
+				Material& material = library.mMaterials[selectedMaterial];
+				ImGui::PushItemWidth(150);
+				GuiString("Name", &material.mName, 100, false);
+				ImGui::SameLine();
+				ImGui::PopItemWidth();
 
-				if (result == NFD_OKAY)
+
+				ImGui::PushItemWidth(60);
+				static int previewSize = 0;
+				//ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
+				//ImGui::SameLine();
+				if (ImGui::Button("Do exports"))
 				{
-					Library tempLibrary;
-					Material& material = library.mMaterials[selectedMaterial];
-					tempLibrary.mMaterials.push_back(material);
-					SaveLib(&tempLibrary, outPath);
-					Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
-					free(outPath);
+					nodeGraphDelegate.DoForce();
 				}
+				ImGui::SameLine();
+				if (ImGui::Button("Save Graph"))
+				{
+					nfdchar_t *outPath = NULL;
+					nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
+
+					if (result == NFD_OKAY)
+					{
+						Library tempLibrary;
+						Material& material = library.mMaterials[selectedMaterial];
+						tempLibrary.mMaterials.push_back(material);
+						SaveLib(&tempLibrary, outPath);
+						Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
+						free(outPath);
+					}
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Delete Material"))
+				{
+					library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
+					selectedMaterial = int(library.mMaterials.size()) - 1;
+				}
+				ImGui::PopItemWidth();
 			}
-			ImGui::PopItemWidth();
-			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);
+			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);	
 		}
-		ImGui::EndDock();
-		if (ImGui::BeginDock("Shaders"))
+		ImGui::End();
+
+		if (ImGui::Begin("Shaders"))
 		{
 			HandleEditor(editor, nodeGraphDelegate, evaluation);
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Left);
-		if (ImGui::BeginDock("Library"))
+		if (ImGui::Begin("Library"))
 		{
 			LibraryEdit(library, nodeGraphDelegate, evaluation);
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
 		ImGui::SetWindowSize(ImVec2(300, 300));
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Left);
-		if (ImGui::BeginDock("Parameters"))
+		if (ImGui::Begin("Parameters"))
 		{
 			NodeEdit(nodeGraphDelegate, evaluation);
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Bottom);
-		if (ImGui::BeginDock("Logs"))
+		if (ImGui::Begin("Logs"))
 		{
 			ImguiAppLog::Log->DrawEmbedded();
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
-
-		ImGui::EndDockspace();
 		ImGui::End();
 	}
 }
@@ -727,7 +810,8 @@ Imogen::~Imogen()
 
 void Imogen::Init()
 {
-	ImGui::InitDock();
+	SetStyle();
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 
 	DiscoverNodes("glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
@@ -736,5 +820,5 @@ void Imogen::Init()
 
 void Imogen::Finish()
 {
-	ImGui::ShutdownDock();
+
 }

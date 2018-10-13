@@ -31,6 +31,7 @@ enum : uint32_t
 	v_materialComment,
 	v_thumbnail,
 	v_nodeImage,
+	v_rugs,
 	v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -118,6 +119,15 @@ template<bool doWrite> struct Serialize
 		ADD(v_initial, materialNode->mParameters);
 		ADD(v_nodeImage, materialNode->mImage);
 	}
+	void Ser(MaterialNodeRug *materialNodeRug)
+	{
+		ADD(v_rugs, materialNodeRug->mPosX);
+		ADD(v_rugs, materialNodeRug->mPosY);
+		ADD(v_rugs, materialNodeRug->mSizeX);
+		ADD(v_rugs, materialNodeRug->mSizeY);
+		ADD(v_rugs, materialNodeRug->mColor);
+		ADD(v_rugs, materialNodeRug->mComment);
+	}
 	void Ser(MaterialConnection *materialConnection)
 	{
 		ADD(v_initial, materialConnection->mInputNode);
@@ -128,10 +138,11 @@ template<bool doWrite> struct Serialize
 	void Ser(Material *material)
 	{
 		ADD(v_initial, material->mName);
-		ADD(v_materialComment, material->mComment);
+		REM(v_materialComment, v_rugs, std::string, (material->mComment), "");
 		ADD(v_initial, material->mMaterialNodes);
 		ADD(v_initial, material->mMaterialConnections);
 		ADD(v_thumbnail, material->mThumbnail);
+		ADD(v_rugs, material->mMaterialRugs);
 	}
 	bool Ser(Library *library)
 	{

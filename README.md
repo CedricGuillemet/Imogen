@@ -61,3 +61,5 @@ NativeFileDialog - Michael Labbe https://github.com/mlabbe/nativefiledialog
 gl3w - Slavomir Kaslev https://github.com/skaslev/gl3w
 
 TinyDir - https://github.com/cxong/tinydir
+
+OpenGL Image (GLI) - http://gli.g-truc.net

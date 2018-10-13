@@ -89,6 +89,7 @@ struct Node
 	ImVec2 GetInputSlotPos(int slot_no) const { return ImVec2(Pos.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
 	ImVec2 GetOutputSlotPos(int slot_no) const { return ImVec2(Pos.x + Size.x, Pos.y + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
 };
+
 struct NodeLink
 {
 	int     InputIdx, InputSlot, OutputIdx, OutputSlot;
@@ -98,6 +99,13 @@ struct NodeLink
 	{
 		return InputIdx == other.InputIdx && InputSlot == other.InputSlot && OutputIdx == other.OutputIdx && OutputSlot == other.OutputSlot;
 	}
+};
+
+struct NodeRug
+{
+	ImVec2 mPos, mSize;
+	uint32_t mColor;
+	std::string mText;
 };
 
 struct UndoRedo
@@ -144,10 +152,12 @@ extern UndoRedoHandler undoRedoHandler;
 
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
-const std::vector<NodeLink> NodeGraphGetLinks();
+const std::vector<NodeLink>& NodeGraphGetLinks();
+const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
 void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy);
+void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
 void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);
 void NodeGraphUpdateScrolling();

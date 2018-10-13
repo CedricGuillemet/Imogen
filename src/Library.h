@@ -67,8 +67,8 @@ struct InputSampler
 struct MaterialNode
 {
 	uint32_t mType;
-	uint32_t mPosX;
-	uint32_t mPosY;
+	int32_t mPosX;
+	int32_t mPosY;
 	std::vector<InputSampler> mInputSamplers;
 	std::vector<uint8_t> mParameters;
 	std::vector<uint8_t> mImage;
@@ -76,6 +76,17 @@ struct MaterialNode
 	// runtime
 	unsigned int mRuntimeUniqueId;
 };
+
+struct MaterialNodeRug
+{
+	int32_t mPosX;
+	int32_t mPosY;
+	int32_t mSizeX;
+	int32_t mSizeY;
+	uint32_t mColor;
+	std::string mComment;
+};
+
 struct MaterialConnection
 {
 	uint32_t mInputNode;
@@ -88,6 +99,7 @@ struct Material
 	std::string mName;
 	std::string mComment;
 	std::vector<MaterialNode> mMaterialNodes;
+	std::vector<MaterialNodeRug> mMaterialRugs;
 	std::vector<MaterialConnection> mMaterialConnections;
 	std::vector<uint8_t> mThumbnail;
 

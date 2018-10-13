@@ -565,8 +565,8 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 			memcpy(&dstNode.mParameters[0], srcNode.mParameters, srcNode.mParametersSize);
 		dstNode.mInputSamplers = srcNode.mInputSamplers;
 		ImVec2 nodePos = NodeGraphGetNodePos(i);
-		dstNode.mPosX = uint32_t(nodePos.x);
-		dstNode.mPosY = uint32_t(nodePos.y);
+		dstNode.mPosX = int32_t(nodePos.x);
+		dstNode.mPosY = int32_t(nodePos.y);
 	}
 	auto links = NodeGraphGetLinks();
 	material.mMaterialConnections.resize(links.size());
@@ -577,6 +577,18 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		materialConnection.mInputSlot = links[i].InputSlot;
 		materialConnection.mOutputNode = links[i].OutputIdx;
 		materialConnection.mOutputSlot = links[i].OutputSlot;
+	}
+	auto rugs = NodeGraphRugs();
+	material.mMaterialRugs.resize(rugs.size());
+	for (size_t i = 0; i < rugs.size(); i++)
+	{
+		MaterialNodeRug& rug = material.mMaterialRugs[i];
+		rug.mPosX = int32_t(rugs[i].mPos.x);
+		rug.mPosY = int32_t(rugs[i].mPos.y);
+		rug.mSizeX = int32_t(rugs[i].mSize.x);
+		rug.mSizeY = int32_t(rugs[i].mSize.y);
+		rug.mColor = rugs[i].mColor;
+		rug.mComment = rugs[i].mText;
 	}
 }
 
@@ -655,24 +667,14 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 				MaterialConnection& materialConnection = material.mMaterialConnections[i];
 				NodeGraphAddLink(&nodeGraphDelegate, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
 			}
+			for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
+			{
+				MaterialNodeRug& rug = material.mMaterialRugs[i];
+				NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
+			}
 			NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
 			NodeGraphUpdateScrolling();
 		}
-	}
-	ImGui::EndChild();
-	ImGui::SameLine();
-	ImGui::BeginChild("Mat");
-	if (selectedMaterial != -1)
-	{
-		Material& material = library.mMaterials[selectedMaterial];
-		GuiString("Name", &material.mName, 100, false);
-		GuiString("Comment", &material.mComment, 101, true);
-		if (ImGui::Button("Delete Material"))
-		{
-			library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
-			selectedMaterial = int(library.mMaterials.size()) - 1;
-		}
-
 	}
 	ImGui::EndChild();
 }
@@ -690,31 +692,47 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Nodes"))
 		{
-			ImGui::PushItemWidth(60);
-			static int previewSize = 0;
-			//ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
-			//ImGui::SameLine();
-			if (ImGui::Button("Export"))
+			if (selectedMaterial != -1)
 			{
-				nodeGraphDelegate.DoForce();
-			}
-			ImGui::SameLine();
-			if (ImGui::Button("Save Graph"))
-			{
-				nfdchar_t *outPath = NULL;
-				nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
+				Material& material = library.mMaterials[selectedMaterial];
+				ImGui::PushItemWidth(150);
+				GuiString("Name", &material.mName, 100, false);
+				ImGui::SameLine();
+				ImGui::PopItemWidth();
 
-				if (result == NFD_OKAY)
+
+				ImGui::PushItemWidth(60);
+				static int previewSize = 0;
+				//ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
+				//ImGui::SameLine();
+				if (ImGui::Button("Do exports"))
 				{
-					Library tempLibrary;
-					Material& material = library.mMaterials[selectedMaterial];
-					tempLibrary.mMaterials.push_back(material);
-					SaveLib(&tempLibrary, outPath);
-					Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
-					free(outPath);
+					nodeGraphDelegate.DoForce();
 				}
+				ImGui::SameLine();
+				if (ImGui::Button("Save Graph"))
+				{
+					nfdchar_t *outPath = NULL;
+					nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
+
+					if (result == NFD_OKAY)
+					{
+						Library tempLibrary;
+						Material& material = library.mMaterials[selectedMaterial];
+						tempLibrary.mMaterials.push_back(material);
+						SaveLib(&tempLibrary, outPath);
+						Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
+						free(outPath);
+					}
+				}
+				ImGui::SameLine();
+				if (ImGui::Button("Delete Material"))
+				{
+					library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
+					selectedMaterial = int(library.mMaterials.size()) - 1;
+				}
+				ImGui::PopItemWidth();
 			}
-			ImGui::PopItemWidth();
 			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);	
 		}
 		ImGui::End();

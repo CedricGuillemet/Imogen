@@ -265,6 +265,51 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImGui::EndGroup();
 		return;
 	}
+	// ----------------------------------------------------
+	// comments
+	static ImVec2 commentPos(250, 250);
+	static ImVec2 commentSize(400, 400);
+
+	ImVec2 node_rect_min = (offset + commentPos) * factor;
+
+	ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+
+
+	ImGui::InvisibleButton("canvas", commentSize * factor);
+	bool node_moving_active = ImGui::IsItemActive();
+
+	//bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
+	commentSize = ImGui::GetItemRectSize();
+	ImVec2 node_rect_max = node_rect_min + commentSize;
+
+	//draw_list->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
+	//draw_list->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName);
+
+	// Display node box
+	draw_list->ChannelsSetCurrent(0); // Background
+	ImGui::SetCursorScreenPos(node_rect_min);
+	ImGui::InvisibleButton("node", commentSize);
+	//ImGui::SetCursorScreenPos(node_rect_min+ ImVec2(5,5));
+	//ImGui::TextColored(ImVec4(0,0,0,10), "bababababba\njajajajajaj\nkakak");
+	if (ImGui::IsItemHovered())
+	{
+		//node_hovered_in_scene = node_idx;
+		open_context_menu |= ImGui::IsMouseClicked(1);
+	}
+	ImRect insideSizingRect(node_rect_min + commentSize-ImVec2(30,30), node_rect_min + commentSize);
+	//if (node_widgets_active || node_moving_active)
+	//	node_selected = node_idx;
+	if (node_moving_active && insideSizingRect.Contains(io.MousePos) && ImGui::IsMouseDragging(0))
+		commentSize += ImGui::GetIO().MouseDelta;
+
+	if (node_moving_active && !insideSizingRect.Contains(io.MousePos) && ImGui::IsMouseDragging(0))
+		commentPos += ImGui::GetIO().MouseDelta;
+
+	draw_list->AddText(ImGui::GetIO().FontDefault, 16, node_rect_min + ImVec2(5, 5), IM_COL32(230, 200, 180, 255), "bababababba\njajajajajaj\nkakak");
+	draw_list->AddRectFilled(node_rect_min, node_rect_max, IM_COL32(230, 200, 180, 80), 10.0f, 15);
+	draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(230, 200, 180, 128) , 10.0f, 15, 2.f);
+	draw_list->AddTriangleFilled(node_rect_min + commentSize-ImVec2(25,8), node_rect_min + commentSize - ImVec2(8, 25), node_rect_min + commentSize - ImVec2(8, 8), IM_COL32(230, 200, 180, 128));
+	// -------------------------------------------------------
 
 	// Display links
 	draw_list->ChannelsSplit(2);

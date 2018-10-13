@@ -27,7 +27,6 @@
 #include "imgui.h"
 #include "Imogen.h"
 #include "TextEditor.h"
-#include "imgui_dock.h"
 #include <fstream>
 #include <streambuf>
 #include "Evaluation.h"
@@ -98,13 +97,82 @@ struct ImguiAppLog
 			ImGui::TextUnformatted(Buf.begin());
 		}
 
-		if (ScrollToBottom)
-			ImGui::SetScrollHere(1.0f);
+//		if (ScrollToBottom)
+//			ImGui::SetScrollHere(1.0f);
 		ScrollToBottom = false;
 		ImGui::PopStyleVar();
 		ImGui::EndChild();
 	}
 };
+
+void SetStyle()
+{
+	ImGuiStyle &st = ImGui::GetStyle();
+st.FrameBorderSize = 1.0f;
+st.FramePadding = ImVec2(4.0f,2.0f);
+st.ItemSpacing = ImVec2(8.0f,2.0f);
+st.WindowBorderSize = 1.0f;
+st.TabBorderSize = 1.0f;
+st.WindowRounding = 1.0f;
+st.ChildRounding = 1.0f;
+st.FrameRounding = 1.0f;
+st.ScrollbarRounding = 1.0f;
+st.GrabRounding = 1.0f;
+st.TabRounding = 1.0f;
+
+// Setup style
+ImVec4* colors = ImGui::GetStyle().Colors;
+colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 0.95f);
+colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+colors[ImGuiCol_WindowBg] = ImVec4(0.13f, 0.12f, 0.12f, 1.00f);
+colors[ImGuiCol_ChildBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.00f);
+colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.05f, 0.94f);
+colors[ImGuiCol_Border] = ImVec4(0.53f, 0.53f, 0.53f, 0.46f);
+colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+colors[ImGuiCol_FrameBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.85f);
+colors[ImGuiCol_FrameBgHovered] = ImVec4(0.22f, 0.22f, 0.22f, 0.40f);
+colors[ImGuiCol_FrameBgActive] = ImVec4(0.16f, 0.16f, 0.16f, 0.53f);
+colors[ImGuiCol_TitleBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+colors[ImGuiCol_TitleBgActive] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+colors[ImGuiCol_MenuBarBg] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
+colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.48f, 0.48f, 0.48f, 1.00f);
+colors[ImGuiCol_CheckMark] = ImVec4(0.79f, 0.79f, 0.79f, 1.00f);
+colors[ImGuiCol_SliderGrab] = ImVec4(0.48f, 0.47f, 0.47f, 0.91f);
+colors[ImGuiCol_SliderGrabActive] = ImVec4(0.56f, 0.55f, 0.55f, 0.62f);
+colors[ImGuiCol_Button] = ImVec4(0.50f, 0.50f, 0.50f, 0.63f);
+colors[ImGuiCol_ButtonHovered] = ImVec4(0.67f, 0.67f, 0.68f, 0.63f);
+colors[ImGuiCol_ButtonActive] = ImVec4(0.26f, 0.26f, 0.26f, 0.63f);
+colors[ImGuiCol_Header] = ImVec4(0.54f, 0.54f, 0.54f, 0.58f);
+colors[ImGuiCol_HeaderHovered] = ImVec4(0.64f, 0.65f, 0.65f, 0.80f);
+colors[ImGuiCol_HeaderActive] = ImVec4(0.25f, 0.25f, 0.25f, 0.80f);
+colors[ImGuiCol_Separator] = ImVec4(0.58f, 0.58f, 0.58f, 0.50f);
+colors[ImGuiCol_SeparatorHovered] = ImVec4(0.81f, 0.81f, 0.81f, 0.64f);
+colors[ImGuiCol_SeparatorActive] = ImVec4(0.81f, 0.81f, 0.81f, 0.64f);
+colors[ImGuiCol_ResizeGrip] = ImVec4(0.87f, 0.87f, 0.87f, 0.53f);
+colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
+colors[ImGuiCol_ResizeGripActive] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
+colors[ImGuiCol_Tab] = ImVec4(0.01f, 0.01f, 0.01f, 0.86f);
+colors[ImGuiCol_TabHovered] = ImVec4(0.29f, 0.29f, 0.29f, 1.00f);
+colors[ImGuiCol_TabActive] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+colors[ImGuiCol_TabUnfocused] = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
+colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.19f, 0.19f, 0.19f, 1.00f);
+colors[ImGuiCol_DockingPreview] = ImVec4(0.38f, 0.48f, 0.60f, 1.00f);
+colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.68f, 0.68f, 0.68f, 1.00f);
+colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.77f, 0.33f, 1.00f);
+colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.87f, 0.55f, 0.08f, 1.00f);
+colors[ImGuiCol_TextSelectedBg] = ImVec4(0.47f, 0.60f, 0.76f, 0.47f);
+colors[ImGuiCol_DragDropTarget] = ImVec4(0.58f, 0.58f, 0.58f, 0.90f);
+colors[ImGuiCol_NavHighlight] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+}
 
 std::vector<ImogenDrawCallback> mCallbackRects;
 void InitCallbackRects()
@@ -616,10 +684,11 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 	ImGui::SetNextWindowSize(io.DisplaySize);
 	if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize))
 	{
-		ImGui::BeginDockspace();
+		static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
+		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), opt_flags);
 
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Tab);
-		if (ImGui::BeginDock("Nodes"))
+		if (ImGui::Begin("Nodes"))
 		{
 			ImGui::PushItemWidth(60);
 			static int previewSize = 0;
@@ -646,39 +715,35 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 				}
 			}
 			ImGui::PopItemWidth();
-			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);
+			NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);	
 		}
-		ImGui::EndDock();
-		if (ImGui::BeginDock("Shaders"))
+		ImGui::End();
+
+		if (ImGui::Begin("Shaders"))
 		{
 			HandleEditor(editor, nodeGraphDelegate, evaluation);
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Left);
-		if (ImGui::BeginDock("Library"))
+		if (ImGui::Begin("Library"))
 		{
 			LibraryEdit(library, nodeGraphDelegate, evaluation);
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
 		ImGui::SetWindowSize(ImVec2(300, 300));
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Left);
-		if (ImGui::BeginDock("Parameters"))
+		if (ImGui::Begin("Parameters"))
 		{
 			NodeEdit(nodeGraphDelegate, evaluation);
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
-		ImGui::SetNextDock("Imogen", ImGuiDockSlot_Bottom);
-		if (ImGui::BeginDock("Logs"))
+		if (ImGui::Begin("Logs"))
 		{
 			ImguiAppLog::Log->DrawEmbedded();
 		}
-		ImGui::EndDock();
+		ImGui::End();
 
-
-		ImGui::EndDockspace();
 		ImGui::End();
 	}
 }
@@ -720,7 +785,8 @@ Imogen::~Imogen()
 
 void Imogen::Init()
 {
-	ImGui::InitDock();
+	SetStyle();
+	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 
 	DiscoverNodes("glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
@@ -729,5 +795,5 @@ void Imogen::Init()
 
 void Imogen::Finish()
 {
-	ImGui::ShutdownDock();
+
 }

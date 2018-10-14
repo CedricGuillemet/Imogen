@@ -38,6 +38,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "cmft/image.h"
+#include "cmft/cubemapfilter.h"
 
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
@@ -541,7 +542,48 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	{
 		evaluation.mTarget = new RenderTarget;
 	}
-	evaluation.mTarget->InitBuffer(image->mWidth, image->mHeight);
+	unsigned int texelSize = GetTexelSize(image->mFormat);
+	unsigned int texelFormat = glInternalFormats[image->mFormat];
+	unsigned int inputFormat = glInputFormats[image->mFormat];
+	unsigned int internalFormat = glInternalFormats[image->mFormat];
+	unsigned char *ptr = (unsigned char *)image->mBits;
+	if (image->mNumFaces == 1)
+	{
+		evaluation.mTarget->InitBuffer(image->mWidth, image->mHeight);
+
+		glBindTexture(GL_TEXTURE_2D, evaluation.mTarget->mGLTexID);
+
+		for (int i = 0; i < image->mNumMips; i++)
+		{
+			glTexImage2D(GL_TEXTURE_2D, i, internalFormat, image->mWidth >> i, image->mHeight >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
+			ptr += (image->mWidth >> i) * (image->mHeight >> i) * texelSize;
+		}
+
+		if (image->mNumMips > 1)
+			TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+		else
+			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+	}
+	else
+	{
+		evaluation.mTarget->InitCube(image->mWidth, image->mHeight);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, evaluation.mTarget->mGLTexID);
+
+		for (int face = 0; face < image->mNumFaces; face++)
+		{
+			for (int i = 0; i < image->mNumMips; i++)
+			{
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, i, internalFormat, image->mWidth >> i, image->mHeight >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
+				ptr += (image->mWidth >> i) * (image->mHeight >> i) * texelSize;
+			}
+		}
+
+		if (image->mNumMips > 1)
+			TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
+		else
+			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
+
+	}
 
 	UploadImage(image, evaluation.mTarget->mGLTexID);
 	return EVAL_OK;
@@ -559,6 +601,41 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 	evaluation.mTarget->InitCube(image->mWidth, image->mHeight);
 
 	UploadImage(image, evaluation.mTarget->mGLTexID, cubeFace);
+	return EVAL_OK;
+}
+
+int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias)
+{
+	cmft::Image img;
+	img.m_data = image->mBits;
+	img.m_dataSize = image->mDataSize;
+	img.m_numMips = image->mNumMips;
+	img.m_numFaces = image->mNumFaces;
+	img.m_width = image->mWidth;
+	img.m_height = image->mHeight;
+	img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
+
+	extern unsigned int gCPUCount;
+
+	if (!cmft::imageRadianceFilter(img
+		, faceSize // face size
+		, (cmft::LightingModel::Enum)lightingModel
+		, (excludeBase != 0)
+		, 99 // map mip count
+		, glossScale
+		, glossBias
+		, cmft::EdgeFixup::None
+		, gCPUCount))
+		return EVAL_ERR;
+
+	image->mBits = img.m_data;
+	image->mDataSize = img.m_dataSize;
+	image->mNumMips = img.m_numMips;
+	image->mNumFaces = img.m_numFaces;
+	image->mWidth = img.m_width;
+	image->mHeight = img.m_height;
+	image->mFormat = img.m_format;
+	
 	return EVAL_OK;
 }
 
@@ -671,6 +748,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
 	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
 	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
+	{ "CubemapFilter", (void*)Evaluation::CubemapFilter},
 };
 
 void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)

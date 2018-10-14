@@ -38,7 +38,7 @@
 #include "stb_image_write.h"
 
 TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
-
+unsigned int gCPUCount = 1;
 int Log(const char *szFormat, ...)
 {
 	va_list ptr_arg;
@@ -117,6 +117,7 @@ enki::TaskScheduler g_TS;
 int main(int, char**)
 {
 	g_TS.Initialize();
+	
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);
 	// Setup SDL
@@ -201,6 +202,8 @@ int main(int, char**)
 	gEvaluation.SetEvaluators(imogen.mEvaluatorFiles);
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
+
+	gCPUCount = SDL_GetCPUCount();
 
 	// Main loop
 	bool done = false;

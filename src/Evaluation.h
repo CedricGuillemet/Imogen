@@ -175,6 +175,7 @@ struct Evaluation
 	static int SetNodeImage(int target, Image *image);
 	static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 	static int SetEvaluationSize(int target, int imageWidth, int imageHeight);
+	static int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 
 	static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
 	// synchronous texture cache

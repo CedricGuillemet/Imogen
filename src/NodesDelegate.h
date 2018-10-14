@@ -83,6 +83,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		Con_FilenameRead,
 		Con_FilenameWrite,
 		Con_ForceEvaluate,
+		Con_Bool,
 		Con_Any,
 	};
 
@@ -174,9 +175,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
 
 
-		metaNodeCount = 29;
+		metaNodeCount = 30;
 
-		static const MetaNode metaNodes[29] = {
+		static const MetaNode metaNodes[30] = {
 
 			{
 				"Circle", hcGenerator, 1
@@ -378,7 +379,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					"ImageWrite", hcFilter, 6
 					,{ { "", (int)Con_Float4 } }
 				,{  }
-				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0"}
+				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0DDS\0KTX\0"}
 						,{ "Quality", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best\0 1\0 2\0 3\0 4\0 5 .. Medium\0 6\0 7\0 8\0 9 .. Lowest\0" }
 						,{ "Width", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
 						,{ "Height", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
@@ -417,6 +418,19 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				,{ { "Quad", (int)Con_Float4, 0.f,1.f,0.f,1.f, false, true } }
 				, true
 				}
+
+					,
+					{
+						"CubemapFilter", hcFilter, 4
+						,{ { "", (int)Con_Float4 } }
+					,{ { "", (int)Con_Float4 } }
+					,{ { "Lighting Model", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Phong\0Phong BRDF\0Blinn\0Blinn BRDF\0"}
+					,{"Exclude Base", (int)Con_Bool}
+					,{"Gloss scale", (int)Con_Int}
+					,{"Gloss bias", (int)Con_Int}
+					,{ "Face size", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "   32\0   64\0  128\0  256\0  512\0 1024\0" }
+				}
+					}
 			};
 
 		return metaNodes;
@@ -571,6 +585,16 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					forceEval = true;
 				}
 				break;
+			case Con_Bool:
+			{
+				bool checked = (*(int*)paramBuffer) != 0;
+				if (ImGui::Checkbox(param->mName, &checked))
+				{
+					*(int*)paramBuffer = checked ? 1 : 0;
+					dirty = true;
+				}
+			}
+			break;
 			}
 			ImGui::PopID();
 			paramBuffer += ComputeParamMemSize(param->mType);
@@ -769,6 +793,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			break;
 		case Con_ForceEvaluate:
 			res += 0;
+			break;
+		case Con_Bool:
+			res += sizeof(int);
 			break;
 		}
 		return res;

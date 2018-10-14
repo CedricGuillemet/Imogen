@@ -36,6 +36,8 @@
 #include "stb_image.h"
 #include "tinydir.h"
 #include "stb_image.h"
+#include "imgui_stdlib.h"
+
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
 extern Evaluation gEvaluation;
 
@@ -387,6 +389,9 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
 		if (data)
 		{
 			image.mBits = data;
+			image.mNumFaces = 1;
+			image.mNumMips = 1;
+			image.mFormat = (components == 4) ? TextureFormat::RGBA8 : TextureFormat::RGB8;
 			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, true);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);
@@ -517,24 +522,6 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
 	ImGui::TreePop();
 	return ret;
-}
-
-inline void GuiString(const char*label, std::string* str, int stringId, bool multi)
-{
-	ImGui::PushID(stringId);
-	char eventStr[2048];
-	strcpy(eventStr, str->c_str());
-	if (multi)
-	{
-		if (ImGui::InputTextMultiline(label, eventStr, 2048))
-			*str = eventStr;
-	}
-	else
-	{
-		if (ImGui::InputText(label, eventStr, 2048))
-			*str = eventStr;
-	}
-	ImGui::PopID();
 }
 
 static int selectedMaterial = -1;
@@ -703,7 +690,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			{
 				Material& material = library.mMaterials[selectedMaterial];
 				ImGui::PushItemWidth(150);
-				GuiString("Name", &material.mName, 100, false);
+				ImGui::InputText("Name", &material.mName, 100, false);
 				ImGui::SameLine();
 				ImGui::PopItemWidth();
 

@@ -643,6 +643,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		const MetaNode& metaNode = metaNodes[mNodes[mSelectedNodeIndex].mType];
 		const NodeGraphDelegate::Con * param = metaNode.mParams;
 		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParameters;
+		bool parametersUseMouse = false;
 		if (lButDown)
 		{
 			for (int i = 0; i < MaxCon; i++, param++)
@@ -692,9 +693,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					}
 				}
 				paramBuffer += ComputeParamMemSize(param->mType);
+				parametersUseMouse = true;
 			}
 		}
-		if (metaNode.mbHasUI)
+		if (metaNode.mbHasUI || parametersUseMouse)
 		{
 			mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
 			mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);

@@ -96,6 +96,7 @@ void RenderTarget::InitBuffer(int width, int height)
 	static const GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 	glDrawBuffers(sizeof(DrawBuffers) / sizeof(GLenum), DrawBuffers);
 
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	CheckFBO();
 	BindAsTarget();
 	glClearColor(0, 0, 0, 0);
@@ -132,6 +133,7 @@ void RenderTarget::InitCube(int width, int height)
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, mGLTexID, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	CheckFBO();
 }
 

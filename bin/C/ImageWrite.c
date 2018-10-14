@@ -11,7 +11,7 @@ typedef struct ImageWrite_t
 
 int main(ImageWrite *param, Evaluation *evaluation)
 {
-	char *stockImages[5] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png"};
+	char *stockImages[7] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png", "Stock/dds-icon.png", "Stock/ktx-icon.png"};
 	Image image;
 	
 	// set info stock image

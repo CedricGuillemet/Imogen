@@ -45,6 +45,52 @@ static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
 static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
 static const unsigned int GLBlends[] = { GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
 	GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_SRC_ALPHA_SATURATE };
+static const unsigned int glInputFormats[] = {
+		GL_BGR,
+		GL_RGB,
+		GL_RGB16,
+		GL_RGB16F,
+		GL_RGB32F,
+		GL_RGBA, // RGBE
+
+		GL_BGRA,
+		GL_RGBA,
+		GL_RGBA16,
+		GL_RGBA16F,
+		GL_RGBA32F,
+
+		GL_RGBA, // RGBM
+};
+static const unsigned int glInternalFormats[] = {
+	GL_RGB,
+	GL_RGB,
+	GL_RGB16,
+	GL_RGB16F,
+	GL_RGB32F,
+	GL_RGBA, // RGBE
+
+	GL_RGBA,
+	GL_RGBA,
+	GL_RGBA16,
+	GL_RGBA16F,
+	GL_RGBA32F,
+
+	GL_RGBA, // RGBM
+};
+static const unsigned int glCubeFace[] = {
+	GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+	GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+};
+static const unsigned int textureFormatSize[] = {    3,3,6,6,12, 4,4,4,8,8,16,4 };
+static const unsigned int textureComponentCount[] = { 3,3,3,3,3, 4,4,4,4,4,4,4 };
+unsigned int GetTexelSize(uint8_t fmt)
+{
+	return textureFormatSize[fmt];
+}
 
 inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {
@@ -381,7 +427,7 @@ int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
 
 int Evaluation::WriteImage(const char *filename, Image *image, int format, int quality)
 {
-	int components = 3; // TODO
+	int components = textureComponentCount[image->mFormat];
 	switch (format)
 	{
 	case 0:
@@ -404,6 +450,38 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 		//if (stbi_write_hdr(filename, image->width, image->height, image->components, image->bits))
 			return EVAL_ERR;
 		break;
+	case 5:
+	{
+		cmft::Image img;
+		img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
+		img.m_width = image->mWidth;
+		img.m_height = image->mHeight;
+		img.m_numFaces = image->mNumFaces;
+		img.m_numMips = image->mNumMips;
+		img.m_data = image->mBits;
+		img.m_dataSize = image->mDataSize;
+		if (img.m_format == cmft::TextureFormat::RGBA8)
+			cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
+		else if (img.m_format == cmft::TextureFormat::RGB8)
+			cmft::imageConvert(img, cmft::TextureFormat::BGR8);
+		if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
+			return EVAL_ERR;
+	}
+		break;
+	case 6:
+	{
+		cmft::Image img;
+		img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
+		img.m_width = image->mWidth;
+		img.m_height = image->mHeight;
+		img.m_numFaces = image->mNumFaces;
+		img.m_numMips = image->mNumMips;
+		img.m_data = image->mBits;
+		img.m_dataSize = image->mDataSize;
+		if (!cmft::imageSave(img, filename, cmft::ImageFileType::KTX))
+			return EVAL_ERR;
+	}
+	break;
 	}
 	return EVAL_OK;
 }
@@ -415,13 +493,44 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
 	RenderTarget& tgt = *evaluation.mTarget;
-	//image->components = 4; TODO
-	image->mWidth = tgt.mImage.mWidth;
-	image->mHeight = tgt.mImage.mHeight;
-	image->mBits = malloc(tgt.mImage.mWidth * tgt.mImage.mHeight * 4);
-	glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->mBits);
 
+	// compute total size
+	Image_t& img = tgt.mImage;
+	unsigned int texelSize = GetTexelSize(img.mFormat);
+	unsigned int texelFormat = glInternalFormats[img.mFormat];
+	uint32_t size = 0;// img.mNumFaces * img.mWidth * img.mHeight * texelSize;
+	for (int i = 0;i<img.mNumMips;i++)
+		size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+
+	image->mBits = malloc(size);
+	image->mDataSize = size;
+	image->mWidth = img.mWidth;
+	image->mHeight = img.mHeight;
+	image->mNumMips = img.mNumMips;
+	image->mFormat = img.mFormat;
+	image->mNumFaces = img.mNumFaces;
+
+	glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
+	unsigned char *ptr = (unsigned char *)image->mBits;
+	if (img.mNumFaces == 1)
+	{
+		for (int i = 0; i < img.mNumMips; i++)
+		{
+			glGetTexImage(GL_TEXTURE_2D, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
+			ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+		}
+	}
+	else
+	{
+		for (int cube = 0; cube < img.mNumFaces; cube++)
+		{
+			for (int i = 0; i < img.mNumMips; i++)
+			{
+				glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X+cube, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
+				ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+			}
+		}
+	}
 	return EVAL_OK;
 }
 
@@ -852,46 +961,6 @@ unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int c
 		glGenTextures(1, &textureId);
 
 	glBindTexture(GL_TEXTURE_2D, textureId);
-	static const unsigned int glInputFormats[] = {
-		GL_BGR,
-		GL_RGB,
-		GL_RGB16,
-		GL_RGB16F,
-		GL_RGB32F,
-		GL_RGBA, // RGBE
-
-		GL_BGRA,
-		GL_RGBA,
-		GL_RGBA16,
-		GL_RGBA16F,
-		GL_RGBA32F,
-
-		GL_RGBA, // RGBM
-	};
-	static const unsigned int glInternalFormats[] = {
-		GL_RGB,
-		GL_RGB,
-		GL_RGB16,
-		GL_RGB16F,
-		GL_RGB32F,
-		GL_RGBA, // RGBE
-
-		GL_RGBA,
-		GL_RGBA,
-		GL_RGBA16,
-		GL_RGBA16F,
-		GL_RGBA32F,
-
-		GL_RGBA, // RGBM
-	};
-	static const unsigned int glCubeFace[] = {
-		GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-		GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-		GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-		GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-		GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-		GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-	};
 
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];

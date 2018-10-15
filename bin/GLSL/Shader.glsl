@@ -27,7 +27,9 @@ layout (std140) uniform EvaluationBlock
 	int padding;
 	vec4 mouse; // x,y, lbut down, rbut down
 	int inputIndices[8];
-	
+	mat4 inv_proj;
+	mat3 inv_view_rot;
+	vec2 viewport;
 } EvaluationParam;
 
 

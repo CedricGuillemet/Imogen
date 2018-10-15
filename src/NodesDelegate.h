@@ -175,9 +175,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
 
 
-		metaNodeCount = 30;
+		metaNodeCount = 31;
 
-		static const MetaNode metaNodes[30] = {
+		static const MetaNode metaNodes[31] = {
 
 			{
 				"Circle", hcGenerator, 1
@@ -430,6 +430,26 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{"Gloss bias", (int)Con_Int}
 					,{ "Face size", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "   32\0   64\0  128\0  256\0  512\0 1024\0" }
 				}
+					}
+
+					,
+					{
+						"PhysicalSky", hcGenerator, 1
+						,{  }
+					,{ { "", (int)Con_Float4 } }
+					,{ { "ambient", (int)Con_Float4 }
+					,{ "lightdir", (int)Con_Float3 }
+					,{ "Kr", (int)Con_Float3 }
+					,{ "rayleigh brightness", (int)Con_Float }
+					,{ "mie brightness", (int)Con_Float }
+					,{ "spot brightness", (int)Con_Float }
+					,{ "scatter strength", (int)Con_Float }
+					,{ "rayleigh strength", (int)Con_Float }
+					,{ "mie strength" , (int)Con_Float }
+					,{ "rayleigh collection power", (int)Con_Float }
+					,{ "mie collection power", (int)Con_Float }
+					,{ "mie distribution", (int)Con_Float } }	    
+
 					}
 			};
 

@@ -49,7 +49,6 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/gli
 )
 
 link_directories(

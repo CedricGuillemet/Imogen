@@ -176,6 +176,8 @@ struct Evaluation
 	static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 	static int SetEvaluationSize(int target, int imageWidth, int imageHeight);
 	static int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
+	static int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
+	static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
 
 	static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
 	// synchronous texture cache
@@ -264,5 +266,9 @@ protected:
 	std::vector<RenderTarget*> mAllocatedRenderTargets;
 	void SetEvaluationMemoryMode(int mode);
 	void RecurseGetUse(size_t target, std::vector<size_t>& usedNodes);
+
+	// ui callback shaders
+	unsigned int mProgressShader;
+	unsigned int mDisplayCubemapShader;
 
 };

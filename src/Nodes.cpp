@@ -529,9 +529,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		}
 		draw_list->AddImage((ImTextureID)(int64_t)(delegate->GetNodeTexture(size_t(node_idx))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
 		if (delegate->NodeIsProcesing(node_idx))
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(ImRect(imgPos + marge, imgPosMax - marge), -1)));
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos + marge, imgPosMax - marge), node_idx)));
 		if (delegate->NodeIsCubemap(node_idx))
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(ImRect(imgPos + marge, imgPosMax - marge), -2)));
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), node_idx)));
 
 		// draw/use inputs/outputs
 		bool hoverSlot = false;

@@ -34,7 +34,7 @@ std::string Evaluation::GetEvaluator(const std::string& filename)
 	return mEvaluatorScripts[filename].mText;
 }
 
-Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0)
+Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0), mProgressShader(0), mDisplayCubemapShader(0)
 {
 	
 }

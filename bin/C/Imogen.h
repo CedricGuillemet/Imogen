@@ -96,7 +96,10 @@ int Evaluate(int target, int width, int height, Image *image);
 void SetBlendingMode(int target, int blendSrc, int blendDst);
 int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(int target, int imageWidth, int imageHeight);
-int CubemapFilter(Image *image, int lightingModel, int excludeBase, int glossScale, int glossBias);
+int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
+
+int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
+int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

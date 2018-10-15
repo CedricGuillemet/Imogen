@@ -39,6 +39,9 @@
 #include "imgui_internal.h"
 #include "cmft/image.h"
 #include "cmft/cubemapfilter.h"
+#include "TaskScheduler.h"
+
+extern enki::TaskScheduler g_TS;
 
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
@@ -372,6 +375,12 @@ FullScreenTriangle mFSQuad;
 void Evaluation::APIInit()
 {
 	mFSQuad.Init();
+
+	std::ifstream prgStr("Stock/ProgressingNode.glsl");
+	std::ifstream cubStr("Stock/DisplayCubemap.glsl");
+
+	mProgressShader = prgStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(prgStr), std::istreambuf_iterator<char>()), "progressShader") : 0;
+	mDisplayCubemapShader = cubStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()), "cubeDisplay") : 0;
 }
 
 static void libtccErrorFunc(void *opaque, const char *msg)
@@ -751,7 +760,62 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
 	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
 	{ "CubemapFilter", (void*)Evaluation::CubemapFilter},
+	{ "Job", (void*)Evaluation::Job },
+	{ "JobMain", (void*)Evaluation::JobMain },
+	{ "memmove", memmove },
+	{ "strcpy", strcpy },
 };
+
+typedef int(*jobFunction)(void*);
+
+struct CFunctionTaskSet : enki::ITaskSet
+{
+	CFunctionTaskSet(jobFunction function, void *ptr, unsigned int size) : enki::ITaskSet()
+		, mFunction(function)
+		, mBuffer(malloc(size))
+	{
+		memcpy(mBuffer, ptr, size);
+	}
+	virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+	{
+		mFunction(mBuffer);
+		free(mBuffer);
+		delete this;
+	}
+	jobFunction mFunction;
+	void *mBuffer;
+};
+
+struct CFunctionMainTask : enki::IPinnedTask
+{
+	CFunctionMainTask(jobFunction function, void *ptr, unsigned int size)
+		: enki::IPinnedTask(0) // set pinned thread to 0
+		, mFunction(function)
+		, mBuffer(malloc(size))
+	{
+		memcpy(mBuffer, ptr, size);
+	}
+	virtual void Execute()
+	{
+		mFunction(mBuffer);
+		free(mBuffer);
+		delete this;
+	}
+	jobFunction mFunction;
+	void *mBuffer;
+};
+
+int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
+{
+	g_TS.AddTaskSetToPipe(new CFunctionTaskSet(jobFunction, ptr, size));
+	return EVAL_OK;
+}
+
+int Evaluation::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size)
+{
+	g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
+	return EVAL_OK;
+}
 
 void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
 {
@@ -1040,7 +1104,7 @@ unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int c
 	if (!textureId)
 		glGenTextures(1, &textureId);
 
-	glBindTexture(GL_TEXTURE_2D, textureId);
+	glBindTexture((cubeFace==-1)?GL_TEXTURE_2D:GL_TEXTURE_CUBE_MAP, textureId);
 
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
@@ -1107,124 +1171,30 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
 	glEnable(GL_SCISSOR_TEST);
 
-	if (cb.mNodeIndex == -1)
+	switch (cb.mType)
 	{
-		// processing UI
-		static int waitingShader = 0;
-		if (waitingShader == 0)
+	case CBUI_Node:
 		{
-			static const char *waitinShaderScript = {
-"#ifdef VERTEX_SHADER\n"
-"layout(location = 0)in vec2 inUV;\n"
-"out vec2 vUV;\n"
-"void main(){ gl_Position = vec4(inUV.xy*2.0 - 1.0,0.5,1.0); vUV = inUV; }\n"
-"#endif\n"
-"#ifdef FRAGMENT_SHADER\n"
-"uniform float time;\n"
-"#define PI 3.1415926\n"
-"layout(location = 0) out vec4 outPixDiffuse;\n"
-"in vec2 vUV;\n"
-"void main() {\n"
-"vec2 npos = vUV-0.5;\n"
-"float mixcontrol = sin(time);\n"
-"if (mixcontrol < 0.0) { mixcontrol = pow(1.0 - abs(mixcontrol), 3.0) - 1.0; } \n"
-"else { mixcontrol = 1.0 - pow(1.0 - mixcontrol, 3.0); }\n"
-"mixcontrol = mixcontrol * 0.5 + 0.5;\n"
-"float c1time = time * 2.0;\n"
-"vec2 c1pos = npos + vec2(sin(c1time), cos(c1time)) * 0.24;\n"
-"float c1size = 0.05;\n"
-"float c2time = time * 2.0 + PI;\n"
-"vec2 c2pos = npos + vec2(sin(c2time), cos(c2time)) * 0.24;\n"
-"float c2size = 0.05;\n"
-"c1pos = mix(npos, c1pos, mixcontrol);\n"
-"c1size = mix(0.18, c1size, mixcontrol);\n"
-"c2pos = mix(npos, c2pos, 1.0 - mixcontrol);\n"
-"c2size = mix(0.18, c2size, 1.0 - mixcontrol);\n"
-"vec3 colorbg = vec3(32.0 / 255.0);\n"
-"vec3 colorfg = vec3(250.0 / 255.0);\n"
-"vec4 col = vec4(colorbg, 1.0);\n"
-"if (length(npos) < 0.3) { col = vec4(colorfg, 1.0); }\n"
-"if (length(c1pos) < c1size) { col = vec4(colorbg, 1.0); }\n"
-"if (length(c2pos) < c2size) { col = vec4(colorbg, 1.0); }\n"
-"outPixDiffuse = vec4(col.rgb, 1.0); }\n"
-"#endif\n"
-			};
-			waitingShader = LoadShader(waitinShaderScript, "WaitingShader");
+			EvaluationInfo evaluationInfo;
+			evaluationInfo.forcedDirty = 1;
+			evaluationInfo.uiPass = 1;
+			gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
 		}
-		glUseProgram(waitingShader);
-		static float gGlobalTime = 0.f;
-		gGlobalTime += 0.03f;
-		glUniform1f(glGetUniformLocation(waitingShader, "time"), gGlobalTime);
-		mFSQuad.Render();
-	}
-	else if (cb.mNodeIndex == -2)
-	{
-		// cubemap
-		// processing UI
-		static int waitingShader = 0;
-		if (waitingShader == 0)
+		break;
+	case CBUI_Progress:
 		{
-			static const char *waitinShaderScript = {
-"#ifdef VERTEX_SHADER\n"
-"layout(location = 0)in vec2 inUV;\n"
-"out vec2 vUV;\n"
-"void main(){ gl_Position = vec4(inUV.xy*2.0 - 1.0,0.5,1.0); vUV = inUV; }\n"
-"#endif\n"
-"#ifdef FRAGMENT_SHADER\n"
-"uniform samplerCube sampler;"
-"layout(location = 0) out vec4 outPixDiffuse;\n"
-"in vec2 vUV;\n"
-"void main() {\n"
-"vec2 uv = (vUV - 0.5) * 2.0;"
-"vec2 ng = uv * vec2(3.14159265, 1.57079633);"
-"vec2 a = cos(ng);"
-"vec2 b = sin(ng);"
-			//Color = sampler(Texture, vec3(vec2(s.x, c.x) * c.y, s.y));
-				//"outPixDiffuse = texture(sampler, vec3(vec2(s.x, c.x) * c.y, s.y)); }\n"
-				"outPixDiffuse = texture(sampler, normalize(vec3(a.x*a.y, -b.y, b.x*a.y))); }\n"
-//"outPixDiffuse = vec4(1.0,0.0,1.0, 1.0); }\n"
-"#endif\n"
-/*
-draw cross
-vec2 uv = fragCoord / iResolution.xy;
-uv.y = 1.0-uv.y;
-vec4 col = vec4(0.0,0.0,0.0,1.0);
-vec2 ngs = floor(uv * vec2(4.0,3.0)+vec2(1.0,0.0)) * 3.14159 * 0.5;
-vec2 cs = cos(ngs);
-vec2 sn = sin(ngs);
-uv.y = 1.0-uv.y;
-vec3 nd=vec3(0.0,0.0,0.0);
-if (uv.y>0.333 && uv.y<0.666)
-{
-uv.x =  -(fract(uv.x*4.0) * 2.0 - 1.0);
-vec3 d = vec3(uv.x, uv.y*6.0-3.0, 1.0);
-nd = vec3(d.x*cs.x - d.z*sn.x, d.y, d.x*sn.x + d.z*cs.x);
-}
-else
-if (uv.x>0.25 && uv.x<0.5)
-{
-uv.y = fract(uv.y*3.0) * 2.0 - 1.0;
-vec3 d = vec3(uv.x*8.0-3.0, 1.0, uv.y);
-nd = vec3(d.x, d.y*cs.y - d.z*sn.y, d.y*sn.y + d.z*cs.y);
-}
-
-fragColor = texture(iChannel0, nd);
-*/
-			};
-			waitingShader = LoadShader(waitinShaderScript, "WaitingShader");
+			glUseProgram(gEvaluation.mProgressShader);
+			static float gGlobalTime = 0.f;
+			gGlobalTime += 0.03f;
+			glUniform1f(glGetUniformLocation(gEvaluation.mProgressShader, "time"), gGlobalTime);
+			mFSQuad.Render();
 		}
-		glUseProgram(waitingShader);
-		static float gGlobalTime = 0.f;
-		gGlobalTime += 0.03f;
-		glUniform1f(glGetUniformLocation(waitingShader, "time"), gGlobalTime);
+		break;
+	case CBUI_Cubemap:
+		glUseProgram(gEvaluation.mDisplayCubemapShader);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, gEvaluation.GetEvaluationTexture(cb.mNodeIndex));
 		mFSQuad.Render();
-	}
-	else
-	{
-		EvaluationInfo evaluationInfo;
-		evaluationInfo.forcedDirty = 1;
-		evaluationInfo.uiPass = 1;
-		gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
+		break;
 	}
 
 	// Restore modified GL state

@@ -12,6 +12,33 @@ typedef struct ImageRead_t
 	char negzfile[1024];
 } ImageRead;
 
+typedef struct JobData_t
+{
+	char filename[1024];
+	int target;
+	int face;
+	Image image;
+} JobData;
+
+int UploadJob(JobData *data)
+{
+	if (SetEvaluationImageCube(data->target, &data->image, data->face) == EVAL_OK)
+	{
+		FreeImage(&data->image);
+	}
+	return EVAL_OK;
+}
+
+int ReadJob(JobData *data)
+{
+	if (ReadImage(data->filename, &data->image) == EVAL_OK)
+	{
+		JobData dataUp = *data;
+		JobMain(UploadJob, &dataUp, sizeof(JobData));
+	}
+	return EVAL_OK;
+}
+
 int main(ImageRead *param, Evaluation *evaluation)
 {
 	Image image;
@@ -34,13 +61,11 @@ int main(ImageRead *param, Evaluation *evaluation)
 		
 		for (i = 0;i<6;i++)
 		{
-			if (ReadImage(files[i], &image) == EVAL_OK)
-			{
-				if (SetEvaluationImageCube(evaluation->targetIndex, &image, CUBEMAP_POSX + i) == EVAL_OK)
-				{
-					FreeImage(&image);
-				}
-			}
+			JobData data;
+			strcpy(data.filename, files[i]);
+			data.target = evaluation->targetIndex;
+			data.face = CUBEMAP_POSX + i;
+			Job(ReadJob, &data, sizeof(JobData));
 		}
 	}
 	return EVAL_OK;

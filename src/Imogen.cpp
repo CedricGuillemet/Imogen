@@ -181,9 +181,9 @@ void InitCallbackRects()
 {
 	mCallbackRects.clear();
 }
-size_t AddNodeUICallbackRect(const ImRect& rect, size_t nodeIndex)
+size_t AddNodeUICallbackRect(CallbackDisplayType type, const ImRect& rect, size_t nodeIndex)
 {
-	mCallbackRects.push_back({ rect, nodeIndex });
+	mCallbackRects.push_back({ type, rect, nodeIndex });
 	return mCallbackRects.size() - 1;
 }
 
@@ -270,11 +270,11 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 		if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
 		{
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, -2)));
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, rc, selNode)));
 		}
 		else if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
 		{
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(rc, selNode)));
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
 		}
 		if (rc.Contains(io.MousePos))
 		{
@@ -589,11 +589,11 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	int previousSelection = selectedMaterial;
-	if (ImGui::Button("New Material"))
+	if (ImGui::Button("New Graph"))
 	{
 		library.mMaterials.push_back(Material());
 		Material& back = library.mMaterials.back();
-		back.mName = "New";
+		back.mName = "Name_Of_New_Graph";
 		back.mThumbnailTextureId = 0;
 		back.mRuntimeUniqueId = GetRuntimeId();
 		

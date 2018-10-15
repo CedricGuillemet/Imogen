@@ -371,7 +371,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			,{ "+Y File name", (int)Con_FilenameRead }
 			,{ "-Y File name", (int)Con_FilenameRead }
 			,{ "+Z File name", (int)Con_FilenameRead }
-			,{ "-ZFile name", (int)Con_FilenameRead }}
+			,{ "-Z File name", (int)Con_FilenameRead }}
 				}
 
 				,

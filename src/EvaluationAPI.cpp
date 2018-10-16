@@ -1110,6 +1110,7 @@ unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int c
 	glTexImage2D((cubeFace==-1)? GL_TEXTURE_2D: glCubeFace[cubeFace], 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->mBits);
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
 
+	glBindTexture(targetType, 0);
 	return textureId;
 }
 
@@ -1159,21 +1160,23 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 	ImGuiIO& io = ImGui::GetIO();
 
-	const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
-
-	ImRect cbRect = cb.mRect;
-	float h = cbRect.Max.y - cbRect.Min.y;
-	float w = cbRect.Max.x - cbRect.Min.x;
-	glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
-
-	cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
-
-	glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
-	glEnable(GL_SCISSOR_TEST);
-
-	switch (cb.mType)
+	if (!mCallbackRects.empty())
 	{
-	case CBUI_Node:
+		const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
+
+		ImRect cbRect = cb.mRect;
+		float h = cbRect.Max.y - cbRect.Min.y;
+		float w = cbRect.Max.x - cbRect.Min.x;
+		glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
+
+		cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
+
+		glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
+		glEnable(GL_SCISSOR_TEST);
+
+		switch (cb.mType)
+		{
+		case CBUI_Node:
 		{
 			EvaluationInfo evaluationInfo;
 			evaluationInfo.forcedDirty = 1;
@@ -1181,7 +1184,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
 		}
 		break;
-	case CBUI_Progress:
+		case CBUI_Progress:
 		{
 			glUseProgram(gEvaluation.mProgressShader);
 			static float gGlobalTime = 0.f;
@@ -1190,19 +1193,19 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			mFSQuad.Render();
 		}
 		break;
-	case CBUI_Cubemap:
-	{
-		glUseProgram(gEvaluation.mDisplayCubemapShader);
-		int tgt = glGetUniformLocation(gEvaluation.mDisplayCubemapShader, "samplerCubemap");
-		glUniform1i(tgt, 0);
-		glActiveTexture(GL_TEXTURE0);
+		case CBUI_Cubemap:
+		{
+			glUseProgram(gEvaluation.mDisplayCubemapShader);
+			int tgt = glGetUniformLocation(gEvaluation.mDisplayCubemapShader, "samplerCubemap");
+			glUniform1i(tgt, 0);
+			glActiveTexture(GL_TEXTURE0);
 
-		glBindTexture(GL_TEXTURE_CUBE_MAP, gEvaluation.GetEvaluationTexture(cb.mNodeIndex));
-		mFSQuad.Render();
-	}
+			glBindTexture(GL_TEXTURE_CUBE_MAP, gEvaluation.GetEvaluationTexture(cb.mNodeIndex));
+			mFSQuad.Render();
+		}
 		break;
+		}
 	}
-
 	// Restore modified GL state
 	glUseProgram(last_program);
 	glBindTexture(GL_TEXTURE_2D, last_texture);

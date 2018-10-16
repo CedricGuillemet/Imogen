@@ -48,7 +48,7 @@ void main()
 	vec2 ng = uv * vec2(3.14159265, 1.57079633);
 	vec2 a = cos(ng);
 	vec2 b = sin(ng);
-	outPixDiffuse = texture(sampler, normalize(vec3(a.x*a.y, -b.y, b.x*a.y))); 
+	outPixDiffuse = texture(samplerCubemap, normalize(vec3(a.x*a.y, -b.y, b.x*a.y))); 
 }
 
 #endif

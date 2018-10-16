@@ -602,10 +602,10 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 			ValidateMaterial(library, nodeGraphDelegate, previousSelection);
 		}
 		selectedMaterial = int(library.mMaterials.size()) - 1;
-
 		nodeGraphDelegate.Clear();
 		evaluation.Clear();
 		NodeGraphClear();
+		InitCallbackRects();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Import"))
@@ -640,6 +640,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 			nodeGraphDelegate.Clear();
 			evaluation.Clear();
 			NodeGraphClear();
+			InitCallbackRects();
 
 			int metaNodeCount;
 			const TileNodeEditGraphDelegate::MetaNode* metaNodes = nodeGraphDelegate.GetMetaNodes(metaNodeCount);

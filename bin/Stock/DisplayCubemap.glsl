@@ -12,7 +12,7 @@ void main()
 
 #ifdef FRAGMENT_SHADER
 
-uniform samplerCube sampler;
+uniform samplerCube samplerCubemap;
 layout(location = 0) out vec4 outPixDiffuse;
 in vec2 vUV;
 

@@ -554,7 +554,6 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 		evaluation.mTarget = new RenderTarget;
 	}
 	unsigned int texelSize = GetTexelSize(image->mFormat);
-	unsigned int texelFormat = glInternalFormats[image->mFormat];
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
 	unsigned char *ptr = (unsigned char *)image->mBits;
@@ -596,7 +595,6 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 
 	}
 
-	UploadImage(image, evaluation.mTarget->mGLTexID);
 	return EVAL_OK;
 }
 
@@ -1104,12 +1102,14 @@ unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int c
 	if (!textureId)
 		glGenTextures(1, &textureId);
 
-	glBindTexture((cubeFace==-1)?GL_TEXTURE_2D:GL_TEXTURE_CUBE_MAP, textureId);
+	unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
+	glBindTexture(targetType, textureId);
 
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
 	glTexImage2D((cubeFace==-1)? GL_TEXTURE_2D: glCubeFace[cubeFace], 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->mBits);
-	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
+
 	return textureId;
 }
 
@@ -1191,9 +1191,15 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 		}
 		break;
 	case CBUI_Cubemap:
+	{
 		glUseProgram(gEvaluation.mDisplayCubemapShader);
+		int tgt = glGetUniformLocation(gEvaluation.mDisplayCubemapShader, "samplerCubemap");
+		glUniform1i(tgt, 0);
+		glActiveTexture(GL_TEXTURE0);
+
 		glBindTexture(GL_TEXTURE_CUBE_MAP, gEvaluation.GetEvaluationTexture(cb.mNodeIndex));
 		mFSQuad.Render();
+	}
 		break;
 	}
 

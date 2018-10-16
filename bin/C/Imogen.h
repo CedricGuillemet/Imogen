@@ -1,4 +1,5 @@
 int Log(const char *szFormat, ...);
+char * strcpy ( char * destination, const char * source );
 
 typedef struct Image_t
 {

@@ -42,6 +42,41 @@ nd = vec3(d.x, d.y*cs.y - d.z*sn.y, d.y*sn.y + d.z*cs.y);
 fragColor = texture(iChannel0, nd);
 */
 
+/* isometric
+vec4 getUV(vec2 I)
+{
+ vec2 a = vec2(2.0*I.x, I.x+I.y);
+  vec2 b = vec2(-2.0*I.x,-I.x+I.y);
+  vec2 c = vec2(-I.x-I.y, I.x-I.y);
+    
+  vec4 uv = vec4(0.0);
+  
+  if(max(max(max(a.x, a.y),max(b.x, b.y)),max(c.x,c.y)) <= 1.0)
+  {
+    if(I.x >= 0.0 && I.x + I.y >= 0.0)
+      uv = vec4(a,0.0, 1.0);
+    else if(I.x <= 0.0 && -I.x + I.y >= 0.0)
+      uv = vec4(0.0,b.y,b.x, 1.0);
+    else
+      uv = vec4(c.y,0.0,c.x, 1.0);
+  }
+  return uv;
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+	vec2 I = 2.0 * fragCoord.xy / iResolution.xy - 1.0;
+  
+   	vec4 uv;
+  	if (I.x>0.0)
+   		uv = getUV(I-vec2(0.5,0.0));  
+    else
+        uv = vec4(1.0, 1.0, 1.0, 0.0)-getUV(vec2(I.x, -I.y)+vec2(0.5,0.0));  
+  fragColor = texture(iChannel0, uv.xyz*2.0-1.0) *abs(uv.w);
+}
+
+*/
+
 void main() 
 {
 	vec2 uv = (vUV - 0.5) * 2.0;

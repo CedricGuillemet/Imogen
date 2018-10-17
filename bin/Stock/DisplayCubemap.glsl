@@ -12,7 +12,7 @@ void main()
 
 #ifdef FRAGMENT_SHADER
 
-uniform samplerCube sampler;
+uniform samplerCube samplerCubemap;
 layout(location = 0) out vec4 outPixDiffuse;
 in vec2 vUV;
 
@@ -48,7 +48,7 @@ void main()
 	vec2 ng = uv * vec2(3.14159265, 1.57079633);
 	vec2 a = cos(ng);
 	vec2 b = sin(ng);
-	outPixDiffuse = texture(sampler, normalize(vec3(a.x*a.y, -b.y, b.x*a.y))); 
+	outPixDiffuse = texture(samplerCubemap, normalize(vec3(a.x*a.y, -b.y, b.x*a.y))); 
 }
 
 #endif

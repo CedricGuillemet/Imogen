@@ -15,17 +15,24 @@ typedef struct ImageRead_t
 typedef struct JobData_t
 {
 	char filename[1024];
-	int target;
+	int targetIndex;
 	int face;
+	int isCube;
 	Image image;
 } JobData;
 
-int UploadJob(JobData *data)
+int UploadImageJob(JobData *data)
 {
-	if (SetEvaluationImageCube(data->target, &data->image, data->face) == EVAL_OK)
+	if (data->isCube)
 	{
-		FreeImage(&data->image);
+		SetEvaluationImageCube(data->targetIndex, &data->image, data->face);
 	}
+	else
+	{
+		SetEvaluationImage(data->targetIndex, &data->image);
+	}
+	FreeImage(&data->image);
+	SetProcessing(data->targetIndex, 0);
 	return EVAL_OK;
 }
 
@@ -34,39 +41,44 @@ int ReadJob(JobData *data)
 	if (ReadImage(data->filename, &data->image) == EVAL_OK)
 	{
 		JobData dataUp = *data;
-		JobMain(UploadJob, &dataUp, sizeof(JobData));
+		JobMain(UploadImageJob, &dataUp, sizeof(JobData));
 	}
 	return EVAL_OK;
 }
 
 int main(ImageRead *param, Evaluation *evaluation)
 {
+	int i;
 	Image image;
-	if (ReadImage(param->filename, &image) == EVAL_OK)
+	char *files[6] = {param->posxfile, param->negxfile, param->posyfile, param->negyfile, param->poszfile, param->negzfile};
+	
+	SetProcessing(evaluation->targetIndex, 1);
+	if (strlen(param->filename))
 	{
-		if (SetEvaluationImage(evaluation->targetIndex, &image) == EVAL_OK)
-		{
-			FreeImage(&image);
-			return EVAL_OK;
-		}
-		else
-		{
-			return EVAL_ERR;
-		}
+		JobData data;
+		strcpy(data.filename, param->filename);
+		data.targetIndex = evaluation->targetIndex;
+		data.face = 0;
+		data.isCube = 0;
+		Job(ReadJob, &data, sizeof(JobData));
 	}
 	else
 	{
-		char *files[6] = {param->posxfile, param->negxfile, param->posyfile, param->negyfile, param->poszfile, param->negzfile};
-		int i;
-		
+		for (i = 0;i<6;i++)
+		{
+			if (!strlen(files[i]))
+				return EVAL_OK;
+		}
 		for (i = 0;i<6;i++)
 		{
 			JobData data;
 			strcpy(data.filename, files[i]);
-			data.target = evaluation->targetIndex;
+			data.targetIndex = evaluation->targetIndex;
 			data.face = CUBEMAP_POSX + i;
+			data.isCube = 1;
 			Job(ReadJob, &data, sizeof(JobData));
-		}
+		}		
 	}
+
 	return EVAL_OK;
 }

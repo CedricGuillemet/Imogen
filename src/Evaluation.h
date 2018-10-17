@@ -181,6 +181,7 @@ struct Evaluation
 	static int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 	static int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
 	static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
+	static void SetProcessing(int target, int processing);
 
 	static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
 	// synchronous texture cache

@@ -40,6 +40,7 @@
 #include "cmft/image.h"
 #include "cmft/cubemapfilter.h"
 #include "TaskScheduler.h"
+#include "NodesDelegate.h"
 
 extern enki::TaskScheduler g_TS;
 
@@ -175,10 +176,10 @@ void RenderTarget::InitCube(int width, int height)
 
 	glGenTextures(1, &mGLTexID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
-
+	/*
 	for (int i = 0; i < 6; i++)
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
+		*/
 
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
@@ -554,7 +555,6 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 		evaluation.mTarget = new RenderTarget;
 	}
 	unsigned int texelSize = GetTexelSize(image->mFormat);
-	unsigned int texelFormat = glInternalFormats[image->mFormat];
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
 	unsigned char *ptr = (unsigned char *)image->mBits;
@@ -596,7 +596,6 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 
 	}
 
-	UploadImage(image, evaluation.mTarget->mGLTexID);
 	return EVAL_OK;
 }
 
@@ -760,10 +759,12 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
 	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
 	{ "CubemapFilter", (void*)Evaluation::CubemapFilter},
+	{ "SetProcessing", (void*)Evaluation::SetProcessing},
 	{ "Job", (void*)Evaluation::Job },
 	{ "JobMain", (void*)Evaluation::JobMain },
 	{ "memmove", memmove },
 	{ "strcpy", strcpy },
+	{ "strlen", strlen },
 };
 
 typedef int(*jobFunction)(void*);
@@ -804,6 +805,11 @@ struct CFunctionMainTask : enki::IPinnedTask
 	jobFunction mFunction;
 	void *mBuffer;
 };
+
+void Evaluation::SetProcessing(int target, int processing)
+{
+	TileNodeEditGraphDelegate::GetInstance()->mNodes[target].mbProcessing = processing != 0;
+}
 
 int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
 {
@@ -1056,7 +1062,8 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 			continue;
 		}
 		//assert(!mEvaluations[targetIndex].mbDirty);
-		glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
+		if (mEvaluationStages[targetIndex].mTarget)
+			glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
 
 		const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
 		TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
@@ -1104,12 +1111,15 @@ unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int c
 	if (!textureId)
 		glGenTextures(1, &textureId);
 
-	glBindTexture((cubeFace==-1)?GL_TEXTURE_2D:GL_TEXTURE_CUBE_MAP, textureId);
+	unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
+	glBindTexture(targetType, textureId);
 
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
 	glTexImage2D((cubeFace==-1)? GL_TEXTURE_2D: glCubeFace[cubeFace], 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->mBits);
-	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
+
+	glBindTexture(targetType, 0);
 	return textureId;
 }
 
@@ -1159,21 +1169,23 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 	ImGuiIO& io = ImGui::GetIO();
 
-	const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
-
-	ImRect cbRect = cb.mRect;
-	float h = cbRect.Max.y - cbRect.Min.y;
-	float w = cbRect.Max.x - cbRect.Min.x;
-	glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
-
-	cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
-
-	glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
-	glEnable(GL_SCISSOR_TEST);
-
-	switch (cb.mType)
+	if (!mCallbackRects.empty())
 	{
-	case CBUI_Node:
+		const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
+
+		ImRect cbRect = cb.mRect;
+		float h = cbRect.Max.y - cbRect.Min.y;
+		float w = cbRect.Max.x - cbRect.Min.x;
+		glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
+
+		cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
+
+		glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
+		glEnable(GL_SCISSOR_TEST);
+
+		switch (cb.mType)
+		{
+		case CBUI_Node:
 		{
 			EvaluationInfo evaluationInfo;
 			evaluationInfo.forcedDirty = 1;
@@ -1181,7 +1193,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
 		}
 		break;
-	case CBUI_Progress:
+		case CBUI_Progress:
 		{
 			glUseProgram(gEvaluation.mProgressShader);
 			static float gGlobalTime = 0.f;
@@ -1190,13 +1202,19 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			mFSQuad.Render();
 		}
 		break;
-	case CBUI_Cubemap:
-		glUseProgram(gEvaluation.mDisplayCubemapShader);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, gEvaluation.GetEvaluationTexture(cb.mNodeIndex));
-		mFSQuad.Render();
-		break;
-	}
+		case CBUI_Cubemap:
+		{
+			glUseProgram(gEvaluation.mDisplayCubemapShader);
+			int tgt = glGetUniformLocation(gEvaluation.mDisplayCubemapShader, "samplerCubemap");
+			glUniform1i(tgt, 0);
+			glActiveTexture(GL_TEXTURE0);
 
+			glBindTexture(GL_TEXTURE_CUBE_MAP, gEvaluation.GetEvaluationTexture(cb.mNodeIndex));
+			mFSQuad.Render();
+		}
+		break;
+		}
+	}
 	// Restore modified GL state
 	glUseProgram(last_program);
 	glBindTexture(GL_TEXTURE_2D, last_texture);

@@ -8,8 +8,6 @@ layout (std140) uniform PhysicalSkyBlock
 };
 
 
-
-
 float surface_height = 0.99;
 float range = 0.01;
 float intensity = 1.8;
@@ -96,4 +94,3 @@ vec4 PhysicalSky()
 	return vec4(max(color * ambient.w, ambient.xyz), 1.0);
 }
 
-#endif

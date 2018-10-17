@@ -1,4 +1,6 @@
 int Log(const char *szFormat, ...);
+char * strcpy ( char * destination, const char * source );
+int strlen ( const char * str );
 
 typedef struct Image_t
 {
@@ -103,6 +105,7 @@ int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase
 
 int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
 int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
+void SetProcessing(int target, int processing);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

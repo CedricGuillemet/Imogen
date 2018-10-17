@@ -40,6 +40,7 @@
 #include "cmft/image.h"
 #include "cmft/cubemapfilter.h"
 #include "TaskScheduler.h"
+#include "NodesDelegate.h"
 
 extern enki::TaskScheduler g_TS;
 
@@ -175,10 +176,10 @@ void RenderTarget::InitCube(int width, int height)
 
 	glGenTextures(1, &mGLTexID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
-
+	/*
 	for (int i = 0; i < 6; i++)
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
+		*/
 
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
@@ -758,10 +759,12 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
 	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
 	{ "CubemapFilter", (void*)Evaluation::CubemapFilter},
+	{ "SetProcessing", (void*)Evaluation::SetProcessing},
 	{ "Job", (void*)Evaluation::Job },
 	{ "JobMain", (void*)Evaluation::JobMain },
 	{ "memmove", memmove },
 	{ "strcpy", strcpy },
+	{ "strlen", strlen },
 };
 
 typedef int(*jobFunction)(void*);
@@ -802,6 +805,11 @@ struct CFunctionMainTask : enki::IPinnedTask
 	jobFunction mFunction;
 	void *mBuffer;
 };
+
+void Evaluation::SetProcessing(int target, int processing)
+{
+	TileNodeEditGraphDelegate::GetInstance()->mNodes[target].mbProcessing = processing != 0;
+}
 
 int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
 {
@@ -1054,7 +1062,8 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 			continue;
 		}
 		//assert(!mEvaluations[targetIndex].mbDirty);
-		glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
+		if (mEvaluationStages[targetIndex].mTarget)
+			glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
 
 		const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
 		TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);

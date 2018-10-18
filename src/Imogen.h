@@ -77,7 +77,8 @@ enum CallbackDisplayType
 struct ImogenDrawCallback
 {
 	CallbackDisplayType mType;
-	ImRect mRect;
+	ImRect mClippedRect;
+	ImRect mOrginalRect;
 	size_t mNodeIndex;
 };
 extern std::vector<ImogenDrawCallback> mCallbackRects;

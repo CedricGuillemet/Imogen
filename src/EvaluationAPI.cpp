@@ -1173,14 +1173,14 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 	{
 		const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
 
-		ImRect cbRect = cb.mRect;
+		ImRect cbRect = cb.mOrginalRect;
 		float h = cbRect.Max.y - cbRect.Min.y;
 		float w = cbRect.Max.x - cbRect.Min.x;
 		glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
 
 		cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
-
-		glScissor(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(cbRect.Max.x - cbRect.Min.x), int(cbRect.Max.y - cbRect.Min.y));
+		ImRect clippedRect = cb.mClippedRect;
+		glScissor(int(clippedRect.Min.x), int(io.DisplaySize.y - clippedRect.Max.y), int(clippedRect.Max.x - clippedRect.Min.x), int(clippedRect.Max.y - clippedRect.Min.y));
 		glEnable(GL_SCISSOR_TEST);
 
 		switch (cb.mType)

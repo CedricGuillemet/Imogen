@@ -183,7 +183,13 @@ void InitCallbackRects()
 }
 size_t AddNodeUICallbackRect(CallbackDisplayType type, const ImRect& rect, size_t nodeIndex)
 {
-	mCallbackRects.push_back({ type, rect, nodeIndex });
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+	ImVec2 mi = draw_list->GetClipRectMin();
+	ImVec2 ma = draw_list->GetClipRectMax();
+
+	ImRect rc;
+	rc.ClipWith(ImRect(mi, ma));
+	mCallbackRects.push_back({ type, rc, rect, nodeIndex });
 	return mCallbackRects.size() - 1;
 }
 

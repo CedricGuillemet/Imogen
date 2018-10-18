@@ -35,7 +35,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
 	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false)
 	{
-		mCategoriesCount = 8;
+		mCategoriesCount = 9;
 		static const char *categories[] = {
 			"Transform",
 			"Generator",
@@ -44,7 +44,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			"Filter",
 			"Noise",
 			"File",
-			"Paint"};
+			"Paint",
+			"Cubemap"};
 		mCategories = categories;
 		assert(!mInstance);
 		mInstance = this;
@@ -175,9 +176,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
 
 
-		metaNodeCount = 31;
+		metaNodeCount = 32;
 
-		static const MetaNode metaNodes[31] = {
+		static const MetaNode metaNodes[32] = {
 
 			{
 				"Circle", hcGenerator, 1
@@ -451,6 +452,16 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					,{ "mie distribution", (int)Con_Float } }	    
 
 					}
+
+
+					,
+					{
+						"CubemapView", hcGenerator, 4
+						,{ { "", (int)Con_Float4 } }
+					,{ { "", (int)Con_Float4 } }
+					,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f, true }, { "Mode", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection\0Isometric\0Cross\0Camera\0" } }
+					}
+
 			};
 
 		return metaNodes;

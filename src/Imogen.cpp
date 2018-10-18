@@ -456,7 +456,7 @@ struct DecodeImageTaskSet : enki::ITaskSet
 	std::vector<uint8_t> *mSrc;
 };
 
-template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, Evaluation& evaluation)
+template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, Evaluation& evaluation, int viewMode)
 {
 	bool ret = false;
 	if (!ImGui::TreeNodeEx(szName, ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
@@ -468,7 +468,9 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 	std::vector<SortedResource<T, Ty>> sortedResources;
 	SortedResource<T, Ty>::ComputeSortedResources(res, sortedResources);
 	unsigned int defaultTextureId = evaluation.GetTexture("Stock/thumbnail-icon.png");
-
+	float regionWidth = ImGui::GetWindowContentRegionWidth();
+	float currentStep = 0.f;
+	float stepSize = (viewMode == 2) ? 64.f : 128.f;
 	for (const auto& sortedRes : sortedResources)
 	{
 		unsigned int indexInRes = sortedRes.mIndex;
@@ -483,7 +485,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 				ImGui::TreePop();
 
 			currentGroup = grp;
-
+			currentStep = 0.f;
 			if (currentGroup.length())
 			{
 				if (!ImGui::TreeNode(currentGroup.c_str()))
@@ -496,6 +498,19 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 		}
 		else if (currentGroupIsSkipped)
 			continue;
+
+		if ((regionWidth - currentStep) < stepSize)
+		{
+			currentStep = 0.f;
+		}
+		if (viewMode == 2 || viewMode == 3)
+		{
+			if (currentStep > FLT_EPSILON)
+			{
+				ImGui::SameLine();
+			}
+		}
+
 		ImGui::BeginGroup();
 
 		T& resource = res[indexInRes];
@@ -504,17 +519,36 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 			resource.mThumbnailTextureId = defaultTextureId;
 			g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&resource.mThumbnail, std::make_pair(indexInRes,resource.mRuntimeUniqueId)));
 		}
-		ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
-		bool clicked = ImGui::IsItemClicked();
-		ImGui::SameLine();
-		ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
-		clicked |= ImGui::IsItemClicked();
+		bool clicked = false;
+		switch (viewMode)
+		{
+		case 0:
+			ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
+			clicked |= ImGui::IsItemClicked();
+			break;
+		case 1:
+			ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
+			clicked = ImGui::IsItemClicked();
+			ImGui::SameLine();
+			ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
+			clicked |= ImGui::IsItemClicked();
+			break;
+		case 2:
+			ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
+			clicked = ImGui::IsItemClicked();
+			break;
+		case 3:
+			ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(128, 128), ImVec2(0, 1), ImVec2(1, 0));
+			clicked = ImGui::IsItemClicked();
+			break;
+		}
 		if (clicked)
 		{
 			selection = (index << 16) + indexInRes;
 			ret = true;
 		}
 		ImGui::EndGroup();
+		currentStep += stepSize;
 	}
 
 	if (currentGroup.length() && !currentGroupIsSkipped)
@@ -625,8 +659,23 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 			free(outPath);
 		}
 	}
-	ImGui::BeginChild("TV", ImVec2(250, -1));
-	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0, evaluation))
+	ImGui::SameLine();
+	static int libraryViewMode = 1;
+	unsigned int libraryViewTextureId = evaluation.GetTexture("Stock/library-view.png");
+	static const ImVec2 iconSize(16.f, 16.f);
+	for (int i = 0; i < 4; i++)
+	{
+		if (i)
+			ImGui::SameLine();
+		ImGui::PushID(99 + i);
+		if (ImGui::ImageButton((ImTextureID)(int64_t)libraryViewTextureId, iconSize, ImVec2(float(i)*0.25f, 0.f), ImVec2(float(i + 1)*0.25f, 1.f), -1, ImVec4(0.f, 0.f, 0.f, 0.f)
+			, (i == libraryViewMode) ? ImVec4(1.f, 0.3f, 0.1f, 1.f) : ImVec4(1.f, 1.f, 1.f, 1.f)))
+			libraryViewMode = i;
+		ImGui::PopID();
+	}
+
+	ImGui::BeginChild("TV");
+	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0, evaluation, libraryViewMode))
 	{
 		nodeGraphDelegate.mSelectedNodeIndex = -1;
 		// save previous

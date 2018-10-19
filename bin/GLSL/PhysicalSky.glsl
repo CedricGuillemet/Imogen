@@ -15,10 +15,9 @@ const int step_count = 16;
 
 vec3 get_world_normal()
 {
-	vec4 device_normal = vec4(vUV, 0.0, 1.0);
-	vec3 eye_normal = normalize((inv_proj * device_normal).xyz);
-	vec3 world_normal = normalize(inv_view_rot*eye_normal);
-	return world_normal;
+	vec4 eye_normal = vec4(vUV * 2.0 - 1.0, 1.0, 0.0);
+	//vec3 world_normal = normalize(EvaluationParam.invView_rot * eye_normal);
+	return eye_normal.xyz;//world_normal;
 }
 
 float atmospheric_depth(vec3 position, vec3 dir)

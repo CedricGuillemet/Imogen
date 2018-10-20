@@ -576,15 +576,12 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 	Material& material = library.mMaterials[materialIndex];
 	material.mMaterialNodes.resize(nodeGraphDelegate.mNodes.size());
 
-	int metaNodeCount;
-	const TileNodeEditGraphDelegate::MetaNode* metaNodes = nodeGraphDelegate.GetMetaNodes(metaNodeCount);
-
 	for (size_t i = 0; i < nodeGraphDelegate.mNodes.size(); i++)
 	{
 		TileNodeEditGraphDelegate::ImogenNode srcNode = nodeGraphDelegate.mNodes[i];
 		MaterialNode &dstNode = material.mMaterialNodes[i];
 		dstNode.mRuntimeUniqueId = GetRuntimeId();
-		if (metaNodes[srcNode.mType].mbSaveTexture)
+		if (gMetaNodes[srcNode.mType].mbSaveTexture)
 		{
 			Image image;
 			if (Evaluation::GetEvaluationImage(int(i), &image) == EVAL_OK)
@@ -696,9 +693,6 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 			evaluation.Clear();
 			NodeGraphClear();
 			InitCallbackRects();
-
-			int metaNodeCount;
-			const TileNodeEditGraphDelegate::MetaNode* metaNodes = nodeGraphDelegate.GetMetaNodes(metaNodeCount);
 
 			Material& material = library.mMaterials[selectedMaterial];
 			for (size_t i = 0; i < material.mMaterialNodes.size(); i++)

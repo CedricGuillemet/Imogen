@@ -118,6 +118,62 @@ struct Library
 void LoadLib(Library *library, const char *szFilename);
 void SaveLib(Library *library, const char *szFilename);
 
+enum ConTypes
+{
+	Con_Float,
+	Con_Float2,
+	Con_Float3,
+	Con_Float4,
+	Con_Color4,
+	Con_Int,
+	Con_Ramp,
+	Con_Angle,
+	Con_Angle2,
+	Con_Angle3,
+	Con_Angle4,
+	Con_Enum,
+	Con_Structure,
+	Con_FilenameRead,
+	Con_FilenameWrite,
+	Con_ForceEvaluate,
+	Con_Bool,
+	Con_Any,
+};
+
+size_t GetParamMemSize(ConTypes paramType);
+
+struct MetaCon
+{
+	std::string mName;
+	int mType;
+};
+
+struct MetaParameter
+{
+	std::string mName;
+	ConTypes mType;
+	float mRangeMinX, mRangeMaxX;
+	float mRangeMinY, mRangeMaxY;
+	bool mbRelative;
+	bool mbQuadSelect;
+	const char* mEnumList;
+};
+
+struct MetaNode
+{
+	std::string mName;
+	uint32_t mHeaderColor;
+	int mCategory;
+	std::vector<MetaCon> mInputs;
+	std::vector<MetaCon> mOutputs;
+	std::vector<MetaParameter> mParams;
+	bool mbHasUI;
+	bool mbSaveTexture;
+};
+
+extern std::vector<MetaNode> gMetaNodes;
+void LoadMetaNodes();
+
 unsigned int GetRuntimeId();
 extern Library library;
 

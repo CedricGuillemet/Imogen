@@ -114,7 +114,7 @@ static const float rotMatrices[6][16] = {
 	0,0,0,1 },
 
 	// -y
-	{ -1,0,0,0,
+	{ 1,0,0,0,
 	0,0,-1,0,
 	0,1,0,0,
 	0,0,0,1 },
@@ -647,7 +647,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
 	}
-
+	gEvaluation.SetTargetDirty(target, true);
 	return EVAL_OK;
 }
 
@@ -663,6 +663,7 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 	evaluation.mTarget->InitCube(image->mWidth);
 
 	UploadImage(image, evaluation.mTarget->mGLTexID, cubeFace);
+	gEvaluation.SetTargetDirty(target, true);
 	return EVAL_OK;
 }
 

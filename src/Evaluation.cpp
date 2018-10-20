@@ -288,11 +288,12 @@ void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 	mEvaluationOrderList = nodeOrderList;
 }
 
-void Evaluation::SetTargetDirty(size_t target)
+void Evaluation::SetTargetDirty(size_t target, bool onlyChild)
 {
 	if (!mEvaluationStages[target].mbDirty)
 	{
-		mDirtyCount++;
+		if (!onlyChild)
+			mDirtyCount++;
 		mEvaluationStages[target].mbDirty = true;
 	}
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
@@ -317,6 +318,8 @@ void Evaluation::SetTargetDirty(size_t target)
 			}
 		}
 	}
+	if (onlyChild)
+		mEvaluationStages[target].mbDirty = false;
 }
 
 void Evaluation::Clear()

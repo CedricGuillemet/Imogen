@@ -161,7 +161,7 @@ struct Evaluation
 	void DelEvaluationInput(size_t target, int slot);
 	void RunEvaluation(int width, int height, bool forceEvaluation);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
-	void SetTargetDirty(size_t target);
+	void SetTargetDirty(size_t target, bool onlyChild = false);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();
 

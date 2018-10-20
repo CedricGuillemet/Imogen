@@ -523,6 +523,9 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 		return EVAL_ERR;
 
 	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
+	if (!evaluation.mTarget)
+		return EVAL_ERR;
+
 	RenderTarget& tgt = *evaluation.mTarget;
 
 	// compute total size

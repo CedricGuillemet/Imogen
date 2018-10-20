@@ -38,32 +38,13 @@ int Log(const char *szFormat, ...);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
-static void GetConCount(const NodeGraphDelegate::MetaNode* metaNodes, int type, int &input, int &output)
-{
-	input = 0;
-	output = 0;
-	const NodeGraphDelegate::MetaNode& metaNode = metaNodes[type];
-	for (int i = 0; i < NodeGraphDelegate::MaxCon; i++)
-	{
-		if (!metaNode.mInputs[i].mName)
-			break;
-		input++;
-	}
-	for (int i = 0; i < NodeGraphDelegate::MaxCon; i++)
-	{
-		if (!metaNode.mOutputs[i].mName)
-			break;
-		output++;
-	}
-
-}
-
-Node::Node(int type, const ImVec2& pos, const NodeGraphDelegate::MetaNode* metaNodes)
+Node::Node(int type, const ImVec2& pos)
 {
 	mType = type;
 	Pos = pos;
 	Size = ImVec2(100, 100);
-	GetConCount(metaNodes, type, InputsCount, OutputsCount);
+	InputsCount = gMetaNodes[type].mInputs.size();
+	OutputsCount = gMetaNodes[type].mOutputs.size();
 }
 
 struct NodeOrder
@@ -280,12 +261,9 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 
 void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy)
 {
-	int metaNodeCount;
-	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
 	size_t index = nodes.size();
-	nodes.push_back(Node(type, ImVec2(float(posx), float(posy)), metaNodes));
+	nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
 	delegate->AddNode(type);
-
 	delegate->SetParamBlock(index, (unsigned char*)parameters);
 }
 
@@ -334,8 +312,8 @@ void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, u
 
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 {
-	int metaNodeCount;
-	const NodeGraphDelegate::MetaNode* metaNodes = delegate->GetMetaNodes(metaNodeCount);
+	size_t metaNodeCount = gMetaNodes.size();
+	const MetaNode* metaNodes = gMetaNodes.data();
 
 	static bool editingNode = false;
 	static ImVec2 editingNodeSource;
@@ -469,7 +447,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImVec2 node_rect_max = node_rect_min + node->Size;
 
 		draw_list->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
-		draw_list->AddText(node_rect_min+ImVec2(2,2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName);
+		draw_list->AddText(node_rect_min+ImVec2(2,2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
 
 		// Display node box
 		draw_list->ChannelsSetCurrent(1); // Background
@@ -537,16 +515,14 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		bool hoverSlot = false;
 		for (int i = 0; i < 2; i++)
 		{
-			int slotCount[2];
-			GetConCount(metaNodes, node->mType, slotCount[0], slotCount[1]);
+			const size_t slotCount[2] = { node->InputsCount, node->OutputsCount };
+			const MetaCon *con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
 			for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
 			{
-				ImVec2 p = offset + (i? node->GetOutputSlotPos(slot_idx, factor):node->GetInputSlotPos(slot_idx, factor));
-				
+				ImVec2 p = offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
 				bool overCon = (!isMovingNode) && (movingRug == NULL && sizingRug == NULL) && !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
 
-				const NodeGraphDelegate::Con *con = i ? metaNodes[node->mType].mOutputs:metaNodes[node->mType].mInputs;
-				const char *conText = con[slot_idx].mName;
+				const char *conText = con[slot_idx].mName.c_str();
 				ImVec2 textSize;
 				textSize = ImGui::CalcTextSize(conText);
 				ImVec2 textPos = p + ImVec2(-NODE_SLOT_RADIUS*(i ? -1.f : 1.f)*(overCon ? 3.f : 2.f) - (i ? 0:textSize.x ), -textSize.y / 2);
@@ -685,7 +661,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImVec2 scene_pos = ImGui::GetMousePosOnOpeningCurrentPopup() - offset;
 		if (node)
 		{
-			ImGui::Text(metaNodes[node->mType].mName);
+			ImGui::Text(metaNodes[node->mType].mName.c_str());
 			ImGui::Separator();
 			//if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
@@ -728,7 +704,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		{
 			auto AddNode = [&](int i)
 			{
-				nodes.push_back(Node(i, scene_pos, metaNodes));
+				nodes.push_back(Node(i, scene_pos));
 				delegate->AddNode(i);
 				NodeGraphUpdateEvaluationOrder(delegate);
 				node_selected = int(nodes.size()) - 1;
@@ -744,7 +720,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				{
 					for (int i = 0; i < metaNodeCount; i++)
 					{
-						const char *nodeName = metaNodes[i].mName;
+						const char *nodeName = metaNodes[i].mName.c_str();
 						bool displayNode = !strlen(inputText) || ImStristr(nodeName, nodeName + strlen(nodeName), inputText, inputText + strlen(inputText));
 						if (displayNode && ImGui::MenuItem(nodeName, NULL, false))
 						{
@@ -756,7 +732,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				{
 					for (int i = 0; i < metaNodeCount; i++)
 					{
-						const char *nodeName = metaNodes[i].mName;
+						const char *nodeName = metaNodes[i].mName.c_str();
 						if (metaNodes[i].mCategory == -1 && ImGui::MenuItem(nodeName, NULL, false))
 						{
 							AddNode(i);
@@ -769,7 +745,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 						{
 							for (int i = 0; i < metaNodeCount; i++)
 							{
-								const char *nodeName = metaNodes[i].mName;
+								const char *nodeName = metaNodes[i].mName.c_str();
 								if (metaNodes[i].mCategory == iCateg && ImGui::MenuItem(nodeName, NULL, false))
 								{
 									AddNode(i);

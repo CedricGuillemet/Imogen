@@ -117,7 +117,8 @@ enki::TaskScheduler g_TS;
 int main(int, char**)
 {
 	g_TS.Initialize();
-	
+	LoadMetaNodes();
+
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);
 	// Setup SDL

@@ -50,7 +50,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		assert(!mInstance);
 		mInstance = this;
 	}
-	
 
 	Evaluation& mEvaluation;
 	struct ImogenNode
@@ -65,28 +64,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	};
 
 	std::vector<ImogenNode> mNodes;
-
-	enum ConTypes
-	{
-		Con_Float,
-		Con_Float2,
-		Con_Float3,
-		Con_Float4,
-		Con_Color4,
-		Con_Int,
-		Con_Ramp,
-		Con_Angle,
-		Con_Angle2,
-		Con_Angle3,
-		Con_Angle4,
-		Con_Enum,
-		Con_Structure,
-		Con_FilenameRead,
-		Con_FilenameWrite,
-		Con_ForceEvaluate,
-		Con_Bool,
-		Con_Any,
-	};
 
 	void Clear()
 	{
@@ -119,12 +96,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual void AddNode(size_t type)
 	{
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
-
 		size_t index = mNodes.size();
 		ImogenNode node;
-		node.mEvaluationTarget = mEvaluation.AddEvaluation(type, metaNodes[type].mName);
+		node.mEvaluationTarget = mEvaluation.AddEvaluation(type, gMetaNodes[type].mName);
 		node.mRuntimeUniqueId = GetRuntimeId();
 		node.mbProcessing = false;
 		node.mType = type;
@@ -132,10 +106,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		node.mParameters = malloc(paramsSize);
 		node.mParametersSize = paramsSize;
 		memset(node.mParameters, 0, paramsSize);
-		size_t inputCount = 0;
-		for (int i = 0; i < MaxCon; i++)
-			if (metaNodes[type].mInputs[i].mName != NULL)
-				inputCount++;
+		size_t inputCount = gMetaNodes[type].mInputs.size();
 		node.mInputSamplers.resize(inputCount);
 		mNodes.push_back(node);
 
@@ -164,308 +135,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				node.mEvaluationTarget--;
 		}
 	}
-
-	virtual const MetaNode* GetMetaNodes(int &metaNodeCount)
-	{
-		static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
-		static const uint32_t hcGenerator = IM_COL32(150, 200, 150, 255);
-		static const uint32_t hcMaterial = IM_COL32(150, 150, 200, 255);
-		static const uint32_t hcBlend = IM_COL32(200, 150, 150, 255);
-		static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
-		static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
-		static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
-
-
-		metaNodeCount = 32;
-
-		static const MetaNode metaNodes[32] = {
-
-			{
-				"Circle", hcGenerator, 1
-				,{ {} }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Radius", (int)Con_Float, -.5f,0.5f,0.f,0.f },{ "T", (int)Con_Float } }
-			}
-			,
-			{
-				"Transform", hcTransform, 0
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Translate", (int)Con_Float2, 1.f,0.f,1.f,0.f, true },{ "Scale", (int)Con_Float2 },{ "Rotation", (int)Con_Angle } }
-			}
-			,
-			{
-				"Square", hcGenerator, 1
-				,{ { } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Width", (int)Con_Float, -.5f,0.5f,0.f,0.f } }
-			}
-			,
-			{
-				"Checker", hcGenerator, 1
-				,{ {} }
-			,{ { "", (int)Con_Float4 } }
-			,{  }
-			}
-			,
-			{
-				"Sine", hcGenerator, 1
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Frequency", (int)Con_Float },{ "Angle", (int)Con_Angle } }
-			}
-
-			,
-			{
-				"SmoothStep", hcFilter, 4
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Low", (int)Con_Float },{ "High", (int)Con_Float } }
-			}
-
-			,
-			{
-				"Pixelize", hcTransform, 0
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "scale", (int)Con_Float } }
-			}
-
-			,
-			{
-				"Blur", hcFilter, 4
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "angle", (int)Con_Float },{ "strength", (int)Con_Float } }
-			}
-
-			,
-			{
-				"NormalMap", hcFilter, 4
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "spread", (int)Con_Float } }
-			}
-
-			,
-			{
-				"LambertMaterial", hcMaterial, 2
-				,{ { "Diffuse", (int)Con_Float4 },{ "Equirect sky", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f } }
-			}
-
-			,
-			{
-				"MADD", hcBlend, 3
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Mul Color", (int)Con_Color4 }, {"Add Color", (int)Con_Color4} }
-			}
-			
-			,
-			{
-				"Hexagon", hcGenerator, 1
-				,{  }
-			,{ { "", (int)Con_Float4 } }
-			,{  }
-			}
-
-			,
-			{
-				"Blend", hcBlend, 3
-				,{ { "", (int)Con_Float4 },{ "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ {"A", (int)Con_Float4 },{ "B", (int)Con_Float4 },{ "Operation", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Add\0Multiply\0Darken\0Lighten\0Average\0Screen\0Color Burn\0Color Dodge\0Soft Light\0Subtract\0Difference\0Inverse Difference\0Exclusion\0" } }
-			}
-
-			,
-			{
-				"Invert", hcFilter, 4
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{}
-			}
-
-			,
-			{
-				"CircleSplatter", hcGenerator, 1
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Distance", (int)Con_Float2 },{ "Radius", (int)Con_Float2 },{ "Angle", (int)Con_Angle2 },{ "Count", (int)Con_Float } }
-			}
-
-			,
-			{
-				"Ramp", hcFilter, 4
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Ramp", (int)Con_Ramp } }
-			}
-
-			,
-			{
-				"Tile", hcTransform, 0
-				,{ { "", (int)Con_Float4 } }
-			,{ { "", (int)Con_Float4 } }
-			,{ { "Scale", (int)Con_Float },{ "Offset 0", (int)Con_Float2 },{ "Offset 1", (int)Con_Float2 },{ "Overlap", (int)Con_Float2 } }
-			}
-
-				,
-				{
-					"Color", hcGenerator, -1
-					,{  }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "Color", (int)Con_Color4 } }
-				}
-
-
-				,
-				{
-					"NormalMapBlending", hcBlend, 3
-					,{ { "", (int)Con_Float4 },{ "", (int)Con_Float4 } }
-				,{ { "Out", (int)Con_Float4 } }
-				,{ { "Technique", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "RNM\0Partial Derivatives\0Whiteout\0UDN\0Unity\0Linear\0Overlay\0" } }
-				}
-
-				,
-				{
-					"iqnoise", hcNoise, 5
-					,{ }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "Size", (int)Con_Float }, { "U", (int)Con_Float, 0.f,1.f,0.f,0.f},{ "V", (int)Con_Float, 0.f,0.f,0.f,1.f } }
-				}
-
-				,
-				{
-					"PBR", hcMaterial, 2
-					,{ { "Diffuse", (int)Con_Float4 },{ "Normal", (int)Con_Float4 },{ "Roughness", (int)Con_Float4 },{ "Displacement", (int)Con_Float4 }, { "Equirect sky", (int)Con_Float4 } }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f, true } }
-				}
-
-				,
-
-			{
-				"PolarCoords", hcTransform, 0
-				,{ { "", (int)Con_Float4 } }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "Type", (int)Con_Enum, 0.f,0.f,0.f,0.f,false, false, "Linear to polar\0Polar to linear\0" } }
-			}
-
-      ,
-				{
-					"Clamp", hcFilter, 4
-					,{ { "", (int)Con_Float4 } }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "Min", (int)Con_Float4}, { "Max", (int)Con_Float4 } }
-				}
-
-				,
-				{
-					"ImageRead", hcFilter, 6
-					,{  }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "File name", (int)Con_FilenameRead }
-			,{ "+X File name", (int)Con_FilenameRead }
-			,{ "-X File name", (int)Con_FilenameRead }
-			,{ "+Y File name", (int)Con_FilenameRead }
-			,{ "-Y File name", (int)Con_FilenameRead }
-			,{ "+Z File name", (int)Con_FilenameRead }
-			,{ "-Z File name", (int)Con_FilenameRead }}
-				}
-
-				,
-				{
-					"ImageWrite", hcFilter, 6
-					,{ { "", (int)Con_Float4 } }
-				,{  }
-				,{ { "File name", (int)Con_FilenameWrite },{ "Format", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0DDS\0KTX\0"}
-						,{ "Quality", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best\0 1\0 2\0 3\0 4\0 5 .. Medium\0 6\0 7\0 8\0 9 .. Lowest\0" }
-						,{ "Width", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
-						,{ "Height", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
-						,{ "Export", (int)Con_ForceEvaluate } }
-				}
-
-				,
-				{
-					"Thumbnail", hcFilter, 6
-					,{ { "", (int)Con_Float4 } }
-				,{}
-				,{ { "Make", (int)Con_ForceEvaluate } }
-				}
-
-				,
-				{
-					"Paint2D", hcPaint, 7
-					,{ { "Brush", (int)Con_Float4 } }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "Size", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
-				, true
-				, true
-				}
-				,
-				{
-					"Swirl", hcTransform, 0
-					,{ { "", (int)Con_Float4 } }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "Angles", (int)Con_Angle2 } }
-				}
-				,
-				{
-					"Crop", hcTransform, 0
-					,{ { "", (int)Con_Float4 } }
-				,{ { "", (int)Con_Float4 } }
-				,{ { "Quad", (int)Con_Float4, 0.f,1.f,0.f,1.f, false, true } }
-				, true
-				}
-
-					,
-					{
-						"CubemapFilter", hcFilter, 8
-						,{ { "", (int)Con_Float4 } }
-					,{ { "", (int)Con_Float4 } }
-					,{ { "Lighting Model", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Phong\0Phong BRDF\0Blinn\0Blinn BRDF\0"}
-					,{"Exclude Base", (int)Con_Bool}
-					,{"Gloss scale", (int)Con_Int}
-					,{"Gloss bias", (int)Con_Int}
-					,{ "Face size", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "   32\0   64\0  128\0  256\0  512\0 1024\0" }
-				}
-					}
-
-					,
-					{
-						"PhysicalSky", hcGenerator, 8
-						,{  }
-					,{ { "", (int)Con_Float4 } }
-					,{ { "ambient", (int)Con_Float4 }
-					,{ "lightdir", (int)Con_Float3 }
-					,{ "Kr", (int)Con_Float3 }
-					,{ "rayleigh brightness", (int)Con_Float }
-					,{ "mie brightness", (int)Con_Float }
-					,{ "spot brightness", (int)Con_Float }
-					,{ "scatter strength", (int)Con_Float }
-					,{ "rayleigh strength", (int)Con_Float }
-					,{ "mie strength" , (int)Con_Float }
-					,{ "rayleigh collection power", (int)Con_Float }
-					,{ "mie collection power", (int)Con_Float }
-					,{ "mie distribution", (int)Con_Float } }	    
-
-					}
-
-
-					,
-					{
-						"CubemapView", hcGenerator, 8
-						,{ { "", (int)Con_Float4 } }
-					,{ { "", (int)Con_Float4 } }
-					,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f, true }, { "Mode", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection\0Isometric\0Cross\0Camera\0" } }
-					}
-
-			};
-
-		return metaNodes;
-	}
 	
 	const float PI = 3.14159f;
 	float RadToDeg(float a) { return a * 180.f / PI; }
@@ -474,8 +143,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	{
 		size_t index = mSelectedNodeIndex;
 
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
+		const MetaNode* metaNodes = gMetaNodes.data();
 		bool dirty = false;
 		bool forceEval = false;
 		bool samplerDirty = false;
@@ -503,35 +171,32 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 
 		}
-		if (!ImGui::CollapsingHeader(currentMeta.mName, 0, ImGuiTreeNodeFlags_DefaultOpen))
+		if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
 			return;
 
-		const NodeGraphDelegate::Con * param = currentMeta.mParams;
 		unsigned char *paramBuffer = (unsigned char*)node.mParameters;
-		for (int i = 0; i < MaxCon; i++, param++)
+		for(const MetaParameter& param : currentMeta.mParams)
 		{
-			if (!param->mName)
-				break;
-			ImGui::PushID(667889 + i);
-			switch (param->mType)
+			ImGui::PushID(&param);
+			switch (param.mType)
 			{
 			case Con_Float:
-				dirty |= ImGui::InputFloat(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
 				break;
 			case Con_Float2:
-				dirty |= ImGui::InputFloat2(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
 				break;
 			case Con_Float3:
-				dirty |= ImGui::InputFloat3(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
 				break;
 			case Con_Float4:
-				dirty |= ImGui::InputFloat4(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
 				break;
 			case Con_Color4:
-				dirty |= ImGui::ColorPicker4(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::ColorPicker4(param.mName.c_str(), (float*)paramBuffer);
 				break;
 			case Con_Int:
-				dirty |= ImGui::InputInt(param->mName, (int*)paramBuffer);
+				dirty |= ImGui::InputInt(param.mName.c_str(), (int*)paramBuffer);
 				break;
 			case Con_Ramp:
 				{
@@ -557,13 +222,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				break;
 			case Con_Angle:
 				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-				dirty |= ImGui::InputFloat(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
 				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
 				break;
 			case Con_Angle2:
 				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
 				((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
-				dirty |= ImGui::InputFloat2(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
 				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
 				((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
 				break;
@@ -571,7 +236,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
 				((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
 				((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
-				dirty |= ImGui::InputFloat3(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
 				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
 				((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
 				((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
@@ -581,7 +246,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
 				((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
 				((float*)paramBuffer)[3] = RadToDeg(((float*)paramBuffer)[3]);
-				dirty |= ImGui::InputFloat4(param->mName, (float*)paramBuffer);
+				dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
 				((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
 				((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
 				((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
@@ -594,7 +259,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				if (ImGui::Button("..."))
 				{
 					nfdchar_t *outPath = NULL;
-					nfdresult_t result = (param->mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath) : NFD_SaveDialog(NULL, NULL, &outPath);
+					nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath) : NFD_SaveDialog(NULL, NULL, &outPath);
 
 					if (result == NFD_OKAY) 
 					{
@@ -604,13 +269,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					}
 				}
 				ImGui::SameLine();
-				ImGui::Text(param->mName);
+				ImGui::Text(param.mName.c_str());
 				break;
 			case Con_Enum:
-				dirty |= ImGui::Combo(param->mName, (int*)paramBuffer, param->mEnumList);
+				dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, param.mEnumList);
 				break;
 			case Con_ForceEvaluate:
-				if (ImGui::Button(param->mName))
+				if (ImGui::Button(param.mName.c_str()))
 				{
 					dirty = true;
 					forceEval = true;
@@ -619,7 +284,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_Bool:
 			{
 				bool checked = (*(int*)paramBuffer) != 0;
-				if (ImGui::Checkbox(param->mName, &checked))
+				if (ImGui::Checkbox(param.mName.c_str(), &checked))
 				{
 					*(int*)paramBuffer = checked ? 1 : 0;
 					dirty = true;
@@ -628,7 +293,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			break;
 			}
 			ImGui::PopID();
-			paramBuffer += ComputeParamMemSize(param->mType);
+			paramBuffer += ComputeParamMemSize(param.mType);
 		}
 		
 		if (dirty)
@@ -644,23 +309,17 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	virtual void DoForce()
 	{
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		bool dirty = false;
 		bool forceEval = false;
-		bool samplerDirty = false;
-		for (size_t index = 0; index < mNodes.size(); index++)
+		for (ImogenNode& node : mNodes)
 		{
-			ImogenNode& node = mNodes[index];
-			const MetaNode& currentMeta = metaNodes[node.mType];
+			const MetaNode& currentMeta = gMetaNodes[node.mType];
 
-			const NodeGraphDelegate::Con * param = currentMeta.mParams;
-			unsigned char *paramBuffer = (unsigned char*)node.mParameters;
-			for (int i = 0; i < MaxCon; i++, param++)
+			for(auto& param : currentMeta.mParams)
 			{
-				if (!param->mName)
+				if (!param.mName.c_str())
 					break;
-				if (param->mType == Con_ForceEvaluate)
+				if (param.mType == Con_ForceEvaluate)
 				{
 					dirty = true;
 					forceEval = true;
@@ -692,22 +351,18 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 		if (!lButDown)
 			mbMouseDragging = false;
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
+
+		const MetaNode* metaNodes = gMetaNodes.data();
 		size_t res = 0;
 		const MetaNode& metaNode = metaNodes[mNodes[mSelectedNodeIndex].mType];
-		const NodeGraphDelegate::Con * param = metaNode.mParams;
 		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParameters;
 		bool parametersUseMouse = false;
 		if (lButDown)
 		{
-			for (int i = 0; i < MaxCon; i++, param++)
+			float *paramFlt = (float*)paramBuffer;
+			for(auto& param : metaNode.mParams)
 			{
-				if (!param->mName)
-					break;
-				float *paramFlt = (float*)paramBuffer;
-
-				if (param->mbQuadSelect && param->mType == Con_Float4)
+				if (param.mbQuadSelect && param.mType == Con_Float4)
 				{
 					if (!mbMouseDragging)
 					{
@@ -723,31 +378,31 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					continue;
 				}
 
-				if (param->mRangeMinX != 0.f || param->mRangeMaxX != 0.f)
+				if (param.mRangeMinX != 0.f || param.mRangeMaxX != 0.f)
 				{
-					if (param->mbRelative)
+					if (param.mbRelative)
 					{
-						paramFlt[0] += ImLerp(param->mRangeMinX, param->mRangeMaxX, dx);
-						paramFlt[0] = fmodf(paramFlt[0], fabsf(param->mRangeMaxX - param->mRangeMinX)) + nmin(param->mRangeMinX, param->mRangeMaxX);
+						paramFlt[0] += ImLerp(param.mRangeMinX, param.mRangeMaxX, dx);
+						paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) + nmin(param.mRangeMinX, param.mRangeMaxX);
 					}
 					else
 					{
-						paramFlt[0] = ImLerp(param->mRangeMinX, param->mRangeMaxX, rx);
+						paramFlt[0] = ImLerp(param.mRangeMinX, param.mRangeMaxX, rx);
 					}
 				}
-				if (param->mRangeMinY != 0.f || param->mRangeMaxY != 0.f)
+				if (param.mRangeMinY != 0.f || param.mRangeMaxY != 0.f)
 				{
-					if (param->mbRelative)
+					if (param.mbRelative)
 					{
-						paramFlt[1] += ImLerp(param->mRangeMinY, param->mRangeMaxY, dy);
-						paramFlt[1] = fmodf(paramFlt[1], fabsf(param->mRangeMaxY - param->mRangeMinY)) + nmin(param->mRangeMinY, param->mRangeMaxY);
+						paramFlt[1] += ImLerp(param.mRangeMinY, param.mRangeMaxY, dy);
+						paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) + nmin(param.mRangeMinY, param.mRangeMaxY);
 					}
 					else
 					{
-						paramFlt[1] = ImLerp(param->mRangeMinY, param->mRangeMaxY, ry);
+						paramFlt[1] = ImLerp(param.mRangeMinY, param.mRangeMaxY, ry);
 					}
 				}
-				paramBuffer += ComputeParamMemSize(param->mType);
+				paramBuffer += ComputeParamMemSize(param.mType);
 				parametersUseMouse = true;
 			}
 		}
@@ -760,23 +415,16 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	size_t ComputeParamMemSize(size_t typeIndex)
 	{
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
 		size_t res = 0;
-		const NodeGraphDelegate::Con * param = metaNodes[typeIndex].mParams;
-		for (int i = 0; i < MaxCon; i++, param++)
+		for(auto& param : gMetaNodes[typeIndex].mParams)
 		{
-			if (!param->mName)
-				break;
-			res += ComputeParamMemSize(param->mType);
+			res += GetParamMemSize(param.mType);
 		}
 		return res;
 	}
 	bool NodeHasUI(size_t nodeIndex)
 	{
-		int metaNodeCount;
-		const MetaNode* metaNodes = GetMetaNodes(metaNodeCount);
-		return metaNodes[mNodes[nodeIndex].mType].mbHasUI;
+		return gMetaNodes[mNodes[nodeIndex].mType].mbHasUI;
 	}
 	virtual bool NodeIsProcesing(size_t nodeIndex)
 	{
@@ -788,48 +436,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		if (target)
 			return target->mImage.mNumFaces == 6;
 		return false;
-	}
-	size_t ComputeParamMemSize(int paramType)
-	{
-		size_t res = 0;
-		switch (paramType)
-		{
-		case Con_Angle:
-		case Con_Float:
-			res += sizeof(float);
-			break;
-		case Con_Angle2:
-		case Con_Float2:
-			res += sizeof(float) * 2;
-			break;
-		case Con_Angle3:
-		case Con_Float3:
-			res += sizeof(float) * 3;
-			break;
-		case Con_Angle4:
-		case Con_Color4:
-		case Con_Float4:
-			res += sizeof(float) * 4;
-			break;
-		case Con_Ramp:
-			res += sizeof(float) * 2 * 8;
-			break;
-		case Con_Enum:
-		case Con_Int:
-			res += sizeof(int);
-			break;
-		case Con_FilenameRead:
-		case Con_FilenameWrite:
-			res += 1024;
-			break;
-		case Con_ForceEvaluate:
-			res += 0;
-			break;
-		case Con_Bool:
-			res += sizeof(int);
-			break;
-		}
-		return res;
 	}
 
 	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList)

@@ -39,9 +39,7 @@ struct NodeGraphDelegate
 	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
 	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
 	virtual void DelLink(int index, int slot) = 0;
-	//virtual void EditNode(size_t index) = 0;
 	virtual unsigned int GetNodeTexture(size_t index) = 0;
-	//virtual void EditNode(size_t index) = 0;
 	virtual bool AuthorizeConnexion(int typeA, int typeB) = 0;
 	// A new node has been added in the graph. Do a push_back on your node array
 	virtual void AddNode(size_t type) = 0;
@@ -54,39 +52,15 @@ struct NodeGraphDelegate
 	virtual bool NodeHasUI(size_t nodeIndex) = 0;
 	virtual bool NodeIsProcesing(size_t nodeIndex) = 0;
 	virtual bool NodeIsCubemap(size_t nodeIndex) = 0;
-	
-	static const int MaxCon = 32;
-	struct Con
-	{
-		const char *mName;
-		int mType;
-		float mRangeMinX, mRangeMaxX;
-		float mRangeMinY, mRangeMaxY;
-		bool mbRelative;
-		bool mbQuadSelect;
-		const char* mEnumList;
-	};
-	struct MetaNode
-	{
-		const char *mName;
-		uint32_t mHeaderColor;
-		int mCategory;
-		Con mInputs[MaxCon];
-		Con mOutputs[MaxCon];
-		Con mParams[MaxCon];
-		bool mbHasUI;
-		bool mbSaveTexture;
-	};
-	virtual const MetaNode* GetMetaNodes(int &metaNodeCount) = 0;
 };
 
 struct Node
 {
 	int     mType;
 	ImVec2  Pos, Size;
-	int     InputsCount, OutputsCount;
+	size_t InputsCount, OutputsCount;
 
-	Node(int type, const ImVec2& pos, const NodeGraphDelegate::MetaNode* metaNodes);
+	Node(int type, const ImVec2& pos);
 
 	ImVec2 GetInputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
 	ImVec2 GetOutputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor + Size.x, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }

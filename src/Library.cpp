@@ -537,6 +537,14 @@ void LoadMetaNodes()
 		,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f, true },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection\0Isometric\0Cross\0Camera\0" } }
 		}
 
+			,
+			{
+				"EquirectConverter", hcGenerator, 8
+				,{ { "", Con_Float4 } }
+			,{ { "", Con_Float4 } }
+			,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Equirect To Cubemap\0Cubemap To Equirect\0" } }
+			}
+
 	};
 
 

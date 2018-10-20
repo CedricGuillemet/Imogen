@@ -580,8 +580,9 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 	{
 		TileNodeEditGraphDelegate::ImogenNode srcNode = nodeGraphDelegate.mNodes[i];
 		MaterialNode &dstNode = material.mMaterialNodes[i];
+		MetaNode& metaNode = gMetaNodes[srcNode.mType];
 		dstNode.mRuntimeUniqueId = GetRuntimeId();
-		if (gMetaNodes[srcNode.mType].mbSaveTexture)
+		if (metaNode.mbSaveTexture)
 		{
 			Image image;
 			if (Evaluation::GetEvaluationImage(int(i), &image) == EVAL_OK)
@@ -591,6 +592,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		}
 
 		dstNode.mType = uint32_t(srcNode.mType);
+		dstNode.mTypeName = metaNode.mName;
 		dstNode.mParameters.resize(srcNode.mParametersSize);
 		if (srcNode.mParametersSize)
 			memcpy(&dstNode.mParameters[0], srcNode.mParameters, srcNode.mParametersSize);

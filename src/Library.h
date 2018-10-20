@@ -29,6 +29,7 @@
 #include <vector>
 #include <stdint.h>
 #include <string>
+#include <map>
 
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
@@ -67,6 +68,7 @@ struct InputSampler
 struct MaterialNode
 {
 	uint32_t mType;
+	std::string mTypeName;
 	int32_t mPosX;
 	int32_t mPosY;
 	std::vector<InputSampler> mInputSamplers;
@@ -172,6 +174,7 @@ struct MetaNode
 };
 
 extern std::vector<MetaNode> gMetaNodes;
+size_t GetMetaNodeIndex(const std::string& metaNodeName);
 void LoadMetaNodes();
 
 unsigned int GetRuntimeId();

@@ -33,6 +33,7 @@ enum : uint32_t
 	v_thumbnail,
 	v_nodeImage,
 	v_rugs,
+	v_nodeTypeName,
 	v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -114,6 +115,7 @@ template<bool doWrite> struct Serialize
 	void Ser(MaterialNode *materialNode)
 	{
 		ADD(v_initial, materialNode->mType);
+		ADD(v_nodeTypeName, materialNode->mTypeName);
 		ADD(v_initial, materialNode->mPosX);
 		ADD(v_initial, materialNode->mPosY);
 		ADD(v_initial, materialNode->mInputSamplers);
@@ -166,7 +168,8 @@ typedef Serialize<false> SerializeRead;
 
 void LoadLib(Library *library, const char *szFilename)
 {
-	SerializeRead(szFilename).Ser(library);
+	SerializeRead loadSer(szFilename);
+	loadSer.Ser(library);
 
 	for (auto& material : library->mMaterials)
 	{
@@ -175,6 +178,10 @@ void LoadLib(Library *library, const char *szFilename)
 		for (auto& node : material.mMaterialNodes)
 		{
 			node.mRuntimeUniqueId = GetRuntimeId();
+			if (loadSer.dataVersion > v_nodeTypeName)
+			{
+				node.mType = uint32_t(GetMetaNodeIndex(node.mTypeName));
+			}
 		}
 	}
 }
@@ -226,6 +233,15 @@ size_t GetParamMemSize(ConTypes paramType)
 }
 
 std::vector<MetaNode> gMetaNodes;
+std::map<std::string, size_t> gMetaNodesIndices;
+
+size_t GetMetaNodeIndex(const std::string& metaNodeName)
+{
+	auto iter = gMetaNodesIndices.find(metaNodeName);
+	if (iter == gMetaNodesIndices.end())
+		return -1;
+	return iter->second;
+}
 void LoadMetaNodes()
 {
 	static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
@@ -523,4 +539,9 @@ void LoadMetaNodes()
 
 	};
 
+
+	for (size_t i = 0; i < gMetaNodes.size(); i++)
+	{
+		gMetaNodesIndices[gMetaNodes[i].mName] = i;
+	}
 }

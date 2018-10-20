@@ -142,7 +142,7 @@ enum ConTypes
 	Con_Any,
 };
 
-size_t GetParamMemSize(ConTypes paramType);
+size_t GetParameterTypeSize(ConTypes paramType);
 
 struct MetaCon
 {

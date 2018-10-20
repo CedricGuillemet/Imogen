@@ -197,7 +197,7 @@ unsigned int GetRuntimeId()
 	return ++runtimeId;
 }
 
-size_t GetParamMemSize(ConTypes paramType)
+size_t GetParameterTypeSize(ConTypes paramType)
 {
 	switch (paramType)
 	{

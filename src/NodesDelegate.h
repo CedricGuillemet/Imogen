@@ -74,13 +74,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize)
 	{
 		const ImogenNode & node = mNodes[index];
-		paramBlockSize = ComputeParamMemSize(node.mType);
+		paramBlockSize = ComputeNodeParametersSize(node.mType);
 		return (unsigned char*)node.mParameters;
 	}
 	virtual void SetParamBlock(size_t index, unsigned char* parameters)
 	{
 		const ImogenNode & node = mNodes[index];
-		memcpy(node.mParameters, parameters, ComputeParamMemSize(node.mType));
+		memcpy(node.mParameters, parameters, ComputeNodeParametersSize(node.mType));
 		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, parameters, node.mParametersSize);
 		mEvaluation.SetEvaluationSampler(node.mEvaluationTarget, node.mInputSamplers);
 	}
@@ -102,7 +102,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		node.mRuntimeUniqueId = GetRuntimeId();
 		node.mbProcessing = false;
 		node.mType = type;
-		size_t paramsSize = ComputeParamMemSize(type);
+		size_t paramsSize = ComputeNodeParametersSize(type);
 		node.mParameters = malloc(paramsSize);
 		node.mParametersSize = paramsSize;
 		memset(node.mParameters, 0, paramsSize);
@@ -295,7 +295,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			ImGui::PopID();
 			i++;
-			paramBuffer += ComputeParamMemSize(param.mType);
+			paramBuffer += GetParameterTypeSize(param.mType);
 		}
 		
 		if (dirty)
@@ -404,7 +404,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 						paramFlt[1] = ImLerp(param.mRangeMinY, param.mRangeMaxY, ry);
 					}
 				}
-				paramBuffer += ComputeParamMemSize(param.mType);
+				paramBuffer += GetParameterTypeSize(param.mType);
 				parametersUseMouse = true;
 			}
 		}
@@ -415,12 +415,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		}
 	}
 
-	size_t ComputeParamMemSize(size_t typeIndex)
+	size_t ComputeNodeParametersSize(size_t nodeTypeIndex)
 	{
 		size_t res = 0;
-		for(auto& param : gMetaNodes[typeIndex].mParams)
+		for(auto& param : gMetaNodes[nodeTypeIndex].mParams)
 		{
-			res += GetParamMemSize(param.mType);
+			res += GetParameterTypeSize(param.mType);
 		}
 		return res;
 	}

@@ -92,6 +92,24 @@ static const unsigned int glCubeFace[] = {
 };
 static const unsigned int textureFormatSize[] = {    3,3,6,6,12, 4,4,4,8,8,16,4 };
 static const unsigned int textureComponentCount[] = { 3,3,3,3,3, 4,4,4,4,4,4,4 };
+/*
+static const vec_t skyRotsDir[] = {
+	vec_t(0.f, 0.f, 1.f),
+	vec_t(0.f, 0.f, -1.f),
+	vec_t(1.f, 0.f, 0.f),
+	vec_t(-1.f, 0.f, 0.f),
+	vec_t(0.f, -1.f, 0.f),
+	vec_t(0.f,  1.f, 0.f) };
+
+static const vec_t skyRotsUp[] = {
+	vec_t(1.f, 0.f, 0.f),
+	vec_t(1.f, 0.f, 0.f),
+	vec_t(0.f, 1.f, 0.f),
+	vec_t(0.f, -1.f, 0.f),
+	vec_t(1.f, 0.f, 0.f),
+	vec_t(1.f, 0.f, 0.f) };
+*/
+
 unsigned int GetTexelSize(uint8_t fmt)
 {
 	return textureFormatSize[fmt];
@@ -1015,8 +1033,9 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 {
 	const Input& input = evaluationStage.mInput;
 
+	RenderTarget* tgt = evaluationStage.mTarget;
 	if (!evaluationInfo.uiPass)
-		evaluationStage.mTarget->BindAsTarget();
+		tgt->BindAsTarget();
 	unsigned int program = mEvaluatorPerNodeType[evaluationStage.mNodeType].mGLSLProgram;
 	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
 	unsigned int blend[] = { GL_ONE, GL_ZERO };
@@ -1043,33 +1062,37 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 
 	glUseProgram(program);
 
-	glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-
-	int samplerIndex = 0;
-	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+	size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
+	for (size_t face = 0; face < faceCount; face++)
 	{
-		unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
-		if (parameter == 0xFFFFFFFF)
-			continue;
-		glUniform1i(parameter, samplerIndex);
-		glActiveTexture(GL_TEXTURE0 + samplerIndex);
-		samplerIndex++;
-		int targetIndex = input.mInputs[inputIndex];
-		if (targetIndex < 0)
-		{
-			glBindTexture(GL_TEXTURE_2D, 0);
-			continue;
-		}
-		//assert(!mEvaluations[targetIndex].mbDirty);
-		if (mEvaluationStages[targetIndex].mTarget)
-			glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
-		const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
-		TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+		int samplerIndex = 0;
+		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+		{
+			unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
+			if (parameter == 0xFFFFFFFF)
+				continue;
+			glUniform1i(parameter, samplerIndex);
+			glActiveTexture(GL_TEXTURE0 + samplerIndex);
+			samplerIndex++;
+			int targetIndex = input.mInputs[inputIndex];
+			if (targetIndex < 0)
+			{
+				glBindTexture(GL_TEXTURE_2D, 0);
+				continue;
+			}
+			//assert(!mEvaluations[targetIndex].mbDirty);
+			if (mEvaluationStages[targetIndex].mTarget)
+				glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
+
+			const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
+			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+		}
+		//
+		mFSQuad.Render();
 	}
-	//
-	mFSQuad.Render();
 	glDisable(GL_BLEND);
 }
 

@@ -422,7 +422,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 					,
 					{
-						"CubemapFilter", hcFilter, 4
+						"CubemapFilter", hcFilter, 8
 						,{ { "", (int)Con_Float4 } }
 					,{ { "", (int)Con_Float4 } }
 					,{ { "Lighting Model", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Phong\0Phong BRDF\0Blinn\0Blinn BRDF\0"}
@@ -435,7 +435,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 					,
 					{
-						"PhysicalSky", hcGenerator, 1
+						"PhysicalSky", hcGenerator, 8
 						,{  }
 					,{ { "", (int)Con_Float4 } }
 					,{ { "ambient", (int)Con_Float4 }
@@ -456,7 +456,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 					,
 					{
-						"CubemapView", hcGenerator, 4
+						"CubemapView", hcGenerator, 8
 						,{ { "", (int)Con_Float4 } }
 					,{ { "", (int)Con_Float4 } }
 					,{ { "view", (int)Con_Float2, 1.f,0.f,0.f,1.f, true }, { "Mode", (int)Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection\0Isometric\0Cross\0Camera\0" } }

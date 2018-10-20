@@ -73,7 +73,6 @@ struct EvaluationInfo
 	int padding;
 	float mouse[4];
 	int inputIndices[8];
-	float inv_proj[16];
 	float inv_view_rot[9];
 	float viewport[2];
 };

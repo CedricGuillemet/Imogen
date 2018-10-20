@@ -21,13 +21,15 @@ void main()
 
 layout (std140) uniform EvaluationBlock
 {
+	mat4 viewRot;
+
 	int targetIndex;
 	int forcedDirty;
 	int	uiPass;
 	int padding;
 	vec4 mouse; // x,y, lbut down, rbut down
 	int inputIndices[8];
-	mat3 invViewRot;
+	
 	vec2 viewport;
 } EvaluationParam;
 

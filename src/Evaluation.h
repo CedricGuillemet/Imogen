@@ -67,13 +67,16 @@ enum EvaluationStatus
 
 struct EvaluationInfo
 {
+	float viewRot[16];
+
 	int targetIndex;
 	int forcedDirty;
 	int uiPass;
 	int padding;
 	float mouse[4];
 	int inputIndices[8];
-	float inv_view_rot[9];
+	float pad2[4];
+	
 	float viewport[2];
 };
 
@@ -121,8 +124,10 @@ public:
 	}
 
 	void InitBuffer(int width, int height);
-	void InitCube(int width, int height);
+	void InitCube(int width);
 	void BindAsTarget() const;
+	void BindAsCubeTarget() const;
+	void BindCubeFace(size_t face);
 	void Destroy();
 	void CheckFBO();
 
@@ -177,6 +182,7 @@ struct Evaluation
 	static int SetNodeImage(int target, Image *image);
 	static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 	static int SetEvaluationSize(int target, int imageWidth, int imageHeight);
+	static int SetEvaluationCubeSize(int target, int faceWidth);
 	static int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 	static int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
 	static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);

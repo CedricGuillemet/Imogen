@@ -15,13 +15,15 @@ typedef struct Image_t
 
 typedef struct Evaluation_t
 {
+	float inv_view_rot[16];
+	
 	int targetIndex;
 	int forcedDirty;
 	int uiPass;
 	int padding;
 	float mouse[4];
 	int inputIndices[8];	
-	float inv_view_rot[9];
+	
 	float viewport[2];
 } Evaluation;
 
@@ -100,6 +102,7 @@ int Evaluate(int target, int width, int height, Image *image);
 void SetBlendingMode(int target, int blendSrc, int blendDst);
 int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(int target, int imageWidth, int imageHeight);
+int SetEvaluationCubeSize(int target, int faceWidth);
 int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 
 int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);

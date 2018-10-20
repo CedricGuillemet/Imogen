@@ -178,7 +178,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		int i = 0;
 		for(const MetaParameter& param : currentMeta.mParams)
 		{
-			ImGui::PushID(667889 + i);
+			ImGui::PushID(667889 + i++);
 			switch (param.mType)
 			{
 			case Con_Float:
@@ -294,7 +294,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			break;
 			}
 			ImGui::PopID();
-			i++;
 			paramBuffer += GetParameterTypeSize(param.mType);
 		}
 		

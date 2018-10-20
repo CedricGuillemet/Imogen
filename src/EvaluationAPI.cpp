@@ -92,23 +92,45 @@ static const unsigned int glCubeFace[] = {
 };
 static const unsigned int textureFormatSize[] = {    3,3,6,6,12, 4,4,4,8,8,16,4 };
 static const unsigned int textureComponentCount[] = { 3,3,3,3,3, 4,4,4,4,4,4,4 };
-/*
-static const vec_t skyRotsDir[] = {
-	vec_t(0.f, 0.f, 1.f),
-	vec_t(0.f, 0.f, -1.f),
-	vec_t(1.f, 0.f, 0.f),
-	vec_t(-1.f, 0.f, 0.f),
-	vec_t(0.f, -1.f, 0.f),
-	vec_t(0.f,  1.f, 0.f) };
 
-static const vec_t skyRotsUp[] = {
-	vec_t(1.f, 0.f, 0.f),
-	vec_t(1.f, 0.f, 0.f),
-	vec_t(0.f, 1.f, 0.f),
-	vec_t(0.f, -1.f, 0.f),
-	vec_t(1.f, 0.f, 0.f),
-	vec_t(1.f, 0.f, 0.f) };
-*/
+static const float rotMatrices[6][16] = {
+	// toward +x
+	{ 0,0,-1,0,
+	0,1,0,0,
+	1,0,0,0,
+	0,0,0,1
+	},
+
+	// -x
+	{ 0,0,1,0,
+	0,1,0,0,
+	-1,0,0,0,
+	0,0,0,1 },
+
+	//+y
+	{ 1,0,0,0,
+	0,0,1,0,
+	0,-1,0,0,
+	0,0,0,1 },
+
+	// -y
+	{ -1,0,0,0,
+	0,0,-1,0,
+	0,1,0,0,
+	0,0,0,1 },
+
+	// +z
+	{ 1,0,0,0,
+	0,1,0,0,
+	0,0,1,0,
+	0,0,0,1 },
+
+	//-z
+	{ -1,0,0,0,
+	0,1,0,0,
+	0,0,-1,0,
+	0,0,0,1 }
+};
 
 unsigned int GetTexelSize(uint8_t fmt)
 {
@@ -127,6 +149,18 @@ void RenderTarget::BindAsTarget() const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
 	glViewport(0, 0, mImage.mWidth, mImage.mHeight);
+}
+
+void RenderTarget::BindAsCubeTarget() const
+{
+	glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
+	glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
+	glViewport(0, 0, mImage.mWidth, mImage.mHeight);
+}
+
+void RenderTarget::BindCubeFace(size_t face)
+{
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face), mGLTexID, 0);
 }
 
 void RenderTarget::Destroy()
@@ -174,30 +208,27 @@ void RenderTarget::InitBuffer(int width, int height)
 
 }
 
-void RenderTarget::InitCube(int width, int height)
+void RenderTarget::InitCube(int width)
 {
-	if ( (width == mImage.mWidth) && (mImage.mHeight == height))
+	if ( (width == mImage.mWidth) && (mImage.mHeight == width) && mImage.mNumFaces == 6)
 		return;
 	Destroy();
 
 	mImage.mWidth = width;
-	mImage.mHeight = height;
-	mImage.mWidth = width;
-	mImage.mHeight = height;
+	mImage.mHeight = width;
 	mImage.mNumMips = 1;
 	mImage.mNumFaces = 6;
 	mImage.mFormat = TextureFormat::RGBA8;
-
 
 	glGenFramebuffers(1, &mFbo);
 	glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
 
 	glGenTextures(1, &mGLTexID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
-	/*
+	
 	for (int i = 0; i < 6; i++)
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		*/
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, width, width, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		
 
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
@@ -598,15 +629,15 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	}
 	else
 	{
-		evaluation.mTarget->InitCube(image->mWidth, image->mHeight);
+		evaluation.mTarget->InitCube(image->mWidth);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, evaluation.mTarget->mGLTexID);
 
 		for (int face = 0; face < image->mNumFaces; face++)
 		{
 			for (int i = 0; i < image->mNumMips; i++)
 			{
-				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, i, internalFormat, image->mWidth >> i, image->mHeight >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
-				ptr += (image->mWidth >> i) * (image->mHeight >> i) * texelSize;
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, i, internalFormat, image->mWidth >> i, image->mWidth >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
+				ptr += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
 			}
 		}
 
@@ -629,7 +660,7 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 	{
 		evaluation.mTarget = new RenderTarget;
 	}
-	evaluation.mTarget->InitCube(image->mWidth, image->mHeight);
+	evaluation.mTarget->InitCube(image->mWidth);
 
 	UploadImage(image, evaluation.mTarget->mGLTexID, cubeFace);
 	return EVAL_OK;
@@ -779,6 +810,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
 	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
 	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
+	{ "SetEvaluationCubeSize", (void*)Evaluation::SetEvaluationCubeSize },
 	{ "CubemapFilter", (void*)Evaluation::CubemapFilter},
 	{ "SetProcessing", (void*)Evaluation::SetProcessing},
 	{ "Job", (void*)Evaluation::Job },
@@ -1038,7 +1070,12 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 
 	RenderTarget* tgt = evaluationStage.mTarget;
 	if (!evaluationInfo.uiPass)
-		tgt->BindAsTarget();
+	{
+		if (tgt->mImage.mNumFaces == 6)
+			tgt->BindAsCubeTarget();
+		else
+			tgt->BindAsTarget();
+	}
 	unsigned int program = mEvaluatorPerNodeType[evaluationStage.mNodeType].mGLSLProgram;
 	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
 	unsigned int blend[] = { GL_ONE, GL_ZERO };
@@ -1055,10 +1092,6 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 	evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;
 	SetMouseInfos(evaluationInfo, evaluationStage);
 	//evaluationInfo.uiPass = 1;
-	glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
 
 	glEnable(GL_BLEND);
 	glBlendFunc(blend[0], blend[1]);
@@ -1068,6 +1101,15 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 	size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
 	for (size_t face = 0; face < faceCount; face++)
 	{
+		if (tgt->mImage.mNumFaces == 6)
+			tgt->BindCubeFace(face);
+
+		memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
+		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
@@ -1284,5 +1326,16 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 	if (!renderTarget)
 		return EVAL_ERR;
 	renderTarget->InitBuffer(imageWidth, imageHeight);
+	return EVAL_OK;
+}
+
+int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
+{
+	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+		return EVAL_ERR;
+	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	if (!renderTarget)
+		return EVAL_ERR;
+	renderTarget->InitCube(faceWidth);
 	return EVAL_OK;
 }

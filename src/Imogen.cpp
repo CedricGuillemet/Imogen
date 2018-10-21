@@ -625,6 +625,43 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 	}
 }
 
+void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+{
+	// set new
+	if (selectedMaterial != -1)
+	{
+		nodeGraphDelegate.Clear();
+		evaluation.Clear();
+		NodeGraphClear();
+		InitCallbackRects();
+
+		Material& material = library.mMaterials[selectedMaterial];
+		for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
+		{
+			MaterialNode& node = material.mMaterialNodes[i];
+			NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY);
+			if (!node.mImage.empty())
+			{
+				TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
+				lastNode.mbProcessing = true;
+				g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
+			}
+		}
+		for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
+		{
+			MaterialConnection& materialConnection = material.mMaterialConnections[i];
+			NodeGraphAddLink(&nodeGraphDelegate, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
+		}
+		for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
+		{
+			MaterialNodeRug& rug = material.mMaterialRugs[i];
+			NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
+		}
+		NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
+		NodeGraphUpdateScrolling();
+	}
+}
+
 void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	int previousSelection = selectedMaterial;
@@ -688,39 +725,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		{
 			ValidateMaterial(library, nodeGraphDelegate, previousSelection);
 		}
-		// set new
-		if (selectedMaterial != -1)
-		{
-			nodeGraphDelegate.Clear();
-			evaluation.Clear();
-			NodeGraphClear();
-			InitCallbackRects();
-
-			Material& material = library.mMaterials[selectedMaterial];
-			for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
-			{
-				MaterialNode& node = material.mMaterialNodes[i];
-				NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY);
-				if (!node.mImage.empty())
-				{
-					TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
-					lastNode.mbProcessing = true;
-					g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
-				}
-			}
-			for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
-			{
-				MaterialConnection& materialConnection = material.mMaterialConnections[i];
-				NodeGraphAddLink(&nodeGraphDelegate, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
-			}
-			for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
-			{
-				MaterialNodeRug& rug = material.mMaterialRugs[i];
-				NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
-			}
-			NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
-			NodeGraphUpdateScrolling();
-		}
+		UpdateNewlySelectedGraph(nodeGraphDelegate, evaluation);
 	}
 	ImGui::EndChild();
 }
@@ -772,10 +777,11 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 					}
 				}
 				ImGui::SameLine();
-				if (ImGui::Button("Delete Material"))
+				if (ImGui::Button("Delete Graph"))
 				{
 					library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
 					selectedMaterial = int(library.mMaterials.size()) - 1;
+					UpdateNewlySelectedGraph(nodeGraphDelegate, evaluation);
 				}
 				ImGui::PopItemWidth();
 			}

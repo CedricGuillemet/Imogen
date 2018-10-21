@@ -408,7 +408,7 @@ void LoadMetaNodes()
 			"iqnoise", hcNoise, 5
 			,{}
 		,{ { "", Con_Float4 } }
-		,{ { "Size", Con_Float },{ "U", Con_Float, 0.f,1.f,0.f,0.f },{ "V", Con_Float, 0.f,0.f,0.f,1.f } }
+		,{ { "Size", Con_Float },{ "U", Con_Float},{ "V", Con_Float} }
 		}
 
 		,

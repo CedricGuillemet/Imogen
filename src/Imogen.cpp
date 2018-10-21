@@ -177,6 +177,20 @@ void SetStyle()
 }
 
 std::vector<ImogenDrawCallback> mCallbackRects;
+struct ExtractedView
+{
+	size_t mNodeIndex;
+	bool mFirstFrame;
+};
+std::vector<ExtractedView> mExtratedViews;
+void AddExtractedView(size_t nodeIndex)
+{
+	mExtratedViews.push_back({ nodeIndex, true });
+}
+void ClearExtractedViews()
+{
+	mExtratedViews.clear();
+}
 void InitCallbackRects()
 {
 	mCallbackRects.clear();
@@ -250,31 +264,35 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 
 }
 
-void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluation)
+void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluation, bool forceUI = false)
 {
 	ImGuiIO& io = ImGui::GetIO();
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0xFF000000);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
+	ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
+	float w = ImGui::GetWindowContentRegionWidth();
+	int imageWidth(1), imageHeight(1);
+	Evaluation::GetEvaluationSize(selNode, &imageWidth, &imageHeight);
+	float ratio = float(imageHeight) / float(imageWidth);
+	float h = w * ratio;
+	ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+	ImRect rc;
 
-	int selNode = nodeGraphDelegate.mSelectedNodeIndex;
-	if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
+	if (forceUI)
 	{
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0xFF000000);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
-		ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
-		float w = ImGui::GetWindowContentRegionWidth();
-		int imageWidth(1), imageHeight(1);
-		Evaluation::GetEvaluationSize(selNode, &imageWidth, &imageHeight);
-		float ratio = float(imageHeight)/float(imageWidth);
-		float h = w * ratio;
-		ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
-
+		ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
+		rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
+	}
+	else
+	{
 		if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
 			ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
 		else
 			ImGui::ImageButton((ImTextureID)(int64_t)((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-		ImGui::PopStyleColor(3);
-		ImGui::PopStyleVar(1);
-		ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+		rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 		if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
@@ -285,16 +303,30 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		{
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
 		}
-		if (rc.Contains(io.MousePos))
-		{
-			ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
-			ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-			nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1]);
-		}
-		else
-		{
-			nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false);
-		}
+	}
+	ImGui::PopStyleColor(3);
+	ImGui::PopStyleVar(1);
+
+	if (rc.Contains(io.MousePos))
+	{
+		ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
+		ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
+		nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1]);
+	}
+	else
+	{
+		nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false);
+	}
+}
+
+void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluation)
+{
+	ImGuiIO& io = ImGui::GetIO();
+
+	int selNode = nodeGraphDelegate.mSelectedNodeIndex;
+	if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		RenderPreviewNode(selNode, nodeGraphDelegate, evaluation);
 	}
 
 	if (selNode == -1)
@@ -637,6 +669,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		evaluation.Clear();
 		NodeGraphClear();
 		InitCallbackRects();
+		ClearExtractedViews();
 
 		Material& material = library.mMaterials[selectedMaterial];
 		for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
@@ -685,6 +718,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 		evaluation.Clear();
 		NodeGraphClear();
 		InitCallbackRects();
+		ClearExtractedViews();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Import"))
@@ -817,7 +851,36 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		}
 		ImGui::End();
 
+		// view extraction
+		int index = 0;
+		int removeExtractedView = -1;
+		for (auto& extraction : mExtratedViews)
+		{
+			char tmps[512];
+			sprintf(tmps, "%s_View_%03d", gMetaNodes[nodeGraphDelegate.mNodes[extraction.mNodeIndex].mType].mName.c_str(), index);
+			bool open = true;
+			if (extraction.mFirstFrame)
+			{
+				extraction.mFirstFrame = false;
+				ImGui::SetNextWindowSize(ImVec2(256, 256));
+			}
+			ImGui::SetNextWindowFocus();
+			if (ImGui::Begin(tmps, &open))
+			{
+				RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, true);
+			}
+			ImGui::End();
+			if (!open)
+			{
+				removeExtractedView = index;
+			}
+			index++;
+		}
+		if (removeExtractedView != -1)
+			mExtratedViews.erase(mExtratedViews.begin() + removeExtractedView);
+
 		ImGui::End();
+		// --
 	}
 }
 

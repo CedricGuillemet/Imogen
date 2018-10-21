@@ -35,6 +35,7 @@
 
 UndoRedoHandler undoRedoHandler;
 int Log(const char *szFormat, ...);
+void AddExtractedView(size_t nodeIndex);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
@@ -666,6 +667,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			ImGui::Text(metaNodes[node->mType].mName.c_str());
 			ImGui::Separator();
 			//if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
+			if (ImGui::MenuItem("Extract view", NULL, false))
+			{
+				AddExtractedView(node_selected);
+			}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
 			{
 				if (delegate->mBakeTargetIndex == node_selected)

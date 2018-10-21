@@ -680,7 +680,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	}
 
 	ImGui::BeginChild("TV");
-	if (TVRes(library.mMaterials, "Materials", selectedMaterial, 0, evaluation, libraryViewMode))
+	if (TVRes(library.mMaterials, "Graphs", selectedMaterial, 0, evaluation, libraryViewMode))
 	{
 		nodeGraphDelegate.mSelectedNodeIndex = -1;
 		// save previous

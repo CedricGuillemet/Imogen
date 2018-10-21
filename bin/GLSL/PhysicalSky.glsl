@@ -2,9 +2,10 @@
 layout (std140) uniform PhysicalSkyBlock
 {
 	vec4 ambient;
-	vec3 lightdir, Kr;
+	vec4 lightdir, Kr;
 	float rayleigh_brightness, mie_brightness, spot_brightness, scatter_strength, rayleigh_strength, mie_strength;
 	float rayleigh_collection_power, mie_collection_power, mie_distribution;
+	int size;
 };
 
 
@@ -15,9 +16,8 @@ const int step_count = 16;
 
 vec3 get_world_normal()
 {
-	vec4 eye_normal = vec4(vUV * 2.0 - 1.0, 1.0, 0.0);
-	//vec3 world_normal = normalize(EvaluationParam.invView_rot * eye_normal);
-	return eye_normal.xyz;//world_normal;
+	vec3 dir = (EvaluationParam.viewRot * vec4(vUV * 2.0 - 1.0, 1.0, 0.0)).xyz;
+	return normalize(dir);
 }
 
 float atmospheric_depth(vec3 position, vec3 dir)
@@ -60,13 +60,13 @@ float horizon_extinction(vec3 position, vec3 dir, float radius)
 
 vec3 absorb(float dist, vec3 color, float factor)
 {
-	return color-color*pow(Kr, vec3(factor/dist));
+	return color-color*pow(Kr.xyz, vec3(factor/dist));
 }
 
 vec4 PhysicalSky()
 {
 	vec3 eyedir = get_world_normal();
-	float alpha = dot(eyedir, lightdir);
+	float alpha = dot(eyedir, lightdir.xyz);
 	float rayleigh_factor = phase(alpha, -0.01)*rayleigh_brightness;
 	float mie_factor = phase(alpha, mie_distribution)*mie_brightness;
 	float spot = smoothstep(0.0, 15.0, phase(alpha, 0.9995))*spot_brightness;
@@ -80,10 +80,10 @@ vec4 PhysicalSky()
 	{
 		float sample_distance = step_length*float(i);
 		vec3 position = eye_position + eyedir*sample_distance;
-		float extinction = horizon_extinction(position, lightdir, surface_height-0.35);
-		float sample_depth = atmospheric_depth(position, lightdir);
+		float extinction = horizon_extinction(position, lightdir.xyz, surface_height-0.35);
+		float sample_depth = atmospheric_depth(position, lightdir.xyz);
 		vec3 influx = absorb(sample_depth, vec3(intensity), scatter_strength)*extinction;
-		rayleigh_collected += absorb(sample_distance, Kr*influx, rayleigh_strength);
+		rayleigh_collected += absorb(sample_distance, Kr.xyz*influx, rayleigh_strength);
 		mie_collected += absorb(sample_distance, influx, mie_strength);
 	}
 	

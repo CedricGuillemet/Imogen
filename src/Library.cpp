@@ -514,8 +514,8 @@ void LoadMetaNodes()
 			,{}
 		,{ { "", Con_Float4 } }
 		,{ { "ambient", Con_Float4 }
-		,{ "lightdir", Con_Float3 }
-		,{ "Kr", Con_Float3 }
+		,{ "lightdir", Con_Float4 }
+		,{ "Kr", Con_Float4 }
 		,{ "rayleigh brightness", Con_Float }
 		,{ "mie brightness", Con_Float }
 		,{ "spot brightness", Con_Float }
@@ -524,8 +524,9 @@ void LoadMetaNodes()
 		,{ "mie strength" , Con_Float }
 		,{ "rayleigh collection power", Con_Float }
 		,{ "mie collection power", Con_Float }
-		,{ "mie distribution", Con_Float } }
-
+		,{ "mie distribution", Con_Float }
+		,{ "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+			}
 		}
 
 

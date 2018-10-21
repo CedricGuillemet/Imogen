@@ -373,9 +373,9 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 			TileNodeEditGraphDelegate::ImogenNode *node = TileNodeEditGraphDelegate::GetInstance()->Get(mIdentifier);
 			if (node)
 			{
-				node->mbProcessing = false;
 				Evaluation::SetEvaluationImage(int(node->mEvaluationTarget), &mImage);
 				gEvaluation.SetEvaluationParameters(node->mEvaluationTarget, node->mParameters, node->mParametersSize);
+				gEvaluation.StageSetProcessing(node->mEvaluationTarget, false);
 			}
 			Evaluation::FreeImage(&mImage);
 		}
@@ -646,7 +646,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 			if (!node.mImage.empty())
 			{
 				TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
-				lastNode.mbProcessing = true;
+				evaluation.StageSetProcessing(lastNode.mEvaluationTarget, true);
 				g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
 			}
 		}

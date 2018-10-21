@@ -164,6 +164,8 @@ struct Evaluation
 	void SetTargetDirty(size_t target, bool onlyChild = false);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();
+	bool StageIsProcessing(size_t target) { return mEvaluationStages[target].mbProcessing; }
+	void StageSetProcessing(size_t target, bool processing) { mEvaluationStages[target].mbProcessing = processing; }
 
 	// API
 	static int ReadImage(const char *filename, Image *image);
@@ -253,6 +255,7 @@ protected:
 		std::vector<InputSampler> mInputSamplers;
 		bool mbDirty;
 		bool mbForceEval;
+		bool mbProcessing;
 		int mEvaluationMask; // see EvaluationMask
 		int mUseCountByOthers;
 		int mBlendingSrc;

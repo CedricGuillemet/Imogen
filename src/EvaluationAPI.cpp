@@ -28,6 +28,7 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
+#include <SDL.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -862,7 +863,7 @@ struct CFunctionMainTask : enki::IPinnedTask
 
 void Evaluation::SetProcessing(int target, int processing)
 {
-	TileNodeEditGraphDelegate::GetInstance()->mNodes[target].mbProcessing = processing != 0;
+	gEvaluation.mEvaluationStages[target].mbProcessing = processing != 0;
 }
 
 int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
@@ -1265,9 +1266,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 		case CBUI_Progress:
 		{
 			glUseProgram(gEvaluation.mProgressShader);
-			static float gGlobalTime = 0.f;
-			gGlobalTime += 0.03f;
-			glUniform1f(glGetUniformLocation(gEvaluation.mProgressShader, "time"), gGlobalTime);
+			glUniform1f(glGetUniformLocation(gEvaluation.mProgressShader, "time"), float(double(SDL_GetTicks())/1000.0));
 			mFSQuad.Render();
 		}
 		break;

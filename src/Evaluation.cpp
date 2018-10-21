@@ -56,6 +56,7 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	evaluation.mUseCountByOthers = 0;
 	evaluation.mbDirty = true;
 	evaluation.mbForceEval = false;
+	evaluation.mbProcessing = false;
 	evaluation.mNodeType = nodeType;
 	evaluation.mParametersBuffer = 0;
 	evaluation.mEvaluationMask = 0;
@@ -142,7 +143,22 @@ void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, b
 		evaluation.mbForceEval = true;
 		SetTargetDirty(index);
 	}
+	// check processing 
+	for (auto& inp : evaluation.mInput.mInputs)
+	{
+		if (inp >= 0)
+		{
+			if (mEvaluationStages[inp].mbProcessing)
+			{
+				evaluation.mbProcessing = true;
+				return;
+			}
+		}
+	}
 
+	evaluation.mbProcessing = false;
+
+	// good to go
 	if (evaluation.mEvaluationMask&EvaluationC)
 		EvaluateC(evaluation, index, evaluationInfo);
 	if (evaluation.mEvaluationMask&EvaluationGLSL)

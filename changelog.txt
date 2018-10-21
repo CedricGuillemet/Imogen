@@ -12,6 +12,7 @@ New:
 - small animation display of processing node/background job
 - list, smal icons, big icons display of graph library
 - rugs in graph editor: add colored comments to your graph
+- extract a node preview into a dockable window
 
 Changed:
 - node graph clips nodes and connexions

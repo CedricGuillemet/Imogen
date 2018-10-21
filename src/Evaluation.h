@@ -241,6 +241,9 @@ protected:
 	};
 	struct EvaluationStage
 	{
+#ifdef _DEBUG
+		std::string mNodeTypename;
+#endif
 		RenderTarget *mTarget;
 		size_t mNodeType;
 		unsigned int mParametersBuffer;

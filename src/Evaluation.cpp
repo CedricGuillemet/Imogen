@@ -61,6 +61,9 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	evaluation.mEvaluationMask = 0;
 	evaluation.mBlendingSrc = ONE;
 	evaluation.mBlendingDst = ZERO;
+#ifdef _DEBUG
+	evaluation.mNodeTypename = nodeName;
+#endif
 
 	bool valid(false);
 	auto iter = mEvaluatorScripts.find(nodeName+".glsl");

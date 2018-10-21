@@ -50,7 +50,7 @@ int main(ImageRead *param, Evaluation *evaluation)
 {
 	int i;
 	Image image;
-	char *files[6] = {param->posxfile, param->negxfile, param->posyfile, param->negyfile, param->poszfile, param->negzfile};
+	char *files[6] = {param->posxfile, param->negxfile, param->negyfile, param->posyfile, param->poszfile, param->negzfile};
 	
 	if (strlen(param->filename))
 	{

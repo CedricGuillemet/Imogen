@@ -176,7 +176,7 @@ void RenderTarget::Destroy()
 
 void RenderTarget::InitBuffer(int width, int height)
 {
-	if ((width == mImage.mWidth) && (mImage.mHeight == height))
+	if ((width == mImage.mWidth) && (mImage.mHeight == height) && mImage.mNumFaces == 1)
 		return;
 	Destroy();
 

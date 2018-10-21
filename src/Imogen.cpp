@@ -187,7 +187,7 @@ size_t AddNodeUICallbackRect(CallbackDisplayType type, const ImRect& rect, size_
 	ImVec2 mi = draw_list->GetClipRectMin();
 	ImVec2 ma = draw_list->GetClipRectMax();
 
-	ImRect rc;
+	ImRect rc = rect;
 	rc.ClipWith(ImRect(mi, ma));
 	mCallbackRects.push_back({ type, rc, rect, nodeIndex });
 	return mCallbackRects.size() - 1;
@@ -268,7 +268,10 @@ void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluati
 		float h = w * ratio;
 		ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
 
-		ImGui::ImageButton((ImTextureID)(int64_t)((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+		if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+			ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
+		else
+			ImGui::ImageButton((ImTextureID)(int64_t)((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
 		ImGui::PopStyleColor(3);
 		ImGui::PopStyleVar(1);
 		ImRect rc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());

@@ -52,9 +52,9 @@ int main(ImageRead *param, Evaluation *evaluation)
 	Image image;
 	char *files[6] = {param->posxfile, param->negxfile, param->posyfile, param->negyfile, param->poszfile, param->negzfile};
 	
-	SetProcessing(evaluation->targetIndex, 1);
 	if (strlen(param->filename))
 	{
+		SetProcessing(evaluation->targetIndex, 1);
 		JobData data;
 		strcpy(data.filename, param->filename);
 		data.targetIndex = evaluation->targetIndex;
@@ -69,6 +69,7 @@ int main(ImageRead *param, Evaluation *evaluation)
 			if (!strlen(files[i]))
 				return EVAL_OK;
 		}
+		SetProcessing(evaluation->targetIndex, 1);
 		for (i = 0;i<6;i++)
 		{
 			JobData data;

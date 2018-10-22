@@ -487,6 +487,9 @@ struct DecodeImageTaskSet : enki::ITaskSet
 		if (data)
 		{
 			image.mBits = data;
+			image.mNumFaces = 1;
+			image.mNumMips = 1;
+			image.mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
 			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, false);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);

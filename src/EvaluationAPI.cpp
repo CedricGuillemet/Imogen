@@ -42,6 +42,7 @@
 #include "cmft/cubemapfilter.h"
 #include "TaskScheduler.h"
 #include "NodesDelegate.h"
+#include "cmft/print.h"
 
 extern enki::TaskScheduler g_TS;
 
@@ -681,11 +682,15 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
 
 	extern unsigned int gCPUCount;
 
+	cmft::setWarningPrintf(Log);
+	cmft::setInfoPrintf(Log);
+
+	faceSize = 16;
 	if (!cmft::imageRadianceFilter(img
 		, faceSize // face size
 		, (cmft::LightingModel::Enum)lightingModel
 		, (excludeBase != 0)
-		, 99 // map mip count
+		, uint8_t(log2(faceSize)) // map mip count
 		, glossScale
 		, glossBias
 		, cmft::EdgeFixup::None

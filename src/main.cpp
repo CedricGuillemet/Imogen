@@ -98,6 +98,7 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
 	{
 	case GL_DEBUG_SEVERITY_LOW:
 		severityStr = "LOW";
+		return;
 		break;
 	case GL_DEBUG_SEVERITY_MEDIUM:
 		severityStr = "MEDIUM";

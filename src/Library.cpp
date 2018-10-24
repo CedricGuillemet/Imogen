@@ -24,6 +24,7 @@
 //
 
 #include "Library.h"
+#include "imgui.h"
 
 enum : uint32_t
 {
@@ -31,6 +32,8 @@ enum : uint32_t
 	v_materialComment,
 	v_thumbnail,
 	v_nodeImage,
+	v_rugs,
+	v_nodeTypeName,
 	v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -112,11 +115,21 @@ template<bool doWrite> struct Serialize
 	void Ser(MaterialNode *materialNode)
 	{
 		ADD(v_initial, materialNode->mType);
+		ADD(v_nodeTypeName, materialNode->mTypeName);
 		ADD(v_initial, materialNode->mPosX);
 		ADD(v_initial, materialNode->mPosY);
 		ADD(v_initial, materialNode->mInputSamplers);
 		ADD(v_initial, materialNode->mParameters);
 		ADD(v_nodeImage, materialNode->mImage);
+	}
+	void Ser(MaterialNodeRug *materialNodeRug)
+	{
+		ADD(v_rugs, materialNodeRug->mPosX);
+		ADD(v_rugs, materialNodeRug->mPosY);
+		ADD(v_rugs, materialNodeRug->mSizeX);
+		ADD(v_rugs, materialNodeRug->mSizeY);
+		ADD(v_rugs, materialNodeRug->mColor);
+		ADD(v_rugs, materialNodeRug->mComment);
 	}
 	void Ser(MaterialConnection *materialConnection)
 	{
@@ -128,10 +141,11 @@ template<bool doWrite> struct Serialize
 	void Ser(Material *material)
 	{
 		ADD(v_initial, material->mName);
-		ADD(v_materialComment, material->mComment);
+		REM(v_materialComment, v_rugs, std::string, (material->mComment), "");
 		ADD(v_initial, material->mMaterialNodes);
 		ADD(v_initial, material->mMaterialConnections);
 		ADD(v_thumbnail, material->mThumbnail);
+		ADD(v_rugs, material->mMaterialRugs);
 	}
 	bool Ser(Library *library)
 	{
@@ -154,7 +168,8 @@ typedef Serialize<false> SerializeRead;
 
 void LoadLib(Library *library, const char *szFilename)
 {
-	SerializeRead(szFilename).Ser(library);
+	SerializeRead loadSer(szFilename);
+	loadSer.Ser(library);
 
 	for (auto& material : library->mMaterials)
 	{
@@ -163,6 +178,10 @@ void LoadLib(Library *library, const char *szFilename)
 		for (auto& node : material.mMaterialNodes)
 		{
 			node.mRuntimeUniqueId = GetRuntimeId();
+			if (loadSer.dataVersion > v_nodeTypeName)
+			{
+				node.mType = uint32_t(GetMetaNodeIndex(node.mTypeName));
+			}
 		}
 	}
 }
@@ -176,4 +195,363 @@ unsigned int GetRuntimeId()
 {
 	static unsigned int runtimeId = 0;
 	return ++runtimeId;
+}
+
+size_t GetParameterTypeSize(ConTypes paramType)
+{
+	switch (paramType)
+	{
+	case Con_Angle:
+	case Con_Float:
+		return sizeof(float);
+	case Con_Angle2:
+	case Con_Float2:
+		return sizeof(float) * 2;
+	case Con_Angle3:
+	case Con_Float3:
+		return sizeof(float) * 3;
+	case Con_Angle4:
+	case Con_Color4:
+	case Con_Float4:
+		return sizeof(float) * 4;
+	case Con_Ramp:
+		return sizeof(float) * 2 * 8;
+	case Con_Enum:
+	case Con_Int:
+		return sizeof(int);
+	case Con_FilenameRead:
+	case Con_FilenameWrite:
+		return 1024;
+	case Con_ForceEvaluate:
+		return 0;
+	case Con_Bool:
+		return sizeof(int);
+	default:
+		assert(0);
+	}
+	return -1;
+}
+
+std::vector<MetaNode> gMetaNodes;
+std::map<std::string, size_t> gMetaNodesIndices;
+
+size_t GetMetaNodeIndex(const std::string& metaNodeName)
+{
+	auto iter = gMetaNodesIndices.find(metaNodeName);
+	if (iter == gMetaNodesIndices.end())
+		return -1;
+	return iter->second;
+}
+void LoadMetaNodes()
+{
+	static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
+	static const uint32_t hcGenerator = IM_COL32(150, 200, 150, 255);
+	static const uint32_t hcMaterial = IM_COL32(150, 150, 200, 255);
+	static const uint32_t hcBlend = IM_COL32(200, 150, 150, 255);
+	static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
+	static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
+	static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
+
+
+	gMetaNodes = {
+
+		{
+			"Circle", hcGenerator, 1
+			,{ {} }
+		,{ { "", Con_Float4 } }
+		,{ { "Radius", Con_Float, -.5f,0.5f,0.f,0.f },{ "T", Con_Float } }
+		}
+		,
+		{
+			"Transform", hcTransform, 0
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Translate", Con_Float2, 1.f,0.f,1.f,0.f, true },{ "Scale", Con_Float2 },{ "Rotation", Con_Angle } }
+		}
+		,
+		{
+			"Square", hcGenerator, 1
+			,{ {} }
+		,{ { "", Con_Float4 } }
+		,{ { "Width", Con_Float, -.5f,0.5f,0.f,0.f } }
+		}
+		,
+		{
+			"Checker", hcGenerator, 1
+			,{ {} }
+		,{ { "", Con_Float4 } }
+		,{}
+		}
+		,
+		{
+			"Sine", hcGenerator, 1
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Frequency", Con_Float },{ "Angle", Con_Angle } }
+		}
+
+		,
+		{
+			"SmoothStep", hcFilter, 4
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Low", Con_Float },{ "High", Con_Float } }
+		}
+
+		,
+		{
+			"Pixelize", hcTransform, 0
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "scale", Con_Float } }
+		}
+
+		,
+		{
+			"Blur", hcFilter, 4
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "angle", Con_Float },{ "strength", Con_Float } }
+		}
+
+		,
+		{
+			"NormalMap", hcFilter, 4
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "spread", Con_Float } }
+		}
+
+		,
+		{
+			"LambertMaterial", hcMaterial, 2
+			,{ { "Diffuse", Con_Float4 },{ "Equirect sky", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f } }
+		}
+
+		,
+		{
+			"MADD", hcBlend, 3
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Mul Color", Con_Color4 },{ "Add Color", Con_Color4 } }
+		}
+
+		,
+		{
+			"Hexagon", hcGenerator, 1
+			,{}
+		,{ { "", Con_Float4 } }
+		,{}
+		}
+
+		,
+		{
+			"Blend", hcBlend, 3
+			,{ { "", Con_Float4 },{ "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "A", Con_Float4 },{ "B", Con_Float4 },{ "Operation", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Add\0Multiply\0Darken\0Lighten\0Average\0Screen\0Color Burn\0Color Dodge\0Soft Light\0Subtract\0Difference\0Inverse Difference\0Exclusion\0" } }
+		}
+
+		,
+		{
+			"Invert", hcFilter, 4
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{}
+		}
+
+		,
+		{
+			"CircleSplatter", hcGenerator, 1
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Distance", Con_Float2 },{ "Radius", Con_Float2 },{ "Angle", Con_Angle2 },{ "Count", Con_Float } }
+		}
+
+		,
+		{
+			"Ramp", hcFilter, 4
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Ramp", Con_Ramp } }
+		}
+
+		,
+		{
+			"Tile", hcTransform, 0
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Scale", Con_Float },{ "Offset 0", Con_Float2 },{ "Offset 1", Con_Float2 },{ "Overlap", Con_Float2 } }
+		}
+
+		,
+		{
+			"Color", hcGenerator, -1
+			,{}
+		,{ { "", Con_Float4 } }
+		,{ { "Color", Con_Color4 } }
+		}
+
+
+		,
+		{
+			"NormalMapBlending", hcBlend, 3
+			,{ { "", Con_Float4 },{ "", Con_Float4 } }
+		,{ { "Out", Con_Float4 } }
+		,{ { "Technique", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "RNM\0Partial Derivatives\0Whiteout\0UDN\0Unity\0Linear\0Overlay\0" } }
+		}
+
+		,
+		{
+			"iqnoise", hcNoise, 5
+			,{}
+		,{ { "", Con_Float4 } }
+		,{ { "Size", Con_Float },{ "U", Con_Float},{ "V", Con_Float} }
+		}
+
+		,
+		{
+			"PBR", hcMaterial, 2
+			,{ { "Diffuse", Con_Float4 },{ "Normal", Con_Float4 },{ "Roughness", Con_Float4 },{ "Displacement", Con_Float4 },{ "Equirect sky", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f, true } }
+		}
+
+		,
+
+		{
+			"PolarCoords", hcTransform, 0
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Type", Con_Enum, 0.f,0.f,0.f,0.f,false, false, "Linear to polar\0Polar to linear\0" } }
+		}
+
+		,
+		{
+			"Clamp", hcFilter, 4
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Min", Con_Float4 },{ "Max", Con_Float4 } }
+		}
+
+		,
+		{
+			"ImageRead", hcFilter, 6
+			,{}
+		,{ { "", Con_Float4 } }
+		,{ { "File name", Con_FilenameRead }
+		,{ "+X File name", Con_FilenameRead }
+		,{ "-X File name", Con_FilenameRead }
+		,{ "+Y File name", Con_FilenameRead }
+		,{ "-Y File name", Con_FilenameRead }
+		,{ "+Z File name", Con_FilenameRead }
+		,{ "-Z File name", Con_FilenameRead } }
+		}
+
+		,
+		{
+			"ImageWrite", hcFilter, 6
+			,{ { "", Con_Float4 } }
+		,{}
+		,{ { "File name", Con_FilenameWrite },{ "Format", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0DDS\0KTX\0" }
+		,{ "Quality", Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best\0 1\0 2\0 3\0 4\0 5 .. Medium\0 6\0 7\0 8\0 9 .. Lowest\0" }
+		,{ "Width", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+		,{ "Height", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+		,{ "Export", Con_ForceEvaluate } }
+		}
+
+		,
+		{
+			"Thumbnail", hcFilter, 6
+			,{ { "", Con_Float4 } }
+		,{}
+		,{ { "Make", Con_ForceEvaluate } }
+		}
+
+		,
+		{
+			"Paint2D", hcPaint, 7
+			,{ { "Brush", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
+		, true
+		, true
+		}
+		,
+		{
+			"Swirl", hcTransform, 0
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Angles", Con_Angle2 } }
+		}
+		,
+		{
+			"Crop", hcTransform, 0
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Quad", Con_Float4, 0.f,1.f,0.f,1.f, false, true } }
+		, true
+		}
+
+		,
+		{
+			"CubemapFilter", hcFilter, 8
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "Lighting Model", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Phong\0Phong BRDF\0Blinn\0Blinn BRDF\0" }
+		,{ "Exclude Base", Con_Bool }
+		,{ "Gloss scale", Con_Int }
+		,{ "Gloss bias", Con_Int }
+		,{ "Face size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "   32\0   64\0  128\0  256\0  512\0 1024\0" }
+		}
+		}
+
+		,
+		{
+			"PhysicalSky", hcGenerator, 8
+			,{}
+		,{ { "", Con_Float4 } }
+		,{ { "ambient", Con_Float4 }
+		,{ "lightdir", Con_Float4 }
+		,{ "Kr", Con_Float4 }
+		,{ "rayleigh brightness", Con_Float }
+		,{ "mie brightness", Con_Float }
+		,{ "spot brightness", Con_Float }
+		,{ "scatter strength", Con_Float }
+		,{ "rayleigh strength", Con_Float }
+		,{ "mie strength" , Con_Float }
+		,{ "rayleigh collection power", Con_Float }
+		,{ "mie collection power", Con_Float }
+		,{ "mie distribution", Con_Float }
+		,{ "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+			}
+		}
+
+
+		,
+		{
+			"CubemapView", hcGenerator, 8
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f, true },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection\0Isometric\0Cross\0Camera\0" } }
+		}
+
+			,
+			{
+				"EquirectConverter", hcGenerator, 8
+				,{ { "", Con_Float4 } }
+			,{ { "", Con_Float4 } }
+			,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Equirect To Cubemap\0Cubemap To Equirect\0" },
+				{ "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
+			}
+
+	};
+
+
+	for (size_t i = 0; i < gMetaNodes.size(); i++)
+	{
+		gMetaNodesIndices[gMetaNodes[i].mName] = i;
+	}
 }

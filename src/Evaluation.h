@@ -67,45 +67,75 @@ enum EvaluationStatus
 
 struct EvaluationInfo
 {
+	float viewRot[16];
+
 	int targetIndex;
 	int forcedDirty;
 	int uiPass;
 	int padding;
 	float mouse[4];
 	int inputIndices[8];
+	float pad2[4];
+	
+	float viewport[2];
+};
+
+struct TextureFormat
+{
+	enum Enum
+	{
+		BGR8,
+		RGB8,
+		RGB16,
+		RGB16F,
+		RGB32F,
+		RGBE,
+
+		BGRA8,
+		RGBA8,
+		RGBA16,
+		RGBA16F,
+		RGBA32F,
+
+		RGBM,
+
+		Count,
+		Null = -1,
+	};
 };
 
 typedef struct Image_t
 {
-	int width, height;
-	int components;
-	void *bits;
+	void *mBits;
+	int mWidth, mHeight;
+	uint32_t mDataSize;
+	uint8_t mNumMips;
+	uint8_t mNumFaces;
+	uint8_t mFormat;
 } Image;
 
 class RenderTarget
 {
 
 public:
-	RenderTarget() : mGLTexID(0)
+	RenderTarget() : mGLTexID(0), mFbo(0), mRefCount(0)
 	{
-		fbo = 0;
-		depthbuffer = 0;
-		mWidth = mHeight = 0;
-		mRefCount = 0;
+		memset(&mImage, 0, sizeof(Image_t));
 	}
 
-	void initBuffer(int width, int height, bool hasZBuffer);
-	void bindAsTarget() const;
+	void InitBuffer(int width, int height);
+	void InitCube(int width);
+	void BindAsTarget() const;
+	void BindAsCubeTarget() const;
+	void BindCubeFace(size_t face);
+	void Destroy();
+	void CheckFBO();
 
-	TextureID txDepth;
+
+	Image_t mImage;
 	unsigned int mGLTexID;
-	int mWidth, mHeight;
-	TextureID fbo;
-	TextureID depthbuffer;
+	TextureID mFbo;
 	int mRefCount;
-	void destroy();
-
-	void checkFBO();
 };
 
 
@@ -121,7 +151,7 @@ struct Evaluation
 	std::string GetEvaluator(const std::string& filename);
 
 	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
-
+	RenderTarget *GetRenderTarget(size_t target) { return mEvaluationStages[target].mTarget; }
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
@@ -131,9 +161,11 @@ struct Evaluation
 	void DelEvaluationInput(size_t target, int slot);
 	void RunEvaluation(int width, int height, bool forceEvaluation);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
-	void SetTargetDirty(size_t target);
+	void SetTargetDirty(size_t target, bool onlyChild = false);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();
+	bool StageIsProcessing(size_t target) { return mEvaluationStages[target].mbProcessing; }
+	void StageSetProcessing(size_t target, bool processing) { mEvaluationStages[target].mbProcessing = processing; }
 
 	// API
 	static int ReadImage(const char *filename, Image *image);
@@ -141,16 +173,22 @@ struct Evaluation
 	static int WriteImage(const char *filename, Image *image, int format, int quality);
 	static int GetEvaluationImage(int target, Image *image);
 	static int SetEvaluationImage(int target, Image *image);
+	static int SetEvaluationImageCube(int target, Image *image, int cubeFace);
 	static int SetThumbnailImage(Image *image);
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
-	static unsigned int UploadImage(Image *image);
+	static unsigned int UploadImage(Image *image, unsigned int textureId, int cubeFace = -1);
 	static int Evaluate(int target, int width, int height, Image *image);
 	static void SetBlendingMode(int target, int blendSrc, int blendDst);
 	static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);
 	static int SetNodeImage(int target, Image *image);
 	static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 	static int SetEvaluationSize(int target, int imageWidth, int imageHeight);
+	static int SetEvaluationCubeSize(int target, int faceWidth);
+	static int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
+	static int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
+	static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
+	static void SetProcessing(int target, int processing);
 
 	static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
 	// synchronous texture cache
@@ -205,6 +243,9 @@ protected:
 	};
 	struct EvaluationStage
 	{
+#ifdef _DEBUG
+		std::string mNodeTypename;
+#endif
 		RenderTarget *mTarget;
 		size_t mNodeType;
 		unsigned int mParametersBuffer;
@@ -214,6 +255,8 @@ protected:
 		std::vector<InputSampler> mInputSamplers;
 		bool mbDirty;
 		bool mbForceEval;
+		bool mbProcessing;
+		bool mbFreeSizing;
 		int mEvaluationMask; // see EvaluationMask
 		int mUseCountByOthers;
 		int mBlendingSrc;
@@ -239,5 +282,9 @@ protected:
 	std::vector<RenderTarget*> mAllocatedRenderTargets;
 	void SetEvaluationMemoryMode(int mode);
 	void RecurseGetUse(size_t target, std::vector<size_t>& usedNodes);
+
+	// ui callback shaders
+	unsigned int mProgressShader;
+	unsigned int mDisplayCubemapShader;
 
 };

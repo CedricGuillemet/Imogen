@@ -38,13 +38,13 @@
 #include "stb_image_write.h"
 
 TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
-
+unsigned int gCPUCount = 1;
 int Log(const char *szFormat, ...)
 {
 	va_list ptr_arg;
 	va_start(ptr_arg, szFormat);
 
-	char buf[1024];
+	static char buf[10240];
 	vsprintf(buf, szFormat, ptr_arg);
 
 	static FILE *fp = fopen("log.txt", "wt");
@@ -98,6 +98,7 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
 	{
 	case GL_DEBUG_SEVERITY_LOW:
 		severityStr = "LOW";
+		return;
 		break;
 	case GL_DEBUG_SEVERITY_MEDIUM:
 		severityStr = "MEDIUM";
@@ -117,6 +118,8 @@ enki::TaskScheduler g_TS;
 int main(int, char**)
 {
 	g_TS.Initialize();
+	LoadMetaNodes();
+
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);
 	// Setup SDL
@@ -149,7 +152,7 @@ int main(int, char**)
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	SDL_DisplayMode current;
 	SDL_GetCurrentDisplayMode(0, &current);
-	SDL_Window* window = SDL_CreateWindow("Imogen 0.1.1", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+	SDL_Window* window = SDL_CreateWindow("Imogen 0.4.0", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 
@@ -201,6 +204,8 @@ int main(int, char**)
 	gEvaluation.SetEvaluators(imogen.mEvaluatorFiles);
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
+
+	gCPUCount = SDL_GetCPUCount();
 
 	// Main loop
 	bool done = false;

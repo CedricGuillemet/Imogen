@@ -29,6 +29,7 @@
 #include <vector>
 #include <stdint.h>
 #include <string>
+#include <map>
 
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
@@ -67,8 +68,9 @@ struct InputSampler
 struct MaterialNode
 {
 	uint32_t mType;
-	uint32_t mPosX;
-	uint32_t mPosY;
+	std::string mTypeName;
+	int32_t mPosX;
+	int32_t mPosY;
 	std::vector<InputSampler> mInputSamplers;
 	std::vector<uint8_t> mParameters;
 	std::vector<uint8_t> mImage;
@@ -76,6 +78,17 @@ struct MaterialNode
 	// runtime
 	unsigned int mRuntimeUniqueId;
 };
+
+struct MaterialNodeRug
+{
+	int32_t mPosX;
+	int32_t mPosY;
+	int32_t mSizeX;
+	int32_t mSizeY;
+	uint32_t mColor;
+	std::string mComment;
+};
+
 struct MaterialConnection
 {
 	uint32_t mInputNode;
@@ -88,6 +101,7 @@ struct Material
 	std::string mName;
 	std::string mComment;
 	std::vector<MaterialNode> mMaterialNodes;
+	std::vector<MaterialNodeRug> mMaterialRugs;
 	std::vector<MaterialConnection> mMaterialConnections;
 	std::vector<uint8_t> mThumbnail;
 
@@ -105,6 +119,63 @@ struct Library
 
 void LoadLib(Library *library, const char *szFilename);
 void SaveLib(Library *library, const char *szFilename);
+
+enum ConTypes
+{
+	Con_Float,
+	Con_Float2,
+	Con_Float3,
+	Con_Float4,
+	Con_Color4,
+	Con_Int,
+	Con_Ramp,
+	Con_Angle,
+	Con_Angle2,
+	Con_Angle3,
+	Con_Angle4,
+	Con_Enum,
+	Con_Structure,
+	Con_FilenameRead,
+	Con_FilenameWrite,
+	Con_ForceEvaluate,
+	Con_Bool,
+	Con_Any,
+};
+
+size_t GetParameterTypeSize(ConTypes paramType);
+
+struct MetaCon
+{
+	std::string mName;
+	int mType;
+};
+
+struct MetaParameter
+{
+	std::string mName;
+	ConTypes mType;
+	float mRangeMinX, mRangeMaxX;
+	float mRangeMinY, mRangeMaxY;
+	bool mbRelative;
+	bool mbQuadSelect;
+	const char* mEnumList;
+};
+
+struct MetaNode
+{
+	std::string mName;
+	uint32_t mHeaderColor;
+	int mCategory;
+	std::vector<MetaCon> mInputs;
+	std::vector<MetaCon> mOutputs;
+	std::vector<MetaParameter> mParams;
+	bool mbHasUI;
+	bool mbSaveTexture;
+};
+
+extern std::vector<MetaNode> gMetaNodes;
+size_t GetMetaNodeIndex(const std::string& metaNodeName);
+void LoadMetaNodes();
 
 unsigned int GetRuntimeId();
 extern Library library;

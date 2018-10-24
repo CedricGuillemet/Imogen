@@ -68,11 +68,19 @@ protected:
 };
 
 void DebugLogText(const char *szText);
+enum CallbackDisplayType
+{
+	CBUI_Node,
+	CBUI_Progress,
+	CBUI_Cubemap
+};
 struct ImogenDrawCallback
 {
-	ImRect mRect;
+	CallbackDisplayType mType;
+	ImRect mClippedRect;
+	ImRect mOrginalRect;
 	size_t mNodeIndex;
 };
 extern std::vector<ImogenDrawCallback> mCallbackRects;
 void InitCallbackRects();
-size_t AddNodeUICallbackRect(const ImRect& rect, size_t nodeIndex);
+size_t AddNodeUICallbackRect(CallbackDisplayType type, const ImRect& rect, size_t nodeIndex);

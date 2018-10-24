@@ -34,7 +34,7 @@ std::string Evaluation::GetEvaluator(const std::string& filename)
 	return mEvaluatorScripts[filename].mText;
 }
 
-Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0)
+Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0), mProgressShader(0), mDisplayCubemapShader(0)
 {
 	
 }
@@ -56,11 +56,16 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	evaluation.mUseCountByOthers = 0;
 	evaluation.mbDirty = true;
 	evaluation.mbForceEval = false;
+	evaluation.mbProcessing = false;
+	evaluation.mbFreeSizing = true;
 	evaluation.mNodeType = nodeType;
 	evaluation.mParametersBuffer = 0;
 	evaluation.mEvaluationMask = 0;
 	evaluation.mBlendingSrc = ONE;
 	evaluation.mBlendingDst = ZERO;
+#ifdef _DEBUG
+	evaluation.mNodeTypename = nodeName;
+#endif
 
 	bool valid(false);
 	auto iter = mEvaluatorScripts.find(nodeName+".glsl");
@@ -139,7 +144,22 @@ void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, b
 		evaluation.mbForceEval = true;
 		SetTargetDirty(index);
 	}
+	// check processing 
+	for (auto& inp : evaluation.mInput.mInputs)
+	{
+		if (inp >= 0)
+		{
+			if (mEvaluationStages[inp].mbProcessing)
+			{
+				evaluation.mbProcessing = true;
+				return;
+			}
+		}
+	}
 
+	evaluation.mbProcessing = false;
+
+	// good to go
 	if (evaluation.mEvaluationMask&EvaluationC)
 		EvaluateC(evaluation, index, evaluationInfo);
 	if (evaluation.mEvaluationMask&EvaluationGLSL)
@@ -156,7 +176,7 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 
 	for (auto* rt : mAllocatedRenderTargets)
 	{
-		rt->destroy();
+		rt->Destroy();
 		delete rt;
 	}
 	mAllocatedRenderTargets.clear();
@@ -244,7 +264,7 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
 
 		if (evaluation.mTarget && !evaluation.mTarget->mGLTexID)
 		{
-			evaluation.mTarget->initBuffer(width, height, false);
+			evaluation.mTarget->InitBuffer(width, height);
 		}
 
 		PerformEvaluationForNode(index, width, height, false, evaluationInfo);
@@ -288,11 +308,12 @@ void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 	mEvaluationOrderList = nodeOrderList;
 }
 
-void Evaluation::SetTargetDirty(size_t target)
+void Evaluation::SetTargetDirty(size_t target, bool onlyChild)
 {
 	if (!mEvaluationStages[target].mbDirty)
 	{
-		mDirtyCount++;
+		if (!onlyChild)
+			mDirtyCount++;
 		mEvaluationStages[target].mbDirty = true;
 	}
 	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
@@ -317,6 +338,8 @@ void Evaluation::SetTargetDirty(size_t target)
 			}
 		}
 	}
+	if (onlyChild)
+		mEvaluationStages[target].mbDirty = false;
 }
 
 void Evaluation::Clear()

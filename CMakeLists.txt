@@ -5,10 +5,6 @@ SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Configuration types" FORCE)
 
-
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(${CMAKE_SOURCE_DIR}/ext)
-
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 
 file(GLOB_RECURSE SRC_FILES
@@ -19,6 +15,8 @@ file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
+	${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
+	${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
 ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
 )

@@ -21,6 +21,8 @@ void main()
 
 layout (std140) uniform EvaluationBlock
 {
+	mat4 viewRot;
+
 	int targetIndex;
 	int forcedDirty;
 	int	uiPass;
@@ -28,6 +30,7 @@ layout (std140) uniform EvaluationBlock
 	vec4 mouse; // x,y, lbut down, rbut down
 	int inputIndices[8];
 	
+	vec2 viewport;
 } EvaluationParam;
 
 
@@ -42,6 +45,7 @@ uniform sampler2D Sampler4;
 uniform sampler2D Sampler5;
 uniform sampler2D Sampler6;
 uniform sampler2D Sampler7;
+uniform samplerCube CubeSampler0;
 
 vec2 Rotate2D(vec2 v, float a) 
 {

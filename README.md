@@ -62,4 +62,6 @@ gl3w - Slavomir Kaslev https://github.com/skaslev/gl3w
 
 TinyDir - https://github.com/cxong/tinydir
 
-OpenGL Image (GLI) - http://gli.g-truc.net
+cmft - cubemap filtering tool - Dario Manesku https://github.com/dariomanesku/cmft
+
+dear imgui color scheme - codz01 https://github.com/ocornut/imgui/issues/1902#issuecomment-429445321

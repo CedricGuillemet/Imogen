@@ -1,11 +1,24 @@
 -------------------------------------------------------------------------------
-Imogen 0.4 - Andromeda Shun
+Imogen 0.4 - codename Andromeda Shun
 
 New:
+- Node graph zoom with mouse wheel
+- cmft used for cubemap filtering
+- dds/ktx load and save
+- cubemap support 
+- physical sky cubemap generator node 
+- cubemap display (projection, fps, isometric) node
+- equirectangular to cubemap converter node
+- small animation display of processing node/background job
+- list, smal icons, big icons display of graph library
+- rugs in graph editor: add colored comments to your graph
+- extract a node preview into a dockable window
 
 Changed:
-
-Fixed:
+- node graph clips nodes and connexions
+- async image  loading
+- dear imgui new docking system
+- new ui dark color scheme
 
 -------------------------------------------------------------------------------
 Imogen 0.3 - codename Cygnus Hyoga

@@ -256,6 +256,7 @@ protected:
 		bool mbDirty;
 		bool mbForceEval;
 		bool mbProcessing;
+		bool mbFreeSizing;
 		int mEvaluationMask; // see EvaluationMask
 		int mUseCountByOthers;
 		int mBlendingSrc;

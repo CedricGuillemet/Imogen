@@ -57,6 +57,7 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	evaluation.mbDirty = true;
 	evaluation.mbForceEval = false;
 	evaluation.mbProcessing = false;
+	evaluation.mbFreeSizing = true;
 	evaluation.mNodeType = nodeType;
 	evaluation.mParametersBuffer = 0;
 	evaluation.mEvaluationMask = 0;

@@ -49,7 +49,7 @@ extern enki::TaskScheduler g_TS;
 static const int SemUV0 = 0;
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
-static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
+static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7", "CubeSampler0" };
 static const unsigned int GLBlends[] = { GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
 	GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_SRC_ALPHA_SATURATE };
 static const unsigned int glInputFormats[] = {
@@ -528,6 +528,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 			cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
 		else if (img.m_format == cmft::TextureFormat::RGB8)
 			cmft::imageConvert(img, cmft::TextureFormat::BGR8);
+		image->mBits = img.m_data;
 		if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
 			return EVAL_ERR;
 	}
@@ -608,6 +609,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	{
 		evaluation.mTarget = new RenderTarget;
 	}
+	evaluation.mbFreeSizing = false;
 	unsigned int texelSize = GetTexelSize(image->mFormat);
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
@@ -662,6 +664,7 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 	{
 		evaluation.mTarget = new RenderTarget;
 	}
+	evaluation.mbFreeSizing = false;
 	evaluation.mTarget->InitCube(image->mWidth);
 
 	UploadImage(image, evaluation.mTarget->mGLTexID, cubeFace);
@@ -1121,26 +1124,38 @@ void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 		int samplerIndex = 0;
-		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+		for (size_t inputIndex = 0; inputIndex < sizeof(samplerName)/sizeof(const char*); inputIndex++)
 		{
 			unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
 			if (parameter == 0xFFFFFFFF)
 				continue;
 			glUniform1i(parameter, samplerIndex);
 			glActiveTexture(GL_TEXTURE0 + samplerIndex);
-			samplerIndex++;
-			int targetIndex = input.mInputs[inputIndex];
+			
+			int targetIndex = input.mInputs[samplerIndex];
 			if (targetIndex < 0)
 			{
 				glBindTexture(GL_TEXTURE_2D, 0);
-				continue;
 			}
-			//assert(!mEvaluations[targetIndex].mbDirty);
-			if (mEvaluationStages[targetIndex].mTarget)
-				glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
-
-			const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
-			TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+			else
+			{
+				auto* tgt = mEvaluationStages[targetIndex].mTarget;
+				if (tgt)
+				{
+					const InputSampler& inputSampler = evaluationStage.mInputSamplers[samplerIndex];
+					if (tgt->mImage.mNumFaces == 1)
+					{
+						glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
+						TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+					}
+					else
+					{
+						glBindTexture(GL_TEXTURE_CUBE_MAP, mEvaluationStages[targetIndex].mTarget->mGLTexID);
+						TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_CUBE_MAP);
+					}
+				}
+			}
+			samplerIndex++;
 		}
 		//
 		mFSQuad.Render();
@@ -1327,9 +1342,11 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
-	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	auto& stage = gEvaluation.mEvaluationStages[target];
+	RenderTarget* renderTarget = stage.mTarget;
 	if (!renderTarget)
 		return EVAL_ERR;
+	stage.mbFreeSizing = false;
 	renderTarget->InitBuffer(imageWidth, imageHeight);
 	return EVAL_OK;
 }
@@ -1338,9 +1355,11 @@ int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
-	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	auto& stage = gEvaluation.mEvaluationStages[target];
+	RenderTarget* renderTarget = stage.mTarget;
 	if (!renderTarget)
 		return EVAL_ERR;
+	stage.mbFreeSizing = false;
 	renderTarget->InitCube(faceWidth);
 	return EVAL_OK;
 }

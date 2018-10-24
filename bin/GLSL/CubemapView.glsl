@@ -15,14 +15,14 @@ vec4 CrossView(vec2 uv)
 	uv.y = 1.0-uv.y;
 	vec3 nd = vec3(0.0,0.0,0.0);
 	
-	if (uv.y>0.333 && uv.y<0.666)
+	if (uv.y>=0.333 && uv.y<=0.666)
 	{
 		uv.x =  -(fract(uv.x*4.0) * 2.0 - 1.0);
 		vec3 d = vec3(uv.x, uv.y*6.0-3.0, 1.0);
 		nd = vec3(d.x*cs.x - d.z*sn.x, d.y, d.x*sn.x + d.z*cs.x);
 	}
 	else
-		if (uv.x>0.25 && uv.x<0.5)
+		if (uv.x>=0.25 && uv.x<=0.5)
 		{
 			uv.y = fract(uv.y*3.0) * 2.0 - 1.0;
 			vec3 d = vec3(uv.x*8.0-3.0, 1.0, uv.y);

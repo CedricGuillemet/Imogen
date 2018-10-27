@@ -43,6 +43,7 @@
 #include "TaskScheduler.h"
 #include "NodesDelegate.h"
 #include "cmft/print.h"
+#include "ffmpegDecode.h"
 
 extern enki::TaskScheduler g_TS;
 
@@ -449,6 +450,7 @@ struct EValuationFunction
 
 extern Evaluation gEvaluation;
 
+
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
 	int components;
@@ -457,9 +459,43 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 	{
 		cmft::Image img;
 		if (!cmft::imageLoad(img, filename))
+		{
+			// ffmpeg
+			FFmpegDecoder decoder;
+
+			if (decoder.OpenFile(std::string(filename)))
+			{
+				int w = decoder.GetWidth();
+				int h = decoder.GetHeight();
+
+			//	for (int i = 0; i < FRAME_COUNT; i++)
+				{
+					AVFrame * frame = decoder.GetNextFrame();
+
+					image->mNumMips = 1;
+					image->mNumFaces = 1;
+					image->mFormat = TextureFormat::RGB8;
+					image->mWidth = frame->width;
+					image->mHeight = frame->height;
+					size_t lineSize = image->mWidth * 3;
+					size_t imgDataSize = lineSize * image->mHeight;
+					image->mBits = (unsigned char*)malloc(imgDataSize);
+					unsigned char *pdst = image->mBits;
+					unsigned char *psrc = frame->data[0];
+					psrc += imgDataSize - lineSize;
+					for (int j = 0; j < image->mHeight; j++)
+					{
+						memcpy(pdst, psrc, lineSize);
+						pdst += lineSize;
+						psrc -= lineSize;
+					}
+					return EVAL_OK;
+				}
+			}
 			return EVAL_ERR;
+		}
 		cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
-		image->mBits = img.m_data;
+		image->mBits = (unsigned char*)img.m_data;
 		image->mWidth = img.m_width;
 		image->mHeight = img.m_height;
 		image->mDataSize = img.m_dataSize;
@@ -528,7 +564,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 			cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
 		else if (img.m_format == cmft::TextureFormat::RGB8)
 			cmft::imageConvert(img, cmft::TextureFormat::BGR8);
-		image->mBits = img.m_data;
+		image->mBits = (unsigned char*)img.m_data;
 		if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
 			return EVAL_ERR;
 	}
@@ -570,7 +606,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	for (int i = 0;i<img.mNumMips;i++)
 		size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 
-	image->mBits = malloc(size);
+	image->mBits = (unsigned char*)malloc(size);
 	image->mDataSize = size;
 	image->mWidth = img.mWidth;
 	image->mHeight = img.mHeight;
@@ -700,7 +736,7 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
 		, gCPUCount))
 		return EVAL_ERR;
 
-	image->mBits = img.m_data;
+	image->mBits = (unsigned char*)img.m_data;
 	image->mDataSize = img.m_dataSize;
 	image->mNumMips = img.m_numMips;
 	image->mNumFaces = img.m_numFaces;

@@ -106,7 +106,7 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-	void *mBits;
+	unsigned char *mBits;
 	int mWidth, mHeight;
 	uint32_t mDataSize;
 	uint8_t mNumMips;

@@ -6,6 +6,7 @@ typedef struct Image_t
 {
 	void *bits;
 	int width, height;
+	int mFrameDuration;
 	//int components;
 	int mDataSize;
 	unsigned char mNumMips;

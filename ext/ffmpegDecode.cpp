@@ -47,6 +47,8 @@ bool FFmpegDecoder::OpenFile (std::string& inputFile)
 		videoFramePerSecond = av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate);
 		// Need for convert time to ffmpeg time.
 		videoBaseTime       = av_q2d(pFormatCtx->streams[videoStreamIndex]->time_base); 
+		videoDuration		= (float)((double)pFormatCtx->streams[videoStreamIndex]->duration * videoBaseTime); 
+		videoFrameDuration = size_t(videoDuration * videoFramePerSecond);
 	}
 
 	if (audioStreamIndex != -1)

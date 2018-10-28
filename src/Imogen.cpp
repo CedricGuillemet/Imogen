@@ -37,6 +37,7 @@
 #include "tinydir.h"
 #include "stb_image.h"
 #include "imgui_stdlib.h"
+#include "ImSequencer.h"
 
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
 extern Evaluation gEvaluation;
@@ -638,6 +639,8 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		ImVec2 nodePos = NodeGraphGetNodePos(i);
 		dstNode.mPosX = int32_t(nodePos.x);
 		dstNode.mPosY = int32_t(nodePos.y);
+		dstNode.mFrameStart = srcNode.mStartFrame;
+		dstNode.mFrameEnd = srcNode.mEndFrame;
 	}
 	auto links = NodeGraphGetLinks();
 	material.mMaterialConnections.resize(links.size());
@@ -678,7 +681,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
 		{
 			MaterialNode& node = material.mMaterialNodes[i];
-			NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY);
+			NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
 			if (!node.mImage.empty())
 			{
 				TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
@@ -770,6 +773,40 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	ImGui::EndChild();
 }
 
+struct MySequence : public ImSequencer::SequenceInterface
+{
+	virtual int GetFrameCount() const { return int(mNodeGraphDelegate.ComputeTimelineLength()); }
+	virtual int GetItemCount() const { return (int)gEvaluation.GetStagesCount(); }
+
+	virtual int GetItemTypeCount() const { return 0; }
+	virtual const char *GetItemTypeName(int typeIndex) const { return NULL; }
+	virtual const char *GetItemLabel(int index) const
+	{
+		size_t nodeType = gEvaluation.GetStageType(index);
+		return gMetaNodes[nodeType].mName.c_str();
+	}
+
+	virtual void Get(int index, int** start, int** end, int *type, unsigned int *color)
+	{
+		size_t nodeType = gEvaluation.GetStageType(index);
+
+		if (color)
+			*color = gMetaNodes[nodeType].mHeaderColor;
+		if (start)
+			*start = &mNodeGraphDelegate.mNodes[index].mStartFrame;
+		if (end)
+			*end = &mNodeGraphDelegate.mNodes[index].mEndFrame;
+		if (type)
+			*type = int(nodeType);
+	}
+	virtual void Add(int type) { };
+	virtual void Del(int index) { }
+	virtual void Duplicate(int index) { }
+
+	MySequence(TileNodeEditGraphDelegate &nodeGraphDelegate) : mNodeGraphDelegate(nodeGraphDelegate) {}
+	TileNodeEditGraphDelegate &mNodeGraphDelegate;
+};
+
 void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -851,6 +888,20 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		if (ImGui::Begin("Logs"))
 		{
 			ImguiAppLog::Log->DrawEmbedded();
+		}
+		ImGui::End();
+
+		if (ImGui::Begin("Timeline"))
+		{
+			MySequence mySequence(nodeGraphDelegate);
+			int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
+			static int firstFrame = 0;
+
+			Sequencer(&mySequence, NULL, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND);
+			if (selectedEntry != -1)
+			{
+				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
+			}
 		}
 		ImGui::End();
 

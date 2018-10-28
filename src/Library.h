@@ -75,6 +75,9 @@ struct MaterialNode
 	std::vector<uint8_t> mParameters;
 	std::vector<uint8_t> mImage;
 
+	uint32_t mFrameStart;
+	uint32_t mFrameEnd;
+
 	// runtime
 	unsigned int mRuntimeUniqueId;
 };

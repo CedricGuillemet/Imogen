@@ -366,3 +366,11 @@ void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rB
 	ev.mLButDown = lButDown;
 	ev.mRButDown = rButDown;
 }
+
+size_t Evaluation::GetEvaluationImageDuration(size_t target)
+{
+	auto& stage = mEvaluationStages[target];
+	if (!stage.mTarget)
+		return 1;
+	return stage.mTarget->mImage.mFrameDuration;
+}

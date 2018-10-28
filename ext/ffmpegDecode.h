@@ -14,7 +14,7 @@ class FFmpegDecoder
   public: FFmpegDecoder() : pImgConvertCtx(NULL), audioBaseTime(0.0), videoBaseTime(0.0),
           videoFramePerSecond(0.0), isOpen(false), audioStreamIndex(-1), videoStreamIndex(-1),
           pAudioCodec(NULL), pAudioCodecCtx(NULL), pVideoCodec(NULL), pVideoCodecCtx(NULL),
-          pFormatCtx(NULL) {;}
+          pFormatCtx(NULL), videoDuration(0.f) {}
 
   // destructor.
   public: virtual ~FFmpegDecoder() 
@@ -31,6 +31,8 @@ class FFmpegDecoder
   // Return next frame FFmpeg.
   public: virtual AVFrame * GetNextFrame();
 
+		  float GetDuration() const { return videoDuration;  }
+		  size_t GetFrameDuration() const { return videoFrameDuration; }
   public: int GetWidth()
   {
     return width;
@@ -103,6 +105,9 @@ class FFmpegDecoder
   
   // Height of image
   private: int height;
+
+		   float videoDuration;
+		   size_t videoFrameDuration;
 };
 
 #endif

@@ -59,6 +59,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		void *mParameters;
 		size_t mParametersSize;
 		unsigned int mRuntimeUniqueId;
+		int mStartFrame, mEndFrame;
 		std::vector<InputSampler> mInputSamplers;
 	};
 
@@ -93,18 +94,23 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	{
 		return mEvaluation.GetEvaluationTexture(mNodes[index].mEvaluationTarget);
 	}
+
 	virtual void AddNode(size_t type)
 	{
-		size_t index = mNodes.size();
+		const size_t index			= mNodes.size();
+		const size_t paramsSize		= ComputeNodeParametersSize(type);
+		const size_t inputCount		= gMetaNodes[type].mInputs.size();
+
 		ImogenNode node;
-		node.mEvaluationTarget = mEvaluation.AddEvaluation(type, gMetaNodes[type].mName);
-		node.mRuntimeUniqueId = GetRuntimeId();
-		node.mType = type;
-		size_t paramsSize = ComputeNodeParametersSize(type);
-		node.mParameters = malloc(paramsSize);
-		node.mParametersSize = paramsSize;
+		node.mEvaluationTarget		= mEvaluation.AddEvaluation(type, gMetaNodes[type].mName);
+		node.mRuntimeUniqueId		= GetRuntimeId();
+		node.mType					= type;
+		node.mParameters			= malloc(paramsSize);
+		node.mParametersSize		= paramsSize;
+		node.mStartFrame			= 0;
+		node.mEndFrame				= 0;
+
 		memset(node.mParameters, 0, paramsSize);
-		size_t inputCount = gMetaNodes[type].mInputs.size();
 		node.mInputSamplers.resize(inputCount);
 		mNodes.push_back(node);
 
@@ -304,6 +310,23 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			evaluationInfo.uiPass = 0;
 			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
 		}
+	}
+	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd)
+	{
+		ImogenNode & node = mNodes[index];
+		node.mStartFrame = frameStart;
+		node.mEndFrame = frameEnd;
+	}
+
+	size_t ComputeTimelineLength() const
+	{
+		int len = 0;
+		for (const ImogenNode& node : mNodes)
+		{
+			len = ImMax(len, node.mEndFrame);
+			len = ImMax(len, int(node.mStartFrame + mEvaluation.GetEvaluationImageDuration(node.mEvaluationTarget)));
+		}
+		return size_t(len);
 	}
 
 	virtual void DoForce()

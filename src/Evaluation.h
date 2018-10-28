@@ -106,8 +106,12 @@ struct TextureFormat
 
 typedef struct Image_t
 {
+	Image_t() : mFrameDuration(1)
+	{}
+
 	unsigned char *mBits;
 	int mWidth, mHeight;
+	int mFrameDuration;
 	uint32_t mDataSize;
 	uint8_t mNumMips;
 	uint8_t mNumFaces;
@@ -152,6 +156,9 @@ struct Evaluation
 
 	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
 	RenderTarget *GetRenderTarget(size_t target) { return mEvaluationStages[target].mTarget; }
+	size_t GetStagesCount() const { return mEvaluationStages.size(); }
+	size_t GetStageType(size_t target) const { return mEvaluationStages[target].mNodeType; }
+	size_t GetEvaluationImageDuration(size_t target);
 	void DelEvaluationTarget(size_t target);
 	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);

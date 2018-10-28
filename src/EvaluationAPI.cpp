@@ -480,6 +480,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 					size_t lineSize = image->mWidth * 3;
 					size_t imgDataSize = lineSize * image->mHeight;
 					image->mBits = (unsigned char*)malloc(imgDataSize);
+					image->mFrameDuration = int(decoder.GetFrameDuration());
 					unsigned char *pdst = image->mBits;
 					unsigned char *psrc = frame->data[0];
 					psrc += imgDataSize - lineSize;
@@ -613,6 +614,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	image->mNumMips = img.mNumMips;
 	image->mFormat = img.mFormat;
 	image->mNumFaces = img.mNumFaces;
+	image->mFrameDuration = 1;
 
 	glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
 	unsigned char *ptr = (unsigned char *)image->mBits;
@@ -687,6 +689,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
 	}
+	evaluation.mTarget->mImage.mFrameDuration = image->mFrameDuration;
 	gEvaluation.SetTargetDirty(target, true);
 	return EVAL_OK;
 }

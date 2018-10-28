@@ -182,7 +182,7 @@ void LoadLib(Library *library, const char *szFilename)
 		for (auto& node : material.mMaterialNodes)
 		{
 			node.mRuntimeUniqueId = GetRuntimeId();
-			if (loadSer.dataVersion > v_nodeTypeName)
+			if (loadSer.dataVersion >= v_nodeTypeName)
 			{
 				node.mType = uint32_t(GetMetaNodeIndex(node.mTypeName));
 			}
@@ -241,7 +241,7 @@ std::map<std::string, size_t> gMetaNodesIndices;
 
 size_t GetMetaNodeIndex(const std::string& metaNodeName)
 {
-	auto iter = gMetaNodesIndices.find(metaNodeName);
+	auto iter = gMetaNodesIndices.find(metaNodeName.c_str());
 	if (iter == gMetaNodesIndices.end())
 		return -1;
 	return iter->second;
@@ -459,7 +459,7 @@ void LoadMetaNodes()
 			"ImageWrite", hcFilter, 6
 			,{ { "", Con_Float4 } }
 		,{}
-		,{ { "File name", Con_FilenameWrite },{ "Format", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0DDS\0KTX\0" }
+		,{ { "File name", Con_FilenameWrite },{ "Format", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0DDS\0KTX\0GIF\0" }
 		,{ "Quality", Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best\0 1\0 2\0 3\0 4\0 5 .. Medium\0 6\0 7\0 8\0 9 .. Lowest\0" }
 		,{ "Width", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
 		,{ "Height", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }

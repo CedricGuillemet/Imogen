@@ -41,7 +41,7 @@
 
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
 extern Evaluation gEvaluation;
-
+int gEvaluationTime = 0;
 extern enki::TaskScheduler g_TS;
 
 struct ImguiAppLog
@@ -896,12 +896,17 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			MySequence mySequence(nodeGraphDelegate);
 			int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
 			static int firstFrame = 0;
-			static int gCurrentFrame = 0;
+			int gCurrentFrame = gEvaluationTime;
 
 			Sequencer(&mySequence, &gCurrentFrame, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
 			if (selectedEntry != -1)
 			{
 				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
+			}
+			if (gCurrentFrame != gEvaluationTime)
+			{
+				gEvaluationTime = gCurrentFrame;
+				nodeGraphDelegate.SetTime(gCurrentFrame);
 			}
 		}
 		ImGui::End();

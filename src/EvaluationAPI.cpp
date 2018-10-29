@@ -187,6 +187,7 @@ void RenderTarget::InitBuffer(int width, int height)
 	mImage.mHeight = height;
 	mImage.mNumMips = 1;
 	mImage.mNumFaces = 1;
+	mImage.mStream = NULL;
 	mImage.mFormat = TextureFormat::RGBA8;
 
 	glGenFramebuffers(1, &mFbo);
@@ -221,6 +222,7 @@ void RenderTarget::InitCube(int width)
 	mImage.mHeight = width;
 	mImage.mNumMips = 1;
 	mImage.mNumFaces = 6;
+	mImage.mStream = NULL;
 	mImage.mFormat = TextureFormat::RGBA8;
 
 	glGenFramebuffers(1, &mFbo);
@@ -450,6 +452,35 @@ struct EValuationFunction
 
 extern Evaluation gEvaluation;
 
+Image_t Evaluation::EvaluationStream::DecodeImage()
+{
+	AVFrame * frame;
+	//for(int i=0;i<50;i++)
+		frame = decoder.GetNextFrame();
+
+	Image_t image;
+	image.mNumMips = 1;
+	image.mNumFaces = 1;
+	image.mFormat = TextureFormat::RGB8;
+	image.mWidth = frame->width;
+	image.mHeight = frame->height;
+	image.mStream = this;
+	image.mFrameDuration = int(decoder.GetFrameDuration());
+	size_t lineSize = image.mWidth * 3;
+	size_t imgDataSize = lineSize * image.mHeight;
+	image.mBits = (unsigned char*)malloc(imgDataSize);
+
+	unsigned char *pdst = image.mBits;
+	unsigned char *psrc = frame->data[0];
+	psrc += imgDataSize - lineSize;
+	for (int j = 0; j < image.mHeight; j++)
+	{
+		memcpy(pdst, psrc, lineSize);
+		pdst += lineSize;
+		psrc -= lineSize;
+	}
+	return image;
+}
 
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
@@ -460,39 +491,14 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		cmft::Image img;
 		if (!cmft::imageLoad(img, filename))
 		{
-			// ffmpeg
-			FFmpegDecoder decoder;
-
-			if (decoder.OpenFile(std::string(filename)))
+			EvaluationStream *stream = new EvaluationStream;
+			if (stream->decoder.OpenFile(std::string(filename)))
 			{
-				int w = decoder.GetWidth();
-				int h = decoder.GetHeight();
-
-			//	for (int i = 0; i < FRAME_COUNT; i++)
-				{
-					AVFrame * frame = decoder.GetNextFrame();
-
-					image->mNumMips = 1;
-					image->mNumFaces = 1;
-					image->mFormat = TextureFormat::RGB8;
-					image->mWidth = frame->width;
-					image->mHeight = frame->height;
-					size_t lineSize = image->mWidth * 3;
-					size_t imgDataSize = lineSize * image->mHeight;
-					image->mBits = (unsigned char*)malloc(imgDataSize);
-					image->mFrameDuration = int(decoder.GetFrameDuration());
-					unsigned char *pdst = image->mBits;
-					unsigned char *psrc = frame->data[0];
-					psrc += imgDataSize - lineSize;
-					for (int j = 0; j < image->mHeight; j++)
-					{
-						memcpy(pdst, psrc, lineSize);
-						pdst += lineSize;
-						psrc -= lineSize;
-					}
-					return EVAL_OK;
-				}
+				stream->decoder.Seek(-50);
+				*image = stream->DecodeImage();
+				return EVAL_OK;
 			}
+			delete stream;
 			return EVAL_ERR;
 		}
 		cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
@@ -503,6 +509,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		image->mNumMips = img.m_numMips;
 		image->mNumFaces = img.m_numFaces;
 		image->mFormat = img.m_format;
+		image->mStream = NULL;
 
 		return EVAL_OK;
 	}
@@ -512,6 +519,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 	image->mNumMips = 1;
 	image->mNumFaces = 1;
 	image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
+	image->mStream = NULL;
 
 	return EVAL_OK;
 }
@@ -614,6 +622,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	image->mNumMips = img.mNumMips;
 	image->mFormat = img.mFormat;
 	image->mNumFaces = img.mNumFaces;
+	image->mStream = img.mStream;
 	image->mFrameDuration = 1;
 
 	glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
@@ -690,6 +699,11 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 
 	}
 	evaluation.mTarget->mImage.mFrameDuration = image->mFrameDuration;
+	evaluation.mTarget->mImage.mStream = image->mStream;
+
+	// not a big fan of this
+	if (image->mFrameDuration > 1)
+		TileNodeEditGraphDelegate::GetInstance()->SetTimeDuration(target, image->mFrameDuration);
 	gEvaluation.SetTargetDirty(target, true);
 	return EVAL_OK;
 }
@@ -746,7 +760,7 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
 	image->mWidth = img.m_width;
 	image->mHeight = img.m_height;
 	image->mFormat = img.m_format;
-	
+	image->mStream = NULL;
 	return EVAL_OK;
 }
 

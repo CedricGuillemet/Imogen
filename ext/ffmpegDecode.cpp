@@ -8,12 +8,16 @@
 
 #define MAX_AUDIO_PACKET (2 * 1024 * 1024)
 
+void FFmpegDecoder::RegisterAll()
+{
+	// Register all components
+	av_register_all();
+}
+
 bool FFmpegDecoder::OpenFile (std::string& inputFile)
 {
 	CloseFile();
 
-	// Register all components
-	av_register_all();
 
 	// Open media file.
 	if (avformat_open_input(&pFormatCtx, inputFile.c_str(), NULL, NULL) != 0)
@@ -364,4 +368,19 @@ int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t*
 	}	
 
 	return decodedSize;
+}
+
+bool FFmpegDecoder::Seek(size_t frame)
+{
+	double m_out_start_time = frame / videoFramePerSecond;
+	int flgs = AVSEEK_FLAG_ANY;
+
+	auto m_in_vid_strm = pFormatCtx->streams[videoStreamIndex];
+
+	int seek_ts = (m_out_start_time*(m_in_vid_strm->time_base.den)) / (m_in_vid_strm->time_base.num);
+	if (av_seek_frame(pFormatCtx, videoStreamIndex, frame, flgs) < 0)
+	{
+		return false;
+	}
+	return true;
 }

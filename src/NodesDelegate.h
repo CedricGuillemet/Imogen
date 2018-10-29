@@ -318,6 +318,20 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		node.mEndFrame = frameEnd;
 	}
 
+	void SetTimeDuration(size_t index, int duration)
+	{
+		ImogenNode & node = mNodes[index];
+		node.mEndFrame = node.mStartFrame + duration;
+	}
+
+	void SetTime(int time)
+	{
+		for (const ImogenNode& node : mNodes)
+		{
+			mEvaluation.SetStageLocalTime(node.mEvaluationTarget, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame));
+		}
+	}
+
 	size_t ComputeTimelineLength() const
 	{
 		int len = 0;

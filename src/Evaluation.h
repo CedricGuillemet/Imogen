@@ -32,6 +32,7 @@
 #include "Imogen.h"
 #include <string.h>
 #include <stdio.h>
+#include "ffmpegDecode.h"
 
 extern int Log(const char *szFormat, ...);
 
@@ -106,7 +107,7 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-	Image_t() : mFrameDuration(1)
+	Image_t() : mFrameDuration(1), mStream(nullptr)
 	{}
 
 	unsigned char *mBits;
@@ -116,6 +117,7 @@ typedef struct Image_t
 	uint8_t mNumMips;
 	uint8_t mNumFaces;
 	uint8_t mFormat;
+	void* mStream;
 } Image;
 
 class RenderTarget
@@ -173,6 +175,7 @@ struct Evaluation
 	void Clear();
 	bool StageIsProcessing(size_t target) { return mEvaluationStages[target].mbProcessing; }
 	void StageSetProcessing(size_t target, bool processing) { mEvaluationStages[target].mbProcessing = processing; }
+	void SetStageLocalTime(size_t target, int localTime);
 
 	// API
 	static int ReadImage(const char *filename, Image *image);
@@ -248,12 +251,19 @@ protected:
 		EvaluationC    = 1 << 0,
 		EvaluationGLSL = 1 << 1,
 	};
+	struct EvaluationStream
+	{
+		FFmpegDecoder decoder;
+		Image_t DecodeImage();
+	};
+
 	struct EvaluationStage
 	{
 #ifdef _DEBUG
 		std::string mNodeTypename;
 #endif
 		RenderTarget *mTarget;
+		EvaluationStream *mStream;
 		size_t mNodeType;
 		unsigned int mParametersBuffer;
 		void *mParameters;
@@ -268,6 +278,7 @@ protected:
 		int mUseCountByOthers;
 		int mBlendingSrc;
 		int mBlendingDst;
+		int mLocalTime;
 		// mouse
 		float mRx;
 		float mRy;

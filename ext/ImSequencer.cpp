@@ -78,7 +78,7 @@ namespace ImSequencer
 			draw_list->AddRectFilled(backgroundRect.Min, backgroundRect.Max, 0xFF262222, 0);
 
 			// current frame top
-			ImRect topRect(ImVec2(canvas_pos.x + legendWidth, canvas_pos.y), ImVec2(canvas_size.x, canvas_pos.y + ItemHeight));
+			ImRect topRect(ImVec2(canvas_pos.x + legendWidth, canvas_pos.y), ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + ItemHeight));
 
 			if (sequenceOptions&SEQUENCER_CHANGE_FRAME && currentFrame && *currentFrame >= 0 && topRect.Contains(io.MousePos) && io.MouseDown[0])
 			{

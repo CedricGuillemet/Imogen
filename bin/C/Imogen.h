@@ -12,6 +12,7 @@ typedef struct Image_t
 	unsigned char mNumMips;
 	unsigned char mNumFaces;
 	unsigned char mFormat;
+	void *mStream;
 } Image;
 
 typedef struct Evaluation_t

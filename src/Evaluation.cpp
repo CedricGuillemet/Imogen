@@ -52,19 +52,21 @@ void Evaluation::Finish()
 size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 {
 	EvaluationStage evaluation;
-	evaluation.mTarget = NULL;
-	evaluation.mUseCountByOthers = 0;
-	evaluation.mbDirty = true;
-	evaluation.mbForceEval = false;
-	evaluation.mbProcessing = false;
-	evaluation.mbFreeSizing = true;
-	evaluation.mNodeType = nodeType;
-	evaluation.mParametersBuffer = 0;
-	evaluation.mEvaluationMask = 0;
-	evaluation.mBlendingSrc = ONE;
-	evaluation.mBlendingDst = ZERO;
+	evaluation.mTarget				= NULL;
+	evaluation.mStream				= NULL;
+	evaluation.mUseCountByOthers	= 0;
+	evaluation.mbDirty				= true;
+	evaluation.mbForceEval			= false;
+	evaluation.mbProcessing			= false;
+	evaluation.mbFreeSizing			= true;
+	evaluation.mNodeType			= nodeType;
+	evaluation.mParametersBuffer	= 0;
+	evaluation.mEvaluationMask		= 0;
+	evaluation.mBlendingSrc			= ONE;
+	evaluation.mBlendingDst			= ZERO;
+	evaluation.mLocalTime			= 0;
 #ifdef _DEBUG
-	evaluation.mNodeTypename = nodeName;
+	evaluation.mNodeTypename		= nodeName;
 #endif
 
 	bool valid(false);
@@ -373,4 +375,24 @@ size_t Evaluation::GetEvaluationImageDuration(size_t target)
 	if (!stage.mTarget)
 		return 1;
 	return stage.mTarget->mImage.mFrameDuration;
+}
+
+void Evaluation::SetStageLocalTime(size_t target, int localTime)
+{
+	auto& stage = mEvaluationStages[target];
+	stage.mLocalTime = localTime;
+
+	auto tgt = stage.mTarget;
+	if (tgt)
+	{
+		stage.mLocalTime = ImMin(stage.mLocalTime, tgt->mImage.mFrameDuration);
+		if (tgt->mImage.mStream)
+		{
+			auto stream = static_cast<EvaluationStream*>(tgt->mImage.mStream);
+			stream->decoder.Seek(stage.mLocalTime);
+			Image_t image = stream->DecodeImage();
+			SetEvaluationImage(int(target), &image);
+			FreeImage(&image);
+		}
+	}
 }

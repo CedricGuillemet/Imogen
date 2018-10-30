@@ -12,6 +12,7 @@ void FFmpegDecoder::RegisterAll()
 {
 	// Register all components
 	av_register_all();
+
 }
 
 bool FFmpegDecoder::OpenFile (std::string& inputFile)
@@ -378,9 +379,19 @@ bool FFmpegDecoder::Seek(size_t frame)
 	auto m_in_vid_strm = pFormatCtx->streams[videoStreamIndex];
 
 	int seek_ts = (m_out_start_time*(m_in_vid_strm->time_base.den)) / (m_in_vid_strm->time_base.num);
-	if (av_seek_frame(pFormatCtx, videoStreamIndex, frame, flgs) < 0)
+	if (av_seek_frame(pFormatCtx, videoStreamIndex, seek_ts, flgs) < 0)
 	{
 		return false;
 	}
+	if (av_seek_frame(pFormatCtx, audioStreamIndex, seek_ts, flgs) < 0)
+	{
+		return false;
+	}
+
+	//packet_queue_flush(&is->audioq);
+	//packet_queue_put(&is->audioq, &flush_pkt);
+
+	//avcodec_flush_buffers(pVideoCodecCtx);
+	//avcodec_flush_buffers(pAudioCodecCtx);
 	return true;
 }

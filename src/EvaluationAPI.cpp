@@ -494,8 +494,11 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 			EvaluationStream *stream = new EvaluationStream;
 			if (stream->decoder.OpenFile(std::string(filename)))
 			{
-				stream->decoder.Seek(-50);
+				
+				//stream->decoder.Seek(1);
 				*image = stream->DecodeImage();
+				//stream->decoder.Seek(50);
+				//*image = stream->DecodeImage();
 				return EVAL_OK;
 			}
 			delete stream;

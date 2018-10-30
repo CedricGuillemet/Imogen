@@ -39,16 +39,10 @@ class FFmpegDecoder
   // Return next frame FFmpeg.
   AVFrame * GetNextFrame();
 
-		  float GetDuration() const { return videoDuration;  }
-		  size_t GetFrameDuration() const { return videoFrameDuration; }
-  int GetWidth()
-  {
-    return width;
-  }
-  int GetHeight()
-  {
-    return height;
-  }
+  float GetDuration() const { return videoDuration;  }
+  size_t GetFrameDuration() const { return videoFrameDuration; }
+  int GetWidth() const { return width; }
+  int GetHeight() const { return height; }
 
   bool Seek(size_t frame);
   // open video stream.
@@ -65,7 +59,7 @@ class FFmpegDecoder
 
 private:
   AVFrame * GetRGBAFrame(AVFrame *pFrameYuv);
-  private: int DecodeAudio(int nStreamIndex, const AVPacket *avpkt, 
+  int DecodeAudio(int nStreamIndex, const AVPacket *avpkt, 
                                     uint8_t* pOutBuffer, size_t nOutBufferSize);
   bool DecodeVideo(const AVPacket *avpkt, AVFrame * pOutFrame);
   
@@ -74,6 +68,7 @@ private:
   AVCodec* pVideoCodec;
   AVCodecContext* pAudioCodecCtx;
   AVCodec* pAudioCodec;
+  static AVPacket flush_pkt;
   int videoStreamIndex;
   int audioStreamIndex;
   bool isOpen;

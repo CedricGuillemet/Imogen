@@ -454,7 +454,7 @@ extern Evaluation gEvaluation;
 
 Image_t Evaluation::EvaluationStream::DecodeImage()
 {
-	decoder.read_frame(gEvaluationTime + 1);
+	decoder.ReadFrame(gEvaluationTime + 1);
 	Image_t image;
 	image.mNumMips = 1;
 	image.mNumFaces = 1;
@@ -468,7 +468,7 @@ Image_t Evaluation::EvaluationStream::DecodeImage()
 	image.mBits = (unsigned char*)malloc(imgDataSize);
 
 	unsigned char *pdst = image.mBits;
-	unsigned char *psrc = (unsigned char*)decoder.getRGBData();
+	unsigned char *psrc = (unsigned char*)decoder.GetRGBData();
 	
 	psrc += imgDataSize - lineSize;
 	for (int j = 0; j < image.mHeight; j++)
@@ -490,7 +490,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		if (!cmft::imageLoad(img, filename))
 		{
 			EvaluationStream *stream = new EvaluationStream;
-			if (stream->decoder.open(std::string(filename)))
+			if (stream->decoder.Open(std::string(filename)))
 			{
 				*image = stream->DecodeImage();
 				return EVAL_OK;

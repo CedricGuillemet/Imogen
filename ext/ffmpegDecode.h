@@ -7,22 +7,24 @@
 class FFmpegDecoder
 { 
 public:
-	bool open(const std::string &name);
-	bool close(void);
-	int current_subimage(void) const {
+	static void RegisterAll();
+	FFmpegDecoder() { Init(); }
+	bool Open(const std::string &name);
+	bool Close(void);
+	int CurrentSubimage(void) const {
 		return m_subimage;
 	}
-	bool seek_subimage(int subimage, int miplevel);
+	bool SeekSubimage(int subimage, int miplevel);
 
-	void *getRGBData();
-	void read_frame(int pos);
+	void *GetRGBData();
+	void ReadFrame(int pos);
 #if 0
 	const char *metadata(const char * key);
 	bool has_metadata(const char * key);
 #endif
-	bool seek(int pos);
-	double fps() const;
-	int64_t time_stamp(int pos) const;
+	bool Seek(int pos);
+	double Fps() const;
+	int64_t TimeStamp(int pos) const;
 
 	size_t mWidth, mHeight;
 	size_t mFrameCount;
@@ -53,7 +55,7 @@ private:
 	int64_t m_start_time;
 
 	// init to initialize state
-	void init(void) {
+	void Init(void) {
 		m_filename.clear();
 		m_format_context = 0;
 		m_codec_context = 0;

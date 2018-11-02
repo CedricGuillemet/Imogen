@@ -1,7 +1,3 @@
-/*
-	It is FFmpeg decoder class. Sample for article from unick-soft.ru
-*/
-
 #include "ffmpegDecode.h"
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,1)
@@ -99,7 +95,12 @@ inline int receive_frame(AVCodecContext *avctx, AVFrame *picture,
 
 #include <iostream>
 
-bool FFmpegDecoder::open(const std::string &name)
+void FFmpegDecoder::RegisterAll()
+{
+	av_register_all();
+}
+
+bool FFmpegDecoder::Open(const std::string &name)
 {
 	// Temporary workaround: refuse to open a file whose name does not
 	// indicate that it's a movie file. This avoids the problem that ffmpeg
@@ -109,21 +110,6 @@ bool FFmpegDecoder::open(const std::string &name)
 	// this reader to handle. At some point, we will institute that superior
 	// approach, but in the mean time, this is a quick solution that 90%
 	// does the job.
-	/*
-	bool valid_extension = false;
-	for (int i = 0; ffmpeg_input_extensions[i]; ++i)
-		if (Strutil::ends_with(name, ffmpeg_input_extensions[i])) {
-			valid_extension = true;
-			break;
-		}
-	if (!valid_extension) {
-		//error("\"%s\" could not open input", name);
-		return false;
-	}
-	*/
-
-	//static std::once_flag init_flag;
-	//std::call_once(init_flag, av_register_all);
 
 	const char *file_name = name.c_str();
 	av_log_set_level(AV_LOG_FATAL);
@@ -138,9 +124,12 @@ bool FFmpegDecoder::open(const std::string &name)
 		return false;
 	}
 	m_video_stream = -1;
-	for (unsigned int i = 0; i<m_format_context->nb_streams; i++) {
-		if (stream_codec(i)->codec_type == AVMEDIA_TYPE_VIDEO) {
-			if (m_video_stream < 0) {
+	for (unsigned int i = 0; i<m_format_context->nb_streams; i++) 
+	{
+		if (stream_codec(i)->codec_type == AVMEDIA_TYPE_VIDEO) 
+		{
+			if (m_video_stream < 0) 
+			{
 				m_video_stream = i;
 			}
 			m_video_indexes.push_back(i); // needed for later use
@@ -157,13 +146,15 @@ bool FFmpegDecoder::open(const std::string &name)
 	AVCodecParameters *par = stream_codec(m_video_stream);
 
 	m_codec = avcodec_find_decoder(par->codec_id);
-	if (!m_codec) {
+	if (!m_codec) 
+	{
 		//error("\"%s\" can't find decoder", file_name);
 		return false;
 	}
 
 	m_codec_context = avcodec_alloc_context3(m_codec);
-	if (!m_codec_context) {
+	if (!m_codec_context) 
+	{
 		//error("\"%s\" can't allocate decoder context", file_name);
 		return false;
 	}
@@ -171,7 +162,8 @@ bool FFmpegDecoder::open(const std::string &name)
 	int ret;
 
 	ret = avcodec_parameters_to_context(m_codec_context, par);
-	if (ret < 0) {
+	if (ret < 0) 
+	{
 		//error("\"%s\" unsupported codec", file_name);
 		return false;
 	}
@@ -196,25 +188,29 @@ bool FFmpegDecoder::open(const std::string &name)
 	m_codec_cap_delay = (bool)(m_codec_context->codec->capabilities & CODEC_CAP_DELAY);
 
 	AVStream *stream = m_format_context->streams[m_video_stream];
-	if (stream->r_frame_rate.num != 0 && stream->r_frame_rate.den != 0) {
+	if (stream->r_frame_rate.num != 0 && stream->r_frame_rate.den != 0) 
+	{
 		m_frame_rate = stream->r_frame_rate;
 	}
 
 	mFrameCount = m_frames = stream->nb_frames;
 	m_start_time = stream->start_time;
-	if (!m_frames) {
-		seek(0);
+	if (!m_frames) 
+	{
+		Seek(0);
 		AVPacket pkt;
 		av_init_packet(&pkt);
 		av_read_frame(m_format_context, &pkt);
 		int64_t first_pts = pkt.pts;
 		int64_t max_pts = 0;
 		av_free_packet(&pkt); //because seek(int) uses m_format_context
-		seek(1 << 29);
+		Seek(1 << 29);
 		av_init_packet(&pkt); //Is this needed?
-		while (stream && av_read_frame(m_format_context, &pkt) >= 0) {
-			int64_t current_pts = static_cast<int64_t> (av_q2d(stream->time_base) * (pkt.pts - first_pts) * fps());
-			if (current_pts > max_pts) {
+		while (stream && av_read_frame(m_format_context, &pkt) >= 0) 
+		{
+			int64_t current_pts = static_cast<int64_t> (av_q2d(stream->time_base) * (pkt.pts - first_pts) * Fps());
+			if (current_pts > max_pts) 
+			{
 				max_pts = current_pts + 1;
 			}
 			av_free_packet(&pkt); //Always free before format_context usage
@@ -306,12 +302,14 @@ bool FFmpegDecoder::open(const std::string &name)
 	return true;
 }
 
-bool FFmpegDecoder::seek_subimage(int subimage, int miplevel)
+bool FFmpegDecoder::SeekSubimage(int subimage, int miplevel)
 {
-	if (subimage < 0 || subimage >= m_nsubimages || miplevel > 0) {
+	if (subimage < 0 || subimage >= m_nsubimages || miplevel > 0) 
+	{
 		return false;
 	}
-	if (subimage == m_subimage) {
+	if (subimage == m_subimage) 
+	{
 		return true;
 	}
 	m_subimage = subimage;
@@ -319,12 +317,12 @@ bool FFmpegDecoder::seek_subimage(int subimage, int miplevel)
 	return true;
 }
 
-void *FFmpegDecoder::getRGBData()
+void *FFmpegDecoder::GetRGBData()
 {
 	return m_rgb_frame->data[0];
 }
 
-bool FFmpegDecoder::close(void)
+bool FFmpegDecoder::Close(void)
 {
 	if (m_codec_context)
 		avcodec_close(m_codec_context);
@@ -334,21 +332,25 @@ bool FFmpegDecoder::close(void)
 	av_frame_free(&m_frame); // free after close input
 	av_frame_free(&m_rgb_frame);
 	sws_freeContext(m_sws_rgb_context);
-	init();
+	Init();
 	return true;
 }
 
-void FFmpegDecoder::read_frame(int frame)
+void FFmpegDecoder::ReadFrame(int frame)
 {
-	if (m_last_decoded_pos + 1 != frame) {
-		seek(frame);
+	if (m_last_decoded_pos + 1 != frame) 
+	{
+		Seek(frame);
 	}
 	AVPacket pkt;
 	int finished = 0;
 	int ret = 0;
-	while ((ret = av_read_frame(m_format_context, &pkt)) == 0 || m_codec_cap_delay) {
-		if (pkt.stream_index == m_video_stream) {
-			if (ret < 0 && m_codec_cap_delay) {
+	while ((ret = av_read_frame(m_format_context, &pkt)) == 0 || m_codec_cap_delay) 
+	{
+		if (pkt.stream_index == m_video_stream) 
+		{
+			if (ret < 0 && m_codec_cap_delay) 
+			{
 				pkt.data = NULL;
 				pkt.size = 0;
 			}
@@ -356,11 +358,12 @@ void FFmpegDecoder::read_frame(int frame)
 			finished = receive_frame(m_codec_context, m_frame, &pkt);
 
 			double pts = 0;
-			if (static_cast<int64_t>(m_frame->pkt_pts) != int64_t(AV_NOPTS_VALUE)) {
+			if (static_cast<int64_t>(m_frame->pkt_pts) != int64_t(AV_NOPTS_VALUE)) 
+			{
 				pts = av_q2d(m_format_context->streams[m_video_stream]->time_base) *  m_frame->pkt_pts;
 			}
 
-			int current_frame = int((pts - m_start_time) * fps() + 0.5f); //???
+			int current_frame = int((pts - m_start_time) * Fps() + 0.5f); //???
 																		  //current_frame =   m_frame->display_picture_number;
 			m_last_search_pos = current_frame;
 
@@ -412,27 +415,29 @@ FFmpegDecoder::has_metadata(const char * key)
 }
 #endif
 
-bool FFmpegDecoder::seek(int frame)
+bool FFmpegDecoder::Seek(int frame)
 {
-	int64_t offset = time_stamp(frame);
+	int64_t offset = TimeStamp(frame);
 	int flags = AVSEEK_FLAG_BACKWARD;
 	avcodec_flush_buffers(m_codec_context);
 	av_seek_frame(m_format_context, -1, offset, flags);
 	return true;
 }
 
-int64_t FFmpegDecoder::time_stamp(int frame) const
+int64_t FFmpegDecoder::TimeStamp(int frame) const
 {
-	int64_t timestamp = static_cast<int64_t>((static_cast<double> (frame) / (fps() * av_q2d(m_format_context->streams[m_video_stream]->time_base))));
-	if (static_cast<int64_t>(m_format_context->start_time) != int64_t(AV_NOPTS_VALUE)) {
+	int64_t timestamp = static_cast<int64_t>((static_cast<double> (frame) / (Fps() * av_q2d(m_format_context->streams[m_video_stream]->time_base))));
+	if (static_cast<int64_t>(m_format_context->start_time) != int64_t(AV_NOPTS_VALUE)) 
+	{
 		timestamp += static_cast<int64_t>(static_cast<double> (m_format_context->start_time)*AV_TIME_BASE / av_q2d(m_format_context->streams[m_video_stream]->time_base));
 	}
 	return timestamp;
 }
 
-double FFmpegDecoder::fps() const
+double FFmpegDecoder::Fps() const
 {
-	if (m_frame_rate.den) {
+	if (m_frame_rate.den) 
+	{
 		return av_q2d(m_frame_rate);
 	}
 	return 1.0f;

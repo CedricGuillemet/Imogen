@@ -41,7 +41,7 @@ void main()
 	c1size = mix(0.18, c1size, mixcontrol);
 	c2pos = mix(npos, c2pos, 1.0 - mixcontrol);
 	c2size = mix(0.18, c2size, 1.0 - mixcontrol);
-	vec3 colorbg = vec3(32.0 / 255.0);
+	vec3 colorbg = vec3(60.0 / 255.0);
 	vec3 colorfg = vec3(250.0 / 255.0);
 	vec4 col = vec4(colorbg, 1.0);
 	if (length(npos) < 0.3) 

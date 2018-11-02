@@ -66,7 +66,7 @@ namespace ImSequencer
 				framePixelWidthTarget *= 1.1f;
 		}
 		framePixelWidthTarget = ImClamp(framePixelWidthTarget, 0.1f, 50.f);
-		framePixelWidth = ImLerp(framePixelWidth, framePixelWidthTarget, 0.15f);
+		framePixelWidth = ImLerp(framePixelWidth, framePixelWidthTarget, 0.33f);
 
 		// --
 		if (expanded && !*expanded)

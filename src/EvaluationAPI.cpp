@@ -454,24 +454,22 @@ extern Evaluation gEvaluation;
 
 Image_t Evaluation::EvaluationStream::DecodeImage()
 {
-	AVFrame * frame;
-	//for(int i=0;i<50;i++)
-		frame = decoder.GetNextFrame();
-
+	decoder.read_frame(gEvaluationTime + 1);
 	Image_t image;
 	image.mNumMips = 1;
 	image.mNumFaces = 1;
-	image.mFormat = TextureFormat::RGB8;
-	image.mWidth = frame->width;
-	image.mHeight = frame->height;
+	image.mFormat = TextureFormat::BGR8;
+	image.mWidth = decoder.mWidth;
+	image.mHeight = decoder.mHeight;
 	image.mStream = this;
-	image.mFrameDuration = int(decoder.GetFrameDuration());
+	image.mFrameDuration = decoder.mFrameCount;
 	size_t lineSize = image.mWidth * 3;
 	size_t imgDataSize = lineSize * image.mHeight;
 	image.mBits = (unsigned char*)malloc(imgDataSize);
 
 	unsigned char *pdst = image.mBits;
-	unsigned char *psrc = frame->data[0];
+	unsigned char *psrc = (unsigned char*)decoder.getRGBData();
+	
 	psrc += imgDataSize - lineSize;
 	for (int j = 0; j < image.mHeight; j++)
 	{
@@ -492,13 +490,9 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		if (!cmft::imageLoad(img, filename))
 		{
 			EvaluationStream *stream = new EvaluationStream;
-			if (stream->decoder.OpenFile(std::string(filename)))
+			if (stream->decoder.open(std::string(filename)))
 			{
-				
-				//stream->decoder.Seek(1);
 				*image = stream->DecodeImage();
-				//stream->decoder.Seek(50);
-				//*image = stream->DecodeImage();
 				return EVAL_OK;
 			}
 			delete stream;

@@ -4,394 +4,436 @@
 
 #include "ffmpegDecode.h"
 
-#define min(a,b) (a > b ? b : a)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,1)
+#  define av_frame_alloc  avcodec_alloc_frame
+//Ancient versions used av_freep
+#  if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,59,100)
+#    define av_frame_free   av_freep
+#  else
+#    define av_frame_free   avcodec_free_frame
+#  endif
+#endif
 
-#define MAX_AUDIO_PACKET (2 * 1024 * 1024)
+// PIX_FMT was renamed to AV_PIX_FMT on this version
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(51,74,100)
+#  define AVPixelFormat PixelFormat
+#  define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
+#  define AV_PIX_FMT_RGB48 PIX_FMT_RGB48
+#  define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
+#  define AV_PIX_FMT_YUVJ422P PIX_FMT_YUVJ422P
+#  define AV_PIX_FMT_YUVJ440P PIX_FMT_YUVJ440P
+#  define AV_PIX_FMT_YUVJ444P PIX_FMT_YUVJ444P
+#  define AV_PIX_FMT_YUV420P  PIX_FMT_YUV420P
+#  define AV_PIX_FMT_YUV422P  PIX_FMT_YUV422P
+#  define AV_PIX_FMT_YUV440P  PIX_FMT_YUV440P
+#  define AV_PIX_FMT_YUV444P  PIX_FMT_YUV444P
+#endif
 
-void FFmpegDecoder::RegisterAll()
+// r_frame_rate deprecated in ffmpeg
+// see ffmpeg commit #aba232c for details
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,42,0)
+#  define r_frame_rate avg_frame_rate
+#endif
+
+// Changes for ffmpeg 3.0
+#define USE_FFMPEG_3_0 (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,24,0))
+
+#if USE_FFMPEG_3_0
+#  define av_free_packet av_packet_unref
+#  define avpicture_get_size(fmt,w,h) av_image_get_buffer_size(fmt,w,h,1)
+
+inline int avpicture_fill(AVPicture *picture, uint8_t *ptr,
+	enum AVPixelFormat pix_fmt, int width, int height)
 {
-	// Register all components
-	av_register_all();
-
+	AVFrame *frame = reinterpret_cast<AVFrame *>(picture);
+	return av_image_fill_arrays(frame->data, frame->linesize,
+		ptr, pix_fmt, width, height, 1);
 }
+#endif
 
-bool FFmpegDecoder::OpenFile (std::string& inputFile)
+// Changes for ffmpeg 3.1
+#define USE_FFMPEG_3_1 (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 48, 101))
+
+#if USE_FFMPEG_3_1
+// AVStream::codec was changed to AVStream::codecpar
+#  define stream_codec(ix) m_format_context->streams[(ix)]->codecpar
+// avcodec_decode_video2 was deprecated.
+// This now works by sending `avpkt` to the decoder, which buffers the
+// decoded image in `avctx`. Then `avcodec_receive_frame` will copy the
+// frame to `picture`.
+inline int receive_frame(AVCodecContext *avctx, AVFrame *picture,
+	AVPacket *avpkt)
 {
-	CloseFile();
+	int ret;
 
+	ret = avcodec_send_packet(avctx, avpkt);
 
-	// Open media file.
-	if (avformat_open_input(&pFormatCtx, inputFile.c_str(), NULL, NULL) != 0)
-	{
-		CloseFile();
-		return false;
-	}
+	if (ret < 0)
+		return 0;
 
-	// Get format info.
-	if (avformat_find_stream_info(pFormatCtx, NULL) < 0)
-	{
-		CloseFile();
-		return false;
-	}
+	ret = avcodec_receive_frame(avctx, picture);
 
-	// open video and audio stream.
-	bool hasVideo = OpenVideo();
-	bool hasAudio = OpenAudio(); 
+	if (ret < 0)
+		return 0;
 
-	if (!hasVideo)
-	{
-		CloseFile();
-		return false;
-	}
-
-	isOpen = true;
-
-	// Get file information.
-	if (videoStreamIndex != -1)
-	{
-		videoFramePerSecond = av_q2d(pFormatCtx->streams[videoStreamIndex]->r_frame_rate);
-		// Need for convert time to ffmpeg time.
-		videoBaseTime       = av_q2d(pFormatCtx->streams[videoStreamIndex]->time_base); 
-		videoDuration		= (float)((double)pFormatCtx->streams[videoStreamIndex]->duration * videoBaseTime); 
-		videoFrameDuration = size_t(videoDuration * videoFramePerSecond);
-	}
-
-	if (audioStreamIndex != -1)
-	{
-		audioBaseTime = av_q2d(pFormatCtx->streams[audioStreamIndex]->time_base);
-	}
-
-	return true;
+	return 1;
 }
-
-
-bool FFmpegDecoder::CloseFile()
+#else
+#  define stream_codec(ix) m_format_context->streams[(ix)]->codec
+inline int receive_frame(AVCodecContext *avctx, AVFrame *picture,
+	AVPacket *avpkt)
 {
-	isOpen = false;
-
-	// Close video and audio.
-	CloseVideo();
-	CloseAudio();
-
-	if (pFormatCtx)
-	{
-		avformat_close_input(&pFormatCtx);
-		pFormatCtx = NULL;
-	}
-
-	return true;
+	int ret;
+	avcodec_decode_video2(avctx, picture, &ret, avpkt);
+	return ret;
 }
+#endif
 
 
-AVFrame * FFmpegDecoder::GetNextFrame()
+// Changes for ffmpeg 4.0
+#define USE_FFMPEG_4_0 (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(58, 18, 100))
+
+#if (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(56, 56, 100))
+#  define CODEC_CAP_DELAY AV_CODEC_CAP_DELAY
+#endif
+
+#include <iostream>
+
+bool FFmpegDecoder::open(const std::string &name)
 {
-	AVFrame * res = NULL;
-
-	if (videoStreamIndex != -1)
-	{
-		AVFrame *pVideoYuv = av_frame_alloc();
-		AVPacket packet;
-
-		if (isOpen)
-		{
-			// Read packet.
-			while (av_read_frame(pFormatCtx, &packet) >= 0)
-			{
-				int64_t pts = 0;
-				pts = (packet.dts != AV_NOPTS_VALUE) ? packet.dts : 0;
-
-				if(packet.stream_index == videoStreamIndex)
-				{
-					// Convert ffmpeg frame timestamp to real frame number.
-					int64_t numberFrame = (double)((int64_t)pts - 
-						pFormatCtx->streams[videoStreamIndex]->start_time) * 
-						videoBaseTime * videoFramePerSecond; 
-
-					// Decode frame
-					bool isDecodeComplite = DecodeVideo(&packet, pVideoYuv);
-					if (isDecodeComplite)
-					{
-						res = GetRGBAFrame(pVideoYuv);
-					}
-					break;
-				} 
-				else if (packet.stream_index == audioStreamIndex)
-				{
-					if (packet.dts != AV_NOPTS_VALUE)
-					{
-						int audioFrameSize = MAX_AUDIO_PACKET;
-						uint8_t * pFrameAudio = new uint8_t[audioFrameSize];
-						if (pFrameAudio)
-						{
-							double fCurrentTime = (double)(pts - pFormatCtx->streams[videoStreamIndex]->start_time)
-								* audioBaseTime;
-							double fCurrentDuration = (double)packet.duration * audioBaseTime;
-
-							// Decode audio
-							int nDecodedSize = DecodeAudio(audioStreamIndex, &packet,
-								pFrameAudio, audioFrameSize);
-
-							if (nDecodedSize > 0 && pAudioCodecCtx->sample_fmt == AV_SAMPLE_FMT_FLTP)
-							{
-								// Process audio here.
-								/* Uncommend sample if you want write raw data to file.
-								{
-									int size = nDecodedSize / sizeof(float);
-									signed short * ar = new signed short[nDecodedSize / sizeof(float)];
-									float* pointer = (float*)pFrameAudio;
-									// Convert float to S16.
-									for (int i = 0; i < size / 2; i ++)
-									{
-										ar[i] = pointer[i] * 32767.0f;
-									}
-
-									FILE* file = fopen("c:\\temp\\AudioRaw.raw", "ab");
-									fwrite(ar, 1, size * sizeof (signed short) / 2, file);
-									fclose(file);
-								}
-								*/
-							}
-							
-							// Delete buffer.
-							delete[] pFrameAudio;
-							pFrameAudio = NULL;
-						}
-					}
-				}
-
-				av_free_packet(&packet);
-				packet = AVPacket();
-			}
-
-			av_free(pVideoYuv);
-		}    
-	}
-
-	return res;
-}
-
-
-AVFrame * FFmpegDecoder::GetRGBAFrame(AVFrame *pFrameYuv)
-{
-	AVFrame * frame = NULL;
-	int width  = pVideoCodecCtx->width;
-	int height = pVideoCodecCtx->height;
-	int bufferImgSize = avpicture_get_size(AV_PIX_FMT_BGR24, width, height);
-	frame = av_frame_alloc();
-	uint8_t * buffer = (uint8_t*)av_mallocz(bufferImgSize);
-	if (frame)
-	{
-		avpicture_fill((AVPicture*)frame, buffer, AV_PIX_FMT_BGR24, width, height);
-		frame->width  = width;
-		frame->height = height;
-		//frame->data[0] = buffer;
-
-		sws_scale(pImgConvertCtx, pFrameYuv->data, pFrameYuv->linesize,
-			0, height, frame->data, frame->linesize);      
-	}  
-
-	return (AVFrame *)frame;
-}
-
-
-bool FFmpegDecoder::OpenVideo()
-{
-	bool res = false;
-
-	if (pFormatCtx)
-	{
-		videoStreamIndex = -1;
-
-		for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++)
-		{
-			if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-			{
-				videoStreamIndex = i;
-				pVideoCodecCtx = pFormatCtx->streams[i]->codec;
-				pVideoCodec = avcodec_find_decoder(pVideoCodecCtx->codec_id);
-
-				if (pVideoCodec)
-				{
-					res     = !(avcodec_open2(pVideoCodecCtx, pVideoCodec, NULL) < 0);
-					width   = pVideoCodecCtx->coded_width;
-					height  = pVideoCodecCtx->coded_height;
-				}
-
-				break;
-			}
-		}
-
-		if (!res)
-		{
-			CloseVideo();
-		}
-		else
-		{
-			pImgConvertCtx = sws_getContext(pVideoCodecCtx->width, pVideoCodecCtx->height,
-				pVideoCodecCtx->pix_fmt,
-				pVideoCodecCtx->width, pVideoCodecCtx->height,
-				AV_PIX_FMT_BGR24,
-				SWS_BICUBIC, NULL, NULL, NULL);
-		}
-	}
-
-	return res;
-}
-
-bool FFmpegDecoder::DecodeVideo(const AVPacket *avpkt, AVFrame * pOutFrame)
-{
-	bool res = false;
-
-	if (pVideoCodecCtx)
-	{
-		if (avpkt && pOutFrame)
-		{
-			int got_picture_ptr = 0;
-			int videoFrameBytes = avcodec_decode_video2(pVideoCodecCtx, pOutFrame, &got_picture_ptr, avpkt);
-
-//			avcodec_decode_video(pVideoCodecCtx, pOutFrame, &videoFrameBytes, pInBuffer, nInbufferSize);
-			res = (videoFrameBytes > 0);
-		}
-	}
-
-	return res;
-}
-
-
-bool FFmpegDecoder::OpenAudio()
-{
-	bool res = false;
-
-	if (pFormatCtx)
-	{   
-		audioStreamIndex = -1;
-
-		for (unsigned int i = 0; i < pFormatCtx->nb_streams; i++)
-		{
-			if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-			{
-				audioStreamIndex = i;
-				pAudioCodecCtx = pFormatCtx->streams[i]->codec;
-				pAudioCodec = avcodec_find_decoder(pAudioCodecCtx->codec_id);
-				if (pAudioCodec)
-				{
-					res = !(avcodec_open2(pAudioCodecCtx, pAudioCodec, NULL) < 0);       
-				}
-				break;
-			}
-		}
-
-		if (! res)
-		{
-			CloseAudio();
-		}
-	}
-
-	return res;
-}
-
-
-void FFmpegDecoder::CloseVideo()
-{
-	if (pVideoCodecCtx)
-	{
-		avcodec_close(pVideoCodecCtx);
-		pVideoCodecCtx = NULL;
-		pVideoCodec = NULL;
-		videoStreamIndex = 0;
-	}
-}
-
-
-void FFmpegDecoder::CloseAudio()
-{    
-	if (pAudioCodecCtx)
-	{
-		avcodec_close(pAudioCodecCtx);
-		pAudioCodecCtx   = NULL;
-		pAudioCodec      = NULL;
-		audioStreamIndex = 0;
-	}  
-}
-
-
-int FFmpegDecoder::DecodeAudio(int nStreamIndex, const AVPacket *avpkt, uint8_t* pOutBuffer, size_t nOutBufferSize)
-{
-	int decodedSize = 0;
-
-	int packetSize = avpkt->size;
-	uint8_t* pPacketData = (uint8_t*) avpkt->data;
-
-	while (packetSize > 0)
-	{
-		int sizeToDecode = nOutBufferSize;
-		uint8_t* pDest = pOutBuffer + decodedSize;
-		int got_picture_ptr = 0;
-		AVFrame* audioFrame = av_frame_alloc();
-
-		int packetDecodedSize = avcodec_decode_audio4(pAudioCodecCtx, audioFrame, &got_picture_ptr, avpkt);
-
-		if (packetDecodedSize > 0)
-		{
-			sizeToDecode = av_samples_get_buffer_size(NULL, audioFrame->channels,
-                                                       audioFrame->nb_samples,
-													   (AVSampleFormat)audioFrame->format, 1);
-
-			// Currenlty we process only AV_SAMPLE_FMT_FLTP.
-			if ((AVSampleFormat)audioFrame->format == AV_SAMPLE_FMT_FLTP)
-			{
-				// Copy each channel plane.
-				for (int i = 0; i < audioFrame->channels; i++)
-				{
-					memcpy(pDest + i * sizeToDecode / audioFrame->channels, 
-						audioFrame->extended_data[i], sizeToDecode / audioFrame->channels);
-				}
-			}
-		}
-
-		if (packetDecodedSize < 0)
-		{
-			decodedSize = 0;
+	// Temporary workaround: refuse to open a file whose name does not
+	// indicate that it's a movie file. This avoids the problem that ffmpeg
+	// is willing to open tiff and other files better handled by other
+	// plugins. The better long-term solution is to replace av_register_all
+	// with our own function that registers only the formats that we want
+	// this reader to handle. At some point, we will institute that superior
+	// approach, but in the mean time, this is a quick solution that 90%
+	// does the job.
+	/*
+	bool valid_extension = false;
+	for (int i = 0; ffmpeg_input_extensions[i]; ++i)
+		if (Strutil::ends_with(name, ffmpeg_input_extensions[i])) {
+			valid_extension = true;
 			break;
 		}
+	if (!valid_extension) {
+		//error("\"%s\" could not open input", name);
+		return false;
+	}
+	*/
 
-		packetSize -= packetDecodedSize;
-		pPacketData += packetDecodedSize;
+	//static std::once_flag init_flag;
+	//std::call_once(init_flag, av_register_all);
 
-		if (sizeToDecode <= 0)
-		{
-			continue;
+	const char *file_name = name.c_str();
+	av_log_set_level(AV_LOG_FATAL);
+	if (avformat_open_input(&m_format_context, file_name, NULL, NULL) != 0) // avformat_open_input allocs format_context
+	{
+		//error("\"%s\" could not open input", file_name);
+		return false;
+	}
+	if (avformat_find_stream_info(m_format_context, NULL) < 0)
+	{
+		//error("\"%s\" could not find stream info", file_name);
+		return false;
+	}
+	m_video_stream = -1;
+	for (unsigned int i = 0; i<m_format_context->nb_streams; i++) {
+		if (stream_codec(i)->codec_type == AVMEDIA_TYPE_VIDEO) {
+			if (m_video_stream < 0) {
+				m_video_stream = i;
+			}
+			m_video_indexes.push_back(i); // needed for later use
+			break;
 		}
+	}
+	if (m_video_stream == -1) {
+		//error("\"%s\" could not find a valid videostream", file_name);
+		return false;
+	}
 
-		decodedSize += sizeToDecode;
-		av_frame_free(&audioFrame);
-		audioFrame = NULL;
-	}	
+	// codec context for videostream
+#if USE_FFMPEG_3_1
+	AVCodecParameters *par = stream_codec(m_video_stream);
 
-	return decodedSize;
+	m_codec = avcodec_find_decoder(par->codec_id);
+	if (!m_codec) {
+		//error("\"%s\" can't find decoder", file_name);
+		return false;
+	}
+
+	m_codec_context = avcodec_alloc_context3(m_codec);
+	if (!m_codec_context) {
+		//error("\"%s\" can't allocate decoder context", file_name);
+		return false;
+	}
+
+	int ret;
+
+	ret = avcodec_parameters_to_context(m_codec_context, par);
+	if (ret < 0) {
+		//error("\"%s\" unsupported codec", file_name);
+		return false;
+	}
+#else
+	m_codec_context = stream_codec(m_video_stream);
+
+	m_codec = avcodec_find_decoder(m_codec_context->codec_id);
+	if (!m_codec) {
+		//error("\"%s\" unsupported codec", file_name);
+		return false;
+	}
+#endif
+
+	if (avcodec_open2(m_codec_context, m_codec, NULL) < 0) {
+		//error("\"%s\" could not open codec", file_name);
+		return false;
+	}
+	if (!strcmp(m_codec_context->codec->name, "mjpeg") ||
+		!strcmp(m_codec_context->codec->name, "dvvideo")) {
+		m_offset_time = false;
+	}
+	m_codec_cap_delay = (bool)(m_codec_context->codec->capabilities & CODEC_CAP_DELAY);
+
+	AVStream *stream = m_format_context->streams[m_video_stream];
+	if (stream->r_frame_rate.num != 0 && stream->r_frame_rate.den != 0) {
+		m_frame_rate = stream->r_frame_rate;
+	}
+
+	mFrameCount = m_frames = stream->nb_frames;
+	m_start_time = stream->start_time;
+	if (!m_frames) {
+		seek(0);
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		av_read_frame(m_format_context, &pkt);
+		int64_t first_pts = pkt.pts;
+		int64_t max_pts = 0;
+		av_free_packet(&pkt); //because seek(int) uses m_format_context
+		seek(1 << 29);
+		av_init_packet(&pkt); //Is this needed?
+		while (stream && av_read_frame(m_format_context, &pkt) >= 0) {
+			int64_t current_pts = static_cast<int64_t> (av_q2d(stream->time_base) * (pkt.pts - first_pts) * fps());
+			if (current_pts > max_pts) {
+				max_pts = current_pts + 1;
+			}
+			av_free_packet(&pkt); //Always free before format_context usage
+		}
+		m_frames = max_pts;
+	}
+	m_frame = av_frame_alloc();
+	m_rgb_frame = av_frame_alloc();
+
+	AVPixelFormat src_pix_format;
+	switch (m_codec_context->pix_fmt) { // deprecation warning for YUV formats
+	case AV_PIX_FMT_YUVJ420P:
+		src_pix_format = AV_PIX_FMT_YUV420P;
+		break;
+	case AV_PIX_FMT_YUVJ422P:
+		src_pix_format = AV_PIX_FMT_YUV422P;
+		break;
+	case AV_PIX_FMT_YUVJ444P:
+		src_pix_format = AV_PIX_FMT_YUV444P;
+		break;
+	case AV_PIX_FMT_YUVJ440P:
+		src_pix_format = AV_PIX_FMT_YUV440P;
+		break;
+	default:
+		src_pix_format = m_codec_context->pix_fmt;
+		break;
+	}
+
+	//m_spec = ImageSpec(m_codec_context->width, m_codec_context->height, 3);
+
+	switch (src_pix_format) {
+		// support for 10-bit and 12-bit pix_fmts
+	case AV_PIX_FMT_YUV420P10BE:
+	case AV_PIX_FMT_YUV420P10LE:
+	case AV_PIX_FMT_YUV422P10BE:
+	case AV_PIX_FMT_YUV422P10LE:
+	case AV_PIX_FMT_YUV444P10BE:
+	case AV_PIX_FMT_YUV444P10LE:
+	case AV_PIX_FMT_YUV420P12BE:
+	case AV_PIX_FMT_YUV420P12LE:
+	case AV_PIX_FMT_YUV422P12BE:
+	case AV_PIX_FMT_YUV422P12LE:
+	case AV_PIX_FMT_YUV444P12BE:
+	case AV_PIX_FMT_YUV444P12LE:
+		//m_spec.set_format(TypeDesc::UINT16);
+		m_dst_pix_format = AV_PIX_FMT_RGB48;
+		//m_stride = (size_t)(m_spec.width * 3 * 2);
+		break;
+	default:
+		//m_spec.set_format(TypeDesc::UINT8);
+		m_dst_pix_format = AV_PIX_FMT_RGB24;
+		//m_stride = (size_t)(m_spec.width * 3);
+		break;
+	}
+
+	m_rgb_buffer.resize(
+		avpicture_get_size(m_dst_pix_format,
+			m_codec_context->width,
+			m_codec_context->height),
+		0
+	);
+
+	m_sws_rgb_context = sws_getContext(
+		m_codec_context->width,
+		m_codec_context->height,
+		src_pix_format,
+		m_codec_context->width,
+		m_codec_context->height,
+		m_dst_pix_format,
+		SWS_AREA,
+		NULL,
+		NULL,
+		NULL
+	);
+	mWidth = m_codec_context->width;
+	mHeight = m_codec_context->height;
+	AVDictionaryEntry *tag = NULL;
+	/*
+	while ((tag = av_dict_get(m_format_context->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+		m_spec.attribute(tag->key, tag->value);
+	}
+	*/
+	int rat[2] = { m_frame_rate.num, m_frame_rate.den };
+	//m_spec.attribute("FramesPerSecond", TypeRational, &rat);
+	//m_spec.attribute("oiio:Movie", true);
+	//m_spec.attribute("oiio:BitsPerSample", m_codec_context->bits_per_raw_sample);
+	m_nsubimages = m_frames;
+	//spec = m_spec;
+	return true;
 }
 
-bool FFmpegDecoder::Seek(size_t frame)
+bool FFmpegDecoder::seek_subimage(int subimage, int miplevel)
 {
-	double m_out_start_time = frame / videoFramePerSecond;
-	int flgs = AVSEEK_FLAG_ANY;
-
-	auto m_in_vid_strm = pFormatCtx->streams[videoStreamIndex];
-
-	int seek_ts = (m_out_start_time*(m_in_vid_strm->time_base.den)) / (m_in_vid_strm->time_base.num);
-	if (av_seek_frame(pFormatCtx, videoStreamIndex, seek_ts, flgs) < 0)
-	{
+	if (subimage < 0 || subimage >= m_nsubimages || miplevel > 0) {
 		return false;
 	}
-	if (av_seek_frame(pFormatCtx, audioStreamIndex, seek_ts, flgs) < 0)
-	{
-		return false;
+	if (subimage == m_subimage) {
+		return true;
 	}
-
-	//packet_queue_flush(&is->audioq);
-	//packet_queue_put(&is->audioq, &flush_pkt);
-
-	//avcodec_flush_buffers(pVideoCodecCtx);
-	//avcodec_flush_buffers(pAudioCodecCtx);
+	m_subimage = subimage;
+	m_read_frame = false;
 	return true;
+}
+
+void *FFmpegDecoder::getRGBData()
+{
+	return m_rgb_frame->data[0];
+}
+
+bool FFmpegDecoder::close(void)
+{
+	if (m_codec_context)
+		avcodec_close(m_codec_context);
+	if (m_format_context)
+		avformat_close_input(&m_format_context);
+	av_free(m_format_context); // will free m_codec and m_codec_context
+	av_frame_free(&m_frame); // free after close input
+	av_frame_free(&m_rgb_frame);
+	sws_freeContext(m_sws_rgb_context);
+	init();
+	return true;
+}
+
+void FFmpegDecoder::read_frame(int frame)
+{
+	if (m_last_decoded_pos + 1 != frame) {
+		seek(frame);
+	}
+	AVPacket pkt;
+	int finished = 0;
+	int ret = 0;
+	while ((ret = av_read_frame(m_format_context, &pkt)) == 0 || m_codec_cap_delay) {
+		if (pkt.stream_index == m_video_stream) {
+			if (ret < 0 && m_codec_cap_delay) {
+				pkt.data = NULL;
+				pkt.size = 0;
+			}
+
+			finished = receive_frame(m_codec_context, m_frame, &pkt);
+
+			double pts = 0;
+			if (static_cast<int64_t>(m_frame->pkt_pts) != int64_t(AV_NOPTS_VALUE)) {
+				pts = av_q2d(m_format_context->streams[m_video_stream]->time_base) *  m_frame->pkt_pts;
+			}
+
+			int current_frame = int((pts - m_start_time) * fps() + 0.5f); //???
+																		  //current_frame =   m_frame->display_picture_number;
+			m_last_search_pos = current_frame;
+
+			if (current_frame == frame && finished)
+			{
+				avpicture_fill
+				(
+					reinterpret_cast<AVPicture*>(m_rgb_frame),
+					&m_rgb_buffer[0],
+					m_dst_pix_format,
+					m_codec_context->width,
+					m_codec_context->height
+				);
+				sws_scale
+				(
+					m_sws_rgb_context,
+					static_cast<uint8_t const * const *> (m_frame->data),
+					m_frame->linesize,
+					0,
+					m_codec_context->height,
+					m_rgb_frame->data,
+					m_rgb_frame->linesize
+				);
+				m_last_decoded_pos = current_frame;
+				av_free_packet(&pkt);
+				break;
+			}
+		}
+		av_free_packet(&pkt);
+	}
+	m_read_frame = true;
+}
+
+#if 0
+const char *
+FFmpegDecoder::metadata(const char * key)
+{
+	AVDictionaryEntry * entry = av_dict_get(m_format_context->metadata, key, NULL, 0);
+	return entry ? av_strdup(entry->value) : NULL;
+	// FIXME -- that looks suspiciously like a memory leak
+}
+
+
+
+bool
+FFmpegDecoder::has_metadata(const char * key)
+{
+	return av_dict_get(m_format_context->metadata, key, NULL, 0); // is there a better to check exists?
+}
+#endif
+
+bool FFmpegDecoder::seek(int frame)
+{
+	int64_t offset = time_stamp(frame);
+	int flags = AVSEEK_FLAG_BACKWARD;
+	avcodec_flush_buffers(m_codec_context);
+	av_seek_frame(m_format_context, -1, offset, flags);
+	return true;
+}
+
+int64_t FFmpegDecoder::time_stamp(int frame) const
+{
+	int64_t timestamp = static_cast<int64_t>((static_cast<double> (frame) / (fps() * av_q2d(m_format_context->streams[m_video_stream]->time_base))));
+	if (static_cast<int64_t>(m_format_context->start_time) != int64_t(AV_NOPTS_VALUE)) {
+		timestamp += static_cast<int64_t>(static_cast<double> (m_format_context->start_time)*AV_TIME_BASE / av_q2d(m_format_context->streams[m_video_stream]->time_base));
+	}
+	return timestamp;
+}
+
+double FFmpegDecoder::fps() const
+{
+	if (m_frame_rate.den) {
+		return av_q2d(m_frame_rate);
+	}
+	return 1.0f;
 }

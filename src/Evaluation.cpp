@@ -380,8 +380,7 @@ size_t Evaluation::GetEvaluationImageDuration(size_t target)
 void Evaluation::SetStageLocalTime(size_t target, int localTime)
 {
 	auto& stage = mEvaluationStages[target];
-	stage.mLocalTime = localTime;
-
+	
 	auto tgt = stage.mTarget;
 	if (tgt)
 	{
@@ -389,10 +388,10 @@ void Evaluation::SetStageLocalTime(size_t target, int localTime)
 		if (tgt->mImage.mStream)
 		{
 			auto stream = static_cast<EvaluationStream*>(tgt->mImage.mStream);
-			stream->decoder.Seek(stage.mLocalTime);
 			Image_t image = stream->DecodeImage();
 			SetEvaluationImage(int(target), &image);
 			FreeImage(&image);
 		}
 	}
+	stage.mLocalTime = localTime;
 }

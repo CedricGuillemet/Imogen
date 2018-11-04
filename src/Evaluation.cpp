@@ -34,7 +34,7 @@ std::string Evaluation::GetEvaluator(const std::string& filename)
 	return mEvaluatorScripts[filename].mText;
 }
 
-Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0), mProgressShader(0), mDisplayCubemapShader(0)
+Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0), mProgressShader(0), mDisplayCubemapShader(0), mbSynchronousEvaluation(false)
 {
 	
 }
@@ -246,13 +246,14 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 	//Log("Using %d allocated buffers.\n", mAllocatedRenderTargets.size());
 }
 
-void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation)
+void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation, bool synchronous)
 {
 	if (mEvaluationOrderList.empty())
 		return;
 	if (!mDirtyCount && !forceEvaluation)
 		return;
 
+	mbSynchronousEvaluation = synchronous;
 	EvaluationInfo evaluationInfo;
 	evaluationInfo.forcedDirty = forceEvaluation ? 1 : 0;
 	evaluationInfo.uiPass = 0;

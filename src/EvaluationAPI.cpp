@@ -480,6 +480,11 @@ Image_t Evaluation::EvaluationStream::DecodeImage()
 	return image;
 }
 
+void Evaluation::EvaluationStream::EncodeImage(Image_t *image)
+{
+
+}
+
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
 	int components;
@@ -589,6 +594,16 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 			return EVAL_ERR;
 	}
 	break;
+	case 7:
+	{
+		FFMPEG::ofxFFMPEGVideoWriter writer;
+		writer.setup("test.mpeg", image->mWidth, image->mHeight);
+		for (int i = 0;i<50;i++)
+		writer.addFrame(image->mBits);
+		writer.close();
+
+	}
+		break;
 	}
 	return EVAL_OK;
 }
@@ -846,13 +861,13 @@ int Evaluation::Evaluate(int target, int width, int height, Image *image)
 
 	gEvaluation.SetEvaluationMemoryMode(1);
 
-	gEvaluation.RunEvaluation(width, height, true);
+	gEvaluation.RunEvaluation(width, height, true, true);
 	GetEvaluationImage(target, image);
 	gEvaluation.SetEvaluationMemoryMode(0);
 
 	gEvaluation.mEvaluationOrderList = svgEvalList;
 
-	gEvaluation.RunEvaluation(256, 256, true);
+	gEvaluation.RunEvaluation(256, 256, true, false);
 	return EVAL_OK;
 }
 
@@ -926,13 +941,27 @@ void Evaluation::SetProcessing(int target, int processing)
 
 int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
 {
-	g_TS.AddTaskSetToPipe(new CFunctionTaskSet(jobFunction, ptr, size));
+	if (gEvaluation.mbSynchronousEvaluation)
+	{
+		return jobFunction(ptr);
+	}
+	else
+	{
+		g_TS.AddTaskSetToPipe(new CFunctionTaskSet(jobFunction, ptr, size));
+	}
 	return EVAL_OK;
 }
 
 int Evaluation::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size)
 {
-	g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
+	if (gEvaluation.mbSynchronousEvaluation)
+	{
+		return jobMainFunction(ptr);
+	}
+	else
+	{
+		g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
+	}
 	return EVAL_OK;
 }
 

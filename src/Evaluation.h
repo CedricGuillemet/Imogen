@@ -168,7 +168,7 @@ struct Evaluation
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
-	void RunEvaluation(int width, int height, bool forceEvaluation);
+	void RunEvaluation(int width, int height, bool forceEvaluation, bool synchronous);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
 	void SetTargetDirty(size_t target, bool onlyChild = false);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
@@ -209,6 +209,7 @@ protected:
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
 	int mEvaluationMode;
+	bool mbSynchronousEvaluation;
 	//int mAllocatedTargets;
 	unsigned int equiRectTexture;
 	int mDirtyCount;
@@ -253,8 +254,11 @@ protected:
 	};
 	struct EvaluationStream
 	{
-		FFmpegDecoder decoder;
+		FFMPEG::FFmpegDecoder decoder;
+		FFMPEG::ofxFFMPEGVideoWriter encoder;
+
 		Image_t DecodeImage();
+		void EncodeImage(Image_t *image);
 	};
 
 	struct EvaluationStage

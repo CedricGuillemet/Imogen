@@ -43,6 +43,8 @@ int ReadJob(JobData *data)
 		JobData dataUp = *data;
 		JobMain(UploadImageJob, &dataUp, sizeof(JobData));
 	}
+	else
+		SetProcessing(data->targetIndex, 0);
 	return EVAL_OK;
 }
 

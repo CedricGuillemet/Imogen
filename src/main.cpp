@@ -120,7 +120,8 @@ int main(int, char**)
 {
 	g_TS.Initialize();
 	LoadMetaNodes();
-	FFmpegDecoder::RegisterAll();
+	FFMPEG::FFmpegDecoder::RegisterAll();
+	FFMPEG::Log = Log;
 
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);
@@ -231,7 +232,7 @@ int main(int, char**)
 
 		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 
-		gEvaluation.RunEvaluation(256, 256, false);
+		gEvaluation.RunEvaluation(256, 256, false, false);
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);

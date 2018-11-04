@@ -4,6 +4,11 @@
 #include <string>
 #include <vector>
 
+namespace FFMPEG
+{
+
+	using namespace std;
+
 class FFmpegDecoder
 { 
 public:
@@ -77,3 +82,46 @@ private:
 		m_start_time = 0;
 	}
 };
+class ofxFFMPEGVideoWriter {
+	//instance variables
+	AVCodec *codec;
+	int size, frame_count;
+	AVFrame *picture, *picture_rgb24;
+	struct SwsContext *sws_ctx;
+	AVOutputFormat *fmt;
+	AVFormatContext *oc;
+	AVStream *video_st;
+	AVCodecContext* c;
+
+	bool initialized;
+
+public:
+
+	ofxFFMPEGVideoWriter() :oc(NULL), codec(NULL), initialized(false), frame_count(1) {}
+
+	/**
+	* setup the video writer
+	* @param output filename, the codec and format will be determined by it. (e.g. "xxx.mpg" will create an MPEG1 file
+	* @param width of the frame
+	* @param height of the frame
+	* @param the bitrate
+	* @param the framerate
+	**/
+	bool setup(const char* filename, int width, int height, int bitrate = 400000, int framerate = 25);
+	/**
+	* add a frame to the video file
+	* @param the pixels packed in RGB (24-bit RGBRGBRGB...)
+	**/
+	bool addFrame(const uint8_t* pixels);
+	/**
+	* close the video file and release all datastructs
+	**/
+	void close();
+	/**
+	* is the videowriter initialized?
+	**/
+	bool isInitialized() const { return initialized; }
+};
+
+extern int(*Log)(const char *szFormat, ...);
+}

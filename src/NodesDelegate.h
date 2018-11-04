@@ -363,10 +363,15 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			if (forceEval)
 			{
-				EvaluationInfo evaluationInfo;
-				evaluationInfo.forcedDirty = 1;
-				evaluationInfo.uiPass = 0;
-				mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+				for (size_t frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
+				{
+					EvaluationInfo evaluationInfo;
+					evaluationInfo.forcedDirty = 1;
+					evaluationInfo.uiPass = 0;
+					evaluationInfo.mFrame = frame;
+					evaluationInfo.mLocalFrame = frame - node.mStartFrame;
+					mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+				}
 			}
 		}
 	}

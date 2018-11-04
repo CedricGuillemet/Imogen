@@ -459,8 +459,8 @@ Image_t Evaluation::EvaluationStream::DecodeImage()
 	image.mNumMips = 1;
 	image.mNumFaces = 1;
 	image.mFormat = TextureFormat::BGR8;
-	image.mWidth = decoder.mWidth;
-	image.mHeight = decoder.mHeight;
+	image.mWidth = int(decoder.mWidth);
+	image.mHeight = int(decoder.mHeight);
 	image.mStream = this;
 	image.mFrameDuration = decoder.mFrameCount;
 	size_t lineSize = image.mWidth * 3;
@@ -596,11 +596,21 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 	break;
 	case 7:
 	{
-		FFMPEG::ofxFFMPEGVideoWriter writer;
-		writer.setup("test.mpeg", image->mWidth, image->mHeight);
-		for (int i = 0;i<50;i++)
-		writer.addFrame(image->mBits);
-		writer.close();
+		
+		if (!image->mStream)
+		{
+			auto stream = new EvaluationStream;
+			image->mStream = stream;
+		}
+
+		auto* encoder = &((EvaluationStream*)image->mStream)->encoder;
+
+		if (!encoder->isInitialized())
+		{
+			encoder->setup(filename, image->mWidth, image->mHeight);
+		}
+		encoder->addFrame(image->mBits);
+		//writer.close();
 
 	}
 		break;

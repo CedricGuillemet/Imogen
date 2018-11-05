@@ -109,17 +109,14 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-	Image_t() : mFrameDuration(1), mStream(nullptr)
-	{}
-
+	Image_t() : mDecoder(NULL) {}
 	unsigned char *mBits;
+	void *mDecoder;
 	int mWidth, mHeight;
-	int mFrameDuration;
 	uint32_t mDataSize;
 	uint8_t mNumMips;
 	uint8_t mNumFaces;
 	uint8_t mFormat;
-	void* mStream;
 } Image;
 
 class RenderTarget
@@ -209,7 +206,6 @@ struct Evaluation
 
 	void BeginBatch();
 	void EndBatch();
-	void ClearStream(size_t target);
 
 protected:
 	void APIInit();
@@ -261,14 +257,6 @@ protected:
 		EvaluationC    = 1 << 0,
 		EvaluationGLSL = 1 << 1,
 	};
-	struct EvaluationStream
-	{
-		FFMPEG::FFmpegDecoder decoder;
-		FFMPEG::ofxFFMPEGVideoWriter encoder;
-
-		Image_t DecodeImage();
-		void EncodeImage(Image_t *image);
-	};
 
 	struct EvaluationStage
 	{
@@ -276,7 +264,7 @@ protected:
 		std::string mNodeTypename;
 #endif
 		RenderTarget *mTarget;
-		EvaluationStream *mStream;
+		FFMPEG::FFmpegDecoder *mDecoder;
 		size_t mNodeType;
 		unsigned int mParametersBuffer;
 		void *mParameters;
@@ -298,6 +286,7 @@ protected:
 		bool mLButDown;
 		bool mRButDown;
 		void Clear();
+		Image_t DecodeImage();
 	};
 
 	unsigned int mEvaluationStateGLSLBuffer;
@@ -318,6 +307,10 @@ protected:
 	// ui callback shaders
 	unsigned int mProgressShader;
 	unsigned int mDisplayCubemapShader;
+
+	// ffmpeg encoders
+	std::map<std::string, FFMPEG::ofxFFMPEGVideoWriter*> mWriteStreams;
+	std::map<std::string, FFMPEG::FFmpegDecoder*> mReadStreams;
 
 };
 

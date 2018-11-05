@@ -896,17 +896,17 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			MySequence mySequence(nodeGraphDelegate);
 			int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
 			static int firstFrame = 0;
-			int gCurrentFrame = gEvaluationTime;
+			int currentTime = gEvaluationTime;
 
-			Sequencer(&mySequence, &gCurrentFrame, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
+			Sequencer(&mySequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
 			if (selectedEntry != -1)
 			{
 				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
 			}
-			if (gCurrentFrame != gEvaluationTime)
+			if (currentTime != gEvaluationTime)
 			{
-				gEvaluationTime = gCurrentFrame;
-				nodeGraphDelegate.SetTime(gCurrentFrame);
+				gEvaluationTime = currentTime;
+				nodeGraphDelegate.SetTime(currentTime);
 			}
 		}
 		ImGui::End();

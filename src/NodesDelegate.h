@@ -376,7 +376,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					evaluationInfo.mLocalFrame = frame - node.mStartFrame;
 					mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
 				}
-				mEvaluation.ClearStream(node.mEvaluationTarget);
 			}
 		}
 		mEvaluation.EndBatch();

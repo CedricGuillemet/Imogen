@@ -5,8 +5,8 @@ int strlen ( const char * str );
 typedef struct Image_t
 {
 	void *bits;
+	void *decoder;
 	int width, height;
-	int mFrameDuration;
 	//int components;
 	int mDataSize;
 	unsigned char mNumMips;

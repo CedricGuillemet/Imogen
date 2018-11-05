@@ -53,7 +53,7 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 {
 	EvaluationStage evaluation;
 	evaluation.mTarget				= NULL;
-	evaluation.mStream				= NULL;
+	evaluation.mDecoder				= NULL;
 	evaluation.mUseCountByOthers	= 0;
 	evaluation.mbDirty				= true;
 	evaluation.mbForceEval			= false;
@@ -373,30 +373,26 @@ void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rB
 size_t Evaluation::GetEvaluationImageDuration(size_t target)
 {
 	auto& stage = mEvaluationStages[target];
-	if (!stage.mTarget)
+	if (!stage.mDecoder)
 		return 1;
-	return stage.mTarget->mImage.mFrameDuration;
+	if (stage.mDecoder->mFrameCount > 2000)
+	{
+		int a = 1;
+	}
+	return stage.mDecoder->mFrameCount;
 }
 
 void Evaluation::SetStageLocalTime(size_t target, int localTime)
 {
 	auto& stage = mEvaluationStages[target];
-	
-	auto tgt = stage.mTarget;
-	if (tgt)
+	stage.mLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
+	if (stage.mDecoder)
 	{
-		stage.mLocalTime = ImMin(stage.mLocalTime, tgt->mImage.mFrameDuration);
-		if (tgt->mImage.mStream)
-		{
-			auto stream = static_cast<EvaluationStream*>(tgt->mImage.mStream);
-			Image_t image = stream->DecodeImage();
-			SetEvaluationImage(int(target), &image);
-			FreeImage(&image);
-		}
+		Image_t image = stage.DecodeImage();
+		SetEvaluationImage(int(target), &image);
+		FreeImage(&image);
 	}
-	stage.mLocalTime = localTime;
 }
-
 
 void Evaluation::RecurseGetUse(size_t target, std::vector<size_t>& usedNodes)
 {
@@ -436,6 +432,13 @@ void Evaluation::EndBatch()
 	mSvgEvalList.clear();
 
 	gEvaluation.RunEvaluation(256, 256, true, false);
+
+	// close write streams
+	for (auto& stream : mWriteStreams)
+		delete stream.second;
+	mWriteStreams.clear();
+
+	// done
 	mbBatching = false;
 }
 
@@ -448,9 +451,3 @@ int Evaluation::Evaluate(int target, int width, int height, Image *image)
 	return EVAL_OK;
 }
 
-void Evaluation::ClearStream(size_t target)
-{
-	auto& stage = mEvaluationStages[target];
-	delete stage.mStream;
-	stage.mStream = NULL;
-}

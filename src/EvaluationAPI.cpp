@@ -187,7 +187,6 @@ void RenderTarget::InitBuffer(int width, int height)
 	mImage.mHeight = height;
 	mImage.mNumMips = 1;
 	mImage.mNumFaces = 1;
-	mImage.mStream = NULL;
 	mImage.mFormat = TextureFormat::RGBA8;
 
 	glGenFramebuffers(1, &mFbo);
@@ -222,7 +221,6 @@ void RenderTarget::InitCube(int width)
 	mImage.mHeight = width;
 	mImage.mNumMips = 1;
 	mImage.mNumFaces = 6;
-	mImage.mStream = NULL;
 	mImage.mFormat = TextureFormat::RGBA8;
 
 	glGenFramebuffers(1, &mFbo);
@@ -450,24 +448,23 @@ struct EValuationFunction
 	void *function;
 };
 
-Image_t Evaluation::EvaluationStream::DecodeImage()
+static Image_t DecodeImage(FFMPEG::FFmpegDecoder *decoder, int frame)
 {
-	decoder.ReadFrame(gEvaluationTime + 1);
+	decoder->ReadFrame(frame);
 	Image_t image;
+	image.mDecoder = decoder;
 	image.mNumMips = 1;
 	image.mNumFaces = 1;
 	image.mFormat = TextureFormat::BGR8;
-	image.mWidth = int(decoder.mWidth);
-	image.mHeight = int(decoder.mHeight);
-	image.mStream = this;
-	image.mFrameDuration = decoder.mFrameCount;
+	image.mWidth = int(decoder->mWidth);
+	image.mHeight = int(decoder->mHeight);
 	size_t lineSize = image.mWidth * 3;
 	size_t imgDataSize = lineSize * image.mHeight;
 	image.mBits = (unsigned char*)malloc(imgDataSize);
 
 	unsigned char *pdst = image.mBits;
-	unsigned char *psrc = (unsigned char*)decoder.GetRGBData();
-	
+	unsigned char *psrc = (unsigned char*)decoder->GetRGBData();
+
 	psrc += imgDataSize - lineSize;
 	for (int j = 0; j < image.mHeight; j++)
 	{
@@ -478,9 +475,9 @@ Image_t Evaluation::EvaluationStream::DecodeImage()
 	return image;
 }
 
-void Evaluation::EvaluationStream::EncodeImage(Image_t *image)
+Image_t Evaluation::EvaluationStage::DecodeImage()
 {
-
+	return ::DecodeImage(mDecoder, mLocalTime);
 }
 
 int Evaluation::ReadImage(const char *filename, Image *image)
@@ -492,14 +489,21 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		cmft::Image img;
 		if (!cmft::imageLoad(img, filename))
 		{
-			EvaluationStream *stream = new EvaluationStream;
-			if (stream->decoder.Open(std::string(filename)))
+			FFMPEG::FFmpegDecoder* decoder = NULL;
+			std::string fn(filename);
+			auto iter = gEvaluation.mReadStreams.find(fn);
+			if (iter == gEvaluation.mReadStreams.end())
 			{
-				*image = stream->DecodeImage();
-				return EVAL_OK;
+				decoder = new FFMPEG::FFmpegDecoder;
+				gEvaluation.mReadStreams[fn] = decoder;
+				decoder->Open(fn);
 			}
-			delete stream;
-			return EVAL_ERR;
+			else
+			{
+				decoder = iter->second;
+			}
+			*image = ::DecodeImage(decoder, gEvaluationTime);// gEvaluation.DecodeImage(*decoder);
+			return EVAL_OK;
 		}
 		cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
 		image->mBits = (unsigned char*)img.m_data;
@@ -509,8 +513,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		image->mNumMips = img.m_numMips;
 		image->mNumFaces = img.m_numFaces;
 		image->mFormat = img.m_format;
-		image->mStream = NULL;
-
+		image->mDecoder = NULL;
 		return EVAL_OK;
 	}
 
@@ -519,8 +522,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 	image->mNumMips = 1;
 	image->mNumFaces = 1;
 	image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-	image->mStream = NULL;
-
+	image->mDecoder = NULL;
 	return EVAL_OK;
 }
 
@@ -594,22 +596,20 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 	break;
 	case 7:
 	{
-		
-		if (!image->mStream)
+		FFMPEG::ofxFFMPEGVideoWriter *encoder = NULL;
+		std::string fn(filename);
+		auto iter = gEvaluation.mWriteStreams.find(fn);
+		if (iter != gEvaluation.mWriteStreams.end())
 		{
-			auto stream = new EvaluationStream;
-			image->mStream = stream;
+			encoder = iter->second;
 		}
-
-		auto* encoder = &((EvaluationStream*)image->mStream)->encoder;
-
-		if (!encoder->isInitialized())
+		else
 		{
+			encoder = new FFMPEG::ofxFFMPEGVideoWriter;
+			gEvaluation.mWriteStreams[fn] = encoder;
 			encoder->setup(filename, image->mWidth, image->mHeight);
 		}
 		encoder->addFrame(image->mBits);
-		//writer.close();
-
 	}
 		break;
 	}
@@ -642,8 +642,6 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	image->mNumMips = img.mNumMips;
 	image->mFormat = img.mFormat;
 	image->mNumFaces = img.mNumFaces;
-	image->mStream = img.mStream;
-	image->mFrameDuration = 1;
 
 	glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
 	unsigned char *ptr = (unsigned char *)image->mBits;
@@ -671,21 +669,21 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
-	if (!evaluation.mTarget)
+	Evaluation::EvaluationStage &stage = gEvaluation.mEvaluationStages[target];
+	if (!stage.mTarget)
 	{
-		evaluation.mTarget = new RenderTarget;
+		stage.mTarget = new RenderTarget;
 	}
-	evaluation.mbFreeSizing = false;
+	stage.mbFreeSizing = false;
 	unsigned int texelSize = GetTexelSize(image->mFormat);
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
 	unsigned char *ptr = (unsigned char *)image->mBits;
 	if (image->mNumFaces == 1)
 	{
-		evaluation.mTarget->InitBuffer(image->mWidth, image->mHeight);
+		stage.mTarget->InitBuffer(image->mWidth, image->mHeight);
 
-		glBindTexture(GL_TEXTURE_2D, evaluation.mTarget->mGLTexID);
+		glBindTexture(GL_TEXTURE_2D, stage.mTarget->mGLTexID);
 
 		for (int i = 0; i < image->mNumMips; i++)
 		{
@@ -700,8 +698,8 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	}
 	else
 	{
-		evaluation.mTarget->InitCube(image->mWidth);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, evaluation.mTarget->mGLTexID);
+		stage.mTarget->InitCube(image->mWidth);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, stage.mTarget->mGLTexID);
 
 		for (int face = 0; face < image->mNumFaces; face++)
 		{
@@ -718,12 +716,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
 	}
-	evaluation.mTarget->mImage.mFrameDuration = image->mFrameDuration;
-	evaluation.mTarget->mImage.mStream = image->mStream;
-
-	// not a big fan of this
-	if (image->mFrameDuration > 1)
-		TileNodeEditGraphDelegate::GetInstance()->SetTimeDuration(target, image->mFrameDuration);
+	stage.mDecoder = (FFMPEG::FFmpegDecoder *)image->mDecoder;
 	gEvaluation.SetTargetDirty(target, true);
 	return EVAL_OK;
 }
@@ -780,7 +773,6 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
 	image->mWidth = img.m_width;
 	image->mHeight = img.m_height;
 	image->mFormat = img.m_format;
-	image->mStream = NULL;
 	return EVAL_OK;
 }
 

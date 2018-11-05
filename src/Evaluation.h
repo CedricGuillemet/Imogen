@@ -206,12 +206,19 @@ struct Evaluation
 	// synchronous texture cache
 	// use for simple textures(stock) or to replace with a more efficient one
 	unsigned int GetTexture(const std::string& filename);
+
+	void BeginBatch();
+	void EndBatch();
+	void ClearStream(size_t target);
+
 protected:
 	void APIInit();
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
 	int mEvaluationMode;
 	bool mbSynchronousEvaluation;
+	bool mbBatching;
+
 	//int mAllocatedTargets;
 	unsigned int equiRectTexture;
 	int mDirtyCount;
@@ -296,6 +303,7 @@ protected:
 	unsigned int mEvaluationStateGLSLBuffer;
 	std::vector<EvaluationStage> mEvaluationStages;
 	std::vector<size_t> mEvaluationOrderList;
+	std::vector<size_t> mSvgEvalList;
 
 	void SetMouseInfos(EvaluationInfo &evaluationInfo, EvaluationStage &evaluationStage) const;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
@@ -312,3 +320,5 @@ protected:
 	unsigned int mDisplayCubemapShader;
 
 };
+
+extern Evaluation gEvaluation;

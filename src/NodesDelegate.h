@@ -54,6 +54,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	Evaluation& mEvaluation;
 	struct ImogenNode
 	{
+#ifdef _DEBUG
+		std::string mNodeTypename;
+#endif
 		size_t mType;
 		size_t mEvaluationTarget;
 		void *mParameters;
@@ -109,7 +112,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		node.mParametersSize		= paramsSize;
 		node.mStartFrame			= 0;
 		node.mEndFrame				= 0;
-
+#ifdef _DEBUG
+		node.mNodeTypename			= gMetaNodes[type].mName;
+#endif
 		memset(node.mParameters, 0, paramsSize);
 		node.mInputSamplers.resize(inputCount);
 		mNodes.push_back(node);
@@ -345,20 +350,19 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	virtual void DoForce()
 	{
-		bool dirty = false;
-		bool forceEval = false;
+		mEvaluation.BeginBatch();
 		for (ImogenNode& node : mNodes)
 		{
 			const MetaNode& currentMeta = gMetaNodes[node.mType];
-
+			bool forceEval = false;
 			for(auto& param : currentMeta.mParams)
 			{
 				if (!param.mName.c_str())
 					break;
 				if (param.mType == Con_ForceEvaluate)
 				{
-					dirty = true;
 					forceEval = true;
+					break;
 				}
 			}
 			if (forceEval)
@@ -372,8 +376,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					evaluationInfo.mLocalFrame = frame - node.mStartFrame;
 					mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
 				}
+				mEvaluation.ClearStream(node.mEvaluationTarget);
 			}
 		}
+		mEvaluation.EndBatch();
 	}
 
 	void InvalidateParameters()

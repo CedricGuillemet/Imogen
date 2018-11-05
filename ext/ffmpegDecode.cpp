@@ -457,7 +457,14 @@ namespace FFMPEG
 		return errStr;
 	}
 
-	bool ofxFFMPEGVideoWriter::setup(const char* filename, int width, int height, int bitrate, int framerate) {
+	bool ofxFFMPEGVideoWriter::setup(const char* filename, int width, int height, int bitrate, int framerate) 
+	{
+		if (initialized)
+		{
+			Log("Stream already initialized. Close it before.");
+			return false;
+		}
+
 		Log("Video encoding: %s\n", filename);
 		/* register all the formats and codecs */
 
@@ -615,7 +622,13 @@ namespace FFMPEG
 	}
 
 	/* add a frame to the video file, RGB 24bpp format */
-	bool ofxFFMPEGVideoWriter::addFrame(const uint8_t* pixels) {
+	bool ofxFFMPEGVideoWriter::addFrame(const uint8_t* pixels) 
+	{
+		if (!initialized)
+		{
+			Log("Trying to add frame on an uninitialized video stream.");
+			return false;
+		}
 		/* copy the buffer */
 		memcpy(picture_rgb24->data[0], pixels, size);
 
@@ -663,7 +676,10 @@ namespace FFMPEG
 	}
 
 
-	void ofxFFMPEGVideoWriter::close() {
+	void ofxFFMPEGVideoWriter::close() 
+	{
+		if (!initialized)
+			return;
 		/* Write the trailer, if any. The trailer must be written before you
 		* close the CodecContexts open when you wrote the header; otherwise
 		* av_write_trailer() may try to use memory that was freed on

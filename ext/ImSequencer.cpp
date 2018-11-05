@@ -74,13 +74,13 @@ namespace ImSequencer
 			ImGui::InvisibleButton("canvas", ImVec2(canvas_size.x - canvas_pos.x, (float)ItemHeight));
 			draw_list->AddRectFilled(canvas_pos, ImVec2(canvas_size.x + canvas_pos.x, canvas_pos.y + ItemHeight), 0xFF3D3837, 0);
 			char tmps[512];
-			snprintf(tmps, sizeof(tmps), "%d Frames / %d entries", frameCount, sequenceCount);
+			sprintf(tmps, "%d Frames / %d entries", frameCount, sequenceCount);
 			draw_list->AddText(ImVec2(canvas_pos.x + 26, canvas_pos.y + 2), 0xFFFFFFFF, tmps);
 		}
 		else
 		{
 			bool hasScrollBar(false);
-			int framesPixelWidth = frameCount * framePixelWidth;
+			int framesPixelWidth = int(frameCount * framePixelWidth);
 			if ((framesPixelWidth + legendWidth) >= canvas_size.x)
 			{
 				hasScrollBar = true;
@@ -198,7 +198,7 @@ namespace ImSequencer
 				if (baseIndex)
 				{
 					char tmps[512];
-					snprintf(tmps, sizeof(tmps), "%d", i);
+					sprintf(tmps, "%d", i);
 					draw_list->AddText(ImVec2((float)px + 3.f, canvas_pos.y), 0xFFBBBBBB, tmps);
 				}
 
@@ -294,7 +294,7 @@ namespace ImSequencer
 						l = r;
 					if (movingPart & 2 && r < l)
 						r = l;
-					movingPos += diffFrame * framePixelWidth;
+					movingPos += int(diffFrame * framePixelWidth);
 				}
 				if (!io.MouseDown[0])
 				{

@@ -98,7 +98,7 @@ class ofxFFMPEGVideoWriter {
 public:
 
 	ofxFFMPEGVideoWriter() :oc(NULL), codec(NULL), initialized(false), frame_count(1) {}
-
+	~ofxFFMPEGVideoWriter() { close(); }
 	/**
 	* setup the video writer
 	* @param output filename, the codec and format will be determined by it. (e.g. "xxx.mpg" will create an MPEG1 file

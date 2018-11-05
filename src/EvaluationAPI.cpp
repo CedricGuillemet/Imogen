@@ -450,8 +450,6 @@ struct EValuationFunction
 	void *function;
 };
 
-extern Evaluation gEvaluation;
-
 Image_t Evaluation::EvaluationStream::DecodeImage()
 {
 	decoder.ReadFrame(gEvaluationTime + 1);
@@ -841,43 +839,6 @@ int Evaluation::SetNodeImage(int target, Image *image)
 	Material & material = library.mMaterials[materialIndex];
 	material.mMaterialNodes[target].mImage = pngImage;
 
-	return EVAL_OK;
-}
-
-void Evaluation::RecurseGetUse(size_t target, std::vector<size_t>& usedNodes)
-{
-	EvaluationStage& evaluation = mEvaluationStages[target];
-	const Input& input = evaluation.mInput;
-
-	std::vector<RenderTarget*> usingTargets;
-	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
-	{
-		int targetIndex = input.mInputs[inputIndex];
-		if (targetIndex == -1)
-			continue;
-		RecurseGetUse(targetIndex, usedNodes);
-	}
-
-	if (std::find(usedNodes.begin(), usedNodes.end(), target) == usedNodes.end())
-		usedNodes.push_back(target);
-}
-
-int Evaluation::Evaluate(int target, int width, int height, Image *image)
-{
-	std::vector<size_t> svgEvalList = gEvaluation.mEvaluationOrderList;
-	gEvaluation.mEvaluationOrderList.clear();
-
-	gEvaluation.RecurseGetUse(target, gEvaluation.mEvaluationOrderList);
-
-	gEvaluation.SetEvaluationMemoryMode(1);
-
-	gEvaluation.RunEvaluation(width, height, true, true);
-	GetEvaluationImage(target, image);
-	gEvaluation.SetEvaluationMemoryMode(0);
-
-	gEvaluation.mEvaluationOrderList = svgEvalList;
-
-	gEvaluation.RunEvaluation(256, 256, true, false);
 	return EVAL_OK;
 }
 

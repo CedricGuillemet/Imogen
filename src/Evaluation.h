@@ -32,7 +32,7 @@
 #include "Imogen.h"
 #include <string.h>
 #include <stdio.h>
-#include "ffmpegDecode.h"
+#include "ffmpegCodec.h"
 
 extern int Log(const char *szFormat, ...);
 
@@ -264,7 +264,7 @@ protected:
 		std::string mNodeTypename;
 #endif
 		RenderTarget *mTarget;
-		FFMPEG::FFmpegDecoder *mDecoder;
+		FFMPEGCodec::Decoder *mDecoder;
 		size_t mNodeType;
 		unsigned int mParametersBuffer;
 		void *mParameters;
@@ -309,8 +309,8 @@ protected:
 	unsigned int mDisplayCubemapShader;
 
 	// ffmpeg encoders
-	std::map<std::string, FFMPEG::VideoCapture*> mWriteStreams;
-	std::map<std::string, FFMPEG::FFmpegDecoder*> mReadStreams;
+	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
+	std::map<std::string, FFMPEGCodec::Decoder*> mReadStreams;
 
 };
 

@@ -18,16 +18,16 @@
 #include <algorithm>
 #include <string> 
 
-namespace FFMPEG
+namespace FFMPEGCodec
 {
+	void RegisterAll();
 
 	using namespace std;
 
-	class FFmpegDecoder
+	class Decoder
 	{
 	public:
-		static void RegisterAll();
-		FFmpegDecoder() { Init(); }
+		Decoder() { Init(); }
 		bool Open(const std::string &name);
 		bool Close(void);
 		int CurrentSubimage(void) const {
@@ -97,68 +97,12 @@ namespace FFMPEG
 			mFrameCount = 0;
 		}
 	};
-	class ofxFFMPEGVideoWriter {
-		//instance variables
-		AVCodec *codec;
-		int size, frame_count;
-		AVFrame *picture, *picture_rgb24;
-		struct SwsContext *sws_ctx;
-		AVOutputFormat *fmt;
-		AVFormatContext *oc;
-		AVStream *video_st;
-		AVCodecContext* c;
-
-		bool initialized;
-
-	public:
-
-		ofxFFMPEGVideoWriter() :oc(NULL), codec(NULL), initialized(false), frame_count(1) {}
-		~ofxFFMPEGVideoWriter() { close(); }
-		/**
-		* setup the video writer
-		* @param output filename, the codec and format will be determined by it. (e.g. "xxx.mpg" will create an MPEG1 file
-		* @param width of the frame
-		* @param height of the frame
-		* @param the bitrate
-		* @param the framerate
-		**/
-		bool setup(const char* filename, int width, int height, int bitrate = 400000, int framerate = 25);
-		/**
-		* add a frame to the video file
-		* @param the pixels packed in RGB (24-bit RGBRGBRGB...)
-		**/
-		bool addFrame(const uint8_t* pixels);
-		/**
-		* close the video file and release all datastructs
-		**/
-		void close();
-		/**
-		* is the videowriter initialized?
-		**/
-		bool isInitialized() const { return initialized; }
-	};
-
-
-	//std::ofstream logFile;
-#if 0
-	void Log(std::string str) {
-		/*
-		logFile.open("Logs.txt", std::ofstream::app);
-		logFile.write(str.c_str(), str.size());
-		logFile.close();
-		*/
-	}
-	/*
-	typedef void(*FuncPtr)(const char *);
-	FuncPtr ExtDebug;
-	char errbuf[32];
-	*/
-#endif
 	
-	class VideoCapture {
+	
+	class Encoder {
 	public:
 
-		VideoCapture() {
+		Encoder() {
 			oformat = NULL;
 			ofctx = NULL;
 			videoStream = NULL;
@@ -171,7 +115,7 @@ namespace FFMPEG
 			//av_log_set_callback(avlog_cb);
 		}
 
-		~VideoCapture() {
+		~Encoder() {
 			Free();
 		}
 
@@ -203,17 +147,17 @@ namespace FFMPEG
 		void Remux();
 	};
 	/*
-	VideoCapture* Init(int width, int height, int fps, int bitrate) {
-		VideoCapture *vc = new VideoCapture();
+	Encoder* Init(int width, int height, int fps, int bitrate) {
+		Encoder *vc = new Encoder();
 		vc->Init(width, height, fps, bitrate);
 		return vc;
 	};
 
-	void AddFrame(uint8_t *data, VideoCapture *vc) {
+	void AddFrame(uint8_t *data, Encoder *vc) {
 		vc->AddFrame(data);
 	}
 
-	void Finish(VideoCapture *vc) {
+	void Finish(Encoder *vc) {
 		vc->Finish();
 	}
 	*/

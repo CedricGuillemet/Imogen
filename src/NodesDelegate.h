@@ -369,7 +369,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			if (forceEval)
 			{
-				for (size_t frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
+				for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
 				{
 					SetTime(frame);
 					EvaluationInfo evaluationInfo;

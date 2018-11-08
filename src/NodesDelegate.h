@@ -331,6 +331,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	void SetTime(int time)
 	{
+		gEvaluationTime = time;
 		for (const ImogenNode& node : mNodes)
 		{
 			mEvaluation.SetStageLocalTime(node.mEvaluationTarget, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame));
@@ -350,6 +351,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	virtual void DoForce()
 	{
+		int currentTime = gEvaluationTime;
 		mEvaluation.BeginBatch();
 		for (ImogenNode& node : mNodes)
 		{
@@ -369,6 +371,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			{
 				for (size_t frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
 				{
+					SetTime(frame);
 					EvaluationInfo evaluationInfo;
 					evaluationInfo.forcedDirty = 1;
 					evaluationInfo.uiPass = 0;
@@ -379,6 +382,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 		}
 		mEvaluation.EndBatch();
+		SetTime(currentTime);
+		InvalidateParameters();
 	}
 
 	void InvalidateParameters()

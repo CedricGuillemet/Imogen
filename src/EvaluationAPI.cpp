@@ -596,7 +596,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 	break;
 	case 7:
 	{
-		FFMPEG::ofxFFMPEGVideoWriter *encoder = NULL;
+		FFMPEG::VideoCapture *encoder = NULL;
 		std::string fn(filename);
 		auto iter = gEvaluation.mWriteStreams.find(fn);
 		if (iter != gEvaluation.mWriteStreams.end())
@@ -605,11 +605,11 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 		}
 		else
 		{
-			encoder = new FFMPEG::ofxFFMPEGVideoWriter;
+			encoder = new FFMPEG::VideoCapture;
 			gEvaluation.mWriteStreams[fn] = encoder;
-			encoder->setup(filename, image->mWidth, image->mHeight);
+			encoder->Init(image->mWidth, image->mHeight, 25, 400000);
 		}
-		encoder->addFrame(image->mBits);
+		encoder->AddFrame(image->mBits);
 	}
 		break;
 	}

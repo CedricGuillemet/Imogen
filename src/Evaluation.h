@@ -309,7 +309,7 @@ protected:
 	unsigned int mDisplayCubemapShader;
 
 	// ffmpeg encoders
-	std::map<std::string, FFMPEG::ofxFFMPEGVideoWriter*> mWriteStreams;
+	std::map<std::string, FFMPEG::VideoCapture*> mWriteStreams;
 	std::map<std::string, FFMPEG::FFmpegDecoder*> mReadStreams;
 
 };

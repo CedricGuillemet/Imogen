@@ -435,7 +435,10 @@ void Evaluation::EndBatch()
 
 	// close write streams
 	for (auto& stream : mWriteStreams)
+	{
+		stream.second->Finish();
 		delete stream.second;
+	}
 	mWriteStreams.clear();
 
 	// done

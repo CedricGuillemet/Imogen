@@ -1,8 +1,8 @@
-#include "ffmpegDecode.h"
+#include "ffmpegCodec.h"
 
 #include <iostream>
 
-namespace FFMPEG
+namespace FFMPEGCodec
 {
 
 	int(*Log)(const char *szFormat, ...) = Log;
@@ -16,7 +16,7 @@ namespace FFMPEG
 #  endif
 #endif
 
-// PIX_FMT was renamed to AV_PIX_FMT on this version
+	// PIX_FMT was renamed to AV_PIX_FMT on this version
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(51,74,100)
 #  define AVPixelFormat PixelFormat
 #  define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
@@ -31,13 +31,13 @@ namespace FFMPEG
 #  define AV_PIX_FMT_YUV444P  PIX_FMT_YUV444P
 #endif
 
-// r_frame_rate deprecated in ffmpeg
-// see ffmpeg commit #aba232c for details
+	// r_frame_rate deprecated in ffmpeg
+	// see ffmpeg commit #aba232c for details
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,42,0)
 #  define r_frame_rate avg_frame_rate
 #endif
 
-// Changes for ffmpeg 3.0
+	// Changes for ffmpeg 3.0
 #define USE_FFMPEG_3_0 (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,24,0))
 
 #if USE_FFMPEG_3_0
@@ -57,12 +57,12 @@ namespace FFMPEG
 #define USE_FFMPEG_3_1 (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 48, 101))
 
 #if USE_FFMPEG_3_1
-// AVStream::codec was changed to AVStream::codecpar
+	// AVStream::codec was changed to AVStream::codecpar
 #  define stream_codec(ix) m_format_context->streams[(ix)]->codecpar
-// avcodec_decode_video2 was deprecated.
-// This now works by sending `avpkt` to the decoder, which buffers the
-// decoded image in `avctx`. Then `avcodec_receive_frame` will copy the
-// frame to `picture`.
+	// avcodec_decode_video2 was deprecated.
+	// This now works by sending `avpkt` to the decoder, which buffers the
+	// decoded image in `avctx`. Then `avcodec_receive_frame` will copy the
+	// frame to `picture`.
 	inline int receive_frame(AVCodecContext *avctx, AVFrame *picture,
 		AVPacket *avpkt)
 	{
@@ -99,24 +99,13 @@ namespace FFMPEG
 #  define CODEC_CAP_DELAY AV_CODEC_CAP_DELAY
 #endif
 
-
-
-	void FFmpegDecoder::RegisterAll()
+	void RegisterAll()
 	{
 		av_register_all();
 	}
 
-	bool FFmpegDecoder::Open(const std::string &name)
+	bool Decoder::Open(const std::string &name)
 	{
-		// Temporary workaround: refuse to open a file whose name does not
-		// indicate that it's a movie file. This avoids the problem that ffmpeg
-		// is willing to open tiff and other files better handled by other
-		// plugins. The better long-term solution is to replace av_register_all
-		// with our own function that registers only the formats that we want
-		// this reader to handle. At some point, we will institute that superior
-		// approach, but in the mean time, this is a quick solution that 90%
-		// does the job.
-
 		const char *file_name = name.c_str();
 		av_log_set_level(AV_LOG_FATAL);
 		if (avformat_open_input(&m_format_context, file_name, NULL, NULL) != 0) // avformat_open_input allocs format_context
@@ -296,7 +285,7 @@ namespace FFMPEG
 		AVDictionaryEntry *tag = NULL;
 		/*
 		while ((tag = av_dict_get(m_format_context->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-			m_spec.attribute(tag->key, tag->value);
+		m_spec.attribute(tag->key, tag->value);
 		}
 		*/
 		int rat[2] = { m_frame_rate.num, m_frame_rate.den };
@@ -308,7 +297,7 @@ namespace FFMPEG
 		return true;
 	}
 
-	bool FFmpegDecoder::SeekSubimage(int subimage, int miplevel)
+	bool Decoder::SeekSubimage(int subimage, int miplevel)
 	{
 		if (subimage < 0 || subimage >= m_nsubimages || miplevel > 0)
 		{
@@ -323,12 +312,12 @@ namespace FFMPEG
 		return true;
 	}
 
-	void *FFmpegDecoder::GetRGBData()
+	void *Decoder::GetRGBData()
 	{
 		return m_rgb_frame->data[0];
 	}
 
-	bool FFmpegDecoder::Close(void)
+	bool Decoder::Close(void)
 	{
 		if (m_codec_context)
 			avcodec_close(m_codec_context);
@@ -342,7 +331,7 @@ namespace FFMPEG
 		return true;
 	}
 
-	void FFmpegDecoder::ReadFrame(int frame)
+	void Decoder::ReadFrame(int frame)
 	{
 		if (m_last_decoded_pos + 1 != frame)
 		{
@@ -405,7 +394,7 @@ namespace FFMPEG
 
 #if 0
 	const char *
-		FFmpegDecoder::metadata(const char * key)
+		Decoder::metadata(const char * key)
 	{
 		AVDictionaryEntry * entry = av_dict_get(m_format_context->metadata, key, NULL, 0);
 		return entry ? av_strdup(entry->value) : NULL;
@@ -415,13 +404,13 @@ namespace FFMPEG
 
 
 	bool
-		FFmpegDecoder::has_metadata(const char * key)
+		Decoder::has_metadata(const char * key)
 	{
 		return av_dict_get(m_format_context->metadata, key, NULL, 0); // is there a better to check exists?
 	}
 #endif
 
-	bool FFmpegDecoder::Seek(int frame)
+	bool Decoder::Seek(int frame)
 	{
 		int64_t offset = TimeStamp(frame);
 		int flags = AVSEEK_FLAG_BACKWARD;
@@ -430,7 +419,7 @@ namespace FFMPEG
 		return true;
 	}
 
-	int64_t FFmpegDecoder::TimeStamp(int frame) const
+	int64_t Decoder::TimeStamp(int frame) const
 	{
 		int64_t timestamp = static_cast<int64_t>((static_cast<double> (frame) / (Fps() * av_q2d(m_format_context->streams[m_video_stream]->time_base))));
 		if (static_cast<int64_t>(m_format_context->start_time) != int64_t(AV_NOPTS_VALUE))
@@ -440,7 +429,7 @@ namespace FFMPEG
 		return timestamp;
 	}
 
-	double FFmpegDecoder::Fps() const
+	double Decoder::Fps() const
 	{
 		if (m_frame_rate.den)
 		{
@@ -449,261 +438,258 @@ namespace FFMPEG
 		return 1.0f;
 	}
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////
-	const char *err2str(int errnum)
-	{
-		static char errStr[AV_ERROR_MAX_STRING_SIZE];
-		av_make_error_string(errStr, AV_ERROR_MAX_STRING_SIZE, errnum);
-		return errStr;
+#define VIDEO_TMP_FILE "tmp.h264"
+#define FINAL_FILE_NAME "record.mp4"
+
+
+	using namespace std;
+	void Debug(std::string str, int err) {
+		Log(str.c_str());
 	}
 
-	bool ofxFFMPEGVideoWriter::setup(const char* filename, int width, int height, int bitrate, int framerate) 
-	{
-		if (initialized)
-		{
-			Log("Stream already initialized. Close it before.");
-			return false;
-		}
+	void Encoder::Init(int width, int height, int fpsrate, int bitrate) {
 
-		Log("Video encoding: %s\n", filename);
-		/* register all the formats and codecs */
+		fps = fpsrate;
 
-		/* allocate the output media context */
-		avformat_alloc_output_context2(&oc, NULL, NULL, filename);
-		if (!oc) {
-			Log("Could not deduce output format from file extension: using MPEG.\n");
-			avformat_alloc_output_context2(&oc, NULL, "mpeg", filename);
-		}
-		if (!oc) {
-			Log("could not create AVFormat context\n");
-			return false;
-		}
-		fmt = oc->oformat;
+		int err;
 
-		AVPixelFormat supported_pix_fmt = AV_PIX_FMT_NONE;
-
-		/* Add the audio and video streams using the default format codecs
-		* and initialize the codecs. */
-		video_st = NULL;
-		if (fmt->video_codec != AV_CODEC_ID_NONE) {
-			/* find the video encoder */
-			AVCodecID avcid = fmt->video_codec;
-			codec = avcodec_find_encoder(avcid);
-			if (!codec) {
-				Log("codec not found: %s\n", avcodec_get_name(avcid));
-				return false;
-			}
-			else {
-				const AVPixelFormat* p = codec->pix_fmts;
-				while (p != NULL && *p != AV_PIX_FMT_NONE) {
-					Log("supported pix fmt: %s\n", av_get_pix_fmt_name(*p));
-					supported_pix_fmt = *p;
-					++p;
-				}
-				if (p == NULL || *p == AV_PIX_FMT_NONE) {
-					if (fmt->video_codec == AV_CODEC_ID_RAWVIDEO) {
-						supported_pix_fmt = AV_PIX_FMT_RGB24;
-					}
-					else {
-						supported_pix_fmt = AV_PIX_FMT_YUV420P; /* default pix_fmt */
-					}
-				}
-			}
-
-			video_st = avformat_new_stream(oc, codec);
-			if (!video_st) {
-				Log("Could not allocate stream\n");
-				return false;
-			}
-			video_st->id = oc->nb_streams - 1;
-			c = video_st->codec;
-
-			/* Some formats want stream headers to be separate. */
-			
-			if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-				c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-				
-		}
-
-		/* Now that all the parameters are set, we can open the audio and
-		* video codecs and allocate the necessary encode buffers. */
-		{
-
-			picture = av_frame_alloc();
-			picture->pts = 0;
-
-			/* put sample parameters */
-			c->codec_id = fmt->video_codec;
-			c->codec_type = AVMEDIA_TYPE_VIDEO;
-			c->bit_rate = bitrate;
-			// resolution must be a multiple of two
-			c->width = width;
-			c->height = height;
-			// frames per second
-			c->time_base = /*(AVRational)*/{ 1, framerate };
-			c->pix_fmt = supported_pix_fmt;
-			//        c->gop_size = 10; // emit one intra frame every ten frames
-			//        c->max_b_frames=1;
-			//
-			//        { //try to get the default pix format
-			//            AVCodecContext tmpcc;
-			//            avcodec_get_context_defaults3(&tmpcc, c->codec);
-			//            c->pix_fmt = (tmpcc.pix_fmt != AV_PIX_FMT_NONE) ? tmpcc.pix_fmt : AV_PIX_FMT_YUV420P;
-			//        }
-			int ret = 0;
-
-			/* open it */
-			//        if(c->codec_id != AV_CODEC_ID_RAWVIDEO) {
-			AVDictionary* options = NULL;
-			if ((ret = avcodec_open2(c, codec, &options)) < 0) {
-				Log("Could not open codec: %s\n", err2str(ret));
-				return false;
-			}
-			else {
-				Log("opened %s\n", avcodec_get_name(fmt->video_codec));
-			}
-			//        } else
-			//            Log("raw video, no codec\n");
-
-			/* alloc image and output buffer */
-			picture->data[0] = NULL;
-			picture->linesize[0] = -1;
-			picture->format = c->pix_fmt;
-
-			ret = av_image_alloc(picture->data, picture->linesize, c->width, c->height, (AVPixelFormat)picture->format, 32);
-			if (ret < 0) {
-				Log("Could not allocate raw picture buffer: %s\n", err2str(ret));
-				return false;
-			}
-			else {
-				Log("allocated picture of size %d (ptr %x), linesize %d %d %d %d\n", ret, picture->data[0], picture->linesize[0], picture->linesize[1], picture->linesize[2], picture->linesize[3]);
-			}
-
-			picture_rgb24 = av_frame_alloc();
-			picture_rgb24->format = AV_PIX_FMT_RGB24;
-
-			if ((ret = av_image_alloc(picture_rgb24->data, picture_rgb24->linesize, c->width, c->height, (AVPixelFormat)picture_rgb24->format, 24)) < 0) {
-				Log("cannot allocate RGB temp image\n");
-				return false;
-			}
-			else
-				Log("allocated picture of size %d (ptr %x), linesize %d %d %d %d\n", ret, picture_rgb24->data[0], picture_rgb24->linesize[0], picture_rgb24->linesize[1], picture_rgb24->linesize[2], picture_rgb24->linesize[3]);
-
-
-			size = ret;
-		}
-
-		av_dump_format(oc, 0, filename, 1);
-		/* open the output file, if needed */
-		if (!(fmt->flags & AVFMT_NOFILE)) {
-			int ret;
-			if ((ret = avio_open(&oc->pb, filename, AVIO_FLAG_WRITE)) < 0) {
-				Log("Could not open '%s': %s\n", filename, err2str(ret));
-				return false;
-			}
-		}
-		/* Write the stream header, if any. */
-		int ret = avformat_write_header(oc, NULL);
-		if (ret < 0) {
-			Log("Error occurred when opening output file: %s\n", err2str(ret));
-			return false;
-		}
-
-		/* get sws context for RGB24 -> YUV420 conversion */
-		sws_ctx = sws_getContext(c->width, c->height, (AVPixelFormat)picture_rgb24->format,
-			c->width, c->height, (AVPixelFormat)picture->format,
-			SWS_BICUBIC, NULL, NULL, NULL);
-		if (!sws_ctx) {
-			Log("Could not initialize the conversion context\n");
-			return false;
-		}
-
-		initialized = true;
-		return true;
-	}
-
-	/* add a frame to the video file, RGB 24bpp format */
-	bool ofxFFMPEGVideoWriter::addFrame(const uint8_t* pixels) 
-	{
-		if (!initialized)
-		{
-			Log("Trying to add frame on an uninitialized video stream.");
-			return false;
-		}
-		/* copy the buffer */
-		memcpy(picture_rgb24->data[0], pixels, size);
-
-		/* convert RGB24 to YUV420 */
-		sws_scale(sws_ctx, picture_rgb24->data, picture_rgb24->linesize, 0, c->height, picture->data, picture->linesize);
-
-		int ret = -1;
-#if 0
-		if (oc->oformat->flags & AVFMT_RAWPICTURE) {
-			/* Raw video case - directly store the picture in the packet */
-			AVPacket pkt;
-			av_init_packet(&pkt);
-			pkt.flags |= AV_PKT_FLAG_KEY;
-			pkt.stream_index = video_st->index;
-			pkt.data = picture->data[0];
-			pkt.size = sizeof(AVPicture);
-			ret = av_interleaved_write_frame(oc, &pkt);
-		}
-		else
-#endif
-		{
-			AVPacket pkt = { 0 };
-			int got_packet;
-			av_init_packet(&pkt);
-			/* encode the image */
-			ret = avcodec_encode_video2(c, &pkt, picture, &got_packet);
-			if (ret < 0)
-			{
-				Log("Error encoding video frame: %s\n", err2str(ret));
-				return false;
-			}
-			/* If size is zero, it means the image was buffered. */
-			if (!ret && got_packet && pkt.size) {
-				pkt.stream_index = video_st->index;
-				/* Write the compressed frame to the media file. */
-				ret = av_interleaved_write_frame(oc, &pkt);
-			}
-			else {
-				ret = 0;
-			}
-		}
-		picture->pts += av_rescale_q(1, video_st->codec->time_base, video_st->time_base);
-		frame_count++;
-		return true;
-	}
-
-
-	void ofxFFMPEGVideoWriter::close() 
-	{
-		if (!initialized)
+		if (!(oformat = av_guess_format(NULL, VIDEO_TMP_FILE, NULL))) {
+			Debug("Failed to define output format", 0);
 			return;
-		/* Write the trailer, if any. The trailer must be written before you
-		* close the CodecContexts open when you wrote the header; otherwise
-		* av_write_trailer() may try to use memory that was freed on
-		* av_codec_close(). */
-		av_write_trailer(oc);
-		/* Close each codec. */
+		}
 
-		avcodec_close(video_st->codec);
-		av_freep(&(picture->data[0]));
-		av_free(picture);
+		if ((err = avformat_alloc_output_context2(&ofctx, oformat, NULL, VIDEO_TMP_FILE) < 0)) {
+			Debug("Failed to allocate output context", err);
+			Free();
+			return;
+		}
 
-		if (!(fmt->flags & AVFMT_NOFILE))
-			/* Close the output file. */
-			avio_close(oc->pb);
+		if (!(codec = avcodec_find_encoder(oformat->video_codec))) {
+			Debug("Failed to find encoder", 0);
+			Free();
+			return;
+		}
 
-		/* free the stream */
-		avformat_free_context(oc);
+		if (!(videoStream = avformat_new_stream(ofctx, codec))) {
+			Debug("Failed to create new stream", 0);
+			Free();
+			return;
+		}
 
-		Log("closed video file\n");
+		if (!(cctx = avcodec_alloc_context3(codec))) {
+			Debug("Failed to allocate codec context", 0);
+			Free();
+			return;
+		}
 
-		initialized = false;
-		frame_count = 0;
+		videoStream->codecpar->codec_id = oformat->video_codec;
+		videoStream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+		videoStream->codecpar->width = width;
+		videoStream->codecpar->height = height;
+		videoStream->codecpar->format = AV_PIX_FMT_YUV420P;
+		videoStream->codecpar->bit_rate = bitrate * 1000;
+		videoStream->time_base = { 1, fps };
+
+		avcodec_parameters_to_context(cctx, videoStream->codecpar);
+		cctx->time_base = { 1, fps };
+		cctx->max_b_frames = 2;
+		cctx->gop_size = 12;
+		/*if (videoStream->codecpar->codec_id == AV_CODEC_ID_H264) {
+		av_opt_set(cctx, "preset", "ultrafast", 0);
+		}*/
+		if (ofctx->oformat->flags & AVFMT_GLOBALHEADER) {
+			cctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+		}
+		avcodec_parameters_from_context(videoStream->codecpar, cctx);
+
+		if ((err = avcodec_open2(cctx, codec, NULL)) < 0) {
+			Debug("Failed to open codec", err);
+			Free();
+			return;
+		}
+
+		if (!(oformat->flags & AVFMT_NOFILE)) {
+			if ((err = avio_open(&ofctx->pb, VIDEO_TMP_FILE, AVIO_FLAG_WRITE)) < 0) {
+				Debug("Failed to open file", err);
+				Free();
+				return;
+			}
+		}
+
+		if ((err = avformat_write_header(ofctx, NULL)) < 0) {
+			Debug("Failed to write header", err);
+			Free();
+			return;
+		}
+
+		av_dump_format(ofctx, 0, VIDEO_TMP_FILE, 1);
 	}
 
+	void Encoder::AddFrame(uint8_t *data) {
+		int err;
+		if (!videoFrame) {
 
+			videoFrame = av_frame_alloc();
+			videoFrame->format = AV_PIX_FMT_YUV420P;
+			videoFrame->width = cctx->width;
+			videoFrame->height = cctx->height;
+
+			if ((err = av_frame_get_buffer(videoFrame, 32)) < 0) {
+				Debug("Failed to allocate picture", err);
+				return;
+			}
+		}
+
+		if (!swsCtx) {
+			swsCtx = sws_getContext(cctx->width, cctx->height, AV_PIX_FMT_RGBA, cctx->width, cctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, 0, 0, 0);
+		}
+
+		int inLinesize[1] = { 4 * cctx->width };
+
+		// From RGB to YUV
+
+		sws_scale(swsCtx, (const uint8_t * const *)&data, inLinesize, 0, cctx->height, videoFrame->data, videoFrame->linesize);
+
+		videoFrame->pts = frameCounter++;
+
+		if ((err = avcodec_send_frame(cctx, videoFrame)) < 0) {
+			Debug("Failed to send frame", err);
+			return;
+		}
+
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		pkt.data = NULL;
+		pkt.size = 0;
+
+		if (avcodec_receive_packet(cctx, &pkt) == 0) {
+			pkt.flags |= AV_PKT_FLAG_KEY;
+			av_interleaved_write_frame(ofctx, &pkt);
+			av_packet_unref(&pkt);
+		}
+	}
+
+	void Encoder::Finish() {
+		//DELAYED FRAMES
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		pkt.data = NULL;
+		pkt.size = 0;
+
+		for (;;) {
+			avcodec_send_frame(cctx, NULL);
+			if (avcodec_receive_packet(cctx, &pkt) == 0) {
+				av_interleaved_write_frame(ofctx, &pkt);
+				av_packet_unref(&pkt);
+			}
+			else {
+				break;
+			}
+		}
+
+		av_write_trailer(ofctx);
+		if (!(oformat->flags & AVFMT_NOFILE)) {
+			int err = avio_close(ofctx->pb);
+			if (err < 0) {
+				Debug("Failed to close file", err);
+			}
+		}
+
+		Free();
+
+		Remux();
+	}
+
+	void Encoder::Free() {
+		if (videoFrame) {
+			av_frame_free(&videoFrame);
+			videoFrame = NULL;
+		}
+		if (cctx) {
+			avcodec_free_context(&cctx);
+			cctx = NULL;
+		}
+		if (ofctx) {
+			avformat_free_context(ofctx);
+			ofctx = NULL;
+		}
+		if (swsCtx) {
+			sws_freeContext(swsCtx);
+			swsCtx = NULL;
+		}
+	}
+
+	void Encoder::Remux() {
+		AVFormatContext *ifmt_ctx = NULL, *ofmt_ctx = NULL;
+		int err;
+
+		if ((err = avformat_open_input(&ifmt_ctx, VIDEO_TMP_FILE, 0, 0)) < 0) {
+			Debug("Failed to open input file for remuxing", err);
+			goto end;
+		}
+		if ((err = avformat_find_stream_info(ifmt_ctx, 0)) < 0) {
+			Debug("Failed to retrieve input stream information", err);
+			goto end;
+		}
+		if ((err = avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, FINAL_FILE_NAME))) {
+			Debug("Failed to allocate output context", err);
+			goto end;
+		}
+
+		AVStream *inVideoStream = ifmt_ctx->streams[0];
+		AVStream *outVideoStream = avformat_new_stream(ofmt_ctx, NULL);
+		if (!outVideoStream) {
+			Debug("Failed to allocate output video stream", 0);
+			goto end;
+		}
+		outVideoStream->time_base = { 1, fps };
+		avcodec_parameters_copy(outVideoStream->codecpar, inVideoStream->codecpar);
+		outVideoStream->codecpar->codec_tag = 0;
+
+		if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+			if ((err = avio_open(&ofmt_ctx->pb, FINAL_FILE_NAME, AVIO_FLAG_WRITE)) < 0) {
+				Debug("Failed to open output file", err);
+				goto end;
+			}
+		}
+
+		if ((err = avformat_write_header(ofmt_ctx, 0)) < 0) {
+			Debug("Failed to write header to output file", err);
+			goto end;
+		}
+
+		AVPacket videoPkt;
+		int ts = 0;
+		while (true) {
+			if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
+				break;
+			}
+			videoPkt.stream_index = outVideoStream->index;
+			videoPkt.pts = ts;
+			videoPkt.dts = ts;
+			videoPkt.duration = av_rescale_q(videoPkt.duration, inVideoStream->time_base, outVideoStream->time_base);
+			ts += videoPkt.duration;
+			videoPkt.pos = -1;
+
+			if ((err = av_interleaved_write_frame(ofmt_ctx, &videoPkt)) < 0) {
+				Debug("Failed to mux packet", err);
+				av_packet_unref(&videoPkt);
+				break;
+			}
+			av_packet_unref(&videoPkt);
+		}
+
+		av_write_trailer(ofmt_ctx);
+
+	end:
+		if (ifmt_ctx) {
+			avformat_close_input(&ifmt_ctx);
+		}
+		if (ofmt_ctx && !(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
+			avio_closep(&ofmt_ctx->pb);
+		}
+		if (ofmt_ctx) {
+			avformat_free_context(ofmt_ctx);
+		}
+	}
 }

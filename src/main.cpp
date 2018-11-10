@@ -36,7 +36,7 @@
 #include "TaskScheduler.h"
 #include "stb_image.h"
 #include "stb_image_write.h"
-#include "ffmpegDecode.h"
+#include "ffmpegCodec.h"
 
 TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 unsigned int gCPUCount = 1;
@@ -120,8 +120,8 @@ int main(int, char**)
 {
 	g_TS.Initialize();
 	LoadMetaNodes();
-	FFMPEG::FFmpegDecoder::RegisterAll();
-	FFMPEG::Log = Log;
+	FFMPEGCodec::RegisterAll();
+	FFMPEGCodec::Log = Log;
 
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);

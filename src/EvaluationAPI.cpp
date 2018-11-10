@@ -43,7 +43,7 @@
 #include "TaskScheduler.h"
 #include "NodesDelegate.h"
 #include "cmft/print.h"
-#include "ffmpegDecode.h"
+#include "ffmpegCodec.h"
 
 extern enki::TaskScheduler g_TS;
 
@@ -448,7 +448,7 @@ struct EValuationFunction
 	void *function;
 };
 
-static Image_t DecodeImage(FFMPEG::FFmpegDecoder *decoder, int frame)
+static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
 {
 	decoder->ReadFrame(frame);
 	Image_t image;
@@ -489,12 +489,12 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		cmft::Image img;
 		if (!cmft::imageLoad(img, filename))
 		{
-			FFMPEG::FFmpegDecoder* decoder = NULL;
+			FFMPEGCodec::Decoder* decoder = NULL;
 			std::string fn(filename);
 			auto iter = gEvaluation.mReadStreams.find(fn);
 			if (iter == gEvaluation.mReadStreams.end())
 			{
-				decoder = new FFMPEG::FFmpegDecoder;
+				decoder = new FFMPEGCodec::Decoder;
 				gEvaluation.mReadStreams[fn] = decoder;
 				decoder->Open(fn);
 			}
@@ -596,7 +596,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 	break;
 	case 7:
 	{
-		FFMPEG::ofxFFMPEGVideoWriter *encoder = NULL;
+		FFMPEGCodec::Encoder *encoder = NULL;
 		std::string fn(filename);
 		auto iter = gEvaluation.mWriteStreams.find(fn);
 		if (iter != gEvaluation.mWriteStreams.end())
@@ -605,11 +605,11 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 		}
 		else
 		{
-			encoder = new FFMPEG::ofxFFMPEGVideoWriter;
+			encoder = new FFMPEGCodec::Encoder;
 			gEvaluation.mWriteStreams[fn] = encoder;
-			encoder->setup(filename, image->mWidth, image->mHeight);
+			encoder->Init(image->mWidth, image->mHeight, 25, 400000);
 		}
-		encoder->addFrame(image->mBits);
+		encoder->AddFrame(image->mBits);
 	}
 		break;
 	}
@@ -716,7 +716,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
 	}
-	stage.mDecoder = (FFMPEG::FFmpegDecoder *)image->mDecoder;
+	stage.mDecoder = (FFMPEGCodec::Decoder *)image->mDecoder;
 	gEvaluation.SetTargetDirty(target, true);
 	return EVAL_OK;
 }

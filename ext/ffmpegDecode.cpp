@@ -519,10 +519,10 @@ namespace FFMPEG
 			c = video_st->codec;
 
 			/* Some formats want stream headers to be separate. */
-			/*
+			
 			if (oc->oformat->flags & AVFMT_GLOBALHEADER)
-				c->flags |= CODEC_FLAG_GLOBAL_HEADER;
-				*/
+				c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+				
 		}
 
 		/* Now that all the parameters are set, we can open the audio and
@@ -534,6 +534,7 @@ namespace FFMPEG
 
 			/* put sample parameters */
 			c->codec_id = fmt->video_codec;
+			c->codec_type = AVMEDIA_TYPE_VIDEO;
 			c->bit_rate = bitrate;
 			// resolution must be a multiple of two
 			c->width = width;

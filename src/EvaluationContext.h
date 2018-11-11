@@ -3,7 +3,7 @@
 
 struct EvaluationContext
 {
-	EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation);
+	EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
 	~EvaluationContext();
 
 	void RunAll();
@@ -31,6 +31,8 @@ protected:
 	std::vector<RenderTarget*> mAllocatedTargets; // allocated RT, might be present multiple times in mStageTarget
 	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 
+	int mDefaultWidth;
+	int mDefaultHeight;
 	bool mbSynchronousEvaluation;
 };
 

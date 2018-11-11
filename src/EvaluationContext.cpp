@@ -50,7 +50,11 @@ static const float rotMatrices[6][16] = {
 };
 
 
-EvaluationContext::EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation) : mEvaluation(evaluation), mbSynchronousEvaluation(synchronousEvaluation)
+EvaluationContext::EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
+	: mEvaluation(evaluation)
+	, mbSynchronousEvaluation(synchronousEvaluation)
+	, mDefaultWidth(defaultWidth)
+	, mDefaultHeight(defaultHeight)
 {
 
 }
@@ -211,6 +215,7 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 	}
 	
 	EvaluationInfo evaluationInfo;
+	memset(&evaluationInfo, 0, sizeof(EvaluationInfo));
 	// run C nodes
 	for (size_t index : nodesToEvaluate)
 	{
@@ -225,9 +230,17 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 		auto& currentEvaluation = mEvaluation.GetEvaluationStage(index);
 		if (!(currentEvaluation.mEvaluationMask&EvaluationGLSL))
 			continue;
+		
+		if (!mStageTarget[index]->mGLTexID)
+			mStageTarget[index]->InitBuffer(mDefaultWidth, mDefaultHeight);
+
 		EvaluateGLSL(currentEvaluation, index, evaluationInfo);
 	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glUseProgram(0);
 }
+
 void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)
 {
 	const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(target);

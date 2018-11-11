@@ -263,7 +263,6 @@ protected:
 	std::vector<EvaluationStage> mEvaluationStages;
 	std::vector<size_t> mEvaluationOrderList;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
-	void FinishEvaluation();
 
 	// ui callback shaders
 	unsigned int mProgressShader;

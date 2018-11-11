@@ -34,7 +34,7 @@
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
-	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false), mEditingContext(evaluation, false)
+	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false), mEditingContext(evaluation, false, 256, 256)
 	{
 		mCategoriesCount = 9;
 		static const char *categories[] = {
@@ -377,7 +377,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			if (forceEval)
 			{
-				EvaluationContext writeContext(mEvaluation, true);
+				EvaluationContext writeContext(mEvaluation, true, 1024, 1024);
 				gCurrentContext = &writeContext;
 				for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
 				{

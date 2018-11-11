@@ -728,12 +728,6 @@ void EvaluationStage::Clear()
 	//gEvaluation.UnreferenceRenderTarget(&mTarget);
 }
 
-void Evaluation::FinishEvaluation()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glUseProgram(0);
-}
-
 unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int cubeFace)
 {
 	if (!textureId)

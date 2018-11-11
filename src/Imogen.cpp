@@ -706,6 +706,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		}
 		NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
 		NodeGraphUpdateScrolling();
+		nodeGraphDelegate.mEditingContext.RunAll();
 	}
 }
 

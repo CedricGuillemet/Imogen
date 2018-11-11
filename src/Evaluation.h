@@ -260,35 +260,10 @@ protected:
 	void APIInit();
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
-	//int mEvaluationMode;
-	//bool mbSynchronousEvaluation;
-	//bool mbBatching;
-
-	//int mAllocatedTargets;
-	//unsigned int equiRectTexture;
-	//int mDirtyCount;
-
-	
-
-	
-
-
-	
-
-	
 	std::vector<EvaluationStage> mEvaluationStages;
 	std::vector<size_t> mEvaluationOrderList;
-	//std::vector<size_t> mSvgEvalList;
-
-	//void SetMouseInfos(EvaluationInfo &evaluationInfo, EvaluationStage &evaluationStage) const;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
-	//void EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& evaluationInfo);
-	//void EvaluateC(EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void FinishEvaluation();
-
-	//std::vector<RenderTarget*> mAllocatedRenderTargets;
-	//void SetEvaluationMemoryMode(int mode);
-	
 
 	// ui callback shaders
 	unsigned int mProgressShader;
@@ -296,8 +271,6 @@ protected:
 
 	// ffmpeg encoders
 	FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
-	
-
 };
 
 extern Evaluation gEvaluation;

@@ -102,8 +102,6 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 
 	if (stage.mEvaluationMask&EvaluationGLSL)
 		BindGLSLParameters(stage);
-
-	//SetTargetDirty(target);
 }
 /*
 void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo)

@@ -63,6 +63,11 @@ EvaluationContext::~EvaluationContext()
 		delete stream.second;
 	}
 	mWriteStreams.clear();
+
+	for (auto* tgt : mAllocatedTargets)
+	{
+		delete tgt;
+	}
 }
 
 static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage &evaluationStage)
@@ -183,7 +188,8 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 	try // todo: find a better solution than a try catch
 	{
 		const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
-		evaluator.mCFunction(evaluationStage.mParameters, &evaluationInfo);
+		if (evaluator.mCFunction)
+			evaluator.mCFunction(evaluationStage.mParameters, &evaluationInfo);
 	}
 	catch (...)
 	{
@@ -193,12 +199,23 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 
 void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 {
+	// alloc targets
+	mStageTarget.resize(mEvaluation.GetStagesCount(), NULL);
+	mAllocatedTargets.resize(mEvaluation.GetStagesCount(), NULL);
+	for (size_t i = 0; i < mEvaluation.GetStagesCount(); i++)
+	{
+		if (!mStageTarget[i])
+		{
+			mStageTarget[i] = mAllocatedTargets[i] = new RenderTarget;
+		}
+	}
+	
 	EvaluationInfo evaluationInfo;
 	// run C nodes
 	for (size_t index : nodesToEvaluate)
 	{
 		auto& currentEvaluation = mEvaluation.GetEvaluationStage(index);
-		if (!currentEvaluation.mEvaluationMask&EvaluationC)
+		if (!(currentEvaluation.mEvaluationMask&EvaluationC))
 			continue;
 		EvaluateC(currentEvaluation, index, evaluationInfo);
 	}

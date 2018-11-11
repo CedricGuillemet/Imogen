@@ -104,11 +104,10 @@ namespace FFMPEGCodec
 		av_register_all();
 	}
 
-	bool Decoder::Open(const std::string &name)
+	bool Decoder::Open(const std::string &filename)
 	{
-		const char *file_name = name.c_str();
 		av_log_set_level(AV_LOG_FATAL);
-		if (avformat_open_input(&m_format_context, file_name, NULL, NULL) != 0) // avformat_open_input allocs format_context
+		if (avformat_open_input(&m_format_context, filename.c_str(), NULL, NULL) != 0) // avformat_open_input allocs format_context
 		{
 			//error("\"%s\" could not open input", file_name);
 			return false;
@@ -293,6 +292,7 @@ namespace FFMPEGCodec
 		//m_spec.attribute("oiio:Movie", true);
 		//m_spec.attribute("oiio:BitsPerSample", m_codec_context->bits_per_raw_sample);
 		m_nsubimages = m_frames;
+		m_filename = filename;
 		//spec = m_spec;
 		return true;
 	}

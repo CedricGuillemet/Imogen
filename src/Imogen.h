@@ -48,6 +48,7 @@ struct EvaluatorFile
 	std::string mFilename;
 	EVALUATOR_TYPE mEvaluatorType;
 };
+
 struct Imogen
 {
 	Imogen();

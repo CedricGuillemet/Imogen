@@ -24,17 +24,16 @@
 //
 
 #include "Evaluation.h"
+#include "Evaluators.h"
 #include <vector>
 #include <algorithm>
 #include <map>
 
 
-std::string Evaluation::GetEvaluator(const std::string& filename)
-{
-	return mEvaluatorScripts[filename].mText;
-}
 
-Evaluation::Evaluation() : mDirtyCount(0), mEvaluationMode(-1), mEvaluationStateGLSLBuffer(0), mProgressShader(0), mDisplayCubemapShader(0), mbSynchronousEvaluation(false), mbBatching(false)
+
+
+Evaluation::Evaluation() : mProgressShader(0), mDisplayCubemapShader(0)
 {
 	
 }
@@ -52,47 +51,24 @@ void Evaluation::Finish()
 size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 {
 	EvaluationStage evaluation;
-	evaluation.mTarget				= NULL;
+#ifdef _DEBUG
+	evaluation.mNodeTypename = nodeName;
+#endif
 	evaluation.mDecoder				= NULL;
 	evaluation.mUseCountByOthers	= 0;
-	evaluation.mbDirty				= true;
 	evaluation.mbForceEval			= false;
 	evaluation.mbProcessing			= false;
-	evaluation.mbFreeSizing			= true;
+	//evaluation.mbFreeSizing			= true;
 	evaluation.mNodeType			= nodeType;
 	evaluation.mParametersBuffer	= 0;
-	evaluation.mEvaluationMask		= 0;
 	evaluation.mBlendingSrc			= ONE;
 	evaluation.mBlendingDst			= ZERO;
 	evaluation.mLocalTime			= 0;
-#ifdef _DEBUG
-	evaluation.mNodeTypename		= nodeName;
-#endif
+	evaluation.mEvaluationMask		= gEvaluators.GetMask(nodeType, nodeName);
 
-	bool valid(false);
-	auto iter = mEvaluatorScripts.find(nodeName+".glsl");
-	if (iter != mEvaluatorScripts.end())
+	if (evaluation.mEvaluationMask)
 	{
-		evaluation.mEvaluationMask |= EvaluationGLSL;
-		iter->second.mNodeType = int(nodeType);
-		evaluation.mTarget = new RenderTarget;
-		mAllocatedRenderTargets.push_back(evaluation.mTarget);
-		mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
-		valid = true;
-	}
-	iter = mEvaluatorScripts.find(nodeName + ".c");
-	if (iter != mEvaluatorScripts.end())
-	{
-		evaluation.mEvaluationMask |= EvaluationC;
-		iter->second.mNodeType = int(nodeType);
-		mEvaluatorPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
-		mEvaluatorPerNodeType[nodeType].mMem = iter->second.mMem;
-		valid = true;
-	}
-
-	if (valid)
-	{
-		mDirtyCount++;
+		//mDirtyCount++;
 		mEvaluationStages.push_back(evaluation);
 		return mEvaluationStages.size() - 1;
 	}
@@ -102,7 +78,7 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 
 void Evaluation::DelEvaluationTarget(size_t target)
 {
-	SetTargetDirty(target);
+	//SetTargetDirty(target);
 	EvaluationStage& ev = mEvaluationStages[target];
 	ev.Clear();
 	mEvaluationStages.erase(mEvaluationStages.begin() + target);
@@ -118,13 +94,6 @@ void Evaluation::DelEvaluationTarget(size_t target)
 	}
 }
 
-unsigned int Evaluation::GetEvaluationTexture(size_t target)
-{
-	if (!mEvaluationStages[target].mTarget)
-		return 0;
-	return mEvaluationStages[target].mTarget->mGLTexID;
-}
-
 void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)
 {
 	EvaluationStage& stage = mEvaluationStages[target];
@@ -134,9 +103,9 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 	if (stage.mEvaluationMask&EvaluationGLSL)
 		BindGLSLParameters(stage);
 
-	SetTargetDirty(target);
+	//SetTargetDirty(target);
 }
-
+/*
 void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo)
 {
 	EvaluationStage& evaluation = mEvaluationStages[index];
@@ -167,7 +136,8 @@ void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, b
 	if (evaluation.mEvaluationMask&EvaluationGLSL)
 		EvaluateGLSL(evaluation, evaluationInfo);
 }
-
+*/
+/*
 void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 {
 	if (evaluationMode == mEvaluationMode)
@@ -245,7 +215,8 @@ void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 	}
 	//Log("Using %d allocated buffers.\n", mAllocatedRenderTargets.size());
 }
-
+*/
+/*
 void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation, bool synchronous)
 {
 	if (mEvaluationOrderList.empty())
@@ -285,32 +256,32 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation, bool
 
 	FinishEvaluation();
 }
-
+*/
 void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
 {
 	mEvaluationStages[target].mInputSamplers = inputSamplers;
-	SetTargetDirty(target);
+	//SetTargetDirty(target);
 }
 
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
 	mEvaluationStages[target].mInput.mInputs[slot] = source;
 	mEvaluationStages[source].mUseCountByOthers++;
-	SetTargetDirty(target);
+	//SetTargetDirty(target);
 }
 
 void Evaluation::DelEvaluationInput(size_t target, int slot)
 {
 	mEvaluationStages[mEvaluationStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
 	mEvaluationStages[target].mInput.mInputs[slot] = -1;
-	SetTargetDirty(target);
+	//SetTargetDirty(target);
 }
 
 void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 {
 	mEvaluationOrderList = nodeOrderList;
 }
-
+/*
 void Evaluation::SetTargetDirty(size_t target, bool onlyChild)
 {
 	if (!mEvaluationStages[target].mbDirty)
@@ -344,7 +315,7 @@ void Evaluation::SetTargetDirty(size_t target, bool onlyChild)
 	if (onlyChild)
 		mEvaluationStages[target].mbDirty = false;
 }
-
+*/
 void Evaluation::Clear()
 {
 	for (auto& ev : mEvaluationStages)
@@ -394,24 +365,8 @@ void Evaluation::SetStageLocalTime(size_t target, int localTime)
 	}
 }
 
-void Evaluation::RecurseGetUse(size_t target, std::vector<size_t>& usedNodes)
-{
-	EvaluationStage& evaluation = mEvaluationStages[target];
-	const Input& input = evaluation.mInput;
 
-	std::vector<RenderTarget*> usingTargets;
-	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
-	{
-		int targetIndex = input.mInputs[inputIndex];
-		if (targetIndex == -1)
-			continue;
-		RecurseGetUse(targetIndex, usedNodes);
-	}
-
-	if (std::find(usedNodes.begin(), usedNodes.end(), target) == usedNodes.end())
-		usedNodes.push_back(target);
-}
-
+/*
 void Evaluation::BeginBatch()
 {
 	assert(!mbBatching);
@@ -434,12 +389,7 @@ void Evaluation::EndBatch()
 	gEvaluation.RunEvaluation(256, 256, true, false);
 
 	// close write streams
-	for (auto& stream : mWriteStreams)
-	{
-		stream.second->Finish();
-		delete stream.second;
-	}
-	mWriteStreams.clear();
+	
 
 	// done
 	mbBatching = false;
@@ -453,4 +403,15 @@ int Evaluation::Evaluate(int target, int width, int height, Image *image)
 
 	return EVAL_OK;
 }
-
+*/
+FFMPEGCodec::Decoder* Evaluation::FindDecoder(const std::string& filename)
+{
+	for (auto& evaluation : mEvaluationStages)
+	{
+		if (evaluation.mDecoder && evaluation.mDecoder->GetFilename() == filename)
+			return evaluation.mDecoder.get();
+	}
+	auto decoder = new FFMPEGCodec::Decoder;
+	decoder->Open(filename);
+	return decoder;
+}

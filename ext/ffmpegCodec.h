@@ -28,6 +28,10 @@ namespace FFMPEGCodec
 	{
 	public:
 		Decoder() { Init(); }
+		virtual ~Decoder() 
+		{ 
+			Close(); 
+		}
 		bool Open(const std::string &name);
 		bool Close(void);
 		int CurrentSubimage(void) const {
@@ -37,17 +41,14 @@ namespace FFMPEGCodec
 
 		void *GetRGBData();
 		void ReadFrame(int pos);
-#if 0
-		const char *metadata(const char * key);
-		bool has_metadata(const char * key);
-#endif
+
 		bool Seek(int pos);
 		double Fps() const;
 		int64_t TimeStamp(int pos) const;
 
 		size_t mWidth, mHeight;
 		size_t mFrameCount;
-
+		const std::string GetFilename() const { return m_filename; }
 	private:
 
 		std::string m_filename;

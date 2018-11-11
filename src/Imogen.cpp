@@ -38,6 +38,7 @@
 #include "stb_image.h"
 #include "imgui_stdlib.h"
 #include "ImSequencer.h"
+#include "Evaluators.h"
 
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
 extern Evaluation gEvaluation;
@@ -224,7 +225,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 	if (currentShaderIndex == -1)
 	{
 		currentShaderIndex = 0;
-		editor.SetText(evaluation.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
+		editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
 	}
 	auto cpos = editor.GetCursorPosition();
 	ImGui::BeginChild(13, ImVec2(250, 800));
@@ -234,7 +235,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		if (ImGui::Selectable(mEvaluatorFiles[i].mFilename.c_str(), &selected))
 		{
 			currentShaderIndex = int(i);
-			editor.SetText(evaluation.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
+			editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
 			editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates());
 		}
 	}
@@ -251,7 +252,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		t.close();
 
 		// TODO
-		evaluation.SetEvaluators(mEvaluatorFiles);
+		gEvaluators.SetEvaluators(mEvaluatorFiles);
 		nodeGraphDelegate.InvalidateParameters();
 	}
 
@@ -275,34 +276,38 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	float w = ImGui::GetWindowContentRegionWidth();
 	int imageWidth(1), imageHeight(1);
 	Evaluation::GetEvaluationSize(selNode, &imageWidth, &imageHeight);
-	float ratio = float(imageHeight) / float(imageWidth);
-	float h = w * ratio;
-	ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
 	ImRect rc;
+	if (imageWidth && imageHeight)
+	{
+		float ratio = float(imageHeight) / float(imageWidth);
+		float h = w * ratio;
+		ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+		
 
-	if (forceUI)
-	{
-		ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
-		rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-		ImDrawList* draw_list = ImGui::GetWindowDrawList();
-		draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
-	}
-	else
-	{
-		if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+		if (forceUI)
+		{
 			ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
-		else
-			ImGui::ImageButton((ImTextureID)(int64_t)((selNode != -1) ? evaluation.GetEvaluationTexture(selNode) : 0), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-		rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-
-		ImDrawList* draw_list = ImGui::GetWindowDrawList();
-		if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
-		{
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, rc, selNode)));
-		}
-		else if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
-		{
+			rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
+		}
+		else
+		{
+			if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+				ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
+			else
+				ImGui::ImageButton((ImTextureID)(int64_t)((selNode != -1) ? nodeGraphDelegate.mEditingContext.GetEvaluationTexture(selNode) : 0), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+			rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+			{
+				draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, rc, selNode)));
+			}
+			else if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+			{
+				draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
+			}
 		}
 	}
 	ImGui::PopStyleColor(3);

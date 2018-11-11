@@ -131,6 +131,7 @@ enum ConTypes
 	Con_Float4,
 	Con_Color4,
 	Con_Int,
+	Con_Int2,
 	Con_Ramp,
 	Con_Angle,
 	Con_Angle2,

@@ -30,10 +30,11 @@
 #include "curve.h"
 #include "Library.h"
 #include "nfd.h"
+#include "EvaluationContext.h"
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
-	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false)
+	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false), mEditingContext(evaluation, false)
 	{
 		mCategoriesCount = 9;
 		static const char *categories[] = {
@@ -49,9 +50,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		mCategories = categories;
 		assert(!mInstance);
 		mInstance = this;
+		gCurrentContext = &mEditingContext;
 	}
 
 	Evaluation& mEvaluation;
+	EvaluationContext mEditingContext;
+
 	struct ImogenNode
 	{
 #ifdef _DEBUG
@@ -95,7 +99,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	virtual unsigned int GetNodeTexture(size_t index)
 	{
-		return mEvaluation.GetEvaluationTexture(mNodes[index].mEvaluationTarget);
+		return mEditingContext.GetEvaluationTexture(mNodes[index].mEvaluationTarget);
 	}
 
 	virtual void AddNode(size_t type)
@@ -208,6 +212,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_Int:
 				dirty |= ImGui::InputInt(param.mName.c_str(), (int*)paramBuffer);
 				break;
+			case Con_Int2:
+				dirty |= ImGui::InputInt2(param.mName.c_str(), (int*)paramBuffer);
+				break;
 			case Con_Ramp:
 				{
 					ImVec2 points[8];
@@ -313,7 +320,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			EvaluationInfo evaluationInfo;
 			evaluationInfo.forcedDirty = 1;
 			evaluationInfo.uiPass = 0;
-			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+			//mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+			mEditingContext.RunForward(node.mEvaluationTarget);
 		}
 	}
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd)
@@ -352,7 +360,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void DoForce()
 	{
 		int currentTime = gEvaluationTime;
-		mEvaluation.BeginBatch();
+		//mEvaluation.BeginBatch();
 		for (ImogenNode& node : mNodes)
 		{
 			const MetaNode& currentMeta = gMetaNodes[node.mType];
@@ -369,6 +377,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			if (forceEval)
 			{
+				EvaluationContext writeContext(mEvaluation, true);
+				gCurrentContext = &writeContext;
 				for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
 				{
 					SetTime(frame);
@@ -377,11 +387,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					evaluationInfo.uiPass = 0;
 					evaluationInfo.mFrame = frame;
 					evaluationInfo.mLocalFrame = frame - node.mStartFrame;
-					mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+					//mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+					writeContext.RunBackward(node.mEvaluationTarget);
 				}
+				gCurrentContext = &mEditingContext;
 			}
 		}
-		mEvaluation.EndBatch();
+		//mEvaluation.EndBatch();
 		SetTime(currentTime);
 		InvalidateParameters();
 	}
@@ -483,7 +495,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual bool NodeIsCubemap(size_t nodeIndex)
 	{
-		RenderTarget *target = mEvaluation.GetRenderTarget(nodeIndex);
+		RenderTarget *target = mEditingContext.GetRenderTarget(nodeIndex);
 		if (target)
 			return target->mImage.mNumFaces == 6;
 		return false;

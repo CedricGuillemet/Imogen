@@ -7,12 +7,14 @@ typedef struct ImageWrite_t
 	int format;
 	int quality;
 	int width, height;
+	int mode;
 }ImageWrite;
 
 int main(ImageWrite *param, Evaluation *evaluation)
 {
 	char *stockImages[8] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png", "Stock/dds-icon.png", "Stock/ktx-icon.png", "Stock/gif-icon.png"};
 	Image image;
+	int imageWidth, imageHeight;
 	
 	// set info stock image
 	if (ReadImage(stockImages[param->format], &image) == EVAL_OK)
@@ -22,12 +24,26 @@ int main(ImageWrite *param, Evaluation *evaluation)
 			FreeImage(&image);
 		}
 	}
-		
+
+	if (param->mode && GetEvaluationSize(evaluation->inputIndices[0], &imageWidth, &imageHeight) == EVAL_OK)
+	{
+		float ratio = (float)imageWidth / (float)imageHeight;
+		if (param->mode == 1)
+		{
+			param->width = imageWidth;
+			param->height = param->width / ratio;
+		}
+		else
+		{
+			param->width = param->height * ratio;
+			param->height = imageHeight;
+		}
+	}
+	
 	if (!evaluation->forcedDirty)
 		return EVAL_OK;
 	
-	if (Evaluate(evaluation->inputIndices[0], 256<<param->width, 256<<param->height, &image) == EVAL_OK)
-	//if (GetEvaluationImage(evaluation->inputIndices[0], &image) == EVAL_OK)
+	if (Evaluate(evaluation->inputIndices[0], param->width, param->height, &image) == EVAL_OK)
 	{
 		if (WriteImage(param->filename, &image, param->format, param->quality) == EVAL_OK)
 		{	

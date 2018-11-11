@@ -26,6 +26,8 @@
 #include "Library.h"
 #include "imgui.h"
 
+int Log(const char *szFormat, ...);
+
 enum : uint32_t
 {
 	v_initial,
@@ -223,6 +225,8 @@ size_t GetParameterTypeSize(ConTypes paramType)
 	case Con_Enum:
 	case Con_Int:
 		return sizeof(int);
+	case Con_Int2:
+		return sizeof(int) * 2;
 	case Con_FilenameRead:
 	case Con_FilenameWrite:
 		return 1024;
@@ -243,7 +247,10 @@ size_t GetMetaNodeIndex(const std::string& metaNodeName)
 {
 	auto iter = gMetaNodesIndices.find(metaNodeName.c_str());
 	if (iter == gMetaNodesIndices.end())
+	{
+		Log("Node type %s not find in the library!\n", metaNodeName.c_str());
 		return -1;
+	}
 	return iter->second;
 }
 void LoadMetaNodes()
@@ -461,8 +468,9 @@ void LoadMetaNodes()
 		,{}
 		,{ { "File name", Con_FilenameWrite },{ "Format", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0DDS\0KTX\0GIF\0" }
 		,{ "Quality", Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best\0 1\0 2\0 3\0 4\0 5 .. Medium\0 6\0 7\0 8\0 9 .. Lowest\0" }
-		,{ "Width", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
-		,{ "Height", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+		,{ "Width", Con_Int }
+		,{ "Height", Con_Int }
+		,{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Free\0Keep ratio on Y\0Keep ratio on X\0"}
 		,{ "Export", Con_ForceEvaluate } }
 		}
 

@@ -37,28 +37,10 @@
 #include "stb_image.h"
 #include "stb_image_write.h"
 #include "ffmpegCodec.h"
+#include "Evaluators.h"
 
 TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 unsigned int gCPUCount = 1;
-int Log(const char *szFormat, ...)
-{
-	va_list ptr_arg;
-	va_start(ptr_arg, szFormat);
-
-	static char buf[10240];
-	vsprintf(buf, szFormat, ptr_arg);
-
-	static FILE *fp = fopen("log.txt", "wt");
-	if (fp)
-	{
-		fprintf(fp, buf);
-		fflush(fp);
-	}
-	DebugLogText(buf);
-	va_end(ptr_arg);
-	return 0;
-}
-
 
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
 	GLenum type,
@@ -193,6 +175,7 @@ int main(int, char**)
 		&unusedIds,
 		true);
 
+	gFSQuad.Init();
 
 	// Setup style
 	ImGui::StyleColorsDark();
@@ -204,7 +187,7 @@ int main(int, char**)
 	imogen.Init();
 	
 	gEvaluation.Init();
-	gEvaluation.SetEvaluators(imogen.mEvaluatorFiles);
+	gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
 
@@ -232,7 +215,7 @@ int main(int, char**)
 
 		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 
-		gEvaluation.RunEvaluation(256, 256, false, false);
+		//gEvaluation.RunEvaluation(256, 256, false, false);
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);

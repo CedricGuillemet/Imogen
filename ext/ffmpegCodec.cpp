@@ -16,7 +16,7 @@ namespace FFMPEGCodec
 #  endif
 #endif
 
-// PIX_FMT was renamed to AV_PIX_FMT on this version
+	// PIX_FMT was renamed to AV_PIX_FMT on this version
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(51,74,100)
 #  define AVPixelFormat PixelFormat
 #  define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
@@ -31,13 +31,13 @@ namespace FFMPEGCodec
 #  define AV_PIX_FMT_YUV444P  PIX_FMT_YUV444P
 #endif
 
-// r_frame_rate deprecated in ffmpeg
-// see ffmpeg commit #aba232c for details
+	// r_frame_rate deprecated in ffmpeg
+	// see ffmpeg commit #aba232c for details
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,42,0)
 #  define r_frame_rate avg_frame_rate
 #endif
 
-// Changes for ffmpeg 3.0
+	// Changes for ffmpeg 3.0
 #define USE_FFMPEG_3_0 (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,24,0))
 
 #if USE_FFMPEG_3_0
@@ -57,12 +57,12 @@ namespace FFMPEGCodec
 #define USE_FFMPEG_3_1 (LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 48, 101))
 
 #if USE_FFMPEG_3_1
-// AVStream::codec was changed to AVStream::codecpar
+	// AVStream::codec was changed to AVStream::codecpar
 #  define stream_codec(ix) m_format_context->streams[(ix)]->codecpar
-// avcodec_decode_video2 was deprecated.
-// This now works by sending `avpkt` to the decoder, which buffers the
-// decoded image in `avctx`. Then `avcodec_receive_frame` will copy the
-// frame to `picture`.
+	// avcodec_decode_video2 was deprecated.
+	// This now works by sending `avpkt` to the decoder, which buffers the
+	// decoded image in `avctx`. Then `avcodec_receive_frame` will copy the
+	// frame to `picture`.
 	inline int receive_frame(AVCodecContext *avctx, AVFrame *picture,
 		AVPacket *avpkt)
 	{
@@ -284,7 +284,7 @@ namespace FFMPEGCodec
 		AVDictionaryEntry *tag = NULL;
 		/*
 		while ((tag = av_dict_get(m_format_context->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-			m_spec.attribute(tag->key, tag->value);
+		m_spec.attribute(tag->key, tag->value);
 		}
 		*/
 		int rat[2] = { m_frame_rate.num, m_frame_rate.den };
@@ -495,7 +495,7 @@ namespace FFMPEGCodec
 		cctx->max_b_frames = 2;
 		cctx->gop_size = 12;
 		/*if (videoStream->codecpar->codec_id == AV_CODEC_ID_H264) {
-			av_opt_set(cctx, "preset", "ultrafast", 0);
+		av_opt_set(cctx, "preset", "ultrafast", 0);
 		}*/
 		if (ofctx->oformat->flags & AVFMT_GLOBALHEADER) {
 			cctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;

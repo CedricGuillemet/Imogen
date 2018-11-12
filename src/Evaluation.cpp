@@ -24,14 +24,11 @@
 //
 
 #include "Evaluation.h"
+#include "EvaluationContext.h"
 #include "Evaluators.h"
 #include <vector>
 #include <algorithm>
 #include <map>
-
-
-
-
 
 Evaluation::Evaluation() : mProgressShader(0), mDisplayCubemapShader(0)
 {
@@ -58,7 +55,6 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	evaluation.mUseCountByOthers	= 0;
 	evaluation.mbForceEval			= false;
 	evaluation.mbProcessing			= false;
-	//evaluation.mbFreeSizing			= true;
 	evaluation.mNodeType			= nodeType;
 	evaluation.mParametersBuffer	= 0;
 	evaluation.mBlendingSrc			= ONE;
@@ -78,7 +74,6 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 
 void Evaluation::DelEvaluationTarget(size_t target)
 {
-	//SetTargetDirty(target);
 	EvaluationStage& ev = mEvaluationStages[target];
 	ev.Clear();
 	mEvaluationStages.erase(mEvaluationStages.begin() + target);
@@ -92,6 +87,7 @@ void Evaluation::DelEvaluationTarget(size_t target)
 				inp--;
 		}
 	}
+	gCurrentContext->RunAll();
 }
 
 void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)
@@ -103,38 +99,7 @@ void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t
 	if (stage.mEvaluationMask&EvaluationGLSL)
 		BindGLSLParameters(stage);
 }
-/*
-void Evaluation::PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo)
-{
-	EvaluationStage& evaluation = mEvaluationStages[index];
-	
-	if (force)
-	{
-		evaluation.mbForceEval = true;
-		SetTargetDirty(index);
-	}
-	// check processing 
-	for (auto& inp : evaluation.mInput.mInputs)
-	{
-		if (inp >= 0)
-		{
-			if (mEvaluationStages[inp].mbProcessing)
-			{
-				evaluation.mbProcessing = true;
-				return;
-			}
-		}
-	}
 
-	evaluation.mbProcessing = false;
-
-	// good to go
-	if (evaluation.mEvaluationMask&EvaluationC)
-		EvaluateC(evaluation, index, evaluationInfo);
-	if (evaluation.mEvaluationMask&EvaluationGLSL)
-		EvaluateGLSL(evaluation, evaluationInfo);
-}
-*/
 /*
 void Evaluation::SetEvaluationMemoryMode(int evaluationMode)
 {
@@ -258,21 +223,21 @@ void Evaluation::RunEvaluation(int width, int height, bool forceEvaluation, bool
 void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
 {
 	mEvaluationStages[target].mInputSamplers = inputSamplers;
-	//SetTargetDirty(target);
+	gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
 	mEvaluationStages[target].mInput.mInputs[slot] = source;
 	mEvaluationStages[source].mUseCountByOthers++;
-	//SetTargetDirty(target);
+	gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::DelEvaluationInput(size_t target, int slot)
 {
 	mEvaluationStages[mEvaluationStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
 	mEvaluationStages[target].mInput.mInputs[slot] = -1;
-	//SetTargetDirty(target);
+	gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
@@ -280,39 +245,7 @@ void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 	mEvaluationOrderList = nodeOrderList;
 }
 /*
-void Evaluation::SetTargetDirty(size_t target, bool onlyChild)
-{
-	if (!mEvaluationStages[target].mbDirty)
-	{
-		if (!onlyChild)
-			mDirtyCount++;
-		mEvaluationStages[target].mbDirty = true;
-	}
-	for (size_t i = 0; i < mEvaluationOrderList.size(); i++)
-	{
-		if (mEvaluationOrderList[i] != target)
-			continue;
-		
-		for (i++; i < mEvaluationOrderList.size(); i++)
-		{
-			EvaluationStage& currentEvaluation = mEvaluationStages[mEvaluationOrderList[i]];
-			if (currentEvaluation.mbDirty)
-				continue;
 
-			for (auto inp : currentEvaluation.mInput.mInputs)
-			{
-				if (inp >= 0 && mEvaluationStages[inp].mbDirty)
-				{
-					mDirtyCount++;
-					currentEvaluation.mbDirty = true;
-					break; // at least 1 dirty
-				}
-			}
-		}
-	}
-	if (onlyChild)
-		mEvaluationStages[target].mbDirty = false;
-}
 */
 void Evaluation::Clear()
 {

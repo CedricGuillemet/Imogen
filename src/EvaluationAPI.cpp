@@ -497,7 +497,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	}
 	if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
 		stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
-	//gEvaluation.SetTargetDirty(target, true);
+	gCurrentContext->SetTargetDirty(target, true);
 	return EVAL_OK;
 }
 
@@ -505,19 +505,12 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 {
 	if (image->mNumFaces != 1)
 		return EVAL_ERR;
-	//EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
-	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);// evaluation.mTarget;
-	/*
-	if (!evaluation.mTarget)
-	{
-		evaluation.mTarget = new RenderTarget;
-	}
-	evaluation.mbFreeSizing = false;
-	*/
+	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
+
 	tgt.InitCube(image->mWidth);
 
 	UploadImage(image, tgt.mGLTexID, cubeFace);
-	//gEvaluation.SetTargetDirty(target, true);
+	gCurrentContext->SetTargetDirty(target, true);
 	return EVAL_OK;
 }
 
@@ -812,6 +805,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			EvaluationInfo evaluationInfo;
 			evaluationInfo.forcedDirty = 1;
 			evaluationInfo.uiPass = 1;
+			gCurrentContext->RunSingle(cb.mNodeIndex, int(w), int(h), evaluationInfo);
 			//gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
 		}
 		break;

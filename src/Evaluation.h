@@ -211,7 +211,6 @@ struct Evaluation
 	void DelEvaluationInput(size_t target, int slot);
 	//void RunEvaluation(int width, int height, bool forceEvaluation, bool synchronous);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
-	//void SetTargetDirty(size_t target, bool onlyChild = false);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();
 	bool StageIsProcessing(size_t target) { return mEvaluationStages[target].mbProcessing; }
@@ -245,9 +244,6 @@ struct Evaluation
 	// synchronous texture cache
 	// use for simple textures(stock) or to replace with a more efficient one
 	unsigned int GetTexture(const std::string& filename);
-
-	//void BeginBatch();
-	//void EndBatch();
 
 
 	const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }

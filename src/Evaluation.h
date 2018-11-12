@@ -228,7 +228,7 @@ struct Evaluation
 	static int AllocateImage(Image *image);
 	static int FreeImage(Image *image);
 	static unsigned int UploadImage(Image *image, unsigned int textureId, int cubeFace = -1);
-	//static int Evaluate(int target, int width, int height, Image *image);
+	static int Evaluate(int target, int width, int height, Image *image);
 	static void SetBlendingMode(int target, int blendSrc, int blendDst);
 	static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);
 	static int SetNodeImage(int target, Image *image);

@@ -447,13 +447,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
 	EvaluationStage &stage = gEvaluation.mEvaluationStages[target];
-	/*if (!stage.mTarget)
-	{
-		stage.mTarget = new RenderTarget;
-	}
-	*/
-	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);// evaluation.mTarget;
-	//stage.mbFreeSizing = false;
+	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
 	unsigned int texelSize = GetTexelSize(image->mFormat);
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];

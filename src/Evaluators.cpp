@@ -46,7 +46,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "AllocateImage", (void*)Evaluation::AllocateImage },
 	{ "FreeImage", (void*)Evaluation::FreeImage },
 	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
-	//{ "Evaluate", (void*)Evaluation::Evaluate},
+	{ "Evaluate", (void*)Evaluation::Evaluate},
 	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
 	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
 	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },

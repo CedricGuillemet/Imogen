@@ -294,8 +294,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_ForceEvaluate:
 				if (ImGui::Button(param.mName.c_str()))
 				{
-					dirty = true;
-					forceEval = true;
+					EvaluationInfo evaluationInfo;
+					evaluationInfo.forcedDirty = 1;
+					evaluationInfo.uiPass = 0;
+					mEditingContext.RunSingle(node.mEvaluationTarget, 256, 256, evaluationInfo);
 				}
 				break;
 			case Con_Bool:
@@ -315,14 +317,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		
 		if (dirty)
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
-		if (forceEval)
-		{
-			EvaluationInfo evaluationInfo;
-			evaluationInfo.forcedDirty = 1;
-			evaluationInfo.uiPass = 0;
-			//mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
-			mEditingContext.RunForward(node.mEvaluationTarget);
-		}
 	}
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd)
 	{
@@ -387,8 +381,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					evaluationInfo.uiPass = 0;
 					evaluationInfo.mFrame = frame;
 					evaluationInfo.mLocalFrame = frame - node.mStartFrame;
-					//mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
-					writeContext.RunBackward(node.mEvaluationTarget);
+					writeContext.RunSingle(node.mEvaluationTarget, 256, 256, evaluationInfo);
 				}
 				gCurrentContext = &mEditingContext;
 			}

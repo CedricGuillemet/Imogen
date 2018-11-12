@@ -226,7 +226,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 	}
 }
 
-void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
+void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
 	// alloc targets
 	mStageTarget.resize(mEvaluation.GetStagesCount(), NULL);
@@ -238,28 +238,76 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 			mStageTarget[i] = mAllocatedTargets[i] = new RenderTarget;
 		}
 	}
-	
+}
+
+void EvaluationContext::AllocRenderTargetsForBaking()
+{
+	assert(mStageTarget.empty());
+	assert(mAllocatedTargets.empty());
+
+	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	size_t stageCount = mEvaluation.GetStagesCount();
+	mStageTarget.resize(stageCount, NULL);
+	std::vector<RenderTarget*> freeRenderTargets;
+	std::vector<int> useCount(stageCount, 0);
+	for (size_t i = 0; i < stageCount; i++)
+	{
+		useCount[i] = mEvaluation.GetEvaluationStage(i).mUseCountByOthers;
+	}
+
+	for (size_t i = 0; i < evaluationOrderList.size(); i++)
+	{
+		size_t index = evaluationOrderList[i];
+
+		const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(index);
+		if (!evaluation.mUseCountByOthers)
+			continue;
+
+		if (freeRenderTargets.empty())
+		{
+			mStageTarget[index] = new RenderTarget();
+			mAllocatedTargets.push_back(mStageTarget[index]);
+		}
+		else
+		{
+			mStageTarget[index] = freeRenderTargets.back();
+			freeRenderTargets.pop_back();
+		}
+
+		const Input& input = evaluation.mInput;
+		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+		{
+			int targetIndex = input.mInputs[inputIndex];
+			if (targetIndex == -1)
+				continue;
+
+			useCount[targetIndex]--;
+			if (!useCount[targetIndex])
+			{
+				freeRenderTargets.push_back(mStageTarget[targetIndex]);
+			}
+		}
+	}
+}
+
+void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
+{
 	EvaluationInfo evaluationInfo;
 	memset(&evaluationInfo, 0, sizeof(EvaluationInfo));
 	// run C nodes
 	for (size_t index : nodesToEvaluate)
 	{
 		auto& currentEvaluation = mEvaluation.GetEvaluationStage(index);
-		if (!(currentEvaluation.mEvaluationMask&EvaluationC))
-			continue;
-		EvaluateC(currentEvaluation, index, evaluationInfo);
-	}
-	// run glsl
-	for (size_t index : nodesToEvaluate)
-	{
-		auto& currentEvaluation = mEvaluation.GetEvaluationStage(index);
-		if (!(currentEvaluation.mEvaluationMask&EvaluationGLSL))
-			continue;
-		
-		if (!mStageTarget[index]->mGLTexID)
-			mStageTarget[index]->InitBuffer(mDefaultWidth, mDefaultHeight);
+		if (currentEvaluation.mEvaluationMask&EvaluationC)
+			EvaluateC(currentEvaluation, index, evaluationInfo);
+	
+		if (currentEvaluation.mEvaluationMask&EvaluationGLSL)
+		{
+			if (!mStageTarget[index]->mGLTexID)
+				mStageTarget[index]->InitBuffer(mDefaultWidth, mDefaultHeight);
 
-		EvaluateGLSL(currentEvaluation, index, evaluationInfo);
+			EvaluateGLSL(currentEvaluation, index, evaluationInfo);
+		}
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -332,6 +380,7 @@ void EvaluationContext::RunForward(size_t nodeIndex)
 			RecurseForward(index, nodeIndex, nodesToEvaluate);
 		}
 	}
+	AllocRenderTargetsForEditingPreview();
 	RunNodeList(nodesToEvaluate);
 }
 
@@ -345,6 +394,7 @@ void EvaluationContext::RunDirty()
 		if (mDirty[currentNodeIndex])
 			nodesToEvaluate.push_back(currentNodeIndex);
 	}
+	AllocRenderTargetsForEditingPreview();
 	RunNodeList(nodesToEvaluate);
 }
 
@@ -352,6 +402,7 @@ void EvaluationContext::RunAll()
 {
 	// get list of nodes to run
 	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	AllocRenderTargetsForEditingPreview();
 	RunNodeList(evaluationOrderList);
 }
 
@@ -359,6 +410,7 @@ void EvaluationContext::RunBackward(size_t nodeIndex)
 {
 	std::vector<size_t> nodesToEvaluate;
 	RecurseBackward(nodeIndex, nodesToEvaluate);
+	AllocRenderTargetsForBaking();
 	RunNodeList(nodesToEvaluate);
 }
 

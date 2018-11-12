@@ -53,6 +53,9 @@ protected:
 	void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 	void RecurseForward(size_t base, size_t parent, std::vector<size_t>& usedNodes);
 
+	void AllocRenderTargetsForEditingPreview();
+	void AllocRenderTargetsForBaking();
+
 	std::vector<RenderTarget*> mStageTarget; // 1 per stage
 	std::vector<RenderTarget*> mAllocatedTargets; // allocated RT, might be present multiple times in mStageTarget
 	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;

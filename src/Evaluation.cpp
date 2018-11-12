@@ -296,45 +296,17 @@ void Evaluation::SetStageLocalTime(size_t target, int localTime)
 	}
 }
 
-
-/*
-void Evaluation::BeginBatch()
-{
-	assert(!mbBatching);
-
-	mSvgEvalList = gEvaluation.mEvaluationOrderList;
-	gEvaluation.mEvaluationOrderList.clear();
-
-	gEvaluation.SetEvaluationMemoryMode(1);
-	mbBatching = true;
-}
-
-void Evaluation::EndBatch()
-{
-	assert(mbBatching);
-	gEvaluation.SetEvaluationMemoryMode(0);
-
-	gEvaluation.mEvaluationOrderList = mSvgEvalList;
-	mSvgEvalList.clear();
-
-	gEvaluation.RunEvaluation(256, 256, true, false);
-
-	// close write streams
-	
-
-	// done
-	mbBatching = false;
-}
-
 int Evaluation::Evaluate(int target, int width, int height, Image *image)
 {
-	gEvaluation.RecurseGetUse(target, gEvaluation.mEvaluationOrderList);
-	gEvaluation.RunEvaluation(width, height, true, true);
+	EvaluationContext *previousContext = gCurrentContext;
+	EvaluationContext context(gEvaluation, true, width, height);
+	gCurrentContext = &context;
+	context.RunBackward(target);
 	GetEvaluationImage(target, image);
-
+	gCurrentContext = previousContext;
 	return EVAL_OK;
 }
-*/
+
 FFMPEGCodec::Decoder* Evaluation::FindDecoder(const std::string& filename)
 {
 	for (auto& evaluation : mEvaluationStages)

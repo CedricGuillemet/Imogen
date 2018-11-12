@@ -48,8 +48,6 @@ ImGuiColorTextEdit - Balazs Jako https://github.com/BalazsJako/ImGuiColorTextEdi
 
 stb_image, stb_image_write - Sean T. Barett https://github.com/nothings/stb
 
-imguiDock - Bentley Blanks https://github.com/BentleyBlanks/imguiDock
-
 EnkiTS - Doug Binks https://github.com/dougbinks/enkiTS
 
 Tiny C Compiler - Fabrice Bellard https://bellard.org/tcc/
@@ -65,3 +63,5 @@ TinyDir - https://github.com/cxong/tinydir
 cmft - cubemap filtering tool - Dario Manesku https://github.com/dariomanesku/cmft
 
 dear imgui color scheme - codz01 https://github.com/ocornut/imgui/issues/1902#issuecomment-429445321
+
+FFMPEG - Fabrice Bellard

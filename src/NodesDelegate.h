@@ -27,10 +27,64 @@
 
 #include "Nodes.h"
 #include "Evaluation.h"
-#include "curve.h"
+#include "ImCurveEdit.h"
 #include "Library.h"
 #include "nfd.h"
 #include "EvaluationContext.h"
+
+struct RampEdit : public ImCurveEdit::Delegate
+{
+	RampEdit()
+	{
+	}
+	size_t GetCurveCount()
+	{
+		return 1;
+	}
+
+	size_t GetPointCount(size_t curveIndex)
+	{
+		return mPointCount;
+	}
+
+	uint32_t GetCurveColor(size_t curveIndex)
+	{
+		return 0xFF00FF00;
+	}
+	ImVec2* GetPoints(size_t curveIndex)
+	{
+		return mPts;
+	}
+
+	virtual size_t EditPoint(size_t curveIndex, size_t pointIndex, ImVec2 value)
+	{
+		mPts[pointIndex] = value;
+		SortValues(curveIndex);
+		for (size_t i = 0; i < GetPointCount(curveIndex); i++)
+		{
+			if (mPts[i].x == value.x)
+				return i;
+		}
+		return pointIndex;
+	}
+	virtual void AddPoint(size_t curveIndex, ImVec2 value)
+	{
+		if (mPointCount >= 8)
+			return;
+		mPts[mPointCount++] = value;
+		SortValues(curveIndex);
+	}
+	ImVec2 mPts[8];
+	size_t mPointCount;
+
+private:
+	void SortValues(size_t curveIndex)
+	{
+		auto b = std::begin(mPts);
+		auto e = std::begin(mPts) + GetPointCount(curveIndex);
+		std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
+	}
+};
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
@@ -217,21 +271,28 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				break;
 			case Con_Ramp:
 				{
-					ImVec2 points[8];
+					//ImVec2 points[8];
 					
+					RampEdit curveEditDelegate;
+					curveEditDelegate.mPointCount = 0;
 					for (int k = 0; k < 8; k++)
 					{
-						points[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
-						if (k && points[k - 1].x > points[k].x)
-							points[k] = ImVec2(1.f, 1.f);
+						curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
+						if (k && curveEditDelegate.mPts[k-1].x > curveEditDelegate.mPts[k].x)
+							break;
+						curveEditDelegate.mPointCount++;
 					}
-
-					if (ImGui::Curve("Ramp", ImVec2(250, 150), 8, points))
+					float regionWidth = ImGui::GetWindowContentRegionWidth();
+					if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth)))
 					{
-						for (int k = 0; k < 8; k++)
+						for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
 						{
-							((float*)paramBuffer)[k * 2] = points[k].x;
-							((float*)paramBuffer)[k * 2 + 1] = points[k].y;
+							((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
+							((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+						}
+						for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+						{
+							((float*)paramBuffer)[k * 2] = -1.f;
 						}
 						dirty = true;
 					}
@@ -316,7 +377,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		}
 		
 		if (dirty)
+		{
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+			mEditingContext.SetTargetDirty(node.mEvaluationTarget);
+		}
 	}
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd)
 	{

@@ -56,6 +56,7 @@ static const EValuationFunction evaluationFunctions[] = {
 	{ "memmove", memmove },
 	{ "strcpy", strcpy },
 	{ "strlen", strlen },
+	{ "fabsf", fabsf },
 };
 
 static void libtccErrorFunc(void *opaque, const char *msg)

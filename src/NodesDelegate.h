@@ -395,12 +395,12 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		node.mEndFrame = node.mStartFrame + duration;
 	}
 
-	void SetTime(int time)
+	void SetTime(int time, bool updateDecoder)
 	{
 		gEvaluationTime = time;
 		for (const ImogenNode& node : mNodes)
 		{
-			mEvaluation.SetStageLocalTime(node.mEvaluationTarget, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame));
+			mEvaluation.SetStageLocalTime(node.mEvaluationTarget, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
 		}
 	}
 
@@ -439,19 +439,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				gCurrentContext = &writeContext;
 				for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
 				{
-					SetTime(frame);
-					EvaluationInfo evaluationInfo;
-					evaluationInfo.forcedDirty = 1;
-					evaluationInfo.uiPass = 0;
-					evaluationInfo.mFrame = frame;
-					evaluationInfo.mLocalFrame = frame - node.mStartFrame;
-					writeContext.RunSingle(node.mEvaluationTarget, 256, 256, evaluationInfo);
+					SetTime(frame, false);
+					writeContext.RunBackward(node.mEvaluationTarget);
 				}
 				gCurrentContext = &mEditingContext;
 			}
 		}
 		//mEvaluation.EndBatch();
-		SetTime(currentTime);
+		SetTime(currentTime, true);
 		InvalidateParameters();
 	}
 
@@ -530,7 +525,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		{
 			mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
 			mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
-			mEditingContext.SetTargetDirty(mSelectedNodeIndex);
+			mEditingContext.SetTargetDirty(mNodes[mSelectedNodeIndex].mEvaluationTarget);
 		}
 	}
 

@@ -142,7 +142,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
 	evaluationInfo.targetIndex = 0;
 	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;
+	//evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;
 	SetMouseInfos(evaluationInfo, evaluationStage);
 	//evaluationInfo.uiPass = 1;
 
@@ -244,8 +244,8 @@ void EvaluationContext::AllocRenderTargetsForEditingPreview()
 
 void EvaluationContext::AllocRenderTargetsForBaking()
 {
-	assert(mStageTarget.empty());
-	assert(mAllocatedTargets.empty());
+	if (!mStageTarget.empty())
+		return;
 
 	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
 	size_t stageCount = mEvaluation.GetStagesCount();
@@ -294,21 +294,19 @@ void EvaluationContext::AllocRenderTargetsForBaking()
 
 void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 {
-	EvaluationInfo evaluationInfo;
-	memset(&evaluationInfo, 0, sizeof(EvaluationInfo));
 	// run C nodes
 	for (size_t index : nodesToEvaluate)
 	{
 		auto& currentEvaluation = mEvaluation.GetEvaluationStage(index);
 		if (currentEvaluation.mEvaluationMask&EvaluationC)
-			EvaluateC(currentEvaluation, index, evaluationInfo);
+			EvaluateC(currentEvaluation, index, mEvaluationInfo);
 	
 		if (currentEvaluation.mEvaluationMask&EvaluationGLSL)
 		{
 			if (!mStageTarget[index]->mGLTexID)
 				mStageTarget[index]->InitBuffer(mDefaultWidth, mDefaultHeight);
 
-			EvaluateGLSL(currentEvaluation, index, evaluationInfo);
+			EvaluateGLSL(currentEvaluation, index, mEvaluationInfo);
 		}
 	}
 
@@ -318,16 +316,18 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 
 void EvaluationContext::RunSingle(size_t nodeIndex, int width, int height, EvaluationInfo& evaluationInfo)
 {
+	mEvaluationInfo = evaluationInfo;
+
 	auto& currentEvaluation = mEvaluation.GetEvaluationStage(nodeIndex);
 	if (currentEvaluation.mEvaluationMask&EvaluationC)
-		EvaluateC(currentEvaluation, nodeIndex, evaluationInfo);
+		EvaluateC(currentEvaluation, nodeIndex, mEvaluationInfo);
 
 	if (currentEvaluation.mEvaluationMask&EvaluationGLSL)
 	{
 		if (!mStageTarget[nodeIndex]->mGLTexID)
 			mStageTarget[nodeIndex]->InitBuffer(width, height);
 
-		EvaluateGLSL(currentEvaluation, nodeIndex, evaluationInfo);
+		EvaluateGLSL(currentEvaluation, nodeIndex, mEvaluationInfo);
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
@@ -350,44 +350,9 @@ void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& used
 		usedNodes.push_back(target);
 }
 
-void EvaluationContext::RecurseForward(size_t base, size_t parent, std::vector<size_t>& usedNodes)
-{
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
-	for (; base < evaluationOrderList.size(); base++)
-	{
-		size_t currentNodeIndex = evaluationOrderList[base];
-		const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(currentNodeIndex);
-		const Input& input = evaluation.mInput;
-
-		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
-		{
-			int targetIndex = input.mInputs[inputIndex];
-			if (targetIndex == parent)
-				RecurseForward(base, currentNodeIndex, usedNodes);
-		}
-	}
-	if (std::find(usedNodes.begin(), usedNodes.end(), parent) == usedNodes.end())
-		usedNodes.push_back(parent);
-}
-
-
-void EvaluationContext::RunForward(size_t nodeIndex)
-{
-	std::vector<size_t> nodesToEvaluate;
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
-	for (size_t index = 0;index< evaluationOrderList.size();index++)
-	{
-		if (evaluationOrderList[index] == nodeIndex)
-		{
-			RecurseForward(index, nodeIndex, nodesToEvaluate);
-		}
-	}
-	AllocRenderTargetsForEditingPreview();
-	RunNodeList(nodesToEvaluate);
-}
-
 void EvaluationContext::RunDirty()
 {
+	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
 	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
 	std::vector<size_t> nodesToEvaluate;
 	for (size_t index = 0; index < evaluationOrderList.size(); index++)
@@ -405,6 +370,7 @@ void EvaluationContext::RunDirty()
 void EvaluationContext::RunAll()
 {
 	// get list of nodes to run
+	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
 	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
 	AllocRenderTargetsForEditingPreview();
 	RunNodeList(evaluationOrderList);
@@ -412,6 +378,8 @@ void EvaluationContext::RunAll()
 
 void EvaluationContext::RunBackward(size_t nodeIndex)
 {
+	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
+	mEvaluationInfo.forcedDirty = true;
 	std::vector<size_t> nodesToEvaluate;
 	RecurseBackward(nodeIndex, nodesToEvaluate);
 	AllocRenderTargetsForBaking();
@@ -430,7 +398,7 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
 	{
 		encoder = new FFMPEGCodec::Encoder;
 		mWriteStreams[filename] = encoder;
-		encoder->Init(width, height, 25, 400000);
+		encoder->Init(filename, width, height, 25, 400000);
 	}
 	return encoder;
 }

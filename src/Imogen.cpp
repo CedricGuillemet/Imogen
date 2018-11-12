@@ -275,6 +275,13 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
 	float w = ImGui::GetWindowContentRegionWidth();
 	int imageWidth(1), imageHeight(1);
+	if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+	{
+		EvaluationInfo evaluationInfo;
+		evaluationInfo.forcedDirty = 1;
+		evaluationInfo.uiPass = 1;
+		gCurrentContext->RunSingle(selNode, 1, 1, evaluationInfo);
+	}
 	Evaluation::GetEvaluationSize(selNode, &imageWidth, &imageHeight);
 	ImRect rc;
 	if (imageWidth && imageHeight)
@@ -824,6 +831,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
 		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), opt_flags);
 
+		gCurrentContext->RunDirty();
 		if (ImGui::Begin("Nodes"))
 		{
 			if (selectedMaterial != -1)
@@ -910,12 +918,12 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
 				auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
 				//nodeGraphDelegate.SetTimeSlot(selectedEntry, imoNode.mStartFrame, imoNode.mEndFrame);
-				gEvaluation.SetStageLocalTime(imoNode.mEvaluationTarget, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame));
+				gEvaluation.SetStageLocalTime(imoNode.mEvaluationTarget, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
 			}
 			if (currentTime != gEvaluationTime)
 			{
 				gEvaluationTime = currentTime;
-				nodeGraphDelegate.SetTime(currentTime);
+				nodeGraphDelegate.SetTime(currentTime, true);
 			}
 		}
 		ImGui::End();

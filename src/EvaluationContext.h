@@ -31,7 +31,6 @@ struct EvaluationContext
 	~EvaluationContext();
 
 	void RunAll();
-	void RunForward(size_t nodeIndex);
 	void RunBackward(size_t nodeIndex);
 	void RunSingle(size_t nodeIndex, int width, int height, EvaluationInfo& evaluationInfo);
 	void RunDirty();
@@ -47,6 +46,7 @@ struct EvaluationContext
 	FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
 	bool IsSynchronous() const { return mbSynchronousEvaluation; }
 	void SetTargetDirty(size_t target, bool onlyChild = false);
+	const EvaluationInfo& GetEvaluationInfo() const { return mEvaluationInfo; }
 
 protected:
 	Evaluation& mEvaluation;
@@ -56,7 +56,6 @@ protected:
 	void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 
 	void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
-	void RecurseForward(size_t base, size_t parent, std::vector<size_t>& usedNodes);
 
 	void AllocRenderTargetsForEditingPreview();
 	void AllocRenderTargetsForBaking();
@@ -65,6 +64,8 @@ protected:
 	std::vector<RenderTarget*> mAllocatedTargets; // allocated RT, might be present multiple times in mStageTarget
 	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 	std::vector<bool> mDirty;
+	EvaluationInfo mEvaluationInfo;
+
 	int mDefaultWidth;
 	int mDefaultHeight;
 	bool mbSynchronousEvaluation;

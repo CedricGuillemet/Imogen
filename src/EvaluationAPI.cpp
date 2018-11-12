@@ -154,11 +154,13 @@ void RenderTarget::InitBuffer(int width, int height)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	CheckFBO();
+
+	GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
 	BindAsTarget();
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+	glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
 void RenderTarget::InitCube(int width)
@@ -441,16 +443,18 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
 	EvaluationStage &stage = gEvaluation.mEvaluationStages[target];
-	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
+	RenderTarget *tgt = gCurrentContext->GetRenderTarget(target);
+	if (!tgt)
+		return EVAL_ERR;
 	unsigned int texelSize = GetTexelSize(image->mFormat);
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
 	unsigned char *ptr = (unsigned char *)image->mBits;
 	if (image->mNumFaces == 1)
 	{
-		tgt.InitBuffer(image->mWidth, image->mHeight);
+		tgt->InitBuffer(image->mWidth, image->mHeight);
 
-		glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
+		glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
 
 		for (int i = 0; i < image->mNumMips; i++)
 		{
@@ -465,8 +469,8 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	}
 	else
 	{
-		tgt.InitCube(image->mWidth);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, tgt.mGLTexID);
+		tgt->InitCube(image->mWidth);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
 
 		for (int face = 0; face < image->mNumFaces; face++)
 		{
@@ -850,6 +854,8 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
+	//if (gCurrentContext->GetEvaluationInfo().uiPass)
+	//	return EVAL_OK;
 	renderTarget->InitBuffer(imageWidth, imageHeight);
 	return EVAL_OK;
 }

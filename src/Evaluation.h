@@ -165,7 +165,7 @@ struct EvaluationStage
 	size_t mParametersSize;
 	Input mInput;
 	std::vector<InputSampler> mInputSamplers;
-	bool mbForceEval;
+	//bool mbForceEval;
 	bool mbProcessing;
 	//bool mbFreeSizing;
 	int mEvaluationMask; // see EvaluationMask
@@ -212,7 +212,7 @@ struct Evaluation
 	void Clear();
 	bool StageIsProcessing(size_t target) { return mEvaluationStages[target].mbProcessing; }
 	void StageSetProcessing(size_t target, bool processing) { mEvaluationStages[target].mbProcessing = processing; }
-	void SetStageLocalTime(size_t target, int localTime);
+	void SetStageLocalTime(size_t target, int localTime, bool updateDecoder);
 
 	// API
 	static int ReadImage(const char *filename, Image *image);

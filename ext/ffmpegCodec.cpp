@@ -439,7 +439,6 @@ namespace FFMPEGCodec
 	}
 
 #define VIDEO_TMP_FILE "tmp.h264"
-#define FINAL_FILE_NAME "record.mp4"
 
 
 	using namespace std;
@@ -447,8 +446,9 @@ namespace FFMPEGCodec
 		Log(str.c_str());
 	}
 
-	void Encoder::Init(int width, int height, int fpsrate, int bitrate) {
-
+	void Encoder::Init(const std::string& filename, int width, int height, int fpsrate, int bitrate)
+	{
+		mFilename = filename;
 		fps = fpsrate;
 
 		int err;
@@ -619,7 +619,8 @@ namespace FFMPEGCodec
 		}
 	}
 
-	void Encoder::Remux() {
+	void Encoder::Remux() 
+	{
 		AVFormatContext *ifmt_ctx = NULL, *ofmt_ctx = NULL;
 		int err;
 
@@ -631,7 +632,7 @@ namespace FFMPEGCodec
 			Debug("Failed to retrieve input stream information", err);
 			goto end;
 		}
-		if ((err = avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, FINAL_FILE_NAME))) {
+		if ((err = avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, mFilename.c_str()))) {
 			Debug("Failed to allocate output context", err);
 			goto end;
 		}
@@ -647,7 +648,7 @@ namespace FFMPEGCodec
 		outVideoStream->codecpar->codec_tag = 0;
 
 		if (!(ofmt_ctx->oformat->flags & AVFMT_NOFILE)) {
-			if ((err = avio_open(&ofmt_ctx->pb, FINAL_FILE_NAME, AVIO_FLAG_WRITE)) < 0) {
+			if ((err = avio_open(&ofmt_ctx->pb, mFilename.c_str(), AVIO_FLAG_WRITE)) < 0) {
 				Debug("Failed to open output file", err);
 				goto end;
 			}

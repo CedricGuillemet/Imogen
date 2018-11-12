@@ -11,11 +11,11 @@ int main(Crop *param, Evaluation *evaluation)
 	int croppedWidth = 256, croppedHeight = 256;
 	if (GetEvaluationSize(evaluation->inputIndices[0], &imageWidth, &imageHeight) == EVAL_OK)
 	{
-		croppedWidth = imageWidth * (param->quad[2] - param->quad[0]);
-		croppedHeight = imageHeight * (param->quad[3] - param->quad[1]);
+		croppedWidth = imageWidth * fabsf(param->quad[2] - param->quad[0]);
+		croppedHeight = imageHeight * fabsf(param->quad[3] - param->quad[1]);
 	}
-	if (croppedWidth<8) croppedWidth = 8;
-	if (croppedHeight<8) croppedHeight = 8;
+	//if (croppedWidth<8) { croppedWidth = 8; }
+	//if (croppedHeight<8) { croppedHeight = 8; }
 	
 	if (evaluation->uiPass)
 		SetEvaluationSize(evaluation->targetIndex, imageWidth, imageHeight);

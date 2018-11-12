@@ -110,24 +110,20 @@ namespace FFMPEGCodec
 			videoFrame = NULL;
 			swsCtx = NULL;
 			frameCounter = 0;
-
-			// Initialize libavcodec
-			//av_register_all();
-			//av_log_set_callback(avlog_cb);
 		}
 
 		~Encoder() {
 			Free();
 		}
 
-		void Init(int width, int height, int fpsrate, int bitrate);
+		void Init(const std::string& filename, int width, int height, int fpsrate, int bitrate);
 
 		void AddFrame(uint8_t *data);
 
 		void Finish();
 
 	private:
-
+		std::string mFilename;
 		AVOutputFormat *oformat;
 		AVFormatContext *ofctx;
 
@@ -147,27 +143,6 @@ namespace FFMPEGCodec
 
 		void Remux();
 	};
-	/*
-	Encoder* Init(int width, int height, int fps, int bitrate) {
-		Encoder *vc = new Encoder();
-		vc->Init(width, height, fps, bitrate);
-		return vc;
-	};
-
-	void AddFrame(uint8_t *data, Encoder *vc) {
-		vc->AddFrame(data);
-	}
-
-	void Finish(Encoder *vc) {
-		vc->Finish();
-	}
-	*/
-	/*
-	void SetDebug(FuncPtr fp) {
-	   ExtDebug = fp;
-   };
-   */
-
 
 	extern int(*Log)(const char *szFormat, ...);
 }

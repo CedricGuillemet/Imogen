@@ -1,6 +1,7 @@
 int Log(const char *szFormat, ...);
 char * strcpy ( char * destination, const char * source );
 int strlen ( const char * str );
+float fabsf(float value);
 
 typedef struct Image_t
 {

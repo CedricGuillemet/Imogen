@@ -215,7 +215,7 @@ int main(int, char**)
 
 		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 
-		gCurrentContext->RunDirty();
+		
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);

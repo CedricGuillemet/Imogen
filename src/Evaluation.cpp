@@ -53,7 +53,7 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 #endif
 	evaluation.mDecoder				= NULL;
 	evaluation.mUseCountByOthers	= 0;
-	evaluation.mbForceEval			= false;
+	//evaluation.mbForceEval			= false;
 	evaluation.mbProcessing			= false;
 	evaluation.mNodeType			= nodeType;
 	evaluation.mParametersBuffer	= 0;
@@ -282,11 +282,11 @@ size_t Evaluation::GetEvaluationImageDuration(size_t target)
 	return stage.mDecoder->mFrameCount;
 }
 
-void Evaluation::SetStageLocalTime(size_t target, int localTime)
+void Evaluation::SetStageLocalTime(size_t target, int localTime, bool updateDecoder)
 {
 	auto& stage = mEvaluationStages[target];
 	stage.mLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
-	if (stage.mDecoder)
+	if (stage.mDecoder && updateDecoder)
 	{
 		Image_t image = stage.DecodeImage();
 		SetEvaluationImage(int(target), &image);

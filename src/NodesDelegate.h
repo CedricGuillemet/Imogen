@@ -466,6 +466,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		{
 			mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
 			mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
+			mEditingContext.SetTargetDirty(mSelectedNodeIndex);
 		}
 	}
 

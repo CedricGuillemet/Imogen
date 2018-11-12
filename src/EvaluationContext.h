@@ -37,7 +37,12 @@ struct EvaluationContext
 	void RunDirty();
 
 	unsigned int GetEvaluationTexture(size_t target);
-	RenderTarget *GetRenderTarget(size_t target) { return mStageTarget[target]; }
+	RenderTarget *GetRenderTarget(size_t target)
+	{ 
+		if (target >= mStageTarget.size())
+			return NULL;
+		return mStageTarget[target]; 
+	}
 
 	FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
 	bool IsSynchronous() const { return mbSynchronousEvaluation; }

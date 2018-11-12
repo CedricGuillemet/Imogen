@@ -17,7 +17,10 @@ int main(Crop *param, Evaluation *evaluation)
 	if (croppedWidth<8) croppedWidth = 8;
 	if (croppedHeight<8) croppedHeight = 8;
 	
-	SetEvaluationSize(evaluation->targetIndex, croppedWidth, croppedHeight);
+	if (evaluation->uiPass)
+		SetEvaluationSize(evaluation->targetIndex, imageWidth, imageHeight);
+	else
+		SetEvaluationSize(evaluation->targetIndex, croppedWidth, croppedHeight);
 	
 	return EVAL_OK;
 }

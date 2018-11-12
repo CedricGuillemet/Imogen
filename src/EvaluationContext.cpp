@@ -109,6 +109,8 @@ static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage 
 
 unsigned int EvaluationContext::GetEvaluationTexture(size_t target)
 {
+	if (target >= mStageTarget.size())
+		return 0;
 	if (!mStageTarget[target])
 		return 0;
 	return mStageTarget[target]->mGLTexID;
@@ -396,6 +398,8 @@ void EvaluationContext::RunDirty()
 	}
 	AllocRenderTargetsForEditingPreview();
 	RunNodeList(nodesToEvaluate);
+	for (auto& b : mDirty)
+		b = false;
 }
 
 void EvaluationContext::RunAll()

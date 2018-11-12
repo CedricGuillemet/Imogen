@@ -213,6 +213,8 @@ int main(int, char**)
 		ImGui::NewFrame();
 		InitCallbackRects();
 
+
+		gCurrentContext->RunDirty();
 		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 
 		

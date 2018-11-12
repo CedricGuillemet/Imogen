@@ -322,7 +322,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, int width, int height, Evalu
 	if (currentEvaluation.mEvaluationMask&EvaluationC)
 		EvaluateC(currentEvaluation, nodeIndex, mEvaluationInfo);
 
-	if (currentEvaluation.mEvaluationMask&EvaluationGLSL)
+	if ((currentEvaluation.mEvaluationMask&EvaluationGLSL))
 	{
 		if (!mStageTarget[nodeIndex]->mGLTexID)
 			mStageTarget[nodeIndex]->InitBuffer(width, height);

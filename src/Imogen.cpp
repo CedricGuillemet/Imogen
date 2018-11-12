@@ -275,6 +275,8 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
 	float w = ImGui::GetWindowContentRegionWidth();
 	int imageWidth(1), imageHeight(1);
+
+	// make 2 evaluation for node to get the UI pass image size
 	if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
 	{
 		EvaluationInfo evaluationInfo;
@@ -283,6 +285,13 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 		gCurrentContext->RunSingle(selNode, 1, 1, evaluationInfo);
 	}
 	Evaluation::GetEvaluationSize(selNode, &imageWidth, &imageHeight);
+	if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+	{
+		EvaluationInfo evaluationInfo;
+		evaluationInfo.forcedDirty = 1;
+		evaluationInfo.uiPass = 0;
+		gCurrentContext->RunSingle(selNode, 1, 1, evaluationInfo);
+	}
 	ImRect rc;
 	if (imageWidth && imageHeight)
 	{
@@ -831,7 +840,6 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
 		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), opt_flags);
 
-		gCurrentContext->RunDirty();
 		if (ImGui::Begin("Nodes"))
 		{
 			if (selectedMaterial != -1)

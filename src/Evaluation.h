@@ -165,9 +165,7 @@ struct EvaluationStage
 	size_t mParametersSize;
 	Input mInput;
 	std::vector<InputSampler> mInputSamplers;
-	//bool mbForceEval;
 	bool mbProcessing;
-	//bool mbFreeSizing;
 	int mEvaluationMask; // see EvaluationMask
 	int mUseCountByOthers;
 	int mBlendingSrc;

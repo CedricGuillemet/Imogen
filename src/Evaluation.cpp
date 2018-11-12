@@ -244,9 +244,7 @@ void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 {
 	mEvaluationOrderList = nodeOrderList;
 }
-/*
 
-*/
 void Evaluation::Clear()
 {
 	for (auto& ev : mEvaluationStages)

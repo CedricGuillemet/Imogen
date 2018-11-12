@@ -47,7 +47,6 @@ struct Evaluators
 
 	const Evaluator& GetEvaluator(size_t nodeType) const { return mEvaluatorPerNodeType[nodeType]; }
 
-
 	unsigned int mEvaluationStateGLSLBuffer;
 
 protected:
@@ -65,8 +64,6 @@ protected:
 
 	std::map<std::string, EvaluatorScript> mEvaluatorScripts;
 	std::vector<Evaluator> mEvaluatorPerNodeType;
-
-	
 };
 
 extern Evaluators gEvaluators;

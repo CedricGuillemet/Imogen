@@ -237,7 +237,6 @@ void RenderTarget::CheckFBO()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-
 void Evaluation::APIInit()
 {
 	std::ifstream prgStr("Stock/ProgressingNode.glsl");
@@ -246,7 +245,6 @@ void Evaluation::APIInit()
 	mProgressShader = prgStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(prgStr), std::istreambuf_iterator<char>()), "progressShader") : 0;
 	mDisplayCubemapShader = cubStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()), "cubeDisplay") : 0;
 }
-
 
 static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
 {
@@ -398,11 +396,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	if (target == -1 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
 
-	//EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
-	//if (!evaluation.mTarget)
-	//	return EVAL_ERR;
-
-	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);// evaluation.mTarget;
+	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
 
 	// compute total size
 	Image_t& img = tgt.mImage;
@@ -604,8 +598,6 @@ int Evaluation::SetNodeImage(int target, Image *image)
 	return EVAL_OK;
 }
 
-
-
 typedef int(*jobFunction)(void*);
 
 struct CFunctionTaskSet : enki::ITaskSet
@@ -684,10 +676,6 @@ void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
 	evaluation.mBlendingDst = blendDst;
 }
 
-
-
-
-
 void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 {
 	if (!stage.mParametersBuffer)
@@ -707,12 +695,10 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	}
 }
 
-
 void EvaluationStage::Clear()
 {
 	if (mEvaluationMask&EvaluationGLSL)
 		glDeleteBuffers(1, &mParametersBuffer);
-	//gEvaluation.UnreferenceRenderTarget(&mTarget);
 }
 
 unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int cubeFace)
@@ -800,7 +786,6 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			evaluationInfo.forcedDirty = 1;
 			evaluationInfo.uiPass = 1;
 			gCurrentContext->RunSingle(cb.mNodeIndex, int(w), int(h), evaluationInfo);
-			//gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
 		}
 		break;
 		case CBUI_Progress:
@@ -862,12 +847,9 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
-	//auto& stage = gEvaluation.mEvaluationStages[target];
-	//RenderTarget* renderTarget = stage.mTarget;
 	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
-	//stage.mbFreeSizing = false;
 	renderTarget->InitBuffer(imageWidth, imageHeight);
 	return EVAL_OK;
 }
@@ -876,12 +858,10 @@ int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
-	//auto& stage = gEvaluation.mEvaluationStages[target];
-	//RenderTarget* renderTarget = stage.mTarget;
+
 	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
-	//stage.mbFreeSizing = false;
 	renderTarget->InitCube(faceWidth);
 	return EVAL_OK;
 }

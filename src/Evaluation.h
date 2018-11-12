@@ -203,13 +203,10 @@ struct Evaluation
 	size_t GetStageType(size_t target) const { return mEvaluationStages[target].mNodeType; }
 	size_t GetEvaluationImageDuration(size_t target);
 	void DelEvaluationTarget(size_t target);
-	//unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
-	//void PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo);
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
-	//void RunEvaluation(int width, int height, bool forceEvaluation, bool synchronous);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();

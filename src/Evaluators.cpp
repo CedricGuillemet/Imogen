@@ -28,13 +28,11 @@
 
 Evaluators gEvaluators;
 
-
 struct EValuationFunction
 {
 	const char *szFunctionName;
 	void *function;
 };
-
 
 static const EValuationFunction evaluationFunctions[] = {
 	{ "Log", (void*)Log },
@@ -70,7 +68,6 @@ std::string Evaluators::GetEvaluator(const std::string& filename)
 {
 	return mEvaluatorScripts[filename].mText;
 }
-
 
 void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames)
 {

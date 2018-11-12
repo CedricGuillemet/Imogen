@@ -908,6 +908,9 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			if (selectedEntry != -1)
 			{
 				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
+				auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
+				//nodeGraphDelegate.SetTimeSlot(selectedEntry, imoNode.mStartFrame, imoNode.mEndFrame);
+				gEvaluation.SetStageLocalTime(imoNode.mEvaluationTarget, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame));
 			}
 			if (currentTime != gEvaluationTime)
 			{

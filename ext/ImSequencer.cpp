@@ -96,7 +96,7 @@ namespace ImSequencer
 			// current frame top
 			ImRect topRect(ImVec2(canvas_pos.x + legendWidth, canvas_pos.y), ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + ItemHeight));
 
-			if (!MovingCurrentFrame && !MovingScrollBar && sequenceOptions&SEQUENCER_CHANGE_FRAME && currentFrame && *currentFrame >= 0 && topRect.Contains(io.MousePos) && io.MouseDown[0])
+			if (!MovingCurrentFrame && !MovingScrollBar && movingEntry == -1 && sequenceOptions&SEQUENCER_CHANGE_FRAME && currentFrame && *currentFrame >= 0 && topRect.Contains(io.MousePos) && io.MouseDown[0])
 			{
 				MovingCurrentFrame = true;
 			}
@@ -104,7 +104,7 @@ namespace ImSequencer
 			{
 				if (frameCount)
 				{
-					*currentFrame = (int)(io.MousePos.x - topRect.Min.x) / framePixelWidth + firstFrameUsed;
+					*currentFrame = (int)((io.MousePos.x - topRect.Min.x) / framePixelWidth) + firstFrameUsed;
 					if (*currentFrame < 0)
 						*currentFrame = 0;
 					if (*currentFrame >= frameCount)
@@ -184,7 +184,7 @@ namespace ImSequencer
 			auto drawLine = [&](int i) {
 				bool baseIndex = ((i % modFrameCount) == 0) || (i == frameCount);
 				bool halfIndex = (i % halfModFrameCount) == 0;
-				int px = (int)canvas_pos.x + i * framePixelWidth + legendWidth - firstFrameUsed * framePixelWidth;
+				int px = (int)canvas_pos.x + int(i * framePixelWidth) + legendWidth - int(firstFrameUsed * framePixelWidth);
 				int tiretStart = baseIndex ? 4 : (halfIndex ? 10 : 14);
 				int tiretEnd = baseIndex ? controlHeight : ItemHeight;
 
@@ -272,7 +272,7 @@ namespace ImSequencer
 			if (backgroundRect.Contains(io.MousePos) && movingEntry >= 0)
 			{
 				ImGui::CaptureMouseFromApp();
-				int diffFrame = (cx - movingPos) / framePixelWidth;
+				int diffFrame = int((cx - movingPos) / framePixelWidth);
 				if (std::abs(diffFrame) > 0)
 				{
 					int *start, *end;
@@ -374,7 +374,7 @@ namespace ImSequencer
 				}
 				else
 				{
-					if (inScrollBar && io.MouseDown[0] && firstFrame && !MovingCurrentFrame)
+					if (inScrollBar && io.MouseDown[0] && firstFrame && !MovingCurrentFrame && movingEntry == -1)
 					{
 						MovingScrollBar = true;
 					}

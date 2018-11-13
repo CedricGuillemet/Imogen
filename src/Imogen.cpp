@@ -282,7 +282,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 		EvaluationInfo evaluationInfo;
 		evaluationInfo.forcedDirty = 1;
 		evaluationInfo.uiPass = 1;
-		gCurrentContext->RunSingle(selNode, 1, 1, evaluationInfo);
+		gCurrentContext->RunSingle(selNode, evaluationInfo);
 	}
 	Evaluation::GetEvaluationSize(selNode, &imageWidth, &imageHeight);
 	if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
@@ -290,7 +290,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 		EvaluationInfo evaluationInfo;
 		evaluationInfo.forcedDirty = 1;
 		evaluationInfo.uiPass = 0;
-		gCurrentContext->RunSingle(selNode, 1, 1, evaluationInfo);
+		gCurrentContext->RunSingle(selNode, evaluationInfo);
 	}
 	ImRect rc;
 	if (imageWidth && imageHeight)

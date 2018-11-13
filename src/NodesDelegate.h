@@ -358,7 +358,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					EvaluationInfo evaluationInfo;
 					evaluationInfo.forcedDirty = 1;
 					evaluationInfo.uiPass = 0;
-					mEditingContext.RunSingle(node.mEvaluationTarget, 256, 256, evaluationInfo);
+					mEditingContext.RunSingle(node.mEvaluationTarget, evaluationInfo);
 				}
 				break;
 			case Con_Bool:
@@ -440,7 +440,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
 				{
 					SetTime(frame, false);
-					writeContext.RunBackward(node.mEvaluationTarget);
+					EvaluationInfo evaluationInfo;
+					evaluationInfo.forcedDirty = 1;
+					evaluationInfo.uiPass = 0;
+					writeContext.RunSingle(node.mEvaluationTarget, evaluationInfo);
 				}
 				gCurrentContext = &mEditingContext;
 			}

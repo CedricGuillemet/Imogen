@@ -140,12 +140,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 			blend[i] = GLBlends[blendOps[i]];
 	}
 
-	evaluationInfo.targetIndex = 0;
-	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	//evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;
-	SetMouseInfos(evaluationInfo, evaluationStage);
-	//evaluationInfo.uiPass = 1;
-
 	glEnable(GL_BLEND);
 	glBlendFunc(blend[0], blend[1]);
 
@@ -208,14 +202,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
 {
-	const Input& input = evaluationStage.mInput;
-
-	//EvaluationInfo evaluationInfo;
-	evaluationInfo.targetIndex = int(index);
-	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	SetMouseInfos(evaluationInfo, evaluationStage);
-	//evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
-	//evaluationInfo.uiPass = false;
 	try // todo: find a better solution than a try catch
 	{
 		const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
@@ -257,10 +243,8 @@ void EvaluationContext::AllocRenderTargetsForBaking()
 		useCount[i] = mEvaluation.GetEvaluationStage(i).mUseCountByOthers;
 	}
 
-	for (size_t i = 0; i < evaluationOrderList.size(); i++)
+	for (auto index : evaluationOrderList)
 	{
-		size_t index = evaluationOrderList[i];
-
 		const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(index);
 		if (!evaluation.mUseCountByOthers)
 			continue;
@@ -277,9 +261,8 @@ void EvaluationContext::AllocRenderTargetsForBaking()
 		}
 
 		const Input& input = evaluation.mInput;
-		for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
+		for (auto targetIndex : input.mInputs)
 		{
-			int targetIndex = input.mInputs[inputIndex];
 			if (targetIndex == -1)
 				continue;
 
@@ -292,43 +275,45 @@ void EvaluationContext::AllocRenderTargetsForBaking()
 	}
 }
 
+void EvaluationContext::RunNode(size_t nodeIndex)
+{
+	auto& currentStage = mEvaluation.GetEvaluationStage(nodeIndex);
+	const Input& input = currentStage.mInput;
+
+	mEvaluationInfo.targetIndex = int(nodeIndex);
+	memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
+	SetMouseInfos(mEvaluationInfo, currentStage);
+
+	if (currentStage.mEvaluationMask&EvaluationC)
+		EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
+
+	if (currentStage.mEvaluationMask&EvaluationGLSL)
+	{
+		if (!mStageTarget[nodeIndex]->mGLTexID)
+			mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight);
+
+		EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
+	}
+}
+
 void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 {
 	// run C nodes
-	for (size_t index : nodesToEvaluate)
+	for (size_t nodeIndex : nodesToEvaluate)
 	{
-		auto& currentEvaluation = mEvaluation.GetEvaluationStage(index);
-		if (currentEvaluation.mEvaluationMask&EvaluationC)
-			EvaluateC(currentEvaluation, index, mEvaluationInfo);
-	
-		if (currentEvaluation.mEvaluationMask&EvaluationGLSL)
-		{
-			if (!mStageTarget[index]->mGLTexID)
-				mStageTarget[index]->InitBuffer(mDefaultWidth, mDefaultHeight);
-
-			EvaluateGLSL(currentEvaluation, index, mEvaluationInfo);
-		}
+		RunNode(nodeIndex);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
 }
 
-void EvaluationContext::RunSingle(size_t nodeIndex, int width, int height, EvaluationInfo& evaluationInfo)
+void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
 	mEvaluationInfo = evaluationInfo;
 
-	auto& currentEvaluation = mEvaluation.GetEvaluationStage(nodeIndex);
-	if (currentEvaluation.mEvaluationMask&EvaluationC)
-		EvaluateC(currentEvaluation, nodeIndex, mEvaluationInfo);
+	RunNode(nodeIndex);
 
-	if ((currentEvaluation.mEvaluationMask&EvaluationGLSL))
-	{
-		if (!mStageTarget[nodeIndex]->mGLTexID)
-			mStageTarget[nodeIndex]->InitBuffer(width, height);
-
-		EvaluateGLSL(currentEvaluation, nodeIndex, mEvaluationInfo);
-	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glUseProgram(0);
 }
@@ -398,7 +383,7 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
 	{
 		encoder = new FFMPEGCodec::Encoder;
 		mWriteStreams[filename] = encoder;
-		encoder->Init(filename, width, height, 25, 400000);
+		encoder->Init(filename, align(width, 4), align(height, 4), 25, 400000);
 	}
 	return encoder;
 }

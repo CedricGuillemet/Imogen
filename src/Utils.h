@@ -51,3 +51,8 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 unsigned int LoadShader(const std::string &shaderString, const char *fileName);
 int Log(const char *szFormat, ...);
+
+inline int align(int value, int alignment)
+{
+	return (value + alignment - 1)&~(alignment - 1);
+}

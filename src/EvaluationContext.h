@@ -32,7 +32,7 @@ struct EvaluationContext
 
 	void RunAll();
 	void RunBackward(size_t nodeIndex);
-	void RunSingle(size_t nodeIndex, int width, int height, EvaluationInfo& evaluationInfo);
+	void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
 	void RunDirty();
 
 	unsigned int GetEvaluationTexture(size_t target);
@@ -54,6 +54,7 @@ protected:
 	void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
+	void RunNode(size_t nodeIndex);
 
 	void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 

@@ -15,7 +15,7 @@ int main(void *param, Evaluation *evaluation)
 	if (!evaluation->forcedDirty)
 		return EVAL_OK;
 
-	if (GetEvaluationImage(evaluation->inputIndices[0], &image) == EVAL_OK)
+	if (Evaluate(evaluation->inputIndices[0], 256, 256, &image) == EVAL_OK)
 	{
 		if (SetThumbnailImage(&image) == EVAL_OK)
 		{	

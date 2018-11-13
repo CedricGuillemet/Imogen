@@ -789,7 +789,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			EvaluationInfo evaluationInfo;
 			evaluationInfo.forcedDirty = 1;
 			evaluationInfo.uiPass = 1;
-			gCurrentContext->RunSingle(cb.mNodeIndex, int(w), int(h), evaluationInfo);
+			gCurrentContext->RunSingle(cb.mNodeIndex, evaluationInfo);
 		}
 		break;
 		case CBUI_Progress:

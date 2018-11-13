@@ -59,7 +59,7 @@ protected:
 	void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 
 	void AllocRenderTargetsForEditingPreview();
-	void AllocRenderTargetsForBaking();
+	void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
 	std::vector<RenderTarget*> mStageTarget; // 1 per stage
 	std::vector<RenderTarget*> mAllocatedTargets; // allocated RT, might be present multiple times in mStageTarget

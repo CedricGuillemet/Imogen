@@ -228,12 +228,12 @@ void EvaluationContext::AllocRenderTargetsForEditingPreview()
 	}
 }
 
-void EvaluationContext::AllocRenderTargetsForBaking()
+void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate)
 {
 	if (!mStageTarget.empty())
 		return;
 
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	//auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
 	size_t stageCount = mEvaluation.GetStagesCount();
 	mStageTarget.resize(stageCount, NULL);
 	std::vector<RenderTarget*> freeRenderTargets;
@@ -243,7 +243,7 @@ void EvaluationContext::AllocRenderTargetsForBaking()
 		useCount[i] = mEvaluation.GetEvaluationStage(i).mUseCountByOthers;
 	}
 
-	for (auto index : evaluationOrderList)
+	for (auto index : nodesToEvaluate)
 	{
 		const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(index);
 		if (!evaluation.mUseCountByOthers)
@@ -367,7 +367,7 @@ void EvaluationContext::RunBackward(size_t nodeIndex)
 	mEvaluationInfo.forcedDirty = true;
 	std::vector<size_t> nodesToEvaluate;
 	RecurseBackward(nodeIndex, nodesToEvaluate);
-	AllocRenderTargetsForBaking();
+	AllocRenderTargetsForBaking(nodesToEvaluate);
 	RunNodeList(nodesToEvaluate);
 }
 

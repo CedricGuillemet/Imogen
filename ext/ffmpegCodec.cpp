@@ -525,7 +525,8 @@ namespace FFMPEGCodec
 		av_dump_format(ofctx, 0, VIDEO_TMP_FILE, 1);
 	}
 
-	void Encoder::AddFrame(uint8_t *data) {
+	void Encoder::AddFrame(uint8_t *data, int width, int height) 
+	{
 		int err;
 		if (!videoFrame) {
 
@@ -540,15 +541,28 @@ namespace FFMPEGCodec
 			}
 		}
 
+		// flip
+		for (int i = 0; i < (height >> 1); i++)
+		{
+			uint32_t *src = ((uint32_t*)data) + i * width;
+			uint32_t *dst = ((uint32_t*)data) + (height-i-1) * width;
+			for (int j = 0; j < width; j++)
+			{
+				uint32_t t = *dst;
+				*dst++ = *src;
+				*src++ = t;
+			}
+		}
+
 		if (!swsCtx) {
 			swsCtx = sws_getContext(cctx->width, cctx->height, AV_PIX_FMT_RGBA, cctx->width, cctx->height, AV_PIX_FMT_YUV420P, SWS_BICUBIC, 0, 0, 0);
 		}
 
-		int inLinesize[1] = { 4 * cctx->width };
+		int inLinesize[1] = { 4 * width };
 
 		// From RGB to YUV
 
-		sws_scale(swsCtx, (const uint8_t * const *)&data, inLinesize, 0, cctx->height, videoFrame->data, videoFrame->linesize);
+		sws_scale(swsCtx, (const uint8_t * const *)&data, inLinesize, 0, height, videoFrame->data, videoFrame->linesize);
 
 		videoFrame->pts = frameCounter++;
 

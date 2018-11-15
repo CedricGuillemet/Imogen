@@ -496,7 +496,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		draw_list->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
 
 		ImVec2 imageSize = delegate->GetEvaluationSize(node_idx);
-		float imageRatio = imageSize.y / imageSize.x;
+		float imageRatio = 1.f;
+		if (imageSize.x > 0.f && imageSize.y > 0.f)
+			imageRatio = imageSize.y / imageSize.x;
 		ImVec2 quadSize = imgPosMax - imgPos;
 		ImVec2 marge(0.f, 0.f);
 		if (imageRatio > 1.f)

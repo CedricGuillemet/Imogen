@@ -386,7 +386,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 	{
 		FFMPEGCodec::Encoder *encoder = gCurrentContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
 		std::string fn(filename);
-		encoder->AddFrame(image->mBits);
+		encoder->AddFrame(image->mBits, image->mWidth, image->mHeight);
 	}
 		break;
 	}

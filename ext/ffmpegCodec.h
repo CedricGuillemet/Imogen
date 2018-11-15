@@ -118,7 +118,7 @@ namespace FFMPEGCodec
 
 		void Init(const std::string& filename, int width, int height, int fpsrate, int bitrate);
 
-		void AddFrame(uint8_t *data);
+		void AddFrame(uint8_t *data, int width, int height);
 
 		void Finish();
 

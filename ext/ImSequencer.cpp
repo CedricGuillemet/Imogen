@@ -277,7 +277,8 @@ namespace ImSequencer
 				{
 					int *start, *end;
 					sequence->Get(movingEntry, &start, &end, NULL, NULL);
-
+					if (selectedEntry)
+						*selectedEntry = movingEntry;
 					int & l = *start;
 					int & r = *end;
 					if (movingPart & 1)

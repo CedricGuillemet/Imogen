@@ -12,7 +12,7 @@ typedef struct ImageWrite_t
 
 int main(ImageWrite *param, Evaluation *evaluation)
 {
-	char *stockImages[8] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png", "Stock/dds-icon.png", "Stock/ktx-icon.png", "Stock/gif-icon.png"};
+	char *stockImages[8] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png", "Stock/dds-icon.png", "Stock/ktx-icon.png", "Stock/mp4-icon.png"};
 	Image image;
 	int imageWidth, imageHeight;
 	

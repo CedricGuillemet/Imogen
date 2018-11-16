@@ -511,7 +511,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		}
 		
 		if (delegate->NodeIsProcesing(node_idx))
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos + marge, imgPosMax - marge), node_idx)));
+			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), node_idx)));
 		else if (delegate->NodeIsCubemap(node_idx))
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), node_idx)));
 		else

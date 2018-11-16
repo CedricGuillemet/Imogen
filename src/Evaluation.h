@@ -165,7 +165,6 @@ struct EvaluationStage
 	size_t mParametersSize;
 	Input mInput;
 	std::vector<InputSampler> mInputSamplers;
-	bool mbProcessing;
 	int mEvaluationMask; // see EvaluationMask
 	int mUseCountByOthers;
 	int mBlendingSrc;
@@ -208,8 +207,7 @@ struct Evaluation
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();
-	bool StageIsProcessing(size_t target) { return mEvaluationStages[target].mbProcessing; }
-	void StageSetProcessing(size_t target, bool processing) { mEvaluationStages[target].mbProcessing = processing; }
+	
 	void SetStageLocalTime(size_t target, int localTime, bool updateDecoder);
 
 	// API

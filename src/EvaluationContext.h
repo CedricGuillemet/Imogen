@@ -48,9 +48,13 @@ struct EvaluationContext
 	void SetTargetDirty(size_t target, bool onlyChild = false);
 	const EvaluationInfo& GetEvaluationInfo() const { return mEvaluationInfo; }
 
+	bool StageIsProcessing(size_t target) const { return mbProcessing[target]; }
+	void StageSetProcessing(size_t target, bool processing) { mbProcessing[target] = processing; }
+
 protected:
 	Evaluation& mEvaluation;
 
+	void PreRun();
 	void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
@@ -64,7 +68,8 @@ protected:
 	std::vector<RenderTarget*> mStageTarget; // 1 per stage
 	std::vector<RenderTarget*> mAllocatedTargets; // allocated RT, might be present multiple times in mStageTarget
 	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
-	std::vector<bool> mDirty;
+	std::vector<bool> mbDirty;
+	std::vector<bool> mbProcessing;
 	EvaluationInfo mEvaluationInfo;
 
 	int mDefaultWidth;

@@ -274,11 +274,30 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 		}
 	}
 }
+void EvaluationContext::PreRun()
+{
+	mbDirty.resize(mEvaluation.GetStagesCount(), false);
+	mbProcessing.resize(mEvaluation.GetStagesCount(), false);
+}
 
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
 	auto& currentStage = mEvaluation.GetEvaluationStage(nodeIndex);
 	const Input& input = currentStage.mInput;
+
+	// check processing 
+	for (auto& inp : input.mInputs)
+	{
+		if (inp < 0)
+			continue;
+		if (mbProcessing[inp])
+		{
+			mbProcessing[nodeIndex] = true;
+			return;
+		}
+	}
+
+	mbProcessing[nodeIndex] = false;
 
 	mEvaluationInfo.targetIndex = int(nodeIndex);
 	memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
@@ -294,6 +313,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
 		EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
 	}
+	mbDirty[nodeIndex] = false;
 }
 
 void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
@@ -310,6 +330,8 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 
 void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
+	PreRun();
+
 	mEvaluationInfo = evaluationInfo;
 
 	RunNode(nodeIndex);
@@ -337,23 +359,23 @@ void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& used
 
 void EvaluationContext::RunDirty()
 {
+	PreRun();
 	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
 	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
 	std::vector<size_t> nodesToEvaluate;
 	for (size_t index = 0; index < evaluationOrderList.size(); index++)
 	{
 		size_t currentNodeIndex = evaluationOrderList[index];
-		if (mDirty[currentNodeIndex])
+		if (mbDirty[currentNodeIndex])
 			nodesToEvaluate.push_back(currentNodeIndex);
 	}
 	AllocRenderTargetsForEditingPreview();
 	RunNodeList(nodesToEvaluate);
-	for (auto& b : mDirty)
-		b = false;
 }
 
 void EvaluationContext::RunAll()
 {
+	PreRun();
 	// get list of nodes to run
 	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
 	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
@@ -363,6 +385,7 @@ void EvaluationContext::RunAll()
 
 void EvaluationContext::RunBackward(size_t nodeIndex)
 {
+	PreRun();
 	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
 	mEvaluationInfo.forcedDirty = true;
 	std::vector<size_t> nodesToEvaluate;
@@ -390,9 +413,9 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
 
 void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 {
-	mDirty.resize(mEvaluation.GetStagesCount(), false);
+	mbDirty.resize(mEvaluation.GetStagesCount(), false);
 	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
-	mDirty[target] = true;
+	mbDirty[target] = true;
 	for (size_t i = 0; i < evaluationOrderList.size(); i++)
 	{
 		size_t currentNodeIndex = evaluationOrderList[i];
@@ -402,20 +425,20 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 		for (i++; i < evaluationOrderList.size(); i++)
 		{
 			currentNodeIndex = evaluationOrderList[i];
-			if (mDirty[currentNodeIndex])
+			if (mbDirty[currentNodeIndex])
 				continue;
 
 			auto& currentEvaluation = mEvaluation.GetEvaluationStage(currentNodeIndex);
 			for (auto inp : currentEvaluation.mInput.mInputs)
 			{
-				if (inp >= 0 && mDirty[inp])
+				if (inp >= 0 && mbDirty[inp])
 				{
-					mDirty[currentNodeIndex] = true;
+					mbDirty[currentNodeIndex] = true;
 					break;
 				}
 			}
 		}
 	}
 	if (onlyChild)
-		mDirty[target] = false;
+		mbDirty[target] = false;
 }

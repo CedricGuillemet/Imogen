@@ -643,7 +643,7 @@ struct CFunctionMainTask : enki::IPinnedTask
 
 void Evaluation::SetProcessing(int target, int processing)
 {
-	gEvaluation.mEvaluationStages[target].mbProcessing = processing != 0;
+	gCurrentContext->StageSetProcessing(target, processing != 0);
 }
 
 int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)

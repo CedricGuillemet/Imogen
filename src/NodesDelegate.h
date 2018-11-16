@@ -547,7 +547,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual bool NodeIsProcesing(size_t nodeIndex)
 	{
-		return mEvaluation.StageIsProcessing(nodeIndex);
+		return mEditingContext.StageIsProcessing(nodeIndex);
 	}
 	virtual bool NodeIsCubemap(size_t nodeIndex)
 	{

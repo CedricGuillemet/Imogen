@@ -53,8 +53,6 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 #endif
 	evaluation.mDecoder				= NULL;
 	evaluation.mUseCountByOthers	= 0;
-	//evaluation.mbForceEval			= false;
-	evaluation.mbProcessing			= false;
 	evaluation.mNodeType			= nodeType;
 	evaluation.mParametersBuffer	= 0;
 	evaluation.mBlendingSrc			= ONE;

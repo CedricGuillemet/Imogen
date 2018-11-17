@@ -49,7 +49,7 @@ struct RampEdit : public ImCurveEdit::Delegate
 
 	uint32_t GetCurveColor(size_t curveIndex)
 	{
-		return 0xFF00FF00;
+		return 0xFFAAAAAA;
 	}
 	ImVec2* GetPoints(size_t curveIndex)
 	{
@@ -73,6 +73,14 @@ struct RampEdit : public ImCurveEdit::Delegate
 			return;
 		mPts[mPointCount++] = value;
 		SortValues(curveIndex);
+	}
+
+	virtual void DelPoint(size_t curveIndex, size_t pointIndex)
+	{
+		mPts[pointIndex].x = FLT_MAX;
+		SortValues(curveIndex);
+		mPointCount--;
+		mPts[mPointCount].x = -1.f; // end marker
 	}
 	ImVec2 mPts[8];
 	size_t mPointCount;
@@ -290,6 +298,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 							((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
 							((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
 						}
+						((float*)paramBuffer)[0] = 0.f;
+						((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
 						for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
 						{
 							((float*)paramBuffer)[k * 2] = -1.f;

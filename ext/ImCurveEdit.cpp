@@ -3,7 +3,7 @@
 #include "imgui_internal.h"
 #include <stdint.h>
 #include <set>
-
+#include <algorithm>
 namespace ImCurveEdit
 {
 
@@ -120,7 +120,7 @@ namespace ImCurveEdit
       const ImVec2 ssizeScaled(size.x, -size.y * scaleV);
       const ImVec2 sizeOfPixel = ImVec2(1.f, 1.f) / ssizeScaled;
       const ImRect container(offset + ImVec2(0.f, ssize.y), offset + ImVec2(ssize.x, 0.f));
-      
+      /*
       if (container.Contains(io.MousePos))
       {
          if (io.MouseWheel > FLT_EPSILON)
@@ -129,9 +129,14 @@ namespace ImCurveEdit
             scaleVTarget *= 1.05f;
       }
       scaleV = ImLerp(scaleV, scaleVTarget, 0.5f);
-
+	  */
       draw_list->AddRectFilled(offset, offset + ssize, 0xFF202020);
-      
+	  for (unsigned int i = 0; i <= 10; i++)
+	  {
+		  float t = float(i) / 10.f;
+		  draw_list->AddLine(ImLerp(offset, offset + ImVec2(ssize.x, 0.f), t), ImLerp(offset + ImVec2(0.f, ssize.y), offset + ssize, t), 0xFF353535);
+		  draw_list->AddLine(ImLerp(offset, offset + ImVec2(0.f, ssize.y), t), ImLerp(offset + ImVec2(ssize.x, 0.f), offset + ssize, t), 0xFF353535);
+	  }
 
       const size_t curveCount = delegate.GetCurveCount();
       bool overCurveOrPoint = false;
@@ -196,6 +201,16 @@ namespace ImCurveEdit
 
       if (localOverCurve == -1)
          overCurve = -1;
+
+	  // delete selection
+	  if (overSelectedPoint && !selection.empty() && io.MouseDown[1])
+	  {
+		  int idx = 0;
+		  for (auto sel : selection)
+			  delegate.DelPoint(sel.curveIndex, sel.pointIndex - idx++);
+		  selection.clear();
+		  ret = 1;
+	  }
 
       // move selection
       if (overSelectedPoint && io.MouseDown[0])

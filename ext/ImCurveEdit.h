@@ -13,6 +13,7 @@ namespace ImCurveEdit
       virtual ImVec2* GetPoints(size_t curveIndex) = 0;
       virtual size_t EditPoint(size_t curveIndex, size_t pointIndex, ImVec2 value) = 0;
       virtual void AddPoint(size_t curveIndex, ImVec2 value) = 0;
+	  virtual void DelPoint(size_t curveIndex, size_t pointIndex) = 0;
    };
 
    int Edit(Delegate &delegate, const ImVec2& size);

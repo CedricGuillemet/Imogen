@@ -3,11 +3,6 @@
 #include "ffmpegInclude.h"
 #include <string>
 #include <vector>
-
-
-
-
-
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>

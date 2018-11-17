@@ -109,12 +109,12 @@ namespace FFMPEGCodec
 		av_log_set_level(AV_LOG_FATAL);
 		if (avformat_open_input(&m_format_context, filename.c_str(), NULL, NULL) != 0) // avformat_open_input allocs format_context
 		{
-			//error("\"%s\" could not open input", file_name);
+			Log("\"%s\" could not open input", filename.c_str());
 			return false;
 		}
 		if (avformat_find_stream_info(m_format_context, NULL) < 0)
 		{
-			//error("\"%s\" could not find stream info", file_name);
+			Log("\"%s\" could not find stream info", filename.c_str());
 			return false;
 		}
 		m_video_stream = -1;
@@ -131,7 +131,7 @@ namespace FFMPEGCodec
 			}
 		}
 		if (m_video_stream == -1) {
-			//error("\"%s\" could not find a valid videostream", file_name);
+			Log("\"%s\" could not find a valid videostream", filename.c_str());
 			return false;
 		}
 
@@ -142,14 +142,14 @@ namespace FFMPEGCodec
 		m_codec = avcodec_find_decoder(par->codec_id);
 		if (!m_codec)
 		{
-			//error("\"%s\" can't find decoder", file_name);
+			Log("\"%s\" can't find decoder", filename.c_str());
 			return false;
 		}
 
 		m_codec_context = avcodec_alloc_context3(m_codec);
 		if (!m_codec_context)
 		{
-			//error("\"%s\" can't allocate decoder context", file_name);
+			Log("\"%s\" can't allocate decoder context", filename.c_str());
 			return false;
 		}
 
@@ -158,7 +158,7 @@ namespace FFMPEGCodec
 		ret = avcodec_parameters_to_context(m_codec_context, par);
 		if (ret < 0)
 		{
-			//error("\"%s\" unsupported codec", file_name);
+			Log("\"%s\" unsupported codec", filename.c_str());
 			return false;
 		}
 #else
@@ -166,13 +166,13 @@ namespace FFMPEGCodec
 
 		m_codec = avcodec_find_decoder(m_codec_context->codec_id);
 		if (!m_codec) {
-			//error("\"%s\" unsupported codec", file_name);
+			Log("\"%s\" unsupported codec", filename);
 			return false;
 		}
 #endif
 
 		if (avcodec_open2(m_codec_context, m_codec, NULL) < 0) {
-			//error("\"%s\" could not open codec", file_name);
+			Log("\"%s\" could not open codec", filename.c_str());
 			return false;
 		}
 		if (!strcmp(m_codec_context->codec->name, "mjpeg") ||
@@ -281,19 +281,8 @@ namespace FFMPEGCodec
 		);
 		mWidth = m_codec_context->width;
 		mHeight = m_codec_context->height;
-		AVDictionaryEntry *tag = NULL;
-		/*
-		while ((tag = av_dict_get(m_format_context->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-		m_spec.attribute(tag->key, tag->value);
-		}
-		*/
-		int rat[2] = { m_frame_rate.num, m_frame_rate.den };
-		//m_spec.attribute("FramesPerSecond", TypeRational, &rat);
-		//m_spec.attribute("oiio:Movie", true);
-		//m_spec.attribute("oiio:BitsPerSample", m_codec_context->bits_per_raw_sample);
 		m_nsubimages = m_frames;
 		m_filename = filename;
-		//spec = m_spec;
 		return true;
 	}
 
@@ -358,11 +347,12 @@ namespace FFMPEGCodec
 					pts = av_q2d(m_format_context->streams[m_video_stream]->time_base) *  m_frame->pkt_pts;
 				}
 
-				int current_frame = int((pts - m_start_time) * Fps() + 0.5f); //???
-																			  //current_frame =   m_frame->display_picture_number;
+				//int current_frame = int((pts - m_start_time) * Fps() + 0.5f); //???
+				int current_frame =   m_frame->display_picture_number;
+
 				m_last_search_pos = current_frame;
 
-				if (current_frame == frame && finished)
+				if (/*current_frame == frame &&*/ finished)
 				{
 					avpicture_fill
 					(
@@ -392,28 +382,10 @@ namespace FFMPEGCodec
 		m_read_frame = true;
 	}
 
-#if 0
-	const char *
-		Decoder::metadata(const char * key)
-	{
-		AVDictionaryEntry * entry = av_dict_get(m_format_context->metadata, key, NULL, 0);
-		return entry ? av_strdup(entry->value) : NULL;
-		// FIXME -- that looks suspiciously like a memory leak
-	}
-
-
-
-	bool
-		Decoder::has_metadata(const char * key)
-	{
-		return av_dict_get(m_format_context->metadata, key, NULL, 0); // is there a better to check exists?
-	}
-#endif
-
 	bool Decoder::Seek(int frame)
 	{
 		int64_t offset = TimeStamp(frame);
-		int flags = AVSEEK_FLAG_BACKWARD;
+		int flags = AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME;
 		avcodec_flush_buffers(m_codec_context);
 		av_seek_frame(m_format_context, -1, offset, flags);
 		return true;
@@ -439,7 +411,6 @@ namespace FFMPEGCodec
 	}
 
 #define VIDEO_TMP_FILE "tmp.h264"
-
 
 	using namespace std;
 	void Debug(std::string str, int err) {

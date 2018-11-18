@@ -43,15 +43,11 @@
 #include "TaskScheduler.h"
 #include "NodesDelegate.h"
 #include "cmft/print.h"
+#include "ffmpegCodec.h"
 
 extern enki::TaskScheduler g_TS;
+extern cmft::ClContext* clContext;
 
-static const int SemUV0 = 0;
-static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
-static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
-static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7", "CubeSampler0" };
-static const unsigned int GLBlends[] = { GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
-	GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_SRC_ALPHA_SATURATE };
 static const unsigned int glInputFormats[] = {
 		GL_BGR,
 		GL_RGB,
@@ -95,57 +91,12 @@ static const unsigned int glCubeFace[] = {
 static const unsigned int textureFormatSize[] = {    3,3,6,6,12, 4,4,4,8,8,16,4 };
 static const unsigned int textureComponentCount[] = { 3,3,3,3,3, 4,4,4,4,4,4,4 };
 
-static const float rotMatrices[6][16] = {
-	// toward +x
-	{ 0,0,-1,0,
-	0,1,0,0,
-	1,0,0,0,
-	0,0,0,1
-	},
-
-	// -x
-	{ 0,0,1,0,
-	0,1,0,0,
-	-1,0,0,0,
-	0,0,0,1 },
-
-	//+y
-	{ 1,0,0,0,
-	0,0,1,0,
-	0,-1,0,0,
-	0,0,0,1 },
-
-	// -y
-	{ 1,0,0,0,
-	0,0,-1,0,
-	0,1,0,0,
-	0,0,0,1 },
-
-	// +z
-	{ 1,0,0,0,
-	0,1,0,0,
-	0,0,1,0,
-	0,0,0,1 },
-
-	//-z
-	{ -1,0,0,0,
-	0,1,0,0,
-	0,0,-1,0,
-	0,0,0,1 }
-};
 
 unsigned int GetTexelSize(uint8_t fmt)
 {
 	return textureFormatSize[fmt];
 }
 
-inline void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
-{
-	glTexParameteri(texMode, GL_TEXTURE_MIN_FILTER, MinFilter);
-	glTexParameteri(texMode, GL_TEXTURE_MAG_FILTER, MagFilter);
-	glTexParameteri(texMode, GL_TEXTURE_WRAP_S, WrapS);
-	glTexParameteri(texMode, GL_TEXTURE_WRAP_T, WrapT);
-}
 
 void RenderTarget::BindAsTarget() const
 {
@@ -203,11 +154,13 @@ void RenderTarget::InitBuffer(int width, int height)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	CheckFBO();
+
+	GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
 	BindAsTarget();
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+	glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
 void RenderTarget::InitCube(int width)
@@ -286,148 +239,8 @@ void RenderTarget::CheckFBO()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-class FullScreenTriangle
-{
-public:
-	FullScreenTriangle() : mGLFullScreenVertexArrayName(-1)
-	{
-	}
-	~FullScreenTriangle()
-	{
-	}
-	void Init();
-	void Render();
-protected:
-	TextureID mGLFullScreenVertexArrayName;
-};
-
-void FullScreenTriangle::Init()
-{
-	TextureID fsVA;
-
-	float fsVts[] = { 0.f,0.f, 2.f,0.f, 0.f,2.f };
-	glGenBuffers(1, &fsVA);
-	glBindBuffer(GL_ARRAY_BUFFER, fsVA);
-	glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(float) * 2, fsVts, GL_STATIC_DRAW);
-
-	glGenVertexArrays(1, &mGLFullScreenVertexArrayName);
-	glBindVertexArray(mGLFullScreenVertexArrayName);
-	glBindBuffer(GL_ARRAY_BUFFER, fsVA);
-	glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(SemUV0);
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-}
-
-void FullScreenTriangle::Render()
-{
-	glBindVertexArray(mGLFullScreenVertexArrayName);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-	glBindVertexArray(0);
-}
-
-unsigned int LoadShader(const std::string &shaderString, const char *fileName)
-{
-	TextureID programObject = glCreateProgram();
-	if (programObject == 0)
-		return 0;
-
-	GLint compiled;
-	const char *shaderTypeStrings[] = { "\n#version 430 core\n#define VERTEX_SHADER\n", "\n#version 430 core\n#define FRAGMENT_SHADER\n" };
-	TextureID shaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER };
-	TextureID compiledShader[2];
-
-	for (int i = 0; i<2; i++)
-	{
-		// Create the shader object
-		int shader = glCreateShader(shaderTypes[i]);
-
-		if (shader == 0)
-			return false;
-
-		int stringsCount = 2;
-		const char ** strings = (const char**)malloc(sizeof(char*) * stringsCount); //new const char*[stringsCount];
-		int * stringLength = (int*)malloc(sizeof(int) * stringsCount); //new int[stringsCount];
-		strings[0] = shaderTypeStrings[i];
-		stringLength[0] = int(strlen(shaderTypeStrings[i]));
-		strings[stringsCount - 1] = shaderString.c_str();
-		stringLength[stringsCount - 1] = int(shaderString.length());
-
-		// Load and compile the shader source
-		glShaderSource(shader, stringsCount, strings, stringLength);
-		glCompileShader(shader);
-
-
-		free(stringLength);
-		free(strings);
-
-		// Check the compile status
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-		if (compiled == 0)
-		{
-			GLint info_len = 0;
-			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_len);
-			if (info_len > 1)
-			{
-				char* info_log = (char*)malloc(sizeof(char) * info_len);
-				glGetShaderInfoLog(shader, info_len, NULL, info_log);
-				Log("Error compiling shader: %s \n", fileName);
-				Log(info_log);
-				Log("\n");
-				free(info_log);
-			}
-			glDeleteShader(shader);
-			return 0;
-		}
-		compiledShader[i] = shader;
-	}
-
-
-
-	GLint linked;
-
-	for (int i = 0; i<2; i++)
-		glAttachShader(programObject, compiledShader[i]);
-
-
-	// Link the program
-	glLinkProgram(programObject);
-
-	glBindAttribLocation(programObject, SemUV0, "inUV");
-
-	// Check the link status
-	glGetProgramiv(programObject, GL_LINK_STATUS, &linked);
-	if (linked == 0)
-	{
-		GLint info_len = 0;
-		glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &info_len);
-		if (info_len > 1)
-		{
-			char* info_log = (char*)malloc(sizeof(char) * info_len);
-			glGetProgramInfoLog(programObject, info_len, NULL, info_log);
-			Log("Error linking program:\n");
-			Log(info_log);
-			free(info_log);
-		}
-		glDeleteProgram(programObject);
-		return 0;
-	}
-
-	// Delete these here because they are attached to the program object.
-	for (int i = 0; i<2; i++)
-		glDeleteShader(compiledShader[i]);
-
-	// attributes
-	return programObject;
-}
-
-FullScreenTriangle mFSQuad;
-
 void Evaluation::APIInit()
 {
-	mFSQuad.Init();
-
 	std::ifstream prgStr("Stock/ProgressingNode.glsl");
 	std::ifstream cubStr("Stock/DisplayCubemap.glsl");
 
@@ -435,19 +248,37 @@ void Evaluation::APIInit()
 	mDisplayCubemapShader = cubStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()), "cubeDisplay") : 0;
 }
 
-static void libtccErrorFunc(void *opaque, const char *msg)
+static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
 {
-	Log(msg);
-	Log("\n");
+	decoder->ReadFrame(frame);
+	Image_t image;
+	image.mDecoder = decoder;
+	image.mNumMips = 1;
+	image.mNumFaces = 1;
+	image.mFormat = TextureFormat::BGR8;
+	image.mWidth = int(decoder->mWidth);
+	image.mHeight = int(decoder->mHeight);
+	size_t lineSize = image.mWidth * 3;
+	size_t imgDataSize = lineSize * image.mHeight;
+	image.mBits = (unsigned char*)malloc(imgDataSize);
+
+	unsigned char *pdst = image.mBits;
+	unsigned char *psrc = (unsigned char*)decoder->GetRGBData();
+
+	psrc += imgDataSize - lineSize;
+	for (int j = 0; j < image.mHeight; j++)
+	{
+		memcpy(pdst, psrc, lineSize);
+		pdst += lineSize;
+		psrc -= lineSize;
+	}
+	return image;
 }
 
-struct EValuationFunction
+Image_t EvaluationStage::DecodeImage()
 {
-	const char *szFunctionName;
-	void *function;
-};
-
-extern Evaluation gEvaluation;
+	return ::DecodeImage(mDecoder.get(), mLocalTime);
+}
 
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
@@ -457,16 +288,20 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 	{
 		cmft::Image img;
 		if (!cmft::imageLoad(img, filename))
-			return EVAL_ERR;
+		{
+			auto decoder = gEvaluation.FindDecoder(filename);
+			*image = ::DecodeImage(decoder, gEvaluationTime);
+			return EVAL_OK;
+		}
 		cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
-		image->mBits = img.m_data;
+		image->mBits = (unsigned char*)img.m_data;
 		image->mWidth = img.m_width;
 		image->mHeight = img.m_height;
 		image->mDataSize = img.m_dataSize;
 		image->mNumMips = img.m_numMips;
 		image->mNumFaces = img.m_numFaces;
 		image->mFormat = img.m_format;
-
+		image->mDecoder = NULL;
 		return EVAL_OK;
 	}
 
@@ -475,7 +310,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 	image->mNumMips = 1;
 	image->mNumFaces = 1;
 	image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-
+	image->mDecoder = NULL;
 	return EVAL_OK;
 }
 
@@ -528,7 +363,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 			cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
 		else if (img.m_format == cmft::TextureFormat::RGB8)
 			cmft::imageConvert(img, cmft::TextureFormat::BGR8);
-		image->mBits = img.m_data;
+		image->mBits = (unsigned char*)img.m_data;
 		if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
 			return EVAL_ERR;
 	}
@@ -547,6 +382,13 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 			return EVAL_ERR;
 	}
 	break;
+	case 7:
+	{
+		FFMPEGCodec::Encoder *encoder = gCurrentContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
+		std::string fn(filename);
+		encoder->AddFrame(image->mBits, image->mWidth, image->mHeight);
+	}
+		break;
 	}
 	return EVAL_OK;
 }
@@ -556,11 +398,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	if (target == -1 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
 
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
-	if (!evaluation.mTarget)
-		return EVAL_ERR;
-
-	RenderTarget& tgt = *evaluation.mTarget;
+	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
 
 	// compute total size
 	Image_t& img = tgt.mImage;
@@ -570,7 +408,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	for (int i = 0;i<img.mNumMips;i++)
 		size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 
-	image->mBits = malloc(size);
+	image->mBits = (unsigned char*)malloc(size);
 	image->mDataSize = size;
 	image->mWidth = img.mWidth;
 	image->mHeight = img.mHeight;
@@ -604,21 +442,19 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
-	if (!evaluation.mTarget)
-	{
-		evaluation.mTarget = new RenderTarget;
-	}
-	evaluation.mbFreeSizing = false;
+	EvaluationStage &stage = gEvaluation.mEvaluationStages[target];
+	RenderTarget *tgt = gCurrentContext->GetRenderTarget(target);
+	if (!tgt)
+		return EVAL_ERR;
 	unsigned int texelSize = GetTexelSize(image->mFormat);
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
 	unsigned char *ptr = (unsigned char *)image->mBits;
 	if (image->mNumFaces == 1)
 	{
-		evaluation.mTarget->InitBuffer(image->mWidth, image->mHeight);
+		tgt->InitBuffer(image->mWidth, image->mHeight);
 
-		glBindTexture(GL_TEXTURE_2D, evaluation.mTarget->mGLTexID);
+		glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
 
 		for (int i = 0; i < image->mNumMips; i++)
 		{
@@ -633,8 +469,8 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	}
 	else
 	{
-		evaluation.mTarget->InitCube(image->mWidth);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, evaluation.mTarget->mGLTexID);
+		tgt->InitCube(image->mWidth);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
 
 		for (int face = 0; face < image->mNumFaces; face++)
 		{
@@ -651,7 +487,9 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
 	}
-	gEvaluation.SetTargetDirty(target, true);
+	if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
+		stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
+	gCurrentContext->SetTargetDirty(target, true);
 	return EVAL_OK;
 }
 
@@ -659,16 +497,12 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 {
 	if (image->mNumFaces != 1)
 		return EVAL_ERR;
-	Evaluation::EvaluationStage &evaluation = gEvaluation.mEvaluationStages[target];
-	if (!evaluation.mTarget)
-	{
-		evaluation.mTarget = new RenderTarget;
-	}
-	evaluation.mbFreeSizing = false;
-	evaluation.mTarget->InitCube(image->mWidth);
+	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
 
-	UploadImage(image, evaluation.mTarget->mGLTexID, cubeFace);
-	gEvaluation.SetTargetDirty(target, true);
+	tgt.InitCube(image->mWidth);
+
+	UploadImage(image, tgt.mGLTexID, cubeFace);
+	gCurrentContext->SetTargetDirty(target, true);
 	return EVAL_OK;
 }
 
@@ -697,17 +531,17 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
 		, glossScale
 		, glossBias
 		, cmft::EdgeFixup::None
-		, gCPUCount))
+		, gCPUCount
+		, clContext))
 		return EVAL_ERR;
 
-	image->mBits = img.m_data;
+	image->mBits = (unsigned char*)img.m_data;
 	image->mDataSize = img.m_dataSize;
 	image->mNumMips = img.m_numMips;
 	image->mNumFaces = img.m_numFaces;
 	image->mWidth = img.m_width;
 	image->mHeight = img.m_height;
 	image->mFormat = img.m_format;
-	
 	return EVAL_OK;
 }
 
@@ -769,67 +603,6 @@ int Evaluation::SetNodeImage(int target, Image *image)
 	return EVAL_OK;
 }
 
-void Evaluation::RecurseGetUse(size_t target, std::vector<size_t>& usedNodes)
-{
-	EvaluationStage& evaluation = mEvaluationStages[target];
-	const Input& input = evaluation.mInput;
-
-	std::vector<RenderTarget*> usingTargets;
-	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
-	{
-		int targetIndex = input.mInputs[inputIndex];
-		if (targetIndex == -1)
-			continue;
-		RecurseGetUse(targetIndex, usedNodes);
-	}
-
-	if (std::find(usedNodes.begin(), usedNodes.end(), target) == usedNodes.end())
-		usedNodes.push_back(target);
-}
-
-int Evaluation::Evaluate(int target, int width, int height, Image *image)
-{
-	std::vector<size_t> svgEvalList = gEvaluation.mEvaluationOrderList;
-	gEvaluation.mEvaluationOrderList.clear();
-
-	gEvaluation.RecurseGetUse(target, gEvaluation.mEvaluationOrderList);
-
-	gEvaluation.SetEvaluationMemoryMode(1);
-
-	gEvaluation.RunEvaluation(width, height, true);
-	GetEvaluationImage(target, image);
-	gEvaluation.SetEvaluationMemoryMode(0);
-
-	gEvaluation.mEvaluationOrderList = svgEvalList;
-
-	gEvaluation.RunEvaluation(256, 256, true);
-	return EVAL_OK;
-}
-
-static const EValuationFunction evaluationFunctions[] = {
-	{ "Log", (void*)Log },
-	{ "ReadImage", (void*)Evaluation::ReadImage },
-	{ "WriteImage", (void*)Evaluation::WriteImage },
-	{ "GetEvaluationImage", (void*)Evaluation::GetEvaluationImage },
-	{ "SetEvaluationImage", (void*)Evaluation::SetEvaluationImage },
-	{ "SetEvaluationImageCube", (void*)Evaluation::SetEvaluationImageCube },
-	{ "AllocateImage", (void*)Evaluation::AllocateImage },
-	{ "FreeImage", (void*)Evaluation::FreeImage },
-	{ "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
-	{ "Evaluate", (void*)Evaluation::Evaluate},
-	{ "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
-	{ "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
-	{ "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
-	{ "SetEvaluationCubeSize", (void*)Evaluation::SetEvaluationCubeSize },
-	{ "CubemapFilter", (void*)Evaluation::CubemapFilter},
-	{ "SetProcessing", (void*)Evaluation::SetProcessing},
-	{ "Job", (void*)Evaluation::Job },
-	{ "JobMain", (void*)Evaluation::JobMain },
-	{ "memmove", memmove },
-	{ "strcpy", strcpy },
-	{ "strlen", strlen },
-};
-
 typedef int(*jobFunction)(void*);
 
 struct CFunctionTaskSet : enki::ITaskSet
@@ -871,18 +644,32 @@ struct CFunctionMainTask : enki::IPinnedTask
 
 void Evaluation::SetProcessing(int target, int processing)
 {
-	gEvaluation.mEvaluationStages[target].mbProcessing = processing != 0;
+	gCurrentContext->StageSetProcessing(target, processing != 0);
 }
 
 int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
 {
-	g_TS.AddTaskSetToPipe(new CFunctionTaskSet(jobFunction, ptr, size));
+	if (gCurrentContext->IsSynchronous())
+	{
+		return jobFunction(ptr);
+	}
+	else
+	{
+		g_TS.AddTaskSetToPipe(new CFunctionTaskSet(jobFunction, ptr, size));
+	}
 	return EVAL_OK;
 }
 
 int Evaluation::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size)
 {
-	g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
+	if (gCurrentContext->IsSynchronous())
+	{
+		return jobMainFunction(ptr);
+	}
+	else
+	{
+		g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
+	}
 	return EVAL_OK;
 }
 
@@ -892,160 +679,6 @@ void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
 
 	evaluation.mBlendingSrc = blendSrc;
 	evaluation.mBlendingDst = blendDst;
-}
-
-std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
-{
-	size_t start_pos = 0;
-	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-		str.replace(start_pos, from.length(), to);
-		start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-	}
-	return str;
-}
-
-void Evaluation::ClearEvaluators()
-{
-	// clear
-	for (auto& program : mEvaluatorPerNodeType)
-	{
-		if (program.mGLSLProgram)
-			glDeleteProgram(program.mGLSLProgram);
-		if (program.mMem)
-			free(program.mMem);
-	}
-}
-
-void Evaluation::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames)
-{
-	ClearEvaluators();
-
-	mEvaluatorPerNodeType.clear();
-	mEvaluatorPerNodeType.resize(evaluatorfilenames.size(), Evaluator());
-
-	// GLSL
-	for (auto& file : evaluatorfilenames)
-	{
-		if (file.mEvaluatorType != EVALUATOR_GLSL)
-			continue;
-		const std::string filename = file.mFilename;
-
-		std::ifstream t(file.mDirectory + filename);
-		if (t.good())
-		{
-			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-			if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
-				mEvaluatorScripts[filename] = EvaluatorScript(str);
-			else
-				mEvaluatorScripts[filename].mText = str;
-		}
-	}
-
-	std::string baseShader = mEvaluatorScripts["Shader.glsl"].mText;
-	for (auto& file : evaluatorfilenames)
-	{
-		if (file.mEvaluatorType != EVALUATOR_GLSL)
-			continue;
-		const std::string filename = file.mFilename;
-
-		if (filename == "Shader.glsl")
-			continue;
-
-		EvaluatorScript& shader = mEvaluatorScripts[filename];
-		std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mText);
-		std::string nodeName = ReplaceAll(filename, ".glsl", "");
-		shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
-
-		unsigned int program = LoadShader(shaderText, filename.c_str());
-
-		int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
-		if (parameterBlockIndex != -1)
-			glUniformBlockBinding(program, parameterBlockIndex, 1);
-
-		parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
-		if (parameterBlockIndex != -1)
-			glUniformBlockBinding(program, parameterBlockIndex, 2);
-		shader.mProgram = program;
-		if (shader.mNodeType != -1)
-			mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
-	}
-
-	if (!gEvaluation.mEvaluationStateGLSLBuffer)
-	{
-		glGenBuffers(1, &mEvaluationStateGLSLBuffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
-
-	// C
-	for (auto& file : evaluatorfilenames)
-	{
-		if (file.mEvaluatorType != EVALUATOR_C)
-			continue;
-		const std::string filename = file.mFilename;
-		try
-		{
-			std::ifstream t(file.mDirectory + filename);
-			if (!t.good())
-			{
-				Log("%s - Unable to load file.\n", filename.c_str());
-				continue;
-			}
-			std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-			if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
-				mEvaluatorScripts[filename] = EvaluatorScript(str);
-			else
-				mEvaluatorScripts[filename].mText = str;
-
-			EvaluatorScript& program = mEvaluatorScripts[filename];
-			TCCState *s = tcc_new();
-
-			int *noLib = (int*)s;
-			noLib[2] = 1; // no stdlib
-
-			tcc_set_error_func(s, 0, libtccErrorFunc);
-			tcc_add_include_path(s, "C\\");
-			tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
-
-			if (tcc_compile_string(s, program.mText.c_str()) != 0)
-			{
-				Log("%s - Compilation error!\n", filename.c_str());
-				continue;
-			}
-
-			for (auto& evaluationFunction : evaluationFunctions)
-				tcc_add_symbol(s, evaluationFunction.szFunctionName, evaluationFunction.function);
-
-			int size = tcc_relocate(s, NULL);
-			if (size == -1)
-			{
-				Log("%s - Libtcc unable to relocate program!\n", filename.c_str());
-				continue;
-			}
-			program.mMem = malloc(size);
-			tcc_relocate(s, program.mMem);
-
-			*(void**)(&program.mCFunction) = tcc_get_symbol(s, "main");
-			if (!program.mCFunction)
-			{
-				Log("%s - No main function!\n", filename.c_str());
-			}
-			tcc_delete(s);
-
-			if (program.mNodeType != -1)
-			{
-				mEvaluatorPerNodeType[program.mNodeType].mCFunction = program.mCFunction;
-				mEvaluatorPerNodeType[program.mNodeType].mMem = program.mMem;
-			}
-		}
-		catch (...)
-		{
-			Log("Error at compiling %s", filename.c_str());
-		}
-	}
 }
 
 void Evaluation::BindGLSLParameters(EvaluationStage& stage)
@@ -1067,133 +700,10 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 	}
 }
 
-void Evaluation::SetMouseInfos(EvaluationInfo &evaluationInfo, EvaluationStage &evaluationStage) const
-{
-	evaluationInfo.mouse[0] = evaluationStage.mRx;
-	evaluationInfo.mouse[1] = evaluationStage.mRy;
-	evaluationInfo.mouse[2] = evaluationStage.mLButDown ? 1.f : 0.f;
-	evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
-}
-void Evaluation::EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& evaluationInfo)
-{
-	const Input& input = evaluationStage.mInput;
-
-	RenderTarget* tgt = evaluationStage.mTarget;
-	if (!evaluationInfo.uiPass)
-	{
-		if (tgt->mImage.mNumFaces == 6)
-			tgt->BindAsCubeTarget();
-		else
-			tgt->BindAsTarget();
-	}
-	unsigned int program = mEvaluatorPerNodeType[evaluationStage.mNodeType].mGLSLProgram;
-	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
-	unsigned int blend[] = { GL_ONE, GL_ZERO };
-
-
-	for (int i = 0; i < 2; i++)
-	{
-		if (blendOps[i] < BLEND_LAST)
-			blend[i] = GLBlends[blendOps[i]];
-	}
-
-	evaluationInfo.targetIndex = 0;
-	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	evaluationInfo.forcedDirty = evaluationStage.mbForceEval ? 1 : 0;
-	SetMouseInfos(evaluationInfo, evaluationStage);
-	//evaluationInfo.uiPass = 1;
-
-	glEnable(GL_BLEND);
-	glBlendFunc(blend[0], blend[1]);
-
-	glUseProgram(program);
-
-	size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
-	for (size_t face = 0; face < faceCount; face++)
-	{
-		if (tgt->mImage.mNumFaces == 6)
-			tgt->BindCubeFace(face);
-
-		memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
-		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-
-		int samplerIndex = 0;
-		for (size_t inputIndex = 0; inputIndex < sizeof(samplerName)/sizeof(const char*); inputIndex++)
-		{
-			unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
-			if (parameter == 0xFFFFFFFF)
-				continue;
-			glUniform1i(parameter, samplerIndex);
-			glActiveTexture(GL_TEXTURE0 + samplerIndex);
-			
-			int targetIndex = input.mInputs[samplerIndex];
-			if (targetIndex < 0)
-			{
-				glBindTexture(GL_TEXTURE_2D, 0);
-			}
-			else
-			{
-				auto* tgt = mEvaluationStages[targetIndex].mTarget;
-				if (tgt)
-				{
-					const InputSampler& inputSampler = evaluationStage.mInputSamplers[samplerIndex];
-					if (tgt->mImage.mNumFaces == 1)
-					{
-						glBindTexture(GL_TEXTURE_2D, mEvaluationStages[targetIndex].mTarget->mGLTexID);
-						TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
-					}
-					else
-					{
-						glBindTexture(GL_TEXTURE_CUBE_MAP, mEvaluationStages[targetIndex].mTarget->mGLTexID);
-						TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_CUBE_MAP);
-					}
-				}
-			}
-			samplerIndex++;
-		}
-		//
-		mFSQuad.Render();
-	}
-	glDisable(GL_BLEND);
-}
-
-void Evaluation::EvaluateC(EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
-{
-	const Input& input = evaluationStage.mInput;
-
-	//EvaluationInfo evaluationInfo;
-	evaluationInfo.targetIndex = int(index);
-	memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(evaluationInfo.inputIndices));
-	SetMouseInfos(evaluationInfo, evaluationStage);
-	//evaluationInfo.forcedDirty = evaluation.mbForceEval ? 1 : 0;
-	//evaluationInfo.uiPass = false;
-	try // todo: find a better solution than a try catch
-	{
-		mEvaluatorPerNodeType[evaluationStage.mNodeType].mCFunction(evaluationStage.mParameters, &evaluationInfo);
-	}
-	catch (...)
-	{
-
-	}
-}
-
-void Evaluation::EvaluationStage::Clear()
+void EvaluationStage::Clear()
 {
 	if (mEvaluationMask&EvaluationGLSL)
 		glDeleteBuffers(1, &mParametersBuffer);
-	//gEvaluation.UnreferenceRenderTarget(&mTarget);
-}
-
-void Evaluation::FinishEvaluation()
-{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glUseProgram(0);
 }
 
 unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int cubeFace)
@@ -1280,14 +790,14 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			EvaluationInfo evaluationInfo;
 			evaluationInfo.forcedDirty = 1;
 			evaluationInfo.uiPass = 1;
-			gEvaluation.PerformEvaluationForNode(cb.mNodeIndex, int(w), int(h), true, evaluationInfo);
+			gCurrentContext->RunSingle(cb.mNodeIndex, evaluationInfo);
 		}
 		break;
 		case CBUI_Progress:
 		{
 			glUseProgram(gEvaluation.mProgressShader);
 			glUniform1f(glGetUniformLocation(gEvaluation.mProgressShader, "time"), float(double(SDL_GetTicks())/1000.0));
-			mFSQuad.Render();
+			gFSQuad.Render();
 		}
 		break;
 		case CBUI_Cubemap:
@@ -1297,8 +807,8 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 			glUniform1i(tgt, 0);
 			glActiveTexture(GL_TEXTURE0);
 
-			glBindTexture(GL_TEXTURE_CUBE_MAP, gEvaluation.GetEvaluationTexture(cb.mNodeIndex));
-			mFSQuad.Render();
+			glBindTexture(GL_TEXTURE_CUBE_MAP, gCurrentContext->GetEvaluationTexture(cb.mNodeIndex));
+			gFSQuad.Render();
 		}
 		break;
 		}
@@ -1330,7 +840,7 @@ int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
-	RenderTarget* renderTarget = gEvaluation.mEvaluationStages[target].mTarget;
+	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
 	*imageWidth = renderTarget->mImage.mWidth;
@@ -1342,11 +852,11 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
-	auto& stage = gEvaluation.mEvaluationStages[target];
-	RenderTarget* renderTarget = stage.mTarget;
+	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
-	stage.mbFreeSizing = false;
+	//if (gCurrentContext->GetEvaluationInfo().uiPass)
+	//	return EVAL_OK;
 	renderTarget->InitBuffer(imageWidth, imageHeight);
 	return EVAL_OK;
 }
@@ -1355,11 +865,10 @@ int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 {
 	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
 		return EVAL_ERR;
-	auto& stage = gEvaluation.mEvaluationStages[target];
-	RenderTarget* renderTarget = stage.mTarget;
+
+	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
-	stage.mbFreeSizing = false;
 	renderTarget->InitCube(faceWidth);
 	return EVAL_OK;
 }

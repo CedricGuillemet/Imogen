@@ -18,7 +18,7 @@ file(GLOB EXT_FILES
 	${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
-${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
+	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
 )
 
 if(WIN32)
@@ -41,6 +41,8 @@ ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
 set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES} libtcc.a)
 endif()
 
+set(FFMPEG_LIBS avcodec.lib avdevice.lib avfilter.lib avformat.lib avutil.lib swscale.lib swresample.lib postproc.lib)
+
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
@@ -49,11 +51,13 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/include
 )
 
 link_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/lib/x64
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/lib
 )
 find_package(OpenGL)
 
@@ -108,7 +112,7 @@ SET(EXE_NAME "Imogen")
 
 ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES})
 
-TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS})
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBS})
 
 #--------------------------------------------------------------------
 # preproc

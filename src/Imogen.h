@@ -48,6 +48,7 @@ struct EvaluatorFile
 	std::string mFilename;
 	EVALUATOR_TYPE mEvaluatorType;
 };
+
 struct Imogen
 {
 	Imogen();
@@ -84,3 +85,4 @@ struct ImogenDrawCallback
 extern std::vector<ImogenDrawCallback> mCallbackRects;
 void InitCallbackRects();
 size_t AddNodeUICallbackRect(CallbackDisplayType type, const ImRect& rect, size_t nodeIndex);
+extern int gEvaluationTime;

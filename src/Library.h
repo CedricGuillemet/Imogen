@@ -75,6 +75,9 @@ struct MaterialNode
 	std::vector<uint8_t> mParameters;
 	std::vector<uint8_t> mImage;
 
+	uint32_t mFrameStart;
+	uint32_t mFrameEnd;
+
 	// runtime
 	unsigned int mRuntimeUniqueId;
 };
@@ -128,6 +131,7 @@ enum ConTypes
 	Con_Float4,
 	Con_Color4,
 	Con_Int,
+	Con_Int2,
 	Con_Ramp,
 	Con_Angle,
 	Con_Angle2,

@@ -36,28 +36,14 @@
 #include "TaskScheduler.h"
 #include "stb_image.h"
 #include "stb_image_write.h"
+#include "ffmpegCodec.h"
+#include "Evaluators.h"
+#include "cmft/clcontext.h"
+#include "cmft/clcontext_internal.h"
 
 TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 unsigned int gCPUCount = 1;
-int Log(const char *szFormat, ...)
-{
-	va_list ptr_arg;
-	va_start(ptr_arg, szFormat);
-
-	static char buf[10240];
-	vsprintf(buf, szFormat, ptr_arg);
-
-	static FILE *fp = fopen("log.txt", "wt");
-	if (fp)
-	{
-		fprintf(fp, buf);
-		fflush(fp);
-	}
-	DebugLogText(buf);
-	va_end(ptr_arg);
-	return 0;
-}
-
+cmft::ClContext* clContext = NULL;
 
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
 	GLenum type,
@@ -119,6 +105,8 @@ int main(int, char**)
 {
 	g_TS.Initialize();
 	LoadMetaNodes();
+	FFMPEGCodec::RegisterAll();
+	FFMPEGCodec::Log = Log;
 
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);
@@ -156,7 +144,7 @@ int main(int, char**)
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 
-							   // Initialize OpenGL loader
+	// Initialize OpenGL loader
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
 	bool err = gl3wInit() != 0;
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
@@ -168,6 +156,25 @@ int main(int, char**)
 	{
 		fprintf(stderr, "Failed to initialize OpenGL loader!\n");
 		return 1;
+	}
+
+	// open cl context
+	int32_t clLoaded = 0;
+	clLoaded = cmft::clLoad();
+	if (clLoaded)
+	{
+		uint32_t clVendor = (uint32_t)CMFT_CL_VENDOR_ANY_GPU;
+		uint32_t deviceType = CMFT_CL_DEVICE_TYPE_GPU;
+		uint32_t deviceIndex = 0;
+		clContext = cmft::clInit(clVendor, deviceType, deviceIndex);
+	}
+	if (clLoaded && clContext)
+	{
+		Log("OpenCL context created with %s / %s\n", clContext->m_deviceVendor, clContext->m_deviceName);
+	}
+	else
+	{
+		Log("OpenCL context not created.\n");
 	}
 
 	// Setup Dear ImGui binding
@@ -190,6 +197,7 @@ int main(int, char**)
 		&unusedIds,
 		true);
 
+	gFSQuad.Init();
 
 	// Setup style
 	ImGui::StyleColorsDark();
@@ -201,7 +209,7 @@ int main(int, char**)
 	imogen.Init();
 	
 	gEvaluation.Init();
-	gEvaluation.SetEvaluators(imogen.mEvaluatorFiles);
+	gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
 	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
 
@@ -227,9 +235,11 @@ int main(int, char**)
 		ImGui::NewFrame();
 		InitCallbackRects();
 
+
+		gCurrentContext->RunDirty();
 		imogen.Show(library, nodeGraphDelegate, gEvaluation);
 
-		gEvaluation.RunEvaluation(256, 256, false);
+		
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -242,7 +252,14 @@ int main(int, char**)
 		g_TS.RunPinnedTasks();
 		SDL_GL_SwapWindow(window);
 	}
-	
+
+	clDestroy(clContext);
+	// Unload opencl lib.
+	if (clLoaded)
+	{
+		cmft::clUnload();
+	}
+
 	imogen.ValidateCurrentMaterial(library, nodeGraphDelegate);
 	SaveLib(&library, libraryFilename);
 	gEvaluation.Finish();

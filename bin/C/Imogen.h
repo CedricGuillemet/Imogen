@@ -1,16 +1,19 @@
 int Log(const char *szFormat, ...);
 char * strcpy ( char * destination, const char * source );
 int strlen ( const char * str );
+float fabsf(float value);
 
 typedef struct Image_t
 {
 	void *bits;
+	void *decoder;
 	int width, height;
 	//int components;
 	int mDataSize;
 	unsigned char mNumMips;
 	unsigned char mNumFaces;
 	unsigned char mFormat;
+	void *mStream;
 } Image;
 
 typedef struct Evaluation_t

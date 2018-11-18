@@ -27,13 +27,76 @@
 
 #include "Nodes.h"
 #include "Evaluation.h"
-#include "curve.h"
+#include "ImCurveEdit.h"
 #include "Library.h"
 #include "nfd.h"
+#include "EvaluationContext.h"
+
+struct RampEdit : public ImCurveEdit::Delegate
+{
+	RampEdit()
+	{
+	}
+	size_t GetCurveCount()
+	{
+		return 1;
+	}
+
+	size_t GetPointCount(size_t curveIndex)
+	{
+		return mPointCount;
+	}
+
+	uint32_t GetCurveColor(size_t curveIndex)
+	{
+		return 0xFFAAAAAA;
+	}
+	ImVec2* GetPoints(size_t curveIndex)
+	{
+		return mPts;
+	}
+
+	virtual size_t EditPoint(size_t curveIndex, size_t pointIndex, ImVec2 value)
+	{
+		mPts[pointIndex] = value;
+		SortValues(curveIndex);
+		for (size_t i = 0; i < GetPointCount(curveIndex); i++)
+		{
+			if (mPts[i].x == value.x)
+				return i;
+		}
+		return pointIndex;
+	}
+	virtual void AddPoint(size_t curveIndex, ImVec2 value)
+	{
+		if (mPointCount >= 8)
+			return;
+		mPts[mPointCount++] = value;
+		SortValues(curveIndex);
+	}
+
+	virtual void DelPoint(size_t curveIndex, size_t pointIndex)
+	{
+		mPts[pointIndex].x = FLT_MAX;
+		SortValues(curveIndex);
+		mPointCount--;
+		mPts[mPointCount].x = -1.f; // end marker
+	}
+	ImVec2 mPts[8];
+	size_t mPointCount;
+
+private:
+	void SortValues(size_t curveIndex)
+	{
+		auto b = std::begin(mPts);
+		auto e = std::begin(mPts) + GetPointCount(curveIndex);
+		std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
+	}
+};
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
-	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false)
+	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false), mEditingContext(evaluation, false, 256, 256)
 	{
 		mCategoriesCount = 9;
 		static const char *categories[] = {
@@ -49,16 +112,23 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		mCategories = categories;
 		assert(!mInstance);
 		mInstance = this;
+		gCurrentContext = &mEditingContext;
 	}
 
 	Evaluation& mEvaluation;
+	EvaluationContext mEditingContext;
+
 	struct ImogenNode
 	{
+#ifdef _DEBUG
+		std::string mNodeTypename;
+#endif
 		size_t mType;
 		size_t mEvaluationTarget;
 		void *mParameters;
 		size_t mParametersSize;
 		unsigned int mRuntimeUniqueId;
+		int mStartFrame, mEndFrame;
 		std::vector<InputSampler> mInputSamplers;
 	};
 
@@ -91,20 +161,27 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	virtual unsigned int GetNodeTexture(size_t index)
 	{
-		return mEvaluation.GetEvaluationTexture(mNodes[index].mEvaluationTarget);
+		return mEditingContext.GetEvaluationTexture(mNodes[index].mEvaluationTarget);
 	}
+
 	virtual void AddNode(size_t type)
 	{
-		size_t index = mNodes.size();
+		const size_t index			= mNodes.size();
+		const size_t paramsSize		= ComputeNodeParametersSize(type);
+		const size_t inputCount		= gMetaNodes[type].mInputs.size();
+
 		ImogenNode node;
-		node.mEvaluationTarget = mEvaluation.AddEvaluation(type, gMetaNodes[type].mName);
-		node.mRuntimeUniqueId = GetRuntimeId();
-		node.mType = type;
-		size_t paramsSize = ComputeNodeParametersSize(type);
-		node.mParameters = malloc(paramsSize);
-		node.mParametersSize = paramsSize;
+		node.mEvaluationTarget		= mEvaluation.AddEvaluation(type, gMetaNodes[type].mName);
+		node.mRuntimeUniqueId		= GetRuntimeId();
+		node.mType					= type;
+		node.mParameters			= malloc(paramsSize);
+		node.mParametersSize		= paramsSize;
+		node.mStartFrame			= 0;
+		node.mEndFrame				= 0;
+#ifdef _DEBUG
+		node.mNodeTypename			= gMetaNodes[type].mName;
+#endif
 		memset(node.mParameters, 0, paramsSize);
-		size_t inputCount = gMetaNodes[type].mInputs.size();
 		node.mInputSamplers.resize(inputCount);
 		mNodes.push_back(node);
 
@@ -197,23 +274,35 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_Int:
 				dirty |= ImGui::InputInt(param.mName.c_str(), (int*)paramBuffer);
 				break;
+			case Con_Int2:
+				dirty |= ImGui::InputInt2(param.mName.c_str(), (int*)paramBuffer);
+				break;
 			case Con_Ramp:
 				{
-					ImVec2 points[8];
+					//ImVec2 points[8];
 					
+					RampEdit curveEditDelegate;
+					curveEditDelegate.mPointCount = 0;
 					for (int k = 0; k < 8; k++)
 					{
-						points[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
-						if (k && points[k - 1].x > points[k].x)
-							points[k] = ImVec2(1.f, 1.f);
+						curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
+						if (k && curveEditDelegate.mPts[k-1].x > curveEditDelegate.mPts[k].x)
+							break;
+						curveEditDelegate.mPointCount++;
 					}
-
-					if (ImGui::Curve("Ramp", ImVec2(250, 150), 8, points))
+					float regionWidth = ImGui::GetWindowContentRegionWidth();
+					if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth)))
 					{
-						for (int k = 0; k < 8; k++)
+						for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
 						{
-							((float*)paramBuffer)[k * 2] = points[k].x;
-							((float*)paramBuffer)[k * 2 + 1] = points[k].y;
+							((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
+							((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+						}
+						((float*)paramBuffer)[0] = 0.f;
+						((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
+						for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+						{
+							((float*)paramBuffer)[k * 2] = -1.f;
 						}
 						dirty = true;
 					}
@@ -276,8 +365,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			case Con_ForceEvaluate:
 				if (ImGui::Button(param.mName.c_str()))
 				{
-					dirty = true;
-					forceEval = true;
+					EvaluationInfo evaluationInfo;
+					evaluationInfo.forcedDirty = 1;
+					evaluationInfo.uiPass = 0;
+					mEditingContext.RunSingle(node.mEvaluationTarget, evaluationInfo);
 				}
 				break;
 			case Con_Bool:
@@ -296,42 +387,80 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		}
 		
 		if (dirty)
-			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
-		if (forceEval)
 		{
-			EvaluationInfo evaluationInfo;
-			evaluationInfo.forcedDirty = 1;
-			evaluationInfo.uiPass = 0;
-			mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+			mEditingContext.SetTargetDirty(node.mEvaluationTarget);
 		}
+	}
+	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd)
+	{
+		ImogenNode & node = mNodes[index];
+		node.mStartFrame = frameStart;
+		node.mEndFrame = frameEnd;
+	}
+
+	void SetTimeDuration(size_t index, int duration)
+	{
+		ImogenNode & node = mNodes[index];
+		node.mEndFrame = node.mStartFrame + duration;
+	}
+
+	void SetTime(int time, bool updateDecoder)
+	{
+		gEvaluationTime = time;
+		for (const ImogenNode& node : mNodes)
+		{
+			mEvaluation.SetStageLocalTime(node.mEvaluationTarget, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
+		}
+	}
+
+	size_t ComputeTimelineLength() const
+	{
+		int len = 0;
+		for (const ImogenNode& node : mNodes)
+		{
+			len = ImMax(len, node.mEndFrame);
+			len = ImMax(len, int(node.mStartFrame + mEvaluation.GetEvaluationImageDuration(node.mEvaluationTarget)));
+		}
+		return size_t(len);
 	}
 
 	virtual void DoForce()
 	{
-		bool dirty = false;
-		bool forceEval = false;
+		int currentTime = gEvaluationTime;
+		//mEvaluation.BeginBatch();
 		for (ImogenNode& node : mNodes)
 		{
 			const MetaNode& currentMeta = gMetaNodes[node.mType];
-
+			bool forceEval = false;
 			for(auto& param : currentMeta.mParams)
 			{
 				if (!param.mName.c_str())
 					break;
 				if (param.mType == Con_ForceEvaluate)
 				{
-					dirty = true;
 					forceEval = true;
+					break;
 				}
 			}
 			if (forceEval)
 			{
-				EvaluationInfo evaluationInfo;
-				evaluationInfo.forcedDirty = 1;
-				evaluationInfo.uiPass = 0;
-				mEvaluation.PerformEvaluationForNode(node.mEvaluationTarget, 256, 256, true, evaluationInfo);
+				EvaluationContext writeContext(mEvaluation, true, 1024, 1024);
+				gCurrentContext = &writeContext;
+				for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
+				{
+					SetTime(frame, false);
+					EvaluationInfo evaluationInfo;
+					evaluationInfo.forcedDirty = 1;
+					evaluationInfo.uiPass = 0;
+					writeContext.RunSingle(node.mEvaluationTarget, evaluationInfo);
+				}
+				gCurrentContext = &mEditingContext;
 			}
 		}
+		//mEvaluation.EndBatch();
+		SetTime(currentTime, true);
+		InvalidateParameters();
 	}
 
 	void InvalidateParameters()
@@ -409,6 +538,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		{
 			mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
 			mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
+			mEditingContext.SetTargetDirty(mNodes[mSelectedNodeIndex].mEvaluationTarget);
 		}
 	}
 
@@ -427,11 +557,11 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	}
 	virtual bool NodeIsProcesing(size_t nodeIndex)
 	{
-		return mEvaluation.StageIsProcessing(nodeIndex);
+		return mEditingContext.StageIsProcessing(nodeIndex);
 	}
 	virtual bool NodeIsCubemap(size_t nodeIndex)
 	{
-		RenderTarget *target = mEvaluation.GetRenderTarget(nodeIndex);
+		RenderTarget *target = mEditingContext.GetRenderTarget(nodeIndex);
 		if (target)
 			return target->mImage.mNumFaces == 6;
 		return false;

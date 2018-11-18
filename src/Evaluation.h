@@ -32,12 +32,14 @@
 #include "Imogen.h"
 #include <string.h>
 #include <stdio.h>
+#include "ffmpegCodec.h"
+#include <memory>
+#include "Utils.h"
 
-extern int Log(const char *szFormat, ...);
 
-typedef unsigned int TextureID;
 struct ImDrawList;
 struct ImDrawCmd;
+
 
 enum BlendOp
 {
@@ -78,6 +80,8 @@ struct EvaluationInfo
 	float pad2[4];
 	
 	float viewport[2];
+	size_t mFrame;
+	size_t mLocalFrame;
 };
 
 struct TextureFormat
@@ -106,7 +110,9 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-	void *mBits;
+	Image_t() : mDecoder(NULL) {}
+	unsigned char *mBits;
+	void *mDecoder;
 	int mWidth, mHeight;
 	uint32_t mDataSize;
 	uint8_t mNumMips;
@@ -138,6 +144,46 @@ public:
 	int mRefCount;
 };
 
+struct Input
+{
+	Input()
+	{
+		memset(mInputs, -1, sizeof(int) * 8);
+	}
+	int mInputs[8];
+};
+
+struct EvaluationStage
+{
+#ifdef _DEBUG
+	std::string mNodeTypename;
+#endif
+	std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
+	size_t mNodeType;
+	unsigned int mParametersBuffer;
+	void *mParameters;
+	size_t mParametersSize;
+	Input mInput;
+	std::vector<InputSampler> mInputSamplers;
+	int mEvaluationMask; // see EvaluationMask
+	int mUseCountByOthers;
+	int mBlendingSrc;
+	int mBlendingDst;
+	int mLocalTime;
+	// mouse
+	float mRx;
+	float mRy;
+	bool mLButDown;
+	bool mRButDown;
+	void Clear();
+	Image_t DecodeImage();
+};
+
+enum EvaluationMask
+{
+	EvaluationC = 1 << 0,
+	EvaluationGLSL = 1 << 1,
+};
 
 // simple API
 struct Evaluation
@@ -147,25 +193,22 @@ struct Evaluation
 	void Init();
 	void Finish();
 
-	void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
-	std::string GetEvaluator(const std::string& filename);
 
 	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
-	RenderTarget *GetRenderTarget(size_t target) { return mEvaluationStages[target].mTarget; }
+	//
+	size_t GetStagesCount() const { return mEvaluationStages.size(); }
+	size_t GetStageType(size_t target) const { return mEvaluationStages[target].mNodeType; }
+	size_t GetEvaluationImageDuration(size_t target);
 	void DelEvaluationTarget(size_t target);
-	unsigned int GetEvaluationTexture(size_t target);
 	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
-	void PerformEvaluationForNode(size_t index, int width, int height, bool force, EvaluationInfo& evaluationInfo);
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
-	void RunEvaluation(int width, int height, bool forceEvaluation);
 	void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
-	void SetTargetDirty(size_t target, bool onlyChild = false);
 	void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
 	void Clear();
-	bool StageIsProcessing(size_t target) { return mEvaluationStages[target].mbProcessing; }
-	void StageSetProcessing(size_t target, bool processing) { mEvaluationStages[target].mbProcessing = processing; }
+	
+	void SetStageLocalTime(size_t target, int localTime, bool updateDecoder);
 
 	// API
 	static int ReadImage(const char *filename, Image *image);
@@ -194,97 +237,29 @@ struct Evaluation
 	// synchronous texture cache
 	// use for simple textures(stock) or to replace with a more efficient one
 	unsigned int GetTexture(const std::string& filename);
+
+
+	const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
+
+	
+	const EvaluationStage& GetEvaluationStage(size_t index) const {
+		return mEvaluationStages[index];
+	}
 protected:
 	void APIInit();
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
-	int mEvaluationMode;
-	//int mAllocatedTargets;
-	unsigned int equiRectTexture;
-	int mDirtyCount;
-
-	void ClearEvaluators();
-	struct Evaluator
-	{
-		Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0) {}
-		unsigned int mGLSLProgram;
-		int(*mCFunction)(void *parameters, void *evaluationInfo);
-		void *mMem;
-	};
-
-	std::vector<Evaluator> mEvaluatorPerNodeType;
-
-	struct EvaluatorScript
-	{
-		EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
-		EvaluatorScript(const std::string & text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
-		std::string mText;
-		unsigned int mProgram;
-		int(*mCFunction)(void *parameters, void *evaluationInfo);
-		void *mMem;
-		int mNodeType;
-	};
-
-	std::map<std::string, EvaluatorScript> mEvaluatorScripts;
-
-	struct Input
-	{
-		Input()
-		{
-			memset(mInputs, -1, sizeof(int) * 8);
-		}
-		int mInputs[8];
-	};
-
-	enum EvaluationMask
-	{
-		EvaluationC    = 1 << 0,
-		EvaluationGLSL = 1 << 1,
-	};
-	struct EvaluationStage
-	{
-#ifdef _DEBUG
-		std::string mNodeTypename;
-#endif
-		RenderTarget *mTarget;
-		size_t mNodeType;
-		unsigned int mParametersBuffer;
-		void *mParameters;
-		size_t mParametersSize;
-		Input mInput;
-		std::vector<InputSampler> mInputSamplers;
-		bool mbDirty;
-		bool mbForceEval;
-		bool mbProcessing;
-		bool mbFreeSizing;
-		int mEvaluationMask; // see EvaluationMask
-		int mUseCountByOthers;
-		int mBlendingSrc;
-		int mBlendingDst;
-		// mouse
-		float mRx;
-		float mRy;
-		bool mLButDown;
-		bool mRButDown;
-		void Clear();
-	};
-
-	unsigned int mEvaluationStateGLSLBuffer;
 	std::vector<EvaluationStage> mEvaluationStages;
 	std::vector<size_t> mEvaluationOrderList;
-
-	void SetMouseInfos(EvaluationInfo &evaluationInfo, EvaluationStage &evaluationStage) const;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
-	void EvaluateGLSL(EvaluationStage& evaluationStage, EvaluationInfo& evaluationInfo);
-	void EvaluateC(EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-	void FinishEvaluation();
-
-	std::vector<RenderTarget*> mAllocatedRenderTargets;
-	void SetEvaluationMemoryMode(int mode);
-	void RecurseGetUse(size_t target, std::vector<size_t>& usedNodes);
 
 	// ui callback shaders
 	unsigned int mProgressShader;
 	unsigned int mDisplayCubemapShader;
 
+	// ffmpeg encoders
+	FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 };
+
+extern Evaluation gEvaluation;
+extern FullScreenTriangle gFSQuad;

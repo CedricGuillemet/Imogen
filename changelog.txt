@@ -1,4 +1,16 @@
 -------------------------------------------------------------------------------
+Imogen 0.5 - codename Phoenix Ikki
+
+New:
+- MP4 video input/output node
+- time line editor
+- opencl context for faster cubemap filtering
+
+Changed:
+- internal evaluation system refactored
+- Many, many bug fixes
+
+-------------------------------------------------------------------------------
 Imogen 0.4 - codename Andromeda Shun
 
 New:

@@ -108,6 +108,7 @@ namespace ImCurveEdit
       static const float step = 1.f / float(subStepCount - 1);
       static std::set<EditPoint> selection;
       static bool overSelectedPoint = false;
+	  static bool movingSelectedPoints = false;
 
       ImGuiIO& io = ImGui::GetIO();
       ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0,0));
@@ -183,7 +184,7 @@ namespace ImCurveEdit
 
          for (size_t p = 0; p < ptCount; p++)
          {
-            const int drawState = DrawPoint(draw_list, pts[p], ssizeScaled, offset, (selection.find({int(c), int(p)}) != selection.end() && movingCurve == -1));
+            const int drawState = DrawPoint(draw_list, pts[p], ssizeScaled, offset, (selection.find({int(c), int(p)}) != selection.end() && movingCurve == -1 && !movingSelectedPoints));
             if (drawState && movingCurve == -1 && !selectingQuad)
             {
                overCurveOrPoint = true;
@@ -215,6 +216,7 @@ namespace ImCurveEdit
       // move selection
       if (overSelectedPoint && io.MouseDown[0])
       {
+		  movingSelectedPoints = true;
          auto prevSelection = selection;
          for (auto& sel : prevSelection)
          {
@@ -231,8 +233,11 @@ namespace ImCurveEdit
       }
 
 
-      if (overSelectedPoint && !io.MouseDown[0])
-         overSelectedPoint = false;
+	  if (overSelectedPoint && !io.MouseDown[0])
+	  {
+		  overSelectedPoint = false;
+		  movingSelectedPoints = false;
+	  }
 
       // add point
       if (overCurve != -1 && io.MouseDoubleClicked[0])

@@ -46,7 +46,7 @@
 #include "ffmpegCodec.h"
 
 extern enki::TaskScheduler g_TS;
-
+extern cmft::ClContext* clContext;
 
 static const unsigned int glInputFormats[] = {
 		GL_BGR,
@@ -531,7 +531,8 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
 		, glossScale
 		, glossBias
 		, cmft::EdgeFixup::None
-		, gCPUCount))
+		, gCPUCount
+		, clContext))
 		return EVAL_ERR;
 
 	image->mBits = (unsigned char*)img.m_data;

@@ -179,7 +179,7 @@ namespace FFMPEGCodec
 			!strcmp(m_codec_context->codec->name, "dvvideo")) {
 			m_offset_time = false;
 		}
-		m_codec_cap_delay = (bool)(m_codec_context->codec->capabilities & CODEC_CAP_DELAY);
+		m_codec_cap_delay = (m_codec_context->codec->capabilities & CODEC_CAP_DELAY) != 0;
 
 		AVStream *stream = m_format_context->streams[m_video_stream];
 		if (stream->r_frame_rate.num != 0 && stream->r_frame_rate.den != 0)
@@ -341,18 +341,21 @@ namespace FFMPEGCodec
 
 				finished = receive_frame(m_codec_context, m_frame, &pkt);
 
+				//int64_t pts = m_frame->pts;
+				
 				double pts = 0;
-				if (static_cast<int64_t>(m_frame->pkt_pts) != int64_t(AV_NOPTS_VALUE))
+				//if (static_cast<int64_t>(m_frame->pkt_pts) != int64_t(AV_NOPTS_VALUE))
 				{
-					pts = av_q2d(m_format_context->streams[m_video_stream]->time_base) *  m_frame->pkt_pts;
+					pts = av_q2d(m_format_context->streams[m_video_stream]->time_base) *  (m_frame->pts - m_start_time);
 				}
+				
+				int current_frame = int((pts) * Fps() + 0.5f);
 
-				//int current_frame = int((pts - m_start_time) * Fps() + 0.5f); //???
-				int current_frame =   m_frame->display_picture_number;
+				//Log("Current frame %d\n", current_frame2);
 
 				m_last_search_pos = current_frame;
 
-				if (/*current_frame == frame &&*/ finished)
+				if (current_frame == frame && finished)
 				{
 					avpicture_fill
 					(
@@ -382,10 +385,18 @@ namespace FFMPEGCodec
 		m_read_frame = true;
 	}
 
+	int64_t FrameToPts(AVStream* pavStream, int frame)
+	{
+		return (int64_t(frame) * pavStream->r_frame_rate.den *  pavStream -> time_base.den) /
+			(int64_t(pavStream->r_frame_rate.num) *
+				pavStream->time_base.num);
+	}
+
 	bool Decoder::Seek(int frame)
 	{
-		int64_t offset = TimeStamp(frame);
-		int flags = AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME;
+		//int64_t offset = TimeStamp(frame);
+		int64_t offset = FrameToPts(m_format_context->streams[m_video_stream], frame);
+		int flags = AVSEEK_FLAG_BACKWARD;// AVSEEK_FLAG_ANY | AVSEEK_FLAG_FRAME;
 		avcodec_flush_buffers(m_codec_context);
 		av_seek_frame(m_format_context, -1, offset, flags);
 		return true;
@@ -396,7 +407,7 @@ namespace FFMPEGCodec
 		int64_t timestamp = static_cast<int64_t>((static_cast<double> (frame) / (Fps() * av_q2d(m_format_context->streams[m_video_stream]->time_base))));
 		if (static_cast<int64_t>(m_format_context->start_time) != int64_t(AV_NOPTS_VALUE))
 		{
-			timestamp += static_cast<int64_t>(static_cast<double> (m_format_context->start_time)*AV_TIME_BASE / av_q2d(m_format_context->streams[m_video_stream]->time_base));
+			timestamp += static_cast<int64_t>(static_cast<double> (m_start_time));// / av_q2d(m_format_context->streams[m_video_stream]->time_base));
 		}
 		return timestamp;
 	}
@@ -413,7 +424,8 @@ namespace FFMPEGCodec
 #define VIDEO_TMP_FILE "tmp.h264"
 
 	using namespace std;
-	void Debug(std::string str, int err) {
+	void Debug(const std::string& str, int err) 
+	{
 		Log(str.c_str());
 	}
 

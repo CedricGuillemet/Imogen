@@ -165,12 +165,17 @@ size_t Evaluation::GetEvaluationImageDuration(size_t target)
 void Evaluation::SetStageLocalTime(size_t target, int localTime, bool updateDecoder)
 {
 	auto& stage = mEvaluationStages[target];
-	stage.mLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
-	if (stage.mDecoder && updateDecoder)
+	int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
+	if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
 	{
+		stage.mLocalTime = newLocalTime;
 		Image_t image = stage.DecodeImage();
 		SetEvaluationImage(int(target), &image);
 		FreeImage(&image);
+	}
+	else
+	{
+		stage.mLocalTime = newLocalTime;
 	}
 }
 

@@ -279,6 +279,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	// make 2 evaluation for node to get the UI pass image size
 	if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
 	{
+		gCurrentContext->AllocRenderTargetsForEditingPreview();
 		EvaluationInfo evaluationInfo;
 		evaluationInfo.forcedDirty = 1;
 		evaluationInfo.uiPass = 1;

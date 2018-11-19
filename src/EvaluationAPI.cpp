@@ -264,13 +264,15 @@ static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
 
 	unsigned char *pdst = image.mBits;
 	unsigned char *psrc = (unsigned char*)decoder->GetRGBData();
-
-	psrc += imgDataSize - lineSize;
-	for (int j = 0; j < image.mHeight; j++)
+	if (psrc && pdst)
 	{
-		memcpy(pdst, psrc, lineSize);
-		pdst += lineSize;
-		psrc -= lineSize;
+		psrc += imgDataSize - lineSize;
+		for (int j = 0; j < image.mHeight; j++)
+		{
+			memcpy(pdst, psrc, lineSize);
+			pdst += lineSize;
+			psrc -= lineSize;
+		}
 	}
 	return image;
 }

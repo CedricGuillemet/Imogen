@@ -303,6 +303,8 @@ namespace FFMPEGCodec
 
 	void *Decoder::GetRGBData()
 	{
+		if (!m_rgb_frame)
+			return NULL;
 		return m_rgb_frame->data[0];
 	}
 
@@ -322,6 +324,8 @@ namespace FFMPEGCodec
 
 	void Decoder::ReadFrame(int frame)
 	{
+		if (!m_codec_context)
+			return;
 		if (m_last_decoded_pos + 1 != frame)
 		{
 			Seek(frame);

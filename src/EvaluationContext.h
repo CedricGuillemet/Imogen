@@ -51,6 +51,7 @@ struct EvaluationContext
 	bool StageIsProcessing(size_t target) const { return mbProcessing[target]; }
 	void StageSetProcessing(size_t target, bool processing) { mbProcessing[target] = processing; }
 
+	void AllocRenderTargetsForEditingPreview();
 protected:
 	Evaluation& mEvaluation;
 
@@ -62,7 +63,7 @@ protected:
 
 	void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 
-	void AllocRenderTargetsForEditingPreview();
+	
 	void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
 	std::vector<RenderTarget*> mStageTarget; // 1 per stage

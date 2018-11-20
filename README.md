@@ -1,4 +1,7 @@
 # Imogen
+
+- 2조 협업 OSS, Imogen - team repository!
+
 GPU/CPU Texture Generator
 
 WIP of a GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.

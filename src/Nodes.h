@@ -57,13 +57,20 @@ struct NodeGraphDelegate
 struct Node
 {
 	int     mType;
-	ImVec2  Pos, Size;
+	ImVec2  Pos, Size; // 2차원 백터
 	size_t InputsCount, OutputsCount;
 
 	Node(int type, const ImVec2& pos);
 
-	ImVec2 GetInputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
-	ImVec2 GetOutputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor + Size.x, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
+	// 차이점을 한눈에 보기 좋게 들여쓰기
+	ImVec2 GetInputSlotPos(int slot_no, float factor) const{ 
+		return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) 
+		/ ((float)InputsCount + 1)); 
+	}
+	ImVec2 GetOutputSlotPos(int slot_no, float factor) const{ 
+		return ImVec2(Pos.x*factor + Size.x, Pos.y*factor + Size.y * ((float)slot_no + 1) 
+			/ ((float)OutputsCount + 1)); 
+	}
 };
 
 struct NodeLink

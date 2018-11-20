@@ -37,7 +37,9 @@ UndoRedoHandler undoRedoHandler;
 int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
 
-static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
+static inline float Distance(ImVec2& a, ImVec2& b) { 
+	return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); 
+}
 
 Node::Node(int type, const ImVec2& pos)
 {
@@ -50,11 +52,12 @@ Node::Node(int type, const ImVec2& pos)
 
 struct NodeOrder
 {
-	size_t mNodeIndex;
-	size_t mNodePriority;
+	size_t mNodeIndex; // 노드의 위치 index
+	size_t mNodePriority; // 노드의 우선순위
 	bool operator < (const NodeOrder& other) const
 	{
-		return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
+		return other.mNodePriority < mNodePriority; 
+		// reverse order compared to priority value: lower last
 	}
 };
 
@@ -184,6 +187,7 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 	return ret;
 }
 
+// 추가한 노드에서 각종 버튼 클릭으로 노드의 매개값과 이펙트 값 수정
 bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -234,19 +238,23 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	return false;
 }
 
+// from은 출발, to는 방향 (도착)
+bool IsStart_inputIdx, IsDest_outputIdx;
+
+// 리소스 노드가 이어져 있음을 확인하는 함수
 bool RecurseIsLinked(int from, int to)
 {
 	for (auto& link : links)
 	{
-		if (link.InputIdx == from)
+		IsStart_inputIdx = (link.InputIdx == from);
+		IsDest_outputIdx = (link.OutputIdx == to);
+		
+		if (IsStart_inputIdx)
 		{
-			if (link.OutputIdx == to)
-				return true;
-
-			if (RecurseIsLinked(link.OutputIdx, to))
-				return true;
-		}
-	}
+			if (IsDest_outputIdx) return true;
+			if (RecurseIsLinked(link.OutputIdx, to)) return true;
+		} // inner if
+	} // for
 	return false;
 }
 
@@ -262,6 +270,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 
 void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy)
 {
+	// 특정 type인, 포지션에 Node를 추가합니다. (NodeGraphDelegate)
 	size_t index = nodes.size();
 	nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
 	delegate->AddNode(type);
@@ -270,12 +279,14 @@ void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, i
 
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
 {
+	// 이어주는 노드가 input
+	// 이어짐을 당하는 노드가 output
 	NodeLink nl;
-	nl.InputIdx = InputIdx;
+	nl.InputIdx = InputIdx; // in, output의 Slot값 (왼쪽에 있는 동그라미, 슬롯)과 인텍스 값 생각
 	nl.InputSlot = InputSlot;
 	nl.OutputIdx = OutputIdx;
 	nl.OutputSlot = OutputSlot;
-	links.push_back(nl);
+	links.push_back(nl); // 링크 스택
 	delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 }
 

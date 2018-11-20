@@ -85,7 +85,7 @@ void Evaluation::DelEvaluationTarget(size_t target)
 				inp--;
 		}
 	}
-	gCurrentContext->RunAll();
+	//gCurrentContext->RunAll();
 }
 
 void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)

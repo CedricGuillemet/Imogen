@@ -487,9 +487,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		bool parametersUseMouse = false;
 		if (lButDown)
 		{
-			float *paramFlt = (float*)paramBuffer;
 			for(auto& param : metaNode.mParams)
 			{
+				float *paramFlt = (float*)paramBuffer;
 				if (param.mbQuadSelect && param.mType == Con_Float4)
 				{
 					if (!mbMouseDragging)

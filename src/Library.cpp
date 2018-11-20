@@ -558,7 +558,13 @@ void LoadMetaNodes()
 			,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Equirect To Cubemap\0Cubemap To Equirect\0" },
 				{ "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
 			}
-
+			,
+			{
+				"NGon", hcGenerator, 1
+				,{  }
+			,{ { "", Con_Float4 } }
+			,{ {"Sides", Con_Int}, { "Radius", Con_Float, -.5f,0.5f,0.f,0.f },{ "T", Con_Float } }
+			}
 	};
 
 

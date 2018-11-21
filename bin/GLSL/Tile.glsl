@@ -1,31 +1,56 @@
 layout (std140) uniform TileBlock
 {
-	float scale;
 	vec2 offset0;
 	vec2 offset1;
 	vec2 overlap;
+	float scale;
 } TileParam;
 
-vec4 GetTile(vec2 uv)
+vec4 GetTile0(vec2 uv)
 {
-    vec2 t = floor((floor(uv)+1.0)*0.5);
-    uv += t *0.1;
-    vec2 md = mod(uv, 2.0);
-    
-    if (md.x > 1.0 || md.y > 1.0)
+    if (uv.x > 1.0 || uv.y > 1.0 || uv.x <0.0 || uv.y<0.0)
         return vec4(0.0);
     
     return texture(Sampler0, uv);
+}
+
+vec2 GetOffset(vec2 uv)
+{
+	float o = float(int(floor(uv.y))&1) * TileParam.offset0.x;
+	//float o = floor(fract(uv.y/2.0)*4.0) * TileParam.offset0.x * 2.0;
+	return vec2(o,0.);
+}
+
+vec4 GetTile(vec2 uv)
+{
+	vec2 cellSize = vec2(1.0) - TileParam.overlap;
+
+	vec4 c = vec4(0.0);
+
+	for (int y = -1;y<2;y++)
+	{
+		for (int x = -1;x<2;x++)
+		{
+			vec2 cell0 = uv - (fract(uv/cellSize) + vec2(float(x), float(y))) * cellSize;
+			vec4 multiplier = vec4(1.0);
+			//if (EvaluationParam.inputIndices[1] > -1.)
+				multiplier = texture(Sampler1, cell0);
+			c += GetTile0(uv - cell0 + GetOffset(cell0)) * multiplier;
+		}
+	}
+
+	return c;
 }
 
 vec4 Tile()
 {
 	vec2 nuv = vUV * TileParam.scale;
 
-    vec4 col = GetTile(nuv + TileParam.offset0);
-    col += GetTile(nuv + vec2(0.95, 0.0)+TileParam.offset0);
-    col += GetTile(nuv + vec2(0.0, 0.95)+TileParam.offset1);    
-    col += GetTile(nuv + vec2(0.95, 0.95)+TileParam.offset1); 
-	
+    vec4 col = GetTile(nuv);
+	/*
+		return vec4(0.0,1.0,0.0,1.0);
+	else
+		return vec4(1.0,0.0,0.0,1.0);
+	*/
 	return col;
 }

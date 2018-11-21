@@ -96,7 +96,7 @@ private:
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
-	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false), mEditingContext(evaluation, false, 256, 256)
+	TileNodeEditGraphDelegate(Evaluation& evaluation) : mEvaluation(evaluation), mbMouseDragging(false), mEditingContext(evaluation, false, 1024, 1024)
 	{
 		mCategoriesCount = 9;
 		static const char *categories[] = {
@@ -209,6 +209,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			if (node.mEvaluationTarget > index)
 				node.mEvaluationTarget--;
 		}
+		mEditingContext.RunAll();
 	}
 	
 	const float PI = 3.14159f;

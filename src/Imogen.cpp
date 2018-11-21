@@ -251,9 +251,8 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		t << textToSave;
 		t.close();
 
-		// TODO
 		gEvaluators.SetEvaluators(mEvaluatorFiles);
-		nodeGraphDelegate.InvalidateParameters();
+		gCurrentContext->RunAll();
 	}
 
 	ImGui::SameLine();

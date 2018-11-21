@@ -701,12 +701,13 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 						links[id].OutputIdx--;
 				}
 
-				// inform delegate
-				delegate->DeleteNode(node_selected);
-
 				// delete links
 				nodes.erase(nodes.begin() + node_selected);
 				NodeGraphUpdateEvaluationOrder(delegate);
+
+				// inform delegate
+				delegate->DeleteNode(node_selected);
+
 				node_selected = -1;
 			}
 		}

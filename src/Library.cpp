@@ -392,9 +392,9 @@ void LoadMetaNodes()
 		,
 		{
 			"Tile", hcTransform, 0
-			,{ { "", Con_Float4 } }
+			,{ { "", Con_Float4 }, { "", Con_Float4 } }
 		,{ { "", Con_Float4 } }
-		,{ { "Scale", Con_Float },{ "Offset 0", Con_Float2 },{ "Offset 1", Con_Float2 },{ "Overlap", Con_Float2 } }
+		,{ { "Offset 0", Con_Float2 },{ "Offset 1", Con_Float2 },{ "Overlap", Con_Float2 },{ "Scale", Con_Float } }
 		}
 
 		,

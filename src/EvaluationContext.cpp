@@ -152,6 +152,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 			tgt->BindCubeFace(face);
 
 		memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
+		memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
+
 		glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.mEvaluationStateGLSLBuffer);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);

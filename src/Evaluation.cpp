@@ -62,7 +62,6 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 
 	if (evaluation.mEvaluationMask)
 	{
-		//mDirtyCount++;
 		mEvaluationStages.push_back(evaluation);
 		return mEvaluationStages.size() - 1;
 	}
@@ -85,7 +84,6 @@ void Evaluation::DelEvaluationTarget(size_t target)
 				inp--;
 		}
 	}
-	//gCurrentContext->RunAll();
 }
 
 void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)

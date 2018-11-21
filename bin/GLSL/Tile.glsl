@@ -32,10 +32,11 @@ vec4 GetTile(vec2 uv)
 		for (int x = -1;x<2;x++)
 		{
 			vec2 cell0 = uv - (fract(uv/cellSize) + vec2(float(x), float(y))) * cellSize;
+			vec2 cell1 = (floor(uv/cellSize) + vec2(float(x), float(y)));// * cellSize;
 			vec4 multiplier = vec4(1.0);
 			//if (EvaluationParam.inputIndices[1] > -1.)
-				multiplier = texture(Sampler1, cell0);
-			c += GetTile0(uv - cell0 + GetOffset(cell0)) * multiplier;
+				multiplier = texture(Sampler1, cell0/TileParam.scale);
+			c += GetTile0(uv - cell0 + GetOffset(cell1)) * multiplier;
 		}
 	}
 

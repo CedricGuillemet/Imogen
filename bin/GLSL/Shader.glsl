@@ -28,7 +28,7 @@ layout (std140) uniform EvaluationBlock
 	int	uiPass;
 	int padding;
 	vec4 mouse; // x,y, lbut down, rbut down
-	int inputIndices[8];
+	ivec4 inputIndices[2];
 	
 	vec2 viewport;
 } EvaluationParam;

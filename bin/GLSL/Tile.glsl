@@ -17,7 +17,6 @@ vec4 GetTile0(vec2 uv)
 vec2 GetOffset(vec2 uv)
 {
 	float o = float(int(floor(uv.y))&1) * TileParam.offset0.x;
-	//float o = floor(fract(uv.y/2.0)*4.0) * TileParam.offset0.x * 2.0;
 	return vec2(o,0.);
 }
 
@@ -34,7 +33,7 @@ vec4 GetTile(vec2 uv)
 			vec2 cell0 = uv - (fract(uv/cellSize) + vec2(float(x), float(y))) * cellSize;
 			vec2 cell1 = (floor(uv/cellSize) + vec2(float(x), float(y)));// * cellSize;
 			vec4 multiplier = vec4(1.0);
-			//if (EvaluationParam.inputIndices[1] > -1.)
+			if (EvaluationParam.inputIndices[0].y > -1.)
 				multiplier = texture(Sampler1, cell0/TileParam.scale);
 			c += GetTile0(uv - cell0 + GetOffset(cell1)) * multiplier;
 		}
@@ -46,12 +45,5 @@ vec4 GetTile(vec2 uv)
 vec4 Tile()
 {
 	vec2 nuv = vUV * TileParam.scale;
-
-    vec4 col = GetTile(nuv);
-	/*
-		return vec4(0.0,1.0,0.0,1.0);
-	else
-		return vec4(1.0,0.0,0.0,1.0);
-	*/
-	return col;
+	return GetTile(nuv);
 }

@@ -28,6 +28,7 @@
 #include "Nodes.h"
 #include "Evaluation.h"
 #include "ImCurveEdit.h"
+#include "ImGradient.h"
 #include "Library.h"
 #include "nfd.h"
 #include "EvaluationContext.h"
@@ -93,6 +94,78 @@ private:
 		std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
 	}
 };
+
+
+struct GradientEdit : public ImGradient::Delegate
+{
+	GradientEdit()
+	{
+		mPts[0] = ImVec4(0, 0, 0, 0);
+		//mPts[1] = ImVec4(0, 0, 0, 0.6f);
+		//mPts[2] = ImVec4(0.5f, 0, 0, 0.2f);
+		//mPts[3] = ImVec4(0.7f, 0, 0, 0.4f);
+		mPts[1] = ImVec4(1.f, 1, 1, 1.f);
+		mPointCount = 2;
+	}
+
+	size_t GetPointCount()
+	{
+		return mPointCount;
+	}
+
+	ImVec4* GetPoints()
+	{
+		return mPts;
+	}
+
+	virtual int EditPoint(int pointIndex, ImVec4 value)
+	{
+		mPts[pointIndex] = value;
+		SortValues();
+		for (size_t i = 0; i < GetPointCount(); i++)
+		{
+			if (mPts[i].x == value.x)
+				return int(i);
+		}
+		return pointIndex;
+	}
+	virtual void AddPoint(ImVec4 value)
+	{
+		if (mPointCount >= 8)
+			return;
+		mPts[mPointCount++] = value;
+		SortValues();
+	}
+	virtual ImVec4 GetPoint(float t)
+	{
+		if (GetPointCount() == 0)
+			return ImVec4(1.f, 1.f, 1.f, 1.f);
+		if (GetPointCount() == 1 || t <= mPts[0].w)
+			return mPts[0];
+
+		for (size_t i = 0; i < GetPointCount() - 1; i++)
+		{
+			if (mPts[i].w <= t && mPts[i + 1].w >= t)
+			{
+				float r = (t - mPts[i].w) / (mPts[i + 1].w - mPts[i].w);
+				return ImLerp(mPts[i], mPts[i + 1], r);
+			}
+		}
+		return mPts[GetPointCount() - 1];
+	}
+	ImVec4 mPts[8];
+	size_t mPointCount;
+
+private:
+	void SortValues()
+	{
+		auto b = std::begin(mPts);
+		auto e = std::begin(mPts) + GetPointCount();
+		std::sort(b, e, [](ImVec4 a, ImVec4 b) { return a.x < b.x; });
+
+	}
+};
+
 
 struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 {
@@ -311,33 +384,37 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				break;
 			case Con_Ramp4:
 			{
-/*
-				RampEdit curveEditDelegate;
-				curveEditDelegate.mPointCount = 0;
+				float regionWidth = ImGui::GetWindowContentRegionWidth();
+				GradientEdit gradientDelegate;
+
+				gradientDelegate.mPointCount = 0;
 				for (int k = 0; k < 8; k++)
 				{
-					curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
-					if (k && curveEditDelegate.mPts[k - 1].x > curveEditDelegate.mPts[k].x)
+					gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
+					if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
 						break;
-					curveEditDelegate.mPointCount++;
+					gradientDelegate.mPointCount++;
 				}
-				float regionWidth = ImGui::GetWindowContentRegionWidth();
-				if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth)))
+
+				int colorIndex;
+				dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
+				if (colorIndex != -1)
 				{
-					for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
-					{
-						((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
-						((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
-					}
-					((float*)paramBuffer)[0] = 0.f;
-					((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
-					for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
-					{
-						((float*)paramBuffer)[k * 2] = -1.f;
-					}
-					dirty = true;
+					dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
 				}
-				*/
+				if (dirty)
+				{
+					for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
+					{
+						((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
+					}
+					((ImVec4*)paramBuffer)[0].w = 0.f;
+					((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
+					for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
+					{
+						((ImVec4*)paramBuffer)[k].w = -1.f;
+					}
+				}
 			}
 			break;
 			case Con_Angle:

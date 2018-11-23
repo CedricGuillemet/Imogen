@@ -5,10 +5,10 @@ vec4 GetRamp(float v, vec4 arr[8])
         if (v >= arr[i].w && v <= arr[i+1].w)
         {
             // linear
-            //float t = (v-arr[i].x)/(arr[i+1].x-arr[i].x);
+            float t = (v-arr[i].w)/(arr[i+1].w-arr[i].w);
             // smooth
-            float t = smoothstep(arr[i].w, arr[i+1].w, v);
-            return mix(arr[i], arr[i+1], t);
+            //float t = smoothstep(arr[i].w, arr[i+1].w, v);
+            return sqrt(mix(arr[i]*arr[i], arr[i+1]*arr[i+1], t));
         }
     }
     
@@ -22,5 +22,5 @@ layout (std140) uniform GradientBuilderBlock
 
 vec4 GradientBuilder()
 {
-	return GetRamp(vUV.x, GradientBuilderParam.ramp);
+	return vec4(GetRamp(vUV.x, GradientBuilderParam.ramp).xyz, 1.0);
 }

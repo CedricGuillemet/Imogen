@@ -309,6 +309,37 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					}
 				}
 				break;
+			case Con_Ramp4:
+			{
+/*
+				RampEdit curveEditDelegate;
+				curveEditDelegate.mPointCount = 0;
+				for (int k = 0; k < 8; k++)
+				{
+					curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
+					if (k && curveEditDelegate.mPts[k - 1].x > curveEditDelegate.mPts[k].x)
+						break;
+					curveEditDelegate.mPointCount++;
+				}
+				float regionWidth = ImGui::GetWindowContentRegionWidth();
+				if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth)))
+				{
+					for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
+					{
+						((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
+						((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+					}
+					((float*)paramBuffer)[0] = 0.f;
+					((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
+					for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+					{
+						((float*)paramBuffer)[k * 2] = -1.f;
+					}
+					dirty = true;
+				}
+				*/
+			}
+			break;
 			case Con_Angle:
 				((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
 				dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);

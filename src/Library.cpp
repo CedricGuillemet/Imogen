@@ -222,6 +222,8 @@ size_t GetParameterTypeSize(ConTypes paramType)
 		return sizeof(float) * 4;
 	case Con_Ramp:
 		return sizeof(float) * 2 * 8;
+	case Con_Ramp4:
+		return sizeof(float) * 4 * 8;
 	case Con_Enum:
 	case Con_Int:
 		return sizeof(int);
@@ -564,6 +566,14 @@ void LoadMetaNodes()
 				,{  }
 			,{ { "", Con_Float4 } }
 			,{ {"Sides", Con_Int}, { "Radius", Con_Float, -.5f,0.5f,0.f,0.f },{ "T", Con_Float } }
+			}
+
+			,
+			{
+				"GradientBuilder", hcGenerator, 1
+				,{  }
+			,{ { "", Con_Float4 } }
+			,{ { "Gradient", Con_Ramp4 } }
 			}
 	};
 

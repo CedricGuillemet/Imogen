@@ -143,6 +143,7 @@ enum ConTypes
 	Con_FilenameWrite,
 	Con_ForceEvaluate,
 	Con_Bool,
+	Con_Ramp4,
 	Con_Any,
 };
 

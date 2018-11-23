@@ -70,7 +70,7 @@ namespace ImGradient
       ImRect rc(offset, offset + size);
       if (rc.Contains(io.MousePos) && io.MouseDoubleClicked[0])
       {
-         float t = io.MousePos.x / size.x;
+         float t = (io.MousePos.x - offset.x) / size.x;
          delegate.AddPoint(delegate.GetPoint(t));
          ret = true;
       }

@@ -100,12 +100,7 @@ struct GradientEdit : public ImGradient::Delegate
 {
 	GradientEdit()
 	{
-		mPts[0] = ImVec4(0, 0, 0, 0);
-		//mPts[1] = ImVec4(0, 0, 0, 0.6f);
-		//mPts[2] = ImVec4(0.5f, 0, 0, 0.2f);
-		//mPts[3] = ImVec4(0.7f, 0, 0, 0.4f);
-		mPts[1] = ImVec4(1.f, 1, 1, 1.f);
-		mPointCount = 2;
+		mPointCount = 0;
 	}
 
 	size_t GetPointCount()
@@ -388,6 +383,21 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 				GradientEdit gradientDelegate;
 
 				gradientDelegate.mPointCount = 0;
+				bool allZero = true;
+				for (int k = 0; k < 8; k++)
+				{
+					if (((ImVec4*)paramBuffer)[k].w >= FLT_EPSILON)
+					{
+						allZero = false;
+						break;
+					}
+				}
+				if (allZero)
+				{
+					((ImVec4*)paramBuffer)[0] = ImVec4(0, 0, 0, 0);
+					((ImVec4*)paramBuffer)[1] = ImVec4(1, 1, 1, 1);
+					dirty = true;
+				}
 				for (int k = 0; k < 8; k++)
 				{
 					gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
@@ -395,6 +405,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 						break;
 					gradientDelegate.mPointCount++;
 				}
+
 
 				int colorIndex;
 				dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);

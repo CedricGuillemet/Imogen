@@ -23,5 +23,8 @@ layout (std140) uniform RampBlock
 vec4 Ramp()
 {
 	vec4 tex = texture(Sampler0, vUV);
-	return tex * GetRamp(tex.x, RampParam.ramp);
+	if (EvaluationParam.inputIndices[0].y > -1.)
+		return texture(Sampler1, vec2(tex.x, 0.5));
+	else
+		return tex * GetRamp(tex.x, RampParam.ramp);
 }

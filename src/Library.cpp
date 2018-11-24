@@ -386,7 +386,7 @@ void LoadMetaNodes()
 		,
 		{
 			"Ramp", hcFilter, 4
-			,{ { "", Con_Float4 } }
+			,{ { "", Con_Float4 },{ "Gradient", Con_Float4 } }
 		,{ { "", Con_Float4 } }
 		,{ { "Ramp", Con_Ramp } }
 		}

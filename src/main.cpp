@@ -105,8 +105,6 @@ Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
 
-
-
 int main(int, char**)
 {
 	g_TS.Initialize();
@@ -117,6 +115,7 @@ int main(int, char**)
 
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);
+
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{
@@ -242,11 +241,8 @@ int main(int, char**)
 		ImGui::NewFrame();
 		InitCallbackRects();
 
-
 		gCurrentContext->RunDirty();
 		imogen.Show(library, nodeGraphDelegate, gEvaluation);
-
-		
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);

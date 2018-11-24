@@ -119,7 +119,7 @@ struct GradientEdit : public ImGradient::Delegate
 		SortValues();
 		for (size_t i = 0; i < GetPointCount(); i++)
 		{
-			if (mPts[i].x == value.x)
+			if (mPts[i].w == value.w)
 				return int(i);
 		}
 		return pointIndex;
@@ -156,7 +156,7 @@ private:
 	{
 		auto b = std::begin(mPts);
 		auto e = std::begin(mPts) + GetPointCount();
-		std::sort(b, e, [](ImVec4 a, ImVec4 b) { return a.x < b.x; });
+		std::sort(b, e, [](ImVec4 a, ImVec4 b) { return a.w < b.w; });
 
 	}
 };
@@ -351,6 +351,21 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 					//ImVec2 points[8];
 					
 					RampEdit curveEditDelegate;
+					bool allZero = true;
+					for (int k = 0; k < 8; k++)
+					{
+						if (((ImVec4*)paramBuffer)[k].x >= FLT_EPSILON)
+						{
+							allZero = false;
+							break;
+						}
+					}
+					if (allZero)
+					{
+						((ImVec2*)paramBuffer)[0] = ImVec2(0, 0);
+						((ImVec2*)paramBuffer)[1] = ImVec2(1, 1);
+						dirty = true;
+					}
 					curveEditDelegate.mPointCount = 0;
 					for (int k = 0; k < 8; k++)
 					{

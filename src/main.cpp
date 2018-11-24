@@ -170,12 +170,17 @@ int main(int, char**)
 		return -1;
 	}
 
+	try
+	{
+		pybind11::module py_module = pybind11::module::import("Nodes.Python.testnode");
+		pybind11::module imo = pybind11::module::import("imo");
+		//auto result = py_module.attr("test")(5, 6, imo.attr("accessor_api")()).cast<int>();
+		py_module.attr("test")(5, 6, imo.attr("accessor_api")());
+	}
+	catch (...)
+	{
 
-	pybind11::module py_module = pybind11::module::import("Nodes.Python.testnode");
-	pybind11::module imo = pybind11::module::import("imo");
-	//auto result = py_module.attr("test")(5, 6, imo.attr("accessor_api")()).cast<int>();
-	py_module.attr("test")(5, 6, imo.attr("accessor_api")());
-
+	}
 
 
 	// Decide GL+GLSL versions

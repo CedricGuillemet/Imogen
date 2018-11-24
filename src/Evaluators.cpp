@@ -161,7 +161,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 			noLib[2] = 1; // no stdlib
 
 			tcc_set_error_func(s, 0, libtccErrorFunc);
-			tcc_add_include_path(s, "C\\");
+			tcc_add_include_path(s, "Nodes/C/");
 			tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
 
 			if (tcc_compile_string(s, program.mText.c_str()) != 0)

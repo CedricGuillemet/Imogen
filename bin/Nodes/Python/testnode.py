@@ -13,5 +13,5 @@ def test(a, b, e):
     #imo.SaveImage(img)
     #print (imo.add)
     #help(imo)
-#    return res​
+    return 1
 	

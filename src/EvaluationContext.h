@@ -58,6 +58,8 @@ protected:
 	void PreRun();
 	void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+	void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+
 	void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 	void RunNode(size_t nodeIndex);
 

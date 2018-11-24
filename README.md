@@ -3,7 +3,8 @@ GPU/CPU Texture Generator
 
 WIP of a GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.
 Basically, add GPU and CPU nodes in a graph to manipulate and generate images. Nodes are hardcoded now but a discovery system is planned.
-Currently nodes can be written in GLSL or C. Python  is coming next.
+Currently nodes can be written in GLSL or C or Python.
+
 ![Image of Imogen 0.4](https://i.imgur.com/pmliWGl.png)
 ![Image of Imogen 0.4](https://i.imgur.com/jNWsXD6.png)
 
@@ -13,7 +14,7 @@ Features:
 - Node based texture editing
 - material library browser
 - edit/change node shaders inside the app
-- bake textures to .png, .jpg, .tga, .bmp, .hdr
+- bake textures to .png, .jpg, .tga, .bmp, .hdr, mp4
 - PBR preview
 
 Currently implemented nodes
@@ -65,3 +66,7 @@ cmft - cubemap filtering tool - Dario Manesku https://github.com/dariomanesku/cm
 dear imgui color scheme - codz01 https://github.com/ocornut/imgui/issues/1902#issuecomment-429445321
 
 FFMPEG - Fabrice Bellard
+
+Python 3 - Python.org
+
+pybind 11 - https://github.com/pybind/pybind11

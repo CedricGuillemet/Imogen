@@ -1010,8 +1010,9 @@ void Imogen::Init()
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 
-	DiscoverNodes("glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
-	DiscoverNodes("c", "C/", EVALUATOR_C, mEvaluatorFiles);
+	DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+	DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
+	DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
 }
 
 void Imogen::Finish()

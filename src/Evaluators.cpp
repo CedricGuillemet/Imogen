@@ -65,6 +65,59 @@ static void libtccErrorFunc(void *opaque, const char *msg)
 	Log("\n");
 }
 
+PYBIND11_MAKE_OPAQUE(Image);
+PYBIND11_EMBEDDED_MODULE(Imogen, m) 
+{
+	pybind11::class_<Image>(m, "Image");
+	//m.def("Log", Log );
+	m.def("ReadImage", Evaluation::ReadImage );
+	m.def("WriteImage", Evaluation::WriteImage );
+	m.def("GetEvaluationImage", Evaluation::GetEvaluationImage );
+	m.def("SetEvaluationImage", Evaluation::SetEvaluationImage );
+	m.def("SetEvaluationImageCube", Evaluation::SetEvaluationImageCube );
+	m.def("AllocateImage", Evaluation::AllocateImage );
+	m.def("FreeImage", Evaluation::FreeImage );
+	m.def("SetThumbnailImage", Evaluation::SetThumbnailImage );
+	m.def("Evaluate", Evaluation::Evaluate );
+	m.def("SetBlendingMode", Evaluation::SetBlendingMode );
+	m.def("GetEvaluationSize", Evaluation::GetEvaluationSize );
+	m.def("SetEvaluationSize", Evaluation::SetEvaluationSize );
+	m.def("SetEvaluationCubeSize", Evaluation::SetEvaluationCubeSize );
+	m.def("CubemapFilter", Evaluation::CubemapFilter );
+	m.def("SetProcessing", Evaluation::SetProcessing );
+	m.def("Job", Evaluation::Job );
+	m.def("JobMain", Evaluation::JobMain );
+
+	m.def("accessor_api", []() {
+		auto d = pybind11::dict();
+
+		d["target"] = 10;
+
+		auto l = pybind11::list();
+		l.append(5);
+		l.append(-1);
+		l.append(-1);
+		d["inputs"] = l;
+
+		return d;
+	});
+
+	
+	/*
+	m.def("GetImage", []() {
+		auto i = new Image;
+		//pImage i;
+		//i.a = 14;
+		//printf("new img %p \n", &i);
+		return i;
+	});
+
+	m.def("SaveImage", [](Image image) {
+		//printf("Saving image %d\n", image.a);
+		//printf("save img %p \n", image);
+	});
+	*/
+}
 std::string Evaluators::GetEvaluator(const std::string& filename)
 {
 	return mEvaluatorScripts[filename].mText;
@@ -161,7 +214,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 			noLib[2] = 1; // no stdlib
 
 			tcc_set_error_func(s, 0, libtccErrorFunc);
-			tcc_add_include_path(s, "C\\");
+			tcc_add_include_path(s, "Nodes/C/");
 			tcc_set_output_type(s, TCC_OUTPUT_MEMORY);
 
 			if (tcc_compile_string(s, program.mText.c_str()) != 0)
@@ -200,6 +253,25 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 			Log("Error at compiling %s", filename.c_str());
 		}
 	}
+	for (auto& file : evaluatorfilenames)
+	{
+		if (file.mEvaluatorType != EVALUATOR_PYTHON)
+			continue;
+		const std::string filename = file.mFilename;
+		std::string nodeName = ReplaceAll(filename, ".py", "");
+		EvaluatorScript& shader = mEvaluatorScripts[filename];
+		try
+		{
+			shader.mPyModule = pybind11::module::import("Nodes.Python.testnode");;
+			if (shader.mNodeType != -1)
+				mEvaluatorPerNodeType[shader.mNodeType].mPyModule = shader.mPyModule;
+		}
+		catch (...)
+		{
+			
+		}
+	}
+	mImogenModule = pybind11::module::import("Imogen");
 }
 
 void Evaluators::ClearEvaluators()
@@ -234,6 +306,17 @@ int Evaluators::GetMask(size_t nodeType, const std::string& nodeName)
 		mEvaluatorPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
 		mEvaluatorPerNodeType[nodeType].mMem = iter->second.mMem;
 	}
-
+	iter = mEvaluatorScripts.find(nodeName + ".py");
+	if (iter != mEvaluatorScripts.end())
+	{
+		mask |= EvaluationPython;
+		iter->second.mNodeType = int(nodeType);
+		mEvaluatorPerNodeType[nodeType].mPyModule = iter->second.mPyModule;
+	}
 	return mask;
+}
+
+void Evaluator::RunPython() const
+{
+	mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
 }

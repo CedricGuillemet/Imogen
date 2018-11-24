@@ -29,6 +29,10 @@
 #include "imgui_impl_opengl3.h"
 #include <SDL.h>
 #include <GL/gl3w.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <io.h> 
+#include <fcntl.h> 
 #include "Nodes.h"
 #include "NodesDelegate.h"
 #include "Evaluation.h"
@@ -101,9 +105,12 @@ Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
 
+
+
 int main(int, char**)
 {
 	g_TS.Initialize();
+	pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 	LoadMetaNodes();
 	FFMPEGCodec::RegisterAll();
 	FFMPEGCodec::Log = Log;

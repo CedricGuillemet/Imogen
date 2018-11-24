@@ -42,6 +42,7 @@ set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES} libtcc.a)
 endif()
 
 set(FFMPEG_LIBS avcodec.lib avdevice.lib avfilter.lib avformat.lib avutil.lib swscale.lib swresample.lib postproc.lib)
+set(PYTHON37_LIBS python3.lib python37.lib)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -52,12 +53,14 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/include
 )
 
 link_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/lib/x64
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/lib
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/libs
 )
 find_package(OpenGL)
 
@@ -112,7 +115,7 @@ SET(EXE_NAME "Imogen")
 
 ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES})
 
-TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBS})
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBS} ${PYTHON37_LIBS})
 
 #--------------------------------------------------------------------
 # preproc
@@ -123,9 +126,10 @@ add_definitions(-DBX_CONFIG_ENABLE_MSVC_LEVEL4_WARNINGS=1)
 add_definitions(-D__STDC_LIMIT_MACROS)
 add_definitions(-D__STDC_CONSTANT_MACROS)
 add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
-if(WINDOWS)
+if(MSVC)
 add_definitions(-DWIN32)
 add_definitions(-D_WIN32)
+add_definitions(-DNOMINMAX)
 endif()
 add_definitions(-DUSE_DL_PREFIX)
 #--------------------------------------------------------------------

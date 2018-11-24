@@ -40,6 +40,7 @@
 #include "Evaluators.h"
 #include "cmft/clcontext.h"
 #include "cmft/clcontext_internal.h"
+#include "pybind11/embed.h"
 
 TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 unsigned int gCPUCount = 1;
@@ -101,9 +102,60 @@ Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
 
+
+struct pImage
+{
+	pImage() : a(13), b(37) {}
+	int a, b;
+};
+
+//PYBIND11_MAKE_OPAQUE(Image);
+int add2(int i, int j)
+{
+	return i + j;
+}
+PYBIND11_EMBEDDED_MODULE(imo, m) {
+	// `m` is a `py::module` which is used to bind functions and classes
+	m.def("add", [](int i, int j) {
+		return i + j;
+	});
+	m.def("add2", add2);
+
+	m.def("accessor_api", []() {
+		auto d = pybind11::dict();
+
+		d["target"] = 10;
+
+		auto l = pybind11::list();
+		//for (const auto &item : o.attr("begin_end")) {
+		l.append(5);
+		l.append(-1);
+		l.append(-1);
+		//}
+		d["inputs"] = l;
+
+		return d;
+	});
+
+	pybind11::class_<Image>(m, "Image");
+
+	m.def("GetImage", []() {
+		auto i = new pImage;
+		i->a = 14;
+		printf("new img %p \n", i);
+		return i;
+	});
+
+	m.def("SaveImage", [](pImage *image) {
+		printf("Saving image %d\n", image->a);
+		printf("save img %p \n", image);
+	});
+}
+
 int main(int, char**)
 {
 	g_TS.Initialize();
+	pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 	LoadMetaNodes();
 	FFMPEGCodec::RegisterAll();
 	FFMPEGCodec::Log = Log;
@@ -116,6 +168,15 @@ int main(int, char**)
 		printf("Error: %s\n", SDL_GetError());
 		return -1;
 	}
+
+
+
+	pybind11::module py_module = pybind11::module::import("node");
+	pybind11::module imo = pybind11::module::import("imo");
+	auto result = py_module.attr("test")(5, 6, imo.attr("accessor_api")()).cast<int>();
+
+
+
 
 	// Decide GL+GLSL versions
 #if __APPLE__

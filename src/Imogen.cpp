@@ -1012,6 +1012,7 @@ void Imogen::Init()
 
 	DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
 	DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
+	DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
 }
 
 void Imogen::Finish()

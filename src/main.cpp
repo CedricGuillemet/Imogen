@@ -29,6 +29,10 @@
 #include "imgui_impl_opengl3.h"
 #include <SDL.h>
 #include <GL/gl3w.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <io.h> 
+#include <fcntl.h> 
 #include "Nodes.h"
 #include "NodesDelegate.h"
 #include "Evaluation.h"
@@ -40,7 +44,6 @@
 #include "Evaluators.h"
 #include "cmft/clcontext.h"
 #include "cmft/clcontext_internal.h"
-#include "pybind11/embed.h"
 
 TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 unsigned int gCPUCount = 1;
@@ -103,55 +106,6 @@ Imogen imogen;
 enki::TaskScheduler g_TS;
 
 
-struct pImage
-{
-	pImage() : a(13), b(37) {}
-	int a, b;
-};
-
-PYBIND11_MAKE_OPAQUE(pImage);
-int add2(int i, int j)
-{
-	return i + j;
-}
-PYBIND11_EMBEDDED_MODULE(imo, m) {
-	// `m` is a `py::module` which is used to bind functions and classes
-	m.def("add", [](int i, int j) {
-		return i + j;
-	});
-	m.def("add2", add2);
-
-	m.def("accessor_api", []() {
-		auto d = pybind11::dict();
-
-		d["target"] = 10;
-
-		auto l = pybind11::list();
-		//for (const auto &item : o.attr("begin_end")) {
-		l.append(5);
-		l.append(-1);
-		l.append(-1);
-		//}
-		d["inputs"] = l;
-
-		return d;
-	});
-
-	pybind11::class_<Image>(m, "Image");
-
-	m.def("GetImage", []() {
-		//auto i = new pImage;
-		pImage i;
-		i.a = 14;
-		printf("new img %p \n", &i);
-		return i;
-	});
-
-	m.def("SaveImage", [](pImage image) {
-		//printf("Saving image %d\n", image.a);
-		//printf("save img %p \n", image);
-	});
-}
 
 int main(int, char**)
 {
@@ -169,19 +123,6 @@ int main(int, char**)
 		printf("Error: %s\n", SDL_GetError());
 		return -1;
 	}
-
-	try
-	{
-		pybind11::module py_module = pybind11::module::import("Nodes.Python.testnode");
-		pybind11::module imo = pybind11::module::import("imo");
-		//auto result = py_module.attr("test")(5, 6, imo.attr("accessor_api")()).cast<int>();
-		py_module.attr("test")(5, 6, imo.attr("accessor_api")());
-	}
-	catch (...)
-	{
-
-	}
-
 
 	// Decide GL+GLSL versions
 #if __APPLE__

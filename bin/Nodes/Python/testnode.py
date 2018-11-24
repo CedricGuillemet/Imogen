@@ -9,9 +9,9 @@ def test(a, b, e):
     print ("target is {}".format(e["target"]))
     print ("inputs is {}".format(e["inputs"]))
     img = imo.GetImage()
-    #print (img)
-    #imo.SaveImage(img)
-    #print (imo.add)
+    print (img)
+    imo.SaveImage(img)
+    print (imo.add)
     #help(imo)
     return 1
 	

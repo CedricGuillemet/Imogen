@@ -216,6 +216,20 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 	}
 }
 
+void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
+{
+	try // todo: find a better solution than a try catch
+	{
+		const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+		evaluator.RunPython();
+	}
+	catch (...)
+	{
+
+	}
+}
+
+
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
 	// alloc targets
@@ -307,6 +321,9 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
 	if (currentStage.mEvaluationMask&EvaluationC)
 		EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
+
+	if (currentStage.mEvaluationMask&EvaluationPython)
+		EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
 
 	if (currentStage.mEvaluationMask&EvaluationGLSL)
 	{

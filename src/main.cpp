@@ -109,7 +109,7 @@ struct pImage
 	int a, b;
 };
 
-//PYBIND11_MAKE_OPAQUE(Image);
+PYBIND11_MAKE_OPAQUE(pImage);
 int add2(int i, int j)
 {
 	return i + j;
@@ -140,15 +140,16 @@ PYBIND11_EMBEDDED_MODULE(imo, m) {
 	pybind11::class_<Image>(m, "Image");
 
 	m.def("GetImage", []() {
-		auto i = new pImage;
-		i->a = 14;
-		printf("new img %p \n", i);
+		//auto i = new pImage;
+		pImage i;
+		i.a = 14;
+		printf("new img %p \n", &i);
 		return i;
 	});
 
-	m.def("SaveImage", [](pImage *image) {
-		printf("Saving image %d\n", image->a);
-		printf("save img %p \n", image);
+	m.def("SaveImage", [](pImage image) {
+		//printf("Saving image %d\n", image.a);
+		//printf("save img %p \n", image);
 	});
 }
 
@@ -170,11 +171,10 @@ int main(int, char**)
 	}
 
 
-
-	pybind11::module py_module = pybind11::module::import("node");
+	pybind11::module py_module = pybind11::module::import("Nodes.Python.testnode");
 	pybind11::module imo = pybind11::module::import("imo");
-	auto result = py_module.attr("test")(5, 6, imo.attr("accessor_api")()).cast<int>();
-
+	//auto result = py_module.attr("test")(5, 6, imo.attr("accessor_api")()).cast<int>();
+	py_module.attr("test")(5, 6, imo.attr("accessor_api")());
 
 
 

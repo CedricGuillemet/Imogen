@@ -183,6 +183,7 @@ enum EvaluationMask
 {
 	EvaluationC = 1 << 0,
 	EvaluationGLSL = 1 << 1,
+	EvaluationPython = 1 << 2,
 };
 
 // simple API

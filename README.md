@@ -65,3 +65,7 @@ cmft - cubemap filtering tool - Dario Manesku https://github.com/dariomanesku/cm
 dear imgui color scheme - codz01 https://github.com/ocornut/imgui/issues/1902#issuecomment-429445321
 
 FFMPEG - Fabrice Bellard
+
+Python 3 - Python.org
+
+pybind 11 - https://github.com/pybind/pybind11

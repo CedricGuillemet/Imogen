@@ -97,6 +97,7 @@ struct UndoRedo
 
 struct UndoRedoParameterBlock : public UndoRedo
 {
+	virtual ~UndoRedoParameterBlock() {}
 	virtual void Undo();
 	virtual void Redo();
 	std::vector<unsigned char> mPreDo;

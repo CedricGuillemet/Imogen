@@ -428,7 +428,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 			if (node)
 			{
 				Evaluation::SetEvaluationImage(int(node->mEvaluationTarget), &mImage);
-				gEvaluation.SetEvaluationParameters(node->mEvaluationTarget, node->mParameters, node->mParametersSize);
+				gEvaluation.SetEvaluationParameters(node->mEvaluationTarget, node->mParameters);
 				gCurrentContext->StageSetProcessing(node->mEvaluationTarget, false);
 			}
 			Evaluation::FreeImage(&mImage);
@@ -653,9 +653,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 
 		dstNode.mType = uint32_t(srcNode.mType);
 		dstNode.mTypeName = metaNode.mName;
-		dstNode.mParameters.resize(srcNode.mParametersSize);
-		if (srcNode.mParametersSize)
-			memcpy(&dstNode.mParameters[0], srcNode.mParameters, srcNode.mParametersSize);
+		dstNode.mParameters = srcNode.mParameters;
 		dstNode.mInputSamplers = srcNode.mInputSamplers;
 		ImVec2 nodePos = NodeGraphGetNodePos(i);
 		dstNode.mPosX = int32_t(nodePos.x);
@@ -702,7 +700,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
 		{
 			MaterialNode& node = material.mMaterialNodes[i];
-			NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
+			NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
 			if (!node.mImage.empty())
 			{
 				TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();

@@ -260,12 +260,12 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 	delegate->UpdateEvaluationList(nodeOrderList);
 }
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy, int frameStart, int frameEnd)
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd)
 {
 	size_t index = nodes.size();
 	nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
 	delegate->AddNode(type);
-	delegate->SetParamBlock(index, (unsigned char*)parameters);
+	delegate->SetParamBlock(index, parameters);
 	delegate->SetTimeSlot(index, frameStart, frameEnd);
 }
 

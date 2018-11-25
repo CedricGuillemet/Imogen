@@ -47,8 +47,7 @@ struct NodeGraphDelegate
 	virtual void DeleteNode(size_t index) = 0;
 	virtual ImVec2 GetEvaluationSize(size_t index) = 0;
 	virtual void DoForce() = 0;
-	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize) = 0;
-	virtual void SetParamBlock(size_t index, unsigned char* paramBlock) = 0;
+	virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd) = 0;
 	virtual bool NodeHasUI(size_t nodeIndex) = 0;
 	virtual bool NodeIsProcesing(size_t nodeIndex) = 0;
@@ -133,7 +132,7 @@ const std::vector<NodeLink>& NodeGraphGetLinks();
 const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy, int frameStart, int frameEnd);
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd);
 void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
 void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);

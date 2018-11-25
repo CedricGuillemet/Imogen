@@ -692,14 +692,14 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 		glGenBuffers(1, &stage.mParametersBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
 
-		glBufferData(GL_UNIFORM_BUFFER, stage.mParametersSize, stage.mParameters, GL_DYNAMIC_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 	else
 	{
 		glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-		glBufferData(GL_UNIFORM_BUFFER, stage.mParametersSize, stage.mParameters, GL_DYNAMIC_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 }

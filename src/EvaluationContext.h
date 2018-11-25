@@ -48,8 +48,8 @@ struct EvaluationContext
 	void SetTargetDirty(size_t target, bool onlyChild = false);
 	const EvaluationInfo& GetEvaluationInfo() const { return mEvaluationInfo; }
 
-	bool StageIsProcessing(size_t target) const { return mbProcessing[target]; }
-	void StageSetProcessing(size_t target, bool processing) { mbProcessing[target] = processing; }
+	bool StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return false; return mbProcessing[target]; }
+	void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(mEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
 
 	void AllocRenderTargetsForEditingPreview();
 protected:

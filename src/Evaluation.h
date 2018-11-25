@@ -161,8 +161,7 @@ struct EvaluationStage
 	std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
 	size_t mNodeType;
 	unsigned int mParametersBuffer;
-	void *mParameters;
-	size_t mParametersSize;
+	std::vector<unsigned char> mParameters;
 	Input mInput;
 	std::vector<InputSampler> mInputSamplers;
 	int mEvaluationMask; // see EvaluationMask
@@ -201,7 +200,7 @@ struct Evaluation
 	size_t GetStageType(size_t target) const { return mEvaluationStages[target].mNodeType; }
 	size_t GetEvaluationImageDuration(size_t target);
 	void DelEvaluationTarget(size_t target);
-	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
+	void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);

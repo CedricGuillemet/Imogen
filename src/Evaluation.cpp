@@ -86,11 +86,10 @@ void Evaluation::DelEvaluationTarget(size_t target)
 	}
 }
 
-void Evaluation::SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize)
+void Evaluation::SetEvaluationParameters(size_t target, const std::vector<unsigned char> &parameters)
 {
 	EvaluationStage& stage = mEvaluationStages[target];
 	stage.mParameters = parameters;
-	stage.mParametersSize = parametersSize;
 
 	if (stage.mEvaluationMask&EvaluationGLSL)
 		BindGLSLParameters(stage);

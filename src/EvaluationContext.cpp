@@ -213,7 +213,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 	{
 		const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
 		if (evaluator.mCFunction)
-			evaluator.mCFunction(evaluationStage.mParameters, &evaluationInfo);
+			evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo);
 	}
 	catch (...)
 	{

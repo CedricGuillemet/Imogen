@@ -193,8 +193,9 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 #endif
 		size_t mType;
 		size_t mEvaluationTarget;
-		void *mParameters;
-		size_t mParametersSize;
+		//void *mParameters;
+		//size_t mParametersSize;
+		std::vector<unsigned char> mParameters;
 		unsigned int mRuntimeUniqueId;
 		int mStartFrame, mEndFrame;
 		std::vector<InputSampler> mInputSamplers;
@@ -208,17 +209,11 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		mNodes.clear();
 	}
 
-	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize)
+	virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters)
 	{
-		const ImogenNode & node = mNodes[index];
-		paramBlockSize = ComputeNodeParametersSize(node.mType);
-		return (unsigned char*)node.mParameters;
-	}
-	virtual void SetParamBlock(size_t index, unsigned char* parameters)
-	{
-		const ImogenNode & node = mNodes[index];
-		memcpy(node.mParameters, parameters, ComputeNodeParametersSize(node.mType));
-		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, parameters, node.mParametersSize);
+		ImogenNode & node = mNodes[index];
+		node.mParameters = parameters;
+		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, parameters);
 		mEvaluation.SetEvaluationSampler(node.mEvaluationTarget, node.mInputSamplers);
 	}
 
@@ -242,18 +237,16 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		node.mEvaluationTarget		= mEvaluation.AddEvaluation(type, gMetaNodes[type].mName);
 		node.mRuntimeUniqueId		= GetRuntimeId();
 		node.mType					= type;
-		node.mParameters			= malloc(paramsSize);
-		node.mParametersSize		= paramsSize;
 		node.mStartFrame			= 0;
 		node.mEndFrame				= 0;
 #ifdef _DEBUG
 		node.mNodeTypename			= gMetaNodes[type].mName;
 #endif
-		memset(node.mParameters, 0, paramsSize);
+		node.mParameters.resize(paramsSize, 0);
 		node.mInputSamplers.resize(inputCount);
 		mNodes.push_back(node);
 
-		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+		mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters);
 		mEvaluation.SetEvaluationSampler(node.mEvaluationTarget, node.mInputSamplers);
 	}
 
@@ -270,7 +263,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void DeleteNode(size_t index)
 	{
 		mEvaluation.DelEvaluationTarget(index);
-		free(mNodes[index].mParameters);
 		mNodes.erase(mNodes.begin() + index);
 		for (auto& node : mNodes)
 		{
@@ -318,7 +310,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
 			return;
 
-		unsigned char *paramBuffer = (unsigned char*)node.mParameters;
+		unsigned char *paramBuffer = node.mParameters.data();
 		int i = 0;
 		for(const MetaParameter& param : currentMeta.mParams)
 		{
@@ -523,7 +515,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		
 		if (dirty)
 		{
-			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters);
 			mEditingContext.SetTargetDirty(node.mEvaluationTarget);
 		}
 	}
@@ -601,7 +593,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	void InvalidateParameters()
 	{
 		for (auto& node : mNodes)
-			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters, node.mParametersSize);
+			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters);
 	}
 
 	template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? rhs : lhs; }
@@ -618,7 +610,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		const MetaNode* metaNodes = gMetaNodes.data();
 		size_t res = 0;
 		const MetaNode& metaNode = metaNodes[mNodes[mSelectedNodeIndex].mType];
-		unsigned char *paramBuffer = (unsigned char*)mNodes[mSelectedNodeIndex].mParameters;
+		unsigned char *paramBuffer = mNodes[mSelectedNodeIndex].mParameters.data();
 		bool parametersUseMouse = false;
 		if (lButDown)
 		{
@@ -672,7 +664,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		if (metaNode.mbHasUI || parametersUseMouse)
 		{
 			mEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
-			mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters, mNodes[mSelectedNodeIndex].mParametersSize);
+			mEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].mEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters);
 			mEditingContext.SetTargetDirty(mNodes[mSelectedNodeIndex].mEvaluationTarget);
 		}
 	}

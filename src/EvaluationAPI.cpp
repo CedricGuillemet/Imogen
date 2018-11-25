@@ -243,9 +243,11 @@ void Evaluation::APIInit()
 {
 	std::ifstream prgStr("Stock/ProgressingNode.glsl");
 	std::ifstream cubStr("Stock/DisplayCubemap.glsl");
+	std::ifstream nodeErrStr("Stock/NodeError.glsl");
 
 	mProgressShader = prgStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(prgStr), std::istreambuf_iterator<char>()), "progressShader") : 0;
 	mDisplayCubemapShader = cubStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()), "cubeDisplay") : 0;
+	mNodeErrorShader = nodeErrStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(nodeErrStr), std::istreambuf_iterator<char>()), "nodeError") : 0;
 }
 
 static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)

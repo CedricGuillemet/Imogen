@@ -246,6 +246,9 @@ struct Evaluation
 	const EvaluationStage& GetEvaluationStage(size_t index) const {
 		return mEvaluationStages[index];
 	}
+
+	// error shader
+	unsigned int mNodeErrorShader;
 protected:
 	void APIInit();
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
@@ -257,6 +260,7 @@ protected:
 	// ui callback shaders
 	unsigned int mProgressShader;
 	unsigned int mDisplayCubemapShader;
+
 
 	// ffmpeg encoders
 	FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);

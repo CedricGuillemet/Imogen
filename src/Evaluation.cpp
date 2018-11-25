@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <map>
 
-Evaluation::Evaluation() : mProgressShader(0), mDisplayCubemapShader(0)
+Evaluation::Evaluation() : mProgressShader(0), mDisplayCubemapShader(0), mNodeErrorShader(0)
 {
 	
 }

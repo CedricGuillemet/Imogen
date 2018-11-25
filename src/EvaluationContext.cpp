@@ -133,7 +133,12 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
 	unsigned int blend[] = { GL_ONE, GL_ZERO };
 
-
+	if (!program)
+	{
+		glUseProgram(gEvaluation.mNodeErrorShader);
+		gFSQuad.Render();
+		return;
+	}
 	for (int i = 0; i < 2; i++)
 	{
 		if (blendOps[i] < BLEND_LAST)

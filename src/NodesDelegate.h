@@ -193,8 +193,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 #endif
 		size_t mType;
 		size_t mEvaluationTarget;
-		//void *mParameters;
-		//size_t mParametersSize;
 		std::vector<unsigned char> mParameters;
 		unsigned int mRuntimeUniqueId;
 		int mStartFrame, mEndFrame;

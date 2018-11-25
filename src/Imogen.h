@@ -87,3 +87,70 @@ extern std::vector<ImogenDrawCallback> mCallbackRects;
 void InitCallbackRects();
 size_t AddNodeUICallbackRect(CallbackDisplayType type, const ImRect& rect, size_t nodeIndex);
 extern int gEvaluationTime;
+
+struct UndoRedo
+{
+	virtual ~UndoRedo() {}
+	virtual void Undo() = 0;
+	virtual void Redo() = 0;
+};
+
+struct UndoRedoParameterBlock : public UndoRedo
+{
+	virtual void Undo();
+	virtual void Redo();
+	std::vector<unsigned char> mPreDo;
+	std::vector<unsigned char> mPostDo;
+	size_t mTarget;
+};
+
+struct UndoRedoHandler
+{
+	~UndoRedoHandler()
+	{
+		Clear();
+	}
+
+	void Undo()
+	{
+		if (mUndos.empty())
+			return;
+		mUndos.back()->Undo();
+		mRedos.push_back(mUndos.back());
+		mUndos.pop_back();
+	}
+
+	void Redo()
+	{
+		if (mRedos.empty())
+			return;
+		mRedos.back()->Redo();
+		mUndos.push_back(mRedos.back());
+		mRedos.pop_back();
+	}
+
+	void AddUndo(UndoRedo *undoRedo)
+	{
+		mUndos.push_back(undoRedo);
+		for (auto redo : mRedos)
+			delete redo;
+		mRedos.clear();
+	}
+
+	void Clear()
+	{
+		for (auto undo : mUndos)
+			delete undo;
+		mUndos.clear();
+
+		for (auto redo : mRedos)
+			delete redo;
+		mRedos.clear();
+	}
+
+private:
+	std::vector<UndoRedo *> mUndos;
+	std::vector<UndoRedo *> mRedos;
+};
+
+extern UndoRedoHandler undoRedoHandler;

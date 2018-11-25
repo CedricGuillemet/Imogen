@@ -234,6 +234,12 @@ int main(int, char**)
 			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
 				done = true;
 		}
+		// undo/redo
+		if (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Z))
+			undoRedoHandler.Undo();
+		if ((io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressedMap(ImGuiKey_Z)) ||
+			(io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Y)) )
+			undoRedoHandler.Redo();
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();

@@ -1017,3 +1017,13 @@ void Imogen::Finish()
 {
 
 }
+
+void UndoRedoParameterBlock::Undo()
+{
+	TileNodeEditGraphDelegate::GetInstance()->SetParamBlock(mTarget, mPreDo);
+}
+
+void UndoRedoParameterBlock::Redo()
+{
+	TileNodeEditGraphDelegate::GetInstance()->SetParamBlock(mTarget, mPostDo);
+}

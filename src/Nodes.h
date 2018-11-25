@@ -84,48 +84,6 @@ struct NodeRug
 	std::string mText;
 };
 
-struct UndoRedo
-{
-	virtual ~UndoRedo() {}
-	virtual void Undo() = 0;
-	virtual void Redo() = 0;
-};
-
-struct UndoRedoHandler
-{
-	void Undo()
-	{
-		if (mUndos.empty())
-			return;
-		mUndos.back()->Undo();
-		mRedos.push_back(mUndos.back());
-		mUndos.pop_back();
-	}
-
-	void Redo()
-	{
-		if (mRedos.empty())
-			return;
-		mRedos.back()->Redo();
-		mUndos.push_back(mRedos.back());
-		mRedos.pop_back();
-	}
-
-	void AddUndo(UndoRedo *undoRedo)
-	{
-		mUndos.push_back(undoRedo);
-		for (auto redo : mRedos)
-			delete redo;
-		mRedos.clear();
-	}
-
-private:
-	std::vector<UndoRedo *> mUndos;
-	std::vector<UndoRedo *> mRedos;
-};
-
-extern UndoRedoHandler undoRedoHandler;
-
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
 const std::vector<NodeLink>& NodeGraphGetLinks();

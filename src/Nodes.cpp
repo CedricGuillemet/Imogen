@@ -32,22 +32,13 @@
 #include <assert.h>
 #include "Evaluation.h"
 #include "imgui_stdlib.h"
+#include "NodesDelegate.h"
 
 int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
-struct UndoRedoNodeLinks : public UndoRedo
-{
-	UndoRedoNodeLinks(size_t linkIndex, const std::vector<NodeLink>& preDo) : mLinkIndex(linkIndex), mPreDo(preDo) {}
-	virtual ~UndoRedoNodeLinks() {}
-	virtual void Undo();
-	virtual void Redo();
-	std::vector<NodeLink> mPreDo;
-	std::vector<NodeLink> mPostDo;
-	size_t mLinkIndex;
-};
 
 Node::Node(int type, const ImVec2& pos)
 {
@@ -124,6 +115,63 @@ static NodeRug *editRug = NULL;
 static NodeRug* movingRug = NULL;
 static NodeRug* sizingRug = NULL;
 
+struct UndoRedoNodeLinks : public UndoRedo
+{
+	UndoRedoNodeLinks(size_t linkIndex, const std::vector<NodeLink>& preDo, bool createLnk) : mLinkIndex(linkIndex), mPreDo(preDo), mbCreateLink(createLnk) {}
+	virtual ~UndoRedoNodeLinks() {}
+	virtual void Undo()
+	{
+		links = mPreDo;
+		if (mbCreateLink)
+		{
+
+		}
+		else
+		{
+			NodeLink& link = links[mLinkIndex];
+			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+		}
+	}
+
+	virtual void Redo()
+	{
+		links = mPostDo;
+		if (mbCreateLink)
+		{
+			NodeLink& link = links[mLinkIndex];
+			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+		}
+		else
+		{
+
+		}
+	}
+
+	std::vector<NodeLink> mPreDo;
+	std::vector<NodeLink> mPostDo;
+	size_t mLinkIndex;
+	bool mbCreateLink;
+};
+
+struct UndoRedoRugs : public UndoRedo
+{
+	UndoRedoRugs(const std::vector<NodeRug>& preDo) : mPreDo(preDo) {}
+	virtual ~UndoRedoRugs() {}
+	virtual void Undo()
+	{
+		rugs = mPreDo;
+	}
+
+	virtual void Redo()
+	{
+		rugs = mPostDo;
+	}
+	std::vector<NodeRug> mPreDo;
+	std::vector<NodeRug> mPostDo;
+};
+
 void NodeGraphClear()
 {
 	nodes.clear();
@@ -146,6 +194,9 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 {
 	ImGuiIO& io = ImGui::GetIO();
 	NodeRug *ret = editRug;
+	bool dirtyRug = false;
+	UndoRedoRugs undoRedoRug(rugs);
+
 	int id = 900;
 	for (NodeRug& rug : rugs)
 	{
@@ -236,7 +287,10 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 
 	if (ImGui::Button("Delete"))
 	{
+		UndoRedoRugs undoRedoRugs(rugs);
 		rugs.erase(rugs.begin() + (rug - rugs.data()));
+		undoRedoRugs.mPostDo = rugs;
+		gUndoRedoHandler.AddUndo(undoRedoRugs);
 		return true;
 	}
 	if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
@@ -594,7 +648,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 							if (!alreadyExisting)
 							{
+								UndoRedoNodeLinks undoRedoLinks(links.size(), links, true);
 								links.push_back(nl);
+								gUndoRedoHandler.AddUndo(undoRedoLinks);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 								NodeGraphUpdateEvaluationOrder(delegate);
 							}
@@ -616,7 +672,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
 								{
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
+									UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
 									links.erase(links.begin() + linkIndex);
+									undoRedoLinks.mPostDo = links;
+									gUndoRedoHandler.AddUndo(undoRedoLinks);
 									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
@@ -732,7 +791,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			};
 			if (ImGui::MenuItem("Add rug", NULL, false))
 			{
+				UndoRedoRugs undoRedoRugs(rugs);
 				rugs.push_back({ scene_pos, ImVec2(400,200), 0xFFA0A0A0, "Description\nEdit me with a double click." });
+				undoRedoRugs.mPostDo = rugs;
+				gUndoRedoHandler.AddUndo(undoRedoRugs);
 			}
 			static char inputText[64] = { 0 };
 			ImGui::InputText("", inputText, sizeof(inputText));

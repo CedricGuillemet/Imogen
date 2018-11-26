@@ -105,6 +105,8 @@ void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSamp
 
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
+	if (mEvaluationStages[target].mInput.mInputs[slot] == source)
+		return;
 	mEvaluationStages[target].mInput.mInputs[slot] = source;
 	mEvaluationStages[source].mUseCountByOthers++;
 	gCurrentContext->SetTargetDirty(target);

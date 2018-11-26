@@ -33,7 +33,6 @@
 #include "Evaluation.h"
 #include "imgui_stdlib.h"
 
-UndoRedoHandler undoRedoHandler;
 int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
 

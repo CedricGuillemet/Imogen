@@ -236,10 +236,10 @@ int main(int, char**)
 		}
 		// undo/redo
 		if (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Z))
-			undoRedoHandler.Undo();
+			gUndoRedoHandler.Undo();
 		if ((io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressedMap(ImGuiKey_Z)) ||
 			(io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Y)) )
-			undoRedoHandler.Redo();
+			gUndoRedoHandler.Redo();
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();

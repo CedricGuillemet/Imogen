@@ -286,6 +286,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		
 		if (ImGui::CollapsingHeader("Samplers", 0))
 		{
+			UndoRedoInputSampler undoRedoInputSampler(index, node.mInputSamplers);
+			
 			for (size_t i = 0; i < node.mInputSamplers.size();i++)
 			{
 				InputSampler& inputSampler = node.mInputSamplers[i];
@@ -301,12 +303,16 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 			}
 			if (samplerDirty)
 			{
+				undoRedoInputSampler.mPostDo = node.mInputSamplers;
+				gUndoRedoHandler.AddUndo(undoRedoInputSampler);
 				mEvaluation.SetEvaluationSampler(node.mEvaluationTarget, node.mInputSamplers);
 			}
 
 		}
 		if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
 			return;
+
+		UndoRedoParameterBlock undoRedoParameterBlock(index, node.mParameters);
 
 		unsigned char *paramBuffer = node.mParameters.data();
 		int i = 0;
@@ -513,6 +519,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		
 		if (dirty)
 		{
+			undoRedoParameterBlock.mPostDo = node.mParameters;
+			gUndoRedoHandler.AddUndo(undoRedoParameterBlock);
 			mEvaluation.SetEvaluationParameters(node.mEvaluationTarget, node.mParameters);
 			mEditingContext.SetTargetDirty(node.mEvaluationTarget);
 		}

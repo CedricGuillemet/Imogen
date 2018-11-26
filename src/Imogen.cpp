@@ -685,16 +685,22 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 	}
 }
 
+void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+{
+	nodeGraphDelegate.Clear();
+	evaluation.Clear();
+	NodeGraphClear();
+	InitCallbackRects();
+	ClearExtractedViews();
+	gUndoRedoHandler.Clear();
+}
+
 void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	// set new
 	if (selectedMaterial != -1)
 	{
-		nodeGraphDelegate.Clear();
-		evaluation.Clear();
-		NodeGraphClear();
-		InitCallbackRects();
-		ClearExtractedViews();
+		ClearAll(nodeGraphDelegate, evaluation);
 
 		Material& material = library.mMaterials[selectedMaterial];
 		for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
@@ -740,11 +746,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 			ValidateMaterial(library, nodeGraphDelegate, previousSelection);
 		}
 		selectedMaterial = int(library.mMaterials.size()) - 1;
-		nodeGraphDelegate.Clear();
-		evaluation.Clear();
-		NodeGraphClear();
-		InitCallbackRects();
-		ClearExtractedViews();
+		ClearAll(nodeGraphDelegate, evaluation);
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Import"))
@@ -1018,12 +1020,33 @@ void Imogen::Finish()
 
 }
 
+UndoRedoHandler gUndoRedoHandler;
+
 void UndoRedoParameterBlock::Undo()
 {
 	TileNodeEditGraphDelegate::GetInstance()->SetParamBlock(mTarget, mPreDo);
+	gEvaluation.SetEvaluationParameters(mTarget, mPreDo);
+	gCurrentContext->SetTargetDirty(mTarget);
 }
 
 void UndoRedoParameterBlock::Redo()
 {
 	TileNodeEditGraphDelegate::GetInstance()->SetParamBlock(mTarget, mPostDo);
+	gEvaluation.SetEvaluationParameters(mTarget, mPostDo);
+	gCurrentContext->SetTargetDirty(mTarget);
 }
+
+void UndoRedoInputSampler::Undo()
+{
+	TileNodeEditGraphDelegate::GetInstance()->mNodes[mTarget].mInputSamplers = mPreDo;
+	gEvaluation.SetEvaluationSampler(mTarget, mPreDo);
+	gCurrentContext->SetTargetDirty(mTarget);
+}
+
+void UndoRedoInputSampler::Redo()
+{
+	TileNodeEditGraphDelegate::GetInstance()->mNodes[mTarget].mInputSamplers = mPostDo;
+	gEvaluation.SetEvaluationSampler(mTarget, mPostDo);
+	gCurrentContext->SetTargetDirty(mTarget);
+}
+

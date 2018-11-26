@@ -29,6 +29,7 @@
 #include <string>
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "Library.h"
 
 struct TileNodeEditGraphDelegate;
 struct Evaluation;
@@ -97,12 +98,36 @@ struct UndoRedo
 
 struct UndoRedoParameterBlock : public UndoRedo
 {
+	UndoRedoParameterBlock(size_t target, const std::vector<unsigned char>& preDo) : mTarget(target), mPreDo(preDo) {}
 	virtual ~UndoRedoParameterBlock() {}
 	virtual void Undo();
 	virtual void Redo();
 	std::vector<unsigned char> mPreDo;
 	std::vector<unsigned char> mPostDo;
 	size_t mTarget;
+};
+
+struct UndoRedoInputSampler : public UndoRedo
+{
+	UndoRedoInputSampler(size_t target, const std::vector<InputSampler>& preDo) : mTarget(target), mPreDo(preDo) {}
+	virtual ~UndoRedoInputSampler() {}
+	virtual void Undo();
+	virtual void Redo();
+	std::vector<InputSampler> mPreDo;
+	std::vector<InputSampler> mPostDo;
+	size_t mTarget;
+};
+
+
+struct UndoRedoNodeLinks : public UndoRedo
+{
+	UndoRedoNodeLinks(size_t linkIndex, const std::vector<NodeLink>& preDo) : mLinkIndex(linkIndex), mPreDo(preDo) {}
+	virtual ~UndoRedoNodeLinks() {}
+	virtual void Undo();
+	virtual void Redo();
+	std::vector<NodeLink> mPreDo;
+	std::vector<NodeLink> mPostDo;
+	size_t mLinkIndex;
 };
 
 struct UndoRedoHandler
@@ -130,13 +155,14 @@ struct UndoRedoHandler
 		mRedos.pop_back();
 	}
 
-	void AddUndo(UndoRedo *undoRedo)
+	template <typename T> void AddUndo(const T &undoRedo)
 	{
-		mUndos.push_back(undoRedo);
+		mUndos.push_back(new T(undoRedo));
 		for (auto redo : mRedos)
 			delete redo;
 		mRedos.clear();
 	}
+
 
 	void Clear()
 	{
@@ -154,4 +180,4 @@ private:
 	std::vector<UndoRedo *> mRedos;
 };
 
-extern UndoRedoHandler undoRedoHandler;
+extern UndoRedoHandler gUndoRedoHandler;

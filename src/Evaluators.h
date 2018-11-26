@@ -43,7 +43,7 @@ struct Evaluator
 
 struct Evaluators
 {
-	Evaluators() : mEvaluationStateGLSLBuffer(0) {}
+	Evaluators() : gEvaluationStateGLSLBuffer(0) {}
 	void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
 	std::string GetEvaluator(const std::string& filename);
 	int GetMask(size_t nodeType, const std::string& nodeName);
@@ -51,7 +51,7 @@ struct Evaluators
 
 	const Evaluator& GetEvaluator(size_t nodeType) const { return mEvaluatorPerNodeType[nodeType]; }
 
-	unsigned int mEvaluationStateGLSLBuffer;
+	unsigned int gEvaluationStateGLSLBuffer;
 	pybind11::module mImogenModule;
 protected:
 

@@ -177,13 +177,13 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 			mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
 	}
 
-	if (!mEvaluationStateGLSLBuffer)
+	if (!gEvaluationStateGLSLBuffer)
 	{
-		glGenBuffers(1, &mEvaluationStateGLSLBuffer);
-		glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+		glGenBuffers(1, &gEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, gEvaluationStateGLSLBuffer);
 
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluationStateGLSLBuffer);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 

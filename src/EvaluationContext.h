@@ -46,14 +46,14 @@ struct EvaluationContext
 	FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
 	bool IsSynchronous() const { return mbSynchronousEvaluation; }
 	void SetTargetDirty(size_t target, bool onlyChild = false);
-	const EvaluationInfo& GetEvaluationInfo() const { return mEvaluationInfo; }
+	const EvaluationInfo& GetEvaluationInfo() const { return gEvaluationInfo; }
 
 	bool StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return false; return mbProcessing[target]; }
-	void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(mEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
+	void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(gEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
 
 	void AllocRenderTargetsForEditingPreview();
 protected:
-	Evaluation& mEvaluation;
+	Evaluation& gEvaluation;
 
 	void PreRun();
 	void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
@@ -73,7 +73,7 @@ protected:
 	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 	std::vector<bool> mbDirty;
 	std::vector<bool> mbProcessing;
-	EvaluationInfo mEvaluationInfo;
+	EvaluationInfo gEvaluationInfo;
 
 	int mDefaultWidth;
 	int mDefaultHeight;

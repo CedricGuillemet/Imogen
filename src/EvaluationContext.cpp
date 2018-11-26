@@ -76,7 +76,7 @@ static const float rotMatrices[6][16] = {
 
 
 EvaluationContext::EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
-	: mEvaluation(evaluation)
+	: gEvaluation(evaluation)
 	, mbSynchronousEvaluation(synchronousEvaluation)
 	, mDefaultWidth(defaultWidth)
 	, mDefaultHeight(defaultHeight)
@@ -159,13 +159,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 		memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
 		memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
 
-		glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.mEvaluationStateGLSLBuffer);
+		glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.mEvaluationStateGLSLBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
 		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < sizeof(samplerName) / sizeof(const char*); inputIndex++)
@@ -238,9 +238,9 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, s
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
 	// alloc targets
-	mStageTarget.resize(mEvaluation.GetStagesCount(), NULL);
-	mAllocatedTargets.resize(mEvaluation.GetStagesCount(), NULL);
-	for (size_t i = 0; i < mEvaluation.GetStagesCount(); i++)
+	mStageTarget.resize(gEvaluation.GetStagesCount(), NULL);
+	mAllocatedTargets.resize(gEvaluation.GetStagesCount(), NULL);
+	for (size_t i = 0; i < gEvaluation.GetStagesCount(); i++)
 	{
 		if (!mStageTarget[i])
 		{
@@ -254,19 +254,19 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 	if (!mStageTarget.empty())
 		return;
 
-	//auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
-	size_t stageCount = mEvaluation.GetStagesCount();
+	//auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+	size_t stageCount = gEvaluation.GetStagesCount();
 	mStageTarget.resize(stageCount, NULL);
 	std::vector<RenderTarget*> freeRenderTargets;
 	std::vector<int> useCount(stageCount, 0);
 	for (size_t i = 0; i < stageCount; i++)
 	{
-		useCount[i] = mEvaluation.GetEvaluationStage(i).mUseCountByOthers;
+		useCount[i] = gEvaluation.GetEvaluationStage(i).mUseCountByOthers;
 	}
 
 	for (auto index : nodesToEvaluate)
 	{
-		const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(index);
+		const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(index);
 		if (!evaluation.mUseCountByOthers)
 			continue;
 
@@ -297,13 +297,13 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 }
 void EvaluationContext::PreRun()
 {
-	mbDirty.resize(mEvaluation.GetStagesCount(), false);
-	mbProcessing.resize(mEvaluation.GetStagesCount(), false);
+	mbDirty.resize(gEvaluation.GetStagesCount(), false);
+	mbProcessing.resize(gEvaluation.GetStagesCount(), false);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
-	auto& currentStage = mEvaluation.GetEvaluationStage(nodeIndex);
+	auto& currentStage = gEvaluation.GetEvaluationStage(nodeIndex);
 	const Input& input = currentStage.mInput;
 
 	// check processing 
@@ -320,22 +320,22 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
 	mbProcessing[nodeIndex] = false;
 
-	mEvaluationInfo.targetIndex = int(nodeIndex);
-	memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
-	SetMouseInfos(mEvaluationInfo, currentStage);
+	gEvaluationInfo.targetIndex = int(nodeIndex);
+	memcpy(gEvaluationInfo.inputIndices, input.mInputs, sizeof(gEvaluationInfo.inputIndices));
+	SetMouseInfos(gEvaluationInfo, currentStage);
 
-	if (currentStage.mEvaluationMask&EvaluationC)
-		EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
+	if (currentStage.gEvaluationMask&EvaluationC)
+		EvaluateC(currentStage, nodeIndex, gEvaluationInfo);
 
-	if (currentStage.mEvaluationMask&EvaluationPython)
-		EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
+	if (currentStage.gEvaluationMask&EvaluationPython)
+		EvaluatePython(currentStage, nodeIndex, gEvaluationInfo);
 
-	if (currentStage.mEvaluationMask&EvaluationGLSL)
+	if (currentStage.gEvaluationMask&EvaluationGLSL)
 	{
 		if (!mStageTarget[nodeIndex]->mGLTexID)
 			mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight);
 
-		EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
+		EvaluateGLSL(currentStage, nodeIndex, gEvaluationInfo);
 	}
 	mbDirty[nodeIndex] = false;
 }
@@ -356,7 +356,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 {
 	PreRun();
 
-	mEvaluationInfo = evaluationInfo;
+	gEvaluationInfo = evaluationInfo;
 
 	RunNode(nodeIndex);
 
@@ -366,7 +366,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 
 void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)
 {
-	const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(target);
+	const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(target);
 	const Input& input = evaluation.mInput;
 
 	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -384,8 +384,8 @@ void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& used
 void EvaluationContext::RunDirty()
 {
 	PreRun();
-	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	memset(&gEvaluationInfo, 0, sizeof(EvaluationInfo));
+	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	std::vector<size_t> nodesToEvaluate;
 	for (size_t index = 0; index < evaluationOrderList.size(); index++)
 	{
@@ -401,8 +401,8 @@ void EvaluationContext::RunAll()
 {
 	PreRun();
 	// get list of nodes to run
-	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	memset(&gEvaluationInfo, 0, sizeof(EvaluationInfo));
+	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	AllocRenderTargetsForEditingPreview();
 	RunNodeList(evaluationOrderList);
 }
@@ -410,8 +410,8 @@ void EvaluationContext::RunAll()
 void EvaluationContext::RunBackward(size_t nodeIndex)
 {
 	PreRun();
-	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-	mEvaluationInfo.forcedDirty = true;
+	memset(&gEvaluationInfo, 0, sizeof(EvaluationInfo));
+	gEvaluationInfo.forcedDirty = true;
 	std::vector<size_t> nodesToEvaluate;
 	RecurseBackward(nodeIndex, nodesToEvaluate);
 	AllocRenderTargetsForBaking(nodesToEvaluate);
@@ -437,8 +437,8 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
 
 void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 {
-	mbDirty.resize(mEvaluation.GetStagesCount(), false);
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	mbDirty.resize(gEvaluation.GetStagesCount(), false);
+	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	mbDirty[target] = true;
 	for (size_t i = 0; i < evaluationOrderList.size(); i++)
 	{
@@ -452,7 +452,7 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 			if (mbDirty[currentNodeIndex])
 				continue;
 
-			auto& currentEvaluation = mEvaluation.GetEvaluationStage(currentNodeIndex);
+			auto& currentEvaluation = gEvaluation.GetEvaluationStage(currentNodeIndex);
 			for (auto inp : currentEvaluation.mInput.mInputs)
 			{
 				if (inp >= 0 && mbDirty[inp])

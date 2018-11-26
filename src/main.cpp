@@ -45,7 +45,6 @@
 #include "cmft/clcontext.h"
 #include "cmft/clcontext_internal.h"
 
-TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
 
@@ -217,8 +216,6 @@ int main(int, char**)
 	gEvaluation.Init();
 	gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
-	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
-
 	gCPUCount = SDL_GetCPUCount();
 
 	// Main loop
@@ -248,7 +245,7 @@ int main(int, char**)
 		InitCallbackRects();
 
 		gCurrentContext->RunDirty();
-		imogen.Show(library, nodeGraphDelegate, gEvaluation);
+		imogen.Show(library, gNodeDelegate, gEvaluation);
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -269,7 +266,7 @@ int main(int, char**)
 		cmft::clUnload();
 	}
 
-	imogen.ValidateCurrentMaterial(library, nodeGraphDelegate);
+	imogen.ValidateCurrentMaterial(library, gNodeDelegate);
 	SaveLib(&library, libraryFilename);
 	gEvaluation.Finish();
 

@@ -26,6 +26,9 @@
 #pragma once
 #include <vector>
 #include <stdint.h>
+#include "imgui.h"
+#include "imgui_internal.h"
+
 struct NodeGraphDelegate
 {
 	NodeGraphDelegate() : mSelectedNodeIndex(-1), mBakeTargetIndex(-1), mCategoriesCount(0), mCategories(0)
@@ -40,7 +43,6 @@ struct NodeGraphDelegate
 	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
 	virtual void DelLink(int index, int slot) = 0;
 	virtual unsigned int GetNodeTexture(size_t index) = 0;
-	virtual bool AuthorizeConnexion(int typeA, int typeB) = 0;
 	// A new node has been added in the graph. Do a push_back on your node array
 	virtual void AddNode(size_t type) = 0;
 	// node deleted

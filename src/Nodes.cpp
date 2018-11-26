@@ -38,6 +38,17 @@ void AddExtractedView(size_t nodeIndex);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
+struct UndoRedoNodeLinks : public UndoRedo
+{
+	UndoRedoNodeLinks(size_t linkIndex, const std::vector<NodeLink>& preDo) : mLinkIndex(linkIndex), mPreDo(preDo) {}
+	virtual ~UndoRedoNodeLinks() {}
+	virtual void Undo();
+	virtual void Redo();
+	std::vector<NodeLink> mPreDo;
+	std::vector<NodeLink> mPostDo;
+	size_t mLinkIndex;
+};
+
 Node::Node(int type, const ImVec2& pos)
 {
 	mType = type;

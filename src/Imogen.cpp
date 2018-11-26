@@ -39,6 +39,7 @@
 #include "imgui_stdlib.h"
 #include "ImSequencer.h"
 #include "Evaluators.h"
+#include "nfd.h"
 
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
 extern Evaluation gEvaluation;
@@ -424,12 +425,12 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 		}
 		else
 		{
-			TileNodeEditGraphDelegate::ImogenNode *node = TileNodeEditGraphDelegate::GetInstance()->Get(mIdentifier);
+			TileNodeEditGraphDelegate::ImogenNode *node = gNodeDelegate.Get(mIdentifier);
 			if (node)
 			{
-				Evaluation::SetEvaluationImage(int(node->mEvaluationTarget), &mImage);
-				gEvaluation.SetEvaluationParameters(node->mEvaluationTarget, node->mParameters);
-				gCurrentContext->StageSetProcessing(node->mEvaluationTarget, false);
+				Evaluation::SetEvaluationImage(int(node->gEvaluationTarget), &mImage);
+				gEvaluation.SetEvaluationParameters(node->gEvaluationTarget, node->mParameters);
+				gCurrentContext->StageSetProcessing(node->gEvaluationTarget, false);
 			}
 			Evaluation::FreeImage(&mImage);
 		}
@@ -710,7 +711,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 			if (!node.mImage.empty())
 			{
 				TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
-				gCurrentContext->StageSetProcessing(lastNode.mEvaluationTarget, true);
+				gCurrentContext->StageSetProcessing(lastNode.gEvaluationTarget, true);
 				g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
 			}
 		}
@@ -926,7 +927,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
 				auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
 				//nodeGraphDelegate.SetTimeSlot(selectedEntry, imoNode.mStartFrame, imoNode.mEndFrame);
-				gEvaluation.SetStageLocalTime(imoNode.mEvaluationTarget, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
+				gEvaluation.SetStageLocalTime(imoNode.gEvaluationTarget, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
 			}
 			if (currentTime != gEvaluationTime)
 			{
@@ -1021,32 +1022,4 @@ void Imogen::Finish()
 }
 
 UndoRedoHandler gUndoRedoHandler;
-
-void UndoRedoParameterBlock::Undo()
-{
-	TileNodeEditGraphDelegate::GetInstance()->SetParamBlock(mTarget, mPreDo);
-	gEvaluation.SetEvaluationParameters(mTarget, mPreDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
-
-void UndoRedoParameterBlock::Redo()
-{
-	TileNodeEditGraphDelegate::GetInstance()->SetParamBlock(mTarget, mPostDo);
-	gEvaluation.SetEvaluationParameters(mTarget, mPostDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
-
-void UndoRedoInputSampler::Undo()
-{
-	TileNodeEditGraphDelegate::GetInstance()->mNodes[mTarget].mInputSamplers = mPreDo;
-	gEvaluation.SetEvaluationSampler(mTarget, mPreDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
-
-void UndoRedoInputSampler::Redo()
-{
-	TileNodeEditGraphDelegate::GetInstance()->mNodes[mTarget].mInputSamplers = mPostDo;
-	gEvaluation.SetEvaluationSampler(mTarget, mPostDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
 

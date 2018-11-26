@@ -399,7 +399,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 
 int Evaluation::GetEvaluationImage(int target, Image *image)
 {
-	if (target == -1 || target >= gEvaluation.mEvaluationStages.size())
+	if (target == -1 || target >= gEvaluation.gEvaluationStages.size())
 		return EVAL_ERR;
 
 	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
@@ -446,7 +446,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
-	EvaluationStage &stage = gEvaluation.mEvaluationStages[target];
+	EvaluationStage &stage = gEvaluation.gEvaluationStages[target];
 	RenderTarget *tgt = gCurrentContext->GetRenderTarget(target);
 	if (!tgt)
 		return EVAL_ERR;
@@ -679,7 +679,7 @@ int Evaluation::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int si
 
 void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
 {
-	EvaluationStage& evaluation = gEvaluation.mEvaluationStages[target];
+	EvaluationStage& evaluation = gEvaluation.gEvaluationStages[target];
 
 	evaluation.mBlendingSrc = blendSrc;
 	evaluation.mBlendingDst = blendDst;
@@ -706,7 +706,7 @@ void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 
 void EvaluationStage::Clear()
 {
-	if (mEvaluationMask&EvaluationGLSL)
+	if (gEvaluationMask&EvaluationGLSL)
 		glDeleteBuffers(1, &mParametersBuffer);
 }
 
@@ -842,7 +842,7 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 
 int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 {
-	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+	if (target < 0 || target >= gEvaluation.gEvaluationStages.size())
 		return EVAL_ERR;
 	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
@@ -854,7 +854,7 @@ int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 
 int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 {
-	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+	if (target < 0 || target >= gEvaluation.gEvaluationStages.size())
 		return EVAL_ERR;
 	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
@@ -867,7 +867,7 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 
 int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 {
-	if (target < 0 || target >= gEvaluation.mEvaluationStages.size())
+	if (target < 0 || target >= gEvaluation.gEvaluationStages.size())
 		return EVAL_ERR;
 
 	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);

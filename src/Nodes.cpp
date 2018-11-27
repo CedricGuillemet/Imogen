@@ -124,12 +124,14 @@ struct UndoRedoNodeLinks : public UndoRedo
 		links = mPreDo;
 		if (mbCreateLink)
 		{
-
+			NodeLink& link = links[mLinkIndex];
+			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
 		}
 		else
 		{
-			NodeLink& link = links[mLinkIndex];
-			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			const NodeLink& nl = links[mLinkIndex];
+			gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
 		}
 	}
@@ -139,13 +141,15 @@ struct UndoRedoNodeLinks : public UndoRedo
 		links = mPostDo;
 		if (mbCreateLink)
 		{
-			NodeLink& link = links[mLinkIndex];
-			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			const NodeLink& nl = links[mLinkIndex];
+			gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
 		}
 		else
 		{
-
+			NodeLink& link = links[mLinkIndex];
+			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
 		}
 	}
 

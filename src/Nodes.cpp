@@ -121,15 +121,16 @@ struct UndoRedoNodeLinks : public UndoRedo
 	virtual ~UndoRedoNodeLinks() {}
 	virtual void Undo()
 	{
-		links = mPreDo;
 		if (mbCreateLink)
 		{
 			NodeLink& link = links[mLinkIndex];
 			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
 			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+			links = mPreDo;
 		}
 		else
 		{
+			links = mPreDo;
 			const NodeLink& nl = links[mLinkIndex];
 			gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
@@ -138,18 +139,20 @@ struct UndoRedoNodeLinks : public UndoRedo
 
 	virtual void Redo()
 	{
-		links = mPostDo;
 		if (mbCreateLink)
 		{
+			links = mPostDo;
 			const NodeLink& nl = links[mLinkIndex];
 			gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+			
 		}
 		else
 		{
 			NodeLink& link = links[mLinkIndex];
 			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
 			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+			links = mPostDo;
 		}
 	}
 
@@ -254,6 +257,8 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	ImGuiIO& io = ImGui::GetIO();
 	ImVec2 commentSize = rug->mSize * factor;
 
+	UndoRedoRugs undoRedoRug(rugs);
+	bool dirtyRug = false;
 	ImVec2 node_rect_min = (offset + rug->mPos) * factor;
 	ImVec2 node_rect_max = node_rect_min + commentSize;
 	ImRect rugRect(node_rect_min, node_rect_max);
@@ -267,7 +272,7 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	ImGui::SetCursorScreenPos(node_rect_min + ImVec2(5, 5));
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
 	ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
-	ImGui::InputTextMultiline("", &rug->mText, (node_rect_max - node_rect_min) - ImVec2(30, 30));
+	dirtyRug |= ImGui::InputTextMultiline("", &rug->mText, (node_rect_max - node_rect_min) - ImVec2(30, 30));
 	ImGui::PopStyleColor(2);
 
 	ImGui::SetCursorScreenPos(node_rect_min + ImVec2(10, commentSize.y - 30));
@@ -283,6 +288,7 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 		if (ImGui::Button("   "))
 		{
 			rug->mColor = buttonColor;
+			dirtyRug = true;
 		}
 		ImGui::PopStyleColor(3);
 		ImGui::PopID();
@@ -296,6 +302,11 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 		undoRedoRugs.mPostDo = rugs;
 		gUndoRedoHandler.AddUndo(undoRedoRugs);
 		return true;
+	}
+	if (dirtyRug)
+	{
+		undoRedoRug.mPostDo = rugs;
+		gUndoRedoHandler.AddUndo(undoRedoRug);
 	}
 	if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
 		return true;
@@ -654,6 +665,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 							{
 								UndoRedoNodeLinks undoRedoLinks(links.size(), links, true);
 								links.push_back(nl);
+								undoRedoLinks.mPostDo = links;
 								gUndoRedoHandler.AddUndo(undoRedoLinks);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 								NodeGraphUpdateEvaluationOrder(delegate);

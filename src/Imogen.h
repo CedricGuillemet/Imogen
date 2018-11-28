@@ -91,9 +91,38 @@ extern int gEvaluationTime;
 
 struct UndoRedo
 {
-	virtual ~UndoRedo() {}
-	virtual void Undo() = 0;
-	virtual void Redo() = 0;
+	UndoRedo() {}
+	/*UndoRedo(const UndoRedo& source)
+	{
+		mSubUndoRedo = source.mSubUndoRedo;
+	}
+	*/
+
+	// sub undoredo clearing happens here and not in d-tor so copy/vector resize wont destroy still in use object
+	// could use sharedPtr
+	void Clear()
+	{
+		for (auto& undoRedo : mSubUndoRedo)
+		{
+			undoRedo->Clear();
+			delete undoRedo;
+		}
+	}
+
+	virtual void Undo()
+	{
+		for (auto iter = std::rbegin(mSubUndoRedo); iter != std::rend(mSubUndoRedo);++iter)
+			(*iter)->Undo();
+	}
+	virtual void Redo()
+	{
+		for (auto& undoRedo : mSubUndoRedo)
+			undoRedo->Undo();
+	}
+	template <typename T> void AddSubUndoRedo(const T& subUndoRedo)	{ mSubUndoRedo.push_back(new T(subUndoRedo)); }
+
+protected:
+	std::vector<UndoRedo*> mSubUndoRedo;
 };
 
 struct UndoRedoHandler
@@ -125,7 +154,10 @@ struct UndoRedoHandler
 	{
 		mUndos.push_back(new T(undoRedo));
 		for (auto redo : mRedos)
+		{
+			redo->Clear();
 			delete redo;
+		}
 		mRedos.clear();
 	}
 
@@ -133,11 +165,17 @@ struct UndoRedoHandler
 	void Clear()
 	{
 		for (auto undo : mUndos)
+		{
+			undo->Clear();
 			delete undo;
+		}
 		mUndos.clear();
 
 		for (auto redo : mRedos)
+		{
+			redo->Clear();
 			delete redo;
+		}
 		mRedos.clear();
 	}
 

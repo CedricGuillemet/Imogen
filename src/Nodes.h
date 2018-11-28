@@ -31,11 +31,10 @@
 
 struct NodeGraphDelegate
 {
-	NodeGraphDelegate() : mSelectedNodeIndex(-1), mBakeTargetIndex(-1), mCategoriesCount(0), mCategories(0)
+	NodeGraphDelegate() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
 	{}
 
 	int mSelectedNodeIndex;
-	int mBakeTargetIndex;
 	int mCategoriesCount;
 	const char ** mCategories;
 

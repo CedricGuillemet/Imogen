@@ -115,52 +115,86 @@ static NodeRug *editRug = NULL;
 static NodeRug* movingRug = NULL;
 static NodeRug* sizingRug = NULL;
 
-struct UndoRedoNodeLinks : public UndoRedo
+// Undo/redo structs
+template <class T> struct UndoRedoIndexed : public UndoRedo
 {
-	UndoRedoNodeLinks(size_t linkIndex, const std::vector<NodeLink>& preDo, bool createLnk) : mLinkIndex(linkIndex), mPreDo(preDo), mbCreateLink(createLnk) {}
-	virtual ~UndoRedoNodeLinks() {}
+	UndoRedoIndexed(size_t index, const std::vector<T>& preDo, bool createNew, std::vector<T>& source) : mIndex(index), mPreDo(preDo), mbCreateNew(createNew), mSource(source) {}
+	virtual ~UndoRedoIndexed() {}
 	virtual void Undo()
 	{
-		if (mbCreateLink)
+		if (mbCreateNew)
 		{
-			NodeLink& link = links[mLinkIndex];
-			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
-			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-			links = mPreDo;
+			DelIndexed();
+			mSource = mPreDo;
 		}
 		else
 		{
-			links = mPreDo;
-			const NodeLink& nl = links[mLinkIndex];
-			gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
-			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+			mSource = mPreDo;
+			AddIndexed();
 		}
+		UndoRedo::Undo();
 	}
 
 	virtual void Redo()
 	{
-		if (mbCreateLink)
+		UndoRedo::Redo();
+		if (mbCreateNew)
 		{
-			links = mPostDo;
-			const NodeLink& nl = links[mLinkIndex];
-			gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
-			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-			
+			mSource = mPostDo;
+			AddIndexed();
 		}
 		else
 		{
-			NodeLink& link = links[mLinkIndex];
-			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
-			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-			links = mPostDo;
+			DelIndexed();
+			mSource = mPostDo;
 		}
 	}
 
-	std::vector<NodeLink> mPreDo;
-	std::vector<NodeLink> mPostDo;
-	size_t mLinkIndex;
-	bool mbCreateLink;
+	virtual void AddIndexed() = 0;
+	virtual void DelIndexed() = 0;
+	
+	std::vector<T> mPreDo;
+	std::vector<T> mPostDo;
+	std::vector<T>& mSource;
+	size_t mIndex;
+	bool mbCreateNew;
 };
+
+struct UndoRedoNodeLinks : public UndoRedoIndexed<NodeLink>
+{
+	UndoRedoNodeLinks(size_t index, const std::vector<NodeLink>& preDo, bool createNew) : UndoRedoIndexed(index, preDo, createNew, links) {}
+	virtual ~UndoRedoNodeLinks() {}
+	virtual void AddIndexed()
+	{
+		const NodeLink& link = links[mIndex];
+		gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+	}
+	virtual void DelIndexed()
+	{
+		NodeLink& link = links[mIndex];
+		gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+	}
+};
+
+struct UndoRedoNode : public UndoRedoIndexed<Node>
+{
+	UndoRedoNode(size_t index, const std::vector<Node>& preDo, bool createNew) : UndoRedoIndexed(index, preDo, createNew, nodes) {}
+	virtual ~UndoRedoNode() {}
+	virtual void AddIndexed()
+	{
+		const Node& node = nodes[mIndex];
+		gNodeDelegate.AddNode(node.mType);
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+	}
+	virtual void DelIndexed()
+	{
+		gNodeDelegate.DeleteNode(mIndex);
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+	}
+};
+
 
 struct UndoRedoRugs : public UndoRedo
 {
@@ -168,11 +202,13 @@ struct UndoRedoRugs : public UndoRedo
 	virtual ~UndoRedoRugs() {}
 	virtual void Undo()
 	{
+		UndoRedo::Undo();
 		rugs = mPreDo;
 	}
 
 	virtual void Redo()
 	{
+		UndoRedo::Redo();
 		rugs = mPostDo;
 	}
 	std::vector<NodeRug> mPreDo;
@@ -202,7 +238,7 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 	ImGuiIO& io = ImGui::GetIO();
 	NodeRug *ret = editRug;
 	bool dirtyRug = false;
-	UndoRedoRugs undoRedoRug(rugs);
+	
 
 	int id = 900;
 	for (NodeRug& rug : rugs)
@@ -226,16 +262,45 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 		{
 			ret = &rug;
 		}
-
+		bool createUndo = false;
+		bool commitUndo = false;
 		if (!editingNodeAndConnexions && !sizingRug && !movingRug && insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
+		{
 			sizingRug = &rug;
+			createUndo = true;
+		}
 		if (sizingRug && !io.MouseDown[0])
+		{
 			sizingRug = NULL;
+			commitUndo = true;
+		}
 
 		if (!editingNodeAndConnexions && !movingRug && !sizingRug && rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
+		{
+			
 			movingRug = &rug;
+			createUndo = true;
+		}
 		if (movingRug && !io.MouseDown[0])
+		{
+			commitUndo = true;
 			movingRug = NULL;
+		}
+		
+
+		// undo/redo for sizing/moving
+		static UndoRedoRugs *undoRedoRug = NULL;
+		if (createUndo)
+		{
+			undoRedoRug = new UndoRedoRugs(rugs);
+		}
+		if (commitUndo)
+		{
+			undoRedoRug->mPostDo = rugs;
+			gUndoRedoHandler.AddUndo(*undoRedoRug);
+			delete undoRedoRug;
+			undoRedoRug = NULL;
+		}
 
 		draw_list->AddText(ImGui::GetIO().FontDefault, 14 * ImLerp(1.f, factor, 0.5f), node_rect_min + ImVec2(5, 5), (rug.mColor & 0xFFFFFF) + 0xFF404040, rug.mText.c_str());
 		draw_list->AddRectFilled(node_rect_min, node_rect_max, (rug.mColor&0xFFFFFF)+0x60000000, 10.0f, 15);
@@ -297,10 +362,9 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 
 	if (ImGui::Button("Delete"))
 	{
-		UndoRedoRugs undoRedoRugs(rugs);
 		rugs.erase(rugs.begin() + (rug - rugs.data()));
-		undoRedoRugs.mPostDo = rugs;
-		gUndoRedoHandler.AddUndo(undoRedoRugs);
+		undoRedoRug.mPostDo = rugs;
+		gUndoRedoHandler.AddUndo(undoRedoRug);
 		return true;
 	}
 	if (dirtyRug)
@@ -556,13 +620,6 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && currentSelectedNode)) ? IM_COL32(85, 85, 85, 255) : IM_COL32(60, 60, 60, 255);
 		
-		if (delegate->mBakeTargetIndex == node_idx)
-		{
-			//draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(230, 100, 30, 255) , 2.0f, 15, 4.f);
-			draw_list->AddRectFilled(node_rect_min, node_rect_max, IM_COL32(230, 100, 30, 255), 2.0f);
-		}
-		else
-			draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
 		draw_list->AddRect(node_rect_min, node_rect_max, currentSelectedNode? IM_COL32(230, 230, 230, 255):IM_COL32(100, 100, 100, 0), 2.0f, 15, 2.f);
 
 		//ImVec2 offsetImg = ImGui::GetCursorScreenPos();
@@ -571,6 +628,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
 		float imgSizeComp = std::min(imgSize.x, imgSize.y);
 		
+		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
+
 		ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
 		draw_list->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
 
@@ -654,8 +713,11 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
 								{
+									UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
+									undoRedoLinks.mPostDo = links;
+									gUndoRedoHandler.AddUndo(undoRedoLinks);
 									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
@@ -705,7 +767,6 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75f*1.2f, IM_COL32(160, 160, 160, 200));
 					draw_list->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
 					draw_list->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
-					
 				}
 			}
 		}
@@ -761,21 +822,28 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
 			{
-				if (delegate->mBakeTargetIndex == node_selected)
-					delegate->mBakeTargetIndex = -1;
+				UndoRedoNode undoRedoNode(node_selected, nodes, false);
 
 				for (int id = 0; id < links.size(); id++)
 				{
 					if (links[id].InputIdx == node_selected || links[id].OutputIdx == node_selected)
 						delegate->DelLink(links[id].OutputIdx, links[id].OutputSlot);
 				}
-				auto iter = links.begin();
-				for (; iter != links.end();)
+				//auto iter = links.begin();
+				for (size_t i = 0;i <links.size();)
 				{
-					if (iter->InputIdx == node_selected || iter->OutputIdx == node_selected)
-						iter = links.erase(iter);
+					auto& link = links[i];
+					if (link.InputIdx == node_selected || link.OutputIdx == node_selected)
+					{
+						UndoRedoNodeLinks undoRedoLink(i, links, false);
+						links.erase(links.begin() + i);
+						undoRedoLink.mPostDo = links;
+						undoRedoNode.AddSubUndoRedo(undoRedoLink);
+					}
 					else
-						iter++;
+					{
+						i++;
+					}
 				}
 				// recompute link indices
 				for (int id = 0; id < links.size(); id++)
@@ -793,6 +861,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				// inform delegate
 				delegate->DeleteNode(node_selected);
 
+				// finish undo
+				undoRedoNode.mPostDo = nodes;
+				gUndoRedoHandler.AddUndo(undoRedoNode);
+
 				node_selected = -1;
 			}
 		}
@@ -800,8 +872,14 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		{
 			auto AddNode = [&](int i)
 			{
+				UndoRedoNode undoRedoNode(nodes.size(), nodes, true);
+
 				nodes.push_back(Node(i, scene_pos));
 				delegate->AddNode(i);
+
+				undoRedoNode.mPostDo = nodes;
+				gUndoRedoHandler.AddUndo(undoRedoNode);
+
 				NodeGraphUpdateEvaluationOrder(delegate);
 				node_selected = int(nodes.size()) - 1;
 			};

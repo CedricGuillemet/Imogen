@@ -167,19 +167,24 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	void Clear();
 
-	virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
-	virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(mNodes[index].gEvaluationTarget); }
 	virtual void AddNode(size_t type);
-	void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { gEvaluation.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);	}
+	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { gEvaluation.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);	}
 	virtual void DelLink(int index, int slot) { gEvaluation.DelEvaluationInput(index, slot); }
 	virtual void DeleteNode(size_t index);
+	virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
+
+	virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(mNodes[index].gEvaluationTarget); }
+
 	void EditNode();
+
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd);
 	void SetTimeDuration(size_t index, int duration);
 	void SetTime(int time, bool updateDecoder);
 	size_t ComputeTimelineLength() const;
+
 	virtual void DoForce();
 	void InvalidateParameters();
+
 	void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown);
 
 	size_t ComputeNodeParametersSize(size_t nodeTypeIndex);

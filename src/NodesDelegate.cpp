@@ -140,7 +140,7 @@ void TileNodeEditGraphDelegate::AddNode(size_t type)
 
 void TileNodeEditGraphDelegate::DeleteNode(size_t index)
 {
-	gEvaluation.DelEvaluationTarget(index);
+	gEvaluation.DelEvaluationTarget(mNodes[index].gEvaluationTarget);
 	mNodes.erase(mNodes.begin() + index);
 	for (auto& node : mNodes)
 	{

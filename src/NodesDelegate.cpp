@@ -484,7 +484,7 @@ void TileNodeEditGraphDelegate::InvalidateParameters()
 
 template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? rhs : lhs; }
 
-void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown)
+void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel)
 {
 	if (mSelectedNodeIndex == -1)
 		return;
@@ -495,13 +495,41 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 	const MetaNode* metaNodes = gMetaNodes.data();
 	size_t res = 0;
 	const MetaNode& metaNode = metaNodes[mNodes[mSelectedNodeIndex].mType];
+
 	unsigned char *paramBuffer = mNodes[mSelectedNodeIndex].mParameters.data();
 	bool parametersUseMouse = false;
+
+	// camera handling
+	for (auto& param : metaNode.mParams)
+	{
+		float *paramFlt = (float*)paramBuffer;
+		if (param.mType == Con_Camera)
+		{
+			Camera *cam = (Camera*)paramBuffer;
+			if (cam->mDirection.lengthSq() < FLT_EPSILON)
+				cam->mDirection.set(0.f, 0.f, 1.f);
+			cam->mPosition += cam->mDirection * wheel;
+
+			parametersUseMouse = true;
+		}
+		paramBuffer += GetParameterTypeSize(param.mType);
+	}
+
+	//
+	
+	paramBuffer = mNodes[mSelectedNodeIndex].mParameters.data();
 	if (lButDown)
 	{
 		for(auto& param : metaNode.mParams)
 		{
 			float *paramFlt = (float*)paramBuffer;
+			if (param.mType == Con_Camera)
+			{
+				Camera *cam = (Camera*)paramBuffer;
+				if (cam->mDirection.lengthSq() < FLT_EPSILON)
+					cam->mDirection.set(0.f, 0.f, 1.f);
+				cam->mPosition += cam->mDirection * wheel;
+			}
 			if (param.mbQuadSelect && param.mType == Con_Float4)
 			{
 				if (!mbMouseDragging)

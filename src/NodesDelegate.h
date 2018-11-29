@@ -185,7 +185,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void DoForce();
 	void InvalidateParameters();
 
-	void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown);
+	void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel);
 
 	size_t ComputeNodeParametersSize(size_t nodeTypeIndex);
 	bool NodeHasUI(size_t nodeIndex) { return gMetaNodes[mNodes[nodeIndex].mType].mbHasUI; }

@@ -334,11 +334,11 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	{
 		ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
 		ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-		nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1]);
+		nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
 	}
 	else
 	{
-		nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false);
+		nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
 	}
 }
 

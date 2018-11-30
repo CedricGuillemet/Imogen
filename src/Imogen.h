@@ -165,7 +165,9 @@ struct UndoRedoHandler
 			mCurrent->AddSubUndoRedo(undoRedo);
 		else
 			mUndos.push_back(std::make_shared<T>(undoRedo));
+		mbProcessing = true;
 		mRedos.clear();
+		mbProcessing = false;
 	}
 
 	void Clear()

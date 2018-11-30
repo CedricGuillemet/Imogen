@@ -115,107 +115,6 @@ static NodeRug *editRug = NULL;
 static NodeRug* movingRug = NULL;
 static NodeRug* sizingRug = NULL;
 
-// Undo/redo structs
-/*
-template <class T> struct UndoRedoIndexed : public UndoRedo
-{
-	UndoRedoIndexed(size_t index, const std::vector<T>& preDo, bool createNew, std::vector<T>& source) : mIndex(index), mPreDo(preDo), mbCreateNew(createNew), mSource(source) {}
-	virtual ~UndoRedoIndexed() {}
-	virtual void Undo()
-	{
-		if (mbCreateNew)
-		{
-			DelIndexed();
-			mSource = mPreDo;
-		}
-		else
-		{
-			mSource = mPreDo;
-			AddIndexed();
-		}
-		UndoRedo::Undo();
-	}
-
-	virtual void Redo()
-	{
-		UndoRedo::Redo();
-		if (mbCreateNew)
-		{
-			mSource = mPostDo;
-			AddIndexed();
-		}
-		else
-		{
-			DelIndexed();
-			mSource = mPostDo;
-		}
-	}
-
-	virtual void AddIndexed() = 0;
-	virtual void DelIndexed() = 0;
-	
-	std::vector<T> mPreDo;
-	std::vector<T> mPostDo;
-	std::vector<T>& mSource;
-	size_t mIndex;
-	bool mbCreateNew;
-};
-
-struct UndoRedoNodeLinks : public UndoRedoIndexed<NodeLink>
-{
-	UndoRedoNodeLinks(size_t index, const std::vector<NodeLink>& preDo, bool createNew) : UndoRedoIndexed(index, preDo, createNew, links) {}
-	virtual ~UndoRedoNodeLinks() {}
-	virtual void AddIndexed()
-	{
-		const NodeLink& link = links[mIndex];
-		gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
-		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-	}
-	virtual void DelIndexed()
-	{
-		NodeLink& link = links[mIndex];
-		gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
-		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-	}
-};
-
-struct UndoRedoNode : public UndoRedoIndexed<Node>
-{
-	UndoRedoNode(size_t index, const std::vector<Node>& preDo, bool createNew) : UndoRedoIndexed(index, preDo, createNew, nodes) {}
-	virtual ~UndoRedoNode() {}
-	virtual void AddIndexed()
-	{
-		const Node& node = nodes[mIndex];
-		gNodeDelegate.AddNode(node.mType);
-		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-	}
-	virtual void DelIndexed()
-	{
-		gNodeDelegate.DeleteNode(mIndex);
-		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-	}
-};
-
-
-struct UndoRedoRugs : public UndoRedo
-{
-	UndoRedoRugs(const std::vector<NodeRug>& preDo) : mPreDo(preDo) {}
-	virtual ~UndoRedoRugs() {}
-	virtual void Undo()
-	{
-		UndoRedo::Undo();
-		rugs = mPreDo;
-	}
-
-	virtual void Redo()
-	{
-		UndoRedo::Redo();
-		rugs = mPostDo;
-	}
-	std::vector<NodeRug> mPreDo;
-	std::vector<NodeRug> mPostDo;
-};
-*/
 void NodeGraphClear()
 {
 	nodes.clear();
@@ -653,6 +552,21 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		else
 			draw_list->AddImage((ImTextureID)(int64_t)(delegate->GetNodeTexture(size_t(node_idx))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
 
+
+
+		auto deleteLink = [](int index)
+		{
+			NodeLink& link = links[index];
+			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+		};
+		auto addLink = [](int index)
+		{
+			NodeLink& link = links[index];
+			gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+		};
+
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
 		for (int i = 0; i < 2; i++)
@@ -705,17 +619,16 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 									break;
 								}
 							}
+
 							// check already connected output
 							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
 							{
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
 								{
-									//UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
+									URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
-									//undoRedoLinks.mPostDo = links;
-									//gUndoRedoHandler.AddUndo(undoRedoLinks);
 									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
@@ -723,10 +636,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 							if (!alreadyExisting)
 							{
-								//UndoRedoNodeLinks undoRedoLinks(links.size(), links, true);
+								URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
+
 								links.push_back(nl);
-								//undoRedoLinks.mPostDo = links;
-								//gUndoRedoHandler.AddUndo(undoRedoLinks);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 								NodeGraphUpdateEvaluationOrder(delegate);
 							}
@@ -747,11 +659,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
 								{
+									URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
-									//UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
 									links.erase(links.begin() + linkIndex);
-									//undoRedoLinks.mPostDo = links;
-									//gUndoRedoHandler.AddUndo(undoRedoLinks);
 									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
@@ -870,23 +780,21 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		{
 			auto AddNode = [&](int i)
 			{
-				//UndoRedoNode undoRedoNode(nodes.size(), nodes, true);
+				auto addDelNodeLambda = [](int) 
+				{ 
+					NodeGraphUpdateEvaluationOrder(&gNodeDelegate); 
+					gNodeDelegate.mSelectedNodeIndex = -1;
+				};
+				URAdd<Node> undoRedoAddRug(int(nodes.size()), []() {return &nodes; }, addDelNodeLambda, addDelNodeLambda);
 
 				nodes.push_back(Node(i, scene_pos));
 				delegate->AddNode(i);
-
-				//undoRedoNode.mPostDo = nodes;
-				//gUndoRedoHandler.AddUndo(undoRedoNode);
-
-				NodeGraphUpdateEvaluationOrder(delegate);
-				node_selected = int(nodes.size()) - 1;
+				addDelNodeLambda(0);
 			};
 			if (ImGui::MenuItem("Add rug", NULL, false))
 			{
-				//UndoRedoRugs undoRedoRugs(rugs);
+				URAdd<NodeRug> undoRedoAddRug(int(rugs.size()), []() {return &rugs; }, [](int) {}, [](int) {});
 				rugs.push_back({ scene_pos, ImVec2(400,200), 0xFFA0A0A0, "Description\nEdit me with a double click." });
-				//undoRedoRugs.mPostDo = rugs;
-				//gUndoRedoHandler.AddUndo(undoRedoRugs);
 			}
 			static char inputText[64] = { 0 };
 			ImGui::InputText("", inputText, sizeof(inputText));

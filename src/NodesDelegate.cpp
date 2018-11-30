@@ -509,6 +509,12 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 			if (cam->mDirection.lengthSq() < FLT_EPSILON)
 				cam->mDirection.set(0.f, 0.f, 1.f);
 			cam->mPosition += cam->mDirection * wheel;
+			Vec4 right = Dot(cam->mDirection, cam->mDirection);
+			auto& io = ImGui::GetIO();
+			if (io.KeyAlt&&io.MouseDown[2])
+				cam->mPosition += right * io.MouseDelta.x + cam->mUp * io.MouseDelta.y;
+			if (io.KeyAlt&&io.MouseDown[1])
+				cam->mPosition += cam->mDirection * io.MouseDelta.y;
 
 			parametersUseMouse = true;
 		}

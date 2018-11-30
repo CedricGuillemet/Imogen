@@ -72,7 +72,7 @@ vec4 Projection(vec2 uv)
 	return texture(CubeSampler0, normalize(vec3(a.x*a.y, -b.y, b.x*a.y))); 
 }
 
-vec4 Camera(vec2 uv)
+vec4 CameraView(vec2 uv)
 {
 	float an = CubemapViewParam.view.x * PI * 2.0;
 	float dn = CubemapViewParam.view.y * PI * 0.5;
@@ -101,6 +101,6 @@ vec4 CubemapView()
 	case 2:
 		return CrossView(uv);
 	case 3:
-		return Camera(uv);
+		return CameraView(uv);
 	}
 }

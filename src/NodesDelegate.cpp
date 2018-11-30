@@ -32,57 +32,6 @@
 #include "EvaluationContext.h"
 #include "NodesDelegate.h"
 
-
-struct UndoRedoParameterBlock : public UndoRedo
-{
-	UndoRedoParameterBlock(size_t target, const std::vector<unsigned char>& preDo) : mTarget(target), mPreDo(preDo) {}
-	virtual ~UndoRedoParameterBlock() {}
-	virtual void Undo();
-	virtual void Redo();
-	std::vector<unsigned char> mPreDo;
-	std::vector<unsigned char> mPostDo;
-	size_t mTarget;
-};
-
-struct UndoRedoInputSampler : public UndoRedo
-{
-	UndoRedoInputSampler(size_t target, const std::vector<InputSampler>& preDo) : mTarget(target), mPreDo(preDo) {}
-	virtual ~UndoRedoInputSampler() {}
-	virtual void Undo();
-	virtual void Redo();
-	std::vector<InputSampler> mPreDo;
-	std::vector<InputSampler> mPostDo;
-	size_t mTarget;
-};
-
-void UndoRedoParameterBlock::Undo()
-{
-	gNodeDelegate.SetParamBlock(mTarget, mPreDo);
-	gEvaluation.SetEvaluationParameters(mTarget, mPreDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
-
-void UndoRedoParameterBlock::Redo()
-{
-	gNodeDelegate.SetParamBlock(mTarget, mPostDo);
-	gEvaluation.SetEvaluationParameters(mTarget, mPostDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
-
-void UndoRedoInputSampler::Undo()
-{
-	gNodeDelegate.mNodes[mTarget].mInputSamplers = mPreDo;
-	gEvaluation.SetEvaluationSampler(mTarget, mPreDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
-
-void UndoRedoInputSampler::Redo()
-{
-	gNodeDelegate.mNodes[mTarget].mInputSamplers = mPostDo;
-	gEvaluation.SetEvaluationSampler(mTarget, mPostDo);
-	gCurrentContext->SetTargetDirty(mTarget);
-}
-
 TileNodeEditGraphDelegate gNodeDelegate;
 TileNodeEditGraphDelegate::TileNodeEditGraphDelegate() : mbMouseDragging(false), mEditingContext(gEvaluation, false, 1024, 1024)
 {
@@ -166,7 +115,9 @@ void TileNodeEditGraphDelegate::EditNode()
 		
 	if (ImGui::CollapsingHeader("Samplers", 0))
 	{
-		UndoRedoInputSampler undoRedoInputSampler(index, node.mInputSamplers);
+		URChange<std::vector<InputSampler> > undoRedoSampler(int(index)
+			, [](int index) { return &gNodeDelegate.mNodes[index].mInputSamplers; }
+			, [](int index) { auto& node = gNodeDelegate.mNodes[index]; gEvaluation.SetEvaluationSampler(node.gEvaluationTarget, node.mInputSamplers);});
 			
 		for (size_t i = 0; i < node.mInputSamplers.size();i++)
 		{
@@ -183,16 +134,26 @@ void TileNodeEditGraphDelegate::EditNode()
 		}
 		if (samplerDirty)
 		{
-			undoRedoInputSampler.mPostDo = node.mInputSamplers;
-			gUndoRedoHandler.AddUndo(undoRedoInputSampler);
 			gEvaluation.SetEvaluationSampler(node.gEvaluationTarget, node.mInputSamplers);
+		}
+		else
+		{
+			undoRedoSampler.Discard();
 		}
 
 	}
 	if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
 		return;
 
-	UndoRedoParameterBlock undoRedoParameterBlock(index, node.mParameters);
+	auto updateDirtyParameter = [](int index) 
+	{
+		auto& node = gNodeDelegate.mNodes[index];
+		gEvaluation.SetEvaluationParameters(node.gEvaluationTarget, node.mParameters);
+		gCurrentContext->SetTargetDirty(node.gEvaluationTarget);
+	};
+	URChange<std::vector<unsigned char> > undoRedoParameter(int(index)
+		, [](int index) { return &gNodeDelegate.mNodes[index].mParameters; }
+		, updateDirtyParameter);
 
 	unsigned char *paramBuffer = node.mParameters.data();
 	int i = 0;
@@ -399,10 +360,11 @@ void TileNodeEditGraphDelegate::EditNode()
 		
 	if (dirty)
 	{
-		undoRedoParameterBlock.mPostDo = node.mParameters;
-		gUndoRedoHandler.AddUndo(undoRedoParameterBlock);
-		gEvaluation.SetEvaluationParameters(node.gEvaluationTarget, node.mParameters);
-		mEditingContext.SetTargetDirty(node.gEvaluationTarget);
+		updateDirtyParameter(int(index));
+	}
+	else
+	{
+		undoRedoParameter.Discard();
 	}
 }
 void TileNodeEditGraphDelegate::SetTimeSlot(size_t index, int frameStart, int frameEnd)

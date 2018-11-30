@@ -116,6 +116,7 @@ static NodeRug* movingRug = NULL;
 static NodeRug* sizingRug = NULL;
 
 // Undo/redo structs
+/*
 template <class T> struct UndoRedoIndexed : public UndoRedo
 {
 	UndoRedoIndexed(size_t index, const std::vector<T>& preDo, bool createNew, std::vector<T>& source) : mIndex(index), mPreDo(preDo), mbCreateNew(createNew), mSource(source) {}
@@ -214,7 +215,7 @@ struct UndoRedoRugs : public UndoRedo
 	std::vector<NodeRug> mPreDo;
 	std::vector<NodeRug> mPostDo;
 };
-
+*/
 void NodeGraphClear()
 {
 	nodes.clear();
@@ -242,7 +243,9 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 
 	int id = 900;
 	for (NodeRug& rug : rugs)
+	for(unsigned int rugIndex = 0; rugIndex<rugs.size();rugIndex++)
 	{
+		auto& rug = rugs[rugIndex];
 		if (&rug == editRug)
 			continue;
 		ImGui::PushID(id++);
@@ -289,15 +292,13 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 		
 
 		// undo/redo for sizing/moving
-		static UndoRedoRugs *undoRedoRug = NULL;
+		static URChange<NodeRug> *undoRedoRug = NULL;
 		if (createUndo)
 		{
-			undoRedoRug = new UndoRedoRugs(rugs);
+			undoRedoRug = new URChange<NodeRug>(rugIndex, [](int index) {return &rugs[index]; }, [](int) {});
 		}
 		if (commitUndo)
 		{
-			undoRedoRug->mPostDo = rugs;
-			gUndoRedoHandler.AddUndo(*undoRedoRug);
 			delete undoRedoRug;
 			undoRedoRug = NULL;
 		}
@@ -322,7 +323,7 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	ImGuiIO& io = ImGui::GetIO();
 	ImVec2 commentSize = rug->mSize * factor;
 
-	UndoRedoRugs undoRedoRug(rugs);
+	URChange<NodeRug> undoRedoRug(int(rug - &rugs[0]), [](int index) {return &rugs[index]; }, [] (int){});
 	bool dirtyRug = false;
 	ImVec2 node_rect_min = (offset + rug->mPos) * factor;
 	ImVec2 node_rect_max = node_rect_min + commentSize;
@@ -363,14 +364,11 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	if (ImGui::Button("Delete"))
 	{
 		rugs.erase(rugs.begin() + (rug - rugs.data()));
-		undoRedoRug.mPostDo = rugs;
-		gUndoRedoHandler.AddUndo(undoRedoRug);
 		return true;
 	}
-	if (dirtyRug)
+	if (!dirtyRug)
 	{
-		undoRedoRug.mPostDo = rugs;
-		gUndoRedoHandler.AddUndo(undoRedoRug);
+		undoRedoRug.Discard();
 	}
 	if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
 		return true;
@@ -713,11 +711,11 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
 								{
-									UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
+									//UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
-									undoRedoLinks.mPostDo = links;
-									gUndoRedoHandler.AddUndo(undoRedoLinks);
+									//undoRedoLinks.mPostDo = links;
+									//gUndoRedoHandler.AddUndo(undoRedoLinks);
 									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
@@ -725,10 +723,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 							if (!alreadyExisting)
 							{
-								UndoRedoNodeLinks undoRedoLinks(links.size(), links, true);
+								//UndoRedoNodeLinks undoRedoLinks(links.size(), links, true);
 								links.push_back(nl);
-								undoRedoLinks.mPostDo = links;
-								gUndoRedoHandler.AddUndo(undoRedoLinks);
+								//undoRedoLinks.mPostDo = links;
+								//gUndoRedoHandler.AddUndo(undoRedoLinks);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 								NodeGraphUpdateEvaluationOrder(delegate);
 							}
@@ -750,10 +748,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
 								{
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
-									UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
+									//UndoRedoNodeLinks undoRedoLinks(linkIndex, links, false);
 									links.erase(links.begin() + linkIndex);
-									undoRedoLinks.mPostDo = links;
-									gUndoRedoHandler.AddUndo(undoRedoLinks);
+									//undoRedoLinks.mPostDo = links;
+									//gUndoRedoHandler.AddUndo(undoRedoLinks);
 									NodeGraphUpdateEvaluationOrder(delegate);
 									break;
 								}
@@ -822,7 +820,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
 			{
-				UndoRedoNode undoRedoNode(node_selected, nodes, false);
+				//UndoRedoNode undoRedoNode(node_selected, nodes, false);
 
 				for (int id = 0; id < links.size(); id++)
 				{
@@ -835,10 +833,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 					auto& link = links[i];
 					if (link.InputIdx == node_selected || link.OutputIdx == node_selected)
 					{
-						UndoRedoNodeLinks undoRedoLink(i, links, false);
+						//UndoRedoNodeLinks undoRedoLink(i, links, false);
 						links.erase(links.begin() + i);
-						undoRedoLink.mPostDo = links;
-						undoRedoNode.AddSubUndoRedo(undoRedoLink);
+						//undoRedoLink.mPostDo = links;
+						//undoRedoNode.AddSubUndoRedo(undoRedoLink);
 					}
 					else
 					{
@@ -862,8 +860,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				delegate->DeleteNode(node_selected);
 
 				// finish undo
-				undoRedoNode.mPostDo = nodes;
-				gUndoRedoHandler.AddUndo(undoRedoNode);
+				//undoRedoNode.mPostDo = nodes;
+				//gUndoRedoHandler.AddUndo(undoRedoNode);
 
 				node_selected = -1;
 			}
@@ -872,23 +870,23 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		{
 			auto AddNode = [&](int i)
 			{
-				UndoRedoNode undoRedoNode(nodes.size(), nodes, true);
+				//UndoRedoNode undoRedoNode(nodes.size(), nodes, true);
 
 				nodes.push_back(Node(i, scene_pos));
 				delegate->AddNode(i);
 
-				undoRedoNode.mPostDo = nodes;
-				gUndoRedoHandler.AddUndo(undoRedoNode);
+				//undoRedoNode.mPostDo = nodes;
+				//gUndoRedoHandler.AddUndo(undoRedoNode);
 
 				NodeGraphUpdateEvaluationOrder(delegate);
 				node_selected = int(nodes.size()) - 1;
 			};
 			if (ImGui::MenuItem("Add rug", NULL, false))
 			{
-				UndoRedoRugs undoRedoRugs(rugs);
+				//UndoRedoRugs undoRedoRugs(rugs);
 				rugs.push_back({ scene_pos, ImVec2(400,200), 0xFFA0A0A0, "Description\nEdit me with a double click." });
-				undoRedoRugs.mPostDo = rugs;
-				gUndoRedoHandler.AddUndo(undoRedoRugs);
+				//undoRedoRugs.mPostDo = rugs;
+				//gUndoRedoHandler.AddUndo(undoRedoRugs);
 			}
 			static char inputText[64] = { 0 };
 			ImGui::InputText("", inputText, sizeof(inputText));

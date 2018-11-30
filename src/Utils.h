@@ -93,8 +93,8 @@ public:
 		Lerp(v2, t);
 	}
 
-	inline void set(float v) { x = y = z = w = v; }
-	inline void set(float _x, float _y, float _z = 0.f, float _w = 0.f) { x = _x; y = _y; z = _z; w = _w; }
+	inline void Set(float v) { x = y = z = w = v; }
+	inline void Set(float _x, float _y, float _z = 0.f, float _w = 0.f) { x = _x; y = _y; z = _z; w = _w; }
 
 	inline Vec4& operator -= (const Vec4& v) { x -= v.x; y -= v.y; z -= v.z; w -= v.w; return *this; }
 	inline Vec4& operator += (const Vec4& v) { x += v.x; y += v.y; z += v.z; w += v.w; return *this; }
@@ -108,10 +108,10 @@ public:
 	inline Vec4 operator * (const Vec4& v) const;
 
 	inline const Vec4& operator + () const { return (*this); }
-	inline float length() const { return sqrtf(x*x + y*y + z*z); };
-	inline float lengthSq() const { return (x*x + y*y + z*z); };
-	inline Vec4 normalize() { (*this) *= (1.f / length() + FLT_EPSILON); return (*this); }
-	inline Vec4 normalize(const Vec4& v) { this->set(v.x, v.y, v.z, v.w); this->normalize(); return (*this); }
+	inline float Length() const { return sqrtf(x*x + y*y + z*z); };
+	inline float LengthSq() const { return (x*x + y*y + z*z); };
+	inline Vec4 Normalize() { (*this) *= (1.f / Length() + FLT_EPSILON); return (*this); }
+	inline Vec4 Normalize(const Vec4& v) { this->Set(v.x, v.y, v.z, v.w); this->Normalize(); return (*this); }
 	inline int LongestAxis() const
 	{
 		int res = 0;
@@ -119,7 +119,7 @@ public:
 		res = (fabsf((*this)[2]) > fabsf((*this)[res])) ? 2 : res;
 		return res;
 	}
-	inline void cross(const Vec4& v)
+	inline void Cross(const Vec4& v)
 	{
 		Vec4 res;
 		res.x = y * v.z - z * v.y;
@@ -131,26 +131,26 @@ public:
 		z = res.z;
 		w = 0.f;
 	}
-	inline void cross(const Vec4& v1, const Vec4& v2)
+	inline void Cross(const Vec4& v1, const Vec4& v2)
 	{
 		x = v1.y * v2.z - v1.z * v2.y;
 		y = v1.z * v2.x - v1.x * v2.z;
 		z = v1.x * v2.y - v1.y * v2.x;
 		w = 0.f;
 	}
-	inline float dot(const Vec4 &v) const
+	inline float Dot(const Vec4 &v) const
 	{
 		return (x * v.x) + (y * v.y) + (z * v.z) + (w * v.w);
 	}
 
-	void isMaxOf(const Vec4& v)
+	void IsMaxOf(const Vec4& v)
 	{
 		x = (v.x>x) ? v.x : x;
 		y = (v.y>y) ? v.y : y;
 		z = (v.z>z) ? v.z : z;
 		w = (v.w>w) ? v.z : w;
 	}
-	void isMinOf(const Vec4& v)
+	void IsMinOf(const Vec4& v)
 	{
 		x = (v.x>x) ? x : v.x;
 		y = (v.y>y) ? y : v.y;
@@ -158,7 +158,7 @@ public:
 		w = (v.w>w) ? z : v.w;
 	}
 
-	bool isInside(const Vec4& min, const Vec4& max) const
+	bool IsInside(const Vec4& min, const Vec4& max) const
 	{
 		if (min.x > x || max.x < x ||
 			min.y > y || max.y < y ||
@@ -167,10 +167,10 @@ public:
 		return true;
 	}
 
-	Vec4 symetrical(const Vec4& v) const
+	Vec4 Symetrical(const Vec4& v) const
 	{
 		Vec4 res;
-		float dist = signedDistanceTo(v);
+		float dist = SignedDistanceTo(v);
 		res = v;
 		res -= (*this)*dist*2.f;
 
@@ -187,10 +187,10 @@ public:
 	// quaternion slerp
 	//void slerp(const Vec4 &q1, const Vec4 &q2, float t );
 
-	inline float signedDistanceTo(const Vec4& point) const;
+	inline float SignedDistanceTo(const Vec4& point) const;
 	//Vec4 interpolateHermite(const Vec4 &nextKey, const Vec4 &nextKeyP1, const Vec4 &prevKey, float ratio) const;
-	static float d(const Vec4& v1, const Vec4& v2) { return (v1 - v2).length(); }
-	static float d2(const Vec4& v1, const Vec4& v2) { return (v1 - v2).lengthSq(); }
+	//static float d(const Vec4& v1, const Vec4& v2) { return (v1 - v2).length(); }
+	//static float d2(const Vec4& v1, const Vec4& v2) { return (v1 - v2).lengthSq(); }
 
 	//static Vec4 zero;
 	/*
@@ -206,7 +206,7 @@ public:
 		y = (float)((v & 0xFF00) >> 8) * (1.f / 255.f); x = (float)((v & 0xFF)) * (1.f / 255.f);
 	}
 	*/
-	Vec4 swapedRB() const;
+	//Vec4 swapedRB() const;
 	float& operator [] (size_t index) { return ((float*)&x)[index]; }
 	const float& operator [] (size_t index) const { return ((float*)&x)[index]; }
 };
@@ -216,10 +216,10 @@ inline Vec4 Vec4::operator - () const { return Vec4(-x, -y, -z, -w); }
 inline Vec4 Vec4::operator - (const Vec4& v) const { return Vec4(x - v.x, y - v.y, z - v.z, w - v.w); }
 inline Vec4 Vec4::operator + (const Vec4& v) const { return Vec4(x + v.x, y + v.y, z + v.z, w + v.w); }
 inline Vec4 Vec4::operator * (const Vec4& v) const { return Vec4(x * v.x, y * v.y, z * v.z, w * v.w); }
-inline float Vec4::signedDistanceTo(const Vec4& point) const { return (point.dot(Vec4(x, y, z))) - w; }
+inline float Vec4::SignedDistanceTo(const Vec4& point) const { return (point.Dot(Vec4(x, y, z))) - w; }
 
-inline Vec4 normalized(const Vec4& v) { Vec4 res; res = v; res.normalize(); return res; }
-inline Vec4 cross(const Vec4& v1, const Vec4& v2)
+inline Vec4 Normalized(const Vec4& v) { Vec4 res; res = v; res.Normalize(); return res; }
+inline Vec4 Cross(const Vec4& v1, const Vec4& v2)
 {
 	Vec4 res;
 	res.x = v1.y * v2.z - v1.z * v2.y;

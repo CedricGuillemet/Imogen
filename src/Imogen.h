@@ -27,6 +27,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "Library.h"

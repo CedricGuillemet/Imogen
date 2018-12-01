@@ -65,11 +65,16 @@ static void libtccErrorFunc(void *opaque, const char *msg)
 	Log("\n");
 }
 
+void LogPython(const std::string &str)
+{
+	Log(str.c_str());
+}
+
 PYBIND11_MAKE_OPAQUE(Image);
 PYBIND11_EMBEDDED_MODULE(Imogen, m) 
 {
 	pybind11::class_<Image>(m, "Image");
-	//m.def("Log", Log );
+	m.def("Log", LogPython );
 	m.def("ReadImage", Evaluation::ReadImage );
 	m.def("WriteImage", Evaluation::WriteImage );
 	m.def("GetEvaluationImage", Evaluation::GetEvaluationImage );
@@ -85,9 +90,10 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
 	m.def("SetEvaluationCubeSize", Evaluation::SetEvaluationCubeSize );
 	m.def("CubemapFilter", Evaluation::CubemapFilter );
 	m.def("SetProcessing", Evaluation::SetProcessing );
+	/*
 	m.def("Job", Evaluation::Job );
 	m.def("JobMain", Evaluation::JobMain );
-
+	*/
 	m.def("accessor_api", []() {
 		auto d = pybind11::dict();
 

@@ -67,7 +67,6 @@ void TileNodeEditGraphDelegate::SetParamBlock(size_t index, const std::vector<un
 void TileNodeEditGraphDelegate::AddNode(size_t type)
 {
 	const size_t index			= mNodes.size();
-	const size_t paramsSize		= ComputeNodeParametersSize(type);
 	const size_t inputCount		= gMetaNodes[type].mInputs.size();
 
 	ImogenNode node;
@@ -79,7 +78,7 @@ void TileNodeEditGraphDelegate::AddNode(size_t type)
 #ifdef _DEBUG
 	node.mNodeTypename			= gMetaNodes[type].mName;
 #endif
-	node.mParameters.resize(paramsSize, 0);
+	InitDefault(node);
 	node.mInputSamplers.resize(inputCount);
 	mNodes.push_back(node);
 
@@ -102,6 +101,59 @@ void TileNodeEditGraphDelegate::DeleteNode(size_t index)
 const float PI = 3.14159f;
 float RadToDeg(float a) { return a * 180.f / PI; }
 float DegToRad(float a) { return a / 180.f * PI; }
+
+void TileNodeEditGraphDelegate::InitDefault(ImogenNode& node)
+{
+	const MetaNode* metaNodes = gMetaNodes.data();
+	const MetaNode& currentMeta = metaNodes[node.mType];
+	const size_t paramsSize = ComputeNodeParametersSize(node.mType);
+	node.mParameters.resize(paramsSize);
+	unsigned char *paramBuffer = node.mParameters.data();
+	memset(paramBuffer, 0, paramsSize);
+	int i = 0;
+	for (const MetaParameter& param : currentMeta.mParams)
+	{
+		if (!stricmp(param.mName.c_str(), "scale"))
+		{
+			float* pf = (float*)paramBuffer;
+			switch (param.mType)
+			{
+			case Con_Float:
+				pf[0] = 1.f;
+				break;
+			case Con_Float2:
+				pf[1] = pf[0] = 1.f;
+				break;
+			case Con_Float3:
+				pf[2] = pf[1] = pf[0] = 1.f;
+				break;
+			case Con_Float4:
+				pf[3] = pf[2] = pf[1] = pf[0] = 1.f;
+				break;
+			}
+		}
+		switch (param.mType)
+		{
+			case Con_Ramp:
+				((ImVec2*)paramBuffer)[0] = ImVec2(0, 0);
+				((ImVec2*)paramBuffer)[1] = ImVec2(1, 1);
+				break;
+			case Con_Ramp4:
+				((ImVec4*)paramBuffer)[0] = ImVec4(0, 0, 0, 0);
+				((ImVec4*)paramBuffer)[1] = ImVec4(1, 1, 1, 1);
+				break;
+			case Con_Camera:
+			{
+				Camera *cam = (Camera*)paramBuffer;
+				cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
+				cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
+			}
+			break;
+		}
+		paramBuffer += GetParameterTypeSize(param.mType);
+	}
+}
+
 void TileNodeEditGraphDelegate::EditNode()
 {
 	size_t index = mSelectedNodeIndex;
@@ -185,24 +237,7 @@ void TileNodeEditGraphDelegate::EditNode()
 			break;
 		case Con_Ramp:
 			{
-				//ImVec2 points[8];
-					
 				RampEdit curveEditDelegate;
-				bool allZero = true;
-				for (int k = 0; k < 8; k++)
-				{
-					if (((ImVec4*)paramBuffer)[k].x >= FLT_EPSILON)
-					{
-						allZero = false;
-						break;
-					}
-				}
-				if (allZero)
-				{
-					((ImVec2*)paramBuffer)[0] = ImVec2(0, 0);
-					((ImVec2*)paramBuffer)[1] = ImVec2(1, 1);
-					dirty = true;
-				}
 				curveEditDelegate.mPointCount = 0;
 				for (int k = 0; k < 8; k++)
 				{
@@ -235,21 +270,7 @@ void TileNodeEditGraphDelegate::EditNode()
 			GradientEdit gradientDelegate;
 
 			gradientDelegate.mPointCount = 0;
-			bool allZero = true;
-			for (int k = 0; k < 8; k++)
-			{
-				if (((ImVec4*)paramBuffer)[k].w >= FLT_EPSILON)
-				{
-					allZero = false;
-					break;
-				}
-			}
-			if (allZero)
-			{
-				((ImVec4*)paramBuffer)[0] = ImVec4(0, 0, 0, 0);
-				((ImVec4*)paramBuffer)[1] = ImVec4(1, 1, 1, 1);
-				dirty = true;
-			}
+
 			for (int k = 0; k < 8; k++)
 			{
 				gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
@@ -257,7 +278,6 @@ void TileNodeEditGraphDelegate::EditNode()
 					break;
 				gradientDelegate.mPointCount++;
 			}
-
 
 			int colorIndex;
 			dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
@@ -468,10 +488,10 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 		if (param.mType == Con_Camera)
 		{
 			Camera *cam = (Camera*)paramBuffer;
-			if (cam->mDirection.LengthSq() < FLT_EPSILON)
+			/*if (cam->mDirection.LengthSq() < FLT_EPSILON)
 				cam->mDirection.Set(0.f, 0.f, 1.f);
 			if (cam->mUp.LengthSq() < FLT_EPSILON)
-				cam->mUp.Set(0.f, 1.f, 0.f);
+				cam->mUp.Set(0.f, 1.f, 0.f);*/
 			cam->mPosition += cam->mDirection * wheel;
 			Vec4 right = Cross(cam->mUp, cam->mDirection);
 			right.Normalize();

@@ -213,7 +213,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	bool mbMouseDragging;
 
 	ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }
-
+protected:
+	void InitDefault(ImogenNode& node);
 };
 
 extern TileNodeEditGraphDelegate gNodeDelegate;

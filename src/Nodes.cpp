@@ -723,7 +723,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		{
 			ImGui::Text(metaNodes[node->mType].mName.c_str());
 			ImGui::Separator();
-			//if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
+
 			if (ImGui::MenuItem("Extract view", NULL, false))
 			{
 				AddExtractedView(node_selected);

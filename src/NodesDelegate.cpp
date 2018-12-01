@@ -113,7 +113,7 @@ void TileNodeEditGraphDelegate::InitDefault(ImogenNode& node)
 	int i = 0;
 	for (const MetaParameter& param : currentMeta.mParams)
 	{
-		if (!stricmp(param.mName.c_str(), "scale"))
+		if (!_stricmp(param.mName.c_str(), "scale"))
 		{
 			float* pf = (float*)paramBuffer;
 			switch (param.mType)
@@ -488,19 +488,34 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 		if (param.mType == Con_Camera)
 		{
 			Camera *cam = (Camera*)paramBuffer;
-			/*if (cam->mDirection.LengthSq() < FLT_EPSILON)
-				cam->mDirection.Set(0.f, 0.f, 1.f);
-			if (cam->mUp.LengthSq() < FLT_EPSILON)
-				cam->mUp.Set(0.f, 1.f, 0.f);*/
 			cam->mPosition += cam->mDirection * wheel;
 			Vec4 right = Cross(cam->mUp, cam->mDirection);
 			right.Normalize();
 			auto& io = ImGui::GetIO();
-			if (io.KeyAlt&&io.MouseDown[2])
-				cam->mPosition += (right * io.MouseDelta.x + cam->mUp * io.MouseDelta.y) * 0.01f;
-			if (io.KeyAlt&&io.MouseDown[1])
-				cam->mPosition += (cam->mDirection * io.MouseDelta.y)*0.01f;
+			if (io.KeyAlt)
+			{
+				if (io.MouseDown[2])
+				{
+					cam->mPosition += (right * io.MouseDelta.x + cam->mUp * io.MouseDelta.y) * 0.01f;
+				}
+				if (io.MouseDown[1])
+				{
+					cam->mPosition += (cam->mDirection * io.MouseDelta.y)*0.01f;
+				}
+				if (io.MouseDown[0])
+				{
+					matrix_t tr, rtUp, rtRight, trp;
+					tr.Translation(-(cam->mPosition + cam->mDirection));
+					rtRight.RotationAxis(right, io.MouseDelta.y);
+					rtUp.RotationAxis(cam->mUp, io.MouseDelta.x);
+					trp.Translation((cam->mPosition + cam->mDirection));
+					matrix_t res = tr * rtRight * rtUp * trp;
+					cam->mPosition.TransformPoint(res);
+					cam->mDirection.TransformPoint(res);
+					cam->mUp.TransformPoint(res);
 
+				}
+			}
 			parametersUseMouse = true;
 		}
 		paramBuffer += GetParameterTypeSize(param.mType);

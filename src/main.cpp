@@ -29,6 +29,10 @@
 #include "imgui_impl_opengl3.h"
 #include <SDL.h>
 #include <GL/gl3w.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <io.h> 
+#include <fcntl.h> 
 #include "Nodes.h"
 #include "NodesDelegate.h"
 #include "Evaluation.h"
@@ -41,7 +45,6 @@
 #include "cmft/clcontext.h"
 #include "cmft/clcontext_internal.h"
 
-TileNodeEditGraphDelegate *TileNodeEditGraphDelegate::mInstance = NULL;
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
 
@@ -104,12 +107,14 @@ enki::TaskScheduler g_TS;
 int main(int, char**)
 {
 	g_TS.Initialize();
+	pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
 	LoadMetaNodes();
 	FFMPEGCodec::RegisterAll();
 	FFMPEGCodec::Log = Log;
 
 	stbi_set_flip_vertically_on_load(1);
 	stbi_flip_vertically_on_write(1);
+
 	// Setup SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
 	{
@@ -140,7 +145,7 @@ int main(int, char**)
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	SDL_DisplayMode current;
 	SDL_GetCurrentDisplayMode(0, &current);
-	SDL_Window* window = SDL_CreateWindow("Imogen 0.5.0", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+	SDL_Window* window = SDL_CreateWindow("Imogen 0.6.0", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 
@@ -211,8 +216,6 @@ int main(int, char**)
 	gEvaluation.Init();
 	gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
-	TileNodeEditGraphDelegate nodeGraphDelegate(gEvaluation);
-
 	gCPUCount = SDL_GetCPUCount();
 
 	// Main loop
@@ -228,6 +231,12 @@ int main(int, char**)
 			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
 				done = true;
 		}
+		// undo/redo
+		if (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Z))
+			gUndoRedoHandler.Undo();
+		if ((io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressedMap(ImGuiKey_Z)) ||
+			(io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Y)) )
+			gUndoRedoHandler.Redo();
 
 		// Start the Dear ImGui frame
 		ImGui_ImplOpenGL3_NewFrame();
@@ -235,11 +244,8 @@ int main(int, char**)
 		ImGui::NewFrame();
 		InitCallbackRects();
 
-
 		gCurrentContext->RunDirty();
-		imogen.Show(library, nodeGraphDelegate, gEvaluation);
-
-		
+		imogen.Show(library, gNodeDelegate, gEvaluation);
 
 		// render everything
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -260,7 +266,7 @@ int main(int, char**)
 		cmft::clUnload();
 	}
 
-	imogen.ValidateCurrentMaterial(library, nodeGraphDelegate);
+	imogen.ValidateCurrentMaterial(library, gNodeDelegate);
 	SaveLib(&library, libraryFilename);
 	gEvaluation.Finish();
 

@@ -24,6 +24,7 @@
 //
 
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
+#include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 
@@ -76,7 +77,7 @@ static const float rotMatrices[6][16] = {
 
 
 EvaluationContext::EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
-	: mEvaluation(evaluation)
+	: gEvaluation(evaluation)
 	, mbSynchronousEvaluation(synchronousEvaluation)
 	, mDefaultWidth(defaultWidth)
 	, mDefaultHeight(defaultHeight)
@@ -92,11 +93,6 @@ EvaluationContext::~EvaluationContext()
 		delete stream.second;
 	}
 	mWriteStreams.clear();
-
-	for (auto* tgt : mAllocatedTargets)
-	{
-		delete tgt;
-	}
 }
 
 static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage &evaluationStage)
@@ -120,7 +116,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 {
 	const Input& input = evaluationStage.mInput;
 
-	RenderTarget* tgt = mStageTarget[index];
+	auto tgt = mStageTarget[index];
 	if (!evaluationInfo.uiPass)
 	{
 		if (tgt->mImage.mNumFaces == 6)
@@ -133,7 +129,12 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
 	unsigned int blend[] = { GL_ONE, GL_ZERO };
 
-
+	if (!program)
+	{
+		glUseProgram(gEvaluation.mNodeErrorShader);
+		gFSQuad.Render();
+		return;
+	}
 	for (int i = 0; i < 2; i++)
 	{
 		if (blendOps[i] < BLEND_LAST)
@@ -152,13 +153,15 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 			tgt->BindCubeFace(face);
 
 		memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
-		glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.mEvaluationStateGLSLBuffer);
+		memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
+
+		glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.mEvaluationStateGLSLBuffer);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
 		int samplerIndex = 0;
 		for (size_t inputIndex = 0; inputIndex < sizeof(samplerName) / sizeof(const char*); inputIndex++)
@@ -176,7 +179,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 			}
 			else
 			{
-				auto* tgt = mStageTarget[targetIndex];
+				auto tgt = mStageTarget[targetIndex];
 				if (tgt)
 				{
 					const InputSampler& inputSampler = evaluationStage.mInputSamplers[samplerIndex];
@@ -206,7 +209,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 	{
 		const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
 		if (evaluator.mCFunction)
-			evaluator.mCFunction(evaluationStage.mParameters, &evaluationInfo);
+			evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo);
 	}
 	catch (...)
 	{
@@ -214,16 +217,29 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 	}
 }
 
+void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
+{
+	try // todo: find a better solution than a try catch
+	{
+		const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+		evaluator.RunPython();
+	}
+	catch (...)
+	{
+
+	}
+}
+
+
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
 	// alloc targets
-	mStageTarget.resize(mEvaluation.GetStagesCount(), NULL);
-	mAllocatedTargets.resize(mEvaluation.GetStagesCount(), NULL);
-	for (size_t i = 0; i < mEvaluation.GetStagesCount(); i++)
+	mStageTarget.resize(gEvaluation.GetStagesCount(), NULL);
+	for (size_t i = 0; i < gEvaluation.GetStagesCount(); i++)
 	{
 		if (!mStageTarget[i])
 		{
-			mStageTarget[i] = mAllocatedTargets[i] = new RenderTarget;
+			mStageTarget[i] = std::make_shared<RenderTarget>();
 		}
 	}
 }
@@ -233,26 +249,25 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 	if (!mStageTarget.empty())
 		return;
 
-	//auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
-	size_t stageCount = mEvaluation.GetStagesCount();
+	//auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+	size_t stageCount = gEvaluation.GetStagesCount();
 	mStageTarget.resize(stageCount, NULL);
-	std::vector<RenderTarget*> freeRenderTargets;
+	std::vector<std::shared_ptr<RenderTarget> > freeRenderTargets;
 	std::vector<int> useCount(stageCount, 0);
 	for (size_t i = 0; i < stageCount; i++)
 	{
-		useCount[i] = mEvaluation.GetEvaluationStage(i).mUseCountByOthers;
+		useCount[i] = gEvaluation.GetEvaluationStage(i).mUseCountByOthers;
 	}
 
 	for (auto index : nodesToEvaluate)
 	{
-		const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(index);
+		const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(index);
 		if (!evaluation.mUseCountByOthers)
 			continue;
 
 		if (freeRenderTargets.empty())
 		{
-			mStageTarget[index] = new RenderTarget();
-			mAllocatedTargets.push_back(mStageTarget[index]);
+			mStageTarget[index] = std::make_shared<RenderTarget>();
 		}
 		else
 		{
@@ -276,13 +291,13 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 }
 void EvaluationContext::PreRun()
 {
-	mbDirty.resize(mEvaluation.GetStagesCount(), false);
-	mbProcessing.resize(mEvaluation.GetStagesCount(), false);
+	mbDirty.resize(gEvaluation.GetStagesCount(), false);
+	mbProcessing.resize(gEvaluation.GetStagesCount(), false);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
-	auto& currentStage = mEvaluation.GetEvaluationStage(nodeIndex);
+	auto& currentStage = gEvaluation.GetEvaluationStage(nodeIndex);
 	const Input& input = currentStage.mInput;
 
 	// check processing 
@@ -303,10 +318,13 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 	memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
 	SetMouseInfos(mEvaluationInfo, currentStage);
 
-	if (currentStage.mEvaluationMask&EvaluationC)
+	if (currentStage.gEvaluationMask&EvaluationC)
 		EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
 
-	if (currentStage.mEvaluationMask&EvaluationGLSL)
+	if (currentStage.gEvaluationMask&EvaluationPython)
+		EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
+
+	if (currentStage.gEvaluationMask&EvaluationGLSL)
 	{
 		if (!mStageTarget[nodeIndex]->mGLTexID)
 			mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight);
@@ -342,7 +360,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 
 void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)
 {
-	const EvaluationStage& evaluation = mEvaluation.GetEvaluationStage(target);
+	const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(target);
 	const Input& input = evaluation.mInput;
 
 	for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -361,12 +379,12 @@ void EvaluationContext::RunDirty()
 {
 	PreRun();
 	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	std::vector<size_t> nodesToEvaluate;
 	for (size_t index = 0; index < evaluationOrderList.size(); index++)
 	{
 		size_t currentNodeIndex = evaluationOrderList[index];
-		if (mbDirty[currentNodeIndex])
+		if (currentNodeIndex < mbDirty.size() && mbDirty[currentNodeIndex]) // TODOUNDO
 			nodesToEvaluate.push_back(currentNodeIndex);
 	}
 	AllocRenderTargetsForEditingPreview();
@@ -378,7 +396,7 @@ void EvaluationContext::RunAll()
 	PreRun();
 	// get list of nodes to run
 	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	AllocRenderTargetsForEditingPreview();
 	RunNodeList(evaluationOrderList);
 }
@@ -413,8 +431,8 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
 
 void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 {
-	mbDirty.resize(mEvaluation.GetStagesCount(), false);
-	auto evaluationOrderList = mEvaluation.GetForwardEvaluationOrder();
+	mbDirty.resize(gEvaluation.GetStagesCount(), false);
+	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	mbDirty[target] = true;
 	for (size_t i = 0; i < evaluationOrderList.size(); i++)
 	{
@@ -425,10 +443,10 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 		for (i++; i < evaluationOrderList.size(); i++)
 		{
 			currentNodeIndex = evaluationOrderList[i];
-			if (mbDirty[currentNodeIndex])
+			if (currentNodeIndex >= mbDirty.size() || mbDirty[currentNodeIndex]) // TODOUNDO
 				continue;
 
-			auto& currentEvaluation = mEvaluation.GetEvaluationStage(currentNodeIndex);
+			auto& currentEvaluation = gEvaluation.GetEvaluationStage(currentNodeIndex);
 			for (auto inp : currentEvaluation.mInput.mInputs)
 			{
 				if (inp >= 0 && mbDirty[inp])
@@ -441,4 +459,26 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 	}
 	if (onlyChild)
 		mbDirty[target] = false;
+}
+
+void EvaluationContext::UserAddStage()
+{
+	URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), []() {return &gCurrentContext->mStageTarget; });
+	URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), []() {return &gCurrentContext->mbDirty; });
+	URAdd<bool> undoRedoAddProcessing(int(mbProcessing.size()), []() {return &gCurrentContext->mbProcessing; });
+
+	mStageTarget.push_back(std::make_shared<RenderTarget>());
+	mbDirty.push_back(true);
+	mbProcessing.push_back(false);
+}
+
+void EvaluationContext::UserDeleteStage(size_t index)
+{
+	URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), []() {return &gCurrentContext->mStageTarget; });
+	URDel<bool> undoRedoDelDirty(int(index), []() {return &gCurrentContext->mbDirty; });
+	URDel<bool> undoRedoDelProcessing(int(index), []() {return &gCurrentContext->mbProcessing; });
+
+	mStageTarget.erase(mStageTarget.begin() + index);
+	mbDirty.erase(mbDirty.begin() + index);
+	mbProcessing.erase(mbProcessing.begin() + index);
 }

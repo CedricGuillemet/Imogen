@@ -161,11 +161,10 @@ struct EvaluationStage
 	std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
 	size_t mNodeType;
 	unsigned int mParametersBuffer;
-	void *mParameters;
-	size_t mParametersSize;
+	std::vector<unsigned char> mParameters;
 	Input mInput;
 	std::vector<InputSampler> mInputSamplers;
-	int mEvaluationMask; // see EvaluationMask
+	int gEvaluationMask; // see EvaluationMask
 	int mUseCountByOthers;
 	int mBlendingSrc;
 	int mBlendingDst;
@@ -183,6 +182,7 @@ enum EvaluationMask
 {
 	EvaluationC = 1 << 0,
 	EvaluationGLSL = 1 << 1,
+	EvaluationPython = 1 << 2,
 };
 
 // simple API
@@ -194,13 +194,16 @@ struct Evaluation
 	void Finish();
 
 
-	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
+	void AddSingleEvaluation(size_t nodeType);
+	void UserAddEvaluation(size_t nodeType);
+	void UserDeleteEvaluation(size_t target);
+
 	//
-	size_t GetStagesCount() const { return mEvaluationStages.size(); }
-	size_t GetStageType(size_t target) const { return mEvaluationStages[target].mNodeType; }
+	size_t GetStagesCount() const { return mStages.size(); }
+	size_t GetStageType(size_t target) const { return mStages[target].mNodeType; }
 	size_t GetEvaluationImageDuration(size_t target);
-	void DelEvaluationTarget(size_t target);
-	void SetEvaluationParameters(size_t target, void *parameters, size_t parametersSize);
+	
+	void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
 	void DelEvaluationInput(size_t target, int slot);
@@ -239,26 +242,33 @@ struct Evaluation
 	unsigned int GetTexture(const std::string& filename);
 
 
-	const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
+	const std::vector<size_t>& GetForwardEvaluationOrder() const { return gEvaluationOrderList; }
 
 	
 	const EvaluationStage& GetEvaluationStage(size_t index) const {
-		return mEvaluationStages[index];
+		return mStages[index];
 	}
+
+	// error shader
+	unsigned int mNodeErrorShader;
 protected:
 	void APIInit();
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
-	std::vector<EvaluationStage> mEvaluationStages;
-	std::vector<size_t> mEvaluationOrderList;
+	std::vector<EvaluationStage> mStages;
+	std::vector<size_t> gEvaluationOrderList;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
 
 	// ui callback shaders
 	unsigned int mProgressShader;
 	unsigned int mDisplayCubemapShader;
 
+
 	// ffmpeg encoders
 	FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
+
+	static void StageIsAdded(int index);
+	static void StageIsDeleted(int index);
 };
 
 extern Evaluation gEvaluation;

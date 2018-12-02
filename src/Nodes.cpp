@@ -32,12 +32,13 @@
 #include <assert.h>
 #include "Evaluation.h"
 #include "imgui_stdlib.h"
+#include "NodesDelegate.h"
 
-UndoRedoHandler undoRedoHandler;
 int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
+
 
 Node::Node(int type, const ImVec2& pos)
 {
@@ -136,9 +137,14 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 {
 	ImGuiIO& io = ImGui::GetIO();
 	NodeRug *ret = editRug;
+	bool dirtyRug = false;
+	
+
 	int id = 900;
 	for (NodeRug& rug : rugs)
+	for(unsigned int rugIndex = 0; rugIndex<rugs.size();rugIndex++)
 	{
+		auto& rug = rugs[rugIndex];
 		if (&rug == editRug)
 			continue;
 		ImGui::PushID(id++);
@@ -158,16 +164,43 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 		{
 			ret = &rug;
 		}
-
+		bool createUndo = false;
+		bool commitUndo = false;
 		if (!editingNodeAndConnexions && !sizingRug && !movingRug && insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
+		{
 			sizingRug = &rug;
+			createUndo = true;
+		}
 		if (sizingRug && !io.MouseDown[0])
+		{
 			sizingRug = NULL;
+			commitUndo = true;
+		}
 
 		if (!editingNodeAndConnexions && !movingRug && !sizingRug && rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
+		{
+			
 			movingRug = &rug;
+			createUndo = true;
+		}
 		if (movingRug && !io.MouseDown[0])
+		{
+			commitUndo = true;
 			movingRug = NULL;
+		}
+		
+
+		// undo/redo for sizing/moving
+		static URChange<NodeRug> *undoRedoRug = NULL;
+		if (createUndo)
+		{
+			undoRedoRug = new URChange<NodeRug>(rugIndex, [](int index) {return &rugs[index]; }, [](int) {});
+		}
+		if (commitUndo)
+		{
+			delete undoRedoRug;
+			undoRedoRug = NULL;
+		}
 
 		draw_list->AddText(ImGui::GetIO().FontDefault, 14 * ImLerp(1.f, factor, 0.5f), node_rect_min + ImVec2(5, 5), (rug.mColor & 0xFFFFFF) + 0xFF404040, rug.mText.c_str());
 		draw_list->AddRectFilled(node_rect_min, node_rect_max, (rug.mColor&0xFFFFFF)+0x60000000, 10.0f, 15);
@@ -189,6 +222,8 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	ImGuiIO& io = ImGui::GetIO();
 	ImVec2 commentSize = rug->mSize * factor;
 
+	URChange<NodeRug> undoRedoRug(int(rug - &rugs[0]), [](int index) {return &rugs[index]; }, [] (int){});
+	bool dirtyRug = false;
 	ImVec2 node_rect_min = (offset + rug->mPos) * factor;
 	ImVec2 node_rect_max = node_rect_min + commentSize;
 	ImRect rugRect(node_rect_min, node_rect_max);
@@ -202,7 +237,7 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	ImGui::SetCursorScreenPos(node_rect_min + ImVec2(5, 5));
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
 	ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
-	ImGui::InputTextMultiline("", &rug->mText, (node_rect_max - node_rect_min) - ImVec2(30, 30));
+	dirtyRug |= ImGui::InputTextMultiline("", &rug->mText, (node_rect_max - node_rect_min) - ImVec2(30, 30));
 	ImGui::PopStyleColor(2);
 
 	ImGui::SetCursorScreenPos(node_rect_min + ImVec2(10, commentSize.y - 30));
@@ -218,6 +253,7 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 		if (ImGui::Button("   "))
 		{
 			rug->mColor = buttonColor;
+			dirtyRug = true;
 		}
 		ImGui::PopStyleColor(3);
 		ImGui::PopID();
@@ -228,6 +264,10 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 	{
 		rugs.erase(rugs.begin() + (rug - rugs.data()));
 		return true;
+	}
+	if (!dirtyRug)
+	{
+		undoRedoRug.Discard();
 	}
 	if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
 		return true;
@@ -260,12 +300,13 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 	delegate->UpdateEvaluationList(nodeOrderList);
 }
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy, int frameStart, int frameEnd)
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd)
 {
 	size_t index = nodes.size();
 	nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
-	delegate->AddNode(type);
-	delegate->SetParamBlock(index, (unsigned char*)parameters);
+	gEvaluation.AddSingleEvaluation(type);
+	delegate->AddSingleNode(type);
+	delegate->SetParamBlock(index, parameters);
 	delegate->SetTimeSlot(index, frameStart, frameEnd);
 }
 
@@ -477,13 +518,6 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && currentSelectedNode)) ? IM_COL32(85, 85, 85, 255) : IM_COL32(60, 60, 60, 255);
 		
-		if (delegate->mBakeTargetIndex == node_idx)
-		{
-			//draw_list->AddRect(node_rect_min, node_rect_max, IM_COL32(230, 100, 30, 255) , 2.0f, 15, 4.f);
-			draw_list->AddRectFilled(node_rect_min, node_rect_max, IM_COL32(230, 100, 30, 255), 2.0f);
-		}
-		else
-			draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
 		draw_list->AddRect(node_rect_min, node_rect_max, currentSelectedNode? IM_COL32(230, 230, 230, 255):IM_COL32(100, 100, 100, 0), 2.0f, 15, 2.f);
 
 		//ImVec2 offsetImg = ImGui::GetCursorScreenPos();
@@ -492,6 +526,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
 		float imgSizeComp = std::min(imgSize.x, imgSize.y);
 		
+		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
+
 		ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
 		draw_list->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
 
@@ -516,6 +552,21 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), node_idx)));
 		else
 			draw_list->AddImage((ImTextureID)(int64_t)(delegate->GetNodeTexture(size_t(node_idx))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
+
+
+
+		auto deleteLink = [](int index)
+		{
+			NodeLink& link = links[index];
+			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+		};
+		auto addLink = [](int index)
+		{
+			NodeLink& link = links[index];
+			gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+		};
 
 		// draw/use inputs/outputs
 		bool hoverSlot = false;
@@ -569,12 +620,14 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 									break;
 								}
 							}
+
 							// check already connected output
 							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
 							{
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
 								{
+									URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
 									NodeGraphUpdateEvaluationOrder(delegate);
@@ -584,6 +637,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 							if (!alreadyExisting)
 							{
+								URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
+
 								links.push_back(nl);
 								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 								NodeGraphUpdateEvaluationOrder(delegate);
@@ -605,6 +660,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 								NodeLink& link = links[linkIndex];
 								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
 								{
+									URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
 									delegate->DelLink(link.OutputIdx, link.OutputSlot);
 									links.erase(links.begin() + linkIndex);
 									NodeGraphUpdateEvaluationOrder(delegate);
@@ -620,7 +676,6 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75f*1.2f, IM_COL32(160, 160, 160, 200));
 					draw_list->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
 					draw_list->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
-					
 				}
 			}
 		}
@@ -669,29 +724,72 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		{
 			ImGui::Text(metaNodes[node->mType].mName.c_str());
 			ImGui::Separator();
-			//if (ImGui::MenuItem("Rename..", NULL, false, false)) {}
+
 			if (ImGui::MenuItem("Extract view", NULL, false))
 			{
 				AddExtractedView(node_selected);
 			}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
 			{
-				if (delegate->mBakeTargetIndex == node_selected)
-					delegate->mBakeTargetIndex = -1;
+				URDel<Node> undoRedoDelNode(node_selected, []() {return &nodes; }
+					, [](int index) {
+							// recompute link indices
+							for (int id = 0; id < links.size(); id++)
+							{
+								if (links[id].InputIdx > index)
+									links[id].InputIdx--;
+								if (links[id].OutputIdx > index)
+									links[id].OutputIdx--;
+							}
+							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							gNodeDelegate.mSelectedNodeIndex = -1;
+						}
+					, [](int index) {
+							// recompute link indices
+							for (int id = 0; id < links.size(); id++)
+							{
+								if (links[id].InputIdx >= index)
+									links[id].InputIdx++;
+								if (links[id].OutputIdx >= index)
+									links[id].OutputIdx++;
+							}
+
+							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							gNodeDelegate.mSelectedNodeIndex = -1;
+						}
+						);
 
 				for (int id = 0; id < links.size(); id++)
 				{
 					if (links[id].InputIdx == node_selected || links[id].OutputIdx == node_selected)
 						delegate->DelLink(links[id].OutputIdx, links[id].OutputSlot);
 				}
-				auto iter = links.begin();
-				for (; iter != links.end();)
+				//auto iter = links.begin();
+				for (size_t i = 0;i <links.size();)
 				{
-					if (iter->InputIdx == node_selected || iter->OutputIdx == node_selected)
-						iter = links.erase(iter);
+					auto& link = links[i];
+					if (link.InputIdx == node_selected || link.OutputIdx == node_selected)
+					{
+						URDel<NodeLink> undoRedoDelNodeLink(int(i), []() {return &links; }
+						, [](int index)
+						{
+							NodeLink& link = links[index];
+							gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+						}
+						, [](int index)
+						{
+							NodeLink& link = links[index];
+							gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+						});
+
+						links.erase(links.begin() + i);
+					}
 					else
-						iter++;
+					{
+						i++;
+					}
 				}
+
 				// recompute link indices
 				for (int id = 0; id < links.size(); id++)
 				{
@@ -701,12 +799,13 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 						links[id].OutputIdx--;
 				}
 
-				// inform delegate
-				delegate->DeleteNode(node_selected);
-
 				// delete links
 				nodes.erase(nodes.begin() + node_selected);
 				NodeGraphUpdateEvaluationOrder(delegate);
+
+				// inform delegate
+				delegate->UserDeleteNode(node_selected);
+
 				node_selected = -1;
 			}
 		}
@@ -714,13 +813,20 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 		{
 			auto AddNode = [&](int i)
 			{
+				auto addDelNodeLambda = [](int) 
+				{ 
+					NodeGraphUpdateEvaluationOrder(&gNodeDelegate); 
+					gNodeDelegate.mSelectedNodeIndex = -1;
+				};
+				URAdd<Node> undoRedoAddRug(int(nodes.size()), []() {return &nodes; }, addDelNodeLambda, addDelNodeLambda);
+
 				nodes.push_back(Node(i, scene_pos));
-				delegate->AddNode(i);
-				NodeGraphUpdateEvaluationOrder(delegate);
-				node_selected = int(nodes.size()) - 1;
+				delegate->UserAddNode(i);
+				addDelNodeLambda(0);
 			};
 			if (ImGui::MenuItem("Add rug", NULL, false))
 			{
+				URAdd<NodeRug> undoRedoAddRug(int(rugs.size()), []() {return &rugs; }, [](int) {}, [](int) {});
 				rugs.push_back({ scene_pos, ImVec2(400,200), 0xFFA0A0A0, "Description\nEdit me with a double click." });
 			}
 			static char inputText[64] = { 0 };

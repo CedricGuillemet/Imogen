@@ -186,3 +186,5 @@ int Log(const char *szFormat, ...)
 	va_end(ptr_arg);
 	return 0;
 }
+
+

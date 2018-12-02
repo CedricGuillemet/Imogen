@@ -28,6 +28,7 @@
 #include <map>
 #include <string>
 #include "Imogen.h"
+#include "pybind11/embed.h"
 
 struct Evaluator
 {
@@ -35,20 +36,23 @@ struct Evaluator
 	unsigned int mGLSLProgram;
 	int(*mCFunction)(void *parameters, void *evaluationInfo);
 	void *mMem;
+	pybind11::module mPyModule;
+
+	void RunPython() const;
 };
 
 struct Evaluators
 {
-	Evaluators() : mEvaluationStateGLSLBuffer(0) {}
+	Evaluators() : gEvaluationStateGLSLBuffer(0) {}
 	void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
 	std::string GetEvaluator(const std::string& filename);
-	int GetMask(size_t nodeType, const std::string& nodeName);
+	int GetMask(size_t nodeType);
 	void ClearEvaluators();
 
 	const Evaluator& GetEvaluator(size_t nodeType) const { return mEvaluatorPerNodeType[nodeType]; }
 
-	unsigned int mEvaluationStateGLSLBuffer;
-
+	unsigned int gEvaluationStateGLSLBuffer;
+	pybind11::module mImogenModule;
 protected:
 
 	struct EvaluatorScript
@@ -60,10 +64,13 @@ protected:
 		int(*mCFunction)(void *parameters, void *evaluationInfo);
 		void *mMem;
 		int mNodeType;
+		pybind11::module mPyModule;
+		
 	};
 
 	std::map<std::string, EvaluatorScript> mEvaluatorScripts;
 	std::vector<Evaluator> mEvaluatorPerNodeType;
+	
 };
 
 extern Evaluators gEvaluators;

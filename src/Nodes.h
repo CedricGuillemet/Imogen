@@ -26,13 +26,15 @@
 #pragma once
 #include <vector>
 #include <stdint.h>
+#include "imgui.h"
+#include "imgui_internal.h"
+
 struct NodeGraphDelegate
 {
-	NodeGraphDelegate() : mSelectedNodeIndex(-1), mBakeTargetIndex(-1), mCategoriesCount(0), mCategories(0)
+	NodeGraphDelegate() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
 	{}
 
 	int mSelectedNodeIndex;
-	int mBakeTargetIndex;
 	int mCategoriesCount;
 	const char ** mCategories;
 
@@ -40,15 +42,16 @@ struct NodeGraphDelegate
 	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
 	virtual void DelLink(int index, int slot) = 0;
 	virtual unsigned int GetNodeTexture(size_t index) = 0;
-	virtual bool AuthorizeConnexion(int typeA, int typeB) = 0;
 	// A new node has been added in the graph. Do a push_back on your node array
-	virtual void AddNode(size_t type) = 0;
+	// add node for batch(loading graph)
+	virtual void AddSingleNode(size_t type) = 0;
+	// add  by user interface
+	virtual void UserAddNode(size_t type) = 0;
 	// node deleted
-	virtual void DeleteNode(size_t index) = 0;
+	virtual void UserDeleteNode(size_t index) = 0;
 	virtual ImVec2 GetEvaluationSize(size_t index) = 0;
 	virtual void DoForce() = 0;
-	virtual unsigned char *GetParamBlock(size_t index, size_t& paramBlockSize) = 0;
-	virtual void SetParamBlock(size_t index, unsigned char* paramBlock) = 0;
+	virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd) = 0;
 	virtual bool NodeHasUI(size_t nodeIndex) = 0;
 	virtual bool NodeIsProcesing(size_t nodeIndex) = 0;
@@ -61,6 +64,7 @@ struct Node
 	ImVec2  Pos, Size;
 	size_t InputsCount, OutputsCount;
 
+	Node() {}
 	Node(int type, const ImVec2& pos);
 
 	ImVec2 GetInputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
@@ -85,55 +89,13 @@ struct NodeRug
 	std::string mText;
 };
 
-struct UndoRedo
-{
-	virtual ~UndoRedo() {}
-	virtual void Undo() = 0;
-	virtual void Redo() = 0;
-};
-
-struct UndoRedoHandler
-{
-	void Undo()
-	{
-		if (mUndos.empty())
-			return;
-		mUndos.back()->Undo();
-		mRedos.push_back(mUndos.back());
-		mUndos.pop_back();
-	}
-
-	void Redo()
-	{
-		if (mRedos.empty())
-			return;
-		mRedos.back()->Redo();
-		mUndos.push_back(mRedos.back());
-		mRedos.pop_back();
-	}
-
-	void AddUndo(UndoRedo *undoRedo)
-	{
-		mUndos.push_back(undoRedo);
-		for (auto redo : mRedos)
-			delete redo;
-		mRedos.clear();
-	}
-
-private:
-	std::vector<UndoRedo *> mUndos;
-	std::vector<UndoRedo *> mRedos;
-};
-
-extern UndoRedoHandler undoRedoHandler;
-
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
 const std::vector<NodeLink>& NodeGraphGetLinks();
 const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, void *parameters, int posx, int posy, int frameStart, int frameEnd);
+void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd);
 void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
 void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);

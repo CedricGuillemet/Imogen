@@ -222,6 +222,8 @@ size_t GetParameterTypeSize(ConTypes paramType)
 		return sizeof(float) * 4;
 	case Con_Ramp:
 		return sizeof(float) * 2 * 8;
+	case Con_Ramp4:
+		return sizeof(float) * 4 * 8;
 	case Con_Enum:
 	case Con_Int:
 		return sizeof(int);
@@ -234,6 +236,8 @@ size_t GetParameterTypeSize(ConTypes paramType)
 		return 0;
 	case Con_Bool:
 		return sizeof(int);
+	case Con_Camera:
+		return sizeof(Camera);
 	default:
 		assert(0);
 	}
@@ -384,7 +388,7 @@ void LoadMetaNodes()
 		,
 		{
 			"Ramp", hcFilter, 4
-			,{ { "", Con_Float4 } }
+			,{ { "", Con_Float4 },{ "Gradient", Con_Float4 } }
 		,{ { "", Con_Float4 } }
 		,{ { "Ramp", Con_Ramp } }
 		}
@@ -392,9 +396,9 @@ void LoadMetaNodes()
 		,
 		{
 			"Tile", hcTransform, 0
-			,{ { "", Con_Float4 } }
+			,{ { "", Con_Float4 }, { "", Con_Float4 } }
 		,{ { "", Con_Float4 } }
-		,{ { "Scale", Con_Float },{ "Offset 0", Con_Float2 },{ "Offset 1", Con_Float2 },{ "Overlap", Con_Float2 } }
+		,{ { "Offset 0", Con_Float2 },{ "Offset 1", Con_Float2 },{ "Overlap", Con_Float2 },{ "Scale", Con_Float } }
 		}
 
 		,
@@ -558,7 +562,38 @@ void LoadMetaNodes()
 			,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Equirect To Cubemap\0Cubemap To Equirect\0" },
 				{ "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
 			}
+			,
+			{
+				"NGon", hcGenerator, 1
+				,{  }
+			,{ { "", Con_Float4 } }
+			,{ {"Sides", Con_Int}, { "Radius", Con_Float, -.5f,0.5f,0.f,0.f },{ "T", Con_Float } }
+			}
 
+			,
+			{
+				"GradientBuilder", hcGenerator, 1
+				,{  }
+			,{ { "", Con_Float4 } }
+			,{ { "Gradient", Con_Ramp4 } }
+			}
+
+			,
+			{
+				"Warp", hcTransform, 0
+				,{ { "", Con_Float4 }, { "Warp", Con_Float4 } }
+			,{ { "", Con_Float4 } }
+			,{ { "Strength", Con_Float },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "XY Offset\0Rotation-Distance\0" } }
+			}
+			/*
+			,
+			{
+				"TestCam", hcTransform, 0
+				,{  }
+			,{ { "", Con_Float4 } }
+			,{ { "Camera", Con_Camera } }
+			}
+			*/
 	};
 
 

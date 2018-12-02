@@ -39,6 +39,7 @@
 #include "imgui_stdlib.h"
 #include "ImSequencer.h"
 #include "Evaluators.h"
+#include "nfd.h"
 
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
 extern Evaluation gEvaluation;
@@ -251,9 +252,8 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 		t << textToSave;
 		t.close();
 
-		// TODO
 		gEvaluators.SetEvaluators(mEvaluatorFiles);
-		nodeGraphDelegate.InvalidateParameters();
+		gCurrentContext->RunAll();
 	}
 
 	ImGui::SameLine();
@@ -334,11 +334,11 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	{
 		ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
 		ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-		nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1]);
+		nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
 	}
 	else
 	{
-		nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false);
+		nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
 	}
 }
 
@@ -425,12 +425,13 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 		}
 		else
 		{
-			TileNodeEditGraphDelegate::ImogenNode *node = TileNodeEditGraphDelegate::GetInstance()->Get(mIdentifier);
+			TileNodeEditGraphDelegate::ImogenNode *node = gNodeDelegate.Get(mIdentifier);
+			size_t nodeIndex = node - gNodeDelegate.mNodes.data();
 			if (node)
 			{
-				Evaluation::SetEvaluationImage(int(node->mEvaluationTarget), &mImage);
-				gEvaluation.SetEvaluationParameters(node->mEvaluationTarget, node->mParameters, node->mParametersSize);
-				gCurrentContext->StageSetProcessing(node->mEvaluationTarget, false);
+				Evaluation::SetEvaluationImage(int(nodeIndex), &mImage);
+				gEvaluation.SetEvaluationParameters(nodeIndex, node->mParameters);
+				gCurrentContext->StageSetProcessing(nodeIndex, false);
 			}
 			Evaluation::FreeImage(&mImage);
 		}
@@ -654,9 +655,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 
 		dstNode.mType = uint32_t(srcNode.mType);
 		dstNode.mTypeName = metaNode.mName;
-		dstNode.mParameters.resize(srcNode.mParametersSize);
-		if (srcNode.mParametersSize)
-			memcpy(&dstNode.mParameters[0], srcNode.mParameters, srcNode.mParametersSize);
+		dstNode.mParameters = srcNode.mParameters;
 		dstNode.mInputSamplers = srcNode.mInputSamplers;
 		ImVec2 nodePos = NodeGraphGetNodePos(i);
 		dstNode.mPosX = int32_t(nodePos.x);
@@ -688,26 +687,32 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 	}
 }
 
+void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+{
+	nodeGraphDelegate.Clear();
+	evaluation.Clear();
+	NodeGraphClear();
+	InitCallbackRects();
+	ClearExtractedViews();
+	gUndoRedoHandler.Clear();
+}
+
 void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	// set new
 	if (selectedMaterial != -1)
 	{
-		nodeGraphDelegate.Clear();
-		evaluation.Clear();
-		NodeGraphClear();
-		InitCallbackRects();
-		ClearExtractedViews();
+		ClearAll(nodeGraphDelegate, evaluation);
 
 		Material& material = library.mMaterials[selectedMaterial];
 		for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
 		{
 			MaterialNode& node = material.mMaterialNodes[i];
-			NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters.data(), node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
+			NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
 			if (!node.mImage.empty())
 			{
 				TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
-				gCurrentContext->StageSetProcessing(lastNode.mEvaluationTarget, true);
+				gCurrentContext->StageSetProcessing(i, true);
 				g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
 			}
 		}
@@ -743,11 +748,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 			ValidateMaterial(library, nodeGraphDelegate, previousSelection);
 		}
 		selectedMaterial = int(library.mMaterials.size()) - 1;
-		nodeGraphDelegate.Clear();
-		evaluation.Clear();
-		NodeGraphClear();
-		InitCallbackRects();
-		ClearExtractedViews();
+		ClearAll(nodeGraphDelegate, evaluation);
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Import"))
@@ -927,7 +928,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
 				auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
 				//nodeGraphDelegate.SetTimeSlot(selectedEntry, imoNode.mStartFrame, imoNode.mEndFrame);
-				gEvaluation.SetStageLocalTime(imoNode.mEvaluationTarget, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
+				gEvaluation.SetStageLocalTime(selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
 			}
 			if (currentTime != gEvaluationTime)
 			{
@@ -1011,11 +1012,15 @@ void Imogen::Init()
 	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 
-	DiscoverNodes("glsl", "GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
-	DiscoverNodes("c", "C/", EVALUATOR_C, mEvaluatorFiles);
+	DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+	DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
+	DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
 }
 
 void Imogen::Finish()
 {
 
 }
+
+UndoRedoHandler gUndoRedoHandler;
+

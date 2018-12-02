@@ -1,4 +1,26 @@
 -------------------------------------------------------------------------------
+Imogen 0.6 - codename Saori Kido
+
+New:
+- Python 3.7 node evaluators (experimental)
+- warp transform node
+- NGon generator node
+- Gradient builder node
+- Camera parameter type
+- Amiga ball displayed when there is compilation error 
+- Gradient builder parameter widget
+- undo/redo (beta)
+
+Changed:
+- fixed tile node
+- Ramp node can use an optional input texture
+- dear imgui version bump
+
+Known issue:
+- Japanese tile sample is broken
+- Cubemap filtering doesn't work and may use a lot of CPU/RAM
+
+-------------------------------------------------------------------------------
 Imogen 0.5 - codename Phoenix Ikki
 
 New:

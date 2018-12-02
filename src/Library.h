@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <string>
 #include <map>
+#include "Utils.h"
 
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
@@ -143,7 +144,17 @@ enum ConTypes
 	Con_FilenameWrite,
 	Con_ForceEvaluate,
 	Con_Bool,
+	Con_Ramp4,
+	Con_Camera,
 	Con_Any,
+};
+
+struct Camera
+{
+	Vec4 mPosition;
+	Vec4 mDirection;
+	Vec4 mUp;
+	Vec4 mLens; // fov,....
 };
 
 size_t GetParameterTypeSize(ConTypes paramType);

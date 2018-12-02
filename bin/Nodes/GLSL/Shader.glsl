@@ -28,11 +28,18 @@ layout (std140) uniform EvaluationBlock
 	int	uiPass;
 	int padding;
 	vec4 mouse; // x,y, lbut down, rbut down
-	int inputIndices[8];
+	ivec4 inputIndices[2];
 	
 	vec2 viewport;
 } EvaluationParam;
 
+struct Camera
+{
+	vec4 pos;
+	vec4 dir;
+	vec4 up;
+	vec4 lens;
+};
 
 layout(location=0) out vec4 outPixDiffuse;
 in vec2 vUV;

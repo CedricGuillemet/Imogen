@@ -661,7 +661,7 @@ namespace FFMPEGCodec
 		}
 
 		AVPacket videoPkt;
-		int ts = 0;
+		int64_t ts = 0;
 		while (true) {
 			if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
 				break;

@@ -301,8 +301,6 @@ int Evaluators::GetMask(size_t nodeType)
 	{
 		mask |= EvaluationGLSL;
 		iter->second.mNodeType = int(nodeType);
-		//evaluation.mTarget = new RenderTarget;
-		//mAllocatedRenderTargets.push_back(evaluation.mTarget);
 		mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
 	}
 	iter = mEvaluatorScripts.find(nodeName + ".c");

@@ -314,22 +314,22 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
 	mbProcessing[nodeIndex] = false;
 
-	gEvaluationInfo.targetIndex = int(nodeIndex);
-	memcpy(gEvaluationInfo.inputIndices, input.mInputs, sizeof(gEvaluationInfo.inputIndices));
-	SetMouseInfos(gEvaluationInfo, currentStage);
+	mEvaluationInfo.targetIndex = int(nodeIndex);
+	memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
+	SetMouseInfos(mEvaluationInfo, currentStage);
 
 	if (currentStage.gEvaluationMask&EvaluationC)
-		EvaluateC(currentStage, nodeIndex, gEvaluationInfo);
+		EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
 
 	if (currentStage.gEvaluationMask&EvaluationPython)
-		EvaluatePython(currentStage, nodeIndex, gEvaluationInfo);
+		EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
 
 	if (currentStage.gEvaluationMask&EvaluationGLSL)
 	{
 		if (!mStageTarget[nodeIndex]->mGLTexID)
 			mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight);
 
-		EvaluateGLSL(currentStage, nodeIndex, gEvaluationInfo);
+		EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
 	}
 	mbDirty[nodeIndex] = false;
 }
@@ -350,7 +350,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 {
 	PreRun();
 
-	gEvaluationInfo = evaluationInfo;
+	mEvaluationInfo = evaluationInfo;
 
 	RunNode(nodeIndex);
 
@@ -378,7 +378,7 @@ void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& used
 void EvaluationContext::RunDirty()
 {
 	PreRun();
-	memset(&gEvaluationInfo, 0, sizeof(EvaluationInfo));
+	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
 	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	std::vector<size_t> nodesToEvaluate;
 	for (size_t index = 0; index < evaluationOrderList.size(); index++)
@@ -395,7 +395,7 @@ void EvaluationContext::RunAll()
 {
 	PreRun();
 	// get list of nodes to run
-	memset(&gEvaluationInfo, 0, sizeof(EvaluationInfo));
+	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
 	auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	AllocRenderTargetsForEditingPreview();
 	RunNodeList(evaluationOrderList);
@@ -404,8 +404,8 @@ void EvaluationContext::RunAll()
 void EvaluationContext::RunBackward(size_t nodeIndex)
 {
 	PreRun();
-	memset(&gEvaluationInfo, 0, sizeof(EvaluationInfo));
-	gEvaluationInfo.forcedDirty = true;
+	memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
+	mEvaluationInfo.forcedDirty = true;
 	std::vector<size_t> nodesToEvaluate;
 	RecurseBackward(nodeIndex, nodesToEvaluate);
 	AllocRenderTargetsForBaking(nodesToEvaluate);

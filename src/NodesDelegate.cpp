@@ -100,9 +100,9 @@ void TileNodeEditGraphDelegate::UserAddNode(size_t type)
 	URAdd<ImogenNode> undoRedoAddNode(int(mNodes.size()), []() {return &gNodeDelegate.mNodes; },
 		NodeIsDeleted, NodeIsAdded);
 
-	AddSingleNode(type);
 	mEditingContext.UserAddStage();
 	gEvaluation.UserAddEvaluation(type);
+	AddSingleNode(type);
 }
 
 void TileNodeEditGraphDelegate::UserDeleteNode(size_t index)

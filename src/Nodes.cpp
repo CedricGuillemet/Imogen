@@ -304,7 +304,8 @@ void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<u
 {
 	size_t index = nodes.size();
 	nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
-	delegate->AddNode(type);
+	gEvaluation.AddSingleEvaluation(type);
+	delegate->AddSingleNode(type);
 	delegate->SetParamBlock(index, parameters);
 	delegate->SetTimeSlot(index, frameStart, frameEnd);
 }
@@ -730,7 +731,33 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 			}
 			if (ImGui::MenuItem("Delete", NULL, false)) 
 			{
-				//UndoRedoNode undoRedoNode(node_selected, nodes, false);
+				URDel<Node> undoRedoDelNode(node_selected, []() {return &nodes; }
+					, [](int index) {
+							// recompute link indices
+							for (int id = 0; id < links.size(); id++)
+							{
+								if (links[id].InputIdx > index)
+									links[id].InputIdx--;
+								if (links[id].OutputIdx > index)
+									links[id].OutputIdx--;
+							}
+							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							gNodeDelegate.mSelectedNodeIndex = -1;
+						}
+					, [](int index) {
+							// recompute link indices
+							for (int id = 0; id < links.size(); id++)
+							{
+								if (links[id].InputIdx >= index)
+									links[id].InputIdx++;
+								if (links[id].OutputIdx >= index)
+									links[id].OutputIdx++;
+							}
+
+							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							gNodeDelegate.mSelectedNodeIndex = -1;
+						}
+						);
 
 				for (int id = 0; id < links.size(); id++)
 				{
@@ -743,16 +770,26 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 					auto& link = links[i];
 					if (link.InputIdx == node_selected || link.OutputIdx == node_selected)
 					{
-						//UndoRedoNodeLinks undoRedoLink(i, links, false);
+						URDel<NodeLink> undoRedoDelNodeLink(int(i), []() {return &links; }
+						, [](int index)
+						{
+							NodeLink& link = links[index];
+							gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+						}
+						, [](int index)
+						{
+							NodeLink& link = links[index];
+							gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+						});
+
 						links.erase(links.begin() + i);
-						//undoRedoLink.mPostDo = links;
-						//undoRedoNode.AddSubUndoRedo(undoRedoLink);
 					}
 					else
 					{
 						i++;
 					}
 				}
+
 				// recompute link indices
 				for (int id = 0; id < links.size(); id++)
 				{
@@ -767,11 +804,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				NodeGraphUpdateEvaluationOrder(delegate);
 
 				// inform delegate
-				delegate->DeleteNode(node_selected);
-
-				// finish undo
-				//undoRedoNode.mPostDo = nodes;
-				//gUndoRedoHandler.AddUndo(undoRedoNode);
+				delegate->UserDeleteNode(node_selected);
 
 				node_selected = -1;
 			}
@@ -788,7 +821,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				URAdd<Node> undoRedoAddRug(int(nodes.size()), []() {return &nodes; }, addDelNodeLambda, addDelNodeLambda);
 
 				nodes.push_back(Node(i, scene_pos));
-				delegate->AddNode(i);
+				delegate->UserAddNode(i);
 				addDelNodeLambda(0);
 			};
 			if (ImGui::MenuItem("Add rug", NULL, false))

@@ -45,11 +45,11 @@ void Evaluation::Finish()
 
 }
 
-size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
+void Evaluation::AddSingleEvaluation(size_t nodeType)
 {
 	EvaluationStage evaluation;
 #ifdef _DEBUG
-	evaluation.mNodeTypename = nodeName;
+	evaluation.mNodeTypename		= gMetaNodes[nodeType].mName;;
 #endif
 	evaluation.mDecoder				= NULL;
 	evaluation.mUseCountByOthers	= 0;
@@ -58,37 +58,60 @@ size_t Evaluation::AddEvaluation(size_t nodeType, const std::string& nodeName)
 	evaluation.mBlendingSrc			= ONE;
 	evaluation.mBlendingDst			= ZERO;
 	evaluation.mLocalTime			= 0;
-	evaluation.gEvaluationMask		= gEvaluators.GetMask(nodeType, nodeName);
-
-	if (evaluation.gEvaluationMask)
-	{
-		gEvaluationStages.push_back(evaluation);
-		return gEvaluationStages.size() - 1;
-	}
-	Log("Could not find node name \"%s\" \n", nodeName.c_str());
-	return -1;
+	evaluation.gEvaluationMask		= gEvaluators.GetMask(nodeType);
+	mStages.push_back(evaluation);
 }
 
-void Evaluation::DelEvaluationTarget(size_t target)
+void Evaluation::StageIsAdded(int index)
 {
-	EvaluationStage& ev = gEvaluationStages[target];
+	for (size_t i = 0;i< gEvaluation.mStages.size();i++)
+	{
+		if (i == index)
+			continue;
+		auto& evaluation = gEvaluation.mStages[i];
+		for (auto& inp : evaluation.mInput.mInputs)
+		{
+			if (inp >= index)
+				inp++;
+		}
+	}
+}
+
+void Evaluation::StageIsDeleted(int index)
+{
+	EvaluationStage& ev = gEvaluation.mStages[index];
 	ev.Clear();
-	gEvaluationStages.erase(gEvaluationStages.begin() + target);
 
 	// shift all connections
-	for (auto& evaluation : gEvaluationStages)
+	for (auto& evaluation : gEvaluation.mStages)
 	{
 		for (auto& inp : evaluation.mInput.mInputs)
 		{
-			if (inp >= int(target))
+			if (inp >= index)
 				inp--;
 		}
 	}
 }
 
+void Evaluation::UserAddEvaluation(size_t nodeType)
+{
+	URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()), []() {return &gEvaluation.mStages; },
+		StageIsDeleted, StageIsAdded);
+
+	AddSingleEvaluation(nodeType);
+}
+
+void Evaluation::UserDeleteEvaluation(size_t target)
+{
+	URDel<EvaluationStage> undoRedoDelStage(int(target), []() {return &gEvaluation.mStages; },
+		StageIsDeleted, StageIsAdded);
+
+	mStages.erase(mStages.begin() + target);
+}
+
 void Evaluation::SetEvaluationParameters(size_t target, const std::vector<unsigned char> &parameters)
 {
-	EvaluationStage& stage = gEvaluationStages[target];
+	EvaluationStage& stage = mStages[target];
 	stage.mParameters = parameters;
 
 	if (stage.gEvaluationMask&EvaluationGLSL)
@@ -99,23 +122,23 @@ void Evaluation::SetEvaluationParameters(size_t target, const std::vector<unsign
 
 void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
 {
-	gEvaluationStages[target].mInputSamplers = inputSamplers;
+	mStages[target].mInputSamplers = inputSamplers;
 	gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
-	if (gEvaluationStages[target].mInput.mInputs[slot] == source)
+	if (mStages[target].mInput.mInputs[slot] == source)
 		return;
-	gEvaluationStages[target].mInput.mInputs[slot] = source;
-	gEvaluationStages[source].mUseCountByOthers++;
+	mStages[target].mInput.mInputs[slot] = source;
+	mStages[source].mUseCountByOthers++;
 	gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::DelEvaluationInput(size_t target, int slot)
 {
-	gEvaluationStages[gEvaluationStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
-	gEvaluationStages[target].mInput.mInputs[slot] = -1;
+	mStages[mStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
+	mStages[target].mInput.mInputs[slot] = -1;
 	gCurrentContext->SetTargetDirty(target);
 }
 
@@ -126,23 +149,23 @@ void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 
 void Evaluation::Clear()
 {
-	for (auto& ev : gEvaluationStages)
+	for (auto& ev : mStages)
 		ev.Clear();
 
-	gEvaluationStages.clear();
+	mStages.clear();
 	gEvaluationOrderList.clear();
 }
 
 void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown)
 {
-	for (auto& ev : gEvaluationStages)
+	for (auto& ev : mStages)
 	{
 		ev.mRx = -9999.f;
 		ev.mRy = -9999.f;
 		ev.mLButDown = false;
 		ev.mRButDown = false;
 	}
-	auto& ev = gEvaluationStages[target];
+	auto& ev = mStages[target];
 	ev.mRx = rx;
 	ev.mRy = 1.f - ry; // inverted for UI
 	ev.mLButDown = lButDown;
@@ -151,7 +174,7 @@ void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rB
 
 size_t Evaluation::GetEvaluationImageDuration(size_t target)
 {
-	auto& stage = gEvaluationStages[target];
+	auto& stage = mStages[target];
 	if (!stage.mDecoder)
 		return 1;
 	if (stage.mDecoder->mFrameCount > 2000)
@@ -163,7 +186,7 @@ size_t Evaluation::GetEvaluationImageDuration(size_t target)
 
 void Evaluation::SetStageLocalTime(size_t target, int localTime, bool updateDecoder)
 {
-	auto& stage = gEvaluationStages[target];
+	auto& stage = mStages[target];
 	int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
 	if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
 	{
@@ -191,7 +214,7 @@ int Evaluation::Evaluate(int target, int width, int height, Image *image)
 
 FFMPEGCodec::Decoder* Evaluation::FindDecoder(const std::string& filename)
 {
-	for (auto& evaluation : gEvaluationStages)
+	for (auto& evaluation : mStages)
 	{
 		if (evaluation.mDecoder && evaluation.mDecoder->GetFilename() == filename)
 			return evaluation.mDecoder.get();

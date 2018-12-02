@@ -24,6 +24,7 @@
 //
 
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
+#include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 
@@ -92,11 +93,6 @@ EvaluationContext::~EvaluationContext()
 		delete stream.second;
 	}
 	mWriteStreams.clear();
-
-	for (auto* tgt : mAllocatedTargets)
-	{
-		delete tgt;
-	}
 }
 
 static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage &evaluationStage)
@@ -120,7 +116,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 {
 	const Input& input = evaluationStage.mInput;
 
-	RenderTarget* tgt = mStageTarget[index];
+	auto tgt = mStageTarget[index];
 	if (!evaluationInfo.uiPass)
 	{
 		if (tgt->mImage.mNumFaces == 6)
@@ -183,7 +179,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 			}
 			else
 			{
-				auto* tgt = mStageTarget[targetIndex];
+				auto tgt = mStageTarget[targetIndex];
 				if (tgt)
 				{
 					const InputSampler& inputSampler = evaluationStage.mInputSamplers[samplerIndex];
@@ -239,12 +235,11 @@ void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
 	// alloc targets
 	mStageTarget.resize(gEvaluation.GetStagesCount(), NULL);
-	mAllocatedTargets.resize(gEvaluation.GetStagesCount(), NULL);
 	for (size_t i = 0; i < gEvaluation.GetStagesCount(); i++)
 	{
 		if (!mStageTarget[i])
 		{
-			mStageTarget[i] = mAllocatedTargets[i] = new RenderTarget;
+			mStageTarget[i] = std::make_shared<RenderTarget>();
 		}
 	}
 }
@@ -257,7 +252,7 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 	//auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
 	size_t stageCount = gEvaluation.GetStagesCount();
 	mStageTarget.resize(stageCount, NULL);
-	std::vector<RenderTarget*> freeRenderTargets;
+	std::vector<std::shared_ptr<RenderTarget> > freeRenderTargets;
 	std::vector<int> useCount(stageCount, 0);
 	for (size_t i = 0; i < stageCount; i++)
 	{
@@ -272,8 +267,7 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 
 		if (freeRenderTargets.empty())
 		{
-			mStageTarget[index] = new RenderTarget();
-			mAllocatedTargets.push_back(mStageTarget[index]);
+			mStageTarget[index] = std::make_shared<RenderTarget>();
 		}
 		else
 		{
@@ -390,7 +384,7 @@ void EvaluationContext::RunDirty()
 	for (size_t index = 0; index < evaluationOrderList.size(); index++)
 	{
 		size_t currentNodeIndex = evaluationOrderList[index];
-		if (mbDirty[currentNodeIndex])
+		if (currentNodeIndex < mbDirty.size() && mbDirty[currentNodeIndex]) // TODOUNDO
 			nodesToEvaluate.push_back(currentNodeIndex);
 	}
 	AllocRenderTargetsForEditingPreview();
@@ -449,7 +443,7 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 		for (i++; i < evaluationOrderList.size(); i++)
 		{
 			currentNodeIndex = evaluationOrderList[i];
-			if (mbDirty[currentNodeIndex])
+			if (currentNodeIndex >= mbDirty.size() || mbDirty[currentNodeIndex]) // TODOUNDO
 				continue;
 
 			auto& currentEvaluation = gEvaluation.GetEvaluationStage(currentNodeIndex);
@@ -465,4 +459,26 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 	}
 	if (onlyChild)
 		mbDirty[target] = false;
+}
+
+void EvaluationContext::UserAddStage()
+{
+	URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), []() {return &gCurrentContext->mStageTarget; });
+	URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), []() {return &gCurrentContext->mbDirty; });
+	URAdd<bool> undoRedoAddProcessing(int(mbProcessing.size()), []() {return &gCurrentContext->mbProcessing; });
+
+	mStageTarget.push_back(std::make_shared<RenderTarget>());
+	mbDirty.push_back(true);
+	mbProcessing.push_back(false);
+}
+
+void EvaluationContext::UserDeleteStage(size_t index)
+{
+	URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), []() {return &gCurrentContext->mStageTarget; });
+	URDel<bool> undoRedoDelDirty(int(index), []() {return &gCurrentContext->mbDirty; });
+	URDel<bool> undoRedoDelProcessing(int(index), []() {return &gCurrentContext->mbProcessing; });
+
+	mStageTarget.erase(mStageTarget.begin() + index);
+	mbDirty.erase(mbDirty.begin() + index);
+	mbProcessing.erase(mbProcessing.begin() + index);
 }

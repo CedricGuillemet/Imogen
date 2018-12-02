@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 #pragma once
+#include <memory>
 #include "Evaluation.h"
 
 struct EvaluationContext
@@ -36,7 +37,7 @@ struct EvaluationContext
 	void RunDirty();
 
 	unsigned int GetEvaluationTexture(size_t target);
-	RenderTarget *GetRenderTarget(size_t target)
+	std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
 	{ 
 		if (target >= mStageTarget.size())
 			return NULL;
@@ -52,6 +53,11 @@ struct EvaluationContext
 	void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(gEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
 
 	void AllocRenderTargetsForEditingPreview();
+
+	// edit context only
+	void UserAddStage();
+	void UserDeleteStage(size_t index);
+
 protected:
 	Evaluation& gEvaluation;
 
@@ -68,8 +74,7 @@ protected:
 	
 	void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
-	std::vector<RenderTarget*> mStageTarget; // 1 per stage
-	std::vector<RenderTarget*> mAllocatedTargets; // allocated RT, might be present multiple times in mStageTarget
+	std::vector<std::shared_ptr<RenderTarget> > mStageTarget; // 1 per stage
 	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 	std::vector<bool> mbDirty;
 	std::vector<bool> mbProcessing;

@@ -528,12 +528,12 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 				}
 				if (io.MouseDown[0])
 				{
-					matrix_t tr, rtUp, rtRight, trp;
+					Mat4x4 tr, rtUp, rtRight, trp;
 					tr.Translation(-(cam->mPosition ));
 					rtRight.RotationAxis(right, io.MouseDelta.y * 0.01f);
 					rtUp.RotationAxis(cam->mUp, -io.MouseDelta.x * 0.01f);
 					trp.Translation((cam->mPosition ));
-					matrix_t res = tr * rtRight * rtUp * trp;
+					Mat4x4 res = tr * rtRight * rtUp * trp;
 					cam->mPosition.TransformPoint(res);
 					cam->mDirection.TransformVector(res);
 					cam->mUp.Cross(cam->mDirection, right);

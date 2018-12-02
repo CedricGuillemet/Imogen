@@ -513,6 +513,7 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 			Camera *cam = (Camera*)paramBuffer;
 			cam->mPosition += cam->mDirection * wheel;
 			Vec4 right = Cross(cam->mUp, cam->mDirection);
+			right.y = 0.f; // keep head up
 			right.Normalize();
 			auto& io = ImGui::GetIO();
 			if (io.KeyAlt)
@@ -528,15 +529,15 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 				if (io.MouseDown[0])
 				{
 					matrix_t tr, rtUp, rtRight, trp;
-					tr.Translation(-(cam->mPosition + cam->mDirection));
-					rtRight.RotationAxis(right, io.MouseDelta.y);
-					rtUp.RotationAxis(cam->mUp, io.MouseDelta.x);
-					trp.Translation((cam->mPosition + cam->mDirection));
+					tr.Translation(-(cam->mPosition ));
+					rtRight.RotationAxis(right, io.MouseDelta.y * 0.01f);
+					rtUp.RotationAxis(cam->mUp, -io.MouseDelta.x * 0.01f);
+					trp.Translation((cam->mPosition ));
 					matrix_t res = tr * rtRight * rtUp * trp;
 					cam->mPosition.TransformPoint(res);
-					cam->mDirection.TransformPoint(res);
-					cam->mUp.TransformPoint(res);
-
+					cam->mDirection.TransformVector(res);
+					cam->mUp.Cross(cam->mDirection, right);
+					cam->mUp.Normalize();
 				}
 			}
 			parametersUseMouse = true;

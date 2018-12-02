@@ -132,7 +132,6 @@ struct UndoRedoHandler
 	UndoRedoHandler() : mbProcessing(false), mCurrent(NULL) {}
 	~UndoRedoHandler()
 	{
-		mbProcessing = true;
 		Clear();
 	}
 
@@ -173,6 +172,7 @@ struct UndoRedoHandler
 
 	void Clear()
 	{
+		mbProcessing = true;
 		mUndos.clear();
 		mRedos.clear();
 	}

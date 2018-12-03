@@ -2,6 +2,12 @@
 Imogen 0.7 - codename Pegasus Tenma
 
 -------------------------------------------------------------------------------
+Imogen 0.6.1 - codename Saori Kido 2
+
+Fixed:
+- missing Python 3.7 library
+
+-------------------------------------------------------------------------------
 Imogen 0.6 - codename Saori Kido
 
 New:

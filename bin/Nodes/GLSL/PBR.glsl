@@ -178,7 +178,7 @@ float CastRay( in vec3 ro, in vec3 rd, mat3 localToWorld )
             break;
         }
         
-	    h = Scene( ro + rd * t, localToWorld );
+	    h = (ro + rd * t).y;//Scene( ro + rd * t, localToWorld );
         t += h;
     }
 

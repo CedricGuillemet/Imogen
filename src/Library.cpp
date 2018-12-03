@@ -585,15 +585,22 @@ void LoadMetaNodes()
 			,{ { "", Con_Float4 } }
 			,{ { "Strength", Con_Float },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "XY Offset\0Rotation-Distance\0" } }
 			}
-			/*
+			
 			,
 			{
-				"TestCam", hcTransform, 0
-				,{  }
+				"TerrainPreview", hcMaterial, 2
+				,{ { "Height", Con_Float4 }, { "Diffuse", Con_Float4 }, { "AO", Con_Float4 }, { "Sky CM", Con_Float4 } }
 			,{ { "", Con_Float4 } }
 			,{ { "Camera", Con_Camera } }
 			}
-			*/
+
+			,
+		{
+			"AO", hcFilter, 4
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{  { "strength", Con_Float }, { "area", Con_Float }, { "falloff", Con_Float }, { "radius", Con_Float }}
+		}
 	};
 
 

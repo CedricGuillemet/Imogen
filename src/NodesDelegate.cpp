@@ -392,6 +392,15 @@ void TileNodeEditGraphDelegate::EditNode()
 			}
 		}
 		break;
+		case Con_Camera:
+			if (ImGui::Button("Reset"))
+			{
+				Camera *cam = (Camera*)paramBuffer;
+				cam->mPosition = Vec4(0.f, 0.f, 0.f);
+				cam->mDirection = Vec4(0.f, 0.f, 1.f);
+				cam->mUp = Vec4(0.f, 1.f, 0.f);
+			}
+			break;
 		}
 		ImGui::PopID();
 		paramBuffer += GetParameterTypeSize(param.mType);

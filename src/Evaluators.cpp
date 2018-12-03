@@ -295,6 +295,9 @@ void Evaluators::ClearEvaluators()
 int Evaluators::GetMask(size_t nodeType)
 {
 	const std::string& nodeName = gMetaNodes[nodeType].mName;
+#ifdef _DEBUG
+	mEvaluatorPerNodeType[nodeType].mName = nodeName;
+#endif
 	int mask = 0;
 	auto iter = mEvaluatorScripts.find(nodeName + ".glsl");
 	if (iter != mEvaluatorScripts.end())

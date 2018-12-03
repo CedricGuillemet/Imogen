@@ -124,6 +124,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 		else
 			tgt->BindAsTarget();
 	}
+	/*if (evaluationStage.mNodeTypename == "TerrainPreview")
+	{
+		DebugBreak();
+	}
+	*/
 	const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
 	unsigned int program = evaluator.mGLSLProgram;
 	const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };

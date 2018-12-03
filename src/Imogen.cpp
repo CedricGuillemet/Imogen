@@ -293,7 +293,9 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 		evaluationInfo.uiPass = 0;
 		gCurrentContext->RunSingle(selNode, evaluationInfo);
 	}
+	ImTextureID displayedTexture = 0;
 	ImRect rc;
+	ImVec2 displayedTextureSize;
 	if (imageWidth && imageHeight)
 	{
 		float ratio = float(imageHeight) / float(imageWidth);
@@ -311,9 +313,19 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 		else
 		{
 			if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+			{
 				ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
+			}
 			else
-				ImGui::ImageButton((ImTextureID)(int64_t)((selNode != -1) ? nodeGraphDelegate.mEditingContext.GetEvaluationTexture(selNode) : 0), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+			{
+				displayedTexture = (ImTextureID)(int64_t)((selNode != -1) ? nodeGraphDelegate.mEditingContext.GetEvaluationTexture(selNode) : 0);
+				if (displayedTexture)
+				{
+					auto tgt = nodeGraphDelegate.mEditingContext.GetRenderTarget(selNode);
+					displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
+				}
+				ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+			}
 			rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -332,9 +344,73 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 
 	if (rc.Contains(io.MousePos))
 	{
-		ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
-		ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-		nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
+		static Image pickerImage;
+		if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1)
+		{
+			if (!pickerImage.mBits)
+			{
+				Evaluation::GetEvaluationImage(selNode, &pickerImage);
+				Log("Texel view Get image\n");
+			}
+			int width = pickerImage.mWidth;
+			int height = pickerImage.mHeight;
+			ImVec2 pix = (io.MousePos - rc.Min) / rc.GetSize();
+			pix.y = 1.f - pix.y;
+			ImVec2 pixSize = ImVec2(1.f, -1.f)/displayedTextureSize;
+
+			ImGui::BeginTooltip();
+			ImGui::BeginGroup();
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			ImGui::InvisibleButton("AnotherInvisibleMan", ImVec2(120, 120));
+			ImRect pickRc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+			draw_list->AddRectFilled(pickRc.Min, pickRc.Max, 0xFF000000);
+			static int zoomSize = 2;
+			float quadWidth = 120.f / float(zoomSize * 2 + 1);
+			ImVec2 quadSize(quadWidth, quadWidth);
+			int basex = ImClamp(int(pix.x * width), zoomSize, width-zoomSize);
+			int basey = ImClamp(int(pix.y * height), zoomSize, height - zoomSize);
+			for (int y = -zoomSize; y <= zoomSize; y++)
+			{
+				for (int x = -zoomSize; x <= zoomSize; x++)
+				{
+					uint32_t texel = ((uint32_t*)pickerImage.mBits)[(basey + zoomSize * 2 + 1 - y) * width + x + basex];
+					ImVec2 pos = pickRc.Min + ImVec2(float(x + zoomSize), float(y + zoomSize)) * quadSize;
+					draw_list->AddRectFilled(pos, pos + quadSize, texel);
+				}
+			}
+			ImVec2 pos = pickRc.Min + ImVec2(float(zoomSize), float(zoomSize)) * quadSize;
+			draw_list->AddRect(pos, pos + quadSize, 0xFF0000FF, 0.f, 15, 2.f);
+			
+			ImGui::EndGroup();
+			ImGui::SameLine();
+			ImGui::BeginGroup();
+			uint32_t texel = ((uint32_t*)pickerImage.mBits)[basey * width + basex];
+			ImVec4 color = ImColor(texel);
+			ImVec4 colHSV;
+			ImGui::ColorConvertRGBtoHSV(color.x, color.y, color.z, colHSV.x, colHSV.y, colHSV.z);
+			ImGui::Text("U %1.3f V %1.3f", pix.x, pix.y);
+			ImGui::Text("Coord %d %d", int(pix.x * width), int(pix.y * height));
+			ImGui::Separator();
+			ImGui::Text("R 0x%02x  G 0x%02x  B 0x%02x", int(color.x * 255.f), int(color.y * 255.f), int(color.z * 255.f));
+			ImGui::Text("R %1.3f G %1.3f B %1.3f", color.x, color.y, color.z);
+			ImGui::Separator();
+			ImGui::Text("H 0x%02x  S 0x%02x  V 0x%02x", int(colHSV.x * 255.f), int(colHSV.y * 255.f), int(colHSV.z * 255.f));
+			ImGui::Text("H %1.3f S %1.3f V %1.3f", colHSV.x, colHSV.y, colHSV.z);
+			ImGui::Separator();
+			ImGui::Text("Alpha 0x%02x", int(color.w * 255.f));
+			ImGui::Text("Alpha %1.3f", color.w);
+			ImGui::Separator();
+			ImGui::Text("Size %d, %d", int(displayedTextureSize.x), int(displayedTextureSize.y));
+			ImGui::EndGroup();
+			ImGui::EndTooltip();
+		}
+		else
+		{
+			Evaluation::FreeImage(&pickerImage);
+			ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
+			ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
+			nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
+		}
 	}
 	else
 	{

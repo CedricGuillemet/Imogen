@@ -110,7 +110,7 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-	Image_t() : mDecoder(NULL) {}
+	Image_t() : mDecoder(NULL), mBits(NULL){}
 	unsigned char *mBits;
 	void *mDecoder;
 	int mWidth, mHeight;
@@ -124,7 +124,7 @@ class RenderTarget
 {
 
 public:
-	RenderTarget() : mGLTexID(0), mFbo(0), mRefCount(0)
+	RenderTarget() : mGLTexID(0), mFbo(0)
 	{
 		memset(&mImage, 0, sizeof(Image_t));
 	}
@@ -141,7 +141,6 @@ public:
 	Image_t mImage;
 	unsigned int mGLTexID;
 	TextureID mFbo;
-	int mRefCount;
 };
 
 struct Input

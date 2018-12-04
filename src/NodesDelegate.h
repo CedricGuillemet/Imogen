@@ -195,6 +195,10 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) { gEvaluation.SetEvaluationOrder(nodeOrderList);	}
 	virtual ImVec2 GetEvaluationSize(size_t nodeIndex);
 	
+	virtual void CopyNodes(const std::vector<size_t> nodes);
+	virtual void CutNodes(const std::vector<size_t> nodes);
+	virtual void PasteNodes();
+
 	EvaluationContext mEditingContext;
 
 	struct ImogenNode
@@ -210,6 +214,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	};
 
 	std::vector<ImogenNode> mNodes;
+	std::vector<ImogenNode> mNodesClipboard;
 	bool mbMouseDragging;
 
 	ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }

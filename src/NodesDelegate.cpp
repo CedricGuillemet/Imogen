@@ -644,3 +644,35 @@ ImVec2 TileNodeEditGraphDelegate::GetEvaluationSize(size_t nodeIndex)
 	gEvaluation.GetEvaluationSize(int(nodeIndex), &imageWidth, &imageHeight);
 	return ImVec2(float(imageWidth), float(imageHeight));
 }
+
+void TileNodeEditGraphDelegate::CopyNodes(const std::vector<size_t> nodes)
+{
+	mNodesClipboard.clear();
+	for (auto nodeIndex : nodes)
+		mNodesClipboard.push_back(mNodes[nodeIndex]);
+}
+
+void TileNodeEditGraphDelegate::CutNodes(const std::vector<size_t> nodes)
+{
+	mNodesClipboard.clear();
+}
+
+void TileNodeEditGraphDelegate::PasteNodes()
+{
+	for (auto& sourceNode : mNodesClipboard)
+	{
+		URAdd<ImogenNode> undoRedoAddNode(int(mNodes.size()), []() {return &gNodeDelegate.mNodes; },
+			NodeIsDeleted, NodeIsAdded);
+
+		mEditingContext.UserAddStage();
+		gEvaluation.UserAddEvaluation(sourceNode.mType);
+		AddSingleNode(sourceNode.mType);
+		auto& node = mNodes.back();
+		node.mParameters = sourceNode.mParameters;
+		node.mInputSamplers = sourceNode.mInputSamplers;
+		node.mStartFrame = sourceNode.mStartFrame;
+		node.mEndFrame = sourceNode.mEndFrame;
+
+		mEditingContext.SetTargetDirty(mNodes.size() - 1);
+	}
+}

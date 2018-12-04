@@ -175,6 +175,7 @@ struct UndoRedoHandler
 		mbProcessing = true;
 		mUndos.clear();
 		mRedos.clear();
+		mbProcessing = false;
 	}
 
 	bool mbProcessing;
@@ -251,6 +252,32 @@ template<typename T> struct URChange : public UndoRedo
 	T* (*GetElements)(int index);
 	void(*Changed)(int index);
 };
+
+
+struct URDummy : public UndoRedo
+{
+	URDummy() : UndoRedo()
+	{
+		if (gUndoRedoHandler.mbProcessing)
+			return;
+	}
+	virtual ~URDummy()
+	{
+		if (gUndoRedoHandler.mbProcessing)
+			return;
+
+		gUndoRedoHandler.AddUndo(*this);
+	}
+	virtual void Undo()
+	{
+		UndoRedo::Undo();
+	}
+	virtual void Redo()
+	{
+		UndoRedo::Redo();
+	}
+};
+
 
 template<typename T> struct URDel : public UndoRedo
 {

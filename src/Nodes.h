@@ -56,6 +56,10 @@ struct NodeGraphDelegate
 	virtual bool NodeHasUI(size_t nodeIndex) = 0;
 	virtual bool NodeIsProcesing(size_t nodeIndex) = 0;
 	virtual bool NodeIsCubemap(size_t nodeIndex) = 0;
+	// clipboard
+	virtual void CopyNodes(const std::vector<size_t> nodes) = 0;
+	virtual void CutNodes(const std::vector<size_t> nodes) = 0;
+	virtual void PasteNodes() = 0;
 };
 
 struct Node
@@ -63,8 +67,8 @@ struct Node
 	int     mType;
 	ImVec2  Pos, Size;
 	size_t InputsCount, OutputsCount;
-
-	Node() {}
+	bool mbSelected;
+	Node() : mbSelected(false) {}
 	Node(int type, const ImVec2& pos);
 
 	ImVec2 GetInputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }

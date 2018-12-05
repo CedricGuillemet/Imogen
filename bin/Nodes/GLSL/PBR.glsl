@@ -223,7 +223,7 @@ vec4 PBR()
 		vec3 baseColor     = pow(boxmap(Sampler0, pos, normalize(pos), 1.0 ).xyz, vec3( 2.2 ) );
 
 		float roughness = boxmap(Sampler2, pos, normalize(pos), 1.0 ).x;
-	    vec3 diffuseColor  = vec3( 0.1 );// : baseColor;
+	    vec3 diffuseColor  = baseColor;
  	    vec3 specularColor = baseColor;// : vec3( 0.02 );
    		float roughnessE   = roughness * roughness;
 	    float roughnessL   = max( .01, roughnessE );
@@ -236,7 +236,7 @@ vec4 PBR()
 
         vec3 envSpecularColor = EnvBRDFApprox( specularColor, roughnessE, ndotv );
 
-        vec3 env       = textureLod(Sampler4, envMapEquirect(refl),roughnessE*12.0).xyz;
+        vec3 env       = texture(CubeSampler4, refl, roughnessE*12.0).xyz;
         
         diffuse += diffuseColor * EnvRemap(env);
         specular += envSpecularColor * env;

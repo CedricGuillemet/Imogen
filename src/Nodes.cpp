@@ -241,7 +241,7 @@ bool EditRug(NodeRug *rug, ImDrawList* drawList, ImVec2 offset, float factor)
 	int rugIndex = int(rug - rugs.data());
 	URChange<NodeRug> undoRedoRug(rugIndex, [](int index) {return &rugs[index]; }, [] (int){});
 	bool dirtyRug = false;
-	ImVec2 node_rect_min = (offset + rug->mPos) * factor;
+	ImVec2 node_rect_min = offset + rug->mPos * factor;
 	ImVec2 node_rect_max = node_rect_min + commentSize;
 	ImRect rugRect(node_rect_min, node_rect_max);
 	ImRect insideSizingRect(node_rect_min + commentSize - ImVec2(30, 30), node_rect_min + commentSize);

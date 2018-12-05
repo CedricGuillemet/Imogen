@@ -175,16 +175,26 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* drawList, ImVec2 offset, floa
 {
 	ImGuiIO& io = ImGui::GetIO();
 	NodeRug *ret = editRug;
-	//bool dirtyRug = false;
+	
+	// mouse pointer over any node?
+	bool overAnyNode = false;
+	for (auto& node : nodes)
+	{
+		ImVec2 node_rect_min = offset + node.Pos * factor;
+		ImVec2 node_rect_max = node_rect_min + node.Size;
+		if (ImRect(node_rect_min, node_rect_max).Contains(io.MousePos))
+		{
+			overAnyNode = true;
+			break;
+		}
+	}
 
-	int id = 900;
-	for (NodeRug& rug : rugs)
 	for(unsigned int rugIndex = 0; rugIndex<rugs.size();rugIndex++)
 	{
 		auto& rug = rugs[rugIndex];
 		if (&rug == editRug)
 			continue;
-		ImGui::PushID(id++);
+		ImGui::PushID(900 + rugIndex);
 		ImVec2 commentSize = rug.mSize * factor;
 
 		ImVec2 node_rect_min = offset + rug.mPos * factor;
@@ -192,19 +202,6 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* drawList, ImVec2 offset, floa
 		ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 
 		ImVec2 node_rect_max = node_rect_min + commentSize;
-
-		// Display node box
-		bool overAnyNode = false;
-		for (auto& node : nodes)
-		{
-			ImVec2 node_rect_min = offset + node.Pos * factor;
-			ImVec2 node_rect_max = node_rect_min + node.Size;
-			if (ImRect(node_rect_min, node_rect_max).Contains(io.MousePos))
-			{
-				overAnyNode = true;
-				break;
-			}
-		}
 
 		ImRect rugRect(node_rect_min, node_rect_max);
 		if (rugRect.Contains(io.MousePos) && !overAnyNode)
@@ -776,13 +773,17 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
 	bool hoverSlot = false;
 	for (int i = 0; i < 2; i++)
 	{
+		float closestDistance = FLT_MAX;
+		int closestConn = -1;
+		ImVec2 closestTextPos;
+		ImVec2 closestPos;
 		const size_t slotCount[2] = { node->InputsCount, node->OutputsCount };
 		const MetaCon *con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
 		for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
 		{
 			ImVec2 p = offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
-			//bool overCon = (!quadSelecting) && (!isMovingNode) && (movingRug == NULL && sizingRug == NULL) && !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
-			bool overCon = (nodeOperation == NO_None || nodeOperation == NO_EditingLink ) && Distance(p, io.MousePos) < NODE_SLOT_RADIUS*2.f;
+			float distance = Distance(p, io.MousePos);
+			bool overCon = (nodeOperation == NO_None || nodeOperation == NO_EditingLink ) && (distance < NODE_SLOT_RADIUS * 2.f) && (distance < closestDistance);
 
 			const char *conText = con[slot_idx].mName.c_str();
 			ImVec2 textSize;
@@ -791,96 +792,101 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
 
 			if (overCon)
 			{
-				hoverSlot = true;
-				drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*2.f, IM_COL32(0, 0, 0, 200));
-				drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*1.5f, IM_COL32(200, 200, 200, 200));
-				drawList->AddText(io.FontDefault, 16, textPos + ImVec2(1, 1), IM_COL32(0, 0, 0, 255), conText);
-				drawList->AddText(io.FontDefault, 16, textPos, IM_COL32(250, 250, 250, 255), conText);
-				bool inputToOutput = (!editingInput && !i) || (editingInput && i);
-				if (nodeOperation == NO_EditingLink && !io.MouseDown[0])
+				closestDistance = distance;
+				closestConn = slot_idx;
+				closestTextPos = textPos;
+				closestPos = p;
+			}
+
+			drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*1.2f, IM_COL32(0, 0, 0, 200));
+			drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75f*1.2f, IM_COL32(160, 160, 160, 200));
+			drawList->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
+			drawList->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
+
+		}
+		if (closestConn != -1)
+		{
+			const char *conText = con[closestConn].mName.c_str();
+
+			hoverSlot = true;
+			drawList->AddCircleFilled(closestPos, NODE_SLOT_RADIUS*2.f, IM_COL32(0, 0, 0, 200));
+			drawList->AddCircleFilled(closestPos, NODE_SLOT_RADIUS*1.5f, IM_COL32(200, 200, 200, 200));
+			drawList->AddText(io.FontDefault, 16, closestTextPos + ImVec2(1, 1), IM_COL32(0, 0, 0, 255), conText);
+			drawList->AddText(io.FontDefault, 16, closestTextPos, IM_COL32(250, 250, 250, 255), conText);
+			bool inputToOutput = (!editingInput && !i) || (editingInput && i);
+			if (nodeOperation == NO_EditingLink && !io.MouseDown[0])
+			{
+				if (inputToOutput)
 				{
-					if (inputToOutput)
+					// check loopback
+					NodeLink nl;
+					if (editingInput)
+						nl = NodeLink(nodeIndex, closestConn, editingNodeIndex, editingSlotIndex);
+					else
+						nl = NodeLink(editingNodeIndex, editingSlotIndex, nodeIndex, closestConn);
+
+					if (RecurseIsLinked(nl.OutputIdx, nl.InputIdx))
 					{
-						//nodeOperation = NO_None;
-
-						// check loopback
-
-						NodeLink nl;
-						if (editingInput)
-							nl = NodeLink(nodeIndex, slot_idx, editingNodeIndex, editingSlotIndex);
-						else
-							nl = NodeLink(editingNodeIndex, editingSlotIndex, nodeIndex, slot_idx);
-
-						if (RecurseIsLinked(nl.OutputIdx, nl.InputIdx))
+						Log("Acyclic graph. Loop is not allowed.\n");
+						break;
+					}
+					bool alreadyExisting = false;
+					for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
+					{
+						if (links[linkIndex] == nl)
 						{
-							Log("Acyclic graph. Loop is not allowed.\n");
+							alreadyExisting = true;
 							break;
 						}
-						bool alreadyExisting = false;
-						for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
-						{
-							if (links[linkIndex] == nl)
-							{
-								alreadyExisting = true;
-								break;
-							}
-						}
+					}
 
-						// check already connected output
-						for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
+					// check already connected output
+					for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
+					{
+						NodeLink& link = links[linkIndex];
+						if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
 						{
-							NodeLink& link = links[linkIndex];
-							if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
-							{
-								URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
-								gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
-								links.erase(links.begin() + linkIndex);
-								NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-								break;
-							}
-						}
-
-						if (!alreadyExisting)
-						{
-							URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
-
-							links.push_back(nl);
-							gNodeDelegate. AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
+							URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+							gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+							links.erase(links.begin() + linkIndex);
 							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							break;
 						}
 					}
-				}
-				if (nodeOperation == NO_None && io.MouseDown[0])
-				{
-					nodeOperation = NO_EditingLink;
-					editingInput = i == 0;
-					editingNodeSource = p;
-					editingNodeIndex = nodeIndex;
-					editingSlotIndex = slot_idx;
-					if (editingInput)
+
+					if (!alreadyExisting)
 					{
-						// remove existing link
-						for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
-						{
-							NodeLink& link = links[linkIndex];
-							if (link.OutputIdx == nodeIndex && link.OutputSlot == slot_idx)
-							{
-								URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
-								gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
-								links.erase(links.begin() + linkIndex);
-								NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-								break;
-							}
-						}
+						URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
+
+						links.push_back(nl);
+						gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
+						NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
 					}
 				}
 			}
-			else
+			if (nodeOperation == NO_None && io.MouseDown[0])
 			{
-				drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*1.2f, IM_COL32(0, 0, 0, 200));
-				drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75f*1.2f, IM_COL32(160, 160, 160, 200));
-				drawList->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
-				drawList->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
+				nodeOperation = NO_EditingLink;
+				editingInput = i == 0;
+				editingNodeSource = closestPos;
+				editingNodeIndex = nodeIndex;
+				editingSlotIndex = closestConn;
+				if (editingInput)
+				{
+					// remove existing link
+					for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
+					{
+						NodeLink& link = links[linkIndex];
+						if (link.OutputIdx == nodeIndex && link.OutputSlot == closestConn)
+						{
+							URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+							gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+							links.erase(links.begin() + linkIndex);
+							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							break;
+						}
+					}
+				}
 			}
 		}
 	}

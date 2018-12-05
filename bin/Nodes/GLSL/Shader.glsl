@@ -53,6 +53,13 @@ uniform sampler2D Sampler5;
 uniform sampler2D Sampler6;
 uniform sampler2D Sampler7;
 uniform samplerCube CubeSampler0;
+uniform samplerCube CubeSampler1;
+uniform samplerCube CubeSampler2;
+uniform samplerCube CubeSampler3;
+uniform samplerCube CubeSampler4;
+uniform samplerCube CubeSampler5;
+uniform samplerCube CubeSampler6;
+uniform samplerCube CubeSampler7;
 
 vec2 Rotate2D(vec2 v, float a) 
 {
@@ -61,7 +68,10 @@ vec2 Rotate2D(vec2 v, float a)
 	mat2 m = mat2(c, -s, s, c);
 	return m * v;
 }
-
+vec3 InvertCubeY(vec3 dir)
+{
+	return vec3(dir.x, -dir.y, dir.z);
+}
 float Circle(vec2 uv, float radius, float t)
 {
     float r = length(uv-vec2(0.5));

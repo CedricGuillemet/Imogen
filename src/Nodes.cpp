@@ -209,7 +209,6 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* drawList, ImVec2 offset, floa
 		ImRect rugRect(node_rect_min, node_rect_max);
 		if (rugRect.Contains(io.MousePos) && !overAnyNode)
 		{
-
 			if (io.MouseDoubleClicked[0])
 			{
 				ret = &rug;

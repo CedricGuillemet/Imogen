@@ -32,7 +32,9 @@ EvaluationContext *gCurrentContext = NULL;
 
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
-static const char* samplerName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7", "CubeSampler0" };
+static const char* sampler2DName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
+static const char* samplerCubeName[] = { "CubeSampler0", "CubeSampler1", "CubeSampler2", "CubeSampler3", "CubeSampler4", "CubeSampler5", "CubeSampler6", "CubeSampler7" };
+
 static const unsigned int GLBlends[] = { GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
 	GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_SRC_ALPHA_SATURATE };
 
@@ -168,26 +170,31 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
-		int samplerIndex = 0;
-		for (size_t inputIndex = 0; inputIndex < sizeof(samplerName) / sizeof(const char*); inputIndex++)
+		//int samplerIndex = 0;
+		for (int inputIndex = 0; inputIndex < 8/*sizeof(samplerName) / sizeof(const char*)*/; inputIndex++)
 		{
-			unsigned int parameter = glGetUniformLocation(program, samplerName[inputIndex]);
-			if (parameter == 0xFFFFFFFF)
-				continue;
-			glUniform1i(parameter, samplerIndex);
-			glActiveTexture(GL_TEXTURE0 + samplerIndex);
-
-			int targetIndex = input.mInputs[samplerIndex];
+			glActiveTexture(GL_TEXTURE0 + inputIndex);
+			int targetIndex = input.mInputs[inputIndex];
 			if (targetIndex < 0)
 			{
 				glBindTexture(GL_TEXTURE_2D, 0);
 			}
 			else
 			{
+				unsigned int parameter = glGetUniformLocation(program, sampler2DName[inputIndex]);
+				if (parameter == 0xFFFFFFFF)
+					parameter = glGetUniformLocation(program, samplerCubeName[inputIndex]);
+				if (parameter == 0xFFFFFFFF)
+				{
+					glBindTexture(GL_TEXTURE_2D, 0);
+					continue;
+				}
+				glUniform1i(parameter, inputIndex);
+
 				auto tgt = mStageTarget[targetIndex];
 				if (tgt)
 				{
-					const InputSampler& inputSampler = evaluationStage.mInputSamplers[samplerIndex];
+					const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
 					if (tgt->mImage.mNumFaces == 1)
 					{
 						glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
@@ -200,7 +207,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 					}
 				}
 			}
-			samplerIndex++;
 		}
 		//
 		gFSQuad.Render();

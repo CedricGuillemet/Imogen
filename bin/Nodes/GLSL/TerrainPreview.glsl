@@ -87,7 +87,7 @@ vec4 TerrainPreview()
 	vec3 rd = normalize( p.x*uu + p.y*vv + 1.5*ww );
 	
 
-    vec3 col = texture(CubeSampler0, rd).xyz + texture(Sampler0, vec2(0.)).xyz*0.01;
+    vec3 col = texture(CubeSampler3, InvertCubeY(rd)).xyz + texture(Sampler0, vec2(0.)).xyz*0.01;
     
 	float d = castRay(ro, rd);
 	if (d<maxd)

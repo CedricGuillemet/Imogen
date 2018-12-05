@@ -33,6 +33,136 @@
 #include "NodesDelegate.h"
 
 TileNodeEditGraphDelegate gNodeDelegate;
+
+
+struct RampEdit : public ImCurveEdit::Delegate
+{
+	RampEdit()
+	{
+	}
+	size_t GetCurveCount()
+	{
+		return 1;
+	}
+
+	size_t GetPointCount(size_t curveIndex)
+	{
+		return mPointCount;
+	}
+
+	uint32_t GetCurveColor(size_t curveIndex)
+	{
+		return 0xFFAAAAAA;
+	}
+	ImVec2* GetPoints(size_t curveIndex)
+	{
+		return mPts;
+	}
+
+	virtual size_t EditPoint(size_t curveIndex, size_t pointIndex, ImVec2 value)
+	{
+		mPts[pointIndex] = value;
+		SortValues(curveIndex);
+		for (size_t i = 0; i < GetPointCount(curveIndex); i++)
+		{
+			if (mPts[i].x == value.x)
+				return i;
+		}
+		return pointIndex;
+	}
+	virtual void AddPoint(size_t curveIndex, ImVec2 value)
+	{
+		if (mPointCount >= 8)
+			return;
+		mPts[mPointCount++] = value;
+		SortValues(curveIndex);
+	}
+
+	virtual void DelPoint(size_t curveIndex, size_t pointIndex)
+	{
+		mPts[pointIndex].x = FLT_MAX;
+		SortValues(curveIndex);
+		mPointCount--;
+		mPts[mPointCount].x = -1.f; // end marker
+	}
+	ImVec2 mPts[8];
+	size_t mPointCount;
+
+private:
+	void SortValues(size_t curveIndex)
+	{
+		auto b = std::begin(mPts);
+		auto e = std::begin(mPts) + GetPointCount(curveIndex);
+		std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
+	}
+};
+
+
+struct GradientEdit : public ImGradient::Delegate
+{
+	GradientEdit()
+	{
+		mPointCount = 0;
+	}
+
+	size_t GetPointCount()
+	{
+		return mPointCount;
+	}
+
+	ImVec4* GetPoints()
+	{
+		return mPts;
+	}
+
+	virtual int EditPoint(int pointIndex, ImVec4 value)
+	{
+		mPts[pointIndex] = value;
+		SortValues();
+		for (size_t i = 0; i < GetPointCount(); i++)
+		{
+			if (mPts[i].w == value.w)
+				return int(i);
+		}
+		return pointIndex;
+	}
+	virtual void AddPoint(ImVec4 value)
+	{
+		if (mPointCount >= 8)
+			return;
+		mPts[mPointCount++] = value;
+		SortValues();
+	}
+	virtual ImVec4 GetPoint(float t)
+	{
+		if (GetPointCount() == 0)
+			return ImVec4(1.f, 1.f, 1.f, 1.f);
+		if (GetPointCount() == 1 || t <= mPts[0].w)
+			return mPts[0];
+
+		for (size_t i = 0; i < GetPointCount() - 1; i++)
+		{
+			if (mPts[i].w <= t && mPts[i + 1].w >= t)
+			{
+				float r = (t - mPts[i].w) / (mPts[i + 1].w - mPts[i].w);
+				return ImLerp(mPts[i], mPts[i + 1], r);
+			}
+		}
+		return mPts[GetPointCount() - 1];
+	}
+	ImVec4 mPts[8];
+	size_t mPointCount;
+
+private:
+	void SortValues()
+	{
+		auto b = std::begin(mPts);
+		auto e = std::begin(mPts) + GetPointCount();
+		std::sort(b, e, [](ImVec4 a, ImVec4 b) { return a.w < b.w; });
+
+	}
+};
+
 TileNodeEditGraphDelegate::TileNodeEditGraphDelegate() : mbMouseDragging(false), mEditingContext(gEvaluation, false, 1024, 1024)
 {
 	mCategoriesCount = 9;
@@ -631,6 +761,15 @@ size_t TileNodeEditGraphDelegate::ComputeNodeParametersSize(size_t nodeTypeIndex
 	}
 	return res;
 }
+
+bool TileNodeEditGraphDelegate::NodeIs2D(size_t nodeIndex)
+{
+	auto target = mEditingContext.GetRenderTarget(nodeIndex);
+	if (target)
+		return target->mImage.mNumFaces == 1;
+	return false;
+}
+
 bool TileNodeEditGraphDelegate::NodeIsCubemap(size_t nodeIndex)
 {
 	auto target = mEditingContext.GetRenderTarget(nodeIndex);

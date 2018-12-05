@@ -992,6 +992,20 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
 	drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
 	drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
 
+	unsigned int stage2D = gEvaluation.GetTexture("Stock/Stage2D.png");
+	unsigned int stagecubemap = gEvaluation.GetTexture("Stock/StageCubemap.png");
+
+	ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
+	ImVec2 bmpInfoSize(20, 20);
+
+	if (gNodeDelegate.NodeIs2D(nodeIndex))
+	{
+		drawList->AddImageQuad((ImTextureID)(uint64_t)stage2D, bmpInfoPos, bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f), bmpInfoPos + bmpInfoSize, bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+	}
+	else if (gNodeDelegate.NodeIsCubemap(nodeIndex))
+	{
+		drawList->AddImageQuad((ImTextureID)(uint64_t)stagecubemap, bmpInfoPos + ImVec2(0., bmpInfoSize.y), bmpInfoPos + bmpInfoSize, bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f), bmpInfoPos);
+	}
 	return nodeHovered;
 }
 

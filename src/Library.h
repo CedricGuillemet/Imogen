@@ -100,6 +100,43 @@ struct MaterialConnection
 	uint8_t mInputSlot;
 	uint8_t mOutputSlot;
 };
+
+struct AnimationBase 
+{
+	std::vector<uint32_t> mFrames;
+
+	virtual void Allocate(size_t elementCount) = 0;
+	virtual void* GetData() = 0;
+	virtual void GetByteLength() const = 0;
+};
+
+template<typename T> struct Animation : public AnimationBase
+{
+	std::vector<T> mValues;
+
+	virtual void Allocate(size_t elementCount) 
+	{ 
+		mFrames.resize(elementCount); 
+		mValues.resize(elementCount);
+	}
+	virtual void* GetData()
+	{
+		return mValues.data();
+	}
+	virtual void GetValuesByteLength() const
+	{
+		return mValues.size() * sizeof(T);
+	}
+};
+
+struct AnimTrack
+{
+	uint32_t mNodeIndex;
+	uint32_t mParamIndex;
+	uint32_t mValueType; // Con_
+	AnimationBase *mAnimation;
+};
+
 struct Material
 {
 	std::string mName;
@@ -109,12 +146,16 @@ struct Material
 	std::vector<MaterialConnection> mMaterialConnections;
 	std::vector<uint8_t> mThumbnail;
 
+	std::vector<AnimTrack> mAnimTrack;
+
+
 	MaterialNode* Get(ASyncId id) { return GetByAsyncId(id, mMaterialNodes); }
 
 	//run time
 	unsigned int mThumbnailTextureId;
 	unsigned int mRuntimeUniqueId;
 };
+
 struct Library
 {
 	std::vector<Material> mMaterials;

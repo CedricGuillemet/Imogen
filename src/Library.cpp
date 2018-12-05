@@ -37,6 +37,7 @@ enum : uint32_t
 	v_rugs,
 	v_nodeTypeName,
 	v_frameStartEnd,
+	v_animation,
 	v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -106,6 +107,61 @@ template<bool doWrite> struct Serialize
 			data.resize(count);
 			fread(&data[0], count, 1, fp);
 		}
+	}
+
+	void Ser(AnimationBase *animBase)
+	{
+		ADD(v_animation, animBase->mFrames);
+		if (doWrite)
+		{
+			fwrite(animBase->GetData(), animBase->GetByteLength(), 1, fp);
+		}
+		else
+		{
+			animBase->Allocate(animBase->mFrames);
+			fread(animBase->GetData(), animBase->GetByteLength(), 1, fp);
+		}
+	}
+
+	AnimationBase *AllocateAnimation(uint32_t valueType)
+	{
+		switch (valueType)
+		{
+		case Con_Float: return new Animation<float>;
+		case Con_Float2: return new Animation<float[2]>;
+		case Con_Float3: return new Animation<float[3]>;
+		case Con_Float4: return new Animation<Vec4>;
+		case Con_Color4: return new Animation<Vec4>;
+		case Con_Int: return new Animation<int>;
+		case Con_Int2: return new Animation<int[2]>;
+		case Con_Ramp: return new Animation<float[2]>;
+		case Con_Angle: return new Animation<float>;
+		case Con_Angle2: return new Animation<float[2]>;
+		case Con_Angle3: return new Animation<float[3]>;
+		case Con_Angle4: return new Animation<Vec4>;
+		case Con_Enum: return new Animation<int>;
+		case Con_Structure:
+		case Con_FilenameRead:
+		case Con_FilenameWrite:
+		case Con_ForceEvaluate:
+			return NULL;
+		case Con_Bool: return new Animation<unsigned char>;
+		case Con_Ramp4: return new Animation<Vec4>;
+		case Con_Camera: return new Animation<Camera>;
+		}
+		return NULL;
+	}
+
+	void Ser(AnimTrack *animTrack)
+	{
+		ADD(v_animation, animTrack->mNodeIndex);
+		ADD(v_animation, animTrack->mParamIndex);
+		ADD(v_animation, animTrack->mValueType);
+		if (!doWrite)
+		{
+			animTrack->mAnimation = AllocateAnimation(animTrack->mValueType);
+		}
+		ADD(v_animation, animTrack->mAnimation);
 	}
 
 	void Ser(InputSampler *inputSampler)

@@ -101,6 +101,73 @@ vec2 envMapEquirect(vec3 wcNormal) {
     return envMapEquirect(wcNormal, -1.0);
 }
 
+float saturate( float x )
+{
+    return clamp( x, 0., 1. );
+}
+
+vec3 saturate( vec3 x )
+{
+    return clamp( x, vec3( 0. ), vec3( 1. ) );
+}
+
+float Smooth( float x )
+{
+	return smoothstep( 0., 1., saturate( x ) );   
+}
+
+// distance functions
+
+float Cylinder( vec3 p, float r, float height ) 
+{
+	float d = length( p.xz ) - r;
+	d = max( d, abs( p.y ) - height );
+	return d;
+}
+
+float Substract( float a, float b )
+{
+    return max( a, -b );
+}
+
+float SubstractRound( float a, float b, float r ) 
+{
+	vec2 u = max( vec2( r + a, r - b ), vec2( 0.0, 0.0 ) );
+	return min( -r, max( a, -b ) ) + length( u );
+}
+
+float Union( float a, float b )
+{
+    return min( a, b );
+}
+
+float Box( vec3 p, vec3 b )
+{
+	vec3 d = abs( p ) - b;
+	return min( max( d.x, max( d.y, d.z ) ), 0.0 ) + length( max( d, 0.0 ) );
+}
+
+float Sphere( vec3 p, float s )
+{
+	return length( p ) - s;
+}
+
+float Torus( vec3 p, float sr, float lr )
+{
+	return length( vec2( length( p.xz ) - lr, p.y ) ) - sr;
+}
+
+float Disc( vec3 p, float r, float t ) 
+{
+	float l = length( p.xz ) - r;
+	return l < 0. ? abs( p.y ) - t : length( vec2( p.y, l ) ) - t;
+}
+
+float UnionRound( float a, float b, float k )
+{
+    float h = clamp( 0.5 + 0.5 * ( b - a ) / k, 0.0, 1.0 );
+    return mix( b, a, h ) - k * h * ( 1.0 - h );
+}
 
 
 __NODE__

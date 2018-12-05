@@ -429,9 +429,9 @@ void LoadMetaNodes()
 		,
 		{
 			"PBR", hcMaterial, 2
-			,{ { "Diffuse", Con_Float4 },{ "Normal", Con_Float4 },{ "Roughness", Con_Float4 },{ "Displacement", Con_Float4 },{ "Equirect sky", Con_Float4 } }
+			,{ { "Diffuse", Con_Float4 },{ "Normal", Con_Float4 },{ "Roughness", Con_Float4 },{ "Displacement", Con_Float4 },{ "Cubemap", Con_Float4 } }
 		,{ { "", Con_Float4 } }
-		,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f, true } }
+		,{ { "View", Con_Float2, 1.f,0.f,0.f,1.f, true }, { "Displacement Factor", Con_Float },{ "Geometry", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Door knob\0Sphere\0Cube\0Plane\0Cylinder\0" } }
 		}
 
 		,
@@ -589,7 +589,7 @@ void LoadMetaNodes()
 			,
 			{
 				"TerrainPreview", hcMaterial, 2
-				,{ { "Height", Con_Float4 }, { "Diffuse", Con_Float4 }, { "AO", Con_Float4 }, { "Sky CM", Con_Float4 } }
+				,{ { "Height", Con_Float4 }, { "Diffuse", Con_Float4 }, { "AO", Con_Float4 }, { "Cubemap", Con_Float4 } }
 			,{ { "", Con_Float4 } }
 			,{ { "Camera", Con_Camera } }
 			}

@@ -1,22 +1,14 @@
-
-
 /////////////////////////////////////////////////////////////////////////
 // PBR by knarkowicz https://www.shadertoy.com/view/4sSfzK
 
-float saturate( float x )
+layout (std140) uniform PBRBlock
 {
-    return clamp( x, 0., 1. );
-}
+	vec2 view;
+	float displacementFactor;
+	int geometry;
+} PBRParam;
 
-vec3 saturate( vec3 x )
-{
-    return clamp( x, vec3( 0. ), vec3( 1. ) );
-}
-
-float Smooth( float x )
-{
-	return smoothstep( 0., 1., saturate( x ) );   
-}
+float camHeight = -0.2;
 
 void Rotate( inout vec2 p, float a ) 
 {
@@ -79,64 +71,13 @@ vec3 EnvRemap( vec3 c )
     return pow( 2. * c, vec3( 2.2 ) );
 }
 
-float Cylinder( vec3 p, float r, float height ) 
-{
-	float d = length( p.xz ) - r;
-	d = max( d, abs( p.y ) - height );
-	return d;
-}
-
-float Substract( float a, float b )
-{
-    return max( a, -b );
-}
-
-float SubstractRound( float a, float b, float r ) 
-{
-	vec2 u = max( vec2( r + a, r - b ), vec2( 0.0, 0.0 ) );
-	return min( -r, max( a, -b ) ) + length( u );
-}
-
-float Union( float a, float b )
-{
-    return min( a, b );
-}
-
-float Box( vec3 p, vec3 b )
-{
-	vec3 d = abs( p ) - b;
-	return min( max( d.x, max( d.y, d.z ) ), 0.0 ) + length( max( d, 0.0 ) );
-}
-
-float Sphere( vec3 p, float s )
-{
-	return length( p ) - s;
-}
-
-float Torus( vec3 p, float sr, float lr )
-{
-	return length( vec2( length( p.xz ) - lr, p.y ) ) - sr;
-}
-
-float Disc( vec3 p, float r, float t ) 
-{
-	float l = length( p.xz ) - r;
-	return l < 0. ? abs( p.y ) - t : length( vec2( p.y, l ) ) - t;
-}
-
-float UnionRound( float a, float b, float k )
-{
-    float h = clamp( 0.5 + 0.5 * ( b - a ) / k, 0.0, 1.0 );
-    return mix( b, a, h ) - k * h * ( 1.0 - h );
-}
-
 float displace(vec3 p)
 {
 	float disp = boxmap(Sampler3, p, normalize(p), 1.0 ).x;
-//float disp = texture
-	return -disp * 0.01;
+	return -disp * PBRParam.displacementFactor;
 }
-float Scene( vec3 p, mat3 localToWorld )
+
+float DoorKnob( vec3 p, mat3 localToWorld )
 {
     p = p * localToWorld;
     
@@ -160,6 +101,32 @@ float Scene( vec3 p, mat3 localToWorld )
     b = Union( b, Sphere( t, .7 ) );
 
     float ret = Union( r, b );
+	return ret;
+}
+
+float Scene( vec3 p, mat3 localToWorld )
+{
+	vec3 centerMesh = vec3(0., -camHeight, 0.);
+	float ret = 0.;
+	
+    switch(PBRParam.geometry)
+	{
+	case 0:
+		ret = DoorKnob(p, localToWorld);
+		break;
+	case 1:
+		ret = Sphere(p+centerMesh, 1.0);
+		break;
+	case 2:
+		ret = Box(p+centerMesh, vec3(0.5));
+		break;
+	case 3:
+		ret = max(p.y, 0.);
+		break;
+	case 4:
+		ret = Cylinder(p+centerMesh, 0.7, 0.7);
+		break;
+	}
 	ret += displace(p);
 	return ret;
 }
@@ -215,11 +182,6 @@ float SceneAO( vec3 p, vec3 n, mat3 localToWorld )
     return Smooth( 1.0 - 12.0 * ao );
 }
 
-layout (std140) uniform PBRBlock
-{
-	vec2 view;
-} PBRParam;
-
 vec4 PBR()
 {
 	vec2 p = vUV * 2.0 - 1.0;
@@ -228,7 +190,7 @@ vec4 PBR()
 	float an = PBRParam.view.x * PI * 2.0;
 	float dn = PBRParam.view.y * PI * 0.5;
 	float cdn = cos(dn);
-float camHeight = -0.2;
+
 	vec3 ro = vec3( 2.0*sin(an)*cdn, camHeight + sin(dn)*2.0, 2.0*cos(an)*cdn );
     vec3 ta = vec3( 0.0, camHeight, 0.0 );
     // camera matrix
@@ -246,7 +208,7 @@ float camHeight = -0.2;
     vec3 lightColor = vec3( 2. );
     vec3 lightDir = normalize( vec3( .7, .9, -.2 ) );
 
-    vec3 col = texture(Sampler4, envMapEquirect(rd)).xyz;
+    vec3 col = texture(CubeSampler4, InvertCubeY(rd)).xyz;
 	float t = CastRay( ro, rd, localToWorld );
     if ( t > 0.0 )
     {

@@ -342,6 +342,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	ImGui::PopStyleColor(3);
 	ImGui::PopStyleVar(1);
 
+	static int lastSentExit = -1;
 	if (rc.Contains(io.MousePos))
 	{
 		static Image pickerImage;
@@ -411,10 +412,15 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
 			nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
 		}
+		lastSentExit = -1;
 	}
 	else
 	{
-		nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
+		if (lastSentExit != selNode)
+		{
+			lastSentExit = selNode;
+			nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
+		}
 	}
 }
 

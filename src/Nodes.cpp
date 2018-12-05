@@ -921,11 +921,9 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
 	node->Size = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
 	ImVec2 node_rect_max = node_rect_min + node->Size;
 
-	drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
-	drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
-
 	// Display node box
 	drawList->ChannelsSetCurrent(1); // Background
+
 	ImGui::SetCursorScreenPos(node_rect_min);
 	ImGui::InvisibleButton("node", node->Size);
 	bool nodeHovered = false;
@@ -990,6 +988,10 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
 		drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), nodeIndex)));
 	else
 		drawList->AddImage((ImTextureID)(int64_t)(gNodeDelegate.GetNodeTexture(size_t(nodeIndex))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
+
+	drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
+	drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
+
 	return nodeHovered;
 }
 
@@ -1057,27 +1059,32 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 	// Display nodes
 	int hoveredNode = -1;
-	for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
+	for (int i = 0; i < 2; i++)
 	{
-		Node* node = &nodes[nodeIndex];
-		ImVec2 node_rect_min = offset + node->Pos * factor;
+		for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
+		{
+			Node* node = &nodes[nodeIndex];
+			if (node->mbSelected != (i != 0))
+				continue;
+			ImVec2 node_rect_min = offset + node->Pos * factor;
 
-		// node view clipping
-		ImVec2 p1 = node_rect_min;
-		ImVec2 p2 = node_rect_min + ImVec2(100, 100) * factor;
-		if (!regionRect.Overlaps(ImRect(p1, p2)))
-			continue;
+			// node view clipping
+			ImVec2 p1 = node_rect_min;
+			ImVec2 p2 = node_rect_min + ImVec2(100, 100) * factor;
+			if (!regionRect.Overlaps(ImRect(p1, p2)))
+				continue;
 
-		ImGui::PushID(nodeIndex);
+			ImGui::PushID(nodeIndex);
 
-		// Display node contents first
-		drawList->ChannelsSetCurrent(2); // Foreground
-		
-		if (DrawNode(drawList, nodeIndex, offset, factor))
-			hoveredNode = nodeIndex;
+			// Display node contents first
+			drawList->ChannelsSetCurrent(2); // Foreground
 
-		HandleConnections(drawList, nodeIndex, offset, factor);
-		ImGui::PopID();
+			if (DrawNode(drawList, nodeIndex, offset, factor))
+				hoveredNode = nodeIndex;
+
+			HandleConnections(drawList, nodeIndex, offset, factor);
+			ImGui::PopID();
+		}
 	}
 
 	if (nodeOperation == NO_MovingNodes)

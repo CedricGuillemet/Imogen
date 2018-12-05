@@ -292,16 +292,15 @@ void Evaluators::ClearEvaluators()
 	}
 }
 
-int Evaluators::GetMask(size_t nodeType, const std::string& nodeName)
+int Evaluators::GetMask(size_t nodeType)
 {
+	const std::string& nodeName = gMetaNodes[nodeType].mName;
 	int mask = 0;
 	auto iter = mEvaluatorScripts.find(nodeName + ".glsl");
 	if (iter != mEvaluatorScripts.end())
 	{
 		mask |= EvaluationGLSL;
 		iter->second.mNodeType = int(nodeType);
-		//evaluation.mTarget = new RenderTarget;
-		//mAllocatedRenderTargets.push_back(evaluation.mTarget);
 		mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
 	}
 	iter = mEvaluatorScripts.find(nodeName + ".c");

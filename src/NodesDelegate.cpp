@@ -60,42 +60,61 @@ void TileNodeEditGraphDelegate::SetParamBlock(size_t index, const std::vector<un
 {
 	ImogenNode & node = mNodes[index];
 	node.mParameters = parameters;
-	gEvaluation.SetEvaluationParameters(node.gEvaluationTarget, parameters);
-	gEvaluation.SetEvaluationSampler(node.gEvaluationTarget, node.mInputSamplers);
+	gEvaluation.SetEvaluationParameters(index, parameters);
+	gEvaluation.SetEvaluationSampler(index, node.mInputSamplers);
 }
 
-void TileNodeEditGraphDelegate::AddNode(size_t type)
+void NodeIsDeleted(int index)
 {
-	const size_t index			= mNodes.size();
-	const size_t inputCount		= gMetaNodes[type].mInputs.size();
+};
+
+void NodeIsAdded(int index)
+{
+	auto& node = gNodeDelegate.mNodes[index];
+	gEvaluation.SetEvaluationParameters(index, node.mParameters);
+	gEvaluation.SetEvaluationSampler(index, node.mInputSamplers);
+};
+
+void TileNodeEditGraphDelegate::AddSingleNode(size_t type)
+{
+	const size_t inputCount = gMetaNodes[type].mInputs.size();
 
 	ImogenNode node;
-	node.gEvaluationTarget		= gEvaluation.AddEvaluation(type, gMetaNodes[type].mName);
-	node.mRuntimeUniqueId		= GetRuntimeId();
-	node.mType					= type;
-	node.mStartFrame			= 0;
-	node.mEndFrame				= 0;
+	node.mRuntimeUniqueId = GetRuntimeId();
+	node.mType = type;
+	node.mStartFrame = 0;
+	node.mEndFrame = 0;
 #ifdef _DEBUG
-	node.mNodeTypename			= gMetaNodes[type].mName;
+	node.mNodeTypename = gMetaNodes[type].mName;
 #endif
 	InitDefault(node);
 	node.mInputSamplers.resize(inputCount);
+
 	mNodes.push_back(node);
 
-	gEvaluation.SetEvaluationParameters(node.gEvaluationTarget, node.mParameters);
-	gEvaluation.SetEvaluationSampler(node.gEvaluationTarget, node.mInputSamplers);
+	NodeIsAdded(int(mNodes.size()) - 1);
 }
 
-void TileNodeEditGraphDelegate::DeleteNode(size_t index)
+void TileNodeEditGraphDelegate::UserAddNode(size_t type)
 {
-	gEvaluation.DelEvaluationTarget(mNodes[index].gEvaluationTarget);
+	URAdd<ImogenNode> undoRedoAddNode(int(mNodes.size()), []() {return &gNodeDelegate.mNodes; },
+		NodeIsDeleted, NodeIsAdded);
+
+	mEditingContext.UserAddStage();
+	gEvaluation.UserAddEvaluation(type);
+	AddSingleNode(type);
+}
+
+void TileNodeEditGraphDelegate::UserDeleteNode(size_t index)
+{
+	URDel<ImogenNode> undoRedoDelNode(int(index), []() {return &gNodeDelegate.mNodes; },
+		NodeIsDeleted, NodeIsAdded);
+
+	NodeIsDeleted(int(index));
+	mEditingContext.UserDeleteStage(index);
+	gEvaluation.UserDeleteEvaluation(index);
+
 	mNodes.erase(mNodes.begin() + index);
-	for (auto& node : mNodes)
-	{
-		if (node.gEvaluationTarget > index)
-			node.gEvaluationTarget--;
-	}
-	mEditingContext.RunAll();
 }
 	
 const float PI = 3.14159f;
@@ -169,7 +188,7 @@ void TileNodeEditGraphDelegate::EditNode()
 	{
 		URChange<std::vector<InputSampler> > undoRedoSampler(int(index)
 			, [](int index) { return &gNodeDelegate.mNodes[index].mInputSamplers; }
-			, [](int index) { auto& node = gNodeDelegate.mNodes[index]; gEvaluation.SetEvaluationSampler(node.gEvaluationTarget, node.mInputSamplers);});
+			, [](int index) { auto& node = gNodeDelegate.mNodes[index]; gEvaluation.SetEvaluationSampler(index, node.mInputSamplers);});
 			
 		for (size_t i = 0; i < node.mInputSamplers.size();i++)
 		{
@@ -186,7 +205,7 @@ void TileNodeEditGraphDelegate::EditNode()
 		}
 		if (samplerDirty)
 		{
-			gEvaluation.SetEvaluationSampler(node.gEvaluationTarget, node.mInputSamplers);
+			gEvaluation.SetEvaluationSampler(index, node.mInputSamplers);
 		}
 		else
 		{
@@ -200,8 +219,8 @@ void TileNodeEditGraphDelegate::EditNode()
 	auto updateDirtyParameter = [](int index) 
 	{
 		auto& node = gNodeDelegate.mNodes[index];
-		gEvaluation.SetEvaluationParameters(node.gEvaluationTarget, node.mParameters);
-		gCurrentContext->SetTargetDirty(node.gEvaluationTarget);
+		gEvaluation.SetEvaluationParameters(index, node.mParameters);
+		gCurrentContext->SetTargetDirty(index);
 	};
 	URChange<std::vector<unsigned char> > undoRedoParameter(int(index)
 		, [](int index) { return &gNodeDelegate.mNodes[index].mParameters; }
@@ -360,7 +379,7 @@ void TileNodeEditGraphDelegate::EditNode()
 				EvaluationInfo evaluationInfo;
 				evaluationInfo.forcedDirty = 1;
 				evaluationInfo.uiPass = 0;
-				mEditingContext.RunSingle(node.gEvaluationTarget, evaluationInfo);
+				mEditingContext.RunSingle(index, evaluationInfo);
 			}
 			break;
 		case Con_Bool:
@@ -403,19 +422,21 @@ void TileNodeEditGraphDelegate::SetTimeDuration(size_t index, int duration)
 void TileNodeEditGraphDelegate::SetTime(int time, bool updateDecoder)
 {
 	gEvaluationTime = time;
-	for (const ImogenNode& node : mNodes)
+	for (size_t i = 0; i < mNodes.size(); i++)
 	{
-		gEvaluation.SetStageLocalTime(node.gEvaluationTarget, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
+		const ImogenNode& node = mNodes[i];
+		gEvaluation.SetStageLocalTime(i, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
 	}
 }
 
 size_t TileNodeEditGraphDelegate::ComputeTimelineLength() const
 {
 	int len = 0;
-	for (const ImogenNode& node : mNodes)
+	for (size_t i = 0; i < mNodes.size(); i++)
 	{
+		const ImogenNode& node = mNodes[i];
 		len = ImMax(len, node.mEndFrame);
-		len = ImMax(len, int(node.mStartFrame + gEvaluation.GetEvaluationImageDuration(node.gEvaluationTarget)));
+		len = ImMax(len, int(node.mStartFrame + gEvaluation.GetEvaluationImageDuration(i)));
 	}
 	return size_t(len);
 }
@@ -423,9 +444,9 @@ size_t TileNodeEditGraphDelegate::ComputeTimelineLength() const
 void TileNodeEditGraphDelegate::DoForce()
 {
 	int currentTime = gEvaluationTime;
-	//gEvaluation.BeginBatch();
-	for (ImogenNode& node : mNodes)
+	for (size_t i = 0; i < mNodes.size(); i++)
 	{
+		const ImogenNode& node = mNodes[i];
 		const MetaNode& currentMeta = gMetaNodes[node.mType];
 		bool forceEval = false;
 		for(auto& param : currentMeta.mParams)
@@ -448,20 +469,22 @@ void TileNodeEditGraphDelegate::DoForce()
 				EvaluationInfo evaluationInfo;
 				evaluationInfo.forcedDirty = 1;
 				evaluationInfo.uiPass = 0;
-				writeContext.RunSingle(node.gEvaluationTarget, evaluationInfo);
+				writeContext.RunSingle(i, evaluationInfo);
 			}
 			gCurrentContext = &mEditingContext;
 		}
 	}
-	//gEvaluation.EndBatch();
 	SetTime(currentTime, true);
 	InvalidateParameters();
 }
 
 void TileNodeEditGraphDelegate::InvalidateParameters()
 {
-	for (auto& node : mNodes)
-		gEvaluation.SetEvaluationParameters(node.gEvaluationTarget, node.mParameters);
+	for (size_t i= 0;i<mNodes.size();i++)
+	{
+		auto& node = mNodes[i];
+		gEvaluation.SetEvaluationParameters(i, node.mParameters);
+	}
 }
 
 template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? rhs : lhs; }
@@ -490,6 +513,7 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 			Camera *cam = (Camera*)paramBuffer;
 			cam->mPosition += cam->mDirection * wheel;
 			Vec4 right = Cross(cam->mUp, cam->mDirection);
+			right.y = 0.f; // keep head up
 			right.Normalize();
 			auto& io = ImGui::GetIO();
 			if (io.KeyAlt)
@@ -504,16 +528,16 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 				}
 				if (io.MouseDown[0])
 				{
-					matrix_t tr, rtUp, rtRight, trp;
-					tr.Translation(-(cam->mPosition + cam->mDirection));
-					rtRight.RotationAxis(right, io.MouseDelta.y);
-					rtUp.RotationAxis(cam->mUp, io.MouseDelta.x);
-					trp.Translation((cam->mPosition + cam->mDirection));
-					matrix_t res = tr * rtRight * rtUp * trp;
+					Mat4x4 tr, rtUp, rtRight, trp;
+					tr.Translation(-(cam->mPosition ));
+					rtRight.RotationAxis(right, io.MouseDelta.y * 0.01f);
+					rtUp.RotationAxis(cam->mUp, -io.MouseDelta.x * 0.01f);
+					trp.Translation((cam->mPosition ));
+					Mat4x4 res = tr * rtRight * rtUp * trp;
 					cam->mPosition.TransformPoint(res);
-					cam->mDirection.TransformPoint(res);
-					cam->mUp.TransformPoint(res);
-
+					cam->mDirection.TransformVector(res);
+					cam->mUp.Cross(cam->mDirection, right);
+					cam->mUp.Normalize();
 				}
 			}
 			parametersUseMouse = true;
@@ -583,8 +607,8 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 	if (metaNode.mbHasUI || parametersUseMouse)
 	{
 		gEvaluation.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
-		gEvaluation.SetEvaluationParameters(mNodes[mSelectedNodeIndex].gEvaluationTarget, mNodes[mSelectedNodeIndex].mParameters);
-		mEditingContext.SetTargetDirty(mNodes[mSelectedNodeIndex].gEvaluationTarget);
+		gEvaluation.SetEvaluationParameters(mSelectedNodeIndex, mNodes[mSelectedNodeIndex].mParameters);
+		mEditingContext.SetTargetDirty(mSelectedNodeIndex);
 	}
 }
 
@@ -599,7 +623,7 @@ size_t TileNodeEditGraphDelegate::ComputeNodeParametersSize(size_t nodeTypeIndex
 }
 bool TileNodeEditGraphDelegate::NodeIsCubemap(size_t nodeIndex)
 {
-	RenderTarget *target = mEditingContext.GetRenderTarget(nodeIndex);
+	auto target = mEditingContext.GetRenderTarget(nodeIndex);
 	if (target)
 		return target->mImage.mNumFaces == 6;
 	return false;

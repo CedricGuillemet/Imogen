@@ -399,7 +399,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 
 int Evaluation::GetEvaluationImage(int target, Image *image)
 {
-	if (target == -1 || target >= gEvaluation.gEvaluationStages.size())
+	if (target == -1 || target >= gEvaluation.mStages.size())
 		return EVAL_ERR;
 
 	RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
@@ -446,8 +446,8 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 
 int Evaluation::SetEvaluationImage(int target, Image *image)
 {
-	EvaluationStage &stage = gEvaluation.gEvaluationStages[target];
-	RenderTarget *tgt = gCurrentContext->GetRenderTarget(target);
+	EvaluationStage &stage = gEvaluation.mStages[target];
+	auto tgt = gCurrentContext->GetRenderTarget(target);
 	if (!tgt)
 		return EVAL_ERR;
 	unsigned int texelSize = GetTexelSize(image->mFormat);
@@ -679,7 +679,7 @@ int Evaluation::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int si
 
 void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
 {
-	EvaluationStage& evaluation = gEvaluation.gEvaluationStages[target];
+	EvaluationStage& evaluation = gEvaluation.mStages[target];
 
 	evaluation.mBlendingSrc = blendSrc;
 	evaluation.mBlendingDst = blendDst;
@@ -708,6 +708,7 @@ void EvaluationStage::Clear()
 {
 	if (gEvaluationMask&EvaluationGLSL)
 		glDeleteBuffers(1, &mParametersBuffer);
+	mParametersBuffer = 0;
 }
 
 unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int cubeFace)
@@ -842,9 +843,9 @@ void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* 
 
 int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 {
-	if (target < 0 || target >= gEvaluation.gEvaluationStages.size())
+	if (target < 0 || target >= gEvaluation.mStages.size())
 		return EVAL_ERR;
-	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
+	auto renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
 	*imageWidth = renderTarget->mImage.mWidth;
@@ -854,9 +855,9 @@ int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 
 int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 {
-	if (target < 0 || target >= gEvaluation.gEvaluationStages.size())
+	if (target < 0 || target >= gEvaluation.mStages.size())
 		return EVAL_ERR;
-	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
+	auto renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
 	//if (gCurrentContext->GetEvaluationInfo().uiPass)
@@ -867,10 +868,10 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 
 int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 {
-	if (target < 0 || target >= gEvaluation.gEvaluationStages.size())
+	if (target < 0 || target >= gEvaluation.mStages.size())
 		return EVAL_ERR;
 
-	RenderTarget* renderTarget = gCurrentContext->GetRenderTarget(target);
+	auto renderTarget = gCurrentContext->GetRenderTarget(target);
 	if (!renderTarget)
 		return EVAL_ERR;
 	renderTarget->InitCube(faceWidth);

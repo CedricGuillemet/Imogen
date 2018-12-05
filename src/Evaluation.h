@@ -194,12 +194,15 @@ struct Evaluation
 	void Finish();
 
 
-	size_t AddEvaluation(size_t nodeType, const std::string& nodeName);
+	void AddSingleEvaluation(size_t nodeType);
+	void UserAddEvaluation(size_t nodeType);
+	void UserDeleteEvaluation(size_t target);
+
 	//
-	size_t GetStagesCount() const { return gEvaluationStages.size(); }
-	size_t GetStageType(size_t target) const { return gEvaluationStages[target].mNodeType; }
+	size_t GetStagesCount() const { return mStages.size(); }
+	size_t GetStageType(size_t target) const { return mStages[target].mNodeType; }
 	size_t GetEvaluationImageDuration(size_t target);
-	void DelEvaluationTarget(size_t target);
+	
 	void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);
 	void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
 	void AddEvaluationInput(size_t target, int slot, int source);
@@ -243,7 +246,7 @@ struct Evaluation
 
 	
 	const EvaluationStage& GetEvaluationStage(size_t index) const {
-		return gEvaluationStages[index];
+		return mStages[index];
 	}
 
 	// error shader
@@ -252,7 +255,7 @@ protected:
 	void APIInit();
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
-	std::vector<EvaluationStage> gEvaluationStages;
+	std::vector<EvaluationStage> mStages;
 	std::vector<size_t> gEvaluationOrderList;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
 
@@ -263,6 +266,9 @@ protected:
 
 	// ffmpeg encoders
 	FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
+
+	static void StageIsAdded(int index);
+	static void StageIsDeleted(int index);
 };
 
 extern Evaluation gEvaluation;

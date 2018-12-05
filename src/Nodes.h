@@ -43,9 +43,12 @@ struct NodeGraphDelegate
 	virtual void DelLink(int index, int slot) = 0;
 	virtual unsigned int GetNodeTexture(size_t index) = 0;
 	// A new node has been added in the graph. Do a push_back on your node array
-	virtual void AddNode(size_t type) = 0;
+	// add node for batch(loading graph)
+	virtual void AddSingleNode(size_t type) = 0;
+	// add  by user interface
+	virtual void UserAddNode(size_t type) = 0;
 	// node deleted
-	virtual void DeleteNode(size_t index) = 0;
+	virtual void UserDeleteNode(size_t index) = 0;
 	virtual ImVec2 GetEvaluationSize(size_t index) = 0;
 	virtual void DoForce() = 0;
 	virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;

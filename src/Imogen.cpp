@@ -426,11 +426,12 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 		else
 		{
 			TileNodeEditGraphDelegate::ImogenNode *node = gNodeDelegate.Get(mIdentifier);
+			size_t nodeIndex = node - gNodeDelegate.mNodes.data();
 			if (node)
 			{
-				Evaluation::SetEvaluationImage(int(node->gEvaluationTarget), &mImage);
-				gEvaluation.SetEvaluationParameters(node->gEvaluationTarget, node->mParameters);
-				gCurrentContext->StageSetProcessing(node->gEvaluationTarget, false);
+				Evaluation::SetEvaluationImage(int(nodeIndex), &mImage);
+				gEvaluation.SetEvaluationParameters(nodeIndex, node->mParameters);
+				gCurrentContext->StageSetProcessing(nodeIndex, false);
 			}
 			Evaluation::FreeImage(&mImage);
 		}
@@ -711,7 +712,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 			if (!node.mImage.empty())
 			{
 				TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
-				gCurrentContext->StageSetProcessing(lastNode.gEvaluationTarget, true);
+				gCurrentContext->StageSetProcessing(i, true);
 				g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
 			}
 		}
@@ -951,7 +952,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 				nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
 				auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
 				//nodeGraphDelegate.SetTimeSlot(selectedEntry, imoNode.mStartFrame, imoNode.mEndFrame);
-				gEvaluation.SetStageLocalTime(imoNode.gEvaluationTarget, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
+				gEvaluation.SetStageLocalTime(selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
 			}
 			if (currentTime != gEvaluationTime)
 			{

@@ -641,7 +641,7 @@ void LoadMetaNodes()
 			,{ { "", Con_Float4 } }
 			,{ { "Strength", Con_Float },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "XY Offset\0Rotation-Distance\0" } }
 			}
-
+			/*
 			,
 			{
 				"TestCam", hcTransform, 0
@@ -649,6 +649,7 @@ void LoadMetaNodes()
 			,{ { "", Con_Float4 } }
 			,{ { "Camera", Con_Camera } }
 			}
+			*/
 	};
 
 

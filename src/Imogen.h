@@ -132,7 +132,6 @@ struct UndoRedoHandler
 	UndoRedoHandler() : mbProcessing(false), mCurrent(NULL) {}
 	~UndoRedoHandler()
 	{
-		mbProcessing = true;
 		Clear();
 	}
 
@@ -173,6 +172,7 @@ struct UndoRedoHandler
 
 	void Clear()
 	{
+		mbProcessing = true;
 		mUndos.clear();
 		mRedos.clear();
 	}
@@ -207,7 +207,7 @@ inline UndoRedo::~UndoRedo()
 
 template<typename T> struct URChange : public UndoRedo
 {
-	URChange(int index, T* (*GetElements)(int index), void(*Changed)(int index)) : GetElements(GetElements), mIndex(index), Changed(Changed)
+	URChange(int index, T* (*GetElements)(int index), void(*Changed)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), Changed(Changed)
 	{
 		if (gUndoRedoHandler.mbProcessing)
 			return;
@@ -254,7 +254,7 @@ template<typename T> struct URChange : public UndoRedo
 
 template<typename T> struct URDel : public UndoRedo
 {
-	URDel(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index), void(*OnNew)(int index)) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+	URDel(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index) = [](int index) {}, void(*OnNew)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
 	{
 		if (gUndoRedoHandler.mbProcessing)
 			return;
@@ -291,7 +291,7 @@ template<typename T> struct URDel : public UndoRedo
 
 template<typename T> struct URAdd : public UndoRedo
 {
-	URAdd(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index), void(*OnNew)(int index)) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+	URAdd(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index)  = [](int index) {}, void(*OnNew)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
 	{
 	}
 	virtual ~URAdd()

@@ -167,13 +167,14 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	void Clear();
 
-	virtual void AddNode(size_t type);
+	virtual void AddSingleNode(size_t type);
+	virtual void UserAddNode(size_t type);
 	virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { gEvaluation.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);	}
 	virtual void DelLink(int index, int slot) { gEvaluation.DelEvaluationInput(index, slot); }
-	virtual void DeleteNode(size_t index);
+	virtual void UserDeleteNode(size_t index);
 	virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
 
-	virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(mNodes[index].gEvaluationTarget); }
+	virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(index); }
 
 	void EditNode();
 
@@ -202,7 +203,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		std::string mNodeTypename;
 #endif
 		size_t mType;
-		size_t gEvaluationTarget;
 		std::vector<unsigned char> mParameters;
 		unsigned int mRuntimeUniqueId;
 		int mStartFrame, mEndFrame;

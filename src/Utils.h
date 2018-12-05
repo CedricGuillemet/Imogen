@@ -58,7 +58,7 @@ inline int align(int value, int alignment)
 	return (value + alignment - 1)&~(alignment - 1);
 }
 
-struct matrix_t;
+struct Mat4x4;
 
 struct Vec4
 {
@@ -170,14 +170,14 @@ public:
 
 		return res;
 	}
-	/*void transform(const matrix_t& matrix);
-	void transform(const Vec4 & s, const matrix_t& matrix);
+	/*void transform(const Mat4x4& matrix);
+	void transform(const Vec4 & s, const Mat4x4& matrix);
 	*/
-	void TransformVector(const matrix_t& matrix);
-	void TransformPoint(const matrix_t& matrix);
+	void TransformVector(const Mat4x4& matrix);
+	void TransformPoint(const Mat4x4& matrix);
 
-	void TransformVector(const Vec4& v, const matrix_t& matrix) { (*this) = v; this->TransformVector(matrix); }
-	void TransformPoint(const Vec4& v, const matrix_t& matrix) { (*this) = v; this->TransformPoint(matrix); }
+	void TransformVector(const Vec4& v, const Mat4x4& matrix) { (*this) = v; this->TransformVector(matrix); }
+	void TransformPoint(const Vec4& v, const Mat4x4& matrix) { (*this) = v; this->TransformPoint(matrix); }
 	
 	// quaternion slerp
 	//void slerp(const Vec4 &q1, const Vec4 &q2, float t );
@@ -237,7 +237,7 @@ inline void FPU_MatrixF_x_MatrixF(const float *a, const float *b, float *r)
 }
 
 
-struct matrix_t
+struct Mat4x4
 {
 public:
 	union
@@ -250,7 +250,7 @@ public:
 		};
 	};
 
-	matrix_t(float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8, float v9, float v10, float v11, float v12, float v13, float v14, float v15, float v16)
+	Mat4x4(float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8, float v9, float v10, float v11, float v12, float v13, float v14, float v15, float v16)
 	{
 		m16[0] = v1;
 		m16[1] = v2;
@@ -269,9 +269,9 @@ public:
 		m16[14] = v15;
 		m16[15] = v16;
 	}
-	matrix_t(const matrix_t& other) { memcpy(&m16[0], &other.m16[0], sizeof(float) * 16); }
-	matrix_t(const Vec4 & r, const Vec4 &u, const Vec4& d, const Vec4& p) { set(r, u, d, p); }
-	matrix_t() {}
+	Mat4x4(const Mat4x4& other) { memcpy(&m16[0], &other.m16[0], sizeof(float) * 16); }
+	Mat4x4(const Vec4 & r, const Vec4 &u, const Vec4& d, const Vec4& p) { set(r, u, d, p); }
+	Mat4x4() {}
 	void set(const Vec4 & r, const Vec4 &u, const Vec4& d, const Vec4& p) { right = r; up = u; dir = d; position = p; }
 	void set(float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8, float v9, float v10, float v11, float v12, float v13, float v14, float v15, float v16)
 	{
@@ -292,8 +292,8 @@ public:
 		m16[14] = v15;
 		m16[15] = v16;
 	}
-	static matrix_t GetIdentity() {
-		return matrix_t(1.f, 0.f, 0.f, 0.f,
+	static Mat4x4 GetIdentity() {
+		return Mat4x4(1.f, 0.f, 0.f, 0.f,
 			0.f, 1.f, 0.f, 0.f,
 			0.f, 0.f, 1.f, 0.f,
 			0.f, 0.f, 0.f, 1.f);
@@ -365,30 +365,30 @@ public:
 	}
 	inline void Scale(const Vec4& s) { Scale(s.x, s.y, s.z); }
 
-	inline matrix_t& operator *= (const matrix_t& mat)
+	inline Mat4x4& operator *= (const Mat4x4& mat)
 	{
-		matrix_t tmpMat;
+		Mat4x4 tmpMat;
 		tmpMat = *this;
 		tmpMat.Multiply(mat);
 		*this = tmpMat;
 		return *this;
 	}
-	inline matrix_t operator * (const matrix_t& mat) const
+	inline Mat4x4 operator * (const Mat4x4& mat) const
 	{
-		matrix_t matT;
+		Mat4x4 matT;
 		matT.Multiply(*this, mat);
 		return matT;
 	}
 
-	inline void Multiply(const matrix_t &matrix)
+	inline void Multiply(const Mat4x4 &matrix)
 	{
-		matrix_t tmp;
+		Mat4x4 tmp;
 		tmp = *this;
 
 		FPU_MatrixF_x_MatrixF((float*)&tmp, (float*)&matrix, (float*)this);
 	}
 
-	inline void Multiply(const matrix_t &m1, const matrix_t &m2)
+	inline void Multiply(const Mat4x4 &m1, const Mat4x4 &m2)
 	{
 		FPU_MatrixF_x_MatrixF((float*)&m1, (float*)&m2, (float*)this);
 	}
@@ -408,7 +408,7 @@ public:
 			m[0][2] * m[1][1] * m[2][0] - m[0][1] * m[1][0] * m[2][2] - m[0][0] * m[1][2] * m[2][1];
 	}
 
-	float Inverse(const matrix_t &srcMatrix, bool affine = false);
+	float Inverse(const Mat4x4 &srcMatrix, bool affine = false);
 	float Inverse(bool affine = false);
 	void Identity() {
 		right.Set(1.f, 0.f, 0.f, 0.f);
@@ -418,7 +418,7 @@ public:
 	}
 	inline void transpose()
 	{
-		matrix_t tmpm;
+		Mat4x4 tmpm;
 		for (int l = 0; l < 4; l++)
 		{
 			for (int c = 0; c < 4; c++)
@@ -430,7 +430,7 @@ public:
 	}
 	void RotationAxis(const Vec4 & axis, float angle);
 	/*
-	void Lerp(const matrix_t& r, const matrix_t& t, float s)
+	void Lerp(const Mat4x4& r, const Mat4x4& t, float s)
 	{
 		right = LERP(r.right, t.right, s);
 		up = LERP(r.up, t.up, s);
@@ -449,7 +449,7 @@ public:
 };
 
 
-inline void Vec4::TransformVector(const matrix_t& matrix)
+inline void Vec4::TransformVector(const Mat4x4& matrix)
 {
 	Vec4 out;
 
@@ -464,7 +464,7 @@ inline void Vec4::TransformVector(const matrix_t& matrix)
 	w = out.w;
 }
 
-inline void Vec4::TransformPoint(const matrix_t& matrix)
+inline void Vec4::TransformPoint(const Mat4x4& matrix)
 {
 	Vec4 out;
 
@@ -480,7 +480,7 @@ inline void Vec4::TransformPoint(const matrix_t& matrix)
 }
 
 
-inline void matrix_t::RotationAxis(const Vec4 & axis, float angle)
+inline void Mat4x4::RotationAxis(const Vec4 & axis, float angle)
 {
 	float length2 = axis.LengthSq();
 	if (length2 < FLT_EPSILON)

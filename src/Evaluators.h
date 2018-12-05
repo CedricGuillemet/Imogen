@@ -46,7 +46,7 @@ struct Evaluators
 	Evaluators() : gEvaluationStateGLSLBuffer(0) {}
 	void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
 	std::string GetEvaluator(const std::string& filename);
-	int GetMask(size_t nodeType, const std::string& nodeName);
+	int GetMask(size_t nodeType);
 	void ClearEvaluators();
 
 	const Evaluator& GetEvaluator(size_t nodeType) const { return mEvaluatorPerNodeType[nodeType]; }

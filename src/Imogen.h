@@ -217,7 +217,7 @@ template<typename T> struct URChange : public UndoRedo
 	}
 	virtual ~URChange()
 	{
-		if (gUndoRedoHandler.mbProcessing)
+		if (gUndoRedoHandler.mbProcessing || mbDiscarded)
 			return;
 
 		// add to handler
@@ -290,7 +290,7 @@ template<typename T> struct URDel : public UndoRedo
 	}
 	virtual ~URDel()
 	{
-		if (gUndoRedoHandler.mbProcessing)
+		if (gUndoRedoHandler.mbProcessing || mbDiscarded)
 			return;
 		// add to handler
 		gUndoRedoHandler.AddUndo(*this);
@@ -323,7 +323,7 @@ template<typename T> struct URAdd : public UndoRedo
 	}
 	virtual ~URAdd()
 	{
-		if (gUndoRedoHandler.mbProcessing)
+		if (gUndoRedoHandler.mbProcessing || mbDiscarded)
 			return;
 
 		mAddedElement = (*GetElements())[mIndex];
@@ -350,5 +350,3 @@ template<typename T> struct URAdd : public UndoRedo
 	void(*OnDelete)(int index);
 	void(*OnNew)(int index);
 };
-
-

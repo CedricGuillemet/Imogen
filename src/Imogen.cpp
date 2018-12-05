@@ -161,8 +161,8 @@ void SetStyle()
 	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
 	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
 	colors[ImGuiCol_Tab] = ImVec4(0.01f, 0.01f, 0.01f, 0.86f);
-	colors[ImGuiCol_TabHovered] = ImVec4(0.29f, 0.29f, 0.29f, 1.00f);
-	colors[ImGuiCol_TabActive] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+	colors[ImGuiCol_TabHovered] = ImVec4(0.29f, 0.29f, 0.79f, 1.00f);
+	colors[ImGuiCol_TabActive] = ImVec4(0.31f, 0.31f, 0.91f, 1.00f);
 	colors[ImGuiCol_TabUnfocused] = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
 	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.19f, 0.19f, 0.19f, 1.00f);
 	colors[ImGuiCol_DockingPreview] = ImVec4(0.38f, 0.48f, 0.60f, 1.00f);
@@ -907,6 +907,26 @@ struct MySequence : public ImSequencer::SequenceInterface
 	TileNodeEditGraphDelegate &mNodeGraphDelegate;
 };
 
+struct FocusDisplay
+{
+	FocusDisplay()
+	{
+
+		ImVec2 windowPos = ImGui::GetCursorScreenPos();
+		ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+	}
+	~FocusDisplay()
+	{
+		if (ImGui::IsWindowFocused())
+		{
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			drawList->AddRect(windowPos - ImVec2(4, 6), windowPos + canvasSize + ImVec2(4, 6), 0xCCCC0000);
+		}
+	}
+	ImVec2 windowPos;
+	ImVec2 canvasSize;
+};
+
 void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -920,6 +940,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Nodes"))
 		{
+			FocusDisplay focusDisplay;
 			if (selectedMaterial != -1)
 			{
 				Material& material = library.mMaterials[selectedMaterial];
@@ -968,12 +989,14 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Shaders"))
 		{
+			FocusDisplay focusDisplay;
 			HandleEditor(editor, nodeGraphDelegate, evaluation);
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Library"))
 		{
+			FocusDisplay focusDisplay;
 			LibraryEdit(library, nodeGraphDelegate, evaluation);
 		}
 		ImGui::End();
@@ -981,18 +1004,30 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::SetWindowSize(ImVec2(300, 300));
 		if (ImGui::Begin("Parameters"))
 		{
+			FocusDisplay focusDisplay;
+			const ImVec2 windowPos = ImGui::GetCursorScreenPos();
+			const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+
 			NodeEdit(nodeGraphDelegate, evaluation);
+			if (ImGui::IsWindowFocused())
+			{
+				ImDrawList* drawList = ImGui::GetWindowDrawList();
+				drawList->AddRect(windowPos-ImVec2(4,6), windowPos+canvasSize+ ImVec2(4, 6), 0xCCCC0000);
+			}
+			
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Logs"))
 		{
+			FocusDisplay focusDisplay;
 			ImguiAppLog::Log->DrawEmbedded();
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Timeline"))
 		{
+			FocusDisplay focusDisplay;
 			MySequence mySequence(nodeGraphDelegate);
 			int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
 			static int firstFrame = 0;
@@ -1030,6 +1065,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			ImGui::SetNextWindowFocus();
 			if (ImGui::Begin(tmps, &open))
 			{
+				FocusDisplay focusDisplay;
 				RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, true);
 			}
 			ImGui::End();

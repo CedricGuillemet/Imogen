@@ -107,14 +107,15 @@ void TileNodeEditGraphDelegate::UserAddNode(size_t type)
 
 void TileNodeEditGraphDelegate::UserDeleteNode(size_t index)
 {
-	URDel<ImogenNode> undoRedoDelNode(int(index), []() {return &gNodeDelegate.mNodes; },
-		NodeIsDeleted, NodeIsAdded);
+	{
+		URDel<ImogenNode> undoRedoDelNode(int(index), []() {return &gNodeDelegate.mNodes; },
+			NodeIsDeleted, NodeIsAdded);
 
-	NodeIsDeleted(int(index));
+		NodeIsDeleted(int(index));
+		mNodes.erase(mNodes.begin() + index);
+	}
 	mEditingContext.UserDeleteStage(index);
 	gEvaluation.UserDeleteEvaluation(index);
-
-	mNodes.erase(mNodes.begin() + index);
 }
 	
 const float PI = 3.14159f;

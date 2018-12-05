@@ -194,12 +194,39 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* drawList, ImVec2 offset, floa
 		ImVec2 node_rect_max = node_rect_min + commentSize;
 
 		// Display node box
-		ImRect rugRect(node_rect_min, node_rect_max);
-		if (rugRect.Contains(io.MousePos) && io.MouseDoubleClicked[0])
+		bool overAnyNode = false;
+		for (auto& node : nodes)
 		{
-			ret = &rug;
+			ImVec2 node_rect_min = offset + node.Pos * factor;
+			ImVec2 node_rect_max = node_rect_min + node.Size;
+			if (ImRect(node_rect_min, node_rect_max).Contains(io.MousePos))
+			{
+				overAnyNode = true;
+				break;
+			}
 		}
-		
+
+		ImRect rugRect(node_rect_min, node_rect_max);
+		if (rugRect.Contains(io.MousePos) && !overAnyNode)
+		{
+
+			if (io.MouseDoubleClicked[0])
+			{
+				ret = &rug;
+			}
+			else if (io.KeyShift && ImGui::IsMouseClicked(0))
+			{
+				for (auto& node:nodes)
+				{
+					ImVec2 node_rect_min = offset + node.Pos * factor;
+					ImVec2 node_rect_max = node_rect_min + node.Size;
+					if (rugRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
+					{
+						node.mbSelected = true;
+					}
+				}
+			}
+		}
 		drawList->AddText(io.FontDefault, 13 * ImLerp(1.f, factor, 0.5f), node_rect_min + ImVec2(5, 5), (rug.mColor & 0xFFFFFF) + 0xFF404040, rug.mText.c_str());
 		drawList->AddRectFilled(node_rect_min, node_rect_max, (rug.mColor&0xFFFFFF)+0x60000000, 10.0f, 15);
 		drawList->AddRect(node_rect_min, node_rect_max, (rug.mColor & 0xFFFFFF) + 0x90000000, 10.0f, 15, 2.f);
@@ -970,9 +997,14 @@ void ComputeDelegateSelection()
 		if (node.mbSelected)
 		{
 			if (gNodeDelegate.mSelectedNodeIndex == -1)
+			{
 				gNodeDelegate.mSelectedNodeIndex = int(&node - nodes.data());
+			}
 			else
+			{
 				gNodeDelegate.mSelectedNodeIndex = -1;
+				return;
+			}
 		}
 	}
 }
@@ -1075,7 +1107,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	// Open context menu
 	bool openContextMenu = false;
 	static int contextMenuHoverNode = -1;
-	if (nodeOperation == NO_None && (ImGui::IsMouseClicked(1) || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Tab))))
+	if (nodeOperation == NO_None && regionRect.Contains(io.MousePos) && (ImGui::IsMouseClicked(1) || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Tab))))
 	{
 		openContextMenu = true;
 		contextMenuHoverNode = hoveredNode;

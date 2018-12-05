@@ -667,13 +667,17 @@ void TileNodeEditGraphDelegate::PasteNodes()
 
 		mEditingContext.UserAddStage();
 		gEvaluation.UserAddEvaluation(sourceNode.mType);
+		size_t target = mNodes.size();
 		AddSingleNode(sourceNode.mType);
 		auto& node = mNodes.back();
 		node.mParameters = sourceNode.mParameters;
 		node.mInputSamplers = sourceNode.mInputSamplers;
 		node.mStartFrame = sourceNode.mStartFrame;
 		node.mEndFrame = sourceNode.mEndFrame;
-
-		mEditingContext.SetTargetDirty(mNodes.size() - 1);
+		
+		gEvaluation.SetEvaluationParameters(target, node.mParameters);
+		gEvaluation.SetEvaluationSampler(target, node.mInputSamplers);
+		SetTime(gEvaluationTime, true);
+		mEditingContext.SetTargetDirty(target);
 	}
 }

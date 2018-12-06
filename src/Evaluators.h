@@ -39,6 +39,10 @@ struct Evaluator
 	pybind11::module mPyModule;
 
 	void RunPython() const;
+
+#ifdef _DEBUG
+	std::string mName;
+#endif
 };
 
 struct Evaluators

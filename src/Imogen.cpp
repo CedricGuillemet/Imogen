@@ -448,7 +448,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			ImGui::EndGroup();
 			ImGui::EndTooltip();
 		}
-		else
+		else if (ImGui::IsWindowFocused())
 		{
 			Evaluation::FreeImage(&pickerImage);
 			ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
@@ -1115,7 +1115,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			if (ImGui::Begin(tmps, &open))
 			{
 				FocusDisplay focusDisplay;
-				RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, true);
+				RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, false);
 			}
 			ImGui::End();
 			if (!open)

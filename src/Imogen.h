@@ -175,6 +175,7 @@ struct UndoRedoHandler
 		mbProcessing = true;
 		mUndos.clear();
 		mRedos.clear();
+		mbProcessing = false;
 	}
 
 	bool mbProcessing;
@@ -216,7 +217,7 @@ template<typename T> struct URChange : public UndoRedo
 	}
 	virtual ~URChange()
 	{
-		if (gUndoRedoHandler.mbProcessing)
+		if (gUndoRedoHandler.mbProcessing || mbDiscarded)
 			return;
 
 		// add to handler
@@ -252,6 +253,32 @@ template<typename T> struct URChange : public UndoRedo
 	void(*Changed)(int index);
 };
 
+
+struct URDummy : public UndoRedo
+{
+	URDummy() : UndoRedo()
+	{
+		if (gUndoRedoHandler.mbProcessing)
+			return;
+	}
+	virtual ~URDummy()
+	{
+		if (gUndoRedoHandler.mbProcessing)
+			return;
+
+		gUndoRedoHandler.AddUndo(*this);
+	}
+	virtual void Undo()
+	{
+		UndoRedo::Undo();
+	}
+	virtual void Redo()
+	{
+		UndoRedo::Redo();
+	}
+};
+
+
 template<typename T> struct URDel : public UndoRedo
 {
 	URDel(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index) = [](int index) {}, void(*OnNew)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
@@ -263,7 +290,7 @@ template<typename T> struct URDel : public UndoRedo
 	}
 	virtual ~URDel()
 	{
-		if (gUndoRedoHandler.mbProcessing)
+		if (gUndoRedoHandler.mbProcessing || mbDiscarded)
 			return;
 		// add to handler
 		gUndoRedoHandler.AddUndo(*this);
@@ -296,7 +323,7 @@ template<typename T> struct URAdd : public UndoRedo
 	}
 	virtual ~URAdd()
 	{
-		if (gUndoRedoHandler.mbProcessing)
+		if (gUndoRedoHandler.mbProcessing || mbDiscarded)
 			return;
 
 		mAddedElement = (*GetElements())[mIndex];
@@ -323,5 +350,3 @@ template<typename T> struct URAdd : public UndoRedo
 	void(*OnDelete)(int index);
 	void(*OnNew)(int index);
 };
-
-

@@ -47,6 +47,7 @@ Node::Node(int type, const ImVec2& pos)
 	Size = ImVec2(100, 100);
 	InputsCount = gMetaNodes[type].mInputs.size();
 	OutputsCount = gMetaNodes[type].mOutputs.size();
+	mbSelected = false;
 }
 
 struct NodeOrder
@@ -109,18 +110,57 @@ const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
 static std::vector<NodeOrder> mOrders;
 static std::vector<Node> nodes;
+static std::vector<Node> mNodesClipboard;
 static std::vector<NodeLink> links;
 static std::vector<NodeRug> rugs;
 static NodeRug *editRug = NULL;
-static NodeRug* movingRug = NULL;
-static NodeRug* sizingRug = NULL;
 
+static ImVec2 editingNodeSource;
+bool editingInput = false;
+static ImVec2 scrolling = ImVec2(0.0f, 0.0f);
+float factor = 1.0f;
+float factorTarget = 1.0f;
+
+enum NodeOperation
+{
+	NO_None,
+	NO_EditingLink,
+	NO_QuadSelecting,
+	NO_MovingNodes,
+	NO_EditInput,
+	NO_MovingRug,
+	NO_SizingRug,
+};
+NodeOperation nodeOperation = NO_None;
+
+void HandleZoomScroll(ImRect regionRect)
+{
+	ImGuiIO& io = ImGui::GetIO();
+	if (!ImGui::IsWindowFocused())
+		return;
+	if (regionRect.Contains(io.MousePos))
+	{
+		if (io.MouseWheel < -FLT_EPSILON)
+			factorTarget *= 0.9f;
+
+		if (io.MouseWheel > FLT_EPSILON)
+			factorTarget *= 1.1f;
+	}
+	ImVec2 mouseWPosPre = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
+	factorTarget = ImClamp(factorTarget, 0.2f, 3.f);
+	factor = ImLerp(factor, factorTarget, 0.15f);
+	ImVec2 mouseWPosPost = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
+	scrolling += mouseWPosPost - mouseWPosPre;
+}
 void NodeGraphClear()
 {
 	nodes.clear();
 	links.clear();
 	rugs.clear();
 	editRug = NULL;
+	nodeOperation = NO_None;
+	factor = 1.0f;
+	factorTarget = 1.0f;
 }
 
 const std::vector<NodeLink>& NodeGraphGetLinks()
@@ -133,21 +173,30 @@ const std::vector<NodeRug>& NodeGraphRugs()
 	return rugs;
 }
 
-NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, float factor, bool editingNodeAndConnexions)
+NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* drawList, ImVec2 offset, float factor)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	NodeRug *ret = editRug;
-	bool dirtyRug = false;
 	
+	// mouse pointer over any node?
+	bool overAnyNode = false;
+	for (auto& node : nodes)
+	{
+		ImVec2 node_rect_min = offset + node.Pos * factor;
+		ImVec2 node_rect_max = node_rect_min + node.Size;
+		if (ImRect(node_rect_min, node_rect_max).Contains(io.MousePos))
+		{
+			overAnyNode = true;
+			break;
+		}
+	}
 
-	int id = 900;
-	for (NodeRug& rug : rugs)
 	for(unsigned int rugIndex = 0; rugIndex<rugs.size();rugIndex++)
 	{
 		auto& rug = rugs[rugIndex];
 		if (&rug == editRug)
 			continue;
-		ImGui::PushID(id++);
+		ImGui::PushID(900 + rugIndex);
 		ImVec2 commentSize = rug.mSize * factor;
 
 		ImVec2 node_rect_min = offset + rug.mPos * factor;
@@ -156,83 +205,54 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* draw_list, ImVec2 offset, flo
 
 		ImVec2 node_rect_max = node_rect_min + commentSize;
 
-		// Display node box
 		ImRect rugRect(node_rect_min, node_rect_max);
-		ImRect insideSizingRect(node_rect_min + commentSize - ImVec2(30, 30), node_rect_min + commentSize);
-
-		if (rugRect.Contains(io.MousePos) && io.MouseDoubleClicked[0])
+		if (rugRect.Contains(io.MousePos) && !overAnyNode)
 		{
-			ret = &rug;
+			if (io.MouseDoubleClicked[0])
+			{
+				ret = &rug;
+			}
+			else if (io.KeyShift && ImGui::IsMouseClicked(0))
+			{
+				for (auto& node:nodes)
+				{
+					ImVec2 node_rect_min = offset + node.Pos * factor;
+					ImVec2 node_rect_max = node_rect_min + node.Size;
+					if (rugRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
+					{
+						node.mbSelected = true;
+					}
+				}
+			}
 		}
-		bool createUndo = false;
-		bool commitUndo = false;
-		if (!editingNodeAndConnexions && !sizingRug && !movingRug && insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
-		{
-			sizingRug = &rug;
-			createUndo = true;
-		}
-		if (sizingRug && !io.MouseDown[0])
-		{
-			sizingRug = NULL;
-			commitUndo = true;
-		}
-
-		if (!editingNodeAndConnexions && !movingRug && !sizingRug && rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos) && io.MouseDown[0])
-		{
-			
-			movingRug = &rug;
-			createUndo = true;
-		}
-		if (movingRug && !io.MouseDown[0])
-		{
-			commitUndo = true;
-			movingRug = NULL;
-		}
-		
-
-		// undo/redo for sizing/moving
-		static URChange<NodeRug> *undoRedoRug = NULL;
-		if (createUndo)
-		{
-			undoRedoRug = new URChange<NodeRug>(rugIndex, [](int index) {return &rugs[index]; }, [](int) {});
-		}
-		if (commitUndo)
-		{
-			delete undoRedoRug;
-			undoRedoRug = NULL;
-		}
-
-		draw_list->AddText(ImGui::GetIO().FontDefault, 14 * ImLerp(1.f, factor, 0.5f), node_rect_min + ImVec2(5, 5), (rug.mColor & 0xFFFFFF) + 0xFF404040, rug.mText.c_str());
-		draw_list->AddRectFilled(node_rect_min, node_rect_max, (rug.mColor&0xFFFFFF)+0x60000000, 10.0f, 15);
-		draw_list->AddRect(node_rect_min, node_rect_max, (rug.mColor & 0xFFFFFF) + 0x90000000, 10.0f, 15, 2.f);
-		draw_list->AddTriangleFilled(node_rect_min + commentSize - ImVec2(25, 8), node_rect_min + commentSize - ImVec2(8, 25), node_rect_min + commentSize - ImVec2(8, 8), (rug.mColor & 0xFFFFFF) + 0x90000000);
+		drawList->AddText(io.FontDefault, 13 * ImLerp(1.f, factor, 0.5f), node_rect_min + ImVec2(5, 5), (rug.mColor & 0xFFFFFF) + 0xFF404040, rug.mText.c_str());
+		drawList->AddRectFilled(node_rect_min, node_rect_max, (rug.mColor&0xFFFFFF)+0x60000000, 10.0f, 15);
+		drawList->AddRect(node_rect_min, node_rect_max, (rug.mColor & 0xFFFFFF) + 0x90000000, 10.0f, 15, 2.f);
 		ImGui::PopID();
 	}
-
-	if (sizingRug && ImGui::IsMouseDragging(0))
-		sizingRug->mSize += ImGui::GetIO().MouseDelta;
-	if (movingRug && ImGui::IsMouseDragging(0))
-		movingRug->mPos += ImGui::GetIO().MouseDelta;
-
 	return ret;
 }
 
-bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
+bool EditRug(NodeRug *rug, ImDrawList* drawList, ImVec2 offset, float factor)
 {
 	ImGuiIO& io = ImGui::GetIO();
 	ImVec2 commentSize = rug->mSize * factor;
+	static NodeRug* movingRug = NULL;
+	static NodeRug* sizingRug = NULL;
 
-	URChange<NodeRug> undoRedoRug(int(rug - &rugs[0]), [](int index) {return &rugs[index]; }, [] (int){});
+	int rugIndex = int(rug - rugs.data());
+	URChange<NodeRug> undoRedoRug(rugIndex, [](int index) {return &rugs[index]; }, [] (int){});
 	bool dirtyRug = false;
-	ImVec2 node_rect_min = (offset + rug->mPos) * factor;
+	ImVec2 node_rect_min = offset + rug->mPos * factor;
 	ImVec2 node_rect_max = node_rect_min + commentSize;
 	ImRect rugRect(node_rect_min, node_rect_max);
-
+	ImRect insideSizingRect(node_rect_min + commentSize - ImVec2(30, 30), node_rect_min + commentSize);
 	ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 	
 
-	draw_list->AddRectFilled(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xE0000000, 10.0f, 15);
-	draw_list->AddRect(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xFF000000, 10.0f, 15, 2.f);
+	drawList->AddRectFilled(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xE0000000, 10.0f, 15);
+	drawList->AddRect(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xFF000000, 10.0f, 15, 2.f);
+	drawList->AddTriangleFilled(node_rect_min + commentSize - ImVec2(25, 8), node_rect_min + commentSize - ImVec2(8, 25), node_rect_min + commentSize - ImVec2(8, 8), (rug->mColor & 0xFFFFFF) + 0x90000000);
 
 	ImGui::SetCursorScreenPos(node_rect_min + ImVec2(5, 5));
 	ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
@@ -262,13 +282,65 @@ bool EditRug(NodeRug *rug, ImDrawList* draw_list, ImVec2 offset, float factor)
 
 	if (ImGui::Button("Delete"))
 	{
-		rugs.erase(rugs.begin() + (rug - rugs.data()));
+		undoRedoRug.Discard();
+		int index = int(rug - rugs.data());
+		URDel<NodeRug> undoRedoDelRug(index, []() {return &rugs; }, [](int) {}, [](int) {});
+		rugs.erase(rugs.begin() + index);
 		return true;
+	}
+
+	bool createUndo = false;
+	bool commitUndo = false;
+	bool mouseMoved = fabsf(io.MouseDelta.x) > FLT_EPSILON && fabsf(io.MouseDelta.y) > FLT_EPSILON;
+	if (insideSizingRect.Contains(io.MousePos))
+	if (nodeOperation == NO_None && io.MouseDown[0] /* && !mouseMoved*/)
+	{
+		sizingRug = rug;
+		createUndo = true;
+		nodeOperation = NO_SizingRug;
+	}
+	if (sizingRug && !io.MouseDown[0])
+	{
+		sizingRug = NULL;
+		commitUndo = true;
+		nodeOperation = NO_None;
+	}
+
+	if (rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos))
+	if (nodeOperation == NO_None && io.MouseDown[0] /*&& !mouseMoved*/)
+	{
+		movingRug = rug;
+		createUndo = true;
+		nodeOperation = NO_MovingRug;
+	}
+	if (movingRug && !io.MouseDown[0])
+	{
+		commitUndo = true;
+		movingRug = NULL;
+		nodeOperation = NO_None;
+	}
+
+	// undo/redo for sizing/moving
+	static URChange<NodeRug> *undoRedoRugcm = NULL;
+	if (createUndo)
+	{
+		undoRedoRugcm = new URChange<NodeRug>(rugIndex, [](int index) {return &rugs[index]; }, [](int) {});
+	}
+	if (commitUndo)
+	{
+		delete undoRedoRugcm;
+		undoRedoRugcm = NULL;
 	}
 	if (!dirtyRug)
 	{
 		undoRedoRug.Discard();
 	}
+
+	if (sizingRug && ImGui::IsMouseDragging(0))
+		sizingRug->mSize += io.MouseDelta;
+	if (movingRug && ImGui::IsMouseDragging(0))
+		movingRug->mPos += io.MouseDelta;
+
 	if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
 		return true;
 	return false;
@@ -297,7 +369,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
 	std::vector<size_t> nodeOrderList(mOrders.size());
 	for (size_t i = 0; i < mOrders.size(); i++)
 		nodeOrderList[i] = mOrders[i].mNodeIndex;
-	delegate->UpdateEvaluationList(nodeOrderList);
+	gNodeDelegate.UpdateEvaluationList(nodeOrderList);
 }
 
 void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd)
@@ -305,9 +377,9 @@ void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<u
 	size_t index = nodes.size();
 	nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
 	gEvaluation.AddSingleEvaluation(type);
-	delegate->AddSingleNode(type);
-	delegate->SetParamBlock(index, parameters);
-	delegate->SetTimeSlot(index, frameStart, frameEnd);
+	gNodeDelegate.AddSingleNode(type);
+	gNodeDelegate.SetParamBlock(index, parameters);
+	gNodeDelegate.SetTimeSlot(index, frameStart, frameEnd);
 }
 
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
@@ -318,15 +390,13 @@ void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, 
 	nl.OutputIdx = OutputIdx;
 	nl.OutputSlot = OutputSlot;
 	links.push_back(nl);
-	delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
+	gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 }
 
 ImVec2 NodeGraphGetNodePos(size_t index)
 {
 	return nodes[index].Pos;
 }
-
-static ImVec2 scrolling = ImVec2(0.0f, 0.0f);
 
 void NodeGraphUpdateScrolling()
 {
@@ -353,372 +423,107 @@ void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, u
 	rugs.push_back({ ImVec2(float(posX), float(posY)), ImVec2(float(sizeX), float(sizeY)), color, comment });
 }
 
-void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
+static void DeleteSelectedNodes()
 {
+	URDummy urDummy;
+	for (int selection = int(nodes.size()) - 1 ; selection >= 0 ; selection--)
+	{
+		if (!nodes[selection].mbSelected)
+			continue;
+		URDel<Node> undoRedoDelNode(int(selection), []() {return &nodes; }
+			, [](int index) {
+			// recompute link indices
+			for (int id = 0; id < links.size(); id++)
+			{
+				if (links[id].InputIdx > index)
+					links[id].InputIdx--;
+				if (links[id].OutputIdx > index)
+					links[id].OutputIdx--;
+			}
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+			gNodeDelegate.mSelectedNodeIndex = -1;
+		}
+			, [](int index) {
+			// recompute link indices
+			for (int id = 0; id < links.size(); id++)
+			{
+				if (links[id].InputIdx >= index)
+					links[id].InputIdx++;
+				if (links[id].OutputIdx >= index)
+					links[id].OutputIdx++;
+			}
+
+			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+			gNodeDelegate.mSelectedNodeIndex = -1;
+		}
+		);
+
+		for (int id = 0; id < links.size(); id++)
+		{
+			if (links[id].InputIdx == selection || links[id].OutputIdx == selection)
+				gNodeDelegate.DelLink(links[id].OutputIdx, links[id].OutputSlot);
+		}
+		//auto iter = links.begin();
+		for (size_t i = 0; i < links.size();)
+		{
+			auto& link = links[i];
+			if (link.InputIdx == selection || link.OutputIdx == selection)
+			{
+				URDel<NodeLink> undoRedoDelNodeLink(int(i), []() {return &links; }
+					, [](int index)
+				{
+					NodeLink& link = links[index];
+					gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+				}
+					, [](int index)
+				{
+					NodeLink& link = links[index];
+					gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+				});
+
+				links.erase(links.begin() + i);
+			}
+			else
+			{
+				i++;
+			}
+		}
+
+		// recompute link indices
+		for (int id = 0; id < links.size(); id++)
+		{
+			if (links[id].InputIdx > selection)
+				links[id].InputIdx--;
+			if (links[id].OutputIdx > selection)
+				links[id].OutputIdx--;
+		}
+
+		// delete links
+		nodes.erase(nodes.begin() + selection);
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+
+		// inform delegate
+		gNodeDelegate.UserDeleteNode(selection);
+	}
+}
+
+static void ContextMenu(ImVec2 offset, int nodeHovered)
+{
+	ImGuiIO& io = ImGui::GetIO();
 	size_t metaNodeCount = gMetaNodes.size();
 	const MetaNode* metaNodes = gMetaNodes.data();
 
-	static bool editingNode = false;
-	static ImVec2 editingNodeSource;
-	static bool editingInput = false;
-	static int editingNodeIndex;
-	static int editingSlotIndex;
-	
-	static bool show_grid = true;
-
-	int node_selected = delegate->mSelectedNodeIndex;
-
-	int node_hovered_in_list = -1;
-	int node_hovered_in_scene = -1;
-	bool open_context_menu = false;
-
-	ImGui::BeginGroup();
-
-	ImGuiIO& io = ImGui::GetIO();
-	const ImVec2 win_pos = ImGui::GetCursorScreenPos();
-	const ImVec2 canvas_sz = ImGui::GetWindowSize();
-	ImRect regionRect(win_pos, win_pos + canvas_sz);
-
-	// zoom factor handling
-	static float factor = 1.0f;
-	static float factorTarget = 1.0f;
-
-	if (regionRect.Contains(io.MousePos))
-	{
-		if (io.MouseWheel < -FLT_EPSILON)
-			factorTarget *= 0.9f;
-
-		if (io.MouseWheel > FLT_EPSILON)
-			factorTarget *= 1.1f;
-	}
-	ImVec2 mouseWPosPre = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
-	factorTarget = ImClamp(factorTarget, 0.2f, 3.f);
-	factor = ImLerp(factor, factorTarget, 0.15f);
-	ImVec2 mouseWPosPost = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
-	scrolling += mouseWPosPost - mouseWPosPre;
-
-	// Create our child canvas
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
-
-	ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
-	ImGui::PushItemWidth(120.0f);
-
-	ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling * factor;
-	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-	// Display grid
-	if (show_grid)
-	{
-		ImU32 GRID_COLOR = IM_COL32(100, 100, 100, 40);
-		float GRID_SZ = 64.0f * factor;
-		for (float x = fmodf(scrolling.x*factor, GRID_SZ); x < canvas_sz.x; x += GRID_SZ)
-			draw_list->AddLine(ImVec2(x, 0.0f) + win_pos, ImVec2(x, canvas_sz.y) + win_pos, GRID_COLOR);
-		for (float y = fmodf(scrolling.y*factor, GRID_SZ); y < canvas_sz.y; y += GRID_SZ)
-			draw_list->AddLine(ImVec2(0.0f, y) + win_pos, ImVec2(canvas_sz.x, y) + win_pos, GRID_COLOR);
-	}
-
-	if (!enabled)
-	{
-		ImGui::PopItemWidth();
-		ImGui::EndChild();
-		ImGui::PopStyleColor(1);
-		ImGui::PopStyleVar(2);
-
-		ImGui::EndGroup();
-		return;
-	}
-
-	// Display links
-	draw_list->ChannelsSplit(3);
-	draw_list->ChannelsSetCurrent(1); // Background
-	for (int link_idx = 0; link_idx < links.size(); link_idx++)
-	{
-		NodeLink* link = &links[link_idx];
-		Node* node_inp = &nodes[link->InputIdx];
-		Node* node_out = &nodes[link->OutputIdx];
-		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot, factor);
-		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot, factor);
-
-		// con. view clipping
-		if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
-			(p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
-			continue;
-		draw_list->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, IM_COL32(200, 200, 150, 255), 3.0f * factor);
-	}
-
-	// edit node
-	if (editingNode)
-	{
-		ImVec2 p1 = editingNodeSource;
-		ImVec2 p2 = ImGui::GetIO().MousePos;
-		draw_list->AddBezierCurve(p1, p1 + ImVec2(editingInput ?-50.f:+50.f, 0.f), p2 + ImVec2(editingInput ?50.f:-50.f, 0.f), p2, IM_COL32(200, 200, 100, 255), 3.0f);
-	}
-
-	int nodeToDelete = -1;
-	bool editingNodeAndConnexions = false;
-	static bool isMovingNode = false;
-
-	// Display nodes
-	for (int node_idx = 0; node_idx < nodes.size(); node_idx++)
-	{
-		Node* node = &nodes[node_idx];
-		ImVec2 node_rect_min = offset + node->Pos * factor;
-
-		// node view clipping
-		ImVec2 p1 = node_rect_min;
-		ImVec2 p2 = node_rect_min + ImVec2(100, 100) * factor;
-		if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
-			(p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
-			continue;
-
-		ImGui::PushID(node_idx);
-
-		// Display node contents first
-		draw_list->ChannelsSetCurrent(2); // Foreground
-		bool old_any_active = ImGui::IsAnyItemActive();
-		ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-
-		ImGui::InvisibleButton("canvas", ImVec2(100, 100) * factor);
-		bool node_moving_active = ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
-		editingNodeAndConnexions |= node_moving_active;
-
-		// Save the size of what we have emitted and whether any of the widgets are being used
-		bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-		node->Size = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
-		ImVec2 node_rect_max = node_rect_min + node->Size;
-
-		draw_list->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
-		draw_list->AddText(node_rect_min+ImVec2(2,2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
-
-		// Display node box
-		draw_list->ChannelsSetCurrent(1); // Background
-		ImGui::SetCursorScreenPos(node_rect_min);
-		ImGui::InvisibleButton("node", node->Size);
-		if (ImGui::IsItemHovered())
-		{
-			node_hovered_in_scene = node_idx;
-			open_context_menu |= ImGui::IsMouseClicked(1);
-		}
-		
-		if (node_widgets_active || node_moving_active)
-			node_selected = node_idx;
-
-		if (node_moving_active && ImGui::IsMouseDragging(0))
-		{
-			node->Pos += ImGui::GetIO().MouseDelta / factor;
-			isMovingNode = true;
-		}
-
-		if (!io.MouseDown[0])
-			isMovingNode = false;
-
-		bool currentSelectedNode = node_selected == node_idx;
-
-		ImU32 node_bg_color = (node_hovered_in_list == node_idx || node_hovered_in_scene == node_idx || (node_hovered_in_list == -1 && currentSelectedNode)) ? IM_COL32(85, 85, 85, 255) : IM_COL32(60, 60, 60, 255);
-		
-		draw_list->AddRect(node_rect_min, node_rect_max, currentSelectedNode? IM_COL32(230, 230, 230, 255):IM_COL32(100, 100, 100, 0), 2.0f, 15, 2.f);
-
-		//ImVec2 offsetImg = ImGui::GetCursorScreenPos();
-
-		ImVec2 imgPos = node_rect_min + ImVec2(14, 25);
-		ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
-		float imgSizeComp = std::min(imgSize.x, imgSize.y);
-		
-		draw_list->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
-
-		ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
-		draw_list->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
-
-		ImVec2 imageSize = delegate->GetEvaluationSize(node_idx);
-		float imageRatio = 1.f;
-		if (imageSize.x > 0.f && imageSize.y > 0.f)
-			imageRatio = imageSize.y / imageSize.x;
-		ImVec2 quadSize = imgPosMax - imgPos;
-		ImVec2 marge(0.f, 0.f);
-		if (imageRatio > 1.f)
-		{
-			marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
-		}
-		else
-		{
-			marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
-		}
-		
-		if (delegate->NodeIsProcesing(node_idx))
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), node_idx)));
-		else if (delegate->NodeIsCubemap(node_idx))
-			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), node_idx)));
-		else
-			draw_list->AddImage((ImTextureID)(int64_t)(delegate->GetNodeTexture(size_t(node_idx))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
-
-
-
-		auto deleteLink = [](int index)
-		{
-			NodeLink& link = links[index];
-			gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
-			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-		};
-		auto addLink = [](int index)
-		{
-			NodeLink& link = links[index];
-			gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
-			NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-		};
-
-		// draw/use inputs/outputs
-		bool hoverSlot = false;
-		for (int i = 0; i < 2; i++)
-		{
-			const size_t slotCount[2] = { node->InputsCount, node->OutputsCount };
-			const MetaCon *con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
-			for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
-			{
-				ImVec2 p = offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
-				bool overCon = (!isMovingNode) && (movingRug == NULL && sizingRug == NULL) && !hoverSlot && (node_hovered_in_scene == -1 || editingNode) && Distance(p, ImGui::GetIO().MousePos) < NODE_SLOT_RADIUS*2.f;
-
-				const char *conText = con[slot_idx].mName.c_str();
-				ImVec2 textSize;
-				textSize = ImGui::CalcTextSize(conText);
-				ImVec2 textPos = p + ImVec2(-NODE_SLOT_RADIUS*(i ? -1.f : 1.f)*(overCon ? 3.f : 2.f) - (i ? 0:textSize.x ), -textSize.y / 2);
-
-				if (overCon)
-				{
-					hoverSlot = true;
-					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*2.f, IM_COL32(0, 0, 0, 200));
-					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*1.5f, IM_COL32(200, 200, 200, 200));
-					draw_list->AddText(io.FontDefault, 16, textPos+ImVec2(1,1), IM_COL32(0, 0, 0, 255), conText);
-					draw_list->AddText(io.FontDefault, 16, textPos, IM_COL32(250, 250, 250, 255), conText);
-					bool inputToOutput = (!editingInput && !i) || (editingInput&& i);
-					if (editingNode && !ImGui::GetIO().MouseDown[0])
-					{
-						if (inputToOutput)
-						{
-							editingNode = false;
-
-							// check loopback
-
-							NodeLink nl;
-							if (editingInput)
-								nl = NodeLink(node_idx, slot_idx, editingNodeIndex, editingSlotIndex);
-							else
-								nl = NodeLink(editingNodeIndex, editingSlotIndex, node_idx, slot_idx);
-
-							if (RecurseIsLinked(nl.OutputIdx, nl.InputIdx))
-							{
-								Log("Acyclic graph. Loop is not allowed.\n");
-								break;
-							}
-							bool alreadyExisting = false;
-							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
-							{
-								if (links[linkIndex] == nl)
-								{
-									alreadyExisting = true;
-									break;
-								}
-							}
-
-							// check already connected output
-							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
-							{
-								NodeLink& link = links[linkIndex];
-								if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
-								{
-									URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
-									delegate->DelLink(link.OutputIdx, link.OutputSlot);
-									links.erase(links.begin() + linkIndex);
-									NodeGraphUpdateEvaluationOrder(delegate);
-									break;
-								}
-							}
-
-							if (!alreadyExisting)
-							{
-								URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
-
-								links.push_back(nl);
-								delegate->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
-								NodeGraphUpdateEvaluationOrder(delegate);
-							}
-						}
-					}
-					if (!editingNode && ImGui::GetIO().MouseDown[0])
-					{
-						editingNode = true;
-						editingInput = i == 0;
-						editingNodeSource = p;
-						editingNodeIndex = node_idx;
-						editingSlotIndex = slot_idx;
-						if (editingInput)
-						{
-							// remove existing link
-							for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
-							{
-								NodeLink& link = links[linkIndex];
-								if (link.OutputIdx == node_idx && link.OutputSlot == slot_idx)
-								{
-									URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
-									delegate->DelLink(link.OutputIdx, link.OutputSlot);
-									links.erase(links.begin() + linkIndex);
-									NodeGraphUpdateEvaluationOrder(delegate);
-									break;
-								}
-							}
-						}
-					}
-				}
-				else
-				{
-					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*1.2f, IM_COL32(0, 0, 0, 200));
-					draw_list->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75f*1.2f, IM_COL32(160, 160, 160, 200));
-					draw_list->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
-					draw_list->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
-				}
-			}
-		}
-		editingNodeAndConnexions |= editingNode || hoverSlot;
-		ImGui::PopID();
-	}
-
-	// release mouse anywhere but over a slot
-	if (editingNode&&!ImGui::GetIO().MouseDown[0])
-	{
-		editingNode = false;
-	}
-	// rugs
-	draw_list->ChannelsSetCurrent(0);
-	editRug = DisplayRugs(editRug, draw_list, offset, factor, editingNodeAndConnexions);
-
-	draw_list->ChannelsMerge();
-
-	if (editRug)
-	{
-		if (EditRug(editRug, draw_list, offset, factor))
-			editRug = NULL;
-	}
-	// Open context menu
-	if (!ImGui::IsAnyItemHovered() && ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) && ImGui::IsMouseClicked(1))
-	{
-		node_selected = node_hovered_in_list = node_hovered_in_scene = -1;
-		open_context_menu = true;
-	}
-	if (open_context_menu)
-	{
-		ImGui::OpenPopup("context_menu");
-		if (node_hovered_in_list != -1)
-			node_selected = node_hovered_in_list;
-		if (node_hovered_in_scene != -1)
-			node_selected = node_hovered_in_scene;
-	}
+	bool copySelection = false;
+	bool deleteSelection = false;
+	bool pasteSelection = false;
 
 	// Draw context menu
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 	if (ImGui::BeginPopup("context_menu"))
 	{
-		Node* node = node_selected != -1 ? &nodes[node_selected] : NULL;
+
+
+		Node* node = nodeHovered != -1 ? &nodes[nodeHovered] : NULL;
 		ImVec2 scene_pos = ImGui::GetMousePosOnOpeningCurrentPopup() - offset;
 		if (node)
 		{
@@ -727,111 +532,29 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
 			if (ImGui::MenuItem("Extract view", NULL, false))
 			{
-				AddExtractedView(node_selected);
-			}
-			if (ImGui::MenuItem("Delete", NULL, false)) 
-			{
-				URDel<Node> undoRedoDelNode(node_selected, []() {return &nodes; }
-					, [](int index) {
-							// recompute link indices
-							for (int id = 0; id < links.size(); id++)
-							{
-								if (links[id].InputIdx > index)
-									links[id].InputIdx--;
-								if (links[id].OutputIdx > index)
-									links[id].OutputIdx--;
-							}
-							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-							gNodeDelegate.mSelectedNodeIndex = -1;
-						}
-					, [](int index) {
-							// recompute link indices
-							for (int id = 0; id < links.size(); id++)
-							{
-								if (links[id].InputIdx >= index)
-									links[id].InputIdx++;
-								if (links[id].OutputIdx >= index)
-									links[id].OutputIdx++;
-							}
-
-							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
-							gNodeDelegate.mSelectedNodeIndex = -1;
-						}
-						);
-
-				for (int id = 0; id < links.size(); id++)
-				{
-					if (links[id].InputIdx == node_selected || links[id].OutputIdx == node_selected)
-						delegate->DelLink(links[id].OutputIdx, links[id].OutputSlot);
-				}
-				//auto iter = links.begin();
-				for (size_t i = 0;i <links.size();)
-				{
-					auto& link = links[i];
-					if (link.InputIdx == node_selected || link.OutputIdx == node_selected)
-					{
-						URDel<NodeLink> undoRedoDelNodeLink(int(i), []() {return &links; }
-						, [](int index)
-						{
-							NodeLink& link = links[index];
-							gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
-						}
-						, [](int index)
-						{
-							NodeLink& link = links[index];
-							gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
-						});
-
-						links.erase(links.begin() + i);
-					}
-					else
-					{
-						i++;
-					}
-				}
-
-				// recompute link indices
-				for (int id = 0; id < links.size(); id++)
-				{
-					if (links[id].InputIdx > node_selected)
-						links[id].InputIdx--;
-					if (links[id].OutputIdx > node_selected)
-						links[id].OutputIdx--;
-				}
-
-				// delete links
-				nodes.erase(nodes.begin() + node_selected);
-				NodeGraphUpdateEvaluationOrder(delegate);
-
-				// inform delegate
-				delegate->UserDeleteNode(node_selected);
-
-				node_selected = -1;
+				AddExtractedView(nodeHovered);
 			}
 		}
 		else
 		{
 			auto AddNode = [&](int i)
 			{
-				auto addDelNodeLambda = [](int) 
-				{ 
-					NodeGraphUpdateEvaluationOrder(&gNodeDelegate); 
+				auto addDelNodeLambda = [](int)
+				{
+					NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
 					gNodeDelegate.mSelectedNodeIndex = -1;
 				};
 				URAdd<Node> undoRedoAddRug(int(nodes.size()), []() {return &nodes; }, addDelNodeLambda, addDelNodeLambda);
 
 				nodes.push_back(Node(i, scene_pos));
-				delegate->UserAddNode(i);
+				gNodeDelegate.UserAddNode(i);
 				addDelNodeLambda(0);
 			};
-			if (ImGui::MenuItem("Add rug", NULL, false))
-			{
-				URAdd<NodeRug> undoRedoAddRug(int(rugs.size()), []() {return &rugs; }, [](int) {}, [](int) {});
-				rugs.push_back({ scene_pos, ImVec2(400,200), 0xFFA0A0A0, "Description\nEdit me with a double click." });
-			}
+
 			static char inputText[64] = { 0 };
+			ImGui::SetKeyboardFocusHere();
 			ImGui::InputText("", inputText, sizeof(inputText));
-			{ 
+			{
 				if (strlen(inputText))
 				{
 					for (int i = 0; i < metaNodeCount; i++)
@@ -855,9 +578,9 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 						}
 					}
 
-					for (int iCateg = 0; iCateg < delegate->mCategoriesCount; iCateg++)
+					for (int iCateg = 0; iCateg < gNodeDelegate.mCategoriesCount; iCateg++)
 					{
-						if (ImGui::BeginMenu(delegate->mCategories[iCateg]))
+						if (ImGui::BeginMenu(gNodeDelegate.mCategories[iCateg]))
 						{
 							for (int i = 0; i < metaNodeCount; i++)
 							{
@@ -873,20 +596,566 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 				}
 			}
 		}
+
+		ImGui::Separator();
+		if (ImGui::MenuItem("Add rug", NULL, false))
+		{
+			URAdd<NodeRug> undoRedoAddRug(int(rugs.size()), []() {return &rugs; }, [](int) {}, [](int) {});
+			rugs.push_back({ scene_pos, ImVec2(400,200), 0xFFA0A0A0, "Description\nEdit me with a double click." });
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("Delete", "Del", false))
+		{
+			deleteSelection = true;
+		}
+		if (ImGui::MenuItem("Copy", "CTRL+C"))
+		{
+			copySelection = true;
+		}
+		if (ImGui::MenuItem("Paste", "CTRL+V", false, !mNodesClipboard.empty()))
+		{
+			pasteSelection = true;
+		}
+
 		ImGui::EndPopup();
 	}
 	ImGui::PopStyleVar();
 
-	// Scrolling
-	if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f))
-		scrolling += ImGui::GetIO().MouseDelta / factor;
+	if (copySelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_C)))
+	{
+		mNodesClipboard.clear();
+		std::vector<size_t> selection;
+		for (size_t i = 0; i < nodes.size(); i++)
+		{
+			if (!nodes[i].mbSelected)
+				continue;
+			mNodesClipboard.push_back(nodes[i]);
+			selection.push_back(i);
+		}
+		gNodeDelegate.CopyNodes(selection);
+	}
 
+	if (deleteSelection || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Delete)))
+	{
+		DeleteSelectedNodes();
+	}
+
+	if (pasteSelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_V)))
+	{
+		URDummy undoRedoDummy;
+		ImVec2 min(FLT_MAX, FLT_MAX);
+		for (auto& clipboardNode : mNodesClipboard)
+		{
+			min.x = ImMin(clipboardNode.Pos.x, min.x);
+			min.y = ImMin(clipboardNode.Pos.y, min.y);
+		}
+		for (auto& selnode : nodes)
+			selnode.mbSelected = false;
+		for (auto& clipboardNode : mNodesClipboard)
+		{
+			URAdd<Node> undoRedoAddRug(int(nodes.size()), []() {return &nodes; }, [](int index) {}, [](int index) {});
+			nodes.push_back(clipboardNode);
+			nodes.back().Pos += (io.MousePos/factor - offset) - min;
+			nodes.back().mbSelected = true;
+		}
+		gNodeDelegate.PasteNodes();
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+	}
+}
+
+static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float factor, const ImRect regionRect)
+{
+	for (int link_idx = 0; link_idx < links.size(); link_idx++)
+	{
+		NodeLink* link = &links[link_idx];
+		Node* node_inp = &nodes[link->InputIdx];
+		Node* node_out = &nodes[link->OutputIdx];
+		ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->InputSlot, factor);
+		ImVec2 p2 = offset + node_out->GetInputSlotPos(link->OutputSlot, factor);
+
+		// con. view clipping
+		if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
+			(p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
+			continue;
+		drawList->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, IM_COL32(200, 200, 150, 255), 3.0f * factor);
+	}
+}
+
+static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const float factor, ImRect contentRect)
+{
+	ImGuiIO& io = ImGui::GetIO();
+	static ImVec2 quadSelectPos;
+
+	ImRect editingRugRect(ImVec2(FLT_MAX, FLT_MAX), ImVec2(FLT_MAX, FLT_MAX));
+	if (editRug)
+	{
+		ImVec2 commentSize = editRug->mSize * factor;
+		ImVec2 node_rect_min = (offset + editRug->mPos) * factor;
+		ImVec2 node_rect_max = node_rect_min + commentSize;
+		editingRugRect = ImRect(node_rect_min, node_rect_max);
+	}
+
+	if (nodeOperation == NO_QuadSelecting)
+	{
+		const ImVec2 bmin = ImMin(quadSelectPos, io.MousePos);
+		const ImVec2 bmax = ImMax(quadSelectPos, io.MousePos);
+		drawList->AddRectFilled(bmin, bmax, 0x40FF2020, 1.f);
+		drawList->AddRect(bmin, bmax, 0xFFFF2020, 1.f);
+		if (!io.MouseDown[0])
+		{
+			if (!io.KeyCtrl && !io.KeyShift)
+			{
+				for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
+				{
+					Node* node = &nodes[nodeIndex];
+					node->mbSelected = false;
+				}
+			}
+
+			nodeOperation = NO_None;
+			ImRect selectionRect(bmin, bmax);
+			for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
+			{
+				Node* node = &nodes[nodeIndex];
+				ImVec2 node_rect_min = offset + node->Pos * factor;
+				ImVec2 node_rect_max = node_rect_min + node->Size;
+				if (selectionRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
+				{
+					if (io.KeyCtrl)
+					{
+						node->mbSelected = false;
+					}
+					else
+					{
+						node->mbSelected = true;
+					}
+				}
+				else
+				{
+					if (!io.KeyShift)
+					{
+						node->mbSelected = false;
+					}
+				}
+			}
+		}
+	}
+	else if (nodeOperation == NO_None && io.MouseDown[0] && ImGui::IsWindowFocused() && contentRect.Contains(io.MousePos) && !editingRugRect.Contains(io.MousePos))
+	{
+		nodeOperation = NO_QuadSelecting;
+		quadSelectPos = io.MousePos;
+	}
+}
+
+
+void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor)
+{
+	static int editingNodeIndex;
+	static int editingSlotIndex;
+
+	auto deleteLink = [](int index)
+	{
+		NodeLink& link = links[index];
+		gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+	};
+	auto addLink = [](int index)
+	{
+		NodeLink& link = links[index];
+		gNodeDelegate.AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
+		NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+	};
+
+	size_t metaNodeCount = gMetaNodes.size();
+	const MetaNode* metaNodes = gMetaNodes.data();
+	ImGuiIO& io = ImGui::GetIO();
+	Node *node = &nodes[nodeIndex];
+
+	// draw/use inputs/outputs
+	bool hoverSlot = false;
+	for (int i = 0; i < 2; i++)
+	{
+		float closestDistance = FLT_MAX;
+		int closestConn = -1;
+		ImVec2 closestTextPos;
+		ImVec2 closestPos;
+		const size_t slotCount[2] = { node->InputsCount, node->OutputsCount };
+		const MetaCon *con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
+		for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
+		{
+			ImVec2 p = offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
+			float distance = Distance(p, io.MousePos);
+			bool overCon = (nodeOperation == NO_None || nodeOperation == NO_EditingLink ) && (distance < NODE_SLOT_RADIUS * 2.f) && (distance < closestDistance);
+
+			const char *conText = con[slot_idx].mName.c_str();
+			ImVec2 textSize;
+			textSize = ImGui::CalcTextSize(conText);
+			ImVec2 textPos = p + ImVec2(-NODE_SLOT_RADIUS * (i ? -1.f : 1.f)*(overCon ? 3.f : 2.f) - (i ? 0 : textSize.x), -textSize.y / 2);
+
+			if (overCon)
+			{
+				closestDistance = distance;
+				closestConn = slot_idx;
+				closestTextPos = textPos;
+				closestPos = p;
+			}
+
+			drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*1.2f, IM_COL32(0, 0, 0, 200));
+			drawList->AddCircleFilled(p, NODE_SLOT_RADIUS*0.75f*1.2f, IM_COL32(160, 160, 160, 200));
+			drawList->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
+			drawList->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
+
+		}
+		if (closestConn != -1)
+		{
+			const char *conText = con[closestConn].mName.c_str();
+
+			hoverSlot = true;
+			drawList->AddCircleFilled(closestPos, NODE_SLOT_RADIUS*2.f, IM_COL32(0, 0, 0, 200));
+			drawList->AddCircleFilled(closestPos, NODE_SLOT_RADIUS*1.5f, IM_COL32(200, 200, 200, 200));
+			drawList->AddText(io.FontDefault, 16, closestTextPos + ImVec2(1, 1), IM_COL32(0, 0, 0, 255), conText);
+			drawList->AddText(io.FontDefault, 16, closestTextPos, IM_COL32(250, 250, 250, 255), conText);
+			bool inputToOutput = (!editingInput && !i) || (editingInput && i);
+			if (nodeOperation == NO_EditingLink && !io.MouseDown[0])
+			{
+				if (inputToOutput)
+				{
+					// check loopback
+					NodeLink nl;
+					if (editingInput)
+						nl = NodeLink(nodeIndex, closestConn, editingNodeIndex, editingSlotIndex);
+					else
+						nl = NodeLink(editingNodeIndex, editingSlotIndex, nodeIndex, closestConn);
+
+					if (RecurseIsLinked(nl.OutputIdx, nl.InputIdx))
+					{
+						Log("Acyclic graph. Loop is not allowed.\n");
+						break;
+					}
+					bool alreadyExisting = false;
+					for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
+					{
+						if (links[linkIndex] == nl)
+						{
+							alreadyExisting = true;
+							break;
+						}
+					}
+
+					// check already connected output
+					for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
+					{
+						NodeLink& link = links[linkIndex];
+						if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
+						{
+							URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+							gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+							links.erase(links.begin() + linkIndex);
+							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							break;
+						}
+					}
+
+					if (!alreadyExisting)
+					{
+						URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
+
+						links.push_back(nl);
+						gNodeDelegate.AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
+						NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+					}
+				}
+			}
+			if (nodeOperation == NO_None && io.MouseDown[0])
+			{
+				nodeOperation = NO_EditingLink;
+				editingInput = i == 0;
+				editingNodeSource = closestPos;
+				editingNodeIndex = nodeIndex;
+				editingSlotIndex = closestConn;
+				if (editingInput)
+				{
+					// remove existing link
+					for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
+					{
+						NodeLink& link = links[linkIndex];
+						if (link.OutputIdx == nodeIndex && link.OutputSlot == closestConn)
+						{
+							URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+							gNodeDelegate.DelLink(link.OutputIdx, link.OutputSlot);
+							links.erase(links.begin() + linkIndex);
+							NodeGraphUpdateEvaluationOrder(&gNodeDelegate);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+static void DrawGrid(ImDrawList* drawList, ImVec2 windowPos, const ImVec2 canvasSize, const float factor)
+{
+	ImU32 GRID_COLOR = IM_COL32(100, 100, 100, 40);
+	float GRID_SZ = 64.0f * factor;
+	for (float x = fmodf(scrolling.x*factor, GRID_SZ); x < canvasSize.x; x += GRID_SZ)
+		drawList->AddLine(ImVec2(x, 0.0f) + windowPos, ImVec2(x, canvasSize.y) + windowPos, GRID_COLOR);
+	for (float y = fmodf(scrolling.y*factor, GRID_SZ); y < canvasSize.y; y += GRID_SZ)
+		drawList->AddLine(ImVec2(0.0f, y) + windowPos, ImVec2(canvasSize.x, y) + windowPos, GRID_COLOR);
+}
+
+// return true if node is hovered
+static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor)
+{
+	ImGuiIO& io = ImGui::GetIO();
+	const MetaNode* metaNodes = gMetaNodes.data();
+	Node *node = &nodes[nodeIndex];
+	ImVec2 node_rect_min = offset + node->Pos * factor;
+
+	bool old_any_active = ImGui::IsAnyItemActive();
+	ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+
+	ImGui::InvisibleButton("canvas", ImVec2(100, 100) * factor);
+	bool node_moving_active = ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
+
+	// Save the size of what we have emitted and whether any of the widgets are being used
+	bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
+	node->Size = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
+	ImVec2 node_rect_max = node_rect_min + node->Size;
+
+	// Display node box
+	drawList->ChannelsSetCurrent(1); // Background
+
+	ImGui::SetCursorScreenPos(node_rect_min);
+	ImGui::InvisibleButton("node", node->Size);
+	bool nodeHovered = false;
+	if (ImGui::IsItemHovered() && nodeOperation == NO_None)
+	{
+		nodeHovered = true;
+	}
+
+	if (ImGui::IsWindowFocused())
+	{
+		if (node_widgets_active || node_moving_active)
+		{
+			if (!node->mbSelected)
+			{
+				if (!io.KeyShift)
+				{
+					for (auto& selnode : nodes)
+						selnode.mbSelected = false;
+				}
+				node->mbSelected = true;
+			}
+		}
+	}
+	if (node_moving_active && io.MouseDown[0])
+	{
+		nodeOperation = NO_MovingNodes;
+	}
+
+	bool currentSelectedNode = node->mbSelected;
+
+	ImU32 node_bg_color = nodeHovered ? IM_COL32(85, 85, 85, 255) : IM_COL32(60, 60, 60, 255);
+
+	drawList->AddRect(node_rect_min, node_rect_max, currentSelectedNode ? IM_COL32(255, 130, 30, 255) : IM_COL32(100, 100, 100, 0), 2.0f, 15, currentSelectedNode ? 6.f : 2.f);
+
+	ImVec2 imgPos = node_rect_min + ImVec2(14, 25);
+	ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
+	float imgSizeComp = std::min(imgSize.x, imgSize.y);
+
+	drawList->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
+
+	ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
+	drawList->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
+
+	ImVec2 imageSize = gNodeDelegate.GetEvaluationSize(nodeIndex);
+	float imageRatio = 1.f;
+	if (imageSize.x > 0.f && imageSize.y > 0.f)
+		imageRatio = imageSize.y / imageSize.x;
+	ImVec2 quadSize = imgPosMax - imgPos;
+	ImVec2 marge(0.f, 0.f);
+	if (imageRatio > 1.f)
+	{
+		marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
+	}
+	else
+	{
+		marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
+	}
+
+	if (gNodeDelegate.NodeIsProcesing(nodeIndex))
+		drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), nodeIndex)));
+	else if (gNodeDelegate.NodeIsCubemap(nodeIndex))
+		drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), nodeIndex)));
+	else
+		drawList->AddImage((ImTextureID)(int64_t)(gNodeDelegate.GetNodeTexture(size_t(nodeIndex))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
+
+	drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
+	drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
+
+	unsigned int stage2D = gEvaluation.GetTexture("Stock/Stage2D.png");
+	unsigned int stagecubemap = gEvaluation.GetTexture("Stock/StageCubemap.png");
+
+	ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
+	ImVec2 bmpInfoSize(20, 20);
+
+	if (gNodeDelegate.NodeIs2D(nodeIndex))
+	{
+		drawList->AddImageQuad((ImTextureID)(uint64_t)stage2D, bmpInfoPos, bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f), bmpInfoPos + bmpInfoSize, bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+	}
+	else if (gNodeDelegate.NodeIsCubemap(nodeIndex))
+	{
+		drawList->AddImageQuad((ImTextureID)(uint64_t)stagecubemap, bmpInfoPos + ImVec2(0., bmpInfoSize.y), bmpInfoPos + bmpInfoSize, bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f), bmpInfoPos);
+	}
+	return nodeHovered;
+}
+
+void ComputeDelegateSelection()
+{
+	// only one selection allowed for delegate
+	gNodeDelegate.mSelectedNodeIndex = -1;
+	for (auto& node : nodes)
+	{
+		if (node.mbSelected)
+		{
+			if (gNodeDelegate.mSelectedNodeIndex == -1)
+			{
+				gNodeDelegate.mSelectedNodeIndex = int(&node - nodes.data());
+			}
+			else
+			{
+				gNodeDelegate.mSelectedNodeIndex = -1;
+				return;
+			}
+		}
+	}
+}
+
+void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
+{
+	ImGui::BeginGroup();
+
+	ImGuiIO& io = ImGui::GetIO();
+	const ImVec2 windowPos = ImGui::GetCursorScreenPos();
+	const ImVec2 canvasSize = ImGui::GetWindowSize();
+	ImRect regionRect(windowPos, windowPos + canvasSize);
+
+	HandleZoomScroll(regionRect);
+
+	// Create our child canvas
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
+
+	ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+	ImGui::PushItemWidth(120.0f);
+
+	ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling * factor;
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+	// Display grid
+	DrawGrid(drawList, windowPos, canvasSize, factor);
+
+	if (!enabled)
+		goto nodeGraphExit;
+
+	// Display links
+	drawList->ChannelsSplit(3);
+	drawList->ChannelsSetCurrent(1); // Background
+	DisplayLinks(drawList, offset, factor, regionRect);
+
+	// edit node link
+	if (nodeOperation == NO_EditingLink)
+	{
+		ImVec2 p1 = editingNodeSource;
+		ImVec2 p2 = io.MousePos;
+		drawList->AddBezierCurve(p1, p1 + ImVec2(editingInput ?-50.f:+50.f, 0.f), p2 + ImVec2(editingInput ?50.f:-50.f, 0.f), p2, IM_COL32(200, 200, 100, 255), 3.0f);
+	}
+
+	// Display nodes
+	int hoveredNode = -1;
+	for (int i = 0; i < 2; i++)
+	{
+		for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
+		{
+			Node* node = &nodes[nodeIndex];
+			if (node->mbSelected != (i != 0))
+				continue;
+			ImVec2 node_rect_min = offset + node->Pos * factor;
+
+			// node view clipping
+			ImVec2 p1 = node_rect_min;
+			ImVec2 p2 = node_rect_min + ImVec2(100, 100) * factor;
+			if (!regionRect.Overlaps(ImRect(p1, p2)))
+				continue;
+
+			ImGui::PushID(nodeIndex);
+
+			// Display node contents first
+			drawList->ChannelsSetCurrent(2); // Foreground
+
+			if (DrawNode(drawList, nodeIndex, offset, factor))
+				hoveredNode = nodeIndex;
+
+			HandleConnections(drawList, nodeIndex, offset, factor);
+			ImGui::PopID();
+		}
+	}
+
+	if (nodeOperation == NO_MovingNodes)
+	{
+		for (auto& node : nodes)
+		{
+			if (!node.mbSelected)
+				continue;
+			node.Pos += io.MouseDelta / factor; 
+		}
+	}
+
+	// rugs
+	drawList->ChannelsSetCurrent(0);
+	editRug = DisplayRugs(editRug, drawList, offset, factor);
+
+	// quad selection
+	HandleQuadSelection(drawList, offset, factor, regionRect);
+
+	drawList->ChannelsMerge();
+
+	if (editRug)
+	{
+		if (EditRug(editRug, drawList, offset, factor))
+			editRug = NULL;
+	}
+	
+	// releasing mouse button means it's done in any operation
+	if (nodeOperation != NO_None && !io.MouseDown[0])
+		nodeOperation = NO_None;
+
+	// Open context menu
+	bool openContextMenu = false;
+	static int contextMenuHoverNode = -1;
+	if (nodeOperation == NO_None && regionRect.Contains(io.MousePos) && (ImGui::IsMouseClicked(1) || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Tab))))
+	{
+		openContextMenu = true;
+		contextMenuHoverNode = hoveredNode;
+	}
+	
+	if (openContextMenu)
+		ImGui::OpenPopup("context_menu");
+	ContextMenu(offset, contextMenuHoverNode);
+	
+	// Scrolling
+	if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f) && ImGui::IsWindowFocused())
+		scrolling += io.MouseDelta / factor;
+
+nodeGraphExit:;
 	ImGui::PopItemWidth();
 	ImGui::EndChild();
 	ImGui::PopStyleColor(1);
 	ImGui::PopStyleVar(2);
 
-	delegate->mSelectedNodeIndex = node_selected;
+	ComputeDelegateSelection();
 	
 	ImGui::EndGroup();
 }

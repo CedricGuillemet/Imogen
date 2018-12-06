@@ -161,8 +161,8 @@ void SetStyle()
 	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
 	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.87f, 0.87f, 0.87f, 0.74f);
 	colors[ImGuiCol_Tab] = ImVec4(0.01f, 0.01f, 0.01f, 0.86f);
-	colors[ImGuiCol_TabHovered] = ImVec4(0.29f, 0.29f, 0.29f, 1.00f);
-	colors[ImGuiCol_TabActive] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+	colors[ImGuiCol_TabHovered] = ImVec4(0.29f, 0.29f, 0.79f, 1.00f);
+	colors[ImGuiCol_TabActive] = ImVec4(0.31f, 0.31f, 0.91f, 1.00f);
 	colors[ImGuiCol_TabUnfocused] = ImVec4(0.02f, 0.02f, 0.02f, 1.00f);
 	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.19f, 0.19f, 0.19f, 1.00f);
 	colors[ImGuiCol_DockingPreview] = ImVec4(0.38f, 0.48f, 0.60f, 1.00f);
@@ -293,13 +293,15 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 		evaluationInfo.uiPass = 0;
 		gCurrentContext->RunSingle(selNode, evaluationInfo);
 	}
+	ImTextureID displayedTexture = 0;
 	ImRect rc;
+	ImVec2 displayedTextureSize;
+	ImVec2 mouseUVCoord(-FLT_MAX, -FLT_MAX);
 	if (imageWidth && imageHeight)
 	{
 		float ratio = float(imageHeight) / float(imageWidth);
 		float h = w * ratio;
 		ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
-		
 
 		if (forceUI)
 		{
@@ -307,13 +309,67 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
+
+			mouseUVCoord = (io.MousePos - rc.Min) / rc.GetSize();
+			mouseUVCoord.y = 1.f - mouseUVCoord.y;
 		}
 		else
 		{
 			if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+			{
 				ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
+			}
 			else
-				ImGui::ImageButton((ImTextureID)(int64_t)((selNode != -1) ? nodeGraphDelegate.mEditingContext.GetEvaluationTexture(selNode) : 0), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+			{
+				displayedTexture = (ImTextureID)(int64_t)((selNode != -1) ? nodeGraphDelegate.mEditingContext.GetEvaluationTexture(selNode) : 0);
+				if (displayedTexture)
+				{
+					auto tgt = nodeGraphDelegate.mEditingContext.GetRenderTarget(selNode);
+					displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
+				}
+				ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
+				mouseUVPos.y = 1.f - mouseUVPos.y;
+				Vec4 mouseUVPosv(mouseUVPos.x, mouseUVPos.y);
+
+				Vec4 uva(0, 0), uvb(1, 1);
+				Mat4x4* viewMatrix = nodeGraphDelegate.GetParameterViewMatrix(selNode);
+				if (viewMatrix)
+				{
+					Mat4x4& res = *viewMatrix;
+					Mat4x4 tr, trp, sc;
+					static float scale = 1.f;
+					scale = ImLerp(scale, 1.f, 0.15f);
+					if (ImRect(p, p + ImVec2(w, h)).Contains(io.MousePos) && ImGui::IsWindowFocused())
+					{
+						scale -= io.MouseWheel*0.04f;
+						scale -= io.MouseDelta.y * 0.01f * ((io.KeyAlt&&io.MouseDown[1]) ? 1.f : 0.f);
+
+						ImVec2 pix2uv = ImVec2(1.f, 1.f) / ImVec2(w, h);
+						Vec4 localTranslate;
+						localTranslate = Vec4(-io.MouseDelta.x * pix2uv.x, io.MouseDelta.y * pix2uv.y) * ((io.KeyAlt&&io.MouseDown[2]) ? 1.f : 0.f) * res[0];
+						Mat4x4 localTranslateMat;
+						localTranslateMat.Translation(localTranslate);
+						res *= localTranslateMat;
+					}
+
+					mouseUVPosv.TransformPoint(res);
+					mouseUVCoord = ImVec2(mouseUVPosv.x, mouseUVPosv.y);
+					sc.Scale(scale, scale, 1.f);
+					tr.Translation(-mouseUVPosv);
+					trp.Translation(mouseUVPosv);
+					res *= tr * sc * trp;
+					res[0] = ImClamp(res[0], 0.05f, 1.f);
+					res[5] = res[0];
+
+					res[12] = ImClamp(res[12], 0.f, 1.f - res[0]);
+					res[13] = ImClamp(res[13], 0.f, 1.f - res[5]);
+
+					uva.TransformPoint(res);
+					uvb.TransformPoint(res);
+				}
+
+				ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(uva.x, uvb.y), ImVec2(uvb.x, uva.y));
+			}
 			rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -330,15 +386,84 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	ImGui::PopStyleColor(3);
 	ImGui::PopStyleVar(1);
 
-	if (rc.Contains(io.MousePos))
+	static int lastSentExit = -1;
+	if (rc.Contains(io.MousePos) && mouseUVCoord.x >= 0.f && mouseUVCoord.y >= 0.f)
 	{
-		ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
-		ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-		nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
+		static Image pickerImage;
+		if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1)
+		{
+			if (!pickerImage.mBits)
+			{
+				Evaluation::GetEvaluationImage(selNode, &pickerImage);
+				Log("Texel view Get image\n");
+			}
+			int width = pickerImage.mWidth;
+			int height = pickerImage.mHeight;
+			
+			ImVec2 pixSize = ImVec2(1.f, -1.f)/displayedTextureSize;
+
+			ImGui::BeginTooltip();
+			ImGui::BeginGroup();
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			ImGui::InvisibleButton("AnotherInvisibleMan", ImVec2(120, 120));
+			ImRect pickRc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+			draw_list->AddRectFilled(pickRc.Min, pickRc.Max, 0xFF000000);
+			static int zoomSize = 2;
+			float quadWidth = 120.f / float(zoomSize * 2 + 1);
+			ImVec2 quadSize(quadWidth, quadWidth);
+			int basex = ImClamp(int(mouseUVCoord.x * width), zoomSize, width-zoomSize);
+			int basey = ImClamp(int(mouseUVCoord.y * height) - zoomSize * 2 - 1, zoomSize, height - zoomSize);
+			for (int y = -zoomSize; y <= zoomSize; y++)
+			{
+				for (int x = -zoomSize; x <= zoomSize; x++)
+				{
+					uint32_t texel = ((uint32_t*)pickerImage.mBits)[(basey + zoomSize * 2 + 1 - y) * width + x + basex];
+					ImVec2 pos = pickRc.Min + ImVec2(float(x + zoomSize), float(y + zoomSize)) * quadSize;
+					draw_list->AddRectFilled(pos, pos + quadSize, texel);
+				}
+			}
+			ImVec2 pos = pickRc.Min + ImVec2(float(zoomSize), float(zoomSize)) * quadSize;
+			draw_list->AddRect(pos, pos + quadSize, 0xFF0000FF, 0.f, 15, 2.f);
+			
+			ImGui::EndGroup();
+			ImGui::SameLine();
+			ImGui::BeginGroup();
+			uint32_t texel = ((uint32_t*)pickerImage.mBits)[basey * width + basex];
+			ImVec4 color = ImColor(texel);
+			ImVec4 colHSV;
+			ImGui::ColorConvertRGBtoHSV(color.x, color.y, color.z, colHSV.x, colHSV.y, colHSV.z);
+			ImGui::Text("U %1.3f V %1.3f", mouseUVCoord.x, mouseUVCoord.y);
+			ImGui::Text("Coord %d %d", int(mouseUVCoord.x * width), int(mouseUVCoord.y * height));
+			ImGui::Separator();
+			ImGui::Text("R 0x%02x  G 0x%02x  B 0x%02x", int(color.x * 255.f), int(color.y * 255.f), int(color.z * 255.f));
+			ImGui::Text("R %1.3f G %1.3f B %1.3f", color.x, color.y, color.z);
+			ImGui::Separator();
+			ImGui::Text("H 0x%02x  S 0x%02x  V 0x%02x", int(colHSV.x * 255.f), int(colHSV.y * 255.f), int(colHSV.z * 255.f));
+			ImGui::Text("H %1.3f S %1.3f V %1.3f", colHSV.x, colHSV.y, colHSV.z);
+			ImGui::Separator();
+			ImGui::Text("Alpha 0x%02x", int(color.w * 255.f));
+			ImGui::Text("Alpha %1.3f", color.w);
+			ImGui::Separator();
+			ImGui::Text("Size %d, %d", int(displayedTextureSize.x), int(displayedTextureSize.y));
+			ImGui::EndGroup();
+			ImGui::EndTooltip();
+		}
+		else if (ImGui::IsWindowFocused())
+		{
+			Evaluation::FreeImage(&pickerImage);
+			ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
+			ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
+			nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
+		}
+		lastSentExit = -1;
 	}
 	else
 	{
-		nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
+		if (lastSentExit != selNode)
+		{
+			lastSentExit = selNode;
+			nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
+		}
 	}
 }
 
@@ -831,6 +956,26 @@ struct MySequence : public ImSequencer::SequenceInterface
 	TileNodeEditGraphDelegate &mNodeGraphDelegate;
 };
 
+struct FocusDisplay
+{
+	FocusDisplay()
+	{
+
+		ImVec2 windowPos = ImGui::GetCursorScreenPos();
+		ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+	}
+	~FocusDisplay()
+	{
+		if (ImGui::IsWindowFocused())
+		{
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			drawList->AddRect(windowPos - ImVec2(4, 6), windowPos + canvasSize + ImVec2(4, 6), 0xCCCC0000);
+		}
+	}
+	ImVec2 windowPos;
+	ImVec2 canvasSize;
+};
+
 void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -844,6 +989,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Nodes"))
 		{
+			FocusDisplay focusDisplay;
 			if (selectedMaterial != -1)
 			{
 				Material& material = library.mMaterials[selectedMaterial];
@@ -892,12 +1038,14 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Shaders"))
 		{
+			FocusDisplay focusDisplay;
 			HandleEditor(editor, nodeGraphDelegate, evaluation);
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Library"))
 		{
+			FocusDisplay focusDisplay;
 			LibraryEdit(library, nodeGraphDelegate, evaluation);
 		}
 		ImGui::End();
@@ -905,18 +1053,30 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::SetWindowSize(ImVec2(300, 300));
 		if (ImGui::Begin("Parameters"))
 		{
+			FocusDisplay focusDisplay;
+			const ImVec2 windowPos = ImGui::GetCursorScreenPos();
+			const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+
 			NodeEdit(nodeGraphDelegate, evaluation);
+			if (ImGui::IsWindowFocused())
+			{
+				ImDrawList* drawList = ImGui::GetWindowDrawList();
+				drawList->AddRect(windowPos-ImVec2(4,6), windowPos+canvasSize+ ImVec2(4, 6), 0xCCCC0000);
+			}
+			
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Logs"))
 		{
+			FocusDisplay focusDisplay;
 			ImguiAppLog::Log->DrawEmbedded();
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Timeline"))
 		{
+			FocusDisplay focusDisplay;
 			MySequence mySequence(nodeGraphDelegate);
 			int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
 			static int firstFrame = 0;
@@ -954,7 +1114,8 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			ImGui::SetNextWindowFocus();
 			if (ImGui::Begin(tmps, &open))
 			{
-				RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, true);
+				FocusDisplay focusDisplay;
+				RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, false);
 			}
 			ImGui::End();
 			if (!open)

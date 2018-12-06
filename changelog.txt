@@ -1,4 +1,26 @@
 -------------------------------------------------------------------------------
+Imogen 0.7 - codename Pegasus Tenma
+
+New:
+- Ambient Occlusion node
+- Improve PBR node with cubemap display, displacement factor and various geometry
+- Better cubemap handling in glsl nodes
+- Terrain preview node
+- small icon on nodes that indicates the type of render target(2D, cubemap)
+- improved undo/redo
+- you can select multiples nodes, move, delete, ...
+- copy/paste node between graphs
+- improved focused window handling
+- color picker/debugger in preview window
+- zoom/pan 2d preview 
+- improved nodes and rugs display
+- 3D view manipulation a la Maya
+- tab key in node graph brings the context menu with focus on search edit box
+
+Known issues:
+- some rendertarget keep previous sizes (from previous open graph)
+
+-------------------------------------------------------------------------------
 Imogen 0.6.1 - codename Saori Kido 2
 
 Fixed:

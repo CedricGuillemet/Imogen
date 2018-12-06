@@ -106,7 +106,7 @@ void Evaluation::UserDeleteEvaluation(size_t target)
 	URDel<EvaluationStage> undoRedoDelStage(int(target), []() {return &gEvaluation.mStages; },
 		StageIsDeleted, StageIsAdded);
 
-	StageIsDeleted(target);
+	StageIsDeleted(int(target));
 	mStages.erase(mStages.begin() + target);
 }
 

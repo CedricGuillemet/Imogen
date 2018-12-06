@@ -767,6 +767,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		rug.mColor = rugs[i].mColor;
 		rug.mComment = rugs[i].mText;
 	}
+	material.mAnimTrack = gEvaluation.GetAnimTrack();
 }
 
 void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
@@ -810,6 +811,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		}
 		NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
 		NodeGraphUpdateScrolling();
+		gEvaluation.SetAnimTrack(material.mAnimTrack);
 		nodeGraphDelegate.mEditingContext.RunAll();
 	}
 }

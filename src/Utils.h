@@ -60,6 +60,26 @@ inline int align(int value, int alignment)
 
 struct Mat4x4;
 
+struct iVec2
+{
+	int x, y;
+};
+struct iVec3
+{
+	int x, y, z;
+};
+struct iVec4
+{
+	int x, y, z, w;
+};
+struct Vec2
+{
+	float x, y;
+};
+struct Vec3
+{
+	float x, y, z;
+};
 struct Vec4
 {
 public:

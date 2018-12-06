@@ -225,3 +225,49 @@ FFMPEGCodec::Decoder* Evaluation::FindDecoder(const std::string& filename)
 	decoder->Open(filename);
 	return decoder;
 }
+
+// animation
+AnimTrack* Evaluation::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
+{
+	for (auto& animTrack : mAnimTrack)
+	{
+		if (animTrack.mNodeIndex == nodeIndex && animTrack.mParamIndex == parameterIndex)
+			return &animTrack;
+	}
+	return NULL;
+}
+
+//void* Evaluation::
+
+void Evaluation::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
+{
+	AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
+	if (!animTrack)
+	{
+		uint32_t parameterType = gMetaNodes[mStages[nodeIndex].mNodeType].mParams[parameterIndex].mType;
+		AnimTrack newTrack{ nodeIndex, parameterIndex, parameterType, AllocateAnimation(parameterType) };
+		mAnimTrack.push_back(newTrack);
+		animTrack = &mAnimTrack.back();
+	}
+
+}
+
+void Evaluation::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed)
+{
+
+}
+
+void Evaluation::ApplyAnimation(int frame)
+{
+	for (auto& animTrack : mAnimTrack)
+	{
+		auto& stage = mStages[animTrack.mNodeIndex];
+		size_t parameterOffset = GetParameterOffset(uint32_t(mStages[animTrack.mNodeIndex].mNodeType), animTrack.mParamIndex);
+		animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
+	}
+}
+
+void Evaluation::RemoveAnimation(int nodeIndex)
+{
+
+}

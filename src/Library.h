@@ -107,7 +107,8 @@ struct AnimationBase
 
 	virtual void Allocate(size_t elementCount) = 0;
 	virtual void* GetData() = 0;
-	virtual void GetByteLength() const = 0;
+	virtual size_t GetValuesByteLength() const = 0;
+	virtual void GetValue(uint32_t frame, void *destination) = 0;
 };
 
 template<typename T> struct Animation : public AnimationBase
@@ -123,10 +124,11 @@ template<typename T> struct Animation : public AnimationBase
 	{
 		return mValues.data();
 	}
-	virtual void GetValuesByteLength() const
+	virtual size_t GetValuesByteLength() const
 	{
 		return mValues.size() * sizeof(T);
 	}
+	virtual void GetValue(uint32_t frame, void *destination) {}
 };
 
 struct AnimTrack
@@ -199,6 +201,8 @@ struct Camera
 };
 
 size_t GetParameterTypeSize(ConTypes paramType);
+size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);
+AnimationBase *AllocateAnimation(uint32_t valueType);
 
 struct MetaCon
 {

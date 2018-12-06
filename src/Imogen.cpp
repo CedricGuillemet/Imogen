@@ -296,12 +296,12 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	ImTextureID displayedTexture = 0;
 	ImRect rc;
 	ImVec2 displayedTextureSize;
+	ImVec2 mouseUVCoord(-FLT_MAX, -FLT_MAX);
 	if (imageWidth && imageHeight)
 	{
 		float ratio = float(imageHeight) / float(imageWidth);
 		float h = w * ratio;
 		ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
-		
 
 		if (forceUI)
 		{
@@ -309,6 +309,9 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 			ImDrawList* draw_list = ImGui::GetWindowDrawList();
 			draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
+
+			mouseUVCoord = (io.MousePos - rc.Min) / rc.GetSize();
+			mouseUVCoord.y = 1.f - mouseUVCoord.y;
 		}
 		else
 		{
@@ -324,7 +327,48 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 					auto tgt = nodeGraphDelegate.mEditingContext.GetRenderTarget(selNode);
 					displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
 				}
-				ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+				ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
+				mouseUVPos.y = 1.f - mouseUVPos.y;
+				Vec4 mouseUVPosv(mouseUVPos.x, mouseUVPos.y);
+
+				Vec4 uva(0, 0), uvb(1, 1);
+				Mat4x4* viewMatrix = nodeGraphDelegate.GetParameterViewMatrix(selNode);
+				if (viewMatrix)
+				{
+					Mat4x4& res = *viewMatrix;
+					Mat4x4 tr, trp, sc;
+					static float scale = 1.f;
+					scale = ImLerp(scale, 1.f, 0.15f);
+					if (ImRect(p, p + ImVec2(w, h)).Contains(io.MousePos) && ImGui::IsWindowFocused())
+					{
+						scale -= io.MouseWheel*0.04f;
+						scale -= io.MouseDelta.y * 0.01f * ((io.KeyAlt&&io.MouseDown[1]) ? 1.f : 0.f);
+
+						ImVec2 pix2uv = ImVec2(1.f, 1.f) / ImVec2(w, h);
+						Vec4 localTranslate;
+						localTranslate = Vec4(-io.MouseDelta.x * pix2uv.x, io.MouseDelta.y * pix2uv.y) * ((io.KeyAlt&&io.MouseDown[2]) ? 1.f : 0.f) * res[0];
+						Mat4x4 localTranslateMat;
+						localTranslateMat.Translation(localTranslate);
+						res *= localTranslateMat;
+					}
+
+					mouseUVPosv.TransformPoint(res);
+					mouseUVCoord = ImVec2(mouseUVPosv.x, mouseUVPosv.y);
+					sc.Scale(scale, scale, 1.f);
+					tr.Translation(-mouseUVPosv);
+					trp.Translation(mouseUVPosv);
+					res *= tr * sc * trp;
+					res[0] = ImClamp(res[0], 0.05f, 1.f);
+					res[5] = res[0];
+
+					res[12] = ImClamp(res[12], 0.f, 1.f - res[0]);
+					res[13] = ImClamp(res[13], 0.f, 1.f - res[5]);
+
+					uva.TransformPoint(res);
+					uvb.TransformPoint(res);
+				}
+
+				ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(uva.x, uvb.y), ImVec2(uvb.x, uva.y));
 			}
 			rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
@@ -343,7 +387,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	ImGui::PopStyleVar(1);
 
 	static int lastSentExit = -1;
-	if (rc.Contains(io.MousePos))
+	if (rc.Contains(io.MousePos) && mouseUVCoord.x >= 0.f && mouseUVCoord.y >= 0.f)
 	{
 		static Image pickerImage;
 		if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1)
@@ -355,8 +399,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			}
 			int width = pickerImage.mWidth;
 			int height = pickerImage.mHeight;
-			ImVec2 pix = (io.MousePos - rc.Min) / rc.GetSize();
-			pix.y = 1.f - pix.y;
+			
 			ImVec2 pixSize = ImVec2(1.f, -1.f)/displayedTextureSize;
 
 			ImGui::BeginTooltip();
@@ -368,8 +411,8 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			static int zoomSize = 2;
 			float quadWidth = 120.f / float(zoomSize * 2 + 1);
 			ImVec2 quadSize(quadWidth, quadWidth);
-			int basex = ImClamp(int(pix.x * width), zoomSize, width-zoomSize);
-			int basey = ImClamp(int(pix.y * height), zoomSize, height - zoomSize);
+			int basex = ImClamp(int(mouseUVCoord.x * width), zoomSize, width-zoomSize);
+			int basey = ImClamp(int(mouseUVCoord.y * height) - zoomSize * 2 - 1, zoomSize, height - zoomSize);
 			for (int y = -zoomSize; y <= zoomSize; y++)
 			{
 				for (int x = -zoomSize; x <= zoomSize; x++)
@@ -389,8 +432,8 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			ImVec4 color = ImColor(texel);
 			ImVec4 colHSV;
 			ImGui::ColorConvertRGBtoHSV(color.x, color.y, color.z, colHSV.x, colHSV.y, colHSV.z);
-			ImGui::Text("U %1.3f V %1.3f", pix.x, pix.y);
-			ImGui::Text("Coord %d %d", int(pix.x * width), int(pix.y * height));
+			ImGui::Text("U %1.3f V %1.3f", mouseUVCoord.x, mouseUVCoord.y);
+			ImGui::Text("Coord %d %d", int(mouseUVCoord.x * width), int(mouseUVCoord.y * height));
 			ImGui::Separator();
 			ImGui::Text("R 0x%02x  G 0x%02x  B 0x%02x", int(color.x * 255.f), int(color.y * 255.f), int(color.z * 255.f));
 			ImGui::Text("R %1.3f G %1.3f B %1.3f", color.x, color.y, color.z);

@@ -690,19 +690,19 @@ struct AnimationPointer
 AnimationBase::AnimationPointer AnimationBase::GetPointer(uint32_t frame) const
 {
 	if (mFrames.empty())
-		return { 0,0, 0.f };
+		return { 0, 0, 0, 0, 0.f };
 	if (frame <= mFrames[0])
-		return { 0, 0, 0.f };
+		return { 0, 0, 0, 0, 0.f };
 	if (frame >= mFrames.back())
-		return { mFrames.back(), mFrames.back(), 0.f };
+		return { uint32_t(mFrames.size()), mFrames.back(), uint32_t(mFrames.size()), mFrames.back(), 0.f };
 	for (uint32_t i = 0; i < mFrames.size() - 1; i++)
 	{
-		if (mFrames[i] >= frame && mFrames[i + 1] <= frame)
+		if (mFrames[i] <= frame && mFrames[i + 1] >= frame)
 		{
 			float ratio = float(frame - mFrames[i]) / float(mFrames[i+1] - mFrames[i]);
-			return { i, i + 1, ratio };
+			return { i, mFrames[i], i + 1, mFrames[i+1], ratio };
 		}
 	}
 	assert(0);
-	return { 0, 0, 0.f };
+	return { 0, 0, 0, 0, 0.f };
 }

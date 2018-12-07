@@ -695,7 +695,7 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
 		editingRugRect = ImRect(node_rect_min, node_rect_max);
 	}
 
-	if (nodeOperation == NO_QuadSelecting)
+	if (nodeOperation == NO_QuadSelecting && ImGui::IsWindowFocused())
 	{
 		const ImVec2 bmin = ImMin(quadSelectPos, io.MousePos);
 		const ImVec2 bmax = ImMax(quadSelectPos, io.MousePos);

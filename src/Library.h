@@ -135,7 +135,9 @@ struct AnimationBase
 	struct AnimationPointer
 	{
 		uint32_t mPreviousIndex;
+		uint32_t mPreviousFrame;
 		uint32_t mNextIndex;
+		uint32_t mNextFrame;
 		float mRatio;
 	};
 	AnimationPointer GetPointer(uint32_t frame) const;
@@ -161,6 +163,17 @@ template<typename T> struct Animation : public AnimationBase
 	}
 	virtual void SetValue(uint32_t frame, void *source) 
 	{
+		auto pointer = GetPointer(frame);
+		T value = *(T*)source;
+		if (frame == pointer.mPreviousFrame && !mValues.empty())
+		{
+			mValues[pointer.mPreviousIndex] = value;
+		}
+		else
+		{
+			mFrames.insert(mFrames.begin() + pointer.mPreviousIndex, frame);
+			mValues.insert(mValues.begin() + pointer.mPreviousIndex, value);
+		}
 	}
 };
 

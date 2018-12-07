@@ -1096,18 +1096,17 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			if (ImGui::Button(">"))
 				currentTime++;
 			ImGui::SameLine();
-			if (ImGui::Button("Key"))
+			currentTime = ImMax(currentTime, 0);
+			if (ImGui::Button("Key") && selectedEntry != -1)
 			{
-
+				gEvaluation.MakeKey(currentTime, uint32_t(selectedEntry), 0);
 			}
 			/*
 			if (ImGui::InputInt("", &currentTime, 0, 0, 0))
 			{
 			}
 			*/
-			currentTime = ImMax(currentTime, 0);
-
-
+			
 			Sequencer(&mySequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
 			if (selectedEntry != -1)
 			{
@@ -1120,6 +1119,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			{
 				gEvaluationTime = currentTime;
 				nodeGraphDelegate.SetTime(currentTime, true);
+				gEvaluation.ApplyAnimation(currentTime);
 			}
 		}
 		ImGui::End();

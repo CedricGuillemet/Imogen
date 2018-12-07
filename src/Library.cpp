@@ -600,18 +600,18 @@ void LoadMetaNodes()
 			,{}
 		,{ { "", Con_Float4 } }
 		,{ { "ambient", Con_Float4 }
-		,{ "lightdir", Con_Float4 }
-		,{ "Kr", Con_Float4 }
-		,{ "rayleigh brightness", Con_Float }
-		,{ "mie brightness", Con_Float }
-		,{ "spot brightness", Con_Float }
-		,{ "scatter strength", Con_Float }
-		,{ "rayleigh strength", Con_Float }
-		,{ "mie strength" , Con_Float }
-		,{ "rayleigh collection power", Con_Float }
-		,{ "mie collection power", Con_Float }
-		,{ "mie distribution", Con_Float }
-		,{ "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+, { "lightdir", Con_Float4 }
+, { "Kr", Con_Float4 }
+, { "rayleigh brightness", Con_Float }
+, { "mie brightness", Con_Float }
+, { "spot brightness", Con_Float }
+, { "scatter strength", Con_Float }
+, { "rayleigh strength", Con_Float }
+, { "mie strength" , Con_Float }
+, { "rayleigh collection power", Con_Float }
+, { "mie collection power", Con_Float }
+, { "mie distribution", Con_Float }
+, { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
 			}
 		}
 
@@ -655,7 +655,7 @@ void LoadMetaNodes()
 			,{ { "", Con_Float4 } }
 			,{ { "Strength", Con_Float },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "XY Offset\0Rotation-Distance\0" } }
 			}
-			
+
 			,
 			{
 				"TerrainPreview", hcMaterial, 2
@@ -665,12 +665,12 @@ void LoadMetaNodes()
 			}
 
 			,
-		{
-			"AO", hcFilter, 4
+			{
+				"AO", hcFilter, 4
+				,{ { "", Con_Float4 } }
 			,{ { "", Con_Float4 } }
-		,{ { "", Con_Float4 } }
-		,{  { "strength", Con_Float }, { "area", Con_Float }, { "falloff", Con_Float }, { "radius", Con_Float }}
-		}
+			,{  { "strength", Con_Float }, { "area", Con_Float }, { "falloff", Con_Float }, { "radius", Con_Float }}
+			}
 	};
 
 
@@ -678,4 +678,31 @@ void LoadMetaNodes()
 	{
 		gMetaNodesIndices[gMetaNodes[i].mName] = i;
 	}
+}
+
+struct AnimationPointer
+{
+	uint32_t mPreviousIndex;
+	uint32_t mNextIndex;
+	float mRatio;
+};
+
+AnimationBase::AnimationPointer AnimationBase::GetPointer(uint32_t frame) const
+{
+	if (mFrames.empty())
+		return { 0,0, 0.f };
+	if (frame <= mFrames[0])
+		return { 0, 0, 0.f };
+	if (frame >= mFrames.back())
+		return { mFrames.back(), mFrames.back(), 0.f };
+	for (uint32_t i = 0; i < mFrames.size() - 1; i++)
+	{
+		if (mFrames[i] >= frame && mFrames[i + 1] <= frame)
+		{
+			float ratio = float(frame - mFrames[i]) / float(mFrames[i+1] - mFrames[i]);
+			return { i, i + 1, ratio };
+		}
+	}
+	assert(0);
+	return { 0, 0, 0.f };
 }

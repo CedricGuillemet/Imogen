@@ -249,7 +249,9 @@ void Evaluation::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
 		mAnimTrack.push_back(newTrack);
 		animTrack = &mAnimTrack.back();
 	}
-
+	auto& stage = mStages[nodeIndex];
+	size_t parameterOffset = GetParameterOffset(uint32_t(stage.mNodeType), parameterIndex);
+	animTrack->mAnimation->SetValue(frame, &stage.mParameters[parameterOffset]);
 }
 
 void Evaluation::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed)
@@ -262,7 +264,7 @@ void Evaluation::ApplyAnimation(int frame)
 	for (auto& animTrack : mAnimTrack)
 	{
 		auto& stage = mStages[animTrack.mNodeIndex];
-		size_t parameterOffset = GetParameterOffset(uint32_t(mStages[animTrack.mNodeIndex].mNodeType), animTrack.mParamIndex);
+		size_t parameterOffset = GetParameterOffset(uint32_t(stage.mNodeType), animTrack.mParamIndex);
 		animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
 	}
 }

@@ -52,6 +52,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 unsigned int LoadShader(const std::string &shaderString, const char *fileName);
 int Log(const char *szFormat, ...);
+template<typename T> T Lerp(T a, T b, float t) { return T(a + (b - a) * t); }
 
 inline int align(int value, int alignment)
 {
@@ -63,23 +64,43 @@ struct Mat4x4;
 struct iVec2
 {
 	int x, y;
+	inline iVec2 operator * (float f) const { return { int(x*f), int(y*f) }; }
+	inline iVec2 operator - (const iVec2& v) const { return { x - v.x, y - v.y }; }
+	inline iVec2 operator + (const iVec2& v) const { return { x + v.x, y + v.y }; }
 };
+
 struct iVec3
 {
 	int x, y, z;
+	inline iVec3 operator * (float f) const { return { int(x*f), int(y*f), int(z*f) }; }
+	inline iVec3 operator - (const iVec3& v) const { return { x - v.x, y - v.y, z - v.z }; }
+	inline iVec3 operator + (const iVec3& v) const { return { x + v.x, y + v.y, z + v.z }; }
 };
+
 struct iVec4
 {
 	int x, y, z, w;
+	inline iVec4 operator * (float f) const { return { int(x*f), int(y*f), int(z*f), int(w*f) }; }
+	inline iVec4 operator - (const iVec4& v) const { return { x - v.x, y - v.y, z - v.z, w - v.w }; }
+	inline iVec4 operator + (const iVec4& v) const { return { x + v.x, y + v.y, z + v.z, w + v.w }; }
 };
+
 struct Vec2
 {
 	float x, y;
+	inline Vec2 operator * (float f) const { return { x*f, y*f }; }
+	inline Vec2 operator - (const Vec2& v) const { return { x - v.x, y - v.y }; }
+	inline Vec2 operator + (const Vec2& v) const { return { x + v.x, y + v.y }; }
 };
+
 struct Vec3
 {
 	float x, y, z;
+	inline Vec3 operator * (float f) const { return { x*f, y*f, z*f }; }
+	inline Vec3 operator - (const Vec3& v) const { return { x - v.x, y - v.y, z - v.z }; }
+	inline Vec3 operator + (const Vec3& v) const { return { x + v.x, y + v.y, z + v.z }; }
 };
+
 struct Vec4
 {
 public:

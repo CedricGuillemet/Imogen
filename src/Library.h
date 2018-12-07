@@ -32,6 +32,27 @@
 #include <map>
 #include "Utils.h"
 
+struct Camera
+{
+	Vec4 mPosition;
+	Vec4 mDirection;
+	Vec4 mUp;
+	Vec4 mLens; // fov,....
+
+	Camera Lerp(const Camera& target, float t)
+	{
+		Camera ret;
+		ret.mPosition = ::Lerp(mPosition, target.mPosition, t);
+		ret.mDirection = ::Lerp(mDirection, target.mDirection, t);
+		ret.mDirection.Normalize();
+		ret.mUp = ::Lerp(mUp, target.mUp, t);
+		ret.mUp.Normalize();
+		ret.mLens = ::Lerp(mLens, target.mLens, t);
+		return ret;
+	}
+};
+inline Camera Lerp(Camera a, Camera b, float t) { return a.Lerp(b, t); }
+
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
 // based on the unique id
@@ -109,6 +130,15 @@ struct AnimationBase
 	virtual void* GetData() = 0;
 	virtual size_t GetValuesByteLength() const = 0;
 	virtual void GetValue(uint32_t frame, void *destination) = 0;
+	virtual void SetValue(uint32_t frame, void *source) = 0;
+
+	struct AnimationPointer
+	{
+		uint32_t mPreviousIndex;
+		uint32_t mNextIndex;
+		float mRatio;
+	};
+	AnimationPointer GetPointer(uint32_t frame) const;
 };
 
 template<typename T> struct Animation : public AnimationBase
@@ -120,15 +150,18 @@ template<typename T> struct Animation : public AnimationBase
 		mFrames.resize(elementCount); 
 		mValues.resize(elementCount);
 	}
-	virtual void* GetData()
+	virtual void* GetData() { return mValues.data(); }
+	virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T);	}
+	
+	virtual void GetValue(uint32_t frame, void *destination) 
 	{
-		return mValues.data();
+		auto pointer = GetPointer(frame);
+		T *dest = (T*)destination;
+		*dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
 	}
-	virtual size_t GetValuesByteLength() const
+	virtual void SetValue(uint32_t frame, void *source) 
 	{
-		return mValues.size() * sizeof(T);
 	}
-	virtual void GetValue(uint32_t frame, void *destination) {}
 };
 
 struct AnimTrack
@@ -192,13 +225,6 @@ enum ConTypes
 	Con_Any,
 };
 
-struct Camera
-{
-	Vec4 mPosition;
-	Vec4 mDirection;
-	Vec4 mUp;
-	Vec4 mLens; // fov,....
-};
 
 size_t GetParameterTypeSize(ConTypes paramType);
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);

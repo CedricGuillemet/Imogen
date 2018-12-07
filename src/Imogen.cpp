@@ -810,7 +810,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		rug.mColor = rugs[i].mColor;
 		rug.mComment = rugs[i].mText;
 	}
-	material.mAnimTrack = gEvaluation.GetAnimTrack();
+	material.mAnimTrack = nodeGraphDelegate.GetAnimTrack();
 }
 
 void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
@@ -854,7 +854,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		}
 		NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
 		NodeGraphUpdateScrolling();
-		gEvaluation.SetAnimTrack(material.mAnimTrack);
+		nodeGraphDelegate.SetAnimTrack(material.mAnimTrack);
 		nodeGraphDelegate.mEditingContext.RunAll();
 	}
 }
@@ -1099,7 +1099,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			currentTime = ImMax(currentTime, 0);
 			if (ImGui::Button("Key") && selectedEntry != -1)
 			{
-				gEvaluation.MakeKey(currentTime, uint32_t(selectedEntry), 0);
+				nodeGraphDelegate.MakeKey(currentTime, uint32_t(selectedEntry), 0);
 			}
 			/*
 			if (ImGui::InputInt("", &currentTime, 0, 0, 0))
@@ -1119,7 +1119,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			{
 				gEvaluationTime = currentTime;
 				nodeGraphDelegate.SetTime(currentTime, true);
-				gEvaluation.ApplyAnimation(currentTime);
+				nodeGraphDelegate.ApplyAnimation(currentTime);
 			}
 		}
 		ImGui::End();

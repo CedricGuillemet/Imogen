@@ -75,6 +75,16 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mNodes.size()) return NULL; return &mNodes[index].mParameterViewMatrix; }
 
+	// animation
+	const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
+	void SetAnimTrack(const std::vector<AnimTrack>& animTrack) { mAnimTrack = animTrack; }
+
+	void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
+	void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);
+	void ApplyAnimation(int frame);
+	void RemoveAnimation(int nodeIndex);
+	AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
+
 	struct ImogenNode
 	{
 #ifdef _DEBUG
@@ -91,6 +101,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	std::vector<ImogenNode> mNodes;
 	std::vector<ImogenNode> mNodesClipboard;
+	std::vector<AnimTrack> mAnimTrack;
 	bool mbMouseDragging;
 
 	ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }

@@ -140,7 +140,7 @@ struct AnimationBase
 		uint32_t mNextFrame;
 		float mRatio;
 	};
-	AnimationPointer GetPointer(uint32_t frame) const;
+	AnimationPointer GetPointer(uint32_t frame, bool bSetting) const;
 };
 
 template<typename T> struct Animation : public AnimationBase
@@ -157,13 +157,13 @@ template<typename T> struct Animation : public AnimationBase
 	
 	virtual void GetValue(uint32_t frame, void *destination) 
 	{
-		auto pointer = GetPointer(frame);
+		auto pointer = GetPointer(frame, false);
 		T *dest = (T*)destination;
 		*dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
 	}
 	virtual void SetValue(uint32_t frame, void *source) 
 	{
-		auto pointer = GetPointer(frame);
+		auto pointer = GetPointer(frame, true);
 		T value = *(T*)source;
 		if (frame == pointer.mPreviousFrame && !mValues.empty())
 		{

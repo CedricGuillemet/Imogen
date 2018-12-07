@@ -246,16 +246,6 @@ struct Evaluation
 	
 	const EvaluationStage& GetEvaluationStage(size_t index) const {	return mStages[index]; }
 
-
-	// animation
-	const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
-	void SetAnimTrack(const std::vector<AnimTrack>& animTrack) { mAnimTrack = animTrack; }
-
-	void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
-	void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);
-	void ApplyAnimation(int frame);
-	void RemoveAnimation(int nodeIndex);
-
 	// error shader
 	unsigned int mNodeErrorShader;
 protected:
@@ -263,7 +253,7 @@ protected:
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
 	std::vector<EvaluationStage> mStages;
-	std::vector<AnimTrack> mAnimTrack;
+
 	std::vector<size_t> mEvaluationOrderList;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
 
@@ -278,7 +268,6 @@ protected:
 	static void StageIsAdded(int index);
 	static void StageIsDeleted(int index);
 
-	AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 };
 
 extern Evaluation gEvaluation;

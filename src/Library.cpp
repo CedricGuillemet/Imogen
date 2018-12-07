@@ -92,7 +92,7 @@ template<bool doWrite> struct Serialize
 		for (auto& item : data)
 			Ser(&item);
 	}
-	void Ser(std::vector<uint8_t>& data)
+	template<typename T> void SerArray(std::vector<T>& data)
 	{
 		uint32_t count = uint32_t(data.size());
 		Ser(count);
@@ -100,13 +100,21 @@ template<bool doWrite> struct Serialize
 			return;
 		if (doWrite)
 		{
-			fwrite(data.data(), count, 1, fp);
+			fwrite(data.data(), count*sizeof(T), 1, fp);
 		}
 		else
 		{
 			data.resize(count);
-			fread(&data[0], count, 1, fp);
+			fread(&data[0], count * sizeof(T), 1, fp);
 		}
+	}
+	void Ser(std::vector<uint8_t>& data)
+	{
+		SerArray(data);
+	}
+	void Ser(std::vector<uint32_t>& data)
+	{
+		SerArray(data);
 	}
 
 	void Ser(AnimationBase *animBase)
@@ -118,7 +126,7 @@ template<bool doWrite> struct Serialize
 		}
 		else
 		{
-			animBase->Allocate(animBase->mFrames);
+			animBase->Allocate(animBase->mFrames.size());
 			fread(animBase->GetData(), animBase->GetValuesByteLength(), 1, fp);
 		}
 	}
@@ -179,6 +187,7 @@ template<bool doWrite> struct Serialize
 		ADD(v_initial, material->mMaterialConnections);
 		ADD(v_thumbnail, material->mThumbnail);
 		ADD(v_rugs, material->mMaterialRugs);
+		ADD(v_animation, material->mAnimTrack);
 	}
 	bool Ser(Library *library)
 	{
@@ -687,14 +696,17 @@ struct AnimationPointer
 	float mRatio;
 };
 
-AnimationBase::AnimationPointer AnimationBase::GetPointer(uint32_t frame) const
+AnimationBase::AnimationPointer AnimationBase::GetPointer(uint32_t frame, bool bSetting) const
 {
 	if (mFrames.empty())
 		return { 0, 0, 0, 0, 0.f };
 	if (frame <= mFrames[0])
 		return { 0, 0, 0, 0, 0.f };
 	if (frame >= mFrames.back())
-		return { uint32_t(mFrames.size()), mFrames.back(), uint32_t(mFrames.size()), mFrames.back(), 0.f };
+	{
+		uint32_t last = uint32_t(mFrames.size() - (bSetting ? 0 : 1));
+		return {last, mFrames.back(), last, mFrames.back(), 0.f };
+	}
 	for (uint32_t i = 0; i < mFrames.size() - 1; i++)
 	{
 		if (mFrames[i] <= frame && mFrames[i + 1] >= frame)

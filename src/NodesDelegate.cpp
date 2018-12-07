@@ -184,6 +184,7 @@ void TileNodeEditGraphDelegate::Clear()
 {
 	mSelectedNodeIndex = -1;
 	mNodes.clear();
+	mAnimTrack.clear();
 }
 
 void TileNodeEditGraphDelegate::SetParamBlock(size_t index, const std::vector<unsigned char>& parameters)
@@ -819,4 +820,64 @@ void TileNodeEditGraphDelegate::PasteNodes()
 		SetTime(gEvaluationTime, true);
 		mEditingContext.SetTargetDirty(target);
 	}
+}
+
+
+
+// animation
+AnimTrack* TileNodeEditGraphDelegate::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
+{
+	for (auto& animTrack : mAnimTrack)
+	{
+		if (animTrack.mNodeIndex == nodeIndex && animTrack.mParamIndex == parameterIndex)
+			return &animTrack;
+	}
+	return NULL;
+}
+
+//void* Evaluation::
+
+void TileNodeEditGraphDelegate::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
+{
+	AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
+	if (!animTrack)
+	{
+		uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mType].mParams[parameterIndex].mType;
+		AnimTrack newTrack{ nodeIndex, parameterIndex, parameterType, AllocateAnimation(parameterType) };
+		mAnimTrack.push_back(newTrack);
+		animTrack = &mAnimTrack.back();
+	}
+	auto& node = mNodes[nodeIndex];
+	size_t parameterOffset = GetParameterOffset(uint32_t(node.mType), parameterIndex);
+	animTrack->mAnimation->SetValue(frame, &node.mParameters[parameterOffset]);
+}
+
+void TileNodeEditGraphDelegate::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed)
+{
+
+}
+
+void TileNodeEditGraphDelegate::ApplyAnimation(int frame)
+{
+	std::vector<bool> animatedNodes;
+	animatedNodes.resize(mNodes.size(), false);
+	for (auto& animTrack : mAnimTrack)
+	{
+		auto& node = mNodes[animTrack.mNodeIndex];
+		animatedNodes[animTrack.mNodeIndex] = true;
+		size_t parameterOffset = GetParameterOffset(uint32_t(node.mType), animTrack.mParamIndex);
+		animTrack.mAnimation->GetValue(frame, &node.mParameters[parameterOffset]);
+	}
+	for (size_t i = 0; i < animatedNodes.size(); i++)
+	{
+		if (!animatedNodes[i])
+			continue;
+		gEvaluation.SetEvaluationParameters(i, mNodes[i].mParameters);
+		gCurrentContext->SetTargetDirty(i);
+	}
+}
+
+void TileNodeEditGraphDelegate::RemoveAnimation(int nodeIndex)
+{
+
 }

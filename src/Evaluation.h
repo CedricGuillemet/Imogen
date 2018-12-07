@@ -110,14 +110,31 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-	Image_t() : mDecoder(NULL), mBits(NULL){}
-	unsigned char *mBits;
+	Image_t() : mDecoder(NULL), mBits(NULL)
+	{
+		imageCount++;
+	}
+	~Image_t() 
+	{ 
+		imageCount--; 
+		free(mBits);
+	}
+	
 	void *mDecoder;
 	int mWidth, mHeight;
 	uint32_t mDataSize;
 	uint8_t mNumMips;
 	uint8_t mNumFaces;
 	uint8_t mFormat;
+	unsigned char *GetBits() const { return mBits; }
+	void SetBits(unsigned char* bits) { free(mBits); mBits = bits; }
+	void Allocate(size_t size) {
+		assert(mBits == NULL); mBits = (unsigned char*)malloc(size);
+	}
+	void Free() { free(mBits); mBits = NULL; }
+protected:
+	unsigned char *mBits;
+	static int imageCount;
 } Image;
 
 class RenderTarget

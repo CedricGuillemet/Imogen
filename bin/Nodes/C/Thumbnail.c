@@ -3,7 +3,7 @@
 int main(void *param, Evaluation *evaluation)
 {
 	Image image;
-	
+	image.bits = 0;
 	if (ReadImage("Stock/thumbnail-icon.png", &image) == EVAL_OK)
 	{
 		if (SetEvaluationImage(evaluation->targetIndex, &image) == EVAL_OK)
@@ -15,6 +15,7 @@ int main(void *param, Evaluation *evaluation)
 	if (!evaluation->forcedDirty)
 		return EVAL_OK;
 
+	image.bits = 0;
 	if (Evaluate(evaluation->inputIndices[0], 256, 256, &image) == EVAL_OK)
 	{
 		if (SetThumbnailImage(&image) == EVAL_OK)

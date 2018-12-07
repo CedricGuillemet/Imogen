@@ -51,7 +51,6 @@ int ReadJob(JobData *data)
 int main(ImageRead *param, Evaluation *evaluation)
 {
 	int i;
-	Image image;
 	char *files[6] = {param->posxfile, param->negxfile, param->negyfile, param->posyfile, param->poszfile, param->negzfile};
 	
 	if (strlen(param->filename))
@@ -62,6 +61,7 @@ int main(ImageRead *param, Evaluation *evaluation)
 		data.targetIndex = evaluation->targetIndex;
 		data.face = 0;
 		data.isCube = 0;
+		data.image.bits = 0;
 		Job(ReadJob, &data, sizeof(JobData));
 	}
 	else
@@ -79,6 +79,7 @@ int main(ImageRead *param, Evaluation *evaluation)
 			data.targetIndex = evaluation->targetIndex;
 			data.face = CUBEMAP_POSX + i;
 			data.isCube = 1;
+			data.image.bits = 0;
 			Job(ReadJob, &data, sizeof(JobData));
 		}		
 	}

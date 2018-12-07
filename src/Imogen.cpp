@@ -392,7 +392,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 		static Image pickerImage;
 		if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1)
 		{
-			if (!pickerImage.mBits)
+			if (!pickerImage.GetBits())
 			{
 				Evaluation::GetEvaluationImage(selNode, &pickerImage);
 				Log("Texel view Get image\n");
@@ -417,7 +417,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			{
 				for (int x = -zoomSize; x <= zoomSize; x++)
 				{
-					uint32_t texel = ((uint32_t*)pickerImage.mBits)[(basey + zoomSize * 2 + 1 - y) * width + x + basex];
+					uint32_t texel = ((uint32_t*)pickerImage.GetBits())[(basey + zoomSize * 2 + 1 - y) * width + x + basex];
 					ImVec2 pos = pickRc.Min + ImVec2(float(x + zoomSize), float(y + zoomSize)) * quadSize;
 					draw_list->AddRectFilled(pos, pos + quadSize, texel);
 				}
@@ -428,7 +428,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 			ImGui::EndGroup();
 			ImGui::SameLine();
 			ImGui::BeginGroup();
-			uint32_t texel = ((uint32_t*)pickerImage.mBits)[basey * width + basex];
+			uint32_t texel = ((uint32_t*)pickerImage.GetBits())[basey * width + basex];
 			ImVec4 color = ImColor(texel);
 			ImVec4 colHSV;
 			ImGui::ColorConvertRGBtoHSV(color.x, color.y, color.z, colHSV.x, colHSV.y, colHSV.z);
@@ -531,7 +531,7 @@ std::string GetName(const std::string &name)
 
 struct PinnedTaskUploadImage : enki::IPinnedTask
 {
-	PinnedTaskUploadImage(Image image, ASyncId identifier, bool isThumbnail)
+	PinnedTaskUploadImage(Image *image, ASyncId identifier, bool isThumbnail)
 		: enki::IPinnedTask(0) // set pinned thread to 0
 		, mImage(image)
 		, mIdentifier(identifier)
@@ -541,7 +541,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 
 	virtual void Execute()
 	{
-		unsigned int textureId = Evaluation::UploadImage(&mImage, 0);
+		unsigned int textureId = Evaluation::UploadImage(mImage, 0);
 		if (mbIsThumbnail)
 		{
 			Material* material = library.Get(mIdentifier);
@@ -554,14 +554,14 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 			size_t nodeIndex = node - gNodeDelegate.mNodes.data();
 			if (node)
 			{
-				Evaluation::SetEvaluationImage(int(nodeIndex), &mImage);
+				Evaluation::SetEvaluationImage(int(nodeIndex), mImage);
 				gEvaluation.SetEvaluationParameters(nodeIndex, node->mParameters);
 				gCurrentContext->StageSetProcessing(nodeIndex, false);
 			}
-			Evaluation::FreeImage(&mImage);
+			Evaluation::FreeImage(mImage);
 		}
 	}
-	Image mImage;
+	Image *mImage;
 	ASyncId mIdentifier;
 	bool mbIsThumbnail;
 };
@@ -578,11 +578,11 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
 		unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
 		if (data)
 		{
-			image.mBits = data;
+			image.SetBits(data);
 			image.mNumFaces = 1;
 			image.mNumMips = 1;
 			image.mFormat = (components == 4) ? TextureFormat::RGBA8 : TextureFormat::RGB8;
-			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, true);
+			PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);
 			Evaluation::FreeImage(&image);
@@ -602,7 +602,7 @@ struct EncodeImageTaskSet : enki::ITaskSet
 	{
 		int outlen;
 		int components = 4;
-		unsigned char *bits = stbi_write_png_to_mem((unsigned char*)mImage.mBits, mImage.mWidth * components, mImage.mWidth, mImage.mHeight, components, &outlen);
+		unsigned char *bits = stbi_write_png_to_mem((unsigned char*)mImage.GetBits(), mImage.mWidth * components, mImage.mWidth, mImage.mHeight, components, &outlen);
 		if (bits)
 		{
 			Material *material = library.Get(mMaterialIdentifier);
@@ -635,11 +635,11 @@ struct DecodeImageTaskSet : enki::ITaskSet
 		unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
 		if (data)
 		{
-			image.mBits = data;
+			image.SetBits(data);
 			image.mNumFaces = 1;
 			image.mNumMips = 1;
 			image.mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-			PinnedTaskUploadImage uploadTexTask(image, mIdentifier, false);
+			PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false);
 			g_TS.AddPinnedTask(&uploadTexTask);
 			g_TS.WaitforTask(&uploadTexTask);
 		}

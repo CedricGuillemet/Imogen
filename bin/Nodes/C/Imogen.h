@@ -5,7 +5,6 @@ float fabsf(float value);
 
 typedef struct Image_t
 {
-	void *bits;
 	void *decoder;
 	int width, height;
 	//int components;
@@ -13,7 +12,7 @@ typedef struct Image_t
 	unsigned char mNumMips;
 	unsigned char mNumFaces;
 	unsigned char mFormat;
-	void *mStream;
+	void *bits;
 } Image;
 
 typedef struct Evaluation_t

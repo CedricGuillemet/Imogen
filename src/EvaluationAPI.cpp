@@ -262,9 +262,9 @@ static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
 	image.mHeight = int(decoder->mHeight);
 	size_t lineSize = image.mWidth * 3;
 	size_t imgDataSize = lineSize * image.mHeight;
-	image.mBits = (unsigned char*)malloc(imgDataSize);
+	image.Allocate(imgDataSize);
 
-	unsigned char *pdst = image.mBits;
+	unsigned char *pdst = image.GetBits();
 	unsigned char *psrc = (unsigned char*)decoder->GetRGBData();
 	if (psrc && pdst)
 	{
@@ -298,7 +298,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 			return EVAL_OK;
 		}
 		cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
-		image->mBits = (unsigned char*)img.m_data;
+		image->SetBits((unsigned char*)img.m_data);
 		image->mWidth = img.m_width;
 		image->mHeight = img.m_height;
 		image->mDataSize = img.m_dataSize;
@@ -309,7 +309,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
 		return EVAL_OK;
 	}
 
-	image->mBits = bits;
+	image->SetBits(bits);
 	image->mDataSize = image->mWidth * image->mHeight * components;
 	image->mNumMips = 1;
 	image->mNumFaces = 1;
@@ -324,7 +324,7 @@ int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
 	unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->mWidth, &image->mHeight, &components, 0);
 	if (!bits)
 		return EVAL_ERR;
-	image->mBits = bits;
+	image->SetBits(bits);
 	return EVAL_OK;
 }
 
@@ -334,19 +334,19 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 	switch (format)
 	{
 	case 0:
-		if (!stbi_write_jpg(filename, image->mWidth, image->mHeight, components, image->mBits, quality))
+		if (!stbi_write_jpg(filename, image->mWidth, image->mHeight, components, image->GetBits(), quality))
 			return EVAL_ERR;
 		break;
 	case 1:
-		if (!stbi_write_png(filename, image->mWidth, image->mHeight, components, image->mBits, image->mWidth * components))
+		if (!stbi_write_png(filename, image->mWidth, image->mHeight, components, image->GetBits(), image->mWidth * components))
 			return EVAL_ERR;
 		break;
 	case 2:
-		if (!stbi_write_tga(filename, image->mWidth, image->mHeight, components, image->mBits))
+		if (!stbi_write_tga(filename, image->mWidth, image->mHeight, components, image->GetBits()))
 			return EVAL_ERR;
 		break;
 	case 3:
-		if (!stbi_write_bmp(filename, image->mWidth, image->mHeight, components, image->mBits))
+		if (!stbi_write_bmp(filename, image->mWidth, image->mHeight, components, image->GetBits()))
 			return EVAL_ERR;
 		break;
 	case 4:
@@ -361,13 +361,13 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 		img.m_height = image->mHeight;
 		img.m_numFaces = image->mNumFaces;
 		img.m_numMips = image->mNumMips;
-		img.m_data = image->mBits;
+		img.m_data = image->GetBits();
 		img.m_dataSize = image->mDataSize;
 		if (img.m_format == cmft::TextureFormat::RGBA8)
 			cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
 		else if (img.m_format == cmft::TextureFormat::RGB8)
 			cmft::imageConvert(img, cmft::TextureFormat::BGR8);
-		image->mBits = (unsigned char*)img.m_data;
+		image->SetBits((unsigned char*)img.m_data);
 		if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
 			return EVAL_ERR;
 	}
@@ -380,7 +380,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 		img.m_height = image->mHeight;
 		img.m_numFaces = image->mNumFaces;
 		img.m_numMips = image->mNumMips;
-		img.m_data = image->mBits;
+		img.m_data = image->GetBits();
 		img.m_dataSize = image->mDataSize;
 		if (!cmft::imageSave(img, filename, cmft::ImageFileType::KTX))
 			return EVAL_ERR;
@@ -390,7 +390,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
 	{
 		FFMPEGCodec::Encoder *encoder = gCurrentContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
 		std::string fn(filename);
-		encoder->AddFrame(image->mBits, image->mWidth, image->mHeight);
+		encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);
 	}
 		break;
 	}
@@ -412,7 +412,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	for (int i = 0;i<img.mNumMips;i++)
 		size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 
-	image->mBits = (unsigned char*)malloc(size);
+	image->Allocate(size);
 	image->mDataSize = size;
 	image->mWidth = img.mWidth;
 	image->mHeight = img.mHeight;
@@ -421,7 +421,7 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
 	image->mNumFaces = img.mNumFaces;
 
 	glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
-	unsigned char *ptr = (unsigned char *)image->mBits;
+	unsigned char *ptr = image->GetBits();
 	if (img.mNumFaces == 1)
 	{
 		for (int i = 0; i < img.mNumMips; i++)
@@ -453,7 +453,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
 	unsigned int texelSize = GetTexelSize(image->mFormat);
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
-	unsigned char *ptr = (unsigned char *)image->mBits;
+	unsigned char *ptr = image->GetBits();
 	if (image->mNumFaces == 1)
 	{
 		tgt->InitBuffer(image->mWidth, image->mHeight);
@@ -513,7 +513,7 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias)
 {
 	cmft::Image img;
-	img.m_data = image->mBits;
+	img.m_data = image->GetBits();
 	img.m_dataSize = image->mDataSize;
 	img.m_numMips = image->mNumMips;
 	img.m_numFaces = image->mNumFaces;
@@ -539,7 +539,7 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
 		, clContext))
 		return EVAL_ERR;
 
-	image->mBits = (unsigned char*)img.m_data;
+	image->SetBits((unsigned char*)img.m_data);
 	image->mDataSize = img.m_dataSize;
 	image->mNumMips = img.m_numMips;
 	image->mNumFaces = img.m_numFaces;
@@ -556,8 +556,7 @@ int Evaluation::AllocateImage(Image *image)
 
 int Evaluation::FreeImage(Image *image)
 {
-	free(image->mBits);
-	image->mBits = NULL;
+	image->Free();
 	return EVAL_OK;
 }
 
@@ -565,7 +564,7 @@ int Evaluation::EncodePng(Image *image, std::vector<unsigned char> &pngImage)
 {
 	int outlen;
 	int components = 4; // TODO
-	unsigned char *bits = stbi_write_png_to_mem((unsigned char*)image->mBits, image->mWidth * components, image->mWidth, image->mHeight, components, &outlen);
+	unsigned char *bits = stbi_write_png_to_mem(image->GetBits(), image->mWidth * components, image->mWidth, image->mHeight, components, &outlen);
 	if (!bits)
 		return EVAL_ERR;
 	pngImage.resize(outlen);
@@ -721,7 +720,7 @@ unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int c
 
 	unsigned int inputFormat = glInputFormats[image->mFormat];
 	unsigned int internalFormat = glInternalFormats[image->mFormat];
-	glTexImage2D((cubeFace==-1)? GL_TEXTURE_2D: glCubeFace[cubeFace], 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->mBits);
+	glTexImage2D((cubeFace==-1)? GL_TEXTURE_2D: glCubeFace[cubeFace], 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->GetBits());
 	TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
 
 	glBindTexture(targetType, 0);
@@ -739,6 +738,7 @@ unsigned int Evaluation::GetTexture(const std::string& filename)
 	if (ReadImage(filename.c_str(), &image) == EVAL_OK)
 	{
 		textureId = UploadImage(&image, 0);
+		FreeImage(&image);
 	}
 
 	mSynchronousTextureCache[filename] = textureId;

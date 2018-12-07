@@ -136,8 +136,7 @@ NodeOperation nodeOperation = NO_None;
 void HandleZoomScroll(ImRect regionRect)
 {
 	ImGuiIO& io = ImGui::GetIO();
-	if (!ImGui::IsWindowFocused())
-		return;
+
 	if (regionRect.Contains(io.MousePos))
 	{
 		if (io.MouseWheel < -FLT_EPSILON)

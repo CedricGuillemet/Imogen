@@ -107,7 +107,7 @@ enki::TaskScheduler g_TS;
 int main(int, char**)
 {
 	g_TS.Initialize();
-	pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
+	pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
 	LoadMetaNodes();
 	FFMPEGCodec::RegisterAll();
 	FFMPEGCodec::Log = Log;
@@ -281,6 +281,7 @@ int main(int, char**)
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 
+	pybind11::finalize_interpreter();
 	g_TS.WaitforAllAndShutdown();
 	return 0;
 }

@@ -136,6 +136,8 @@ NodeOperation nodeOperation = NO_None;
 void HandleZoomScroll(ImRect regionRect)
 {
 	ImGuiIO& io = ImGui::GetIO();
+	if (!ImGui::IsWindowFocused())
+		return;
 	if (regionRect.Contains(io.MousePos))
 	{
 		if (io.MouseWheel < -FLT_EPSILON)
@@ -1144,7 +1146,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 	ContextMenu(offset, contextMenuHoverNode);
 	
 	// Scrolling
-	if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f))
+	if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f) && ImGui::IsWindowFocused())
 		scrolling += io.MouseDelta / factor;
 
 nodeGraphExit:;

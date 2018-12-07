@@ -236,7 +236,7 @@ vec4 PBR()
 
         vec3 envSpecularColor = EnvBRDFApprox( specularColor, roughnessE, ndotv );
 
-        vec3 env       = texture(CubeSampler4, refl, roughnessE*12.0).xyz;
+        vec3 env       = texture(CubeSampler4, InvertCubeY(refl), roughnessE*12.0).xyz;
         
         diffuse += diffuseColor * EnvRemap(env);
         specular += envSpecularColor * env;

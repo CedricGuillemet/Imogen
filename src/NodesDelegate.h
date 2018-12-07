@@ -73,6 +73,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
 	EvaluationContext mEditingContext;
 
+	Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mNodes.size()) return NULL; return &mNodes[index].mParameterViewMatrix; }
+
 	struct ImogenNode
 	{
 #ifdef _DEBUG
@@ -83,6 +85,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 		unsigned int mRuntimeUniqueId;
 		int mStartFrame, mEndFrame;
 		std::vector<InputSampler> mInputSamplers;
+
+		Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
 	};
 
 	std::vector<ImogenNode> mNodes;

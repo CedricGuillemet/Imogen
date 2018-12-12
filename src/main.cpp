@@ -47,7 +47,7 @@
 
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
-
+bool gbIsPlaying = false;
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
 	GLenum type,
 	GLuint id,
@@ -244,6 +244,10 @@ int main(int, char**)
 		ImGui::NewFrame();
 		InitCallbackRects();
 
+		if (gbIsPlaying)
+		{
+			gCurrentContext->SetTargetDirty(1);
+		}
 		gCurrentContext->RunDirty();
 		imogen.Show(library, gNodeDelegate, gEvaluation);
 

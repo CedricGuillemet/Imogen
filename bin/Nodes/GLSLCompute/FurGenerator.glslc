@@ -1,0 +1,15 @@
+out vec4 outInstanceP0;
+out vec4 outInstanceN0;
+out vec4 outInstanceP1;
+out vec4 outInstanceP2;
+
+void main()
+{
+	float n = float(gl_VertexID);
+	
+	vec4 gp = vec4(cos(n*0.1), 0., sin(n*0.1), 0.) * n * 0.1;
+	outInstanceP0 = gp;
+	outInstanceN0 = vec4(0.,1.,0.,0.);
+	outInstanceP1 = gp + vec4(0.,2.0,0.,0.);
+	outInstanceP2 = gp + vec4(0.,1.8,0.5,0.);
+}

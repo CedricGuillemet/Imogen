@@ -51,6 +51,7 @@ void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, Texture
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
 
 unsigned int LoadShader(const std::string &shaderString, const char *fileName);
+unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const char *fileName);
 int Log(const char *szFormat, ...);
 
 inline int align(int value, int alignment)

@@ -165,7 +165,7 @@ private:
 
 TileNodeEditGraphDelegate::TileNodeEditGraphDelegate() : mbMouseDragging(false), mEditingContext(gEvaluation, false, 1024, 1024)
 {
-	mCategoriesCount = 9;
+	mCategoriesCount = 10;
 	static const char *categories[] = {
 		"Transform",
 		"Generator",
@@ -175,7 +175,8 @@ TileNodeEditGraphDelegate::TileNodeEditGraphDelegate() : mbMouseDragging(false),
 		"Noise",
 		"File",
 		"Paint",
-		"Cubemap"};
+		"Cubemap",
+		"Fur"};
 	mCategories = categories;
 	gCurrentContext = &mEditingContext;
 }
@@ -819,4 +820,27 @@ void TileNodeEditGraphDelegate::PasteNodes()
 		SetTime(gEvaluationTime, true);
 		mEditingContext.SetTargetDirty(target);
 	}
+}
+
+Camera *TileNodeEditGraphDelegate::GetCameraParameter(size_t index)
+{
+	if (index >= mNodes.size()) 
+		return NULL;
+	ImogenNode& node = mNodes[index];
+	const MetaNode* metaNodes = gMetaNodes.data();
+	const MetaNode& currentMeta = metaNodes[node.mType];
+	const size_t paramsSize = ComputeNodeParametersSize(node.mType);
+	node.mParameters.resize(paramsSize);
+	unsigned char *paramBuffer = node.mParameters.data();
+	for (const MetaParameter& param : currentMeta.mParams)
+	{
+		if (param.mType == Con_Camera)
+		{
+			Camera *cam = (Camera*)paramBuffer;
+			return cam;
+		}
+		paramBuffer += GetParameterTypeSize(param.mType);
+	}
+
+	return NULL;
 }

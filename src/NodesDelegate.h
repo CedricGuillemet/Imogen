@@ -74,7 +74,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	EvaluationContext mEditingContext;
 
 	Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mNodes.size()) return NULL; return &mNodes[index].mParameterViewMatrix; }
-
+	Camera *GetCameraParameter(size_t index);
 	struct ImogenNode
 	{
 #ifdef _DEBUG

@@ -244,6 +244,18 @@ size_t GetParameterTypeSize(ConTypes paramType)
 	return -1;
 }
 
+void Camera::ComputeViewProjectionMatrix(float *viewProj, float *viewInverse)
+{
+	Mat4x4& vp = *(Mat4x4*)viewProj;
+	Mat4x4 view, proj;
+	view.lookAtRH(mPosition, mPosition + mDirection, Vec4(0.f, 1.f, 0.f, 0.f));
+	proj.glhPerspectivef2(53.f, 1.f, 0.01f, 100.f);
+	vp = view * proj;
+
+	Mat4x4& vi = *(Mat4x4*)viewInverse;
+	vi.LookAt(mPosition, mPosition + mDirection, Vec4(0.f, 1.f, 0.f, 0.f));
+}
+
 std::vector<MetaNode> gMetaNodes;
 std::map<std::string, size_t> gMetaNodesIndices;
 
@@ -600,6 +612,30 @@ void LoadMetaNodes()
 			,{ { "", Con_Float4 } }
 		,{ { "", Con_Float4 } }
 		,{  { "strength", Con_Float }, { "area", Con_Float }, { "falloff", Con_Float }, { "radius", Con_Float }}
+		}
+
+
+			,
+		{
+			"FurGenerator", hcFilter, 9
+			,{  }
+		,{ { "", Con_Float4 } }
+		,{  /*{ "strength", Con_Float }, { "area", Con_Float }, { "falloff", Con_Float }, { "radius", Con_Float }*/}
+		}
+
+			,
+		{
+			"FurDisplay", hcFilter, 9
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{  { "Camera", Con_Camera }}
+		}
+			,
+		{
+			"FurIntegrator", hcFilter, 9
+			,{ { "", Con_Float4 } }
+		,{ { "", Con_Float4 } }
+		,{ }
 		}
 	};
 

@@ -1,0 +1,20 @@
+layout(location = 0)in vec4 inInstanceP0;
+layout(location = 1)in vec4 inInstanceN0;
+layout(location = 2)in vec4 inInstanceP1;
+layout(location = 3)in vec4 inInstanceP2;
+
+out vec4 outInstanceP0;
+out vec4 outInstanceN0;
+out vec4 outInstanceP1;
+out vec4 outInstanceP2;
+
+
+void main()
+{
+	vec4 dif = vec4(0., 0.001, 0.0,0.0);
+	
+	outInstanceP0 = inInstanceP0 + dif;
+	outInstanceN0 = inInstanceN0;
+	outInstanceP1 = inInstanceP1 + dif;
+	outInstanceP2 = inInstanceP2 + dif;
+}

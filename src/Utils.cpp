@@ -166,6 +166,46 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 	return programObject;
 }
 
+
+unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const char *fileName)
+{
+	GLuint programHandle = glCreateProgram();
+	GLuint vsHandle = glCreateShader(GL_VERTEX_SHADER);
+
+	const char *src[2] = { "#version 430\n", shaderString.c_str() };
+	int size[2];
+	for (int j = 0; j < 2; j++)
+		size[j] = strlen(src[j]);
+
+	glShaderSource(vsHandle, 2, src, size);
+	glCompileShader(vsHandle);
+
+	GLint compiled;
+	// Check the compile status
+	glGetShaderiv(vsHandle, GL_COMPILE_STATUS, &compiled);
+	if (compiled == 0)
+	{
+		GLint info_len = 0;
+		glGetShaderiv(vsHandle, GL_INFO_LOG_LENGTH, &info_len);
+		if (info_len > 1)
+		{
+			char info_log[2048];
+			glGetShaderInfoLog(vsHandle, info_len, NULL, info_log);
+			Log(info_log);
+		}
+		return 0;
+	}
+
+	glAttachShader(programHandle, vsHandle);
+
+	const char* varyings[] = { "outInstanceP0", "outInstanceN0", "outInstanceP1", "outInstanceP2" };
+	glTransformFeedbackVaryings(programHandle, sizeof(varyings) / sizeof(const char*), varyings, GL_INTERLEAVED_ATTRIBS);
+
+	glLinkProgram(programHandle);
+
+	return programHandle;
+}
+
 void DebugLogText(const char *szText);
 
 int Log(const char *szFormat, ...)
@@ -188,3 +228,219 @@ int Log(const char *szFormat, ...)
 }
 
 
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+//matrix will receive the calculated perspective matrix.
+//You would have to upload to your shader
+// or use glLoadMatrixf if you aren't using shaders.
+void Mat4x4::glhPerspectivef2(float fovyInDegrees, float aspectRatio,
+	float znear, float zfar)
+{
+	float ymax, xmax;
+	ymax = znear * tanf(fovyInDegrees * 3.14159f / 360.0f);
+	xmax = ymax * aspectRatio;
+	glhFrustumf2(-xmax, xmax, -ymax, ymax, znear, zfar);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Mat4x4::glhFrustumf2(float left, float right, float bottom, float top,
+	float znear, float zfar)
+{
+	float temp, temp2, temp3, temp4;
+	temp = 2.0f * znear;
+	temp2 = right - left;
+	temp3 = top - bottom;
+	temp4 = zfar - znear;
+	m16[0] = temp / temp2;
+	m16[1] = 0.0;
+	m16[2] = 0.0;
+	m16[3] = 0.0;
+	m16[4] = 0.0;
+	m16[5] = temp / temp3;
+	m16[6] = 0.0;
+	m16[7] = 0.0;
+	m16[8] = (right + left) / temp2;
+	m16[9] = (top + bottom) / temp3;
+	m16[10] = (-zfar - znear) / temp4;
+	m16[11] = -1.0f;
+	m16[12] = 0.0;
+	m16[13] = 0.0;
+	m16[14] = (-temp * zfar) / temp4;
+	m16[15] = 0.0;
+}
+
+void Mat4x4::lookAtRH(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
+{
+	Vec4 X, Y, Z, tmp;
+
+	Z.Normalize(eye - at);
+	Y.Normalize(up);
+
+	tmp.Cross(Y, Z);
+	X.Normalize(tmp);
+
+	tmp.Cross(Z, X);
+	Y.Normalize(tmp);
+
+	m[0][0] = X.x;
+	m[0][1] = Y.x;
+	m[0][2] = Z.x;
+	m[0][3] = 0.0f;
+
+	m[1][0] = X.y;
+	m[1][1] = Y.y;
+	m[1][2] = Z.y;
+	m[1][3] = 0.0f;
+
+	m[2][0] = X.z;
+	m[2][1] = Y.z;
+	m[2][2] = Z.z;
+	m[2][3] = 0.0f;
+
+	m[3][0] = -X.Dot(eye);
+	m[3][1] = -Y.Dot(eye);
+	m[3][2] = -Z.Dot(eye);
+	m[3][3] = 1.0f;
+
+}
+
+
+void Mat4x4::lookAtLH(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
+{
+	Vec4 X, Y, Z, tmp;
+
+	Z.Normalize(at - eye);
+	Y.Normalize(up);
+
+	tmp.Cross(Y, Z);
+	X.Normalize(tmp);
+
+	tmp.Cross(Z, X);
+	Y.Normalize(tmp);
+
+	m[0][0] = X.x;
+	m[0][1] = Y.x;
+	m[0][2] = Z.x;
+	m[0][3] = 0.0f;
+
+	m[1][0] = X.y;
+	m[1][1] = Y.y;
+	m[1][2] = Z.y;
+	m[1][3] = 0.0f;
+
+	m[2][0] = X.z;
+	m[2][1] = Y.z;
+	m[2][2] = Z.z;
+	m[2][3] = 0.0f;
+
+	m[3][0] = -X.Dot(eye);
+	m[3][1] = -Y.Dot(eye);
+	m[3][2] = -Z.Dot(eye);
+	m[3][3] = 1.0f;
+}
+
+void Mat4x4::LookAt(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
+{
+
+	Vec4 X, Y, Z, tmp;
+
+	Z.Normalize(at - eye);
+	Y.Normalize(up);
+
+	tmp.Cross(Y, Z);
+	X.Normalize(tmp);
+
+	tmp.Cross(Z, X);
+	Y.Normalize(tmp);
+
+	m[0][0] = X.x;
+	m[0][1] = X.y;
+	m[0][2] = X.z;
+	m[0][3] = 0.0f;
+
+	m[1][0] = Y.x;
+	m[1][1] = Y.y;
+	m[1][2] = Y.z;
+	m[1][3] = 0.0f;
+
+	m[2][0] = Z.x;
+	m[2][1] = Z.y;
+	m[2][2] = Z.z;
+	m[2][3] = 0.0f;
+
+	m[3][0] = eye.x;
+	m[3][1] = eye.y;
+	m[3][2] = eye.z;
+	m[3][3] = 1.0f;
+}
+
+void Mat4x4::PerspectiveFovLH2(const float fovy, const float aspect, const float zn, const float zf)
+{
+	/*
+		xScale     0          0               0
+	0        yScale       0               0
+	0          0       zf/(zf-zn)         1
+	0          0       -zn*zf/(zf-zn)     0
+	where:
+	*/
+	/*
+	+    pout->m[0][0] =3D 1.0f / (aspect * tan(fovy/2.0f));
+	+    pout->m[1][1] =3D 1.0f / tan(fovy/2.0f);
+	+    pout->m[2][2] =3D zf / (zf - zn);
+	+    pout->m[2][3] =3D 1.0f;
+	+    pout->m[3][2] =3D (zf * zn) / (zn - zf);
+	+    pout->m[3][3] =3D 0.0f;
+
+
+
+	float yscale = cosf(fovy*0.5f);
+
+	float xscale = yscale / aspect;
+
+	*/
+	m[0][0] = 1.0f / (aspect * tanf(fovy*0.5f));
+	m[0][1] = 0.0f;
+	m[0][2] = 0.0f;
+	m[0][3] = 0.0f;
+
+	m[1][0] = 0.0f;
+	m[1][1] = 1.0f / tanf(fovy*0.5f);
+	m[1][2] = 0.0f;
+	m[1][3] = 0.0f;
+
+	m[2][0] = 0.0f;
+	m[2][1] = 0.0f;
+	m[2][2] = zf / (zf - zn);
+	m[2][3] = 1.0f;
+
+	m[3][0] = 0.0f;
+	m[3][1] = 0.0f;
+	m[3][2] = (zf * zn) / (zn - zf);
+	m[3][3] = 0.0f;
+}
+
+
+
+void Mat4x4::OrthoOffCenterLH(const float l, float r, float b, const float t, float zn, const float zf)
+{
+	m[0][0] = 2 / (r - l);
+	m[0][1] = 0.0f;
+	m[0][2] = 0.0f;
+	m[0][3] = 0.0f;
+
+	m[1][0] = 0.0f;
+	m[1][1] = 2 / (t - b);
+	m[1][2] = 0.0f;
+	m[1][3] = 0.0f;
+
+	m[2][0] = 0.0f;
+	m[2][1] = 0.0f;
+	m[2][2] = 1.0f / (zf - zn);
+	m[2][3] = 0.0f;
+
+	m[3][0] = (l + r) / (l - r);
+	m[3][1] = (t + b) / (b - t);
+	m[3][2] = zn / (zn - zf);
+	m[3][3] = 1.0f;
+}

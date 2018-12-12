@@ -18,6 +18,8 @@ typedef struct Image_t
 typedef struct Evaluation_t
 {
 	float inv_view_rot[16];
+	float viewProjection[16];
+	float viewInverse[16];
 	
 	int targetIndex;
 	int forcedDirty;

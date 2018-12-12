@@ -155,6 +155,7 @@ struct Camera
 	Vec4 mDirection;
 	Vec4 mUp;
 	Vec4 mLens; // fov,....
+	void ComputeViewProjectionMatrix(float *viewProj, float *viewInverse);
 };
 
 size_t GetParameterTypeSize(ConTypes paramType);

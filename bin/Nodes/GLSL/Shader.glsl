@@ -22,7 +22,8 @@ void main()
 layout (std140) uniform EvaluationBlock
 {
 	mat4 viewRot;
-
+	mat4 viewProjection;
+	mat4 viewInverse;
 	int targetIndex;
 	int forcedDirty;
 	int	uiPass;

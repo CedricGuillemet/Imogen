@@ -918,11 +918,37 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	ImGui::EndChild();
 }
 
-
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
 	AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, int nodeIndex) : mMin(min), mMax(max), mAnimTrack(animTrack)
 	{
+		auto type = gNodeDelegate.mNodes[nodeIndex].mType;
+		const MetaNode& metaNode = gMetaNodes[type];
+		int parameterIndex = 0;
+		for (auto& track : mAnimTrack)
+		{
+			if (track.mNodeIndex != nodeIndex)
+				continue;
+			if (track.mAnimation->mFrames.empty())
+				continue;
+			const std::string & parameterName = metaNode.mParams[parameterIndex].mName;
+
+			auto& animation = track.mAnimation;
+			size_t curveCountPerParameter = GetCurveCountPerParameterType(track.mValueType);
+			for (size_t curveIndex = 0; curveIndex < curveCountPerParameter; curveIndex++)
+			{
+				std::vector<ImVec2> curvePts;
+				size_t ptCount = animation->mFrames.size();
+				curvePts.resize(ptCount);
+				for (size_t i = 0; i < ptCount; i++)
+				{
+					curvePts[i] = ImVec2(float(animation->mFrames[i]), animation->GetFloatValue(uint32_t(i), int(curveIndex)));
+				}
+				mPts.push_back(curvePts);
+				mLabels.push_back(parameterName + GetCurveParameterSuffix(track.mValueType, int(curveIndex)));
+			}
+			parameterIndex++;
+		}
 	}
 	
 	virtual ImVec2 GetRange() { return mMax - mMin; }
@@ -971,8 +997,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 	}
 	
 	std::vector<std::vector<ImVec2>> mPts;
-	std::vector<bool> mbVisible;
-	std::vector<const char *> mLabels;
+	std::vector<std::string> mLabels;
 	std::vector<AnimTrack>& mAnimTrack;
 	ImVec2 mMin, mMax;
 
@@ -985,7 +1010,6 @@ private:
 	}
 };
 
-
 struct MySequence : public ImSequencer::SequenceInterface
 {
 	MySequence(TileNodeEditGraphDelegate &nodeGraphDelegate) : mNodeGraphDelegate(nodeGraphDelegate) {}
@@ -993,6 +1017,8 @@ struct MySequence : public ImSequencer::SequenceInterface
 	void Clear()
 	{
 		mbExpansions.clear();
+		mbVisible.clear();
+		mLastCustomDrawIndex = -1;
 	}
 	virtual int GetFrameMin() const { return gNodeDelegate.mFrameMin; }
 	virtual int GetFrameMax() const { return gNodeDelegate.mFrameMax; }
@@ -1046,16 +1072,22 @@ struct MySequence : public ImSequencer::SequenceInterface
 
 	virtual void CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect)
 	{
+		if (mLastCustomDrawIndex != index)
+		{
+			mLastCustomDrawIndex = index;
+			mbVisible.clear();
+		}
+
 		AnimCurveEdit curveEdit(ImVec2(float(gNodeDelegate.mFrameMin), 0.f), ImVec2(float(gNodeDelegate.mFrameMax), 1.f), gNodeDelegate.mAnimTrack, index);
-	
+		mbVisible.resize(curveEdit.GetCurveCount(), true);
 		draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < curveEdit.GetCurveCount(); i++)
 		{
 			ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
 			ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-			draw_list->AddText(pta, curveEdit.mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, curveEdit.mLabels[i]);
+			draw_list->AddText(pta, mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, curveEdit.mLabels[i].c_str());
 			if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
-				curveEdit.mbVisible[i] = !curveEdit.mbVisible[i];
+				mbVisible[i] = !mbVisible[i];
 		}
 		draw_list->PopClipRect();
 
@@ -1065,28 +1097,10 @@ struct MySequence : public ImSequencer::SequenceInterface
 
 	TileNodeEditGraphDelegate &mNodeGraphDelegate;
 	std::vector<bool> mbExpansions;
+	std::vector<bool> mbVisible;
+	int mLastCustomDrawIndex;
 };
 MySequence mySequence(gNodeDelegate);
-
-struct FocusDisplay
-{
-	FocusDisplay()
-	{
-
-		ImVec2 windowPos = ImGui::GetCursorScreenPos();
-		ImVec2 canvasSize = ImGui::GetContentRegionAvail();
-	}
-	~FocusDisplay()
-	{
-		if (ImGui::IsWindowFocused())
-		{
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-			drawList->AddRect(windowPos - ImVec2(4, 6), windowPos + canvasSize + ImVec2(4, 6), 0xCCCC0000);
-		}
-	}
-	ImVec2 windowPos;
-	ImVec2 canvasSize;
-};
 
 void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
@@ -1101,7 +1115,6 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Nodes"))
 		{
-			FocusDisplay focusDisplay;
 			if (selectedMaterial != -1)
 			{
 				Material& material = library.mMaterials[selectedMaterial];
@@ -1150,14 +1163,12 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Shaders"))
 		{
-			FocusDisplay focusDisplay;
 			HandleEditor(editor, nodeGraphDelegate, evaluation);
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Library"))
 		{
-			FocusDisplay focusDisplay;
 			LibraryEdit(library, nodeGraphDelegate, evaluation);
 		}
 		ImGui::End();
@@ -1165,7 +1176,6 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		ImGui::SetWindowSize(ImVec2(300, 300));
 		if (ImGui::Begin("Parameters"))
 		{
-			FocusDisplay focusDisplay;
 			const ImVec2 windowPos = ImGui::GetCursorScreenPos();
 			const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
@@ -1181,14 +1191,12 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
 		if (ImGui::Begin("Logs"))
 		{
-			FocusDisplay focusDisplay;
 			ImguiAppLog::Log->DrawEmbedded();
 		}
 		ImGui::End();
 
 		if (ImGui::Begin("Timeline"))
 		{
-			FocusDisplay focusDisplay;
 			int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
 			static int firstFrame = 0;
 			int currentTime = gEvaluationTime;
@@ -1263,7 +1271,6 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			ImGui::SetNextWindowFocus();
 			if (ImGui::Begin(tmps, &open))
 			{
-				FocusDisplay focusDisplay;
 				RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, false);
 			}
 			ImGui::End();

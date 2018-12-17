@@ -50,6 +50,23 @@ struct Camera
 		ret.mLens = ::Lerp(mLens, target.mLens, t);
 		return ret;
 	}
+	float& operator[] (int index)
+	{
+		switch (index)
+		{
+		case 0:
+		case 1:
+		case 2:
+			return mPosition[index];
+		case 3:
+		case 4:
+		case 5:
+			return mDirection[index - 3];
+		case 6:
+			return mDirection[index - 6];
+		}
+		return mPosition[0];
+	}
 };
 inline Camera Lerp(Camera a, Camera b, float t) { return a.Lerp(b, t); }
 
@@ -131,7 +148,7 @@ struct AnimationBase
 	virtual size_t GetValuesByteLength() const = 0;
 	virtual void GetValue(uint32_t frame, void *destination) = 0;
 	virtual void SetValue(uint32_t frame, void *source) = 0;
-
+	virtual float GetFloatValue(uint32_t index, int componentIndex) = 0;
 	struct AnimationPointer
 	{
 		uint32_t mPreviousIndex;
@@ -154,7 +171,13 @@ template<typename T> struct Animation : public AnimationBase
 	}
 	virtual void* GetData() { return mValues.data(); }
 	virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T);	}
-	
+	virtual float GetFloatValue(uint32_t index, int componentIndex)
+	{
+		unsigned char*ptr = (unsigned char*)GetData();
+		T& v = ((T*)ptr)[index];
+		return GetComponent(componentIndex, v);
+	}
+
 	virtual void GetValue(uint32_t frame, void *destination) 
 	{
 		auto pointer = GetPointer(frame, false);
@@ -174,6 +197,24 @@ template<typename T> struct Animation : public AnimationBase
 			mFrames.insert(mFrames.begin() + pointer.mPreviousIndex, frame);
 			mValues.insert(mValues.begin() + pointer.mPreviousIndex, value);
 		}
+	}
+protected:
+	template<typename T> float GetComponent(int componentIndex, T& v)
+	{
+		return float(v[componentIndex]);
+	}
+
+	float GetComponent(int componentIndex, unsigned char& v)
+	{
+		return float(v);
+	}
+	float GetComponent(int componentIndex, int& v)
+	{
+		return float(v);
+	}
+	float GetComponent(int componentIndex, float& v)
+	{
+		return v;
 	}
 };
 
@@ -242,6 +283,8 @@ enum ConTypes
 
 size_t GetParameterTypeSize(ConTypes paramType);
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);
+size_t GetCurveCountPerParameterType(uint32_t paramType);
+const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 AnimationBase *AllocateAnimation(uint32_t valueType);
 
 struct MetaCon

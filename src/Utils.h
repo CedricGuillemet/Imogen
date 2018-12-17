@@ -67,6 +67,8 @@ struct iVec2
 	inline iVec2 operator * (float f) const { return { int(x*f), int(y*f) }; }
 	inline iVec2 operator - (const iVec2& v) const { return { x - v.x, y - v.y }; }
 	inline iVec2 operator + (const iVec2& v) const { return { x + v.x, y + v.y }; }
+	int& operator [] (size_t index) { return ((int*)&x)[index]; }
+	const int& operator [] (size_t index) const { return ((int*)&x)[index]; }
 };
 
 struct iVec3
@@ -75,6 +77,8 @@ struct iVec3
 	inline iVec3 operator * (float f) const { return { int(x*f), int(y*f), int(z*f) }; }
 	inline iVec3 operator - (const iVec3& v) const { return { x - v.x, y - v.y, z - v.z }; }
 	inline iVec3 operator + (const iVec3& v) const { return { x + v.x, y + v.y, z + v.z }; }
+	int& operator [] (size_t index) { return ((int*)&x)[index]; }
+	const int& operator [] (size_t index) const { return ((int*)&x)[index]; }
 };
 
 struct iVec4
@@ -83,6 +87,8 @@ struct iVec4
 	inline iVec4 operator * (float f) const { return { int(x*f), int(y*f), int(z*f), int(w*f) }; }
 	inline iVec4 operator - (const iVec4& v) const { return { x - v.x, y - v.y, z - v.z, w - v.w }; }
 	inline iVec4 operator + (const iVec4& v) const { return { x + v.x, y + v.y, z + v.z, w + v.w }; }
+	int& operator [] (size_t index) { return ((int*)&x)[index]; }
+	const int& operator [] (size_t index) const { return ((int*)&x)[index]; }
 };
 
 struct Vec2
@@ -91,6 +97,8 @@ struct Vec2
 	inline Vec2 operator * (float f) const { return { x*f, y*f }; }
 	inline Vec2 operator - (const Vec2& v) const { return { x - v.x, y - v.y }; }
 	inline Vec2 operator + (const Vec2& v) const { return { x + v.x, y + v.y }; }
+	float& operator [] (size_t index) { return ((float*)&x)[index]; }
+	const float& operator [] (size_t index) const { return ((float*)&x)[index]; }
 };
 
 struct Vec3
@@ -99,6 +107,8 @@ struct Vec3
 	inline Vec3 operator * (float f) const { return { x*f, y*f, z*f }; }
 	inline Vec3 operator - (const Vec3& v) const { return { x - v.x, y - v.y, z - v.z }; }
 	inline Vec3 operator + (const Vec3& v) const { return { x + v.x, y + v.y, z + v.z }; }
+	float& operator [] (size_t index) { return ((float*)&x)[index]; }
+	const float& operator [] (size_t index) const { return ((float*)&x)[index]; }
 };
 
 struct Vec4

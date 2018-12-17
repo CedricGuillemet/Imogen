@@ -282,6 +282,92 @@ size_t GetParameterTypeSize(ConTypes paramType)
 	return -1;
 }
 
+size_t GetCurveCountPerParameterType(uint32_t paramType)
+{
+	switch (paramType)
+	{
+	case Con_Angle:
+	case Con_Float:
+		return 1;
+	case Con_Angle2:
+	case Con_Float2:
+		return 2;
+	case Con_Angle3:
+	case Con_Float3:
+		return 3;
+	case Con_Angle4:
+	case Con_Color4:
+	case Con_Float4:
+		return 4;
+	case Con_Ramp:
+		return 0;// sizeof(float) * 2 * 8;
+	case Con_Ramp4:
+		return 0;// sizeof(float) * 4 * 8;
+	case Con_Enum:
+		return 0;
+	case Con_Int:
+		return 1;
+	case Con_Int2:
+		return 2;
+	case Con_FilenameRead:
+	case Con_FilenameWrite:
+		return 0;
+	case Con_ForceEvaluate:
+		return 0;
+	case Con_Bool:
+		return 1;
+	case Con_Camera:
+		return 7;
+	default:
+		assert(0);
+	}
+	return 0;
+}
+
+const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex)
+{
+	static const char* suffixes[] = { ".x",".y",".z",".w" };
+	static const char* cameraSuffixes[] = { "posX","posY","posZ", "dirX", "dirY", "dirZ", "FOV" };
+	switch (paramType)
+	{
+	case Con_Angle:
+	case Con_Float:
+		return "";
+	case Con_Angle2:
+	case Con_Float2:
+		return suffixes[suffixIndex];
+	case Con_Angle3:
+	case Con_Float3:
+		return suffixes[suffixIndex];
+	case Con_Angle4:
+	case Con_Color4:
+	case Con_Float4:
+		return suffixes[suffixIndex];
+	case Con_Ramp:
+		return 0;// sizeof(float) * 2 * 8;
+	case Con_Ramp4:
+		return 0;// sizeof(float) * 4 * 8;
+	case Con_Enum:
+		return 0;
+	case Con_Int:
+		return "";
+	case Con_Int2:
+		return suffixes[suffixIndex];
+	case Con_FilenameRead:
+	case Con_FilenameWrite:
+		return 0;
+	case Con_ForceEvaluate:
+		return 0;
+	case Con_Bool:
+		return "";
+	case Con_Camera:
+		return cameraSuffixes[suffixIndex];
+	default:
+		assert(0);
+	}
+	return "";
+}
+
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex)
 {
 	const MetaNode& currentMeta = gMetaNodes[type];
@@ -324,6 +410,8 @@ AnimationBase *AllocateAnimation(uint32_t valueType)
 	}
 	return NULL;
 }
+
+
 
 std::vector<MetaNode> gMetaNodes;
 std::map<std::string, size_t> gMetaNodesIndices;

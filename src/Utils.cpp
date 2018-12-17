@@ -167,7 +167,7 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 }
 
 
-unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const char *fileName)
+unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const char *filename)
 {
 	GLuint programHandle = glCreateProgram();
 	GLuint vsHandle = glCreateShader(GL_VERTEX_SHADER);
@@ -191,6 +191,7 @@ unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const 
 		{
 			char info_log[2048];
 			glGetShaderInfoLog(vsHandle, info_len, NULL, info_log);
+			Log("Error compiling Transform Feedback shader %s\n", filename);
 			Log(info_log);
 		}
 		return 0;

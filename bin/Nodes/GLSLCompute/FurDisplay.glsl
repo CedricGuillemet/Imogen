@@ -1,14 +1,6 @@
 #define pi 3.15159
 #define isqrt2 0.707106
-/*
-layout(std140) uniform CameraUniform
-{
-	mat4 ViewProjection;
-	mat4 ModelMatrix;
-	mat4 View;
-	vec4 cameraPos;
-};
-*/
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef VERTEX_SHADER
@@ -21,7 +13,7 @@ layout (std140) uniform EvaluationBlock
 	int targetIndex;
 	int forcedDirty;
 	int	uiPass;
-	int padding;
+	int frameNumber;
 	vec4 mouse; // x,y, lbut down, rbut down
 	ivec4 inputIndices[2];
 	
@@ -35,6 +27,9 @@ layout(location = 3)in vec4 inInstanceP1;
 layout(location = 4)in vec4 inInstanceP2;
 
 out vec2 uv;
+out vec4 color;
+out vec3 normal;
+out vec3 up;
 void main() 
 {
 	float startWidth = 0.1;
@@ -46,22 +41,34 @@ void main()
 	vec4 tgt = normalize(i2 - i1);
 	
 	vec3 right = normalize(cross(bezierPos.xyz - EvaluationParam.viewInverse[3].xyz, tgt.xyz));
+	up = cross(right, tgt.xyz);
 	
-	float width = mix(startWidth, endWidth, inUV.y);
+	float width = min(mix(startWidth, endWidth, inUV.y), startWidth * 0.5);
 	
 	vec4 pos = bezierPos + vec4(right,0.) * inUV.x * width;
 	gl_Position = EvaluationParam.viewProjection * vec4(pos.xyz, 1.0); 
 	
-	//gl_Position = vec4(inUV.xy, 0.0, 1.0);
+	
+	normal = right;
 	uv = vec2(inUV.x * 0.5 + 0.5, inUV.y);
+	color = vec4(inInstanceP0.a, inInstanceN0.a, inInstanceP1.a, 1.);
+	//color = vec4(localDir, 1.0);
 } 
 #endif
 
 #ifdef FRAGMENT_SHADER
 layout (location=0) out vec4 co;
 in vec2 uv;
+in vec4 color;
+in vec3 normal;
+in vec3 up;
+
 void main() 
 { 
-	co = vec4(1.0, uv.y, 1.0, 1.0);
+	float u01 = (uv.x * 2.0 - 1.0);
+	vec3 n = mix(up, normal, abs(u01));
+	float dnl = max(dot(normalize(n), normalize(vec3(1.))), 0.) * 0.4 + 0.6;
+	//co = vec4(normalize(normal) * 0.5 + 0.5, 1.0);//color;//vec4(1.0, uv.y, 1.0, 1.0);
+	co = color * dnl;
 }
 #endif

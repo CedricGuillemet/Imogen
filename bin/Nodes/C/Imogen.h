@@ -29,6 +29,8 @@ typedef struct Evaluation_t
 	int inputIndices[8];	
 	
 	float viewport[2];
+	int frame;
+	int localFrame;
 } Evaluation;
 
 enum BlendOp

@@ -246,6 +246,7 @@ int main(int, char**)
 
 		if (gbIsPlaying)
 		{
+			gEvaluationTime++;
 			gCurrentContext->SetTargetDirty(1);
 		}
 		gCurrentContext->RunDirty();

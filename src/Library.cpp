@@ -618,7 +618,7 @@ void LoadMetaNodes()
 			,
 		{
 			"FurGenerator", hcFilter, 9
-			,{  }
+			,{ { "Color", Con_Float4 }, { "Length", Con_Float4 } }
 		,{ { "", Con_Float4 } }
 		,{  /*{ "strength", Con_Float }, { "area", Con_Float }, { "falloff", Con_Float }, { "radius", Con_Float }*/}
 		}

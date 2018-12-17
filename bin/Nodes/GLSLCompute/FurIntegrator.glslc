@@ -9,12 +9,38 @@ out vec4 outInstanceP1;
 out vec4 outInstanceP2;
 
 
+layout (std140) uniform EvaluationBlock
+{
+	mat4 viewRot;
+	mat4 viewProjection;
+	mat4 viewInverse;
+	int targetIndex;
+	int forcedDirty;
+	int	uiPass;
+	int padding;
+	vec4 mouse; // x,y, lbut down, rbut down
+	ivec4 inputIndices[2];
+	
+	vec2 viewport;
+	int frame;
+	int localFrame;
+} EvaluationParam;
+
+
 void main()
 {
-	vec4 dif = vec4(0., 0.001, 0.0,0.0);
+	vec3 norm0 = inInstanceN0.xyz;
+	float stifness = 1.;
 	
-	outInstanceP0 = inInstanceP0 + dif;
+	float frm = float(EvaluationParam.frame);
+	float len = inInstanceP2.w;
+	outInstanceP0 = inInstanceP0 + vec4(0., frm, 0., 0.);
 	outInstanceN0 = inInstanceN0;
-	outInstanceP1 = inInstanceP1 + dif;
-	outInstanceP2 = inInstanceP2 + dif;
+	
+	vec3 idealPos1 = inInstanceP0.xyz + norm0 * len;
+	vec3 curSeg = inInstanceP1.xyz - inInstanceP0.xyz;
+	vec3 idealPos2 = inInstanceP1.xyz + normalize(curSeg) * len;
+	
+	outInstanceP1 = vec4(mix(inInstanceP1.xyz, idealPos1, stifness), inInstanceP1.w);
+	outInstanceP2 = vec4(mix(inInstanceP2.xyz, idealPos2, stifness), inInstanceP2.w);
 }

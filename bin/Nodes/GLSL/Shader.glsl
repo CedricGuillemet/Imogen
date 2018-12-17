@@ -32,6 +32,8 @@ layout (std140) uniform EvaluationBlock
 	ivec4 inputIndices[2];
 	
 	vec2 viewport;
+	int frame;
+	int localFrame;
 } EvaluationParam;
 
 struct Camera

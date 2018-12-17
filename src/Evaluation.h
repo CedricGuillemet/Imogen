@@ -82,8 +82,8 @@ struct EvaluationInfo
 	float pad2[4];
 	
 	float viewport[2];
-	size_t mFrame;
-	size_t mLocalFrame;
+	int mFrame;
+	int mLocalFrame;
 };
 
 struct TextureFormat

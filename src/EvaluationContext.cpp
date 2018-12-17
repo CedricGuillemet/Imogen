@@ -243,7 +243,7 @@ void drawBlades()
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bladeIA);
 
-	glDrawElementsInstanced(GL_TRIANGLE_STRIP, tess*2, GL_UNSIGNED_SHORT, (void*)0, 1/*32 * 32*/);
+	glDrawElementsInstanced(GL_TRIANGLE_STRIP, tess*2, GL_UNSIGNED_SHORT, (void*)0, 32 * 32);
 
 	glVertexAttribDivisor(SemInstanceP0, 0);
 	glVertexAttribDivisor(SemInstanceN0, 0);
@@ -255,7 +255,47 @@ void drawBlades()
 	glBindVertexArray(0);
 }
 
+void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, unsigned int program)
+{
+	const Input& input = evaluationStage.mInput;
+	for (int inputIndex = 0; inputIndex < 8; inputIndex++)
+	{
+		glActiveTexture(GL_TEXTURE0 + inputIndex);
+		int targetIndex = input.mInputs[inputIndex];
+		if (targetIndex < 0)
+		{
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
+		else
+		{
+			unsigned int parameter = glGetUniformLocation(program, sampler2DName[inputIndex]);
+			if (parameter == 0xFFFFFFFF)
+				parameter = glGetUniformLocation(program, samplerCubeName[inputIndex]);
+			if (parameter == 0xFFFFFFFF)
+			{
+				glBindTexture(GL_TEXTURE_2D, 0);
+				continue;
+			}
+			glUniform1i(parameter, inputIndex);
 
+			auto tgt = mStageTarget[targetIndex];
+			if (tgt)
+			{
+				const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
+				if (tgt->mImage.mNumFaces == 1)
+				{
+					glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
+					TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+				}
+				else
+				{
+					glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
+					TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_CUBE_MAP);
+				}
+			}
+		}
+	}
+}
 void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
 {
 	if (bladeIA == -1)
@@ -284,6 +324,16 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
 	size_t firstParticle = 0;
 	size_t particleCount = 32 * 32;
 	glUseProgram(program);
+
+	glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
+
+	BindTextures(evaluationStage, program);
 	glEnable(GL_RASTERIZER_DISCARD);
 	glBindVertexArray(feedbackVertexArray[instancesBufferReadIndex]);
 	glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mInstancesParametersBufferName[(instancesBufferReadIndex + 1) & 1], firstParticle * 16 * sizeof(float), particleCount * 16 * sizeof(float));
@@ -360,43 +410,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
-		for (int inputIndex = 0; inputIndex < 8; inputIndex++)
-		{
-			glActiveTexture(GL_TEXTURE0 + inputIndex);
-			int targetIndex = input.mInputs[inputIndex];
-			if (targetIndex < 0)
-			{
-				glBindTexture(GL_TEXTURE_2D, 0);
-			}
-			else
-			{
-				unsigned int parameter = glGetUniformLocation(program, sampler2DName[inputIndex]);
-				if (parameter == 0xFFFFFFFF)
-					parameter = glGetUniformLocation(program, samplerCubeName[inputIndex]);
-				if (parameter == 0xFFFFFFFF)
-				{
-					glBindTexture(GL_TEXTURE_2D, 0);
-					continue;
-				}
-				glUniform1i(parameter, inputIndex);
+		BindTextures(evaluationStage, program);
 
-				auto tgt = mStageTarget[targetIndex];
-				if (tgt)
-				{
-					const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
-					if (tgt->mImage.mNumFaces == 1)
-					{
-						glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
-						TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
-					}
-					else
-					{
-						glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
-						TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_CUBE_MAP);
-					}
-				}
-			}
-		}
 		//
 		if (evaluationStage.mNodeTypename == "FurDisplay")
 		{
@@ -523,6 +538,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 	mbProcessing[nodeIndex] = false;
 
 	mEvaluationInfo.targetIndex = int(nodeIndex);
+	mEvaluationInfo.mFrame = gEvaluationTime;
 	memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
 	SetMouseInfos(mEvaluationInfo, currentStage);
 

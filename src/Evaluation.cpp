@@ -146,7 +146,7 @@ void Evaluation::DelEvaluationInput(size_t target, int slot)
 
 void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 {
-	gEvaluationOrderList = nodeOrderList;
+	mEvaluationOrderList = nodeOrderList;
 }
 
 void Evaluation::Clear()
@@ -155,7 +155,7 @@ void Evaluation::Clear()
 		ev.Clear();
 
 	mStages.clear();
-	gEvaluationOrderList.clear();
+	mEvaluationOrderList.clear();
 }
 
 void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown)

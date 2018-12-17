@@ -810,6 +810,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		rug.mColor = rugs[i].mColor;
 		rug.mComment = rugs[i].mText;
 	}
+	material.mAnimTrack = nodeGraphDelegate.GetAnimTrack();
 }
 
 void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
@@ -853,6 +854,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		}
 		NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
 		NodeGraphUpdateScrolling();
+		nodeGraphDelegate.SetAnimTrack(material.mAnimTrack);
 		nodeGraphDelegate.mEditingContext.RunAll();
 	}
 }
@@ -1082,6 +1084,29 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			static int firstFrame = 0;
 			int currentTime = gEvaluationTime;
 
+			if (ImGui::Button("<"))
+				currentTime--;
+			ImGui::SameLine();
+			ImGui::PushItemWidth(100);
+			if (ImGui::InputInt("", &currentTime, 0, 0, 0))
+			{
+			}
+			ImGui::PopItemWidth();
+			ImGui::SameLine();
+			if (ImGui::Button(">"))
+				currentTime++;
+			ImGui::SameLine();
+			currentTime = ImMax(currentTime, 0);
+			if (ImGui::Button("Key") && selectedEntry != -1)
+			{
+				nodeGraphDelegate.MakeKey(currentTime, uint32_t(selectedEntry), 0);
+			}
+			/*
+			if (ImGui::InputInt("", &currentTime, 0, 0, 0))
+			{
+			}
+			*/
+			
 			Sequencer(&mySequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
 			if (selectedEntry != -1)
 			{
@@ -1094,6 +1119,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			{
 				gEvaluationTime = currentTime;
 				nodeGraphDelegate.SetTime(currentTime, true);
+				nodeGraphDelegate.ApplyAnimation(currentTime);
 			}
 		}
 		ImGui::End();

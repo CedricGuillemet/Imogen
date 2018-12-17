@@ -1,8 +1,9 @@
 #pragma once
 
+struct ImDrawList;
+struct ImRect;
 namespace ImSequencer
 {
-
 	enum SEQUENCER_OPTIONS
 	{
 		SEQUENCER_EDIT_NONE = 0,
@@ -16,7 +17,8 @@ namespace ImSequencer
 
 	struct SequenceInterface
 	{
-		virtual int GetFrameCount() const = 0;
+		virtual int GetFrameMin() const = 0;
+      virtual int GetFrameMax() const = 0;
 		virtual int GetItemCount() const = 0;
 
 		virtual int GetItemTypeCount() const { return 0; }
@@ -30,6 +32,10 @@ namespace ImSequencer
 
 		virtual void Copy() {}
 		virtual void Paste() {}
+
+		virtual size_t GetCustomHeight(int /*index*/) { return 0; }
+      virtual void DoubleClick(int /*index*/) {}
+      virtual void CustomDraw(int /*index*/, ImDrawList* /*draw_list*/, const ImRect& /*rc*/, const ImRect& /*legendRect*/, const ImRect& /*clippingRect*/, const ImRect& /*legendClippingRect*/) {}
 	};
 
 

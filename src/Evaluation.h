@@ -258,12 +258,10 @@ struct Evaluation
 	unsigned int GetTexture(const std::string& filename);
 
 
-	const std::vector<size_t>& GetForwardEvaluationOrder() const { return gEvaluationOrderList; }
+	const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
 
 	
-	const EvaluationStage& GetEvaluationStage(size_t index) const {
-		return mStages[index];
-	}
+	const EvaluationStage& GetEvaluationStage(size_t index) const {	return mStages[index]; }
 
 	// error shader
 	unsigned int mNodeErrorShader;
@@ -272,7 +270,8 @@ protected:
 	std::map<std::string, unsigned int> mSynchronousTextureCache;
 
 	std::vector<EvaluationStage> mStages;
-	std::vector<size_t> gEvaluationOrderList;
+
+	std::vector<size_t> mEvaluationOrderList;
 	void BindGLSLParameters(EvaluationStage& evaluationStage);
 
 	// ui callback shaders
@@ -285,6 +284,7 @@ protected:
 
 	static void StageIsAdded(int index);
 	static void StageIsDeleted(int index);
+
 };
 
 extern Evaluation gEvaluation;

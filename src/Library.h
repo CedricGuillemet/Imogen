@@ -32,6 +32,27 @@
 #include <map>
 #include "Utils.h"
 
+struct Camera
+{
+	Vec4 mPosition;
+	Vec4 mDirection;
+	Vec4 mUp;
+	Vec4 mLens; // fov,....
+
+	Camera Lerp(const Camera& target, float t)
+	{
+		Camera ret;
+		ret.mPosition = ::Lerp(mPosition, target.mPosition, t);
+		ret.mDirection = ::Lerp(mDirection, target.mDirection, t);
+		ret.mDirection.Normalize();
+		ret.mUp = ::Lerp(mUp, target.mUp, t);
+		ret.mUp.Normalize();
+		ret.mLens = ::Lerp(mLens, target.mLens, t);
+		return ret;
+	}
+};
+inline Camera Lerp(Camera a, Camera b, float t) { return a.Lerp(b, t); }
+
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
 // based on the unique id
@@ -100,6 +121,70 @@ struct MaterialConnection
 	uint8_t mInputSlot;
 	uint8_t mOutputSlot;
 };
+
+struct AnimationBase 
+{
+	std::vector<uint32_t> mFrames;
+
+	virtual void Allocate(size_t elementCount) = 0;
+	virtual void* GetData() = 0;
+	virtual size_t GetValuesByteLength() const = 0;
+	virtual void GetValue(uint32_t frame, void *destination) = 0;
+	virtual void SetValue(uint32_t frame, void *source) = 0;
+
+	struct AnimationPointer
+	{
+		uint32_t mPreviousIndex;
+		uint32_t mPreviousFrame;
+		uint32_t mNextIndex;
+		uint32_t mNextFrame;
+		float mRatio;
+	};
+	AnimationPointer GetPointer(uint32_t frame, bool bSetting) const;
+};
+
+template<typename T> struct Animation : public AnimationBase
+{
+	std::vector<T> mValues;
+
+	virtual void Allocate(size_t elementCount) 
+	{ 
+		mFrames.resize(elementCount); 
+		mValues.resize(elementCount);
+	}
+	virtual void* GetData() { return mValues.data(); }
+	virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T);	}
+	
+	virtual void GetValue(uint32_t frame, void *destination) 
+	{
+		auto pointer = GetPointer(frame, false);
+		T *dest = (T*)destination;
+		*dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
+	}
+	virtual void SetValue(uint32_t frame, void *source) 
+	{
+		auto pointer = GetPointer(frame, true);
+		T value = *(T*)source;
+		if (frame == pointer.mPreviousFrame && !mValues.empty())
+		{
+			mValues[pointer.mPreviousIndex] = value;
+		}
+		else
+		{
+			mFrames.insert(mFrames.begin() + pointer.mPreviousIndex, frame);
+			mValues.insert(mValues.begin() + pointer.mPreviousIndex, value);
+		}
+	}
+};
+
+struct AnimTrack
+{
+	uint32_t mNodeIndex;
+	uint32_t mParamIndex;
+	uint32_t mValueType; // Con_
+	AnimationBase *mAnimation;
+};
+
 struct Material
 {
 	std::string mName;
@@ -109,12 +194,16 @@ struct Material
 	std::vector<MaterialConnection> mMaterialConnections;
 	std::vector<uint8_t> mThumbnail;
 
+	std::vector<AnimTrack> mAnimTrack;
+
+
 	MaterialNode* Get(ASyncId id) { return GetByAsyncId(id, mMaterialNodes); }
 
 	//run time
 	unsigned int mThumbnailTextureId;
 	unsigned int mRuntimeUniqueId;
 };
+
 struct Library
 {
 	std::vector<Material> mMaterials;
@@ -149,15 +238,10 @@ enum ConTypes
 	Con_Any,
 };
 
-struct Camera
-{
-	Vec4 mPosition;
-	Vec4 mDirection;
-	Vec4 mUp;
-	Vec4 mLens; // fov,....
-};
 
 size_t GetParameterTypeSize(ConTypes paramType);
+size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);
+AnimationBase *AllocateAnimation(uint32_t valueType);
 
 struct MetaCon
 {

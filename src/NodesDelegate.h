@@ -52,7 +52,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd);
 	void SetTimeDuration(size_t index, int duration);
 	void SetTime(int time, bool updateDecoder);
-	//size_t ComputeTimelineLength() const;
 
 	virtual void DoForce();
 	void InvalidateParameters();

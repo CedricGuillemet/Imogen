@@ -45,6 +45,7 @@ unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, in
 extern Evaluation gEvaluation;
 int gEvaluationTime = 0;
 extern enki::TaskScheduler g_TS;
+void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
 
 struct ImguiAppLog
 {
@@ -814,17 +815,6 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 	material.mFrameMin = nodeGraphDelegate.mFrameMin;
 	material.mFrameMax = nodeGraphDelegate.mFrameMax;
 }
-
-void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
-{
-	nodeGraphDelegate.Clear();
-	evaluation.Clear();
-	NodeGraphClear();
-	InitCallbackRects();
-	ClearExtractedViews();
-	gUndoRedoHandler.Clear();
-}
-
 void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
 	// set new
@@ -928,8 +918,82 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 	ImGui::EndChild();
 }
 
+
+struct AnimCurveEdit : public ImCurveEdit::Delegate
+{
+	AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, int nodeIndex) : mMin(min), mMax(max), mAnimTrack(animTrack)
+	{
+	}
+	
+	virtual ImVec2 GetRange() { return mMax - mMin; }
+	virtual ImVec2 GetMin() { return mMin; }
+
+	size_t GetCurveCount()
+	{
+		return mPts.size();
+	}
+
+	size_t GetPointCount(size_t curveIndex)
+	{
+		return mPts[curveIndex].size();
+	}
+
+	uint32_t GetCurveColor(size_t curveIndex)
+	{
+		return 0xFFAAAAAA;
+	}
+	ImVec2* GetPoints(size_t curveIndex)
+	{
+		return mPts[curveIndex].data();
+	}
+
+	virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
+	{
+		mPts[curveIndex][pointIndex] = value;
+		SortValues(curveIndex);
+		for (size_t i = 0; i < GetPointCount(curveIndex); i++)
+		{
+			if (mPts[curveIndex][i].x == value.x)
+				return int(i);
+		}
+		return pointIndex;
+	}
+	virtual void AddPoint(size_t curveIndex, ImVec2 value)
+	{
+		mPts[curveIndex].push_back(value);
+		SortValues(curveIndex);
+	}
+
+	virtual void DelPoint(size_t curveIndex, size_t pointIndex)
+	{
+		mPts[curveIndex].erase(mPts[curveIndex].begin() + pointIndex);
+		SortValues(curveIndex);
+	}
+	
+	std::vector<std::vector<ImVec2>> mPts;
+	std::vector<bool> mbVisible;
+	std::vector<const char *> mLabels;
+	std::vector<AnimTrack>& mAnimTrack;
+	ImVec2 mMin, mMax;
+
+private:
+	void SortValues(size_t curveIndex)
+	{
+		auto b = std::begin(mPts[curveIndex]);
+		auto e = std::end(mPts[curveIndex]);
+		std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
+	}
+};
+
+
 struct MySequence : public ImSequencer::SequenceInterface
 {
+	MySequence(TileNodeEditGraphDelegate &nodeGraphDelegate) : mNodeGraphDelegate(nodeGraphDelegate) {}
+
+	void Clear()
+	{
+		mbExpansions.clear();
+	}
 	virtual int GetFrameMin() const { return gNodeDelegate.mFrameMin; }
 	virtual int GetFrameMax() const { return gNodeDelegate.mFrameMax; }
 
@@ -960,9 +1024,49 @@ struct MySequence : public ImSequencer::SequenceInterface
 	virtual void Del(int index) { }
 	virtual void Duplicate(int index) { }
 
-	MySequence(TileNodeEditGraphDelegate &nodeGraphDelegate) : mNodeGraphDelegate(nodeGraphDelegate) {}
+	virtual size_t GetCustomHeight(int index) 
+	{ 
+		if (index >= mbExpansions.size())
+			return false;
+		return mbExpansions[index]? 300 : 0;
+	}
+	virtual void DoubleClick(int index) 
+	{
+		if (index >= mbExpansions.size())
+			mbExpansions.resize(index + 1, false);
+		if (mbExpansions[index])
+		{
+			mbExpansions[index] = false;
+			return;
+		}
+		for (auto& item : mbExpansions)
+			item = false;
+		mbExpansions[index] = !mbExpansions[index];
+	}
+
+	virtual void CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect)
+	{
+		AnimCurveEdit curveEdit(ImVec2(float(gNodeDelegate.mFrameMin), 0.f), ImVec2(float(gNodeDelegate.mFrameMax), 1.f), gNodeDelegate.mAnimTrack, index);
+	
+		draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
+		for (int i = 0; i < 3; i++)
+		{
+			ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
+			ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
+			draw_list->AddText(pta, curveEdit.mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, curveEdit.mLabels[i]);
+			if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
+				curveEdit.mbVisible[i] = !curveEdit.mbVisible[i];
+		}
+		draw_list->PopClipRect();
+
+		ImGui::SetCursorScreenPos(rc.Min);
+		ImCurveEdit::Edit(curveEdit, rc.Max - rc.Min, 137 + index, &clippingRect);
+	}
+
 	TileNodeEditGraphDelegate &mNodeGraphDelegate;
+	std::vector<bool> mbExpansions;
 };
+MySequence mySequence(gNodeDelegate);
 
 struct FocusDisplay
 {
@@ -1085,7 +1189,6 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 		if (ImGui::Begin("Timeline"))
 		{
 			FocusDisplay focusDisplay;
-			MySequence mySequence(nodeGraphDelegate);
 			int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
 			static int firstFrame = 0;
 			int currentTime = gEvaluationTime;
@@ -1227,6 +1330,17 @@ void Imogen::Init()
 void Imogen::Finish()
 {
 
+}
+
+void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+{
+	nodeGraphDelegate.Clear();
+	evaluation.Clear();
+	NodeGraphClear();
+	InitCallbackRects();
+	ClearExtractedViews();
+	gUndoRedoHandler.Clear();
+	mySequence.Clear();
 }
 
 UndoRedoHandler gUndoRedoHandler;

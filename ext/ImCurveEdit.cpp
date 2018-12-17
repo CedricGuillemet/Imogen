@@ -110,6 +110,7 @@ namespace ImCurveEdit
 
       ImGuiIO& io = ImGui::GetIO();
       ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0,0));
+	  ImGui::PushStyleColor(ImGuiCol_Border, 0);
       ImGui::BeginChildFrame(id, size);
 
       ImDrawList* draw_list = ImGui::GetWindowDrawList();
@@ -297,6 +298,7 @@ namespace ImCurveEdit
 
       ImGui::EndChildFrame();
       ImGui::PopStyleVar();
+	  ImGui::PopStyleColor(1);
       return 0;
    }
 }

@@ -920,7 +920,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
-	AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, int nodeIndex) : mMin(min), mMax(max), mAnimTrack(animTrack)
+	AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) : mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible)
 	{
 		auto type = gNodeDelegate.mNodes[nodeIndex].mType;
 		const MetaNode& metaNode = gMetaNodes[type];
@@ -954,6 +954,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 	virtual ImVec2 GetRange() { return mMax - mMin; }
 	virtual ImVec2 GetMin() { return mMin; }
 
+	virtual unsigned int GetBackgroundColor() { return 0x00202020; }
+	virtual bool IsVisible(size_t curveIndex) { return mbVisible[curveIndex]; }
 	size_t GetCurveCount()
 	{
 		return mPts.size();
@@ -999,6 +1001,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 	std::vector<std::vector<ImVec2>> mPts;
 	std::vector<std::string> mLabels;
 	std::vector<AnimTrack>& mAnimTrack;
+	std::vector<bool>& mbVisible;
 	ImVec2 mMin, mMax;
 
 private:
@@ -1078,7 +1081,7 @@ struct MySequence : public ImSequencer::SequenceInterface
 			mbVisible.clear();
 		}
 
-		AnimCurveEdit curveEdit(ImVec2(float(gNodeDelegate.mFrameMin), 0.f), ImVec2(float(gNodeDelegate.mFrameMax), 1.f), gNodeDelegate.mAnimTrack, index);
+		AnimCurveEdit curveEdit(ImVec2(float(gNodeDelegate.mFrameMin), 0.f), ImVec2(float(gNodeDelegate.mFrameMax), 1.f), gNodeDelegate.mAnimTrack, mbVisible, index);
 		mbVisible.resize(curveEdit.GetCurveCount(), true);
 		draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
 		for (int i = 0; i < curveEdit.GetCurveCount(); i++)

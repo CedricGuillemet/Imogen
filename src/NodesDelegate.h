@@ -52,7 +52,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd);
 	void SetTimeDuration(size_t index, int duration);
 	void SetTime(int time, bool updateDecoder);
-	size_t ComputeTimelineLength() const;
+	//size_t ComputeTimelineLength() const;
 
 	virtual void DoForce();
 	void InvalidateParameters();
@@ -102,6 +102,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	std::vector<ImogenNode> mNodes;
 	std::vector<ImogenNode> mNodesClipboard;
 	std::vector<AnimTrack> mAnimTrack;
+	int mFrameMin, mFrameMax;
 	bool mbMouseDragging;
 
 	ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }

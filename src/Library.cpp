@@ -188,6 +188,8 @@ template<bool doWrite> struct Serialize
 		ADD(v_thumbnail, material->mThumbnail);
 		ADD(v_rugs, material->mMaterialRugs);
 		ADD(v_animation, material->mAnimTrack);
+		ADD(v_animation, material->mFrameMin);
+		ADD(v_animation, material->mFrameMax);
 	}
 	bool Ser(Library *library)
 	{

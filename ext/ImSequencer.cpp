@@ -42,6 +42,9 @@ namespace ImSequencer
 		int ItemHeight = 20;
 
 		bool popupOpened = false;
+		int sequenceCount = sequence->GetItemCount();
+		if (!sequenceCount)
+			return false;
 		ImGui::BeginGroup();
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 		ImVec2 canvas_pos = ImGui::GetCursorScreenPos();            // ImDrawList API uses screen coordinates!
@@ -49,10 +52,10 @@ namespace ImSequencer
 		static const int scrollBarHeight = 14;
 		int firstFrameUsed = firstFrame ? *firstFrame : 0;
 
-		int sequenceCount = sequence->GetItemCount();
+		
 		int controlHeight = sequenceCount * ItemHeight;
-      for (int i = 0; i < sequenceCount; i++)
-         controlHeight += sequence->GetCustomHeight(i);
+        for (int i = 0; i < sequenceCount; i++)
+			controlHeight += int(sequence->GetCustomHeight(i));
 		int frameCount = ImMax(sequence->GetFrameMax() - sequence->GetFrameMin(), 1);
 
 		static bool MovingScrollBar = false;
@@ -148,7 +151,7 @@ namespace ImSequencer
          ImVec2 childFrameSize(canvas_size.x, canvas_size.y - 8.f - headerSize.y - (hasScrollBar ? scrollBarSize.y : 0));
          ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
          ImGui::BeginChildFrame(889, childFrameSize);
-         ImGui::InvisibleButton("contentBar", ImVec2(canvas_size.x, controlHeight));
+         ImGui::InvisibleButton("contentBar", ImVec2(canvas_size.x, float(controlHeight)));
          const ImVec2 contentMin = ImGui::GetItemRectMin();
          const ImVec2 contentMax = ImGui::GetItemRectMax();
          const ImRect contentRect(contentMin, contentMax);
@@ -234,14 +237,14 @@ namespace ImSequencer
 
          auto drawLineContent = [&](int i, int regionHeight) {
             int px = (int)canvas_pos.x + int(i * framePixelWidth) + legendWidth - int(firstFrameUsed * framePixelWidth);
-            int tiretStart = contentMin.y;
-            int tiretEnd = contentMax.y;
+            int tiretStart = int(contentMin.y);
+            int tiretEnd = int(contentMax.y);
 
             if (px <= (canvas_size.x + canvas_pos.x) && px >= (canvas_pos.x + legendWidth))
             {
                //draw_list->AddLine(ImVec2((float)px, canvas_pos.y + (float)tiretStart), ImVec2((float)px, canvas_pos.y + (float)tiretEnd - 1), 0xFF606060, 1);
 
-               draw_list->AddLine(ImVec2((float)px, tiretStart), ImVec2((float)px, tiretEnd), 0x30606060, 1);
+               draw_list->AddLine(ImVec2(float(px), float(tiretStart)), ImVec2(float(px), float(tiretEnd)), 0x30606060, 1);
             }
          };
          for (int i = sequence->GetFrameMin(); i <= sequence->GetFrameMax(); i += frameStep)
@@ -301,15 +304,15 @@ namespace ImSequencer
             customHeight += localCustomHeight;
 			}
 
-         draw_list->PushClipRect(childFramePos + ImVec2(legendWidth, 0), childFramePos + childFrameSize);
+         draw_list->PushClipRect(childFramePos + ImVec2(float(legendWidth), 0.f), childFramePos + childFrameSize);
 
          // vertical frame lines in content area
          for (int i = sequence->GetFrameMin(); i <= sequence->GetFrameMax(); i += frameStep)
          {
-            drawLineContent(i, contentHeight);
+            drawLineContent(i, int(contentHeight));
          }
-         drawLineContent(sequence->GetFrameMin(), contentHeight);
-         drawLineContent(sequence->GetFrameMax(), contentHeight);
+         drawLineContent(sequence->GetFrameMin(), int(contentHeight));
+         drawLineContent(sequence->GetFrameMax(), int(contentHeight));
          
 			// selection
 			bool selected = selectedEntry && (*selectedEntry >= 0);
@@ -379,10 +382,10 @@ namespace ImSequencer
             {
                ImVec2 rp(canvas_pos.x, contentMin.y + ItemHeight * i + 1 + customHeight);
                ImRect customRect(rp + ImVec2(legendWidth - (firstFrameUsed - sequence->GetFrameMin() - 0.5f) * framePixelWidth, 0),
-                  rp + ImVec2(legendWidth + (sequence->GetFrameMax() - firstFrameUsed - 0.5f) * framePixelWidth, localCustomHeight));
-               ImRect clippingRect(rp + ImVec2(legendWidth, ItemHeight), rp + ImVec2(canvas_size.x, localCustomHeight));
-               ImRect legendRect(rp + ImVec2(0, ItemHeight), rp + ImVec2(legendWidth, localCustomHeight));
-               ImRect legendClippingRect(canvas_pos + ImVec2(0, ItemHeight), canvas_pos+ImVec2(legendWidth, localCustomHeight + ItemHeight));
+                  rp + ImVec2(legendWidth + (sequence->GetFrameMax() - firstFrameUsed - 0.5f) * framePixelWidth, float(localCustomHeight)));
+               ImRect clippingRect(rp + ImVec2(float(legendWidth), float(ItemHeight)), rp + ImVec2(canvas_size.x, float(localCustomHeight)));
+               ImRect legendRect(rp + ImVec2(0.f, float(ItemHeight)), rp + ImVec2(float(legendWidth), float(localCustomHeight)));
+               ImRect legendClippingRect(canvas_pos + ImVec2(0.f, float(ItemHeight)), canvas_pos + ImVec2(float(legendWidth), float(localCustomHeight + ItemHeight)));
                customDraws.push_back({ i, customRect, legendRect, clippingRect, legendClippingRect });
             }
 				customHeight += localCustomHeight;

@@ -59,14 +59,14 @@ struct RampEdit : public ImCurveEdit::Delegate
 		return mPts;
 	}
 
-	virtual size_t EditPoint(size_t curveIndex, size_t pointIndex, ImVec2 value)
+	virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
 	{
 		mPts[pointIndex] = value;
 		SortValues(curveIndex);
 		for (size_t i = 0; i < GetPointCount(curveIndex); i++)
 		{
 			if (mPts[i].x == value.x)
-				return i;
+				return int(i);
 		}
 		return pointIndex;
 	}
@@ -163,7 +163,7 @@ private:
 	}
 };
 
-TileNodeEditGraphDelegate::TileNodeEditGraphDelegate() : mbMouseDragging(false), mEditingContext(gEvaluation, false, 1024, 1024)
+TileNodeEditGraphDelegate::TileNodeEditGraphDelegate() : mbMouseDragging(false), mEditingContext(gEvaluation, false, 1024, 1024), mFrameMin(0), mFrameMax(1)
 {
 	mCategoriesCount = 9;
 	static const char *categories[] = {
@@ -398,7 +398,7 @@ void TileNodeEditGraphDelegate::EditNode()
 					curveEditDelegate.mPointCount++;
 				}
 				float regionWidth = ImGui::GetWindowContentRegionWidth();
-				if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth)))
+				if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth), 974))
 				{
 					for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
 					{
@@ -569,7 +569,7 @@ void TileNodeEditGraphDelegate::SetTime(int time, bool updateDecoder)
 		gEvaluation.SetStageLocalTime(i, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
 	}
 }
-
+/*
 size_t TileNodeEditGraphDelegate::ComputeTimelineLength() const
 {
 	int len = 0;
@@ -581,7 +581,7 @@ size_t TileNodeEditGraphDelegate::ComputeTimelineLength() const
 	}
 	return size_t(len);
 }
-
+*/
 void TileNodeEditGraphDelegate::DoForce()
 {
 	int currentTime = gEvaluationTime;

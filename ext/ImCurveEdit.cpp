@@ -175,8 +175,8 @@ namespace ImCurveEdit
 
                if (distance(io.MousePos.x, io.MousePos.y, pos1.x, pos1.y, pos2.x, pos2.y) < 8.f && localOverCurve == -1)
                {
-                  localOverCurve = c;
-                  overCurve = c;
+                  localOverCurve = int(c);
+                  overCurve = int(c);
                   overCurveOrPoint = true;
                }
 
@@ -242,7 +242,7 @@ namespace ImCurveEdit
          {
             for (size_t p = 0; p < ptCount; p++)
             {
-               delegate.EditPoint(movingCurve, p, rangeToPoint(pointToRange(pts[p]) + io.MouseDelta * sizeOfPixel));
+               delegate.EditPoint(movingCurve, int(p), rangeToPoint(pointToRange(pts[p]) + io.MouseDelta * sizeOfPixel));
             }
          }
          if (!io.MouseDown[0])

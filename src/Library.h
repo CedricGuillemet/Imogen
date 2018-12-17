@@ -196,6 +196,7 @@ struct Material
 
 	std::vector<AnimTrack> mAnimTrack;
 
+	int mFrameMin, mFrameMax;
 
 	MaterialNode* Get(ASyncId id) { return GetByAsyncId(id, mMaterialNodes); }
 

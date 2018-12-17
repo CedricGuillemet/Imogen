@@ -811,6 +811,8 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
 		rug.mComment = rugs[i].mText;
 	}
 	material.mAnimTrack = nodeGraphDelegate.GetAnimTrack();
+	material.mFrameMin = nodeGraphDelegate.mFrameMin;
+	material.mFrameMax = nodeGraphDelegate.mFrameMax;
 }
 
 void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
@@ -855,6 +857,8 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
 		NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
 		NodeGraphUpdateScrolling();
 		nodeGraphDelegate.SetAnimTrack(material.mAnimTrack);
+		nodeGraphDelegate.mFrameMin = material.mFrameMin;
+		nodeGraphDelegate.mFrameMax = material.mFrameMax;
 		nodeGraphDelegate.mEditingContext.RunAll();
 	}
 }
@@ -926,7 +930,9 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
-	virtual int GetFrameCount() const { return int(mNodeGraphDelegate.ComputeTimelineLength()); }
+	virtual int GetFrameMin() const { return gNodeDelegate.mFrameMin; }
+	virtual int GetFrameMax() const { return gNodeDelegate.mFrameMax; }
+
 	virtual int GetItemCount() const { return (int)gEvaluation.GetStagesCount(); }
 
 	virtual int GetItemTypeCount() const { return 0; }
@@ -1084,23 +1090,37 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			static int firstFrame = 0;
 			int currentTime = gEvaluationTime;
 
+			ImGui::PushItemWidth(80);
+			ImGui::PushID(200);
+			ImGui::InputInt("", &gNodeDelegate.mFrameMin, 0, 0);
+			ImGui::PopID();
+			ImGui::SameLine();
 			if (ImGui::Button("<"))
 				currentTime--;
 			ImGui::SameLine();
-			ImGui::PushItemWidth(100);
+			
+			ImGui::PushID(201);
 			if (ImGui::InputInt("", &currentTime, 0, 0, 0))
 			{
 			}
-			ImGui::PopItemWidth();
+			ImGui::PopID();
+			
 			ImGui::SameLine();
 			if (ImGui::Button(">"))
 				currentTime++;
+			ImGui::SameLine();
+			ImGui::PushID(202);
+			ImGui::InputInt("", &gNodeDelegate.mFrameMax, 0, 0);
+			ImGui::PopID();
+			ImGui::SameLine();
+
 			ImGui::SameLine();
 			currentTime = ImMax(currentTime, 0);
 			if (ImGui::Button("Key") && selectedEntry != -1)
 			{
 				nodeGraphDelegate.MakeKey(currentTime, uint32_t(selectedEntry), 0);
 			}
+			ImGui::PopItemWidth();
 			/*
 			if (ImGui::InputInt("", &currentTime, 0, 0, 0))
 			{

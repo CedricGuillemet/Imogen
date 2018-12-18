@@ -123,6 +123,10 @@ namespace ImSequencer
 
         framePixelWidth = ImLerp(framePixelWidth, framePixelWidthTarget, 0.33f);
 
+        frameCount = sequence->GetFrameMax() - sequence->GetFrameMin();
+        if (visibleFrameCount >= frameCount && firstFrame)
+            *firstFrame = sequence->GetFrameMin();
+
 
         // --
         if (expanded && !*expanded)

@@ -84,6 +84,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 	void RemoveAnimation(int nodeIndex);
 	AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
+	Camera *GetCameraParameter(size_t index);
+
 	struct ImogenNode
 	{
 #ifdef _DEBUG

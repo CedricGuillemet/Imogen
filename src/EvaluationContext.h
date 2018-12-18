@@ -64,13 +64,13 @@ protected:
 	void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-
+	void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 	void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 	void RunNode(size_t nodeIndex);
 
 	void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 
-	
+	void BindTextures(const EvaluationStage& evaluationStage, unsigned int program);
 	void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
 	std::vector<std::shared_ptr<RenderTarget> > mStageTarget; // 1 per stage

@@ -22,7 +22,8 @@ void main()
 layout (std140) uniform EvaluationBlock
 {
 	mat4 viewRot;
-
+	mat4 viewProjection;
+	mat4 viewInverse;
 	int targetIndex;
 	int forcedDirty;
 	int	uiPass;
@@ -31,6 +32,8 @@ layout (std140) uniform EvaluationBlock
 	ivec4 inputIndices[2];
 	
 	vec2 viewport;
+	int frame;
+	int localFrame;
 } EvaluationParam;
 
 struct Camera

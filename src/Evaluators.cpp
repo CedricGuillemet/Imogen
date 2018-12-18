@@ -139,7 +139,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 	// GLSL
 	for (auto& file : evaluatorfilenames)
 	{
-		if (file.mEvaluatorType != EVALUATOR_GLSL)
+		if (file.mEvaluatorType != EVALUATOR_GLSL&& file.mEvaluatorType != EVALUATOR_GLSLCOMPUTE)
 			continue;
 		const std::string filename = file.mFilename;
 
@@ -154,6 +154,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 		}
 	}
 
+	// GLSL
 	std::string baseShader = mEvaluatorScripts["Shader.glsl"].mText;
 	for (auto& file : evaluatorfilenames)
 	{
@@ -193,6 +194,41 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
+	// GLSL compute
+	for (auto& file : evaluatorfilenames)
+	{
+		if (file.mEvaluatorType != EVALUATOR_GLSLCOMPUTE)
+			continue;
+		const std::string filename = file.mFilename;
+
+		EvaluatorScript& shader = mEvaluatorScripts[filename];
+		//std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mText);
+		std::string nodeName = ReplaceAll(filename, ".glslc", "");
+		//shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
+
+		unsigned int program = 0;
+		if (nodeName == filename)
+		{
+			// glsl in compute directory
+			nodeName = ReplaceAll(filename, ".glsl", "");
+			program = LoadShader(shader.mText, filename.c_str());
+		}
+		else
+		{
+			program = LoadShaderTransformFeedback(shader.mText, filename.c_str());
+		}
+
+		int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
+		if (parameterBlockIndex != -1)
+			glUniformBlockBinding(program, parameterBlockIndex, 1);
+
+		parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
+		if (parameterBlockIndex != -1)
+			glUniformBlockBinding(program, parameterBlockIndex, 2);
+		shader.mProgram = program;
+		if (shader.mNodeType != -1)
+			mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
+	}
 	// C
 	for (auto& file : evaluatorfilenames)
 	{
@@ -303,6 +339,13 @@ int Evaluators::GetMask(size_t nodeType)
 	if (iter != mEvaluatorScripts.end())
 	{
 		mask |= EvaluationGLSL;
+		iter->second.mNodeType = int(nodeType);
+		mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
+	}
+	iter = mEvaluatorScripts.find(nodeName + ".glslc");
+	if (iter != mEvaluatorScripts.end())
+	{
+		mask |= EvaluationGLSLCompute;
 		iter->second.mNodeType = int(nodeType);
 		mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
 	}

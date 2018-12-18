@@ -334,7 +334,8 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 
 				Vec4 uva(0, 0), uvb(1, 1);
 				Mat4x4* viewMatrix = nodeGraphDelegate.GetParameterViewMatrix(selNode);
-				if (viewMatrix)
+				Camera *nodeCamera = nodeGraphDelegate.GetCameraParameter(selNode);
+				if (viewMatrix && !nodeCamera)
 				{
 					Mat4x4& res = *viewMatrix;
 					Mat4x4 tr, trp, sc;
@@ -388,10 +389,10 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
 	ImGui::PopStyleVar(1);
 
 	static int lastSentExit = -1;
-	if (rc.Contains(io.MousePos) && mouseUVCoord.x >= 0.f && mouseUVCoord.y >= 0.f)
+	if (rc.Contains(io.MousePos))
 	{
 		static Image pickerImage;
-		if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1)
+		if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1 && mouseUVCoord.x >= 0.f && mouseUVCoord.y >= 0.f)
 		{
 			if (!pickerImage.GetBits())
 			{
@@ -1229,6 +1230,10 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			if (ImGui::Button(">|"))
 				currentTime = gNodeDelegate.mFrameMax;
 			ImGui::SameLine();
+			extern bool gbIsPlaying;
+			if (ImGui::Button(gbIsPlaying ? "Stop" : "Play"))
+				gbIsPlaying = !gbIsPlaying;
+			ImGui::SameLine();
 			ImGui::PushID(202);
 			ImGui::InputInt("", &gNodeDelegate.mFrameMax, 0, 0);
 			ImGui::PopID();
@@ -1245,7 +1250,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			{
 			}
 			*/
-			
+
 			Sequencer(&mySequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
 			if (selectedEntry != -1)
 			{
@@ -1340,6 +1345,8 @@ void Imogen::Init()
 	DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
 	DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
 	DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
+	DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+	DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
 }
 
 void Imogen::Finish()

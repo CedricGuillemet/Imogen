@@ -67,6 +67,8 @@ struct Camera
 		}
 		return mPosition[0];
 	}
+
+	void ComputeViewProjectionMatrix(float *viewProj, float *viewInverse);
 };
 inline Camera Lerp(Camera a, Camera b, float t) { return a.Lerp(b, t); }
 
@@ -279,7 +281,6 @@ enum ConTypes
 	Con_Camera,
 	Con_Any,
 };
-
 
 size_t GetParameterTypeSize(ConTypes paramType);
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);

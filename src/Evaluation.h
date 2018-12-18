@@ -70,6 +70,8 @@ enum EvaluationStatus
 struct EvaluationInfo
 {
 	float viewRot[16];
+	float viewProjection[16];
+	float viewInverse[16];
 
 	int targetIndex;
 	int forcedDirty;
@@ -80,8 +82,8 @@ struct EvaluationInfo
 	float pad2[4];
 	
 	float viewport[2];
-	size_t mFrame;
-	size_t mLocalFrame;
+	int mFrame;
+	int mLocalFrame;
 };
 
 struct TextureFormat
@@ -199,6 +201,7 @@ enum EvaluationMask
 	EvaluationC = 1 << 0,
 	EvaluationGLSL = 1 << 1,
 	EvaluationPython = 1 << 2,
+	EvaluationGLSLCompute = 1 << 3,
 };
 
 // simple API

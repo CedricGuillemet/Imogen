@@ -85,7 +85,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
     Camera *GetCameraParameter(size_t index);
-
+    float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
     struct ImogenNode
     {
 #ifdef _DEBUG

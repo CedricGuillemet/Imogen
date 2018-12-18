@@ -387,7 +387,7 @@ namespace ImSequencer
                 if (localCustomHeight > 0)
                 {
                     ImVec2 rp(canvas_pos.x, contentMin.y + ItemHeight * i + 1 + customHeight);
-                    ImRect customRect(rp + ImVec2(legendWidth - (firstFrameUsed - sequence->GetFrameMin() - 0.5f) * framePixelWidth, 0),
+                    ImRect customRect(rp + ImVec2(legendWidth - (firstFrameUsed - sequence->GetFrameMin() - 0.5f) * framePixelWidth, ItemHeight),
                         rp + ImVec2(legendWidth + (sequence->GetFrameMax() - firstFrameUsed - 0.5f) * framePixelWidth, float(localCustomHeight)));
                     ImRect clippingRect(rp + ImVec2(float(legendWidth), float(ItemHeight)), rp + ImVec2(canvas_size.x, float(localCustomHeight)));
                     ImRect legendRect(rp + ImVec2(0.f, float(ItemHeight)), rp + ImVec2(float(legendWidth), float(localCustomHeight)));

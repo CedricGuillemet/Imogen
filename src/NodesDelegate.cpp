@@ -904,3 +904,45 @@ Camera *TileNodeEditGraphDelegate::GetCameraParameter(size_t index)
     return NULL;
 }
 
+float TileNodeEditGraphDelegate::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)
+{
+    auto& node = mNodes[index];
+    size_t paramOffset = GetParameterOffset(node.mType, parameterIndex);
+    unsigned char *ptr = &node.mParameters.data()[paramOffset];
+    const MetaNode* metaNodes = gMetaNodes.data();
+    const MetaNode& currentMeta = metaNodes[node.mType];
+    switch (currentMeta.mParams[parameterIndex].mType)
+    {
+    case Con_Angle:
+    case Con_Float:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle2:
+    case Con_Float2:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle3:
+    case Con_Float3:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle4:
+    case Con_Color4:
+    case Con_Float4:
+        return ((float*)ptr)[componentIndex];
+    case Con_Ramp:
+        return 0;
+    case Con_Ramp4:
+        return 0;
+    case Con_Enum:
+    case Con_Int:
+        return float(((int*)ptr)[componentIndex]);
+    case Con_Int2:
+        return float(((int*)ptr)[componentIndex]);
+    case Con_FilenameRead:
+    case Con_FilenameWrite:
+        return 0;
+    case Con_ForceEvaluate:
+        return 0;
+    case Con_Bool:
+        return float(((bool*)ptr)[componentIndex]);
+    case Con_Camera:
+        return float((*(Camera*)ptr)[componentIndex]);
+    }
+}

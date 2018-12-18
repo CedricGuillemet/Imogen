@@ -921,60 +921,107 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
-    AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) : mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible)
+    AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) : 
+        mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible), mNodeIndex(nodeIndex)
     {
-        auto type = gNodeDelegate.mNodes[nodeIndex].mType;
+        size_t type = gNodeDelegate.mNodes[nodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
-        int parameterIndex = 0;
+        std::vector<bool> parameterAddressed(metaNode.mParams.size(), false);
+
+        auto curveForParameter = [&](int parameterIndex, ConTypes type, AnimationBase * animation) {
+            const std::string & parameterName = metaNode.mParams[parameterIndex].mName;
+            size_t curveCountPerParameter = GetCurveCountPerParameterType(type);
+            parameterAddressed[parameterIndex] = true;
+            for (size_t curveIndex = 0; curveIndex < curveCountPerParameter; curveIndex++)
+            {
+                std::vector<ImVec2> curvePts;
+                if (!animation || animation->mFrames.empty())
+                {
+                    curvePts.resize(2);
+                    auto& node = gNodeDelegate.mNodes[mNodeIndex];
+                    float value = gNodeDelegate.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
+                    curvePts[0] = ImVec2(float(node.mStartFrame), value);
+                    curvePts[1] = ImVec2(float(node.mEndFrame), value);
+                }
+                else
+                {
+                    size_t ptCount = animation->mFrames.size();
+                    curvePts.resize(ptCount);
+                    for (size_t i = 0; i < ptCount; i++)
+                    {
+                        curvePts[i] = ImVec2(float(animation->mFrames[i]), animation->GetFloatValue(uint32_t(i), int(curveIndex)));
+                    }
+                }
+                mPts.push_back(curvePts);
+                mValueType.push_back(type);
+                mParameterIndex.push_back(parameterIndex);
+                mComponentIndex.push_back(uint32_t(curveIndex));
+                mLabels.push_back(parameterName + GetCurveParameterSuffix(type, int(curveIndex)));
+            }
+        };
+
         for (auto& track : mAnimTrack)
         {
             if (track.mNodeIndex != nodeIndex)
                 continue;
-            if (track.mAnimation->mFrames.empty())
+            curveForParameter(track.mParamIndex, ConTypes(track.mValueType), track.mAnimation);
+        }
+        // non keyed parameters
+        for (size_t param = 0; param < metaNode.mParams.size(); param++)
+        {
+            if (parameterAddressed[param])
                 continue;
-            const std::string & parameterName = metaNode.mParams[parameterIndex].mName;
-
-            auto& animation = track.mAnimation;
-            size_t curveCountPerParameter = GetCurveCountPerParameterType(track.mValueType);
-            for (size_t curveIndex = 0; curveIndex < curveCountPerParameter; curveIndex++)
-            {
-                std::vector<ImVec2> curvePts;
-                size_t ptCount = animation->mFrames.size();
-                curvePts.resize(ptCount);
-                for (size_t i = 0; i < ptCount; i++)
-                {
-                    curvePts[i] = ImVec2(float(animation->mFrames[i]), animation->GetFloatValue(uint32_t(i), int(curveIndex)));
-                }
-                mPts.push_back(curvePts);
-                mLabels.push_back(parameterName + GetCurveParameterSuffix(track.mValueType, int(curveIndex)));
-            }
-            parameterIndex++;
+            curveForParameter(int(param), metaNode.mParams[param].mType, nullptr);
         }
     }
-    
+
+    void BakeValuesToAnimationTrack()
+    {
+        size_t type = gNodeDelegate.mNodes[mNodeIndex].mType;
+        const MetaNode& metaNode = gMetaNodes[type];
+
+        auto iter = mAnimTrack.begin();
+        for (; iter != mAnimTrack.end();)
+        {
+            if (iter->mNodeIndex == mNodeIndex)
+            {
+                delete iter->mAnimation;
+                iter = mAnimTrack.erase(iter);
+            }
+            else
+                ++iter;
+        }
+
+
+        for (size_t curve = 0; curve < mPts.size(); curve++)
+        {
+            AnimTrack animTrack;
+            animTrack.mNodeIndex = mNodeIndex;
+            animTrack.mParamIndex = mParameterIndex[curve];
+            animTrack.mValueType = mValueType[curve];
+            animTrack.mAnimation = AllocateAnimation(mValueType[curve]);
+            size_t keyCount = mPts[curve].size();
+            auto anim = animTrack.mAnimation;
+            anim->mFrames.resize(keyCount);
+            anim->Allocate(keyCount);
+            for (size_t key = 0; key < keyCount; key++)
+            {
+                ImVec2 keyValue = mPts[curve][key];
+                anim->mFrames[key] = uint32_t(keyValue.x);
+                anim->SetFloatValue(uint32_t(key), mComponentIndex[curve], keyValue.y);
+            }
+            mAnimTrack.push_back(animTrack);
+        }
+    }
+
     virtual ImVec2 GetRange() { return mMax - mMin; }
     virtual ImVec2 GetMin() { return mMin; }
-
     virtual unsigned int GetBackgroundColor() { return 0x00202020; }
     virtual bool IsVisible(size_t curveIndex) { return mbVisible[curveIndex]; }
-    size_t GetCurveCount()
-    {
-        return mPts.size();
-    }
-
-    size_t GetPointCount(size_t curveIndex)
-    {
-        return mPts[curveIndex].size();
-    }
-
-    uint32_t GetCurveColor(size_t curveIndex)
-    {
-        return 0xFFAAAAAA;
-    }
-    ImVec2* GetPoints(size_t curveIndex)
-    {
-        return mPts[curveIndex].data();
-    }
+    size_t GetCurveCount() { return mPts.size(); }
+    size_t GetPointCount(size_t curveIndex) { return mPts[curveIndex].size(); }
+    uint32_t GetCurveColor(size_t curveIndex) { return 0xFFAAAAAA; }
+    ImVec2* GetPoints(size_t curveIndex) { return mPts[curveIndex].data(); }
 
     virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
     {
@@ -987,6 +1034,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         }
         return pointIndex;
     }
+
     virtual void AddPoint(size_t curveIndex, ImVec2 value)
     {
         mPts[curveIndex].push_back(value);
@@ -998,12 +1046,24 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         mPts[curveIndex].erase(mPts[curveIndex].begin() + pointIndex);
         SortValues(curveIndex);
     }
-    
+
+    virtual void BeginEditing() 
+    {
+    }
+
+    virtual void EndEditing() 
+    {
+    }
+
     std::vector<std::vector<ImVec2>> mPts;
     std::vector<std::string> mLabels;
     std::vector<AnimTrack>& mAnimTrack;
+    std::vector<uint32_t> mValueType;
+    std::vector<uint32_t> mParameterIndex;
+    std::vector<uint32_t> mComponentIndex;
     std::vector<bool>& mbVisible;
     ImVec2 mMin, mMax;
+    int mNodeIndex;
 
 private:
     void SortValues(size_t curveIndex)
@@ -1011,6 +1071,7 @@ private:
         auto b = std::begin(mPts[curveIndex]);
         auto e = std::end(mPts[curveIndex]);
         std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
+        BakeValuesToAnimationTrack();
     }
 };
 
@@ -1111,7 +1172,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
     ImGuiIO& io = ImGui::GetIO();
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(io.DisplaySize);
-    if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus))
     {
         static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
         ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
@@ -1281,7 +1342,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
                 extraction.mFirstFrame = false;
                 ImGui::SetNextWindowSize(ImVec2(256, 256));
             }
-            ImGui::SetNextWindowFocus();
+            //ImGui::SetNextWindowFocus();
             if (ImGui::Begin(tmps, &open))
             {
                 RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, false);

@@ -30,7 +30,9 @@
 #include <stdint.h>
 #include <string>
 #include <map>
+#include <memory>
 #include "Utils.h"
+#include <assert.h>
 
 struct Camera
 {
@@ -143,14 +145,24 @@ struct MaterialConnection
 
 struct AnimationBase 
 {
+    AnimationBase() {}
+    AnimationBase(const AnimationBase&& animation)
+    {
+        mFrames = animation.mFrames;
+    }
+    AnimationBase(const AnimationBase& animation)
+    {
+        mFrames = animation.mFrames;
+    }
     std::vector<uint32_t> mFrames;
 
-    virtual void Allocate(size_t elementCount) = 0;
-    virtual void* GetData() = 0;
-    virtual size_t GetValuesByteLength() const = 0;
-    virtual void GetValue(uint32_t frame, void *destination) = 0;
-    virtual void SetValue(uint32_t frame, void *source) = 0;
-    virtual float GetFloatValue(uint32_t index, int componentIndex) = 0;
+    virtual void Allocate(size_t elementCount) { assert(0); }
+    virtual void* GetData() { assert(0); return nullptr; }
+    virtual size_t GetValuesByteLength() const { assert(0); return 0; }
+    virtual void GetValue(uint32_t frame, void *destination) { assert(0); }
+    virtual void SetValue(uint32_t frame, void *source) { assert(0); }
+    virtual float GetFloatValue(uint32_t index, int componentIndex) { assert(0); return 0.f; }
+    virtual void SetFloatValue(uint32_t index, int componentIndex, float value) { assert(0); }
     struct AnimationPointer
     {
         uint32_t mPreviousIndex;
@@ -164,6 +176,15 @@ struct AnimationBase
 
 template<typename T> struct Animation : public AnimationBase
 {
+    Animation() {}
+    Animation(const Animation&& animation) : AnimationBase(animation)
+    {
+        mValues = animation.mValues;
+    }
+    Animation(const Animation& animation) : AnimationBase(animation)
+    {
+        mValues = animation.mValues;
+    }
     std::vector<T> mValues;
 
     virtual void Allocate(size_t elementCount) 
@@ -180,12 +201,20 @@ template<typename T> struct Animation : public AnimationBase
         return GetComponent(componentIndex, v);
     }
 
+    virtual void SetFloatValue(uint32_t index, int componentIndex, float value)
+    {
+        unsigned char*ptr = (unsigned char*)GetData();
+        T& v = ((T*)ptr)[index];
+        SetComponent(componentIndex, v, value);
+    }
+
     virtual void GetValue(uint32_t frame, void *destination) 
     {
         auto pointer = GetPointer(frame, false);
         T *dest = (T*)destination;
         *dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
     }
+
     virtual void SetValue(uint32_t frame, void *source) 
     {
         auto pointer = GetPointer(frame, true);
@@ -200,12 +229,16 @@ template<typename T> struct Animation : public AnimationBase
             mValues.insert(mValues.begin() + pointer.mPreviousIndex, value);
         }
     }
+
 protected:
     template<typename T> float GetComponent(int componentIndex, T& v)
     {
         return float(v[componentIndex]);
     }
-
+    template<typename T> void SetComponent(int componentIndex, T& v, float value)
+    {
+        v[componentIndex] = decltype(v[componentIndex])(value);
+    }
     float GetComponent(int componentIndex, unsigned char& v)
     {
         return float(v);
@@ -218,6 +251,18 @@ protected:
     {
         return v;
     }
+    void SetComponent(int componentIndex, unsigned char& v, float value)
+    {
+        v = unsigned char(value);
+    }
+    void SetComponent(int componentIndex, int& v, float value)
+    {
+        v = int(value);
+    }
+    void SetComponent(int componentIndex, float& v, float value)
+    {
+        v = value;
+    }
 };
 
 struct AnimTrack
@@ -225,7 +270,7 @@ struct AnimTrack
     uint32_t mNodeIndex;
     uint32_t mParamIndex;
     uint32_t mValueType; // Con_
-    AnimationBase *mAnimation;
+    AnimationBase* mAnimation;
 };
 
 struct Material

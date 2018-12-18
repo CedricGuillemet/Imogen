@@ -378,6 +378,7 @@ size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex)
         if (i == parameterIndex)
             break;
         ret += GetParameterTypeSize(param.mType);
+        i++;
     }
     return ret;
 }

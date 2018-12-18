@@ -207,31 +207,45 @@ namespace ImCurveEdit
          overCurve = -1;
 
       // move selection
+      static bool pointsMoved = false;
       if (overSelectedPoint && io.MouseDown[0])
       {
-         auto prevSelection = selection;
-         for (auto& sel : prevSelection)
-         {
-            const ImVec2* pts = delegate.GetPoints(sel.curveIndex);
-            const ImVec2 p = rangeToPoint(pointToRange(pts[sel.pointIndex]) + io.MouseDelta * sizeOfPixel);
-            const int newIndex = delegate.EditPoint(sel.curveIndex, sel.pointIndex, p);
-            if (newIndex != sel.pointIndex)
-            {
-               selection.erase(sel);
-               selection.insert({ sel.curveIndex, newIndex });
-            }
-         }
+          if (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f && !selection.empty())
+          {
+              delegate.BeginEditing();
+              pointsMoved = true;
+              auto prevSelection = selection;
+              for (auto& sel : prevSelection)
+              {
+                  const ImVec2* pts = delegate.GetPoints(sel.curveIndex);
+                  const ImVec2 p = rangeToPoint(pointToRange(pts[sel.pointIndex]) + io.MouseDelta * sizeOfPixel);
+                  const int newIndex = delegate.EditPoint(sel.curveIndex, sel.pointIndex, p);
+                  if (newIndex != sel.pointIndex)
+                  {
+                      selection.erase(sel);
+                      selection.insert({ sel.curveIndex, newIndex });
+                  }
+              }
+          }
       }
 
-
       if (overSelectedPoint && !io.MouseDown[0])
-         overSelectedPoint = false;
+      {
+          overSelectedPoint = false;
+          if (pointsMoved)
+          {
+              pointsMoved = false;
+              delegate.EndEditing();
+          }
+      }
 
       // add point
       if (overCurve != -1 && io.MouseDoubleClicked[0])
       {
          const ImVec2 np = rangeToPoint((io.MousePos - offset) / ssizeScaled);
+         delegate.BeginEditing();
          delegate.AddPoint(overCurve, np);
+         delegate.EndEditing();
       }
 
       // move curve
@@ -247,11 +261,15 @@ namespace ImCurveEdit
             }
          }
          if (!io.MouseDown[0])
-            movingCurve = -1;
+         {
+             movingCurve = -1;
+             delegate.EndEditing();
+         }
       }
       if (movingCurve == -1 && overCurve != -1 && ImGui::IsMouseClicked(0) && selection.empty() && !selectingQuad)
       {
          movingCurve = overCurve;
+         delegate.BeginEditing();
       }
 
       // quad selection

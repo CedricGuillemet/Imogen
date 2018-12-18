@@ -1209,6 +1209,9 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			ImGui::InputInt("", &gNodeDelegate.mFrameMin, 0, 0);
 			ImGui::PopID();
 			ImGui::SameLine();
+			if (ImGui::Button("|<"))
+				currentTime = gNodeDelegate.mFrameMin;
+			ImGui::SameLine();
 			if (ImGui::Button("<"))
 				currentTime--;
 			ImGui::SameLine();
@@ -1223,13 +1226,15 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 			if (ImGui::Button(">"))
 				currentTime++;
 			ImGui::SameLine();
+			if (ImGui::Button(">|"))
+				currentTime = gNodeDelegate.mFrameMax;
+			ImGui::SameLine();
 			ImGui::PushID(202);
 			ImGui::InputInt("", &gNodeDelegate.mFrameMax, 0, 0);
 			ImGui::PopID();
 			ImGui::SameLine();
-
-			ImGui::SameLine();
 			currentTime = ImMax(currentTime, 0);
+			ImGui::SameLine();
 			if (ImGui::Button("Key") && selectedEntry != -1)
 			{
 				nodeGraphDelegate.MakeKey(currentTime, uint32_t(selectedEntry), 0);

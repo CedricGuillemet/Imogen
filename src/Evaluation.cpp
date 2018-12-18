@@ -33,12 +33,12 @@
 int Image_t::imageCount = 0;
 Evaluation::Evaluation() : mProgressShader(0), mDisplayCubemapShader(0), mNodeErrorShader(0)
 {
-	
+    
 }
 
 void Evaluation::Init()
 {
-	APIInit();
+    APIInit();
 }
 
 void Evaluation::Finish()
@@ -48,180 +48,180 @@ void Evaluation::Finish()
 
 void Evaluation::AddSingleEvaluation(size_t nodeType)
 {
-	EvaluationStage evaluation;
+    EvaluationStage evaluation;
 #ifdef _DEBUG
-	evaluation.mNodeTypename		= gMetaNodes[nodeType].mName;;
+    evaluation.mNodeTypename        = gMetaNodes[nodeType].mName;;
 #endif
-	evaluation.mDecoder				= NULL;
-	evaluation.mUseCountByOthers	= 0;
-	evaluation.mNodeType			= nodeType;
-	evaluation.mParametersBuffer	= 0;
-	evaluation.mBlendingSrc			= ONE;
-	evaluation.mBlendingDst			= ZERO;
-	evaluation.mLocalTime			= 0;
-	evaluation.gEvaluationMask		= gEvaluators.GetMask(nodeType);
-	mStages.push_back(evaluation);
+    evaluation.mDecoder                = NULL;
+    evaluation.mUseCountByOthers    = 0;
+    evaluation.mNodeType            = nodeType;
+    evaluation.mParametersBuffer    = 0;
+    evaluation.mBlendingSrc            = ONE;
+    evaluation.mBlendingDst            = ZERO;
+    evaluation.mLocalTime            = 0;
+    evaluation.gEvaluationMask        = gEvaluators.GetMask(nodeType);
+    mStages.push_back(evaluation);
 }
 
 void Evaluation::StageIsAdded(int index)
 {
-	for (size_t i = 0;i< gEvaluation.mStages.size();i++)
-	{
-		if (i == index)
-			continue;
-		auto& evaluation = gEvaluation.mStages[i];
-		for (auto& inp : evaluation.mInput.mInputs)
-		{
-			if (inp >= index)
-				inp++;
-		}
-	}
+    for (size_t i = 0;i< gEvaluation.mStages.size();i++)
+    {
+        if (i == index)
+            continue;
+        auto& evaluation = gEvaluation.mStages[i];
+        for (auto& inp : evaluation.mInput.mInputs)
+        {
+            if (inp >= index)
+                inp++;
+        }
+    }
 }
 
 void Evaluation::StageIsDeleted(int index)
 {
-	EvaluationStage& ev = gEvaluation.mStages[index];
-	ev.Clear();
+    EvaluationStage& ev = gEvaluation.mStages[index];
+    ev.Clear();
 
-	// shift all connections
-	for (auto& evaluation : gEvaluation.mStages)
-	{
-		for (auto& inp : evaluation.mInput.mInputs)
-		{
-			if (inp >= index)
-				inp--;
-		}
-	}
+    // shift all connections
+    for (auto& evaluation : gEvaluation.mStages)
+    {
+        for (auto& inp : evaluation.mInput.mInputs)
+        {
+            if (inp >= index)
+                inp--;
+        }
+    }
 }
 
 void Evaluation::UserAddEvaluation(size_t nodeType)
 {
-	URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()), []() {return &gEvaluation.mStages; },
-		StageIsDeleted, StageIsAdded);
+    URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()), []() {return &gEvaluation.mStages; },
+        StageIsDeleted, StageIsAdded);
 
-	AddSingleEvaluation(nodeType);
+    AddSingleEvaluation(nodeType);
 }
 
 void Evaluation::UserDeleteEvaluation(size_t target)
 {
-	URDel<EvaluationStage> undoRedoDelStage(int(target), []() {return &gEvaluation.mStages; },
-		StageIsDeleted, StageIsAdded);
+    URDel<EvaluationStage> undoRedoDelStage(int(target), []() {return &gEvaluation.mStages; },
+        StageIsDeleted, StageIsAdded);
 
-	StageIsDeleted(int(target));
-	mStages.erase(mStages.begin() + target);
+    StageIsDeleted(int(target));
+    mStages.erase(mStages.begin() + target);
 }
 
 void Evaluation::SetEvaluationParameters(size_t target, const std::vector<unsigned char> &parameters)
 {
-	EvaluationStage& stage = mStages[target];
-	stage.mParameters = parameters;
+    EvaluationStage& stage = mStages[target];
+    stage.mParameters = parameters;
 
-	if (stage.gEvaluationMask&EvaluationGLSL)
-		BindGLSLParameters(stage);
-	if (stage.mDecoder)
-		stage.mDecoder = NULL;
+    if (stage.gEvaluationMask&EvaluationGLSL)
+        BindGLSLParameters(stage);
+    if (stage.mDecoder)
+        stage.mDecoder = NULL;
 }
 
 void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
 {
-	mStages[target].mInputSamplers = inputSamplers;
-	gCurrentContext->SetTargetDirty(target);
+    mStages[target].mInputSamplers = inputSamplers;
+    gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
 {
-	if (mStages[target].mInput.mInputs[slot] == source)
-		return;
-	mStages[target].mInput.mInputs[slot] = source;
-	mStages[source].mUseCountByOthers++;
-	gCurrentContext->SetTargetDirty(target);
+    if (mStages[target].mInput.mInputs[slot] == source)
+        return;
+    mStages[target].mInput.mInputs[slot] = source;
+    mStages[source].mUseCountByOthers++;
+    gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::DelEvaluationInput(size_t target, int slot)
 {
-	mStages[mStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
-	mStages[target].mInput.mInputs[slot] = -1;
-	gCurrentContext->SetTargetDirty(target);
+    mStages[mStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
+    mStages[target].mInput.mInputs[slot] = -1;
+    gCurrentContext->SetTargetDirty(target);
 }
 
 void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 {
-	mEvaluationOrderList = nodeOrderList;
+    mEvaluationOrderList = nodeOrderList;
 }
 
 void Evaluation::Clear()
 {
-	for (auto& ev : mStages)
-		ev.Clear();
+    for (auto& ev : mStages)
+        ev.Clear();
 
-	mStages.clear();
-	mEvaluationOrderList.clear();
+    mStages.clear();
+    mEvaluationOrderList.clear();
 }
 
 void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown)
 {
-	for (auto& ev : mStages)
-	{
-		ev.mRx = -9999.f;
-		ev.mRy = -9999.f;
-		ev.mLButDown = false;
-		ev.mRButDown = false;
-	}
-	auto& ev = mStages[target];
-	ev.mRx = rx;
-	ev.mRy = 1.f - ry; // inverted for UI
-	ev.mLButDown = lButDown;
-	ev.mRButDown = rButDown;
+    for (auto& ev : mStages)
+    {
+        ev.mRx = -9999.f;
+        ev.mRy = -9999.f;
+        ev.mLButDown = false;
+        ev.mRButDown = false;
+    }
+    auto& ev = mStages[target];
+    ev.mRx = rx;
+    ev.mRy = 1.f - ry; // inverted for UI
+    ev.mLButDown = lButDown;
+    ev.mRButDown = rButDown;
 }
 
 size_t Evaluation::GetEvaluationImageDuration(size_t target)
 {
-	auto& stage = mStages[target];
-	if (!stage.mDecoder)
-		return 1;
-	if (stage.mDecoder->mFrameCount > 2000)
-	{
-		int a = 1;
-	}
-	return stage.mDecoder->mFrameCount;
+    auto& stage = mStages[target];
+    if (!stage.mDecoder)
+        return 1;
+    if (stage.mDecoder->mFrameCount > 2000)
+    {
+        int a = 1;
+    }
+    return stage.mDecoder->mFrameCount;
 }
 
 void Evaluation::SetStageLocalTime(size_t target, int localTime, bool updateDecoder)
 {
-	auto& stage = mStages[target];
-	int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
-	if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
-	{
-		stage.mLocalTime = newLocalTime;
-		Image_t image = stage.DecodeImage();
-		SetEvaluationImage(int(target), &image);
-		FreeImage(&image);
-	}
-	else
-	{
-		stage.mLocalTime = newLocalTime;
-	}
+    auto& stage = mStages[target];
+    int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
+    if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
+    {
+        stage.mLocalTime = newLocalTime;
+        Image_t image = stage.DecodeImage();
+        SetEvaluationImage(int(target), &image);
+        FreeImage(&image);
+    }
+    else
+    {
+        stage.mLocalTime = newLocalTime;
+    }
 }
 
 int Evaluation::Evaluate(int target, int width, int height, Image *image)
 {
-	EvaluationContext *previousContext = gCurrentContext;
-	EvaluationContext context(gEvaluation, true, width, height);
-	gCurrentContext = &context;
-	context.RunBackward(target);
-	GetEvaluationImage(target, image);
-	gCurrentContext = previousContext;
-	return EVAL_OK;
+    EvaluationContext *previousContext = gCurrentContext;
+    EvaluationContext context(gEvaluation, true, width, height);
+    gCurrentContext = &context;
+    context.RunBackward(target);
+    GetEvaluationImage(target, image);
+    gCurrentContext = previousContext;
+    return EVAL_OK;
 }
 
 FFMPEGCodec::Decoder* Evaluation::FindDecoder(const std::string& filename)
 {
-	for (auto& evaluation : mStages)
-	{
-		if (evaluation.mDecoder && evaluation.mDecoder->GetFilename() == filename)
-			return evaluation.mDecoder.get();
-	}
-	auto decoder = new FFMPEGCodec::Decoder;
-	decoder->Open(filename);
-	return decoder;
+    for (auto& evaluation : mStages)
+    {
+        if (evaluation.mDecoder && evaluation.mDecoder->GetFilename() == filename)
+            return evaluation.mDecoder.get();
+    }
+    auto decoder = new FFMPEGCodec::Decoder;
+    decoder->Open(filename);
+    return decoder;
 }

@@ -28,60 +28,60 @@
 
 struct EvaluationContext
 {
-	EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
-	~EvaluationContext();
+    EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
+    ~EvaluationContext();
 
-	void RunAll();
-	void RunBackward(size_t nodeIndex);
-	void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
-	void RunDirty();
+    void RunAll();
+    void RunBackward(size_t nodeIndex);
+    void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
+    void RunDirty();
 
-	unsigned int GetEvaluationTexture(size_t target);
-	std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
-	{ 
-		if (target >= mStageTarget.size())
-			return NULL;
-		return mStageTarget[target]; 
-	}
+    unsigned int GetEvaluationTexture(size_t target);
+    std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
+    { 
+        if (target >= mStageTarget.size())
+            return NULL;
+        return mStageTarget[target]; 
+    }
 
-	FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
-	bool IsSynchronous() const { return mbSynchronousEvaluation; }
-	void SetTargetDirty(size_t target, bool onlyChild = false);
+    FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
+    bool IsSynchronous() const { return mbSynchronousEvaluation; }
+    void SetTargetDirty(size_t target, bool onlyChild = false);
 
-	bool StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return false; return mbProcessing[target]; }
-	void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(gEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
+    bool StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return false; return mbProcessing[target]; }
+    void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(gEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
 
-	void AllocRenderTargetsForEditingPreview();
+    void AllocRenderTargetsForEditingPreview();
 
-	// edit context only
-	void UserAddStage();
-	void UserDeleteStage(size_t index);
+    // edit context only
+    void UserAddStage();
+    void UserDeleteStage(size_t index);
 
 protected:
-	Evaluation& gEvaluation;
+    Evaluation& gEvaluation;
 
-	void PreRun();
-	void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-	void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-	void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-	void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-	void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
-	void RunNode(size_t nodeIndex);
+    void PreRun();
+    void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+    void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
+    void RunNode(size_t nodeIndex);
 
-	void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
+    void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 
-	void BindTextures(const EvaluationStage& evaluationStage, unsigned int program);
-	void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
+    void BindTextures(const EvaluationStage& evaluationStage, unsigned int program);
+    void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
-	std::vector<std::shared_ptr<RenderTarget> > mStageTarget; // 1 per stage
-	std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
-	std::vector<bool> mbDirty;
-	std::vector<bool> mbProcessing;
-	EvaluationInfo mEvaluationInfo;
+    std::vector<std::shared_ptr<RenderTarget> > mStageTarget; // 1 per stage
+    std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
+    std::vector<bool> mbDirty;
+    std::vector<bool> mbProcessing;
+    EvaluationInfo mEvaluationInfo;
 
-	int mDefaultWidth;
-	int mDefaultHeight;
-	bool mbSynchronousEvaluation;
+    int mDefaultWidth;
+    int mDefaultHeight;
+    bool mbSynchronousEvaluation;
 };
 
 extern EvaluationContext *gCurrentContext;

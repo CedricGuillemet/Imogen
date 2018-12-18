@@ -32,49 +32,49 @@
 
 struct Evaluator
 {
-	Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0) {}
-	unsigned int mGLSLProgram;
-	int(*mCFunction)(void *parameters, void *evaluationInfo);
-	void *mMem;
-	pybind11::module mPyModule;
+    Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0) {}
+    unsigned int mGLSLProgram;
+    int(*mCFunction)(void *parameters, void *evaluationInfo);
+    void *mMem;
+    pybind11::module mPyModule;
 
-	void RunPython() const;
+    void RunPython() const;
 
 #ifdef _DEBUG
-	std::string mName;
+    std::string mName;
 #endif
 };
 
 struct Evaluators
 {
-	Evaluators() : gEvaluationStateGLSLBuffer(0) {}
-	void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
-	std::string GetEvaluator(const std::string& filename);
-	int GetMask(size_t nodeType);
-	void ClearEvaluators();
+    Evaluators() : gEvaluationStateGLSLBuffer(0) {}
+    void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
+    std::string GetEvaluator(const std::string& filename);
+    int GetMask(size_t nodeType);
+    void ClearEvaluators();
 
-	const Evaluator& GetEvaluator(size_t nodeType) const { return mEvaluatorPerNodeType[nodeType]; }
+    const Evaluator& GetEvaluator(size_t nodeType) const { return mEvaluatorPerNodeType[nodeType]; }
 
-	unsigned int gEvaluationStateGLSLBuffer;
-	pybind11::module mImogenModule;
+    unsigned int gEvaluationStateGLSLBuffer;
+    pybind11::module mImogenModule;
 protected:
 
-	struct EvaluatorScript
-	{
-		EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
-		EvaluatorScript(const std::string & text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
-		std::string mText;
-		unsigned int mProgram;
-		int(*mCFunction)(void *parameters, void *evaluationInfo);
-		void *mMem;
-		int mNodeType;
-		pybind11::module mPyModule;
-		
-	};
+    struct EvaluatorScript
+    {
+        EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
+        EvaluatorScript(const std::string & text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
+        std::string mText;
+        unsigned int mProgram;
+        int(*mCFunction)(void *parameters, void *evaluationInfo);
+        void *mMem;
+        int mNodeType;
+        pybind11::module mPyModule;
+        
+    };
 
-	std::map<std::string, EvaluatorScript> mEvaluatorScripts;
-	std::vector<Evaluator> mEvaluatorPerNodeType;
-	
+    std::map<std::string, EvaluatorScript> mEvaluatorScripts;
+    std::vector<Evaluator> mEvaluatorPerNodeType;
+    
 };
 
 extern Evaluators gEvaluators;

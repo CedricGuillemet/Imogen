@@ -214,8 +214,8 @@ void TileNodeEditGraphDelegate::AddSingleNode(size_t type)
     ImogenNode node;
     node.mRuntimeUniqueId = GetRuntimeId();
     node.mType = type;
-    node.mStartFrame = 0;
-    node.mEndFrame = 0;
+    node.mStartFrame = mFrameMin;
+    node.mEndFrame = mFrameMax;
 #ifdef _DEBUG
     node.mNodeTypename = gMetaNodes[type].mName;
 #endif

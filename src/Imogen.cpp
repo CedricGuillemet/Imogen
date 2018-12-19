@@ -1294,7 +1294,21 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             ImGui::SameLine();
             extern bool gbIsPlaying;
             if (ImGui::Button(gbIsPlaying ? "Stop" : "Play"))
+            {
+                if (!gbIsPlaying)
+                {
+                    currentTime = gNodeDelegate.mFrameMin;
+                }
                 gbIsPlaying = !gbIsPlaying;
+            }
+            extern bool gPlayLoop;
+            unsigned int playNoLoopTextureId = evaluation.GetTexture("Stock/PlayNoLoop.png");
+            unsigned int playLoopTextureId = evaluation.GetTexture("Stock/PlayLoop.png");
+
+            ImGui::SameLine();
+            if (ImGui::ImageButton((ImTextureID)(uint64_t)(gPlayLoop ? playLoopTextureId : playNoLoopTextureId), ImVec2(16.f, 16.f)))
+                gPlayLoop = !gPlayLoop;
+
             ImGui::SameLine();
             ImGui::PushID(202);
             ImGui::InputInt("", &gNodeDelegate.mFrameMax, 0, 0);
@@ -1308,12 +1322,19 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             }
 
             ImGui::SameLine(0, 50.f);
-            ImGui::PushItemWidth(120);
+            
             float keyValue[2];
-            if (ImGui::InputFloat2("Key", keyValue))
+            ImGui::PushID(203);
+            if (ImGui::InputFloat("", &keyValue[0]))
             {
 
             }
+            ImGui::SameLine();
+            if (ImGui::InputFloat("Key", &keyValue[1]))
+            {
+
+            }
+            ImGui::PopID();
             ImGui::SameLine();
             int timeMask[2] = { 0,0 };
             if (selectedEntry != -1)
@@ -1321,6 +1342,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
                 timeMask[0] = gNodeDelegate.mNodes[selectedEntry].mStartFrame;
                 timeMask[1] = gNodeDelegate.mNodes[selectedEntry].mEndFrame;
             }
+            ImGui::PushItemWidth(120);
             if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
             {
                 gNodeDelegate.SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);

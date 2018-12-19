@@ -48,6 +48,7 @@
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
 bool gbIsPlaying = false;
+bool gPlayLoop = false;
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
     GLenum type,
     GLuint id,
@@ -247,6 +248,17 @@ int main(int, char**)
         if (gbIsPlaying)
         {
             gEvaluationTime++;
+            if (gEvaluationTime >= gNodeDelegate.mFrameMax)
+            {
+                if (gPlayLoop)
+                {
+                    gEvaluationTime = gNodeDelegate.mFrameMin;
+                }
+                else
+                {
+                    gbIsPlaying = false;
+                }
+            }
             gCurrentContext->SetTargetDirty(1);
         }
         gCurrentContext->RunDirty();

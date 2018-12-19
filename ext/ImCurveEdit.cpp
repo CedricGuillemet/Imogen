@@ -128,6 +128,7 @@ namespace ImCurveEdit
       const ImVec2 min = delegate.GetMin();
       const size_t curveCount = delegate.GetCurveCount();
 
+
       if (container.Contains(io.MousePos))
       {
          if (io.MouseWheel > FLT_EPSILON)
@@ -142,7 +143,7 @@ namespace ImCurveEdit
       auto pointToRange = [&](ImVec2 pt) { return (pt - min) / range; };
       auto rangeToPoint = [&](ImVec2 pt) { return (pt * range) + min; };
       
-
+      draw_list->AddLine(rangeToPoint(ImVec2(-1.f, 0.f)), rangeToPoint(ImVec2(1.f, 0.f)), 0xFF000000, 1.5f);
       bool overCurveOrPoint = false;
 
       int localOverCurve = -1;

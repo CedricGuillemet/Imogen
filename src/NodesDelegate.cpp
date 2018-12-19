@@ -856,6 +856,28 @@ void TileNodeEditGraphDelegate::GetKeyedParameters(int frame, uint32_t nodeIndex
 
 }
 
+void TileNodeEditGraphDelegate::ApplyAnimationForNode(size_t nodeIndex, int frame)
+{
+    bool animatedNodes = false;
+    auto& node = mNodes[nodeIndex];
+    for (auto& animTrack : mAnimTrack)
+    {
+        if (animTrack.mNodeIndex == nodeIndex)
+        {
+            size_t parameterOffset = GetParameterOffset(uint32_t(node.mType), animTrack.mParamIndex);
+            animTrack.mAnimation->GetValue(frame, &node.mParameters[parameterOffset]);
+
+            animatedNodes = true;
+            break;
+        }
+    }
+    if (animatedNodes)
+    {
+        gEvaluation.SetEvaluationParameters(nodeIndex, node.mParameters);
+        gCurrentContext->SetTargetDirty(nodeIndex);
+    }
+}
+
 void TileNodeEditGraphDelegate::ApplyAnimation(int frame)
 {
     std::vector<bool> animatedNodes;
@@ -945,4 +967,5 @@ float TileNodeEditGraphDelegate::GetParameterComponentValue(size_t index, int pa
     case Con_Camera:
         return float((*(Camera*)ptr)[componentIndex]);
     }
+    return 0.f;
 }

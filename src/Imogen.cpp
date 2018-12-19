@@ -940,8 +940,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                     curvePts.resize(2);
                     auto& node = gNodeDelegate.mNodes[mNodeIndex];
                     float value = gNodeDelegate.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
-                    curvePts[0] = ImVec2(float(node.mStartFrame), value);
-                    curvePts[1] = ImVec2(float(node.mEndFrame), value);
+                    curvePts[0] = ImVec2(float(node.mStartFrame) + 0.5f, value);
+                    curvePts[1] = ImVec2(float(node.mEndFrame) + 0.5f, value);
                 }
                 else
                 {
@@ -949,7 +949,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                     curvePts.resize(ptCount);
                     for (size_t i = 0; i < ptCount; i++)
                     {
-                        curvePts[i] = ImVec2(float(animation->mFrames[i]), animation->GetFloatValue(uint32_t(i), int(curveIndex)));
+                        curvePts[i] = ImVec2(float(animation->mFrames[i] + 0.5f), animation->GetFloatValue(uint32_t(i), int(curveIndex)));
                     }
                 }
                 mPts.push_back(curvePts);
@@ -1012,6 +1012,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             }
             mAnimTrack.push_back(animTrack);
         }
+        gNodeDelegate.ApplyAnimationForNode(mNodeIndex, gEvaluationTime);
     }
 
     virtual ImVec2 GetRange() { return mMax - mMin; }
@@ -1300,17 +1301,33 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             ImGui::PopID();
             ImGui::SameLine();
             currentTime = ImMax(currentTime, 0);
-            ImGui::SameLine();
-            if (ImGui::Button("Key") && selectedEntry != -1)
+            ImGui::SameLine(0, 40.f);
+            if (ImGui::Button("Make Key") && selectedEntry != -1)
             {
                 nodeGraphDelegate.MakeKey(currentTime, uint32_t(selectedEntry), 0);
             }
-            ImGui::PopItemWidth();
-            /*
-            if (ImGui::InputInt("", &currentTime, 0, 0, 0))
+
+            ImGui::SameLine(0, 50.f);
+            ImGui::PushItemWidth(120);
+            float keyValue[2];
+            if (ImGui::InputFloat2("Key", keyValue))
             {
+
             }
-            */
+            ImGui::SameLine();
+            int timeMask[2] = { 0,0 };
+            if (selectedEntry != -1)
+            {
+                timeMask[0] = gNodeDelegate.mNodes[selectedEntry].mStartFrame;
+                timeMask[1] = gNodeDelegate.mNodes[selectedEntry].mEndFrame;
+            }
+            if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
+            {
+                gNodeDelegate.SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
+            }
+            ImGui::PopItemWidth();
+            ImGui::PopItemWidth();
+
 
             Sequencer(&mySequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
             if (selectedEntry != -1)

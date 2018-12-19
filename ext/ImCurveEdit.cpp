@@ -3,6 +3,7 @@
 #include "imgui_internal.h"
 #include <stdint.h>
 #include <set>
+#include <vector>
 
 namespace ImCurveEdit
 {
@@ -106,6 +107,7 @@ namespace ImCurveEdit
       static const size_t subStepCount = 20;
       static const float step = 1.f / float(subStepCount - 1);
       static std::set<EditPoint> selection;
+      
       static bool overSelectedPoint = false;
 
       ImGuiIO& io = ImGui::GetIO();
@@ -208,23 +210,38 @@ namespace ImCurveEdit
 
       // move selection
       static bool pointsMoved = false;
+      static ImVec2 mousePosOrigin;
+      static std::vector<ImVec2> originalPoints;
       if (overSelectedPoint && io.MouseDown[0])
       {
           if (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f && !selection.empty())
           {
               delegate.BeginEditing();
+              if (!pointsMoved)
+              {
+                  mousePosOrigin = io.MousePos;
+                  originalPoints.resize(selection.size());
+                  int index = 0;
+                  for (auto& sel : selection)
+                  {
+                      const ImVec2* pts = delegate.GetPoints(sel.curveIndex);
+                      originalPoints[index++] = pts[sel.pointIndex];
+                  }
+              }
               pointsMoved = true;
               auto prevSelection = selection;
+              int originalIndex = 0;
               for (auto& sel : prevSelection)
               {
                   const ImVec2* pts = delegate.GetPoints(sel.curveIndex);
-                  const ImVec2 p = rangeToPoint(pointToRange(pts[sel.pointIndex]) + io.MouseDelta * sizeOfPixel);
+                  const ImVec2 p = rangeToPoint(pointToRange(originalPoints[originalIndex]) + (io.MousePos - mousePosOrigin) * sizeOfPixel);
                   const int newIndex = delegate.EditPoint(sel.curveIndex, sel.pointIndex, p);
                   if (newIndex != sel.pointIndex)
                   {
                       selection.erase(sel);
                       selection.insert({ sel.curveIndex, newIndex });
                   }
+                  originalIndex++;
               }
           }
       }
@@ -249,20 +266,32 @@ namespace ImCurveEdit
       }
 
       // move curve
+      
       if (movingCurve != -1)
       {
          const size_t ptCount = delegate.GetPointCount(movingCurve);
          const ImVec2* pts = delegate.GetPoints(movingCurve);
+         if (!pointsMoved)
+         {
+             mousePosOrigin = io.MousePos;
+             pointsMoved = true;
+             originalPoints.resize(ptCount);
+             for (int index = 0;index< ptCount;index++)
+             {
+                 originalPoints[index] = pts[index];
+             }
+         }
          if (ptCount >= 1)
          {
             for (size_t p = 0; p < ptCount; p++)
             {
-               delegate.EditPoint(movingCurve, int(p), rangeToPoint(pointToRange(pts[p]) + io.MouseDelta * sizeOfPixel));
+               delegate.EditPoint(movingCurve, int(p), rangeToPoint(pointToRange(originalPoints[p]) + (io.MousePos - mousePosOrigin) * sizeOfPixel));
             }
          }
          if (!io.MouseDown[0])
          {
              movingCurve = -1;
+             pointsMoved = false;
              delegate.EndEditing();
          }
       }

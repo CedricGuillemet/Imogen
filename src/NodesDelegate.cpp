@@ -186,6 +186,7 @@ void TileNodeEditGraphDelegate::Clear()
     mSelectedNodeIndex = -1;
     mNodes.clear();
     mAnimTrack.clear();
+    mEditingContext.Clear();
 }
 
 void TileNodeEditGraphDelegate::SetParamBlock(size_t index, const std::vector<unsigned char>& parameters)

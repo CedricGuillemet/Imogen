@@ -66,6 +66,7 @@ struct EvaluationContext
     };
 
     const ComputeBuffer* GetComputeBuffer(size_t index) const;
+    void Clear();
 protected:
     Evaluation& gEvaluation;
 

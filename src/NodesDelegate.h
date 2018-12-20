@@ -71,7 +71,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     virtual void CutNodes(const std::vector<size_t> nodes);
     virtual void PasteNodes();
 
-    EvaluationContext mEditingContext;
+    
 
     Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mNodes.size()) return NULL; return &mNodes[index].mParameterViewMatrix; }
 
@@ -101,6 +101,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
         Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
     };
+
+    EvaluationContext mEditingContext;
 
     std::vector<ImogenNode> mNodes;
     std::vector<ImogenNode> mNodesClipboard;

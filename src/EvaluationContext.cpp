@@ -106,6 +106,16 @@ static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage 
     evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
 }
 
+void EvaluationContext::Clear()
+{
+    mStageTarget.clear();
+    for (auto& buffer : mComputeBuffers)
+        glDeleteBuffers(1, &buffer.mBuffer);
+    mComputeBuffers.clear();
+    mbDirty.clear();
+    mbProcessing.clear();
+}
+
 unsigned int EvaluationContext::GetEvaluationTexture(size_t target)
 {
     if (target >= mStageTarget.size())

@@ -21,10 +21,10 @@ layout (std140) uniform EvaluationBlock
 } EvaluationParam;
 
 layout(location = 0)in vec2 inUV;
-layout(location = 1)in vec4 inInstanceP0;
-layout(location = 2)in vec4 inInstanceN0;
-layout(location = 3)in vec4 inInstanceP1;
-layout(location = 4)in vec4 inInstanceP2;
+layout(location = 1)in vec4 inCompute0;
+layout(location = 2)in vec4 inCompute1;
+layout(location = 3)in vec4 inCompute2;
+layout(location = 4)in vec4 inCompute3;
 
 out vec2 uv;
 out vec4 color;
@@ -34,8 +34,8 @@ void main()
 {
 	float startWidth = 0.1;
 	float endWidth = 0.0;
-	vec4 i1 = mix(inInstanceP0, inInstanceP1, inUV.y);
-	vec4 i2 = mix(inInstanceP1, inInstanceP2, inUV.y);
+	vec4 i1 = mix(inCompute0, inCompute2, inUV.y);
+	vec4 i2 = mix(inCompute2, inCompute3, inUV.y);
 	
 	vec4 bezierPos = mix(i1, i2, inUV.y);
 	vec4 tgt = normalize(i2 - i1);
@@ -51,7 +51,7 @@ void main()
 	
 	normal = right;
 	uv = vec2(inUV.x * 0.5 + 0.5, inUV.y);
-	color = vec4(inInstanceP0.a, inInstanceN0.a, inInstanceP1.a, 1.);
+	color = vec4(inCompute0.a, inCompute1.a, inCompute2.a, 1.);
 	//color = vec4(localDir, 1.0);
 } 
 #endif

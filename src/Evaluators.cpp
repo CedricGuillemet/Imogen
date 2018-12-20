@@ -49,6 +49,7 @@ static const EValuationFunction evaluationFunctions[] = {
     { "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
     { "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
     { "SetEvaluationCubeSize", (void*)Evaluation::SetEvaluationCubeSize },
+    { "AllocateComputeBuffer", (void*)Evaluation::AllocateComputeBuffer },
     { "CubemapFilter", (void*)Evaluation::CubemapFilter},
     { "SetProcessing", (void*)Evaluation::SetProcessing},
     { "Job", (void*)Evaluation::Job },

@@ -353,7 +353,7 @@ namespace ImCurveEdit
 
       if (selectedPoints)
       {
-          selectedPoints->resize(selection.size());
+          selectedPoints->resize(int(selection.size()));
           int index = 0;
           for (auto& point : selection)
               (*selectedPoints)[index++] = point;

@@ -650,6 +650,12 @@ void Evaluation::SetProcessing(int target, int processing)
     gCurrentContext->StageSetProcessing(target, processing != 0);
 }
 
+int Evaluation::AllocateComputeBuffer(int target, int elementCount, int elementSize)
+{
+    gCurrentContext->AllocateComputeBuffer(target, elementCount, elementSize);
+    return EVAL_OK;
+}
+
 int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
 {
     if (gCurrentContext->IsSynchronous())

@@ -115,16 +115,8 @@ unsigned int EvaluationContext::GetEvaluationTexture(size_t target)
     return mStageTarget[target]->mGLTexID;
 }
 
-#define SemUV 0
-#define SemInstanceP0 1
-#define SemInstanceN0 2
-#define SemInstanceP1 3
-#define SemInstanceP2 4
-
-unsigned int mInstancesParametersBufferName[2];
-unsigned int cubesVertexArrayName[2];
-int instancesBufferReadIndex = 0;
-unsigned int feedbackVertexArray[2];
+unsigned int bladesVertexArray;
+unsigned int bladesVertexSize = 2 * sizeof(float);
 
 unsigned int UploadIndices(const unsigned short *indices, unsigned int indexCount)
 {
@@ -136,119 +128,28 @@ unsigned int UploadIndices(const unsigned short *indices, unsigned int indexCoun
     return indexArray;
 }
 
-
 void UploadVertices(const void *vertices, unsigned int vertexArraySize)
 {
-    unsigned int vertexSize = 2 * sizeof(float);// Mesh::GetVertexSizeFromFormat(vertexFormat);
-
-    glGenVertexArrays(2, cubesVertexArrayName);
-    glGenVertexArrays(2, feedbackVertexArray);
-
-    // cube vertex array
-    unsigned int vertexArray;
-    glGenBuffers(1, &vertexArray);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexArray);
+    glGenBuffers(1, &bladesVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
     glBufferData(GL_ARRAY_BUFFER, vertexArraySize, vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-    glGenBuffers(2, mInstancesParametersBufferName);
-        struct Instance
-        {
-            float p0x, p0y, p0z, pad0;
-            float n0x, n0y, n0z, pad1;
-            float p1x, p1y, p1z, pad2;
-            float p2x, p2y, p2z, pad3;
-        };
-    
-        Instance instancesPos[32*32];
-        memset(instancesPos, 0, sizeof(instancesPos));
-        for (int y = 0; y < 32; y++)
-        {
-            for (int x = 0; x < 32; x++)
-            {
-                instancesPos[y * 32 + x].p0x = x - 15;
-                instancesPos[y * 32 + x].p0z = y - 15;
-            }
-        }
-        
-        // 2 buffers for transform feedback
-        for (unsigned int i = 0; i < 2; i++)
-        {
-            glBindBuffer(GL_ARRAY_BUFFER, mInstancesParametersBufferName[i]);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(instancesPos), instancesPos, GL_STATIC_DRAW);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-
-    // 2 vertex arrays
-    for (unsigned int i = 0; i < 2; i++)
-    {
-        glBindVertexArray(cubesVertexArrayName[i]);
-
-        // blade vertices
-        glBindBuffer(GL_ARRAY_BUFFER, vertexArray);
-        glVertexAttribPointer(SemUV, 2, GL_FLOAT, GL_FALSE, vertexSize, 0);
-        glEnableVertexAttribArray(SemUV);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        // blade instances
-        // root pos0, normal, pos1, pos2
-        glBindBuffer(GL_ARRAY_BUFFER, mInstancesParametersBufferName[i]);
-        glVertexAttribPointer(SemInstanceP0, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 0));
-        glVertexAttribPointer(SemInstanceN0, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 1));
-        glVertexAttribPointer(SemInstanceP1, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 2));
-        glVertexAttribPointer(SemInstanceP2, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 3));
-
-        glEnableVertexAttribArray(SemInstanceP0);
-        glEnableVertexAttribArray(SemInstanceN0);
-        glEnableVertexAttribArray(SemInstanceP1);
-        glEnableVertexAttribArray(SemInstanceP2);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-        // back to normal
-        glBindVertexArray(0);
-
-        // vertex array for transform feedback
-        glBindVertexArray(feedbackVertexArray[i]);
-        glBindBuffer(GL_ARRAY_BUFFER, mInstancesParametersBufferName[i]);
-        glVertexAttribPointer(0/*SemInstanceP0*/, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 0));
-        glVertexAttribPointer(1/*SemInstanceN0*/, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 1));
-        glVertexAttribPointer(2/*SemInstanceP1*/, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 2));
-        glVertexAttribPointer(3/*SemInstanceP2*/, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 3));
-
-        glEnableVertexAttribArray(0/*SemInstanceP0*/);
-        glEnableVertexAttribArray(1/*SemInstanceN0*/);
-        glEnableVertexAttribArray(2/*SemInstanceP1*/);
-        glEnableVertexAttribArray(3/*SemInstanceP2*/);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glBindVertexArray(0);
-    }
-
 }
+
 static const int tess = 10;
 static unsigned int bladeIA = -1;
-void drawBlades()
+void drawBlades(int indexCount, int instanceCount, int elementCount)
 {
-    //glUseProgram(bladeProgram);
-    glBindVertexArray(cubesVertexArrayName[instancesBufferReadIndex]);
-
     // instances
-    glVertexAttribDivisor(SemInstanceP0, 1);
-    glVertexAttribDivisor(SemInstanceN0, 1);
-    glVertexAttribDivisor(SemInstanceP1, 1);
-    glVertexAttribDivisor(SemInstanceP2, 1);
+    for (int i = 0;i<elementCount;i++)
+        glVertexAttribDivisor(1 + i, 1);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bladeIA);
 
-    glDrawElementsInstanced(GL_TRIANGLE_STRIP, tess*2, GL_UNSIGNED_SHORT, (void*)0, 32 * 32);
+    glDrawElementsInstanced(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_SHORT, (void*)0, instanceCount);
 
-    glVertexAttribDivisor(SemInstanceP0, 0);
-    glVertexAttribDivisor(SemInstanceN0, 0);
-    glVertexAttribDivisor(SemInstanceP1, 0);
-    glVertexAttribDivisor(SemInstanceP2, 0);
+    for (int i = 0; i < elementCount; i++)
+        glVertexAttribDivisor(1 + i, 0);
 
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -296,6 +197,19 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
         }
     }
 }
+
+int  EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const
+{
+    const Input& input = evaluationStage.mInput;
+    for (int inputIndex = 0; inputIndex < 8; inputIndex++)
+    {
+        int targetIndex = input.mInputs[inputIndex];
+        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer)
+            return targetIndex;
+    }
+    return -1;
+}
+
 void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
 {
     if (bladeIA == -1)
@@ -321,8 +235,32 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
     const unsigned int program = evaluator.mGLSLProgram;
 
-    size_t firstParticle = 0;
-    size_t particleCount = 32 * 32;
+    // allocate buffer
+    unsigned int feedbackVertexArray = 0;
+    ComputeBuffer* destinationBuffer = NULL;
+    int computeBufferIndex = GetBindedComputeBuffer(evaluationStage);
+    if (computeBufferIndex != -1)
+    {
+        AllocateComputeBuffer(int(index), mComputeBuffers[computeBufferIndex].mElementCount, mComputeBuffers[computeBufferIndex].mElementSize);
+ 
+        /// build source VAO
+        glGenVertexArrays(1, &feedbackVertexArray);
+        glBindVertexArray(feedbackVertexArray);
+        glBindBuffer(GL_ARRAY_BUFFER, mComputeBuffers[computeBufferIndex].mBuffer);
+        for (int i = 0; i < (mComputeBuffers[computeBufferIndex].mElementSize/(4*sizeof(float)));i++)
+        {
+            glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * i));
+            glEnableVertexAttribArray(i);
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glBindVertexArray(0);
+    }
+    if (mComputeBuffers.size() <= index)
+        return; // no compute buffer destination, no source either -> non connected node -> early exit
+    destinationBuffer = &mComputeBuffers[index];
+
+    // compute buffer
     glUseProgram(program);
 
     glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
@@ -333,19 +271,22 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
+
     BindTextures(evaluationStage, program);
     glEnable(GL_RASTERIZER_DISCARD);
-    glBindVertexArray(feedbackVertexArray[instancesBufferReadIndex]);
-    glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mInstancesParametersBufferName[(instancesBufferReadIndex + 1) & 1], firstParticle * 16 * sizeof(float), particleCount * 16 * sizeof(float));
+    glBindVertexArray(feedbackVertexArray);
+    glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, destinationBuffer->mBuffer, 0, destinationBuffer->mElementCount * destinationBuffer->mElementSize);
 
     glBeginTransformFeedback(GL_POINTS);
-    glDrawArrays(GL_POINTS, firstParticle, particleCount);
+    glDrawArrays(GL_POINTS, 0, destinationBuffer->mElementCount);
     glEndTransformFeedback();
 
     glDisable(GL_RASTERIZER_DISCARD);
     glBindVertexArray(0);
     glUseProgram(0);
-    ++instancesBufferReadIndex &= 1;
+
+    if (feedbackVertexArray)
+        glDeleteVertexArrays(1, &feedbackVertexArray);
 }
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
@@ -416,7 +357,47 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
         if (evaluationStage.mNodeTypename == "FurDisplay")
         {
             glClear(GL_COLOR_BUFFER_BIT);
-            drawBlades();
+            /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
+            if (sourceBuffer != -1)
+            {
+                const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
+                unsigned int vao;
+                glGenVertexArrays(1, &vao);
+                glBindVertexArray(vao);
+
+                // blade vertices
+                glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
+                glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
+                glEnableVertexAttribArray(0/*SemUV*/);
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                // blade instances
+                // root pos0, normal, pos1, pos2
+                glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
+                for (unsigned int vp = 0; vp < buffer->mElementCount; vp++)
+                {
+                    glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * vp));
+                    glEnableVertexAttribArray(1 + vp);
+                }
+                    /*
+                glVertexAttribPointer(SemInstanceP0, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 0));
+                glVertexAttribPointer(SemInstanceN0, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 1));
+                glVertexAttribPointer(SemInstanceP1, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 2));
+                glVertexAttribPointer(SemInstanceP2, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 3));
+
+                glEnableVertexAttribArray(SemInstanceP0);
+                glEnableVertexAttribArray(SemInstanceN0);
+                glEnableVertexAttribArray(SemInstanceP1);
+                glEnableVertexAttribArray(SemInstanceP2);
+                */
+                
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                glBindVertexArray(vao);
+                drawBlades(tess * 2, buffer->mElementCount, buffer->mElementSize/(sizeof(float)*4));
+                glBindVertexArray(0);
+                glDeleteVertexArrays(1, &vao);
+            }
         }
         else
         {
@@ -710,4 +691,27 @@ void EvaluationContext::UserDeleteStage(size_t index)
     mStageTarget.erase(mStageTarget.begin() + index);
     mbDirty.erase(mbDirty.begin() + index);
     mbProcessing.erase(mbProcessing.begin() + index);
+}
+
+void EvaluationContext::AllocateComputeBuffer(int target, int elementCount, int elementSize)
+{
+    if (mComputeBuffers.size() <= target)
+        mComputeBuffers.resize(target + 1);
+    ComputeBuffer& buffer = mComputeBuffers[target];
+    buffer.mElementCount = elementCount;
+    buffer.mElementSize = elementSize;
+    if (!buffer.mBuffer)
+        glGenBuffers(1, &buffer.mBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, buffer.mBuffer);
+    glBufferData(GL_ARRAY_BUFFER, elementSize * elementCount, NULL, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size_t index) const
+{
+    ComputeBuffer res;
+    if (mComputeBuffers.size() <= index)
+        return nullptr;
+    return &mComputeBuffers[index];
 }

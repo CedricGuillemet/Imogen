@@ -53,10 +53,19 @@ struct EvaluationContext
 
     void AllocRenderTargetsForEditingPreview();
 
+    void AllocateComputeBuffer(int target, int elementCount, int elementSize);
     // edit context only
     void UserAddStage();
     void UserDeleteStage(size_t index);
 
+    struct ComputeBuffer
+    {
+        unsigned int mBuffer{ 0 };
+        unsigned int mElementCount;
+        unsigned int mElementSize;
+    };
+
+    const ComputeBuffer* GetComputeBuffer(size_t index) const;
 protected:
     Evaluation& gEvaluation;
 
@@ -73,7 +82,12 @@ protected:
     void BindTextures(const EvaluationStage& evaluationStage, unsigned int program);
     void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
+    
+
+    int GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const;
+
     std::vector<std::shared_ptr<RenderTarget> > mStageTarget; // 1 per stage
+    std::vector<ComputeBuffer> mComputeBuffers;
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
     std::vector<bool> mbDirty;
     std::vector<bool> mbProcessing;

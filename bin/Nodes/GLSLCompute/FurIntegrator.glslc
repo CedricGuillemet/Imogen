@@ -1,12 +1,12 @@
-layout(location = 0)in vec4 inInstanceP0;
-layout(location = 1)in vec4 inInstanceN0;
-layout(location = 2)in vec4 inInstanceP1;
-layout(location = 3)in vec4 inInstanceP2;
+layout(location = 0)in vec4 inCompute0;
+layout(location = 1)in vec4 inCompute1;
+layout(location = 2)in vec4 inCompute2;
+layout(location = 3)in vec4 inCompute3;
 
-out vec4 outInstanceP0;
-out vec4 outInstanceN0;
-out vec4 outInstanceP1;
-out vec4 outInstanceP2;
+out vec4 outCompute0;
+out vec4 outCompute1;
+out vec4 outCompute2;
+out vec4 outCompute3;
 
 
 layout (std140) uniform EvaluationBlock
@@ -29,18 +29,18 @@ layout (std140) uniform EvaluationBlock
 
 void main()
 {
-	vec3 norm0 = inInstanceN0.xyz;
+	vec3 norm0 = inCompute1.xyz;
 	float stifness = 1.;
 	
 	float frm = float(EvaluationParam.frame);
-	float len = inInstanceP2.w;
-	outInstanceP0 = inInstanceP0 + vec4(0., frm, 0., 0.);
-	outInstanceN0 = inInstanceN0;
+	float len = inCompute3.w;
+	outCompute0 = inCompute0 + vec4(0., frm, 0., 0.);
+	outCompute1 = inCompute1;
 	
-	vec3 idealPos1 = inInstanceP0.xyz + norm0 * len;
-	vec3 curSeg = inInstanceP1.xyz - inInstanceP0.xyz;
-	vec3 idealPos2 = inInstanceP1.xyz + normalize(curSeg) * len;
+	vec3 idealPos1 = inCompute0.xyz + norm0 * len;
+	vec3 curSeg = inCompute2.xyz - inCompute0.xyz;
+	vec3 idealPos2 = inCompute2.xyz + normalize(curSeg) * len;
 	
-	outInstanceP1 = vec4(mix(inInstanceP1.xyz, idealPos1, stifness), inInstanceP1.w);
-	outInstanceP2 = vec4(mix(inInstanceP2.xyz, idealPos2, stifness), inInstanceP2.w);
+	outCompute2 = vec4(mix(inCompute2.xyz, idealPos1, stifness), inCompute2.w);
+	outCompute3 = vec4(mix(inCompute3.xyz, idealPos2, stifness), inCompute3.w);
 }

@@ -115,5 +115,8 @@ int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
 int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
 void SetProcessing(int target, int processing);
 
+// compute shader memory allocation
+int AllocateComputeBuffer(int target, int elementCount, int elementSize);
+
 #define EVAL_OK 0
 #define EVAL_ERR 1

@@ -63,6 +63,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     virtual bool NodeIsProcesing(size_t nodeIndex) { return mEditingContext.StageIsProcessing(nodeIndex); }
     virtual bool NodeIsCubemap(size_t nodeIndex);
     virtual bool NodeIs2D(size_t nodeIndex);
+    virtual bool NodeIsCompute(size_t nodeIndex);
     virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) { gEvaluation.SetEvaluationOrder(nodeOrderList);    }
     virtual ImVec2 GetEvaluationSize(size_t nodeIndex);
     

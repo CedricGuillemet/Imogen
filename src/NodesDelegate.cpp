@@ -772,6 +772,14 @@ bool TileNodeEditGraphDelegate::NodeIs2D(size_t nodeIndex)
     return false;
 }
 
+bool TileNodeEditGraphDelegate::NodeIsCompute(size_t nodeIndex)
+{
+    auto buffer = mEditingContext.GetComputeBuffer(nodeIndex);
+    if (buffer)
+        return true;
+    return false;
+}
+
 bool TileNodeEditGraphDelegate::NodeIsCubemap(size_t nodeIndex)
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);

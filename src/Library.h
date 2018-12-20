@@ -327,11 +327,21 @@ enum ConTypes
     Con_Any,
 };
 
+enum CurveType
+{
+    CurveNone,
+    CurveDiscrete,
+    CurveLinear,
+    CurveSmooth,
+    CurveBezier,
+};
+
 size_t GetParameterTypeSize(ConTypes paramType);
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);
 size_t GetCurveCountPerParameterType(uint32_t paramType);
 const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 AnimationBase *AllocateAnimation(uint32_t valueType);
+CurveType GetCurveTypeForParameterType(ConTypes paramType);
 
 struct MetaCon
 {

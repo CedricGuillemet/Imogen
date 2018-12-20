@@ -921,7 +921,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
 
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
-    AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) : 
+    AnimCurveEdit(const ImVec2 min, const ImVec2 max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) :
         mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible), mNodeIndex(nodeIndex)
     {
         size_t type = gNodeDelegate.mNodes[nodeIndex].mType;
@@ -930,6 +930,9 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
         auto curveForParameter = [&](int parameterIndex, ConTypes type, AnimationBase * animation) {
             const std::string & parameterName = metaNode.mParams[parameterIndex].mName;
+            CurveType curveType = GetCurveTypeForParameterType(type);
+            if (curveType == CurveNone)
+                return;
             size_t curveCountPerParameter = GetCurveCountPerParameterType(type);
             parameterAddressed[parameterIndex] = true;
             for (size_t curveIndex = 0; curveIndex < curveCountPerParameter; curveIndex++)
@@ -956,6 +959,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 mValueType.push_back(type);
                 mParameterIndex.push_back(parameterIndex);
                 mComponentIndex.push_back(uint32_t(curveIndex));
+                mCurveType.push_back(ImCurveEdit::CurveType(curveType));
                 mLabels.push_back(parameterName + GetCurveParameterSuffix(type, int(curveIndex)));
             }
         };
@@ -1014,7 +1018,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         }
         gNodeDelegate.ApplyAnimationForNode(mNodeIndex, gEvaluationTime);
     }
-
+    virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return mCurveType[curveIndex]; }
     virtual ImVec2 GetRange() { return mMax - mMin; }
     virtual ImVec2 GetMin() { return mMin; }
     virtual unsigned int GetBackgroundColor() { return 0x00202020; }
@@ -1062,7 +1066,9 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     std::vector<uint32_t> mValueType;
     std::vector<uint32_t> mParameterIndex;
     std::vector<uint32_t> mComponentIndex;
+    std::vector<ImCurveEdit::CurveType> mCurveType;
     std::vector<bool>& mbVisible;
+
     ImVec2 mMin, mMax;
     int mNodeIndex;
 
@@ -1078,13 +1084,14 @@ private:
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
-    MySequence(TileNodeEditGraphDelegate &nodeGraphDelegate) : mNodeGraphDelegate(nodeGraphDelegate) {}
+    MySequence(TileNodeEditGraphDelegate &nodeGraphDelegate) : mNodeGraphDelegate(nodeGraphDelegate), setKeyFrameOrValue(FLT_MAX, FLT_MAX){}
 
     void Clear()
     {
         mbExpansions.clear();
         mbVisible.clear();
         mLastCustomDrawIndex = -1;
+        setKeyFrameOrValue.x = setKeyFrameOrValue.y = FLT_MAX;
     }
     virtual int GetFrameMin() const { return gNodeDelegate.mFrameMin; }
     virtual int GetFrameMax() const { return gNodeDelegate.mFrameMax; }
@@ -1158,13 +1165,40 @@ struct MySequence : public ImSequencer::SequenceInterface
         draw_list->PopClipRect();
 
         ImGui::SetCursorScreenPos(rc.Min);
-        ImCurveEdit::Edit(curveEdit, rc.Max - rc.Min, 137 + index, &clippingRect);
+        ImCurveEdit::Edit(curveEdit, rc.Max - rc.Min, 137 + index, &clippingRect, &mSelectedCurvePoints);
+        getKeyFrameOrValue = ImVec2(FLT_MAX, FLT_MAX);
+        if (setKeyFrameOrValue.x < FLT_MAX || setKeyFrameOrValue.y < FLT_MAX)
+        {
+            for (int i = 0; i < mSelectedCurvePoints.size(); i++)
+            {
+                auto& selPoint = mSelectedCurvePoints[i];
+                int keyIndex = selPoint.pointIndex;
+                ImVec2 keyValue = curveEdit.mPts[selPoint.curveIndex][keyIndex];
+                AnimTrack& anim = curveEdit.mAnimTrack[selPoint.curveIndex];
+                if (setKeyFrameOrValue.x < FLT_MAX)
+                {
+                    anim.mAnimation->mFrames[keyIndex] = uint32_t(setKeyFrameOrValue.x);
+                }
+                else
+                {
+                    anim.mAnimation->SetFloatValue(uint32_t(keyIndex), curveEdit.mComponentIndex[selPoint.curveIndex], setKeyFrameOrValue.y);
+                }
+                setKeyFrameOrValue.x = setKeyFrameOrValue.y = FLT_MAX;
+            }
+        }
+        if (mSelectedCurvePoints.size() == 1)
+        {
+            getKeyFrameOrValue = curveEdit.mPts[mSelectedCurvePoints[0].curveIndex][mSelectedCurvePoints[0].pointIndex];
+        }
     }
 
     TileNodeEditGraphDelegate &mNodeGraphDelegate;
     std::vector<bool> mbExpansions;
     std::vector<bool> mbVisible;
+    ImVector<ImCurveEdit::EditPoint> mSelectedCurvePoints;
     int mLastCustomDrawIndex;
+    ImVec2 setKeyFrameOrValue;
+    ImVec2 getKeyFrameOrValue;
 };
 MySequence mySequence(gNodeDelegate);
 
@@ -1323,16 +1357,18 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
             ImGui::SameLine(0, 50.f);
             
-            float keyValue[2];
-            ImGui::PushID(203);
-            if (ImGui::InputFloat("", &keyValue[0]))
-            {
 
+            int setf = (mySequence.getKeyFrameOrValue.x<FLT_MAX)? int(mySequence.getKeyFrameOrValue.x):0;
+            ImGui::PushID(203);
+            if (ImGui::InputInt("", &setf, 0, 0))
+            {
+                mySequence.setKeyFrameOrValue.x = float(setf);
             }
             ImGui::SameLine();
-            if (ImGui::InputFloat("Key", &keyValue[1]))
+            float setv = (mySequence.getKeyFrameOrValue.y < FLT_MAX) ? mySequence.getKeyFrameOrValue.y : 0.f;
+            if (ImGui::InputFloat("Key", &setv))
             {
-
+                mySequence.setKeyFrameOrValue.y = setv;
             }
             ImGui::PopID();
             ImGui::SameLine();

@@ -304,7 +304,7 @@ size_t GetCurveCountPerParameterType(uint32_t paramType)
     case Con_Ramp4:
         return 0;// sizeof(float) * 4 * 8;
     case Con_Enum:
-        return 0;
+        return 1;
     case Con_Int:
         return 1;
     case Con_Int2:
@@ -348,7 +348,7 @@ const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex)
     case Con_Ramp4:
         return 0;// sizeof(float) * 4 * 8;
     case Con_Enum:
-        return 0;
+        return "";
     case Con_Int:
         return "";
     case Con_Int2:
@@ -410,6 +410,35 @@ AnimationBase *AllocateAnimation(uint32_t valueType)
     case Con_Camera: return new Animation<Camera>;
     }
     return NULL;
+}
+
+CurveType GetCurveTypeForParameterType(ConTypes paramType)
+{
+    switch (paramType)
+    {
+    case Con_Float: return CurveSmooth;
+    case Con_Float2: return CurveSmooth;
+    case Con_Float3: return CurveSmooth;
+    case Con_Float4: return CurveSmooth;
+    case Con_Color4: return CurveSmooth;
+    case Con_Int: return CurveLinear;
+    case Con_Int2: return CurveLinear;
+    case Con_Ramp: return CurveNone;
+    case Con_Angle: return CurveSmooth;
+    case Con_Angle2: return CurveSmooth;
+    case Con_Angle3: return CurveSmooth;
+    case Con_Angle4: return CurveSmooth;
+    case Con_Enum: return CurveDiscrete;
+    case Con_Structure:
+    case Con_FilenameRead:
+    case Con_FilenameWrite:
+    case Con_ForceEvaluate:
+        return CurveNone;
+    case Con_Bool: return CurveDiscrete;
+    case Con_Ramp4: return CurveNone;
+    case Con_Camera: return CurveSmooth;
+    }
+    return CurveNone;
 }
 
 void Camera::ComputeViewProjectionMatrix(float *viewProj, float *viewInverse)

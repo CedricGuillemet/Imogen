@@ -78,34 +78,15 @@ namespace ImCurveEdit
       return ret;
    }
 
-   int Edit(Delegate &delegate, const ImVec2& size, unsigned int id, const ImRect *clippingRect)
+   int Edit(Delegate &delegate, const ImVec2& size, unsigned int id, const ImRect *clippingRect, ImVector<EditPoint> *selectedPoints)
    {
-      struct EditPoint
-      {
-         int curveIndex;
-         int pointIndex;
-         bool operator <(const EditPoint& other) const
-         {
-            if (curveIndex < other.curveIndex)
-               return true;
-            if (curveIndex > other.curveIndex)
-               return false;
-
-            if (pointIndex < other.pointIndex)
-               return true;
-            return false;
-         }
-      };
-
-
       static bool selectingQuad = false;
       static ImVec2 quadSelection;
       static int overCurve = -1;
       static int movingCurve = -1;
       static float scaleV = 1.0f;
       static float scaleVTarget = 1.f;
-      static const size_t subStepCount = 20;
-      static const float step = 1.f / float(subStepCount - 1);
+
       static std::set<EditPoint> selection;
       
       static bool overSelectedPoint = false;
@@ -154,7 +135,9 @@ namespace ImCurveEdit
          const size_t ptCount = delegate.GetPointCount(c);
          if (ptCount < 1)
             continue;
-
+         CurveType curveType = delegate.GetCurveType(c);
+         if (curveType == CurveNone)
+             continue;
          const ImVec2* pts = delegate.GetPoints(c);
          uint32_t curveColor = delegate.GetCurveColor(c);
          if ((overCurve == c && selection.empty() && !selectingQuad) || movingCurve == c)
@@ -164,28 +147,48 @@ namespace ImCurveEdit
          {
             const ImVec2 p1 = pointToRange(pts[p]);
             const ImVec2 p2 = pointToRange(pts[p+1]);
-            for (size_t substep = 0; substep < subStepCount-1; substep++)
+            
+            if (curveType == CurveSmooth || curveType == CurveLinear)
             {
-               float t = float(substep) * step;
+                size_t subStepCount = (curveType == CurveSmooth)?20:1;
+                float step = 1.f / float(subStepCount - 1);
+                for (size_t substep = 0; substep < subStepCount - 1; substep++)
+                {
+                    float t = float(substep) * step;
 
-               const ImVec2 sp1 = ImLerp(p1, p2, t);
-               const ImVec2 sp2 = ImLerp(p1, p2, t+step);
+                    const ImVec2 sp1 = ImLerp(p1, p2, t);
+                    const ImVec2 sp2 = ImLerp(p1, p2, t + step);
 
-               const float rt1 = smoothstep(p1.x, p2.x, sp1.x);
-               const float rt2 = smoothstep(p1.x, p2.x, sp2.x);
+                    const float rt1 = smoothstep(p1.x, p2.x, sp1.x);
+                    const float rt2 = smoothstep(p1.x, p2.x, sp2.x);
 
-               const ImVec2 pos1 = ImVec2(sp1.x, ImLerp(p1.y, p2.y, rt1)) * ssizeScaled + offset;
-               const ImVec2 pos2 = ImVec2(sp2.x, ImLerp(p1.y, p2.y, rt2)) * ssizeScaled + offset;
+                    const ImVec2 pos1 = ImVec2(sp1.x, ImLerp(p1.y, p2.y, rt1)) * ssizeScaled + offset;
+                    const ImVec2 pos2 = ImVec2(sp2.x, ImLerp(p1.y, p2.y, rt2)) * ssizeScaled + offset;
 
-               if (distance(io.MousePos.x, io.MousePos.y, pos1.x, pos1.y, pos2.x, pos2.y) < 8.f && localOverCurve == -1)
-               {
-                  localOverCurve = int(c);
-                  overCurve = int(c);
-                  overCurveOrPoint = true;
-               }
+                    if (distance(io.MousePos.x, io.MousePos.y, pos1.x, pos1.y, pos2.x, pos2.y) < 8.f && localOverCurve == -1)
+                    {
+                        localOverCurve = int(c);
+                        overCurve = int(c);
+                        overCurveOrPoint = true;
+                    }
 
-               draw_list->AddLine(pos1, pos2, curveColor, 1.3f);
-            } // substep
+                    draw_list->AddLine(pos1, pos2, curveColor, 1.3f);
+                } // substep
+            }
+            else if (curveType == CurveDiscrete)
+            {
+                draw_list->AddLine(p1, ImVec2(p2.x, p1.y), curveColor, 1.3f);
+                draw_list->AddLine(ImVec2(p2.x, p1.y), p2, curveColor, 1.3f);
+
+                if ( (distance(io.MousePos.x, io.MousePos.y, p1.x, p1.y, p2.x, p1.y) < 8.f ||
+                    distance(io.MousePos.x, io.MousePos.y, p2.x, p1.y, p2.x, p2.y) < 8.f )
+                    && localOverCurve == -1)
+                {
+                    localOverCurve = int(c);
+                    overCurve = int(c);
+                    overCurveOrPoint = true;
+                }
+            }
          } // point loop
 
          for (size_t p = 0; p < ptCount; p++)
@@ -347,6 +350,15 @@ namespace ImCurveEdit
       ImGui::EndChildFrame();
       ImGui::PopStyleVar();
       ImGui::PopStyleColor(1);
+
+      if (selectedPoints)
+      {
+          selectedPoints->resize(selection.size());
+          int index = 0;
+          for (auto& point : selection)
+              (*selectedPoints)[index++] = point;
+
+      }
       return 0;
    }
 }

@@ -997,7 +997,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         }
 
 
-        for (size_t curve = 0; curve < mPts.size(); curve++)
+        for (size_t curve = 0; curve < mPts.size(); )
         {
             AnimTrack animTrack;
             animTrack.mNodeIndex = mNodeIndex;
@@ -1012,8 +1012,16 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             {
                 ImVec2 keyValue = mPts[curve][key];
                 anim->mFrames[key] = uint32_t(keyValue.x);
-                anim->SetFloatValue(uint32_t(key), mComponentIndex[curve], keyValue.y);
             }
+            do
+            {
+                for (size_t key = 0; key < keyCount; key++)
+                {
+                    ImVec2 keyValue = mPts[curve][key];
+                    anim->SetFloatValue(uint32_t(key), mComponentIndex[curve], keyValue.y);
+                }
+                curve++;
+            } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
             mAnimTrack.push_back(animTrack);
         }
         gNodeDelegate.ApplyAnimationForNode(mNodeIndex, gEvaluationTime);
@@ -1280,12 +1288,6 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
             NodeEdit(nodeGraphDelegate, evaluation);
-            if (ImGui::IsWindowFocused())
-            {
-                ImDrawList* drawList = ImGui::GetWindowDrawList();
-                drawList->AddRect(windowPos-ImVec2(4,6), windowPos+canvasSize+ ImVec2(4, 6), 0xCCCC0000);
-            }
-            
         }
         ImGui::End();
 
@@ -1357,7 +1359,6 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
             ImGui::SameLine(0, 50.f);
             
-
             int setf = (mySequence.getKeyFrameOrValue.x<FLT_MAX)? int(mySequence.getKeyFrameOrValue.x):0;
             ImGui::PushID(203);
             if (ImGui::InputInt("", &setf, 0, 0))
@@ -1386,14 +1387,12 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             ImGui::PopItemWidth();
             ImGui::PopItemWidth();
 
-
             Sequencer(&mySequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
             if (selectedEntry != -1)
             {
                 nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
                 NodeGraphSelectNode(selectedEntry);
                 auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
-                //nodeGraphDelegate.SetTimeSlot(selectedEntry, imoNode.mStartFrame, imoNode.mEndFrame);
                 gEvaluation.SetStageLocalTime(selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
             }
             if (currentTime != gEvaluationTime)

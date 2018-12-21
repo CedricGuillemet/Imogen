@@ -98,27 +98,22 @@ struct UndoRedo
 
     virtual void Undo()
     {
-        //printf(" Undoing\n");
         if (mSubUndoRedo.empty())
             return;
         for (int i = int(mSubUndoRedo.size()) - 1; i >= 0; i--)
         {
-            //printf("Undoing sub\n");
             mSubUndoRedo[i]->Undo();
         }
     }
     virtual void Redo()
     {
-        //printf(" Redoing\n");
         for (auto& undoRedo : mSubUndoRedo)
         {
-            //printf("Redoing sub\n");
             undoRedo->Redo();
         }
     }
     template <typename T> void AddSubUndoRedo(const T& subUndoRedo)
     {
-        //printf("adding sub UR\n");
         mSubUndoRedo.push_back(std::make_shared<T>(subUndoRedo));
     }
     void Discard() { mbDiscarded = true; }
@@ -193,7 +188,6 @@ inline UndoRedo::UndoRedo() : mbDiscarded(false)
 {
     if (!gUndoRedoHandler.mCurrent)
     {
-        //printf("new master UR\n");
         gUndoRedoHandler.mCurrent = this;
     }
 }
@@ -202,7 +196,6 @@ inline UndoRedo::~UndoRedo()
 {
     if (gUndoRedoHandler.mCurrent == this)
     {
-        //printf("remove master UR\n");
         gUndoRedoHandler.mCurrent = NULL;
     }
 }

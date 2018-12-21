@@ -1035,6 +1035,14 @@ void ComputeDelegateSelection()
     }
 }
 
+void NodeGraphSelectNode(int selectedNodeIndex)
+{
+    for (size_t i = 0; i < nodes.size(); i++)
+    {
+        nodes[i].mbSelected = selectedNodeIndex == i;
+    }
+}
+
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 {
     ImGui::BeginGroup();

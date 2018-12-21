@@ -104,3 +104,4 @@ void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, u
 void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
 void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);
 void NodeGraphUpdateScrolling();
+void NodeGraphSelectNode(int selectedNodeIndex);

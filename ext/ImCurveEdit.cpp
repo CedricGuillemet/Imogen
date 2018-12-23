@@ -128,8 +128,20 @@ namespace ImCurveEdit
       bool overCurveOrPoint = false;
 
       int localOverCurve = -1;
+      // make sure highlighted curve is rendered last
+      int *curvesIndex = (int*)_alloca(sizeof(int) * curveCount);
       for (size_t c = 0; c < curveCount; c++)
+          curvesIndex[c] = int(c);
+      int highLightedCurveIndex = -1;
+      if (overCurve != -1 && curveCount)
       {
+          ImSwap(curvesIndex[overCurve], curvesIndex[curveCount - 1]);
+          highLightedCurveIndex = overCurve;
+      }
+
+      for (size_t cur = 0; cur < curveCount; cur++)
+      {
+          int c = curvesIndex[cur];
          if (!delegate.IsVisible(c))
             continue;
          const size_t ptCount = delegate.GetPointCount(c);
@@ -140,7 +152,7 @@ namespace ImCurveEdit
              continue;
          const ImVec2* pts = delegate.GetPoints(c);
          uint32_t curveColor = delegate.GetCurveColor(c);
-         if ((overCurve == c && selection.empty() && !selectingQuad) || movingCurve == c)
+         if ((c == highLightedCurveIndex && selection.empty() && !selectingQuad) || movingCurve == c)
             curveColor = 0xFFFFFFFF;
 
          for (size_t p = 0; p < ptCount - 1; p++)
@@ -165,7 +177,7 @@ namespace ImCurveEdit
                     const ImVec2 pos1 = ImVec2(sp1.x, ImLerp(p1.y, p2.y, rt1)) * ssizeScaled + offset;
                     const ImVec2 pos2 = ImVec2(sp2.x, ImLerp(p1.y, p2.y, rt2)) * ssizeScaled + offset;
 
-                    if (distance(io.MousePos.x, io.MousePos.y, pos1.x, pos1.y, pos2.x, pos2.y) < 8.f && localOverCurve == -1)
+                    if (distance(io.MousePos.x, io.MousePos.y, pos1.x, pos1.y, pos2.x, pos2.y) < 8.f /*&& localOverCurve == -1*/)
                     {
                         localOverCurve = int(c);
                         overCurve = int(c);
@@ -182,7 +194,7 @@ namespace ImCurveEdit
 
                 if ( (distance(io.MousePos.x, io.MousePos.y, p1.x, p1.y, p2.x, p1.y) < 8.f ||
                     distance(io.MousePos.x, io.MousePos.y, p2.x, p1.y, p2.x, p2.y) < 8.f )
-                    && localOverCurve == -1)
+                    /*&& localOverCurve == -1*/)
                 {
                     localOverCurve = int(c);
                     overCurve = int(c);

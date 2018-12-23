@@ -914,7 +914,11 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     bool old_any_active = ImGui::IsAnyItemActive();
     ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 
-    ImGui::InvisibleButton("canvas", ImVec2(100, 100) * factor);
+    const bool nodeIsCompute = gNodeDelegate.NodeIsCompute(nodeIndex);
+    if (nodeIsCompute)
+        ImGui::InvisibleButton("canvas", ImVec2(100, 50) * factor);
+    else
+        ImGui::InvisibleButton("canvas", ImVec2(100, 100) * factor);
     bool node_moving_active = ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
 
     // Save the size of what we have emitted and whether any of the widgets are being used
@@ -966,7 +970,8 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     drawList->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
 
     ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
-    drawList->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
+    if (!nodeIsCompute)
+        drawList->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
 
     ImVec2 imageSize = gNodeDelegate.GetEvaluationSize(nodeIndex);
     float imageRatio = 1.f;
@@ -984,11 +989,20 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     }
 
     if (gNodeDelegate.NodeIsProcesing(nodeIndex))
+    {
         drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), nodeIndex)));
+    }
     else if (gNodeDelegate.NodeIsCubemap(nodeIndex))
+    {
         drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), nodeIndex)));
+    }
+    else if (nodeIsCompute)
+    {
+    }
     else
+    {
         drawList->AddImage((ImTextureID)(int64_t)(gNodeDelegate.GetNodeTexture(size_t(nodeIndex))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
+    }
 
     drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
     drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());

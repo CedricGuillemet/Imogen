@@ -17,6 +17,8 @@ void main()
 {
 	float n = float(gl_VertexID);
 	vec2 uv = vec2(mod(n, 32.0), floor(n/32.0)) / 32.0;
+	uv *= 10.;
+	
 	vec4 color = texture(Sampler0, uv);
 	float length = texture(Sampler1, uv).x * 2.0;
 	
@@ -29,6 +31,13 @@ void main()
 	outCompute2 = gp + vec4(nrm, 0.) * 0.01;
 	outCompute3 = gp + vec4(nrm, 0.) * 0.02;
 	
+
+	/*
+	outCompute0 = vec4(uv.x,0.0,uv.y,1.);
+	outCompute1 = vec4(0.,1.,0.,1.);
+	outCompute2 = vec4(uv.x,1.,uv.y,1.);
+	outCompute3 = vec4(uv.x,2.,uv.y,1.);
+	*/
 	outCompute0.a = color.r;
 	outCompute1.a = color.g;
 	outCompute2.a = color.b;

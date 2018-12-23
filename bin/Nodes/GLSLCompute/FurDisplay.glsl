@@ -46,13 +46,13 @@ void main()
 	float width = min(mix(startWidth, endWidth, inUV.y), startWidth * 0.5);
 	
 	vec4 pos = bezierPos + vec4(right,0.) * inUV.x * width;
+
 	gl_Position = EvaluationParam.viewProjection * vec4(pos.xyz, 1.0); 
 	
 	
 	normal = right;
 	uv = vec2(inUV.x * 0.5 + 0.5, inUV.y);
 	color = vec4(inCompute0.a, inCompute1.a, inCompute2.a, 1.);
-	//color = vec4(localDir, 1.0);
 } 
 #endif
 
@@ -65,10 +65,11 @@ in vec3 up;
 
 void main() 
 { 
-	float u01 = (uv.x * 2.0 - 1.0);
+	/*float u01 = (uv.x * 2.0 - 1.0);
 	vec3 n = mix(up, normal, abs(u01));
 	float dnl = max(dot(normalize(n), normalize(vec3(1.))), 0.) * 0.4 + 0.6;
-	//co = vec4(normalize(normal) * 0.5 + 0.5, 1.0);//color;//vec4(1.0, uv.y, 1.0, 1.0);
 	co = color * dnl;
+	*/
+	co = color;
 }
 #endif

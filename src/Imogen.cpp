@@ -1182,15 +1182,16 @@ struct MySequence : public ImSequencer::SequenceInterface
                 auto& selPoint = mSelectedCurvePoints[i];
                 int keyIndex = selPoint.pointIndex;
                 ImVec2 keyValue = curveEdit.mPts[selPoint.curveIndex][keyIndex];
-                AnimTrack& anim = curveEdit.mAnimTrack[selPoint.curveIndex];
+
                 if (setKeyFrameOrValue.x < FLT_MAX)
                 {
-                    anim.mAnimation->mFrames[keyIndex] = uint32_t(setKeyFrameOrValue.x);
+                    keyValue.x = setKeyFrameOrValue.x;
                 }
                 else
                 {
-                    anim.mAnimation->SetFloatValue(uint32_t(keyIndex), curveEdit.mComponentIndex[selPoint.curveIndex], setKeyFrameOrValue.y);
+                    keyValue.y = setKeyFrameOrValue.y;
                 }
+                curveEdit.EditPoint(selPoint.curveIndex, selPoint.pointIndex, keyValue);
                 setKeyFrameOrValue.x = setKeyFrameOrValue.y = FLT_MAX;
             }
         }

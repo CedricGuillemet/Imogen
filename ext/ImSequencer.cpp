@@ -72,7 +72,7 @@ namespace ImSequencer
         // zoom in/out
         int frameOverCursor = 0;
         const int visibleFrameCount = (int)floorf((canvas_size.x - legendWidth) / framePixelWidth);
-        const float barWidthRatio = visibleFrameCount / (float)frameCount;
+        const float barWidthRatio = ImMin(visibleFrameCount / (float)frameCount, 1.f);
         const float barWidthInPixels = barWidthRatio * (canvas_size.x - legendWidth);
 
         ImRect regionRect(canvas_pos, canvas_pos + canvas_size);
@@ -139,13 +139,14 @@ namespace ImSequencer
         }
         else
         {
-            bool hasScrollBar(false);
+            bool hasScrollBar(true);
+            /*
             int framesPixelWidth = int(frameCount * framePixelWidth);
             if ((framesPixelWidth + legendWidth) >= canvas_size.x)
             {
                 hasScrollBar = true;
             }
-
+            */
             // test scroll area
             ImVec2 headerSize(canvas_size.x, (float)ItemHeight);
             ImVec2 scrollBarSize(canvas_size.x, 14.f);
@@ -518,7 +519,7 @@ namespace ImSequencer
                     {
                         float framesPerPixelInBar = barWidthInPixels / (float)visibleFrameCount;
                         *firstFrame = int((io.MousePos.x - panningViewSource.x) / framesPerPixelInBar) - panningViewFrame;
-                        *firstFrame = ImClamp(*firstFrame, sequence->GetFrameMin(), sequence->GetFrameMax() - visibleFrameCount);
+                        *firstFrame = ImClamp(*firstFrame, sequence->GetFrameMin(), ImMax(sequence->GetFrameMax() - visibleFrameCount, sequence->GetFrameMin()));
                     }
                 }
                 else

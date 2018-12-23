@@ -31,6 +31,7 @@
 #include "nfd.h"
 #include "EvaluationContext.h"
 #include "NodesDelegate.h"
+#include "Evaluators.h"
 
 TileNodeEditGraphDelegate gNodeDelegate;
 
@@ -775,10 +776,12 @@ bool TileNodeEditGraphDelegate::NodeIs2D(size_t nodeIndex)
 
 bool TileNodeEditGraphDelegate::NodeIsCompute(size_t nodeIndex)
 {
-    auto buffer = mEditingContext.GetComputeBuffer(nodeIndex);
+    /*auto buffer = mEditingContext.GetComputeBuffer(nodeIndex);
     if (buffer)
         return true;
     return false;
+    */
+    return (gEvaluators.GetMask(mNodes[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
 }
 
 bool TileNodeEditGraphDelegate::NodeIsCubemap(size_t nodeIndex)

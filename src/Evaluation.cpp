@@ -50,16 +50,17 @@ void Evaluation::AddSingleEvaluation(size_t nodeType)
 {
     EvaluationStage evaluation;
 #ifdef _DEBUG
-    evaluation.mNodeTypename        = gMetaNodes[nodeType].mName;;
+    evaluation.mNodeTypename          = gMetaNodes[nodeType].mName;;
 #endif
-    evaluation.mDecoder                = NULL;
-    evaluation.mUseCountByOthers    = 0;
-    evaluation.mNodeType            = nodeType;
-    evaluation.mParametersBuffer    = 0;
-    evaluation.mBlendingSrc            = ONE;
-    evaluation.mBlendingDst            = ZERO;
-    evaluation.mLocalTime            = 0;
+    evaluation.mDecoder               = NULL;
+    evaluation.mUseCountByOthers      = 0;
+    evaluation.mNodeType              = nodeType;
+    evaluation.mParametersBuffer      = 0;
+    evaluation.mBlendingSrc           = ONE;
+    evaluation.mBlendingDst           = ZERO;
+    evaluation.mLocalTime             = 0;
     evaluation.gEvaluationMask        = gEvaluators.GetMask(nodeType);
+    evaluation.mbDepthBuffer          = false;
     mStages.push_back(evaluation);
 }
 

@@ -367,7 +367,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
         //
         if (evaluationStage.mNodeTypename == "FurDisplay")
         {
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClearDepth(1.f);
+            glDepthFunc(GL_LEQUAL);
+            glEnable(GL_DEPTH_TEST);
+            glClear(GL_COLOR_BUFFER_BIT|(evaluationStage.mbDepthBuffer?GL_DEPTH_BUFFER_BIT:0));
+            
             /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
             if (sourceBuffer != -1)
             {
@@ -537,7 +541,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     if (currentStage.gEvaluationMask&EvaluationGLSL)
     {
         if (!mStageTarget[nodeIndex]->mGLTexID)
-            mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight);
+            mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight, currentStage.mbDepthBuffer);
 
         EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
     }

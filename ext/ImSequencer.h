@@ -22,6 +22,8 @@ namespace ImSequencer
         virtual int GetFrameMax() const = 0;
         virtual int GetItemCount() const = 0;
 
+        virtual void BeginEdit(int /*index*/) {}
+        virtual void EndEdit() {}
         virtual int GetItemTypeCount() const { return 0; }
         virtual const char *GetItemTypeName(int /*typeIndex*/) const { return ""; }
         virtual const char *GetItemLabel(int /*index*/) const { return ""; }

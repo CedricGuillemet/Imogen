@@ -77,31 +77,7 @@ namespace ImSequencer
         const float barWidthInPixels = barWidthRatio * (canvas_size.x - legendWidth);
 
         ImRect regionRect(canvas_pos, canvas_pos + canvas_size);
-        if (regionRect.Contains(io.MousePos))
-        {
-
-            frameOverCursor = *firstFrame + (int)(visibleFrameCount * ((io.MousePos.x - (float)legendWidth - canvas_pos.x) / (canvas_size.x - legendWidth)));
-            //frameOverCursor = max(min(*firstFrame - visibleFrameCount / 2, frameCount - visibleFrameCount), 0);
-
-            /**firstFrame -= frameOverCursor;
-            *firstFrame *= framePixelWidthTarget / framePixelWidth;
-            *firstFrame += frameOverCursor;*/
-            if (io.MouseWheel < -FLT_EPSILON)
-            {
-                *firstFrame -= frameOverCursor;
-                *firstFrame = int(*firstFrame * 1.1f);
-                framePixelWidthTarget *= 0.9f;
-                *firstFrame += frameOverCursor;
-            }
-
-            if (io.MouseWheel > FLT_EPSILON)
-            {
-                *firstFrame -= frameOverCursor;
-                *firstFrame = int(*firstFrame * 0.9f);
-                framePixelWidthTarget *= 1.1f;
-                *firstFrame += frameOverCursor;
-            }
-        }
+        
         static bool panningView = false;
         static ImVec2 panningViewSource;
         static int panningViewFrame;
@@ -383,6 +359,7 @@ namespace ImSequencer
                             movingEntry = i;
                             movingPos = cx;
                             movingPart = j + 1;
+                            sequence->BeginEdit(movingEntry);
                             break;
                         }
                     }
@@ -440,6 +417,7 @@ namespace ImSequencer
                     }
 
                     movingEntry = -1;
+                    sequence->EndEdit();
                 }
             }
 
@@ -537,6 +515,47 @@ namespace ImSequencer
         }
 
         ImGui::EndGroup();
+
+        if (regionRect.Contains(io.MousePos))
+        {
+            bool overCustomDraw = false;
+            for (auto&custom : customDraws)
+            {
+                if (custom.customRect.Contains(io.MousePos))
+                {
+                    overCustomDraw = true;
+                }
+            }
+            if (overCustomDraw)
+            {
+            }
+            else
+            {
+#if 0
+                frameOverCursor = *firstFrame + (int)(visibleFrameCount * ((io.MousePos.x - (float)legendWidth - canvas_pos.x) / (canvas_size.x - legendWidth)));
+                //frameOverCursor = max(min(*firstFrame - visibleFrameCount / 2, frameCount - visibleFrameCount), 0);
+
+                /**firstFrame -= frameOverCursor;
+                *firstFrame *= framePixelWidthTarget / framePixelWidth;
+                *firstFrame += frameOverCursor;*/
+                if (io.MouseWheel < -FLT_EPSILON)
+                {
+                    *firstFrame -= frameOverCursor;
+                    *firstFrame = int(*firstFrame * 1.1f);
+                    framePixelWidthTarget *= 0.9f;
+                    *firstFrame += frameOverCursor;
+                }
+
+                if (io.MouseWheel > FLT_EPSILON)
+                {
+                    *firstFrame -= frameOverCursor;
+                    *firstFrame = int(*firstFrame * 0.9f);
+                    framePixelWidthTarget *= 1.1f;
+                    *firstFrame += frameOverCursor;
+                }
+#endif
+            }
+        }
 
         if (expanded)
         {

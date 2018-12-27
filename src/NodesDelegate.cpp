@@ -40,6 +40,8 @@ struct RampEdit : public ImCurveEdit::Delegate
 {
     RampEdit()
     {
+        mMin = ImVec2(0.f, 0.f);
+        mMax = ImVec2(1.f, 1.f);
     }
     size_t GetCurveCount()
     {
@@ -59,6 +61,8 @@ struct RampEdit : public ImCurveEdit::Delegate
     {
         return mPts;
     }
+    virtual ImVec2& GetMin() { return mMin; }
+    virtual ImVec2& GetMax() { return mMax; }
 
     virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
     {
@@ -96,6 +100,7 @@ private:
         auto e = std::begin(mPts) + GetPointCount(curveIndex);
         std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
     }
+    ImVec2 mMin, mMax;
 };
 
 

@@ -17,6 +17,7 @@ namespace ImSequencer
 
     struct SequenceInterface
     {
+        bool focused = false;
         virtual int GetFrameMin() const = 0;
         virtual int GetFrameMax() const = 0;
         virtual int GetItemCount() const = 0;
@@ -34,8 +35,8 @@ namespace ImSequencer
         virtual void Paste() {}
 
         virtual size_t GetCustomHeight(int /*index*/) { return 0; }
-      virtual void DoubleClick(int /*index*/) {}
-      virtual void CustomDraw(int /*index*/, ImDrawList* /*draw_list*/, const ImRect& /*rc*/, const ImRect& /*legendRect*/, const ImRect& /*clippingRect*/, const ImRect& /*legendClippingRect*/) {}
+        virtual void DoubleClick(int /*index*/) {}
+        virtual void CustomDraw(int /*index*/, ImDrawList* /*draw_list*/, const ImRect& /*rc*/, const ImRect& /*legendRect*/, const ImRect& /*clippingRect*/, const ImRect& /*legendClippingRect*/) {}
     };
 
 

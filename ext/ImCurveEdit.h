@@ -34,6 +34,7 @@ namespace ImCurveEdit
 
     struct Delegate
     {
+        bool focused = false;
         virtual size_t GetCurveCount() = 0;
         virtual bool IsVisible(size_t curveIndex) { return true; }
         virtual CurveType GetCurveType(size_t curveIndex) const { return CurveLinear; }

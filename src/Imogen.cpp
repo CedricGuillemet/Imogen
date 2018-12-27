@@ -996,7 +996,6 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 ++iter;
         }
 
-
         for (size_t curve = 0; curve < mPts.size(); )
         {
             AnimTrack animTrack;
@@ -1005,20 +1004,33 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             animTrack.mValueType = mValueType[curve];
             animTrack.mAnimation = AllocateAnimation(mValueType[curve]);
             size_t keyCount = mPts[curve].size();
+            for (auto& pt : mPts[curve])
+            {
+                if (pt.x >= FLT_MAX)
+                    keyCount--;
+            }
+            if (!keyCount)
+                continue;
             auto anim = animTrack.mAnimation;
             anim->mFrames.resize(keyCount);
             anim->Allocate(keyCount);
-            for (size_t key = 0; key < keyCount; key++)
+            for (size_t key = 0, pointIndex = 0; key < keyCount; pointIndex++)
             {
-                ImVec2 keyValue = mPts[curve][key];
+                ImVec2 keyValue = mPts[curve][pointIndex];
+                if (keyValue.x >= FLT_MAX)
+                    continue;
                 anim->mFrames[key] = uint32_t(keyValue.x);
+                key++;
             }
             do
             {
-                for (size_t key = 0; key < keyCount; key++)
+                for (size_t key = 0, pointIndex = 0; key < keyCount; pointIndex++)
                 {
-                    ImVec2 keyValue = mPts[curve][key];
+                    ImVec2 keyValue = mPts[curve][pointIndex];
+                    if (keyValue.x >= FLT_MAX)
+                        continue;
                     anim->SetFloatValue(uint32_t(key), mComponentIndex[curve], keyValue.y);
+                    key++;
                 }
                 curve++;
             } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
@@ -1026,6 +1038,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         }
         gNodeDelegate.ApplyAnimationForNode(mNodeIndex, gEvaluationTime);
     }
+
     virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return mCurveType[curveIndex]; }
     virtual ImVec2 GetRange() { return mMax - mMin; }
     virtual ImVec2 GetMin() { return mMin; }
@@ -1038,7 +1051,17 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
     {
+        uint32_t parameterIndex = mParameterIndex[curveIndex];
+
         mPts[curveIndex][pointIndex] = value;
+        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
+        {
+            if (mParameterIndex[curve] == parameterIndex)
+            {
+                mPts[curve][pointIndex].x = value.x;
+            }
+        }
+
         SortValues(curveIndex);
         for (size_t i = 0; i < GetPointCount(curveIndex); i++)
         {
@@ -1050,14 +1073,39 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     virtual void AddPoint(size_t curveIndex, ImVec2 value)
     {
-        mPts[curveIndex].push_back(value);
-        SortValues(curveIndex);
+        uint32_t parameterIndex = mParameterIndex[curveIndex];
+        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
+        {
+            if (mParameterIndex[curve] == parameterIndex)
+            {
+                mPts[curve].push_back(value);
+            }
+        }
+        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
+        {
+            if (mParameterIndex[curve] == parameterIndex)
+            {
+                SortValues(curve);
+            }
+        }
     }
 
-    virtual void DelPoint(size_t curveIndex, size_t pointIndex)
+    void DeletePoints(const ImVector<ImCurveEdit::EditPoint>& points)
     {
-        mPts[curveIndex].erase(mPts[curveIndex].begin() + pointIndex);
-        SortValues(curveIndex);
+        // tag point 
+        for (int i = 0; i < points.size(); i++)
+        {
+            auto& selPoint = points[i];
+            uint32_t parameterIndex = mParameterIndex[selPoint.curveIndex];
+            for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
+            {
+                if (mParameterIndex[curve] == parameterIndex)
+                {
+                    mPts[curve][selPoint.pointIndex].x = FLT_MAX;
+                }
+            }
+        }
+        BakeValuesToAnimationTrack();
     }
 
     virtual void BeginEditing() 
@@ -1175,6 +1223,15 @@ struct MySequence : public ImSequencer::SequenceInterface
         ImGui::SetCursorScreenPos(rc.Min);
         ImCurveEdit::Edit(curveEdit, rc.Max - rc.Min, 137 + index, &clippingRect, &mSelectedCurvePoints);
         getKeyFrameOrValue = ImVec2(FLT_MAX, FLT_MAX);
+
+        if (focused || curveEdit.focused)
+        {
+            if (ImGui::IsKeyPressedMap(ImGuiKey_Delete))
+            {
+                curveEdit.DeletePoints(mSelectedCurvePoints);
+            }
+        }
+
         if (setKeyFrameOrValue.x < FLT_MAX || setKeyFrameOrValue.y < FLT_MAX)
         {
             for (int i = 0; i < mSelectedCurvePoints.size(); i++)

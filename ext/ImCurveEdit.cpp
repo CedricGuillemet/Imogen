@@ -95,7 +95,7 @@ namespace ImCurveEdit
       ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0,0));
       ImGui::PushStyleColor(ImGuiCol_Border, 0);
       ImGui::BeginChildFrame(id, size);
-
+      delegate.focused = ImGui::IsWindowFocused();
       ImDrawList* draw_list = ImGui::GetWindowDrawList();
       if (clippingRect)
          draw_list->PushClipRect(clippingRect->Min, clippingRect->Max, true);
@@ -340,7 +340,7 @@ namespace ImCurveEdit
                   continue;
 
                const ImVec2* pts = delegate.GetPoints(c);
-               for (size_t p = 0; p < ptCount - 1; p++)
+               for (size_t p = 0; p < ptCount; p++)
                {
                   const ImVec2 center = pointToRange(pts[p]) * ssizeScaled + offset;
                   if (selectionQuad.Contains(center))
@@ -369,7 +369,6 @@ namespace ImCurveEdit
           int index = 0;
           for (auto& point : selection)
               (*selectedPoints)[index++] = point;
-
       }
       return 0;
    }

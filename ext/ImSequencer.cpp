@@ -46,6 +46,7 @@ namespace ImSequencer
         if (!sequenceCount)
             return false;
         ImGui::BeginGroup();
+        
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         ImVec2 canvas_pos = ImGui::GetCursorScreenPos();            // ImDrawList API uses screen coordinates!
         ImVec2 canvas_size = ImGui::GetContentRegionAvail();        // Resize canvas to what's available
@@ -156,6 +157,7 @@ namespace ImSequencer
             ImVec2 childFrameSize(canvas_size.x, canvas_size.y - 8.f - headerSize.y - (hasScrollBar ? scrollBarSize.y : 0));
             ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
             ImGui::BeginChildFrame(889, childFrameSize);
+            sequence->focused = ImGui::IsWindowFocused();
             ImGui::InvisibleButton("contentBar", ImVec2(canvas_size.x, float(controlHeight)));
             const ImVec2 contentMin = ImGui::GetItemRectMin();
             const ImVec2 contentMax = ImGui::GetItemRectMax();

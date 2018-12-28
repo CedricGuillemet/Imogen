@@ -253,6 +253,7 @@ void TileNodeEditGraphDelegate::UserDeleteNode(size_t index)
         NodeIsDeleted(int(index));
         mNodes.erase(mNodes.begin() + index);
     }
+    RemoveAnimation(index);
     mEditingContext.UserDeleteStage(index);
     gEvaluation.UserDeleteEvaluation(index);
 }
@@ -851,18 +852,20 @@ AnimTrack* TileNodeEditGraphDelegate::GetAnimTrack(uint32_t nodeIndex, uint32_t 
     return NULL;
 }
 
-//void* Evaluation::
-
 void TileNodeEditGraphDelegate::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
 {
+    URDummy urDummy;
+
     AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
     if (!animTrack)
     {
+        URAdd<AnimTrack> urAdd(int(mAnimTrack.size()), [] { return &gNodeDelegate.mAnimTrack; });
         uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mType].mParams[parameterIndex].mType;
         AnimTrack newTrack{ nodeIndex, parameterIndex, parameterType, AllocateAnimation(parameterType) };
         mAnimTrack.push_back(newTrack);
         animTrack = &mAnimTrack.back();
     }
+    URChange<AnimTrack> urChange(int(animTrack - mAnimTrack.data()), [](int index) {return &gNodeDelegate.mAnimTrack[index]; });
     auto& node = mNodes[nodeIndex];
     size_t parameterOffset = GetParameterOffset(uint32_t(node.mType), parameterIndex);
     animTrack->mAnimation->SetValue(frame, &node.mParameters[parameterOffset]);
@@ -915,9 +918,26 @@ void TileNodeEditGraphDelegate::ApplyAnimation(int frame)
     }
 }
 
-void TileNodeEditGraphDelegate::RemoveAnimation(int nodeIndex)
+void TileNodeEditGraphDelegate::RemoveAnimation(size_t nodeIndex)
 {
+    if (mAnimTrack.empty())
+        return;
+    std::vector<int> tracks;
+    for (int i = 0; i < int(mAnimTrack.size()); i++)
+    {
+        const AnimTrack& animTrack = mAnimTrack[i];
+        if (animTrack.mNodeIndex == nodeIndex)
+            tracks.push_back(i);
+    }
+    if (tracks.empty())
+        return;
 
+    for (int i = 0; i < int(tracks.size()); i++)
+    {
+        int index = tracks[i] - i;
+        URDel<AnimTrack> urDel(index, [] { return &gNodeDelegate.mAnimTrack; });
+        mAnimTrack.erase(mAnimTrack.begin() + index);
+    }
 }
 
 Camera *TileNodeEditGraphDelegate::GetCameraParameter(size_t index)
@@ -946,7 +966,7 @@ Camera *TileNodeEditGraphDelegate::GetCameraParameter(size_t index)
 float TileNodeEditGraphDelegate::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)
 {
     auto& node = mNodes[index];
-    size_t paramOffset = GetParameterOffset(node.mType, parameterIndex);
+    size_t paramOffset = GetParameterOffset(uint32_t(node.mType), parameterIndex);
     unsigned char *ptr = &node.mParameters.data()[paramOffset];
     const MetaNode* metaNodes = gMetaNodes.data();
     const MetaNode& currentMeta = metaNodes[node.mType];

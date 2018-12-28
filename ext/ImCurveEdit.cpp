@@ -252,9 +252,9 @@ namespace ImCurveEdit
       {
           if (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f && !selection.empty())
           {
-              delegate.BeginEdit(0);
               if (!pointsMoved)
               {
+                  delegate.BeginEdit(0);
                   mousePosOrigin = io.MousePos;
                   originalPoints.resize(selection.size());
                   int index = 0;

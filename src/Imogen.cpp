@@ -1108,15 +1108,26 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         BakeValuesToAnimationTrack();
     }
 
-    static URChange<AnimTrack> *undoRedoChange;
+    static std::vector<URChange<AnimTrack> *> undoRedoChanges;
     virtual void BeginEdit(int index)
     {
+        bool hasTrackForNode = false;
+        for (auto& track : gNodeDelegate.mAnimTrack)
+        {
+            if (track.mNodeIndex == gNodeDelegate.mSelectedNodeIndex)
+            {
+                hasTrackForNode = true;
+                break;
+            }
+        }
+        if (!hasTrackForNode)
+            return;
         for (size_t i = 0; i < gNodeDelegate.mAnimTrack.size(); i++)
         {
             auto& track = gNodeDelegate.mAnimTrack[i];
             if (track.mNodeIndex == gNodeDelegate.mSelectedNodeIndex)
             {
-                undoRedoChange = new URChange<AnimTrack>(i, [](int index) { return &gNodeDelegate.mAnimTrack[index]; });
+                undoRedoChanges.push_back(new URChange<AnimTrack>(i, [](int index) { return &gNodeDelegate.mAnimTrack[index]; }));
                 break;
             }
         }
@@ -1124,8 +1135,9 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     virtual void EndEdit() 
     {
-        delete undoRedoChange;
-        undoRedoChange = NULL;
+        for (auto ur : undoRedoChanges)
+            delete ur;
+        undoRedoChanges.clear();
     }
 
     std::vector<std::vector<ImVec2>> mPts;
@@ -1150,7 +1162,7 @@ private:
     }
 };
 
-URChange<AnimTrack> *AnimCurveEdit::undoRedoChange = nullptr;
+std::vector<URChange<AnimTrack> *> AnimCurveEdit::undoRedoChanges;
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
@@ -1170,6 +1182,7 @@ struct MySequence : public ImSequencer::SequenceInterface
 
     virtual void BeginEdit(int index)
     {
+        assert(undoRedoChange == nullptr);
         undoRedoChange = new URChange<TileNodeEditGraphDelegate::ImogenNode>(index, [](int index) { return &gNodeDelegate.mNodes[index]; });
     }
     virtual void EndEdit()
@@ -1265,11 +1278,21 @@ struct MySequence : public ImSequencer::SequenceInterface
 
         if (setKeyFrameOrValue.x < FLT_MAX || setKeyFrameOrValue.y < FLT_MAX)
         {
+            //URChange<AnimTrack> urChange(gNodeDelegate.mSelectedNodeIndex, [](int index) { return &gNodeDelegate.mAnimTrack[index]; });
+            bool hasUndo = false;
+            URDummy urDummy;
             for (int i = 0; i < mSelectedCurvePoints.size(); i++)
             {
                 auto& selPoint = mSelectedCurvePoints[i];
                 int keyIndex = selPoint.pointIndex;
                 ImVec2 keyValue = curveEdit.mPts[selPoint.curveIndex][keyIndex];
+                uint32_t parameterIndex = curveEdit.mParameterIndex[selPoint.curveIndex];
+                AnimTrack* animTrack = gNodeDelegate.GetAnimTrack(gNodeDelegate.mSelectedNodeIndex, parameterIndex);
+                if (animTrack)
+                {
+                    URChange<AnimTrack> urChange(int(animTrack - gNodeDelegate.GetAnimTrack().data()), [](int index) { return &gNodeDelegate.mAnimTrack[index]; });
+                    hasUndo = true;
+                }
 
                 if (setKeyFrameOrValue.x < FLT_MAX)
                 {
@@ -1282,6 +1305,8 @@ struct MySequence : public ImSequencer::SequenceInterface
                 curveEdit.EditPoint(selPoint.curveIndex, selPoint.pointIndex, keyValue);
             }
             setKeyFrameOrValue.x = setKeyFrameOrValue.y = FLT_MAX;
+            if (!hasUndo)
+                urDummy.Discard();
         }
         if (mSelectedCurvePoints.size() == 1)
         {

@@ -163,6 +163,10 @@ struct AnimationBase
     virtual void SetValue(uint32_t frame, void *source) { assert(0); }
     virtual float GetFloatValue(uint32_t index, int componentIndex) { assert(0); return 0.f; }
     virtual void SetFloatValue(uint32_t index, int componentIndex, float value) { assert(0); }
+    virtual void Copy(AnimationBase *source)
+    {
+        mFrames = source->mFrames;
+    }
     struct AnimationPointer
     {
         uint32_t mPreviousIndex;
@@ -229,7 +233,12 @@ template<typename T> struct Animation : public AnimationBase
             mValues.insert(mValues.begin() + pointer.mPreviousIndex, value);
         }
     }
-
+    virtual void Copy(AnimationBase *source)
+    {
+        AnimationBase::Copy(source);
+        Allocate(source->mFrames.size());
+        memcpy(GetData(), source->GetData(), GetValuesByteLength());
+    }
 protected:
     template<typename T> float GetComponent(int componentIndex, T& v)
     {
@@ -271,6 +280,7 @@ struct AnimTrack
     uint32_t mParamIndex;
     uint32_t mValueType; // Con_
     AnimationBase* mAnimation;
+    AnimTrack& operator = (const AnimTrack& other);
 };
 
 struct Material

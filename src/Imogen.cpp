@@ -1108,12 +1108,24 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         BakeValuesToAnimationTrack();
     }
 
-    virtual void BeginEditing() 
+    static URChange<AnimTrack> *undoRedoChange;
+    virtual void BeginEdit(int index)
     {
+        for (size_t i = 0; i < gNodeDelegate.mAnimTrack.size(); i++)
+        {
+            auto& track = gNodeDelegate.mAnimTrack[i];
+            if (track.mNodeIndex == gNodeDelegate.mSelectedNodeIndex)
+            {
+                undoRedoChange = new URChange<AnimTrack>(i, [](int index) { return &gNodeDelegate.mAnimTrack[index]; });
+                break;
+            }
+        }
     }
 
-    virtual void EndEditing() 
+    virtual void EndEdit() 
     {
+        delete undoRedoChange;
+        undoRedoChange = NULL;
     }
 
     std::vector<std::vector<ImVec2>> mPts;
@@ -1137,6 +1149,8 @@ private:
         BakeValuesToAnimationTrack();
     }
 };
+
+URChange<AnimTrack> *AnimCurveEdit::undoRedoChange = nullptr;
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
@@ -1163,7 +1177,6 @@ struct MySequence : public ImSequencer::SequenceInterface
         delete undoRedoChange;
         undoRedoChange = NULL;
     }
-
 
     virtual int GetItemCount() const { return (int)gEvaluation.GetStagesCount(); }
 

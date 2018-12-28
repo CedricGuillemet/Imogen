@@ -252,7 +252,7 @@ namespace ImCurveEdit
       {
           if (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f && !selection.empty())
           {
-              delegate.BeginEditing();
+              delegate.BeginEdit(0);
               if (!pointsMoved)
               {
                   mousePosOrigin = io.MousePos;
@@ -288,7 +288,7 @@ namespace ImCurveEdit
           if (pointsMoved)
           {
               pointsMoved = false;
-              delegate.EndEditing();
+              delegate.EndEdit();
           }
       }
 
@@ -296,9 +296,9 @@ namespace ImCurveEdit
       if (overCurve != -1 && io.MouseDoubleClicked[0])
       {
          const ImVec2 np = rangeToPoint((io.MousePos - offset) / viewSize);
-         delegate.BeginEditing();
+         delegate.BeginEdit(overCurve);
          delegate.AddPoint(overCurve, np);
-         delegate.EndEditing();
+         delegate.EndEdit();
       }
 
       // move curve
@@ -328,13 +328,13 @@ namespace ImCurveEdit
          {
              movingCurve = -1;
              pointsMoved = false;
-             delegate.EndEditing();
+             delegate.EndEdit();
          }
       }
       if (movingCurve == -1 && overCurve != -1 && ImGui::IsMouseClicked(0) && selection.empty() && !selectingQuad)
       {
          movingCurve = overCurve;
-         delegate.BeginEditing();
+         delegate.BeginEdit(overCurve);
       }
 
       // quad selection

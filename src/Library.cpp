@@ -873,3 +873,13 @@ AnimationBase::AnimationPointer AnimationBase::GetPointer(uint32_t frame, bool b
     assert(0);
     return { 0, 0, 0, 0, 0.f };
 }
+
+AnimTrack& AnimTrack::operator = (const AnimTrack& other)
+{
+    mNodeIndex = other.mNodeIndex;
+    mParamIndex = other.mParamIndex;
+    mValueType = other.mValueType;
+    mAnimation = AllocateAnimation(mValueType);
+    mAnimation->Copy(other.mAnimation);
+    return *this;
+}

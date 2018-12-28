@@ -47,8 +47,8 @@ namespace ImCurveEdit
         virtual void AddPoint(size_t curveIndex, ImVec2 value) = 0;
         virtual unsigned int GetBackgroundColor() { return 0xFF202020; }
         // handle undo/redo thru this functions
-        virtual void BeginEditing() {}
-        virtual void EndEditing() {}
+        virtual void BeginEdit(int /*index*/) {}
+        virtual void EndEdit() {}
     };
 
     int Edit(Delegate &delegate, const ImVec2& size, unsigned int id, const ImRect *clippingRect = NULL, ImVector<EditPoint> *selectedPoints = NULL);

@@ -154,7 +154,7 @@ struct AnimationBase
     {
         mFrames = animation.mFrames;
     }
-    std::vector<uint32_t> mFrames;
+    std::vector<int32_t> mFrames;
 
     virtual void Allocate(size_t elementCount) { assert(0); }
     virtual void* GetData() { assert(0); return nullptr; }
@@ -169,13 +169,13 @@ struct AnimationBase
     }
     struct AnimationPointer
     {
-        uint32_t mPreviousIndex;
-        uint32_t mPreviousFrame;
-        uint32_t mNextIndex;
-        uint32_t mNextFrame;
+        int mPreviousIndex;
+        int mPreviousFrame;
+        int mNextIndex;
+        int mNextFrame;
         float mRatio;
     };
-    AnimationPointer GetPointer(uint32_t frame, bool bSetting) const;
+    AnimationPointer GetPointer(int32_t frame, bool bSetting) const;
 };
 
 template<typename T> struct Animation : public AnimationBase
@@ -214,7 +214,7 @@ template<typename T> struct Animation : public AnimationBase
 
     virtual void GetValue(uint32_t frame, void *destination) 
     {
-        auto pointer = GetPointer(frame, false);
+        AnimationPointer pointer = GetPointer(frame, false);
         T *dest = (T*)destination;
         *dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
     }
@@ -229,8 +229,8 @@ template<typename T> struct Animation : public AnimationBase
         }
         else
         {
-            mFrames.insert(mFrames.begin() + pointer.mPreviousIndex, frame);
-            mValues.insert(mValues.begin() + pointer.mPreviousIndex, value);
+            mFrames.insert(mFrames.begin() + pointer.mPreviousIndex + 1, frame);
+            mValues.insert(mValues.begin() + pointer.mPreviousIndex + 1, value);
         }
     }
     virtual void Copy(AnimationBase *source)
@@ -279,7 +279,7 @@ struct AnimTrack
     uint32_t mNodeIndex;
     uint32_t mParamIndex;
     uint32_t mValueType; // Con_
-    AnimationBase* mAnimation;
+    AnimationBase* mAnimation = nullptr;
     AnimTrack& operator = (const AnimTrack& other);
 };
 

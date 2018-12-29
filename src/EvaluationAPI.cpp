@@ -307,9 +307,12 @@ Image_t EvaluationStage::DecodeImage()
 int Evaluation::LoadSVG(const char *filename, Image *image, int width, int height)
 {
     NSVGimage* svgImage;
-    svgImage = nsvgParseFromFile("C:\\Users\\cedri\\dev\\nanosvg\\example\\23.svg"/*filename*/, "px", 96);
+    svgImage = nsvgParseFromFile(filename, "px", 96);
     if (!svgImage)
         return EVAL_ERR;
+
+    width = (int)svgImage->width;
+    height = (int)svgImage->height;
 
     // Create rasterizer (can be used to render multiple images).
     NSVGrasterizer* rast = nsvgCreateRasterizer();
@@ -322,6 +325,8 @@ int Evaluation::LoadSVG(const char *filename, Image *image, int width, int heigh
 
     image->SetBits(img);
     image->mDataSize = width * height * 4;
+    image->mWidth = width;
+    image->mHeight = height;
     image->mNumMips = 1;
     image->mNumFaces = 1;
     image->mFormat = TextureFormat::RGBA8;

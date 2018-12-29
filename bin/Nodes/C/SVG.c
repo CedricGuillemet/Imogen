@@ -14,7 +14,7 @@ int main(SVG *param, Evaluation *evaluation)
 	if (strlen(param->filename))
 	{
 		//SetEvaluationSize(evaluation->targetIndex, dim, dim);
-		if (LoadSVG(param->filename, &image, dim, dim) == EVAL_ERR)
+		if (LoadSVG(param->filename, &image, dim, dim) == EVAL_OK)
 		{
 			SetEvaluationImage(evaluation->targetIndex, &image);
 		}

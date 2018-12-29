@@ -86,11 +86,33 @@ struct NodeLink
     }
 };
 
+inline bool operator != (const ImVec2 r1, const ImVec2 r2)
+{
+    if (r1.x != r2.x)
+        return true;
+    if (r1.y != r2.y)
+        return true;
+    return false;
+}
+
 struct NodeRug
 {
     ImVec2 mPos, mSize;
     uint32_t mColor;
     std::string mText;
+
+    bool operator != (const NodeRug& other) const
+    {
+        if (mPos != other.mPos)
+            return true;
+        if (mSize != other.mSize)
+            return false;
+        if (mColor != other.mColor)
+            return true;
+        if (mText != other.mText)
+            return true;
+        return false;
+    }
 };
 
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled);

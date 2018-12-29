@@ -107,7 +107,17 @@ struct InputSampler
     uint32_t mWrapV;
     uint32_t mFilterMin;
     uint32_t mFilterMag;
+    
+    bool operator != (const InputSampler& other) const
+    {
+        return (mWrapU != other.mWrapU || mWrapV != other.mWrapV || mFilterMin != other.mFilterMin || mFilterMag != other.mFilterMag);
+    }
+    bool operator == (const InputSampler& other) const
+    {
+        return (mWrapU == other.mWrapU && mWrapV == other.mWrapV && mFilterMin == other.mFilterMin && mFilterMag == other.mFilterMag);
+    }
 };
+
 struct MaterialNode
 {
     uint32_t mType;
@@ -158,6 +168,7 @@ struct AnimationBase
 
     virtual void Allocate(size_t elementCount) { assert(0); }
     virtual void* GetData() { assert(0); return nullptr; }
+    virtual const void* GetDataConst() const { assert(0); return nullptr; }
     virtual size_t GetValuesByteLength() const { assert(0); return 0; }
     virtual void GetValue(uint32_t frame, void *destination) { assert(0); }
     virtual void SetValue(uint32_t frame, void *source) { assert(0); }
@@ -176,6 +187,19 @@ struct AnimationBase
         float mRatio;
     };
     AnimationPointer GetPointer(int32_t frame, bool bSetting) const;
+    bool operator != (const AnimationBase& other) const
+    {
+        if (mFrames != other.mFrames)
+            return true;
+
+        size_t la = GetValuesByteLength();
+        size_t lb = other.GetValuesByteLength();
+        if (la != lb)
+            return true;
+        if (memcmp(this->GetDataConst(), other.GetDataConst(), la))
+            return true;
+        return false;
+    }
 };
 
 template<typename T> struct Animation : public AnimationBase
@@ -197,7 +221,9 @@ template<typename T> struct Animation : public AnimationBase
         mValues.resize(elementCount);
     }
     virtual void* GetData() { return mValues.data(); }
-    virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T);    }
+    virtual const void* GetDataConst() const { return mValues.data(); }
+
+    virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T); }
     virtual float GetFloatValue(uint32_t index, int componentIndex)
     {
         unsigned char*ptr = (unsigned char*)GetData();
@@ -233,12 +259,14 @@ template<typename T> struct Animation : public AnimationBase
             mValues.insert(mValues.begin() + pointer.mPreviousIndex + 1, value);
         }
     }
+
     virtual void Copy(AnimationBase *source)
     {
         AnimationBase::Copy(source);
         Allocate(source->mFrames.size());
         memcpy(GetData(), source->GetData(), GetValuesByteLength());
     }
+
 protected:
     template<typename T> float GetComponent(int componentIndex, T& v)
     {
@@ -281,6 +309,18 @@ struct AnimTrack
     uint32_t mValueType; // Con_
     AnimationBase* mAnimation = nullptr;
     AnimTrack& operator = (const AnimTrack& other);
+    bool operator != (const AnimTrack& other) const
+    {
+        if (mNodeIndex != other.mNodeIndex)
+            return true;
+        if (mParamIndex != other.mParamIndex)
+            return true;
+        if (mValueType != other.mValueType)
+            return true;
+        if (mAnimation->operator != (*other.mAnimation))
+            return true;
+        return false;
+    }
 };
 
 struct Material

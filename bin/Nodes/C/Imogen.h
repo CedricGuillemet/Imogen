@@ -106,6 +106,7 @@ int SetThumbnailImage(Image *image);
 int Evaluate(int target, int width, int height, Image *image);
 
 void SetBlendingMode(int target, int blendSrc, int blendDst);
+void EnableDepthBuffer(int target, int enable);
 int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(int target, int imageWidth, int imageHeight);
 int SetEvaluationCubeSize(int target, int faceWidth);

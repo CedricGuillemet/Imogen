@@ -1112,6 +1112,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 {
                     undoRedoEditCurves.push_back(new URChange<AnimTrack>(index, [](int index) { return &gNodeDelegate.mAnimTrack[index]; }));
                     parameterFound = true;
+                    break;
                 }
                 index++;
             }

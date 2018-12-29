@@ -214,16 +214,14 @@ template<typename T> struct URChange : public UndoRedo
         if (gUndoRedoHandler.mbProcessing || mbDiscarded)
             return;
 
-        // add to handler
-        /*if (gUndoRedoHandler.mLastElementPtr == GetElements(mIndex))
-        {
-            gUndoRedoHandler.mUndos.back()->UpdatePostDo();
-        }
-        else
-        */
+        if (*GetElements(mIndex) != mPreDo)
         {
             mPostDo = *GetElements(mIndex);
             gUndoRedoHandler.AddUndo(*this);
+        }
+        else
+        {
+            // TODO: should not be here unless asking for too much useless undo
         }
     }
     virtual void Undo()

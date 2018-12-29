@@ -838,6 +838,15 @@ void LoadMetaNodes()
         ,{ }
         }
 
+
+            ,
+        {
+            "SVG", hcFilter, 6
+            ,{ }
+        ,{ { "", Con_Float4 } }
+        ,{ { "File name", Con_FilenameRead }, { "DPI", Con_Float}}
+        }
+
     };
 
 

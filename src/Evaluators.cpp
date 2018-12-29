@@ -59,6 +59,7 @@ static const EValuationFunction evaluationFunctions[] = {
     { "strcpy", strcpy },
     { "strlen", strlen },
     { "fabsf", fabsf },
+    { "LoadSVG", (void*)Evaluation::LoadSVG},
 };
 
 static void libtccErrorFunc(void *opaque, const char *msg)

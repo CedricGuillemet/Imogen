@@ -260,6 +260,7 @@ struct Evaluation
     static void SetProcessing(int target, int processing);
     static int AllocateComputeBuffer(int target, int elementCount, int elementSize);
     static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
+    static int LoadSVG(const char *filename, Image *image, float dpi);
     // synchronous texture cache
     // use for simple textures(stock) or to replace with a more efficient one
     unsigned int GetTexture(const std::string& filename);

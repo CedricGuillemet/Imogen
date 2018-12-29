@@ -25,6 +25,22 @@
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include <SDL.h>
 #include "Utils.h"
+#include "Evaluation.h"
+
+void FlipVImage(Image *image)
+{
+    int pixelSize = (image->mFormat == TextureFormat::RGB8) ? 3 : 4;
+    int stride = image->mWidth * pixelSize;
+    for (int y = 0; y < image->mHeight / 2; y++)
+    {
+        for (int x = 0; x < stride; x++)
+        {
+            unsigned char * p1 = &image->GetBits()[y * stride + x];
+            unsigned char * p2 = &image->GetBits()[(image->mHeight - 1 - y) * stride + x];
+            ImSwap(*p1, *p2);
+        }
+    }
+}
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {

@@ -34,6 +34,12 @@
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
+#define NANOSVG_ALL_COLOR_KEYWORDS	// Include full list of color keywords.
+#define NANOSVG_IMPLEMENTATION	// Expands implementation
+#include "nanosvg.h"
+#define NANOSVGRAST_IMPLEMENTATION
+#include "nanosvgrast.h"
+
 #include <fstream>
 #include <streambuf>
 #include "imgui.h"
@@ -296,6 +302,37 @@ static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
 Image_t EvaluationStage::DecodeImage()
 {
     return ::DecodeImage(mDecoder.get(), mLocalTime);
+}
+
+int Evaluation::LoadSVG(const char *filename, Image *image, int width, int height)
+{
+    if (!strlen(filename))
+        return EVAL_ERR;
+
+    NSVGimage* svgImage;
+    svgImage = nsvgParseFromFile(filename, "px", 96);
+    if (!svgImage)
+        return EVAL_ERR;
+
+    // Create rasterizer (can be used to render multiple images).
+    NSVGrasterizer* rast = nsvgCreateRasterizer();
+
+    // Allocate memory for image
+    unsigned char* img = (unsigned char*)malloc(width * height * 4);
+
+    // Rasterize
+    nsvgRasterize(rast, svgImage, 0, 0, 1, img, width, height, width * 4);
+
+    image->SetBits(img);
+    image->mDataSize = width * height * 4;
+    image->mNumMips = 1;
+    image->mNumFaces = 1;
+    image->mFormat = TextureFormat::RGBA8;
+    image->mDecoder = NULL;
+
+    nsvgDelete(svgImage);
+    nsvgDeleteRasterizer(rast);
+    return EVAL_OK;
 }
 
 int Evaluation::ReadImage(const char *filename, Image *image)

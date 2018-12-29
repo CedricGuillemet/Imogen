@@ -70,3 +70,5 @@ FFMPEG - Fabrice Bellard
 Python 3 - Python.org
 
 pybind 11 - https://github.com/pybind/pybind11
+
+nanosvg - Mikko Mononen https://github.com/memononen/nanosvg

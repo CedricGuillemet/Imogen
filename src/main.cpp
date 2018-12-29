@@ -105,24 +105,6 @@ Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
 
-void TagTime(const char *tagInfo)
-{
-    static uint64_t lastTime = -1;
-    if (lastTime == -1)
-    {
-        lastTime = SDL_GetPerformanceCounter();
-        Log("%s\n", tagInfo);
-        return;
-    }
-    uint64_t t = SDL_GetPerformanceCounter();
-    
-    double v = double(t - lastTime) / double(SDL_GetPerformanceFrequency());
-    Log("%s : %5.3f s\n", tagInfo, float(v));
-    lastTime = t;
-}
-//extern DECLSPEC Uint64 SDLCALL SDL_GetPerformanceCounter(void);
-//extern DECLSPEC Uint64 SDLCALL SDL_GetPerformanceFrequency(void);
-
 int main(int, char**)
 {
     TagTime("App start");

@@ -117,10 +117,7 @@ namespace ImSequencer
         else
         {
             bool hasScrollBar(true);
-<<<<<<< HEAD
-=======
             /*
->>>>>>> 94fb14a7398a97b613fc47031623b94bcfee67ef
             int framesPixelWidth = int(frameCount * framePixelWidth);
             if ((framesPixelWidth + legendWidth) >= canvas_size.x)
             {

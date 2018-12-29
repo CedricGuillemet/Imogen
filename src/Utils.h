@@ -27,8 +27,10 @@
 #include <string>
 #include <float.h>
 
+struct Image_t;
+typedef struct Image_t Image;
 void TagTime(const char *tagInfo);
-
+void FlipVImage(Image *image);
 typedef unsigned int TextureID;
 static const int SemUV0 = 0;
 

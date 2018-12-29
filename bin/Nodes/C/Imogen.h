@@ -96,7 +96,7 @@ int SetEvaluationImageCube(int target, Image *image, int cubeFace);
 // set the bits pointer with an allocated memory
 int AllocateImage(Image *image);
 int FreeImage(Image *image);
-int LoadSVG(const char *filename, Image *image, int width, int height);
+int LoadSVG(const char *filename, Image *image, float dpi);
 
 // Image resize
 // Image thumbnail

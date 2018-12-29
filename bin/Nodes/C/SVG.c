@@ -3,18 +3,19 @@
 typedef struct SVG_t
 {
 	char filename[1024];
-	int size;
+	float dpi;
 } SVG;
 
 int main(SVG *param, Evaluation *evaluation)
 {
 	Image image;
 	image.bits = 0;
-	int dim = 256<<param->size;
+	if (param->dpi <= 1.f)
+		param->dpi = 96.f;
+
 	if (strlen(param->filename))
 	{
-		//SetEvaluationSize(evaluation->targetIndex, dim, dim);
-		if (LoadSVG(param->filename, &image, dim, dim) == EVAL_OK)
+		if (LoadSVG(param->filename, &image, param->dpi) == EVAL_OK)
 		{
 			SetEvaluationImage(evaluation->targetIndex, &image);
 		}

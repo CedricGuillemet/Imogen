@@ -304,15 +304,15 @@ Image_t EvaluationStage::DecodeImage()
     return ::DecodeImage(mDecoder.get(), mLocalTime);
 }
 
-int Evaluation::LoadSVG(const char *filename, Image *image, int width, int height)
+int Evaluation::LoadSVG(const char *filename, Image *image, float dpi)
 {
     NSVGimage* svgImage;
-    svgImage = nsvgParseFromFile(filename, "px", 96);
+    svgImage = nsvgParseFromFile(filename, "px", dpi);
     if (!svgImage)
         return EVAL_ERR;
 
-    width = (int)svgImage->width;
-    height = (int)svgImage->height;
+    int width = (int)svgImage->width;
+    int height = (int)svgImage->height;
 
     // Create rasterizer (can be used to render multiple images).
     NSVGrasterizer* rast = nsvgCreateRasterizer();
@@ -332,6 +332,7 @@ int Evaluation::LoadSVG(const char *filename, Image *image, int width, int heigh
     image->mFormat = TextureFormat::RGBA8;
     image->mDecoder = NULL;
 
+    FlipVImage(image);
     nsvgDelete(svgImage);
     nsvgDeleteRasterizer(rast);
     return EVAL_OK;

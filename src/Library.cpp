@@ -844,7 +844,7 @@ void LoadMetaNodes()
             "SVG", hcFilter, 6
             ,{ }
         ,{ { "", Con_Float4 } }
-        ,{ { "File name", Con_FilenameRead }, { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }}
+        ,{ { "File name", Con_FilenameRead }, { "DPI", Con_Float}}
         }
 
     };

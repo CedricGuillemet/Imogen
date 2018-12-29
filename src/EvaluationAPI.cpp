@@ -306,11 +306,8 @@ Image_t EvaluationStage::DecodeImage()
 
 int Evaluation::LoadSVG(const char *filename, Image *image, int width, int height)
 {
-    if (!strlen(filename))
-        return EVAL_ERR;
-
     NSVGimage* svgImage;
-    svgImage = nsvgParseFromFile(filename, "px", 96);
+    svgImage = nsvgParseFromFile("C:\\Users\\cedri\\dev\\nanosvg\\example\\23.svg"/*filename*/, "px", 96);
     if (!svgImage)
         return EVAL_ERR;
 

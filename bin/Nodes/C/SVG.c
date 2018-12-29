@@ -6,15 +6,18 @@ typedef struct SVG_t
 	int size;
 } SVG;
 
-
 int main(SVG *param, Evaluation *evaluation)
 {
 	Image image;
+	image.bits = 0;
 	int dim = 256<<param->size;
-	SetEvaluationSize(evaluation->targetIndex, dim, dim);
-	if (LoadSVG(param->filename, &image, dim, dim) == EVAL_ERR)
+	if (strlen(param->filename))
 	{
-		SetEvaluationImage(evaluation->targetIndex, &image);
+		//SetEvaluationSize(evaluation->targetIndex, dim, dim);
+		if (LoadSVG(param->filename, &image, dim, dim) == EVAL_ERR)
+		{
+			SetEvaluationImage(evaluation->targetIndex, &image);
+		}
 	}
 	return EVAL_OK;
 }

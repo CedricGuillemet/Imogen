@@ -17,6 +17,8 @@ void main()
 {
 	float n = float(gl_VertexID);
 	vec2 uv = vec2(mod(n, 32.0), floor(n/32.0)) / 32.0;
+	uv *= 10.;
+	
 	vec4 color = texture(Sampler0, uv);
 	float length = texture(Sampler1, uv).x * 2.0;
 	

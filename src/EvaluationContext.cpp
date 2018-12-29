@@ -257,9 +257,10 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         glGenVertexArrays(1, &feedbackVertexArray);
         glBindVertexArray(feedbackVertexArray);
         glBindBuffer(GL_ARRAY_BUFFER, mComputeBuffers[computeBufferIndex].mBuffer);
-        for (int i = 0; i < (mComputeBuffers[computeBufferIndex].mElementSize/(4*sizeof(float)));i++)
+        const int transformElementCount = mComputeBuffers[computeBufferIndex].mElementSize / (4 * sizeof(float));
+        for (int i = 0; i < transformElementCount;i++)
         {
-            glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * i));
+            glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
             glEnableVertexAttribArray(i);
         }
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -367,7 +368,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 #if 0
         if (evaluationStage.mNodeTypename == "FurDisplay")
         {
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClearDepth(1.f);
+            glDepthFunc(GL_LEQUAL);
+            glEnable(GL_DEPTH_TEST);
+            glClear(GL_COLOR_BUFFER_BIT|(evaluationStage.mbDepthBuffer?GL_DEPTH_BUFFER_BIT:0));
+            
             /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
             if (sourceBuffer != -1)
             {
@@ -383,29 +388,18 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                 // blade instances
-                // root pos0, normal, pos1, pos2
+                const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
                 glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
-                for (unsigned int vp = 0; vp < buffer->mElementCount; vp++)
+                for (unsigned int vp = 0; vp < transformElementCount; vp++)
                 {
-                    glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * vp));
+                    glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * vp));
                     glEnableVertexAttribArray(1 + vp);
                 }
-                    /*
-                glVertexAttribPointer(SemInstanceP0, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 0));
-                glVertexAttribPointer(SemInstanceN0, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 1));
-                glVertexAttribPointer(SemInstanceP1, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 2));
-                glVertexAttribPointer(SemInstanceP2, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 16, (void*)(16 * 3));
 
-                glEnableVertexAttribArray(SemInstanceP0);
-                glEnableVertexAttribArray(SemInstanceN0);
-                glEnableVertexAttribArray(SemInstanceP1);
-                glEnableVertexAttribArray(SemInstanceP2);
-                */
-                
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                 glBindVertexArray(vao);
-                drawBlades(tess * 2, buffer->mElementCount, buffer->mElementSize/(sizeof(float)*4));
+                drawBlades(tess * 2, buffer->mElementCount, transformElementCount);
                 glBindVertexArray(0);
                 glDeleteVertexArrays(1, &vao);
             }
@@ -549,7 +543,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     if (currentStage.gEvaluationMask&EvaluationGLSL)
     {
         if (!mStageTarget[nodeIndex]->mGLTexID)
-            mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight);
+            mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight, currentStage.mbDepthBuffer);
 
         EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
     }

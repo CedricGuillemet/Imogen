@@ -120,16 +120,20 @@ void RenderTarget::Destroy()
 {
     if (mGLTexID)
         glDeleteTextures(1, &mGLTexID);
+    if (mGLTexDepth)
+        glDeleteTextures(1, &mGLTexDepth);
     if (mFbo)
         glDeleteFramebuffers(1, &mFbo);
+    if (mDepthBuffer)
+        glDeleteRenderbuffers(1, &mDepthBuffer);
     mFbo = 0;
     mImage.mWidth = mImage.mHeight = 0;
     mGLTexID = 0;
 }
 
-void RenderTarget::InitBuffer(int width, int height)
+void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 {
-    if ((width == mImage.mWidth) && (mImage.mHeight == height) && mImage.mNumFaces == 1)
+    if ((width == mImage.mWidth) && (mImage.mHeight == height) && mImage.mNumFaces == 1 && (!(depthBuffer ^ (mDepthBuffer != 0))))
         return;
     Destroy();
 
@@ -149,6 +153,16 @@ void RenderTarget::InitBuffer(int width, int height)
     TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mGLTexID, 0);
 
+    if (depthBuffer)
+    {
+        // Z
+        glGenTextures(1, &mGLTexDepth);
+        glBindTexture(GL_TEXTURE_2D, mGLTexDepth);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mGLTexDepth, 0);
+    }
+
     static const GLenum DrawBuffers[] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(sizeof(DrawBuffers) / sizeof(GLenum), DrawBuffers);
 
@@ -158,7 +172,7 @@ void RenderTarget::InitBuffer(int width, int height)
     GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
     BindAsTarget();
     glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT|(depthBuffer?GL_DEPTH_BUFFER_BIT:0));
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
@@ -456,7 +470,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
     unsigned char *ptr = image->GetBits();
     if (image->mNumFaces == 1)
     {
-        tgt->InitBuffer(image->mWidth, image->mHeight);
+        tgt->InitBuffer(image->mWidth, image->mHeight, stage.mbDepthBuffer);
 
         glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
 
@@ -690,6 +704,12 @@ void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
     evaluation.mBlendingDst = blendDst;
 }
 
+void Evaluation::EnableDepthBuffer(int target, int enable)
+{
+    EvaluationStage& evaluation = gEvaluation.mStages[target];
+    evaluation.mbDepthBuffer = enable != 0;
+}
+
 void Evaluation::BindGLSLParameters(EvaluationStage& stage)
 {
     if (!stage.mParametersBuffer)
@@ -868,7 +888,7 @@ int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
         return EVAL_ERR;
     //if (gCurrentContext->GetEvaluationInfo().uiPass)
     //    return EVAL_OK;
-    renderTarget->InitBuffer(imageWidth, imageHeight);
+    renderTarget->InitBuffer(imageWidth, imageHeight, gEvaluation.mStages[target].mbDepthBuffer);
     return EVAL_OK;
 }
 

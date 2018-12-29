@@ -107,7 +107,17 @@ struct InputSampler
     uint32_t mWrapV;
     uint32_t mFilterMin;
     uint32_t mFilterMag;
+    
+    bool operator != (const InputSampler& other) const
+    {
+        return (mWrapU != other.mWrapU || mWrapV != other.mWrapV || mFilterMin != other.mFilterMin || mFilterMag != other.mFilterMag);
+    }
+    bool operator == (const InputSampler& other) const
+    {
+        return (mWrapU == other.mWrapU && mWrapV == other.mWrapV && mFilterMin == other.mFilterMin && mFilterMag == other.mFilterMag);
+    }
 };
+
 struct MaterialNode
 {
     uint32_t mType;
@@ -154,24 +164,42 @@ struct AnimationBase
     {
         mFrames = animation.mFrames;
     }
-    std::vector<uint32_t> mFrames;
+    std::vector<int32_t> mFrames;
 
     virtual void Allocate(size_t elementCount) { assert(0); }
     virtual void* GetData() { assert(0); return nullptr; }
+    virtual const void* GetDataConst() const { assert(0); return nullptr; }
     virtual size_t GetValuesByteLength() const { assert(0); return 0; }
     virtual void GetValue(uint32_t frame, void *destination) { assert(0); }
     virtual void SetValue(uint32_t frame, void *source) { assert(0); }
     virtual float GetFloatValue(uint32_t index, int componentIndex) { assert(0); return 0.f; }
     virtual void SetFloatValue(uint32_t index, int componentIndex, float value) { assert(0); }
+    virtual void Copy(AnimationBase *source)
+    {
+        mFrames = source->mFrames;
+    }
     struct AnimationPointer
     {
-        uint32_t mPreviousIndex;
-        uint32_t mPreviousFrame;
-        uint32_t mNextIndex;
-        uint32_t mNextFrame;
+        int mPreviousIndex;
+        int mPreviousFrame;
+        int mNextIndex;
+        int mNextFrame;
         float mRatio;
     };
-    AnimationPointer GetPointer(uint32_t frame, bool bSetting) const;
+    AnimationPointer GetPointer(int32_t frame, bool bSetting) const;
+    bool operator != (const AnimationBase& other) const
+    {
+        if (mFrames != other.mFrames)
+            return true;
+
+        size_t la = GetValuesByteLength();
+        size_t lb = other.GetValuesByteLength();
+        if (la != lb)
+            return true;
+        if (memcmp(this->GetDataConst(), other.GetDataConst(), la))
+            return true;
+        return false;
+    }
 };
 
 template<typename T> struct Animation : public AnimationBase
@@ -193,7 +221,9 @@ template<typename T> struct Animation : public AnimationBase
         mValues.resize(elementCount);
     }
     virtual void* GetData() { return mValues.data(); }
-    virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T);    }
+    virtual const void* GetDataConst() const { return mValues.data(); }
+
+    virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T); }
     virtual float GetFloatValue(uint32_t index, int componentIndex)
     {
         unsigned char*ptr = (unsigned char*)GetData();
@@ -210,7 +240,7 @@ template<typename T> struct Animation : public AnimationBase
 
     virtual void GetValue(uint32_t frame, void *destination) 
     {
-        auto pointer = GetPointer(frame, false);
+        AnimationPointer pointer = GetPointer(frame, false);
         T *dest = (T*)destination;
         *dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
     }
@@ -225,9 +255,16 @@ template<typename T> struct Animation : public AnimationBase
         }
         else
         {
-            mFrames.insert(mFrames.begin() + pointer.mPreviousIndex, frame);
-            mValues.insert(mValues.begin() + pointer.mPreviousIndex, value);
+            mFrames.insert(mFrames.begin() + pointer.mPreviousIndex + 1, frame);
+            mValues.insert(mValues.begin() + pointer.mPreviousIndex + 1, value);
         }
+    }
+
+    virtual void Copy(AnimationBase *source)
+    {
+        AnimationBase::Copy(source);
+        Allocate(source->mFrames.size());
+        memcpy(GetData(), source->GetData(), GetValuesByteLength());
     }
 
 protected:
@@ -270,7 +307,20 @@ struct AnimTrack
     uint32_t mNodeIndex;
     uint32_t mParamIndex;
     uint32_t mValueType; // Con_
-    AnimationBase* mAnimation;
+    AnimationBase* mAnimation = nullptr;
+    AnimTrack& operator = (const AnimTrack& other);
+    bool operator != (const AnimTrack& other) const
+    {
+        if (mNodeIndex != other.mNodeIndex)
+            return true;
+        if (mParamIndex != other.mParamIndex)
+            return true;
+        if (mValueType != other.mValueType)
+            return true;
+        if (mAnimation->operator != (*other.mAnimation))
+            return true;
+        return false;
+    }
 };
 
 struct Material

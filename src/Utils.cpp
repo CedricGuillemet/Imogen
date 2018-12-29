@@ -200,10 +200,11 @@ unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const 
     glAttachShader(programHandle, vsHandle);
 
     static const char* varyings[] = { "outCompute0", "outCompute1", "outCompute2", "outCompute3", 
-        "outCompute4", "outCompute5", "outCompute6", "outCompute7", 
+        /*"outCompute4", "outCompute5", "outCompute6", "outCompute7", 
         "outCompute8", "outCompute9", "outCompute10", "outCompute11", 
-        "outCompute12", "outCompute13", "outCompute14", "outCompute15" };
+        "outCompute12", "outCompute13", "outCompute14", "outCompute15"*/ };
     glTransformFeedbackVaryings(programHandle, sizeof(varyings) / sizeof(const char*), varyings, GL_INTERLEAVED_ATTRIBS);
+
 
     glLinkProgram(programHandle);
 

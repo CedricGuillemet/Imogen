@@ -116,7 +116,10 @@ template<bool doWrite> struct Serialize
     {
         SerArray(data);
     }
-
+    void Ser(std::vector<int32_t>& data)
+    {
+        SerArray(data);
+    }
     void Ser(AnimationBase *animBase)
     {
         ADD(v_animation, animBase->mFrames);
@@ -844,25 +847,18 @@ void LoadMetaNodes()
     }
 }
 
-struct AnimationPointer
-{
-    uint32_t mPreviousIndex;
-    uint32_t mNextIndex;
-    float mRatio;
-};
-
-AnimationBase::AnimationPointer AnimationBase::GetPointer(uint32_t frame, bool bSetting) const
+AnimationBase::AnimationPointer AnimationBase::GetPointer(int32_t frame, bool bSetting) const
 {
     if (mFrames.empty())
         return { 0, 0, 0, 0, 0.f };
     if (frame <= mFrames[0])
-        return { 0, 0, 0, 0, 0.f };
+        return { bSetting ?-1:0, 0, 0, 0, 0.f };
     if (frame >= mFrames.back())
     {
-        uint32_t last = uint32_t(mFrames.size() - (bSetting ? 0 : 1));
+        int32_t last = int32_t(mFrames.size() - (bSetting ? 0 : 1));
         return {last, mFrames.back(), last, mFrames.back(), 0.f };
     }
-    for (uint32_t i = 0; i < mFrames.size() - 1; i++)
+    for (int i = 0; i < int(mFrames.size()) - 1; i++)
     {
         if (mFrames[i] <= frame && mFrames[i + 1] >= frame)
         {
@@ -871,5 +867,16 @@ AnimationBase::AnimationPointer AnimationBase::GetPointer(uint32_t frame, bool b
         }
     }
     assert(0);
-    return { 0, 0, 0, 0, 0.f };
+    return { bSetting? -1:0, 0, 0, 0, 0.f };
+}
+
+AnimTrack& AnimTrack::operator = (const AnimTrack& other)
+{
+    mNodeIndex = other.mNodeIndex;
+    mParamIndex = other.mParamIndex;
+    mValueType = other.mValueType;
+    delete mAnimation;
+    mAnimation = AllocateAnimation(mValueType);
+    mAnimation->Copy(other.mAnimation);
+    return *this;
 }

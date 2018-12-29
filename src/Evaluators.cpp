@@ -46,6 +46,7 @@ static const EValuationFunction evaluationFunctions[] = {
     { "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
     { "Evaluate", (void*)Evaluation::Evaluate},
     { "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
+    { "EnableDepthBuffer", (void*)Evaluation::EnableDepthBuffer},
     { "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
     { "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
     { "SetEvaluationCubeSize", (void*)Evaluation::SetEvaluationCubeSize },

@@ -83,7 +83,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);
     void ApplyAnimation(int frame);
     void ApplyAnimationForNode(size_t nodeIndex, int frame);
-    void RemoveAnimation(int nodeIndex);
+    void RemoveAnimation(size_t nodeIndex);
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
     Camera *GetCameraParameter(size_t index);
@@ -100,6 +100,32 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
         std::vector<InputSampler> mInputSamplers;
 
         Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
+
+        bool operator != (const ImogenNode& other) const
+        {
+            if (mType != other.mType)
+                return true;
+            if (mParameters != other.mParameters)
+                return true;
+            if (mRuntimeUniqueId != other.mRuntimeUniqueId)
+                return true;
+            if (mStartFrame != other.mStartFrame)
+                return true;
+            if (mEndFrame != other.mEndFrame)
+                return true;
+            if (mInputSamplers.size() != other.mInputSamplers.size())
+                return true;
+            /*
+            for (size_t i = 0; i < mInputSamplers.size(); i++)
+            {
+                if (mInputSamplers[i] != other.mInputSamplers[i])
+                    return true;
+            }
+            */
+            if (mParameterViewMatrix != other.mParameterViewMatrix)
+                return true;
+            return false;
+        }
     };
 
     EvaluationContext mEditingContext;

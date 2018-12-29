@@ -143,12 +143,12 @@ class RenderTarget
 {
 
 public:
-    RenderTarget() : mGLTexID(0), mFbo(0)
+    RenderTarget() : mGLTexID(0), mGLTexDepth(0), mFbo(0), mDepthBuffer(0)
     {
         memset(&mImage, 0, sizeof(Image_t));
     }
 
-    void InitBuffer(int width, int height);
+    void InitBuffer(int width, int height, bool depthBuffer);
     void InitCube(int width);
     void BindAsTarget() const;
     void BindAsCubeTarget() const;
@@ -159,6 +159,8 @@ public:
 
     Image_t mImage;
     unsigned int mGLTexID;
+    unsigned int mGLTexDepth;
+    TextureID mDepthBuffer;
     TextureID mFbo;
 };
 
@@ -187,6 +189,7 @@ struct EvaluationStage
     int mBlendingSrc;
     int mBlendingDst;
     int mLocalTime;
+    bool mbDepthBuffer;
     // mouse
     float mRx;
     float mRy;
@@ -245,6 +248,7 @@ struct Evaluation
     static unsigned int UploadImage(Image *image, unsigned int textureId, int cubeFace = -1);
     static int Evaluate(int target, int width, int height, Image *image);
     static void SetBlendingMode(int target, int blendSrc, int blendDst);
+    static void EnableDepthBuffer(int target, int enable);
     static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);
     static int SetNodeImage(int target, Image *image);
     static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);

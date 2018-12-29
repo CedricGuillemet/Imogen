@@ -131,6 +131,8 @@ std::string Evaluators::GetEvaluator(const std::string& filename)
     return mEvaluatorScripts[filename].mText;
 }
 
+void TagTime(const char *tagInfo);
+
 void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames)
 {
     ClearEvaluators();
@@ -196,6 +198,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
+    TagTime("GLSL init");
+
     // GLSL compute
     for (auto& file : evaluatorfilenames)
     {
@@ -231,6 +235,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         if (shader.mNodeType != -1)
             mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
     }
+    TagTime("GLSL compute init");
     // C
     for (auto& file : evaluatorfilenames)
     {
@@ -297,6 +302,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             Log("Error at compiling %s", filename.c_str());
         }
     }
+    TagTime("C init");
     for (auto& file : evaluatorfilenames)
     {
         if (file.mEvaluatorType != EVALUATOR_PYTHON)
@@ -316,6 +322,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
     }
     mImogenModule = pybind11::module::import("Imogen");
+    TagTime("Python init");
 }
 
 void Evaluators::ClearEvaluators()

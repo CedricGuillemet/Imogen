@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
+#include <SDL.h>
 #include "Utils.h"
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
@@ -448,4 +449,20 @@ void Mat4x4::OrthoOffCenterLH(const float l, float r, float b, const float t, fl
     m[3][1] = (t + b) / (b - t);
     m[3][2] = zn / (zn - zf);
     m[3][3] = 1.0f;
+}
+
+void TagTime(const char *tagInfo)
+{
+    static uint64_t lastTime = -1;
+    if (lastTime == -1)
+    {
+        lastTime = SDL_GetPerformanceCounter();
+        Log("%s\n", tagInfo);
+        return;
+    }
+    uint64_t t = SDL_GetPerformanceCounter();
+
+    double v = double(t - lastTime) / double(SDL_GetPerformanceFrequency());
+    Log("%s : %5.3f s\n", tagInfo, float(v));
+    lastTime = t;
 }

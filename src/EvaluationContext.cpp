@@ -365,6 +365,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
         BindTextures(evaluationStage, program);
 
         //
+#if 0
         if (evaluationStage.mNodeTypename == "FurDisplay")
         {
             glClearDepth(1.f);
@@ -404,6 +405,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             }
         }
         else
+#endif
         {
             gFSQuad.Render();
         }

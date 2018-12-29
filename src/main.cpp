@@ -107,11 +107,15 @@ enki::TaskScheduler g_TS;
 
 int main(int, char**)
 {
+    TagTime("App start");
     g_TS.Initialize();
+    TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
+    TagTime("Python interpreter Init");
     LoadMetaNodes();
     FFMPEGCodec::RegisterAll();
     FFMPEGCodec::Log = Log;
+    TagTime("FFMPEG Init");
 
     stbi_set_flip_vertically_on_load(1);
     stbi_flip_vertically_on_write(1);
@@ -122,6 +126,7 @@ int main(int, char**)
         printf("Error: %s\n", SDL_GetError());
         return -1;
     }
+    TagTime("SDL Init");
 
     // Decide GL+GLSL versions
 #if __APPLE__
@@ -182,6 +187,7 @@ int main(int, char**)
     {
         Log("OpenCL context not created.\n");
     }
+    TagTime("OpenCL Init");
 
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
@@ -191,6 +197,7 @@ int main(int, char**)
 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version);
+    TagTime("Imgui Init");
 
     // opengl debug
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -211,14 +218,18 @@ int main(int, char**)
     static const char* libraryFilename = "library.dat";
     
     LoadLib(&library, libraryFilename);
-    
+    TagTime("Library loaded");
+
     imogen.Init();
-    
+    TagTime("Imogen Init");
+
     gEvaluation.Init();
+    TagTime("Evaluation Init");
     gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
     gCPUCount = SDL_GetCPUCount();
 
+    TagTime("App init done");
     // Main loop
     bool done = false;
     while (!done)

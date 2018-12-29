@@ -27,6 +27,8 @@
 #include <string>
 #include <float.h>
 
+void TagTime(const char *tagInfo);
+
 typedef unsigned int TextureID;
 static const int SemUV0 = 0;
 

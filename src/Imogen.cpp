@@ -1490,6 +1490,8 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
             {
                 URChange<TileNodeEditGraphDelegate::ImogenNode> undoRedoChange(selectedEntry, [](int index) { return &gNodeDelegate.mNodes[index]; });
+                timeMask[1] = ImMax(timeMask[1], timeMask[0]);
+                timeMask[0] = ImMin(timeMask[1], timeMask[0]);
                 gNodeDelegate.SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
             }
             ImGui::PopItemWidth();

@@ -139,7 +139,7 @@ namespace ImSequencer
         }
         else
         {
-            bool hasScrollBar(false);
+            bool hasScrollBar(true);
             int framesPixelWidth = int(frameCount * framePixelWidth);
             if ((framesPixelWidth + legendWidth) >= canvas_size.x)
             {
@@ -507,6 +507,12 @@ namespace ImSequencer
                 ImVec2 scrollBarC(scrollBarMin.x + legendWidth + startFrameOffset, scrollBarMin.y);
                 ImVec2 scrollBarD(scrollBarMin.x + legendWidth + barWidthInPixels + startFrameOffset, scrollBarMax.y - 2);
                 draw_list->AddRectFilled(scrollBarC, scrollBarD, (inScrollBar || MovingScrollBar) ? 0xFF606060 : 0xFF505050, 6);
+
+                float handleRadius = (scrollBarMax.y - scrollBarMin.y) / 2;
+                draw_list->AddRectFilled(scrollBarC, ImVec2(scrollBarC.x + 14, scrollBarD.y), 0xFFAAAAAA, 6);
+                draw_list->AddRectFilled(ImVec2(scrollBarD.x - 14, scrollBarC.y), scrollBarD, 0xFFAAAAAA, 6);
+
+
                 ImRect scrollBarThumb(scrollBarC, scrollBarD);
                 if (MovingScrollBar)
                 {

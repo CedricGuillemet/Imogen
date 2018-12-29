@@ -364,6 +364,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
         BindTextures(evaluationStage, program);
 
         //
+#if 0
         if (evaluationStage.mNodeTypename == "FurDisplay")
         {
             glClear(GL_COLOR_BUFFER_BIT);
@@ -410,6 +411,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             }
         }
         else
+#endif
         {
             gFSQuad.Render();
         }

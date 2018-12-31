@@ -332,8 +332,6 @@ std::string Evaluators::GetEvaluator(const std::string& filename)
     return mEvaluatorScripts[filename].mText;
 }
 
-void TagTime(const char *tagInfo);
-
 void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames)
 {
     ClearEvaluators();

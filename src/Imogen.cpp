@@ -103,8 +103,9 @@ struct ImguiAppLog
             ImGui::TextUnformatted(Buf.begin());
         }
 
-//        if (ScrollToBottom)
-//            ImGui::SetScrollHere(1.0f);
+        if (ScrollToBottom)
+            ImGui::SetScrollY(ImGui::GetScrollMaxY());
+
         ScrollToBottom = false;
         ImGui::PopStyleVar();
         ImGui::EndChild();
@@ -1317,11 +1318,58 @@ struct MySequence : public ImSequencer::SequenceInterface
 };
 MySequence mySequence(gNodeDelegate);
 
+void Imogen::ShowAppMainMenuBar()
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Plugins"))
+        {
+            if (ImGui::MenuItem("Reload plugins")) {}
+            ImGui::Separator();
+            for (auto& plugin : mRegisteredPlugins)
+            {
+                if (ImGui::MenuItem(plugin.mName.c_str())) 
+                {
+                    try
+                    {
+                        //pybind11::eval<pybind11::eval_expr>(plugin.mPythonCommand);
+                        pybind11::eval<pybind11::eval_expr>("import Plugins.exportMaterialX as plg\n"
+                                                            "plg.exportMaterialX()");
+                    }
+                    catch (pybind11::error_already_set& ex)
+                    {
+                        Log("naaaaahhhh\n");
+                        //PyObject *ptype, *pvalue, *ptraceback;
+                        //PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+                        /*if (ex.pvalue) {
+                            PyObject *pstr = PyObject_Str(pvalue);
+                            if (pstr) {
+                                const char* err_msg = PyUnicode_AsUTF8(pstr);
+                                if (err_msg)
+                                    Log(err_msg);
+                            }
+                            //PyErr_Restore(ptype, pvalue, ptraceback);
+                        }
+                        */
+                    }
+
+                }
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+}
+
 void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
     ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(io.DisplaySize);
+    ShowAppMainMenuBar();
+    ImVec2 rc = ImGui::GetItemRectSize();
+    ImVec2 deltaHeight = ImVec2(0, rc.y);
+    ImGui::SetNextWindowPos(deltaHeight);
+    ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
+    
     if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus))
     {
         static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;

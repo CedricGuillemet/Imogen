@@ -106,20 +106,9 @@ Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
 
-static void reprint(PyObject *obj) {
-    PyObject* repr = PyObject_Repr(obj);
-    PyObject* str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
-    const char *bytes = PyBytes_AS_STRING(str);
-
-    Log("REPR: %s\n", bytes);
-
-    Py_XDECREF(repr);
-    Py_XDECREF(str);
-}
-
 int main(int, char**)
 {
-    _putenv_s("PATH", (std::string(getenv("PATH")) + ";.").c_str());
+    //_putenv_s("PATH", (std::string(getenv("PATH")) + ";.").c_str());
     TagTime("App start");
     g_TS.Initialize();
     TagTime("Enki TS Init");
@@ -242,7 +231,7 @@ int main(int, char**)
 
     gCPUCount = SDL_GetCPUCount();
 
-    TagTime("App init done");
+    TagTime("Evaluators set");
 
     try
     {
@@ -262,6 +251,7 @@ int main(int, char**)
             PyErr_Restore(ptype, pvalue, ptraceback);
         }
     }
+    TagTime("Plugins loading done");
     // Main loop
     bool done = false;
     while (!done)

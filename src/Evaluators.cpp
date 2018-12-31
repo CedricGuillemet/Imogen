@@ -229,7 +229,10 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         }
         return d;
     });
-
+    m.def("RegisterPlugin", [](std::string& name, std::string command) {
+        imogen.mRegisteredPlugins.push_back({ name, command });
+        Log("Plugin registered : %s \n", name.c_str());
+    });
     m.def("Log", LogPython );
     m.def("ReadImage", Evaluation::ReadImage );
     m.def("WriteImage", Evaluation::WriteImage );

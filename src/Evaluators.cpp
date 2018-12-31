@@ -116,20 +116,15 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
 
         MetaNode& metaNode = gMetaNodes[node.mNode->mType];
 
-        auto e = pybind11::dict();
-
-        int inputCount = 0;
         for (auto& con : node.mGraph->mMaterialConnections)
         {
             if (con.mOutputNode == node.mNodeIndex)
             {
-                if (!inputCount)
-                {
-                    d.append(e);
-                }
+                auto e = pybind11::dict();
+                d.append(e);
+
                 e["nodeIndex"] = pybind11::int_(con.mInputNode);
                 e["name"] = metaNode.mInputs[con.mOutputSlot].mName;
-                inputCount++;
             }
         }
         return d;

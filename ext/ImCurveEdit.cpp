@@ -8,6 +8,28 @@
 namespace ImCurveEdit
 {
 
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+   static ImVec2 operator+(const ImVec2 &a, const ImVec2 &b) {
+      return ImVec2(a.x + b.x, a.y + b.y);
+   }
+
+   static ImVec2 operator-(const ImVec2 &a, const ImVec2 &b) {
+      return ImVec2(a.x - b.x, a.y - b.y);
+   }
+
+   static ImVec2 operator*(const ImVec2 &a, const ImVec2 &b) {
+      return ImVec2(a.x * b.x, a.y * b.y);
+   }
+
+   static ImVec2 operator/(const ImVec2 &a, const ImVec2 &b) {
+      return ImVec2(a.x / b.x, a.y / b.y);
+   }
+
+   static ImVec2 operator*(const ImVec2 &a, const float b) {
+      return ImVec2(a.x * b, a.y * b);
+   }
+#endif
+
    static float smoothstep(float edge0, float edge1, float x)
    {
       x = ImClamp((x - edge0) / (edge1 - edge0), 0.0f, 1.0f);
@@ -182,7 +204,7 @@ namespace ImCurveEdit
             
             if (curveType == CurveSmooth || curveType == CurveLinear)
             {
-                size_t subStepCount = (curveType == CurveSmooth)?20:1;
+                size_t subStepCount = (curveType == CurveSmooth)?20:2;
                 float step = 1.f / float(subStepCount - 1);
                 for (size_t substep = 0; substep < subStepCount - 1; substep++)
                 {
@@ -209,11 +231,14 @@ namespace ImCurveEdit
             }
             else if (curveType == CurveDiscrete)
             {
-                draw_list->AddLine(p1, ImVec2(p2.x, p1.y), curveColor, 1.3f);
-                draw_list->AddLine(ImVec2(p2.x, p1.y), p2, curveColor, 1.3f);
+                ImVec2 dp1 = p1 * viewSize + offset;
+                ImVec2 dp2 = ImVec2(p2.x, p1.y) * viewSize + offset;
+                ImVec2 dp3 = p2 * viewSize + offset;
+                draw_list->AddLine(dp1, dp2, curveColor, 1.3f);
+                draw_list->AddLine(dp2, dp3, curveColor, 1.3f);
 
-                if ( (distance(io.MousePos.x, io.MousePos.y, p1.x, p1.y, p2.x, p1.y) < 8.f ||
-                    distance(io.MousePos.x, io.MousePos.y, p2.x, p1.y, p2.x, p2.y) < 8.f )
+                if ( (distance(io.MousePos.x, io.MousePos.y, dp1.x, dp1.y, dp3.x, dp1.y) < 8.f ||
+                    distance(io.MousePos.x, io.MousePos.y, dp3.x, dp1.y, dp3.x, dp3.y) < 8.f )
                     /*&& localOverCurve == -1*/)
                 {
                     localOverCurve = int(c);
@@ -312,7 +337,7 @@ namespace ImCurveEdit
              mousePosOrigin = io.MousePos;
              pointsMoved = true;
              originalPoints.resize(ptCount);
-             for (int index = 0;index< ptCount;index++)
+             for (size_t index = 0;index< ptCount;index++)
              {
                  originalPoints[index] = pts[index];
              }

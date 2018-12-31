@@ -44,6 +44,7 @@
 #include "Evaluators.h"
 #include "cmft/clcontext.h"
 #include "cmft/clcontext_internal.h"
+#include <stdio.h>
 
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
@@ -105,8 +106,20 @@ Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
 
+static void reprint(PyObject *obj) {
+    PyObject* repr = PyObject_Repr(obj);
+    PyObject* str = PyUnicode_AsEncodedString(repr, "utf-8", "~E~");
+    const char *bytes = PyBytes_AS_STRING(str);
+
+    Log("REPR: %s\n", bytes);
+
+    Py_XDECREF(repr);
+    Py_XDECREF(str);
+}
+
 int main(int, char**)
 {
+    _putenv_s("PATH", (std::string(getenv("PATH")) + ";.").c_str());
     TagTime("App start");
     g_TS.Initialize();
     TagTime("Enki TS Init");
@@ -230,6 +243,25 @@ int main(int, char**)
     gCPUCount = SDL_GetCPUCount();
 
     TagTime("App init done");
+
+    try
+    {
+        pybind11::module mPyModule = pybind11::module::import("Plugins");
+    }
+    catch(pybind11::error_already_set& ex)
+    {
+        PyObject *ptype, *pvalue, *ptraceback;
+        PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+        if (pvalue) {
+            PyObject *pstr = PyObject_Str(pvalue);
+            if (pstr) {
+                const char* err_msg = PyUnicode_AsUTF8(pstr);
+                if (err_msg)
+                    Log(err_msg);
+            }
+            PyErr_Restore(ptype, pvalue, ptraceback);
+        }
+    }
     // Main loop
     bool done = false;
     while (!done)

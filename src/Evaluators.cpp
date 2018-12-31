@@ -74,9 +74,162 @@ void LogPython(const std::string &str)
 }
 
 PYBIND11_MAKE_OPAQUE(Image);
+
+struct PyGraph {
+    Material* mGraph;
+};
+
+struct PyNode {
+    Material* mGraph;
+    MaterialNode* mNode;
+    int mNodeIndex;
+};
+
 PYBIND11_EMBEDDED_MODULE(Imogen, m) 
 {
     pybind11::class_<Image>(m, "Image");
+    auto graph = pybind11::class_<PyGraph>(m, "Graph");
+    graph.def("GetEvaluationList", [](PyGraph& pyGraph) {
+        auto d = pybind11::list();
+
+        for (int index = 0; index < int(pyGraph.mGraph->mMaterialNodes.size()) ; index++)
+        {
+            auto & node = pyGraph.mGraph->mMaterialNodes[index];
+            d.append(new PyNode{ pyGraph.mGraph, &node, index});
+        }
+        return d;
+
+    });
+    auto node = pybind11::class_<PyNode>(m, "Node");
+    node.def("GetType", [](PyNode& node) {
+        std::string& s = node.mNode->mTypeName;
+        if (!s.length())
+            s = std::string("EmptyNode");
+        return s;
+    });
+    node.def("GetInputs", [](PyNode& node) {
+        //
+        auto d = pybind11::list();
+        if (node.mNode->mType == 0xFFFFFFFF)
+            return d;
+
+        MetaNode& metaNode = gMetaNodes[node.mNode->mType];
+
+        auto e = pybind11::dict();
+
+        int inputCount = 0;
+        for (auto& con : node.mGraph->mMaterialConnections)
+        {
+            if (con.mOutputNode == node.mNodeIndex)
+            {
+                if (!inputCount)
+                {
+                    d.append(e);
+                }
+                e["nodeIndex"] = pybind11::int_(con.mInputNode);
+                e["name"] = metaNode.mInputs[con.mOutputSlot].mName;
+                inputCount++;
+            }
+        }
+        return d;
+    });
+    node.def("GetParameters", [](PyNode& node) {
+        // name, type, value
+        auto d = pybind11::list();
+        if (node.mNode->mType == 0xFFFFFFFF)
+            return d;
+        MetaNode& metaNode = gMetaNodes[node.mNode->mType];
+        
+        for (uint32_t index = 0;index<metaNode.mParams.size();index++)
+        {
+            auto& param = metaNode.mParams[index];
+            auto e = pybind11::dict();
+            d.append(e);
+            e["name"] = param.mName;
+            e["type"] = pybind11::int_(int(param.mType));
+
+            size_t parameterOffset = GetParameterOffset(node.mNode->mType, index);
+            if (parameterOffset >= node.mNode->mParameters.size())
+            {
+                e["value"] = std::string("");
+                continue;
+            }
+            
+            unsigned char * ptr = &node.mNode->mParameters[parameterOffset];
+            float *ptrf = (float*)ptr;
+            int * ptri = (int*)ptr;
+            char tmps[512];
+            switch (param.mType)
+            {
+            case Con_Float:
+                e["value"] = pybind11::float_(ptrf[0]);
+                break;
+            case Con_Float2:
+                sprintf(tmps, "%f,%f", ptrf[0], ptrf[1]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Float3:
+                sprintf(tmps, "%f,%f,%f", ptrf[0], ptrf[1], ptrf[2]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Float4:
+                sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Color4:
+                sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Int:
+                e["value"] = pybind11::int_(ptri[0]);
+                break;
+            case Con_Int2:
+                sprintf(tmps, "%d,%d", ptri[0], ptri[1]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Ramp:
+                e["value"] = std::string("N/A");
+                break;
+            case Con_Angle:
+                e["value"] = pybind11::float_(ptrf[0]);
+                break;
+            case Con_Angle2:
+                sprintf(tmps, "%f,%f", ptrf[0], ptrf[1]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Angle3:
+                sprintf(tmps, "%f,%f,%f", ptrf[0], ptrf[1], ptrf[2]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Angle4:
+                sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
+                e["value"] = std::string(tmps);
+                break;
+            case Con_Enum:
+                e["value"] = pybind11::int_(ptri[0]);
+                break;
+            case Con_Structure:
+                e["value"] = std::string("N/A");
+                break;
+            case Con_FilenameRead:
+            case Con_FilenameWrite:
+                e["value"] = std::string((char*)ptr, strlen((char*)ptr));
+                break;
+            case Con_ForceEvaluate:
+                e["value"] = std::string("N/A");
+                break;
+            case Con_Bool:
+                e["value"] = pybind11::bool_(ptr[0] != 0);
+                break;
+            case Con_Ramp4:
+            case Con_Camera:
+                e["value"] = std::string("N/A");
+                break;
+            }
+        }
+        return d;
+    });
+
     m.def("Log", LogPython );
     m.def("ReadImage", Evaluation::ReadImage );
     m.def("WriteImage", Evaluation::WriteImage );
@@ -97,6 +250,29 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("Job", Evaluation::Job );
     m.def("JobMain", Evaluation::JobMain );
     */
+    m.def("GetLibraryGraphs", []() {
+        auto d = pybind11::list();
+        for (auto& graph : library.mMaterials)
+        {
+            const std::string& s = graph.mName;
+            d.append(graph.mName);
+        }
+        return d;
+        }
+        );
+    m.def("GetGraph", [](const std::string& graphName) -> PyGraph* {
+        
+        for (auto& graph : library.mMaterials)
+        {
+            if (graph.mName == graphName)
+            {
+                return new PyGraph{ &graph };
+            }
+        }
+        return nullptr;
+    }
+    );
+    /*
     m.def("accessor_api", []() {
         auto d = pybind11::dict();
 
@@ -110,7 +286,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
 
         return d;
     });
-
+    */
     
     /*
     m.def("GetImage", []() {
@@ -304,6 +480,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
     }
     TagTime("C init");
+    mImogenModule = pybind11::module::import("Imogen");
     for (auto& file : evaluatorfilenames)
     {
         if (file.mEvaluatorType != EVALUATOR_PYTHON)
@@ -313,16 +490,16 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         EvaluatorScript& shader = mEvaluatorScripts[filename];
         try
         {
-            shader.mPyModule = pybind11::module::import("Nodes.Python.testnode");;
+            shader.mPyModule = pybind11::module::import("Nodes.Python.testnode");
             if (shader.mNodeType != -1)
                 mEvaluatorPerNodeType[shader.mNodeType].mPyModule = shader.mPyModule;
         }
         catch (...)
         {
-            
+            Log("Python exception\n");
         }
     }
-    mImogenModule = pybind11::module::import("Imogen");
+    
     TagTime("Python init");
 }
 

@@ -24,6 +24,9 @@ materialXParamTypes = [
     'camera']
 
 def exportMaterialX():
+	filename = Imogen.FileDialogWrite()
+	if len(filename) == 0:
+		return;
 	mat = ET.Element('materialx')  
 	mat.set('version','1.36')  
 
@@ -76,10 +79,11 @@ def exportMaterialX():
 			
 	# create a new XML file with the results
 	mydata = ET.tostring(mat)
-	myfile = open("materialx_test.xml", "wb")  
+	myfile = open(filename, "wb")  
 	myfile.write(mydata)
 	myfile.close()
 
-	Imogen.Log("\nDone!\n")
-	
-Imogen.RegisterPlugin("Export MaterialX", "Plugins.exportMaterialX.exportMaterialX();") 
+	Imogen.Log("Export Done!\n")
+
+
+Imogen.RegisterPlugin("Export MaterialX", "import Plugins.exportMaterialX as plg\nplg.exportMaterialX()") 

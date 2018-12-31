@@ -1332,13 +1332,10 @@ void Imogen::ShowAppMainMenuBar()
                 {
                     try
                     {
-                        //pybind11::eval<pybind11::eval_expr>(plugin.mPythonCommand);
-                        pybind11::eval<pybind11::eval_expr>("import Plugins.exportMaterialX as plg\n"
-                                                            "plg.exportMaterialX()");
+                        pybind11::exec(plugin.mPythonCommand);
                     }
                     catch (pybind11::error_already_set& ex)
                     {
-                        Log("naaaaahhhh\n");
                         //PyObject *ptype, *pvalue, *ptraceback;
                         //PyErr_Fetch(&ptype, &pvalue, &ptraceback);
                         /*if (ex.pvalue) {

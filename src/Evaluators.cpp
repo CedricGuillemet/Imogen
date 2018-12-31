@@ -25,6 +25,7 @@
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include "Evaluators.h"
 #include "Evaluation.h"
+#include "nfd.h"
 
 Evaluators gEvaluators;
 
@@ -232,6 +233,31 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("RegisterPlugin", [](std::string& name, std::string command) {
         imogen.mRegisteredPlugins.push_back({ name, command });
         Log("Plugin registered : %s \n", name.c_str());
+    });
+    m.def("FileDialogRead", []() {
+        nfdchar_t *outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
+
+        if (result == NFD_OKAY)
+        {
+            std::string res = outPath;
+            free(outPath);
+            return res;
+        }
+        return std::string();
+
+    });
+    m.def("FileDialogWrite", []() {
+        nfdchar_t *outPath = NULL;
+        nfdresult_t result = NFD_SaveDialog(NULL, NULL, &outPath);
+
+        if (result == NFD_OKAY)
+        {
+            std::string res = outPath;
+            free(outPath);
+            return res;
+        }
+        return std::string();
     });
     m.def("Log", LogPython );
     m.def("ReadImage", Evaluation::ReadImage );

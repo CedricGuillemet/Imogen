@@ -112,13 +112,15 @@ struct TextureFormat
 
 typedef struct Image_t
 {
-    Image_t() : mDecoder(NULL), mBits(NULL)
+    Image_t() : mDecoder(NULL), mBits(NULL), mDataSize(0)
     {
-        imageCount++;
+    }
+    Image_t(const Image_t& other) : mBits(NULL), mDataSize(0)
+    {
+        *this = other;
     }
     ~Image_t() 
     { 
-        imageCount--; 
         free(mBits);
     }
     
@@ -128,15 +130,35 @@ typedef struct Image_t
     uint8_t mNumMips;
     uint8_t mNumFaces;
     uint8_t mFormat;
-    unsigned char *GetBits() const { return mBits; }
-    void SetBits(unsigned char* bits) { free(mBits); mBits = bits; }
-    void Allocate(size_t size) {
-        assert(mBits == NULL); mBits = (unsigned char*)malloc(size);
+    Image_t& operator = (const Image_t &other)
+    {
+        mDecoder = other.mDecoder;
+        mWidth = other.mWidth;
+        mHeight = other.mHeight;
+        mNumMips = other.mNumMips;
+        mNumFaces = other.mNumFaces;
+        mFormat = other.mFormat;
+        SetBits(other.mBits, other.mDataSize);
+        return *this;
     }
-    void Free() { free(mBits); mBits = NULL; }
+    unsigned char *GetBits() const { return mBits; }
+    void SetBits(unsigned char* bits, size_t size) 
+    { 
+        Allocate(size);
+        memcpy(mBits, bits, size); 
+    }
+    void Allocate(size_t size) 
+    {
+        if (mDataSize != size)
+            free(mBits);
+        mBits = (unsigned char*)malloc(size);
+        mDataSize = uint32_t(size);
+    }
+    void Free() {
+        free(mBits); mBits = NULL; mDataSize = 0;
+    }
 protected:
     unsigned char *mBits;
-    static int imageCount;
 } Image;
 
 class RenderTarget

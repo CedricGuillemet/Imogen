@@ -318,13 +318,13 @@ int Evaluation::LoadSVG(const char *filename, Image *image, float dpi)
     NSVGrasterizer* rast = nsvgCreateRasterizer();
 
     // Allocate memory for image
-    unsigned char* img = (unsigned char*)malloc(width * height * 4);
+    size_t imgSize = width * height * 4;
+    unsigned char* img = (unsigned char*)malloc(imgSize);
 
     // Rasterize
     nsvgRasterize(rast, svgImage, 0, 0, 1, img, width, height, width * 4);
 
-    image->SetBits(img);
-    image->mDataSize = width * height * 4;
+    image->SetBits(img, imgSize);
     image->mWidth = width;
     image->mHeight = height;
     image->mNumMips = 1;
@@ -352,10 +352,9 @@ int Evaluation::ReadImage(const char *filename, Image *image)
             return EVAL_OK;
         }
         cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
-        image->SetBits((unsigned char*)img.m_data);
+        image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
         image->mWidth = img.m_width;
         image->mHeight = img.m_height;
-        image->mDataSize = img.m_dataSize;
         image->mNumMips = img.m_numMips;
         image->mNumFaces = img.m_numFaces;
         image->mFormat = img.m_format;
@@ -363,8 +362,7 @@ int Evaluation::ReadImage(const char *filename, Image *image)
         return EVAL_OK;
     }
 
-    image->SetBits(bits);
-    image->mDataSize = image->mWidth * image->mHeight * components;
+    image->SetBits(bits, image->mWidth * image->mHeight * components);
     image->mNumMips = 1;
     image->mNumFaces = 1;
     image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
@@ -378,7 +376,7 @@ int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
     unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->mWidth, &image->mHeight, &components, 0);
     if (!bits)
         return EVAL_ERR;
-    image->SetBits(bits);
+    image->SetBits(bits, image->mWidth * image->mHeight * components);
     return EVAL_OK;
 }
 
@@ -421,7 +419,7 @@ int Evaluation::WriteImage(const char *filename, Image *image, int format, int q
             cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
         else if (img.m_format == cmft::TextureFormat::RGB8)
             cmft::imageConvert(img, cmft::TextureFormat::BGR8);
-        image->SetBits((unsigned char*)img.m_data);
+        image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
         if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
             return EVAL_ERR;
     }
@@ -467,7 +465,6 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
         size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 
     image->Allocate(size);
-    image->mDataSize = size;
     image->mWidth = img.mWidth;
     image->mHeight = img.mHeight;
     image->mNumMips = img.mNumMips;
@@ -593,8 +590,7 @@ int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int
         , clContext))
         return EVAL_ERR;
 
-    image->SetBits((unsigned char*)img.m_data);
-    image->mDataSize = img.m_dataSize;
+    image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
     image->mNumMips = img.m_numMips;
     image->mNumFaces = img.m_numFaces;
     image->mWidth = img.m_width;

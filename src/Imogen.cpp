@@ -580,7 +580,7 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
         unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
         if (data)
         {
-            image.SetBits(data);
+            image.SetBits(data, image.mWidth * image.mHeight * components);
             image.mNumFaces = 1;
             image.mNumMips = 1;
             image.mFormat = (components == 4) ? TextureFormat::RGBA8 : TextureFormat::RGB8;
@@ -637,7 +637,7 @@ struct DecodeImageTaskSet : enki::ITaskSet
         unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
         if (data)
         {
-            image.SetBits(data);
+            image.SetBits(data, image.mWidth * image.mHeight * components);
             image.mNumFaces = 1;
             image.mNumMips = 1;
             image.mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;

@@ -230,6 +230,9 @@ int main(int, char**)
     gCPUCount = SDL_GetCPUCount();
 
     TagTime("App init done");
+
+    std::shared_ptr<std::vector<char>> ptr = std::make_shared<std::vector<char>>();
+    size_t s = sizeof(ptr);
     // Main loop
     bool done = false;
     while (!done)

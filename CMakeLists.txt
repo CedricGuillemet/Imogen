@@ -14,11 +14,11 @@ file(GLOB_RECURSE SRC_FILES
 file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
-	${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
-	${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
-	${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
-	${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
-	${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
+    ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
+    ${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
 )
 
 if(WIN32)
@@ -68,15 +68,15 @@ find_package(OpenGL)
 
 set (USE_MSVC_RUNTIME_LIBRARY_DLL true)
 IF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
-	#We statically link to reduce dependancies
-	FOREACH(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_CXX_FLAGS_RETAIL)
-		IF(${flag_var} MATCHES "/MD")
-			STRING(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-		ENDIF(${flag_var} MATCHES "/MD")
-		IF(${flag_var} MATCHES "/MDd")
-			STRING(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-		ENDIF(${flag_var} MATCHES "/MDd")
-	ENDFOREACH(flag_var)
+    #We statically link to reduce dependancies
+    FOREACH(flag_var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO CMAKE_CXX_FLAGS_RETAIL)
+        IF(${flag_var} MATCHES "/MD")
+            STRING(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+        ENDIF(${flag_var} MATCHES "/MD")
+        IF(${flag_var} MATCHES "/MDd")
+            STRING(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
+        ENDIF(${flag_var} MATCHES "/MDd")
+    ENDFOREACH(flag_var)
 ENDIF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 
 set(SDL2_LIBS "SDL2" "SDL2main")
@@ -148,8 +148,8 @@ set_target_properties("Imogen" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE
 #--------------------------------------------------------------------
 if(ENABLE_HIDECONSOLE_BUILD)
 if(MSVC)
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 endif()
 endif()
 

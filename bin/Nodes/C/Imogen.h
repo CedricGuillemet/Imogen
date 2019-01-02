@@ -5,7 +5,6 @@ float fabsf(float value);
 
 typedef struct Image_t
 {
-	void *bits;
 	void *decoder;
 	int width, height;
 	//int components;
@@ -13,12 +12,14 @@ typedef struct Image_t
 	unsigned char mNumMips;
 	unsigned char mNumFaces;
 	unsigned char mFormat;
-	void *mStream;
+	void *bits;
 } Image;
 
 typedef struct Evaluation_t
 {
 	float inv_view_rot[16];
+	float viewProjection[16];
+	float viewInverse[16];
 	
 	int targetIndex;
 	int forcedDirty;
@@ -28,6 +29,8 @@ typedef struct Evaluation_t
 	int inputIndices[8];	
 	
 	float viewport[2];
+	int frame;
+	int localFrame;
 } Evaluation;
 
 enum BlendOp
@@ -93,6 +96,7 @@ int SetEvaluationImageCube(int target, Image *image, int cubeFace);
 // set the bits pointer with an allocated memory
 int AllocateImage(Image *image);
 int FreeImage(Image *image);
+int LoadSVG(const char *filename, Image *image, float dpi);
 
 // Image resize
 // Image thumbnail
@@ -103,6 +107,7 @@ int SetThumbnailImage(Image *image);
 int Evaluate(int target, int width, int height, Image *image);
 
 void SetBlendingMode(int target, int blendSrc, int blendDst);
+void EnableDepthBuffer(int target, int enable);
 int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(int target, int imageWidth, int imageHeight);
 int SetEvaluationCubeSize(int target, int faceWidth);
@@ -111,6 +116,9 @@ int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase
 int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
 int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
 void SetProcessing(int target, int processing);
+
+// compute shader memory allocation
+int AllocateComputeBuffer(int target, int elementCount, int elementSize);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

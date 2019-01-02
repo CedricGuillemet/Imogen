@@ -16,6 +16,7 @@ int main(ImageWrite *param, Evaluation *evaluation)
 	Image image;
 	int imageWidth, imageHeight;
 	
+	image.bits = 0;
 	// set info stock image
 	if (ReadImage(stockImages[param->format], &image) == EVAL_OK)
 	{
@@ -43,6 +44,7 @@ int main(ImageWrite *param, Evaluation *evaluation)
 	if (!evaluation->forcedDirty)
 		return EVAL_OK;
 	
+	image.bits = 0;
 	if (Evaluate(evaluation->inputIndices[0], param->width, param->height, &image) == EVAL_OK)
 	{
 		if (WriteImage(param->filename, &image, param->format, param->quality) == EVAL_OK)

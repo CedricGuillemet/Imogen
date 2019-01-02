@@ -47,56 +47,57 @@
 
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
-
+bool gbIsPlaying = false;
+bool gPlayLoop = false;
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
-	GLenum type,
-	GLuint id,
-	GLenum severity,
-	GLsizei /*length*/,
-	const GLchar* message,
-	const void* /*userParam*/)
+    GLenum type,
+    GLuint id,
+    GLenum severity,
+    GLsizei /*length*/,
+    const GLchar* message,
+    const void* /*userParam*/)
 {
-	const char *typeStr = "";
-	const char *severityStr = "";
+    const char *typeStr = "";
+    const char *severityStr = "";
 
-	switch (type)
-	{
-	case GL_DEBUG_TYPE_ERROR:
-		typeStr = "ERROR";
-		break;
-	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-		typeStr = "DEPRECATED_BEHAVIOR";
-		break;
-	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-		typeStr = "UNDEFINED_BEHAVIOR";
-		break;
-	case GL_DEBUG_TYPE_PORTABILITY:
-		typeStr = "PORTABILITY";
-		break;
-	case GL_DEBUG_TYPE_PERFORMANCE:
-		typeStr = "PERFORMANCE";
-		break;
-	case GL_DEBUG_TYPE_OTHER:
-		typeStr = "OTHER";
-		// skip
-		return;
-		break;
-	}
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:
+        typeStr = "ERROR";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        typeStr = "DEPRECATED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        typeStr = "UNDEFINED_BEHAVIOR";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        typeStr = "PORTABILITY";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        typeStr = "PERFORMANCE";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        typeStr = "OTHER";
+        // skip
+        return;
+        break;
+    }
 
-	switch (severity)
-	{
-	case GL_DEBUG_SEVERITY_LOW:
-		severityStr = "LOW";
-		return;
-		break;
-	case GL_DEBUG_SEVERITY_MEDIUM:
-		severityStr = "MEDIUM";
-		break;
-	case GL_DEBUG_SEVERITY_HIGH:
-		severityStr = "HIGH";
-		break;
-	}
-	Log("GL Debug (%s - %s) %s \n", typeStr, severityStr, message);
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_LOW:
+        severityStr = "LOW";
+        return;
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severityStr = "MEDIUM";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severityStr = "HIGH";
+        break;
+    }
+    Log("GL Debug (%s - %s) %s \n", typeStr, severityStr, message);
 }
 
 Evaluation gEvaluation;
@@ -106,181 +107,212 @@ enki::TaskScheduler g_TS;
 
 int main(int, char**)
 {
-	g_TS.Initialize();
-	pybind11::scoped_interpreter guard{}; // start the interpreter and keep it alive
-	LoadMetaNodes();
-	FFMPEGCodec::RegisterAll();
-	FFMPEGCodec::Log = Log;
+    TagTime("App start");
+    g_TS.Initialize();
+    TagTime("Enki TS Init");
+    pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
+    TagTime("Python interpreter Init");
+    LoadMetaNodes();
+    FFMPEGCodec::RegisterAll();
+    FFMPEGCodec::Log = Log;
+    TagTime("FFMPEG Init");
 
-	stbi_set_flip_vertically_on_load(1);
-	stbi_flip_vertically_on_write(1);
+    stbi_set_flip_vertically_on_load(1);
+    stbi_flip_vertically_on_write(1);
 
-	// Setup SDL
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
-	{
-		printf("Error: %s\n", SDL_GetError());
-		return -1;
-	}
+    // Setup SDL
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0)
+    {
+        printf("Error: %s\n", SDL_GetError());
+        return -1;
+    }
+    TagTime("SDL Init");
 
-	// Decide GL+GLSL versions
+    // Decide GL+GLSL versions
 #if __APPLE__
-	// GL 3.2 Core + GLSL 150
-	const char* glsl_version = "#version 150";
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    // GL 3.2 Core + GLSL 150
+    const char* glsl_version = "#version 150";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 #else
-	// GL 3.0 + GLSL 130
-	const char* glsl_version = "#version 130";
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    // GL 3.0 + GLSL 130
+    const char* glsl_version = "#version 130";
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 
-	// Create window with graphics context
-	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-	SDL_DisplayMode current;
-	SDL_GetCurrentDisplayMode(0, &current);
-	SDL_Window* window = SDL_CreateWindow("Imogen 0.7.0", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
-	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-	SDL_GL_SetSwapInterval(1); // Enable vsync
+    // Create window with graphics context
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_DisplayMode current;
+    SDL_GetCurrentDisplayMode(0, &current);
+    SDL_Window* window = SDL_CreateWindow("Imogen 0.8.0", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    SDL_GL_SetSwapInterval(1); // Enable vsync
 
-	// Initialize OpenGL loader
+    // Initialize OpenGL loader
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-	bool err = gl3wInit() != 0;
+    bool err = gl3wInit() != 0;
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-	bool err = glewInit() != GLEW_OK;
+    bool err = glewInit() != GLEW_OK;
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-	bool err = gladLoadGL() == 0;
+    bool err = gladLoadGL() == 0;
 #endif
-	if (err)
-	{
-		fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-		return 1;
-	}
+    if (err)
+    {
+        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
+        return 1;
+    }
 
-	// open cl context
-	int32_t clLoaded = 0;
-	clLoaded = cmft::clLoad();
-	if (clLoaded)
-	{
-		uint32_t clVendor = (uint32_t)CMFT_CL_VENDOR_ANY_GPU;
-		uint32_t deviceType = CMFT_CL_DEVICE_TYPE_GPU;
-		uint32_t deviceIndex = 0;
-		clContext = cmft::clInit(clVendor, deviceType, deviceIndex);
-	}
-	if (clLoaded && clContext)
-	{
-		Log("OpenCL context created with %s / %s\n", clContext->m_deviceVendor, clContext->m_deviceName);
-	}
-	else
-	{
-		Log("OpenCL context not created.\n");
-	}
+    // open cl context
+    int32_t clLoaded = 0;
+    clLoaded = cmft::clLoad();
+    if (clLoaded)
+    {
+        uint32_t clVendor = (uint32_t)CMFT_CL_VENDOR_ANY_GPU;
+        uint32_t deviceType = CMFT_CL_DEVICE_TYPE_GPU;
+        uint32_t deviceIndex = 0;
+        clContext = cmft::clInit(clVendor, deviceType, deviceIndex);
+    }
+    if (clLoaded && clContext)
+    {
+        Log("OpenCL context created with %s / %s\n", clContext->m_deviceVendor, clContext->m_deviceName);
+    }
+    else
+    {
+        Log("OpenCL context not created.\n");
+    }
+    TagTime("OpenCL Init");
 
-	// Setup Dear ImGui binding
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+    // Setup Dear ImGui binding
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
-	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-	ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+    TagTime("Imgui Init");
 
-	// opengl debug
-	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-	glDebugMessageCallback((GLDEBUGPROCARB)openglCallbackFunction, NULL);
-	GLuint unusedIds = 0;
-	glDebugMessageControl(GL_DONT_CARE,
-		GL_DONT_CARE,
-		GL_DONT_CARE,
-		0,
-		&unusedIds,
-		true);
+    // opengl debug
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback((GLDEBUGPROCARB)openglCallbackFunction, NULL);
+    GLuint unusedIds = 0;
+    glDebugMessageControl(GL_DONT_CARE,
+        GL_DONT_CARE,
+        GL_DONT_CARE,
+        0,
+        &unusedIds,
+        true);
 
-	gFSQuad.Init();
+    gFSQuad.Init();
 
-	// Setup style
-	ImGui::StyleColorsDark();
+    // Setup style
+    ImGui::StyleColorsDark();
 
-	static const char* libraryFilename = "library.dat";
-	
-	LoadLib(&library, libraryFilename);
-	
-	imogen.Init();
-	
-	gEvaluation.Init();
-	gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
+    static const char* libraryFilename = "library.dat";
+    
+    LoadLib(&library, libraryFilename);
+    TagTime("Library loaded");
 
-	gCPUCount = SDL_GetCPUCount();
+    imogen.Init();
+    TagTime("Imogen Init");
 
-	// Main loop
-	bool done = false;
-	while (!done)
-	{
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			ImGui_ImplSDL2_ProcessEvent(&event);
-			if (event.type == SDL_QUIT)
-				done = true;
-			if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-				done = true;
-		}
-		// undo/redo
-		if (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Z))
-			gUndoRedoHandler.Undo();
-		if ((io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressedMap(ImGuiKey_Z)) ||
-			(io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Y)) )
-			gUndoRedoHandler.Redo();
+    gEvaluation.Init();
+    TagTime("Evaluation Init");
+    gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
-		// Start the Dear ImGui frame
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(window);
-		ImGui::NewFrame();
-		InitCallbackRects();
+    gCPUCount = SDL_GetCPUCount();
 
-		gCurrentContext->RunDirty();
-		imogen.Show(library, gNodeDelegate, gEvaluation);
+    TagTime("App init done");
 
-		// render everything
-		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-		glClearColor(0., 0., 0., 0.);
-		glClear(GL_COLOR_BUFFER_BIT);
+    std::shared_ptr<std::vector<char>> ptr = std::make_shared<std::vector<char>>();
+    size_t s = sizeof(ptr);
+    // Main loop
+    bool done = false;
+    while (!done)
+    {
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+            if (event.type == SDL_QUIT)
+                done = true;
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+                done = true;
+        }
+        // undo/redo
+        if (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Z))
+            gUndoRedoHandler.Undo();
+        if ((io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressedMap(ImGuiKey_Z)) ||
+            (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Y)) )
+            gUndoRedoHandler.Redo();
 
-		ImGui::Render();
-		SDL_GL_MakeCurrent(window, gl_context);
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		g_TS.RunPinnedTasks();
-		SDL_GL_SwapWindow(window);
-	}
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
+        InitCallbackRects();
 
-	clDestroy(clContext);
-	// Unload opencl lib.
-	if (clLoaded)
-	{
-		cmft::clUnload();
-	}
+        if (gbIsPlaying)
+        {
+            gEvaluationTime++;
+            if (gEvaluationTime >= gNodeDelegate.mFrameMax)
+            {
+                if (gPlayLoop)
+                {
+                    gEvaluationTime = gNodeDelegate.mFrameMin;
+                }
+                else
+                {
+                    gbIsPlaying = false;
+                }
+            }
+            gCurrentContext->SetTargetDirty(1);
+        }
+        gCurrentContext->RunDirty();
+        imogen.Show(library, gNodeDelegate, gEvaluation);
 
-	imogen.ValidateCurrentMaterial(library, gNodeDelegate);
-	SaveLib(&library, libraryFilename);
-	gEvaluation.Finish();
+        // render everything
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        glClearColor(0., 0., 0., 0.);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-	// Cleanup
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL2_Shutdown();
-	ImGui::DestroyContext();
+        ImGui::Render();
+        SDL_GL_MakeCurrent(window, gl_context);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        g_TS.RunPinnedTasks();
+        SDL_GL_SwapWindow(window);
+    }
 
-	imogen.Finish(); // keep dock being saved
+    clDestroy(clContext);
+    // Unload opencl lib.
+    if (clLoaded)
+    {
+        cmft::clUnload();
+    }
 
-	SDL_GL_DeleteContext(gl_context);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
+    imogen.ValidateCurrentMaterial(library, gNodeDelegate);
+    SaveLib(&library, libraryFilename);
+    gEvaluation.Finish();
 
-	g_TS.WaitforAllAndShutdown();
-	return 0;
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
+    imogen.Finish(); // keep dock being saved
+
+    SDL_GL_DeleteContext(gl_context);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    pybind11::finalize_interpreter();
+    g_TS.WaitforAllAndShutdown();
+    return 0;
 }

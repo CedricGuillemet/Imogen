@@ -1,0 +1,46 @@
+layout(location = 0)in vec4 inCompute0;
+layout(location = 1)in vec4 inCompute1;
+layout(location = 2)in vec4 inCompute2;
+layout(location = 3)in vec4 inCompute3;
+
+out vec4 outCompute0;
+out vec4 outCompute1;
+out vec4 outCompute2;
+out vec4 outCompute3;
+
+
+layout (std140) uniform EvaluationBlock
+{
+	mat4 viewRot;
+	mat4 viewProjection;
+	mat4 viewInverse;
+	int targetIndex;
+	int forcedDirty;
+	int	uiPass;
+	int padding;
+	vec4 mouse; // x,y, lbut down, rbut down
+	ivec4 inputIndices[2];
+	
+	vec2 viewport;
+	int frame;
+	int localFrame;
+} EvaluationParam;
+
+
+void main()
+{
+	vec3 norm0 = inCompute1.xyz;
+	float stifness = 1.;
+	
+	float frm = float(EvaluationParam.frame);
+	float len = inCompute3.w;
+	outCompute0 = inCompute0 + vec4(0., frm, 0., 0.);
+	outCompute1 = inCompute1;
+	
+	vec3 idealPos1 = inCompute0.xyz + norm0 * len;
+	vec3 curSeg = inCompute2.xyz - inCompute0.xyz;
+	vec3 idealPos2 = inCompute2.xyz + normalize(curSeg) * len;
+	
+	outCompute2 = vec4(mix(inCompute2.xyz, idealPos1, stifness), inCompute2.w);
+	outCompute3 = vec4(mix(inCompute3.xyz, idealPos2, stifness), inCompute3.w);
+}

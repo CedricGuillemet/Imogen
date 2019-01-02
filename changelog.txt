@@ -1,6 +1,18 @@
 -------------------------------------------------------------------------------
 Imogen 0.8 - codename Unicorn Jabu
 
+New:
+- python plugins
+- svg import
+- fur generator/display (experimental)
+- materialX graph library export (experimental)
+- time line/animation play modes 
+- animation curve editing (numerical edit, deletion) with undo/redo
+- improved curve edit and sequence editor
+
+Fixed:
+- image allocation fixed
+- PBR node inverted cubemap sampling
 
 -------------------------------------------------------------------------------
 Imogen 0.7 - codename Pegasus Tenma

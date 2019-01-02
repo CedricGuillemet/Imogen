@@ -53,6 +53,13 @@ struct EvaluatorFile
     EVALUATOR_TYPE mEvaluatorType;
 };
 
+// plugins
+struct RegisteredPlugin
+{
+    std::string mName;
+    std::string mPythonCommand;
+};
+
 struct Imogen
 {
     Imogen();
@@ -66,11 +73,14 @@ struct Imogen
     void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
+    std::vector<RegisteredPlugin> mRegisteredPlugins;
     int GetCurrentMaterialIndex();
 
 protected:
     void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+    void ShowAppMainMenuBar();
 };
+extern Imogen imogen;
 
 void DebugLogText(const char *szText);
 enum CallbackDisplayType

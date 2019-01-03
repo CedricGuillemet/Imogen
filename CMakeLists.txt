@@ -19,6 +19,9 @@ file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
+	${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
+	${CMAKE_SOURCE_DIR}/ext/SOIL/src/*.c
+	${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
 )
 
 if(WIN32)
@@ -54,6 +57,10 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/include
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/glm/
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SOIL/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/Nvidia-SBVH
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/GLSL_Pathtracer/
 )
 
 link_directories(

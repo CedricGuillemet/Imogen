@@ -94,6 +94,7 @@ protected:
     std::vector<bool> mbProcessing;
     EvaluationInfo mEvaluationInfo;
 
+    std::vector<int> mStillDirty;
     int mDefaultWidth;
     int mDefaultHeight;
     bool mbSynchronousEvaluation;

@@ -61,6 +61,12 @@ static const EValuationFunction evaluationFunctions[] = {
     { "strlen", strlen },
     { "fabsf", fabsf },
     { "LoadSVG", (void*)Evaluation::LoadSVG},
+    { "LoadScene", (void*)Evaluation::LoadScene},
+    { "SetEvaluationScene", (void*)Evaluation::SetEvaluationScene},
+    { "GetEvaluationScene", (void*)Evaluation::GetEvaluationScene},
+    { "GetEvaluationRenderer", (void*)Evaluation::GetEvaluationRenderer},
+    { "InitRenderer", (void*)Evaluation::InitRenderer},
+    { "UpdateRenderer", (void*)Evaluation::UpdateRenderer},
 };
 
 static void libtccErrorFunc(void *opaque, const char *msg)

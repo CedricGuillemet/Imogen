@@ -419,7 +419,13 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
     {
         const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
         if (evaluator.mCFunction)
-            evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo);
+        {
+            int res = evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo);
+            if (res == EVAL_DIRTY)
+            {
+                mStillDirty.push_back(index);
+            }
+        }
     }
     catch (...)
     {
@@ -557,6 +563,10 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     {
         RunNode(nodeIndex);
     }
+    // set dirty nodes that tell so
+    for (auto index : mStillDirty)
+        SetTargetDirty(index);
+    mStillDirty.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);

@@ -65,6 +65,7 @@ enum EvaluationStatus
 {
     EVAL_OK,
     EVAL_ERR,
+    EVAL_DIRTY,
 };
 
 struct EvaluationInfo
@@ -218,6 +219,9 @@ struct EvaluationStage
     bool mLButDown;
     bool mRButDown;
     void Clear();
+    // scene render
+    void *scene;
+    void *renderer;
     Image_t DecodeImage();
 };
 
@@ -283,6 +287,13 @@ struct Evaluation
     static int AllocateComputeBuffer(int target, int elementCount, int elementSize);
     static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
     static int LoadSVG(const char *filename, Image *image, float dpi);
+    static int LoadScene(const char *filename, void **scene);
+    static int SetEvaluationScene(int target, void *scene);
+    static int GetEvaluationScene(int target, void **scene);
+    static int GetEvaluationRenderer(int target, void **renderer);
+    static int InitRenderer(int target, int mode, void *scene);
+    static int UpdateRenderer(int target);
+
     // synchronous texture cache
     // use for simple textures(stock) or to replace with a more efficient one
     unsigned int GetTexture(const std::string& filename);

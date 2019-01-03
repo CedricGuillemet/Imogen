@@ -939,3 +939,103 @@ int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
     renderTarget->InitCube(faceWidth);
     return EVAL_OK;
 }
+
+#include "Scene.h"
+#include "Loader.h"
+#include "TiledRenderer.h"
+#include "ProgressiveRenderer.h"
+
+int Evaluation::LoadScene(const char *filename, void **pscene)
+{
+    GLSLPathTracer::Scene *scene = new GLSLPathTracer::Scene;
+    *pscene = scene;
+
+    if (!GLSLPathTracer::LoadScene(scene, filename))
+    {
+        Log("Unable to load scene\n");
+        return EVAL_ERR;
+    }
+    Log("Scene Loaded\n\n");
+
+    scene->buildBVH();
+
+    // --------Print info on memory usage ------------- //
+
+    Log("Triangles: %d\n", scene->triangleIndices.size());
+    Log("Triangle Indices: %d\n", scene->gpuBVH->bvhTriangleIndices.size());
+    Log("Vertices: %d\n", scene->vertexData.size());
+
+    long long scene_data_bytes =
+        sizeof(GPUBVHNode) * scene->gpuBVH->bvh->getNumNodes() +
+        sizeof(GLSLPathTracer::TriangleData) * scene->gpuBVH->bvhTriangleIndices.size() +
+        sizeof(GLSLPathTracer::VertexData) * scene->vertexData.size() +
+        sizeof(GLSLPathTracer::NormalTexData) * scene->normalTexData.size() +
+        sizeof(GLSLPathTracer::MaterialData) * scene->materialData.size() +
+        sizeof(GLSLPathTracer::LightData) * scene->lightData.size();
+
+    Log("GPU Memory used for BVH and scene data: %d MB\n", scene_data_bytes / 1048576);
+
+    long long tex_data_bytes =
+        scene->texData.albedoTextureSize.x * scene->texData.albedoTextureSize.y * scene->texData.albedoTexCount * 3 +
+        scene->texData.metallicRoughnessTextureSize.x * scene->texData.metallicRoughnessTextureSize.y * scene->texData.metallicRoughnessTexCount * 3 +
+        scene->texData.normalTextureSize.x * scene->texData.normalTextureSize.y * scene->texData.normalTexCount * 3 +
+        scene->hdrLoaderRes.width * scene->hdrLoaderRes.height * sizeof(GL_FLOAT) * 3;
+
+    Log("GPU Memory used for Textures: %d MB\n", tex_data_bytes / 1048576);
+
+    Log("Total GPU Memory used: %d MB\n", (scene_data_bytes + tex_data_bytes) / 1048576);
+
+    return EVAL_OK;
+}
+
+int Evaluation::SetEvaluationScene(int target, void *scene)
+{
+    gEvaluation.mStages[target].scene = scene;
+    return EVAL_OK;
+}
+
+int Evaluation::GetEvaluationScene(int target, void **scene)
+{
+    *scene = gEvaluation.mStages[target].scene;
+    return EVAL_OK;
+}
+
+int Evaluation::GetEvaluationRenderer(int target, void **renderer)
+{
+    *renderer = gEvaluation.mStages[target].renderer;
+    return EVAL_OK;
+}
+
+int Evaluation::InitRenderer(int target, int mode, void *scene)
+{
+    GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
+    gEvaluation.mStages[target].scene = scene;
+    auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene);
+    gEvaluation.mStages[target].renderer = renderer;
+    return EVAL_OK;
+}
+
+int Evaluation::UpdateRenderer(int target)
+{
+    GLSLPathTracer::Renderer *renderer = (GLSLPathTracer::Renderer *)gEvaluation.mStages[target].renderer;
+    GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)gEvaluation.mStages[target].scene;
+ 
+    Camera* camera = gNodeDelegate.GetCameraParameter(target);
+    if (camera)
+    {
+        Vec4 pos = camera->mPosition;
+        Vec4 lk = camera->mPosition + camera->mDirection;
+        *rdscene->camera = GLSLPathTracer::Camera(glm::vec3(pos.x, pos.y, pos.z), glm::vec3(lk.x, lk.y, lk.z), 90.f);
+        rdscene->camera->updateCamera();
+    }
+    renderer->update(0.0166f);
+    auto tgt = gCurrentContext->GetRenderTarget(target);
+    renderer->render();
+
+    tgt->BindAsTarget();
+    renderer->present();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glUseProgram(0);
+
+    return EVAL_OK;
+}

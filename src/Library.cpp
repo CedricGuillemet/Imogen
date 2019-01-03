@@ -839,7 +839,6 @@ void LoadMetaNodes()
         ,{ }
         }
 
-
             ,
         {
             "SVG", hcFilter, 6
@@ -847,7 +846,21 @@ void LoadMetaNodes()
         ,{ { "", Con_Float4 } }
         ,{ { "File name", Con_FilenameRead }, { "DPI", Con_Float}}
         }
+            ,
+        {
+            "SceneLoader", hcFilter, 6
+            ,{ }
+        ,{ { "", Con_Float4 } }
+        ,{ { "File name", Con_FilenameRead }}
+        }
 
+            ,
+            {
+                "PathTracer", hcMaterial, 2
+                ,{ { "", Con_Float4 } }
+            ,{ { "", Con_Float4 } }
+            ,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Tiled\0Progressive\0" }, { "Camera", Con_Camera } }
+            }
     };
 
 

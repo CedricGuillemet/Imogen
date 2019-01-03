@@ -60,6 +60,8 @@ void Evaluation::AddSingleEvaluation(size_t nodeType)
     evaluation.mLocalTime             = 0;
     evaluation.gEvaluationMask        = gEvaluators.GetMask(nodeType);
     evaluation.mbDepthBuffer          = false;
+    evaluation.scene = nullptr;
+    evaluation.renderer = nullptr;
     mStages.push_back(evaluation);
 }
 

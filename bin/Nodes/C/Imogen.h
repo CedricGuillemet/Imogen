@@ -120,5 +120,13 @@ void SetProcessing(int target, int processing);
 // compute shader memory allocation
 int AllocateComputeBuffer(int target, int elementCount, int elementSize);
 
+int LoadScene(const char *filename, void **scene);
+int SetEvaluationScene(int target, void *scene);
+int GetEvaluationScene(int target, void **scene);
+int GetEvaluationRenderer(int target, void **renderer);
+int InitRenderer(int target, int mode, void *scene);
+int UpdateRenderer(int target);
+
 #define EVAL_OK 0
 #define EVAL_ERR 1
+#define EVAL_DIRTY 2

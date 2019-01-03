@@ -873,10 +873,10 @@ void LoadMetaNodes()
 AnimationBase::AnimationPointer AnimationBase::GetPointer(int32_t frame, bool bSetting) const
 {
     if (mFrames.empty())
-        return { 0, 0, 0, 0, 0.f };
+        return { bSetting ? -1 : 0, 0, 0, 0, 0.f };
     if (frame <= mFrames[0])
-        return { bSetting ?-1:0, 0, 0, 0, 0.f };
-    if (frame >= mFrames.back())
+        return { bSetting ? -1 : 0, 0, 0, 0, 0.f };
+    if (frame > mFrames.back())
     {
         int32_t last = int32_t(mFrames.size() - (bSetting ? 0 : 1));
         return {last, mFrames.back(), last, mFrames.back(), 0.f };

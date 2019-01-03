@@ -255,8 +255,16 @@ template<typename T> struct Animation : public AnimationBase
         }
         else
         {
-            mFrames.insert(mFrames.begin() + pointer.mPreviousIndex + 1, frame);
-            mValues.insert(mValues.begin() + pointer.mPreviousIndex + 1, value);
+            if (mFrames.empty() || pointer.mPreviousIndex >= mFrames.size())
+            {
+                mFrames.push_back(frame);
+                mValues.push_back(value);
+            }
+            else
+            {
+                mFrames.insert(mFrames.begin() + pointer.mPreviousIndex + 1, frame);
+                mValues.insert(mValues.begin() + pointer.mPreviousIndex + 1, value);
+            }
         }
     }
 

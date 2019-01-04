@@ -1040,6 +1040,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
     {
+        gCurrentContext->SetTargetDirty(mNodeIndex);
+
         uint32_t parameterIndex = mParameterIndex[curveIndex];
 
         mPts[curveIndex][pointIndex] = value;
@@ -1136,6 +1138,39 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         for (auto ur : undoRedoEditCurves)
             delete ur;
         undoRedoEditCurves.clear();
+    }
+
+    void MakeCurvesVisible()
+    {
+        float minY = FLT_MAX;
+        float maxY = -FLT_MAX;
+        bool somethingVisible = false;
+        for (size_t curve = 0; curve < mPts.size(); curve++)
+        {
+            if (!mbVisible[curve])
+                continue;
+            somethingVisible = true;
+            std::vector<ImVec2>& pts = mPts[curve];
+            for (auto& pt : pts)
+            {
+                minY = ImMin(minY, pt.y);
+                maxY = ImMax(maxY, pt.y);
+            }
+        }
+        if (somethingVisible)
+        {
+            if ((maxY - minY) <= FLT_EPSILON)
+            {
+                mMin.y = minY - 0.1f;
+                mMax.y = minY + 0.1f;
+            }
+            else
+            {
+                float marge = (maxY - minY) * 0.05f;
+                mMin.y = minY - marge;
+                mMax.y = maxY + marge;
+            }
+        }
     }
 
     std::vector<std::vector<ImVec2>> mPts;
@@ -1261,9 +1296,6 @@ struct MySequence : public ImSequencer::SequenceInterface
 
         ImGui::SetCursorScreenPos(rc.Min);
         ImCurveEdit::Edit(curveEdit, rc.Max - rc.Min, 137 + index, &clippingRect, &mSelectedCurvePoints);
-        mCurveMin = curveMin.y;
-        mCurveMax = curveMax.y;
-
         getKeyFrameOrValue = ImVec2(FLT_MAX, FLT_MAX);
 
         if (focused || curveEdit.focused)
@@ -1271,6 +1303,10 @@ struct MySequence : public ImSequencer::SequenceInterface
             if (ImGui::IsKeyPressedMap(ImGuiKey_Delete))
             {
                 curveEdit.DeletePoints(mSelectedCurvePoints);
+            }
+            if (ImGui::IsKeyPressed(SDL_SCANCODE_F))
+            {
+                curveEdit.MakeCurvesVisible();
             }
         }
 
@@ -1305,6 +1341,10 @@ struct MySequence : public ImSequencer::SequenceInterface
         {
             getKeyFrameOrValue = curveEdit.mPts[mSelectedCurvePoints[0].curveIndex][mSelectedCurvePoints[0].pointIndex];
         }
+
+        // set back visible bounds
+        mCurveMin = curveMin.y;
+        mCurveMax = curveMax.y;
     }
 
     TileNodeEditGraphDelegate &mNodeGraphDelegate;

@@ -1031,7 +1031,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return mCurveType[curveIndex]; }
     virtual ImVec2& GetMax() { return mMax; }
     virtual ImVec2& GetMin() { return mMin; }
-    virtual unsigned int GetBackgroundColor() { return 0x00202020; }
+    virtual unsigned int GetBackgroundColor() { return 0x80202060; }
     virtual bool IsVisible(size_t curveIndex) { return mbVisible[curveIndex]; }
     size_t GetCurveCount() { return mPts.size(); }
     size_t GetPointCount(size_t curveIndex) { return mPts[curveIndex].size(); }

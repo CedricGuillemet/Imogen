@@ -849,9 +849,12 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
         }
         NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
         NodeGraphUpdateScrolling();
+        gEvaluationTime = 0;
         nodeGraphDelegate.SetAnimTrack(material.mAnimTrack);
         nodeGraphDelegate.mFrameMin = material.mFrameMin;
         nodeGraphDelegate.mFrameMax = material.mFrameMax;
+        nodeGraphDelegate.SetTime(gEvaluationTime, true);
+        nodeGraphDelegate.ApplyAnimation(gEvaluationTime);
         nodeGraphDelegate.mEditingContext.RunAll();
     }
 }
@@ -1222,6 +1225,7 @@ struct MySequence : public ImSequencer::SequenceInterface
     {
         delete undoRedoChange;
         undoRedoChange = NULL;
+        gNodeDelegate.SetTime(gEvaluationTime, false);
     }
 
     virtual int GetItemCount() const { return (int)gEvaluation.GetStagesCount(); }

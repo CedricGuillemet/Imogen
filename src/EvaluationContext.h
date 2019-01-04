@@ -47,7 +47,7 @@ struct EvaluationContext
     FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
     bool IsSynchronous() const { return mbSynchronousEvaluation; }
     void SetTargetDirty(size_t target, bool onlyChild = false);
-
+    void SetEnable(size_t target, bool enable);
     bool StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return false; return mbProcessing[target]; }
     void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(gEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
 
@@ -92,6 +92,7 @@ protected:
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
     std::vector<bool> mbDirty;
     std::vector<bool> mbProcessing;
+    std::vector<bool> mbEnable;
     EvaluationInfo mEvaluationInfo;
 
     std::vector<int> mStillDirty;

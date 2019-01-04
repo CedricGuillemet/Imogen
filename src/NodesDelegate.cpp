@@ -576,21 +576,11 @@ void TileNodeEditGraphDelegate::SetTime(int time, bool updateDecoder)
     {
         const ImogenNode& node = mNodes[i];
         gEvaluation.SetStageLocalTime(i, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
+        bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
+        gCurrentContext->SetEnable(i, enabled);
     }
 }
-/*
-size_t TileNodeEditGraphDelegate::ComputeTimelineLength() const
-{
-    int len = 0;
-    for (size_t i = 0; i < mNodes.size(); i++)
-    {
-        const ImogenNode& node = mNodes[i];
-        len = ImMax(len, node.mEndFrame);
-        len = ImMax(len, int(node.mStartFrame + gEvaluation.GetEvaluationImageDuration(i)));
-    }
-    return size_t(len);
-}
-*/
+
 void TileNodeEditGraphDelegate::DoForce()
 {
     int currentTime = gEvaluationTime;

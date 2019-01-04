@@ -6,7 +6,7 @@ Renderer
 	maxDepth 4
 	numTilesX 5
 	numTilesY 5
-	envMap ./assets/ajax/sunset.hdr
+	envMap ./Media/Scene/ajax/sunset.hdr
 	hdrMultiplier 5.0
 }
 
@@ -61,6 +61,6 @@ material glass
 
 mesh
 {
-	file ./assets/ajax/ajax.obj
+	file ./Media/Scene/ajax/ajax.obj
 	material black
 }

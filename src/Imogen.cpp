@@ -1043,8 +1043,6 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
     {
-        gCurrentContext->SetTargetDirty(mNodeIndex);
-
         uint32_t parameterIndex = mParameterIndex[curveIndex];
 
         mPts[curveIndex][pointIndex] = value;
@@ -1057,6 +1055,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         }
 
         SortValues(curveIndex);
+        BakeValuesToAnimationTrack();
+
         for (size_t i = 0; i < GetPointCount(curveIndex); i++)
         {
             if (mPts[curveIndex][i].x == value.x)

@@ -878,7 +878,6 @@ void TileNodeEditGraphDelegate::ApplyAnimationForNode(size_t nodeIndex, int fram
             animTrack.mAnimation->GetValue(frame, &node.mParameters[parameterOffset]);
 
             animatedNodes = true;
-            break;
         }
     }
     if (animatedNodes)

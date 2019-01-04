@@ -944,6 +944,8 @@ int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 #include "Loader.h"
 #include "TiledRenderer.h"
 #include "ProgressiveRenderer.h"
+#include "GPUBVH.h"
+#include "Camera.h"
 
 int Evaluation::LoadScene(const char *filename, void **pscene)
 {
@@ -966,7 +968,7 @@ int Evaluation::LoadScene(const char *filename, void **pscene)
     Log("Vertices: %d\n", scene->vertexData.size());
 
     long long scene_data_bytes =
-        sizeof(GPUBVHNode) * scene->gpuBVH->bvh->getNumNodes() +
+        sizeof(GLSLPathTracer::GPUBVHNode) * scene->gpuBVH->bvh->getNumNodes() +
         sizeof(GLSLPathTracer::TriangleData) * scene->gpuBVH->bvhTriangleIndices.size() +
         sizeof(GLSLPathTracer::VertexData) * scene->vertexData.size() +
         sizeof(GLSLPathTracer::NormalTexData) * scene->normalTexData.size() +
@@ -1010,7 +1012,7 @@ int Evaluation::InitRenderer(int target, int mode, void *scene)
 {
     GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
     gEvaluation.mStages[target].scene = scene;
-    auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene);
+    auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
     gEvaluation.mStages[target].renderer = renderer;
     return EVAL_OK;
 }

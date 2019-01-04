@@ -1,12 +1,13 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include <string>
-#include <vector>
-#include <Scene.h>
 
 namespace GLSLPathTracer
 {
-    void LoadModel(Scene *scene, std::string filename, float materialId);
-    bool LoadScene(Scene *scene, const char* filename);
+    class Scene;
+
+    bool LoadModel(Scene *scene, const std::string &filename, float materialId);
+    bool LoadScene(Scene *scene, const std::string &filename);
+    // logger function. might be set at init time
+    extern int(*Log)(const char* szFormat, ...);
 }

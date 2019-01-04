@@ -21,8 +21,8 @@ int main(PathTracer *param, Evaluation *evaluation)
 	{
 		if (InitRenderer(evaluation->targetIndex, 0, scene) != EVAL_OK)
 			return EVAL_ERR;
-		SetEvaluationSize(evaluation->targetIndex, 1024, 1024);
 	}
+	SetEvaluationSize(evaluation->targetIndex, 1024, 1024);
 	if (UpdateRenderer(evaluation->targetIndex) != EVAL_OK)
 		return EVAL_ERR;
 

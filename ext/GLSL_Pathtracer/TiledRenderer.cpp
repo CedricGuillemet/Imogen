@@ -1,8 +1,9 @@
-#include <TiledRenderer.h>
+#include "TiledRenderer.h"
+#include "Camera.h"
 
 namespace GLSLPathTracer
 {
-    void TiledRenderer::init()
+    void TiledRenderer::init(const std::string& shadersDirectory)
     {
         renderCompleted = false;
         totalTime = 0.0f;
@@ -22,10 +23,10 @@ namespace GLSLPathTracer
         //----------------------------------------------------------
         // Shaders
         //----------------------------------------------------------
-        pathTraceShader = loadShaders("./PathTracer/src/shaders/Tiled/PathTraceVert.glsl", "./PathTracer/src/shaders/Tiled/PathTraceFrag.glsl");
-        accumShader = loadShaders("./PathTracer/src/shaders/Tiled/AccumVert.glsl", "./PathTracer/src/shaders/Tiled/AccumFrag.glsl");
-        tileOutputShader = loadShaders("./PathTracer/src/shaders/Tiled/TileOutputVert.glsl", "./PathTracer/src/shaders/Tiled/TileOutputFrag.glsl");
-        outputShader = loadShaders("./PathTracer/src/shaders/Tiled/OutputVert.glsl", "./PathTracer/src/shaders/Tiled/OutputFrag.glsl");
+        pathTraceShader = loadShaders(shadersDirectory + "PathTraceVert.glsl", shadersDirectory + "PathTraceFrag.glsl");
+        accumShader = loadShaders(shadersDirectory + "AccumVert.glsl", shadersDirectory + "AccumFrag.glsl");
+        tileOutputShader = loadShaders(shadersDirectory + "TileOutputVert.glsl", shadersDirectory + "TileOutputFrag.glsl");
+        outputShader = loadShaders(shadersDirectory + "OutputVert.glsl", shadersDirectory + "OutputFrag.glsl");
 
         //----------------------------------------------------------
         // FBO Setup
@@ -50,7 +51,7 @@ namespace GLSLPathTracer
         //Create Texture for FBO
         glGenTextures(1, &accumTexture);
         glBindTexture(GL_TEXTURE_2D, accumTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, screenSize.x, screenSize.y, 0, GL_RGB, GL_FLOAT, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, GLsizei(screenSize.x), GLsizei(screenSize.y), 0, GL_RGB, GL_FLOAT, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -63,7 +64,7 @@ namespace GLSLPathTracer
         //Create Texture for FBO
         glGenTextures(1, &tileOutputTexture);
         glBindTexture(GL_TEXTURE_2D, tileOutputTexture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, screenSize.x, screenSize.y, 0, GL_RGB, GL_FLOAT, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, GLsizei(screenSize.x), GLsizei(screenSize.y), 0, GL_RGB, GL_FLOAT, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -86,7 +87,7 @@ namespace GLSLPathTracer
         glUniform1f(glGetUniformLocation(shaderObject, "hdrMultiplier"), scene->renderOptions.hdrMultiplier);
 
         glUniform1i(glGetUniformLocation(shaderObject, "maxDepth"), maxDepth);
-        glUniform2fv(glGetUniformLocation(shaderObject, "screenResolution"), 1, glm::value_ptr(screenSize));
+        glUniform2f(glGetUniformLocation(shaderObject, "screenResolution"), float(screenSize.x), float(screenSize.y));
         glUniform1i(glGetUniformLocation(shaderObject, "numOfLights"), numOfLights);
         glUniform1f(glGetUniformLocation(shaderObject, "invTileWidth"), 1.0f / numTilesX);
         glUniform1f(glGetUniformLocation(shaderObject, "invTileHeight"), 1.0f / numTilesY);
@@ -167,12 +168,6 @@ namespace GLSLPathTracer
             quad->Draw(outputShader);
         }
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, screenSize.x, screenSize.y);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tileOutputTexture);
-        quad->Draw(tileOutputShader);
-
         if (sampleCounter[tileX][tileY] > maxSamples)
         {
             tileX++;
@@ -183,10 +178,17 @@ namespace GLSLPathTracer
                 if (tileY < 0)
                 {
                     renderCompleted = true;
-                    printf("Completed: %f secs\n", totalTime);
+                    Log("Completed: %f secs\n", totalTime);
                 }
             }
         }
+    }
+
+    void TiledRenderer::present()
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tileOutputTexture);
+        quad->Draw(tileOutputShader);
     }
 
     void TiledRenderer::update(float secondsElapsed)

@@ -1,5 +1,7 @@
-#include <Scene.h>
 #include <iostream>
+
+#include "Scene.h"
+#include "Camera.h"
 
 namespace GLSLPathTracer
 {
@@ -18,16 +20,16 @@ namespace GLSLPathTracer
         GPUScene::Triangle newtri;
 
         // convert Triangle to GPUScene::Triangle
-        int triCount = triangleIndices.size();
-        for (unsigned int i = 0; i < triCount; i++) {
+        int triCount = int(triangleIndices.size());
+        for (int i = 0; i < triCount; i++) {
             GPUScene::Triangle newtri;
-            newtri.vertices = Vec3i(triangleIndices[i].indices.x, triangleIndices[i].indices.y, triangleIndices[i].indices.z);
+            newtri.vertices = Vec3i(int(triangleIndices[i].indices.x), int(triangleIndices[i].indices.y), int(triangleIndices[i].indices.z));
             tris.add(newtri);
         }
 
         // fill up Array of vertices
-        int verCount = vertexData.size();
-        for (unsigned int i = 0; i < verCount; i++) {
+        int verCount = int(vertexData.size());
+        for (int i = 0; i < verCount; i++) {
             verts.add(Vec3f(vertexData[i].vertex.x, vertexData[i].vertex.y, vertexData[i].vertex.z));
         }
 

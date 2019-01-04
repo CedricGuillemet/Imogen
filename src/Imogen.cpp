@@ -332,6 +332,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
                 mouseUVPos.y = 1.f - mouseUVPos.y;
                 Vec4 mouseUVPosv(mouseUVPos.x, mouseUVPos.y);
+                mouseUVCoord = ImVec2(mouseUVPosv.x, mouseUVPosv.y);
 
                 Vec4 uva(0, 0), uvb(1, 1);
                 Mat4x4* viewMatrix = nodeGraphDelegate.GetParameterViewMatrix(selNode);

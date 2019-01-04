@@ -44,6 +44,7 @@
 #include "Evaluators.h"
 #include "cmft/clcontext.h"
 #include "cmft/clcontext_internal.h"
+#include "Loader.h"
 
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
@@ -108,6 +109,7 @@ enki::TaskScheduler g_TS;
 int main(int, char**)
 {
     TagTime("App start");
+    GLSLPathTracer::Log = Log;
     g_TS.Initialize();
     TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive

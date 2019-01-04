@@ -33,13 +33,18 @@ freely, subject to the following restrictions:
 #include <algorithm>
 #include <SOIL.h>
 #include "linear_math.h"
-# define M_PI  3.14159265358979323846
+#include "Scene.h"
+#include "Camera.h"
 
 namespace GLSLPathTracer
 {
-    static const int kMaxLineLength = 2048;
 
-    void LoadModel(Scene *scene, std::string filename, float materialId)
+    static const float M_PI = 3.14159265358979323846f;
+
+    static const int kMaxLineLength = 2048;
+    int(*Log)(const char* szFormat, ...) = printf;
+
+    bool LoadModel(Scene *scene, const std::string &filename, float materialId)
     {
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
@@ -49,12 +54,12 @@ namespace GLSLPathTracer
 
         if (!ret)
         {
-            printf_s("Unable to load model\n");
-            exit(0);
+            Log("Unable to load model\n");
+            return false;
         }
 
         // Load vertices
-        int vertCount = attrib.vertices.size() / 3;
+        int vertCount = int(attrib.vertices.size() / 3);
         size_t vertStartIndex = scene->vertexData.size();
         for (int i = 0; i < vertCount; i++)
             scene->vertexData.push_back(VertexData{ glm::vec3(attrib.vertices[3 * i + 0], attrib.vertices[3 * i + 1], attrib.vertices[3 * i + 2]) });
@@ -75,8 +80,8 @@ namespace GLSLPathTracer
                 int fv = shapes[s].mesh.num_face_vertices[f];
                 for (int i = 0; i < fv; i++)
                 {
-                    tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + i];
-                    indices[i] = vertStartIndex + (3 * idx.vertex_index + i) / 3;
+                    tinyobj::index_t idx = tinyobj::index_t(shapes[s].mesh.indices[index_offset + i]);
+                    indices[i] = float(vertStartIndex + (3 * idx.vertex_index + i) / 3);
 
                     vx = attrib.vertices[3 * idx.vertex_index + 0];
                     vy = attrib.vertices[3 * idx.vertex_index + 1];
@@ -122,20 +127,21 @@ namespace GLSLPathTracer
                 index_offset += fv;
             }
         }
+        return true;
     }
 
-    bool LoadScene(Scene *scene, const char* filename)
+    bool LoadScene(Scene *scene, const std::string &filename)
     {
         FILE* file;
-        fopen_s(&file, filename, "r");
+        fopen_s(&file, filename.c_str(), "r");
 
         if (!file)
         {
-            printf("Couldn't open %s for reading\n", filename);
+            Log("Couldn't open %s for reading\n", filename.c_str());
             return false;
         }
 
-        printf("Loading Scene..\n");
+        Log("Loading Scene..\n");
 
         struct Material
         {
@@ -207,10 +213,10 @@ namespace GLSLPathTracer
                     if (pos == albedoTex.size()) // New texture
                     {
                         albedoTex.push_back(albedoTexName);
-                        material.texIDs.x = albedoTex.size() - 1;
+                        material.texIDs.x = float(albedoTex.size() - 1);
                     }
                     else
-                        material.texIDs.x = pos;
+                        material.texIDs.x = float(int(pos));
                 }
                 else
                     material.texIDs.x = -1;
@@ -222,11 +228,11 @@ namespace GLSLPathTracer
                     if (pos == metallicRoughnessTex.size())
                     {
                         metallicRoughnessTex.push_back(metallicRoughnessTexName);
-                        material.texIDs.y = metallicRoughnessTex.size() - 1;
+                        material.texIDs.y = float(metallicRoughnessTex.size() - 1);
                     }
                     else
                     {
-                        material.texIDs.y = pos;
+                        material.texIDs.y = float(int(pos));
                     }
                 }
                 else
@@ -241,10 +247,10 @@ namespace GLSLPathTracer
                     if (pos == normalTex.size())
                     {
                         normalTex.push_back(normalTexName);
-                        material.texIDs.z = normalTex.size() - 1;
+                        material.texIDs.z = float(normalTex.size() - 1);
                     }
                     else
-                        material.texIDs.z = pos;
+                        material.texIDs.z = float(int(pos));
                 }
                 else
                     material.texIDs.z = -1;
@@ -336,7 +342,7 @@ namespace GLSLPathTracer
                         break;
 
                     sscanf(line, " rendererType %s", &rendererType);
-                    sscanf(line, " resolution %f %f", &scene->renderOptions.resolution.x, &scene->renderOptions.resolution.y);
+                    sscanf(line, " resolution %d %d", &scene->renderOptions.resolution.x, &scene->renderOptions.resolution.y);
                     sscanf(line, " envMap %s", &envMap);
                     sscanf(line, " hdrMultiplier %f", &scene->renderOptions.hdrMultiplier);
                     sscanf(line, " maxDepth %i", &scene->renderOptions.maxDepth);
@@ -381,18 +387,21 @@ namespace GLSLPathTracer
                         // look up material in dictionary
                         if (materialMap.find(path) != materialMap.end())
                         {
-                            materialId = materialMap[path].id;
+                            materialId = float(materialMap[path].id);
                         }
                         else
                         {
-                            printf_s("Could not find material %s\n", path);
+                            Log("Could not find material %s\n", path);
                         }
                     }
                 }
                 if (!meshPath.empty())
                 {
-                    printf("Loading Model: %s\n", meshPath.c_str());
-                    LoadModel(scene, meshPath, materialId);
+                    Log("Loading Model: %s\n", meshPath.c_str());
+                    if (!LoadModel(scene, meshPath, materialId))
+                    {
+                        return false;
+                    }
                 }
             }
         }
@@ -404,14 +413,14 @@ namespace GLSLPathTracer
         //(Assume for now that all textures have same width and height as their group (albedo, metallic etc))
         int width, height;
 
-        scene->texData.albedoTexCount = albedoTex.size();
-        scene->texData.metallicRoughnessTexCount = metallicRoughnessTex.size();
-        scene->texData.normalTexCount = normalTex.size();
+        scene->texData.albedoTexCount = int(albedoTex.size());
+        scene->texData.metallicRoughnessTexCount = int(metallicRoughnessTex.size());
+        scene->texData.normalTexCount = int(normalTex.size());
 
         //Load albedo Textures
         for (size_t i = 0; i < albedoTex.size(); i++)
         {
-            printf("Loading Texture: %s\n", albedoTex[i].c_str());
+            Log("Loading Texture: %s\n", albedoTex[i].c_str());
             unsigned char * texture = SOIL_load_image(albedoTex[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
             if (i == 0) // Alloc memory based on first texture size
                 scene->texData.albedoTextures = new unsigned char[width * height * 3 * albedoTex.size()];
@@ -423,7 +432,7 @@ namespace GLSLPathTracer
         //Load MetallicRoughness textures
         for (size_t i = 0; i < metallicRoughnessTex.size(); i++)
         {
-            printf("Loading Texture: %s\n", metallicRoughnessTex[i].c_str());
+            Log("Loading Texture: %s\n", metallicRoughnessTex[i].c_str());
             unsigned char * texture = SOIL_load_image(metallicRoughnessTex[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
             if (i == 0) // Alloc memory based on first texture size
                 scene->texData.metallicRoughnessTextures = new unsigned char[width * height * 3 * metallicRoughnessTex.size()];
@@ -435,7 +444,7 @@ namespace GLSLPathTracer
         //Load normal textures
         for (size_t i = 0; i < normalTex.size(); i++)
         {
-            printf("Loading Texture: %s\n", normalTex[i].c_str());
+            Log("Loading Texture: %s\n", normalTex[i].c_str());
             unsigned char * texture = SOIL_load_image(normalTex[i].c_str(), &width, &height, 0, SOIL_LOAD_RGB);
             if (i == 0) // Alloc memory based on first texture size
                 scene->texData.normalTextures = new unsigned char[width * height * 3 * normalTex.size()];

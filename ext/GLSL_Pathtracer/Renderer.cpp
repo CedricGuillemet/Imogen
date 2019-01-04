@@ -2,7 +2,7 @@
 
 namespace GLSLPathTracer
 {
-    Program *loadShaders(std::string vertex_shader_fileName, std::string frag_shader_fileName)
+    Program *loadShaders(const std::string &vertex_shader_fileName, const std::string &frag_shader_fileName)
     {
         std::vector<Shader> shaders;
         shaders.push_back(Shader(vertex_shader_fileName, GL_VERTEX_SHADER));
@@ -10,14 +10,14 @@ namespace GLSLPathTracer
         return new Program(shaders);
     }
 
-    void Renderer::init()
+    bool Renderer::init()
     {
         quad = new Quad();
 
         if (scene == NULL)
         {
-            std::cout << "Error: No Scene Found";
-            exit(0);
+            Log("Error: No Scene Found\n");
+            return false;
         }
 
         //Create Texture for BVH Tree
@@ -61,7 +61,7 @@ namespace GLSLPathTracer
         glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, materialArrayBuffer);
 
         //Create Buffer and Texture for Lights
-        numOfLights = scene->lightData.size();
+        numOfLights = int(scene->lightData.size());
 
         if (numOfLights > 0)
         {
@@ -134,5 +134,6 @@ namespace GLSLPathTracer
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glBindTexture(GL_TEXTURE_2D, 0);
         }
+        return true;
     }
 }

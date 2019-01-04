@@ -1,7 +1,9 @@
-#include <ProgressiveRenderer.h>
+#include "ProgressiveRenderer.h"
+#include "Camera.h"
+
 namespace GLSLPathTracer
 {
-    void ProgressiveRenderer::init()
+    void ProgressiveRenderer::init(const std::string& shadersDirectory)
     {
         sampleCounter = 1;
         timeToFade = 2.0f;
@@ -13,12 +15,10 @@ namespace GLSLPathTracer
         //----------------------------------------------------------
         // Shaders
         //----------------------------------------------------------
-#define SHD_PATH(x) "Stock/PathTracer/Progressive/"x
-
-        pathTraceShader = loadShaders(SHD_PATH("PathTraceVert.glsl"), SHD_PATH("PathTraceFrag.glsl"));
-        accumShader = loadShaders(SHD_PATH("AccumVert.glsl"), SHD_PATH("AccumFrag.glsl"));
-        outputShader = loadShaders(SHD_PATH("OutputVert.glsl"), SHD_PATH("OutputFrag.glsl"));
-        outputFadeShader = loadShaders(SHD_PATH("OutputFadeVert.glsl"), SHD_PATH("OutputFadeFrag.glsl"));
+        pathTraceShader = loadShaders(shadersDirectory + "PathTraceVert.glsl", shadersDirectory + "PathTraceFrag.glsl");
+        accumShader = loadShaders(shadersDirectory + "AccumVert.glsl", shadersDirectory + "AccumFrag.glsl");
+        outputShader = loadShaders(shadersDirectory + "OutputVert.glsl", shadersDirectory + "OutputFrag.glsl");
+        outputFadeShader = loadShaders(shadersDirectory + "OutputFadeVert.glsl", shadersDirectory + "OutputFadeFrag.glsl");
 
         //----------------------------------------------------------
         // FBO Setup
@@ -43,7 +43,7 @@ namespace GLSLPathTracer
         //Create Half Res Texture for FBO
         glGenTextures(1, &pathTraceTextureHalf);
         glBindTexture(GL_TEXTURE_2D, pathTraceTextureHalf);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, screenSize.x * 0.5f, screenSize.y * 0.5f, 0, GL_RGB, GL_FLOAT, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, screenSize.x / 2, screenSize.y / 2, 0, GL_RGB, GL_FLOAT, 0);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -68,10 +68,10 @@ namespace GLSLPathTracer
         shaderObject = pathTraceShader->object();
 
         glUniform1i(glGetUniformLocation(shaderObject, "maxDepth"), maxDepth);
-        glUniform2fv(glGetUniformLocation(shaderObject, "screenResolution"), 1, glm::value_ptr(screenSize));
+        glUniform2f(glGetUniformLocation(shaderObject, "screenResolution"), float(screenSize.x), float(screenSize.y));
         glUniform1i(glGetUniformLocation(shaderObject, "numOfLights"), numOfLights);
         glUniform1i(glGetUniformLocation(shaderObject, "useEnvMap"), scene->renderOptions.useEnvMap);
-        glUniform1f(glGetUniformLocation(shaderObject, "hdrResolution"), scene->hdrLoaderRes.width * scene->hdrLoaderRes.height);
+        glUniform1f(glGetUniformLocation(shaderObject, "hdrResolution"), float(scene->hdrLoaderRes.width * scene->hdrLoaderRes.height));
         glUniform1f(glGetUniformLocation(shaderObject, "hdrMultiplier"), scene->renderOptions.hdrMultiplier);
 
         glUniform1i(glGetUniformLocation(shaderObject, "accumTexture"), 0);
@@ -129,7 +129,7 @@ namespace GLSLPathTracer
             glBindFramebuffer(GL_FRAMEBUFFER, accumFBO);
             glClear(GL_COLOR_BUFFER_BIT);
             glBindFramebuffer(GL_FRAMEBUFFER, pathTraceFBOHalf);
-            glViewport(0, 0, screenSize.x * 0.5, screenSize.y * 0.5);
+            glViewport(0, 0, screenSize.x / 2, screenSize.y / 2);
             quad->Draw(pathTraceShader);
         }
         else
@@ -155,17 +155,14 @@ namespace GLSLPathTracer
         //----------------------------------------------------------
         // final output
         //----------------------------------------------------------
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
         if (lowRes)
         {
-            //glViewport(0, 0, screenSize.x, screenSize.y);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, pathTraceTextureHalf);
             quad->Draw(outputShader);
         }
         else if (fadeIn)
         {
-            //glViewport(0, 0, screenSize.x, screenSize.y);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, pathTraceTextureHalf);
             glActiveTexture(GL_TEXTURE1);
@@ -231,10 +228,10 @@ namespace GLSLPathTracer
         glUniform1f(glGetUniformLocation(shaderObject, "camera.focalDist"), scene->camera->focalDist);
         glUniform1f(glGetUniformLocation(shaderObject, "camera.aperture"), scene->camera->aperture);
         glUniform3fv(glGetUniformLocation(shaderObject, "randomVector"), 1, glm::value_ptr(glm::vec3(r1, r2, r3)));
-        glUniform1i(glGetUniformLocation(shaderObject, "sampleCounter"), sampleCounter);
+        glUniform1i(glGetUniformLocation(shaderObject, "sampleCounter"), int(sampleCounter));
         glUniform1i(glGetUniformLocation(shaderObject, "maxDepth"), lowRes ? 2 : maxDepth);
         glUniform1i(glGetUniformLocation(shaderObject, "isCameraMoving"), scene->camera->isMoving);
-        glUniform2fv(glGetUniformLocation(shaderObject, "screenResolution"), 1, glm::value_ptr(screenSize));
+        glUniform2f(glGetUniformLocation(shaderObject, "screenResolution"), float(screenSize.x), float(screenSize.y));
         pathTraceShader->stopUsing();
 
         outputShader->use();

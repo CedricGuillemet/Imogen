@@ -2,14 +2,14 @@
 
 #include <glm/glm.hpp>
 #include <string>
-#include <tiny_obj_loader.h>
 #include <vector>
-#include <Camera.h>
-#include <hdrloader.h>
-#include <GPUBVH.h>
+#include "hdrloader.h"
+#include "GPUBVH.h"
 
 namespace GLSLPathTracer
 {
+    class Camera;
+
     struct TriangleData
     {
         glm::vec4 indices;
@@ -51,9 +51,9 @@ namespace GLSLPathTracer
         int metallicRoughnessTexCount;
         int normalTexCount;
 
-        glm::vec2 albedoTextureSize;
-        glm::vec2 metallicRoughnessTextureSize;
-        glm::vec2 normalTextureSize;
+        glm::ivec2 albedoTextureSize;
+        glm::ivec2 metallicRoughnessTextureSize;
+        glm::ivec2 normalTextureSize;
     };
 
     struct LightData
@@ -79,7 +79,7 @@ namespace GLSLPathTracer
             hdrMultiplier = 1.0f;
         }
         std::string rendererType;
-        glm::vec2 resolution;
+        glm::ivec2 resolution;
         int maxSamples;
         int maxDepth;
         int numTilesX;

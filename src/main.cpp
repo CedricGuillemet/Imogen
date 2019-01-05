@@ -113,6 +113,31 @@ int main(int, char**)
     g_TS.Initialize();
     TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
+    gEvaluators.InitPythonModules();
+    pybind11::exec( R"(import sys
+import Imogen
+class CatchImogenIO:
+    def __init__(self):
+        pass
+    def write(self, txt):
+        Imogen.Log(txt)
+catchImogenIO = CatchImogenIO()
+sys.stdout = catchImogenIO
+sys.stderr = catchImogenIO
+print("Python std out catched.\n"))");
+    pybind11::module::import("Plugins");
+    /*
+    try
+    {
+        pybind11::exec(R"(sa mere la pute)");
+    }
+    catch (const pybind11::error_already_set &e)
+    {
+        Log("Python Error:\n");
+        Log(e.what());
+        Log("\n");
+    }
+    */
     TagTime("Python interpreter Init");
     LoadMetaNodes();
     FFMPEGCodec::RegisterAll();

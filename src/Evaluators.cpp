@@ -508,7 +508,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
     }
     TagTime("C init");
-    mImogenModule = pybind11::module::import("Imogen");
+    
     for (auto& file : evaluatorfilenames)
     {
         if (file.mEvaluatorType != EVALUATOR_PYTHON)
@@ -582,7 +582,13 @@ int Evaluators::GetMask(size_t nodeType)
     return mask;
 }
 
+void Evaluators::InitPythonModules()
+{
+    mImogenModule = pybind11::module::import("Imogen");
+}
+
 void Evaluator::RunPython() const
 {
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
 }
+

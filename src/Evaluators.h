@@ -56,6 +56,7 @@ struct Evaluators
     const Evaluator& GetEvaluator(size_t nodeType) const { return mEvaluatorPerNodeType[nodeType]; }
 
     unsigned int gEvaluationStateGLSLBuffer;
+    void InitPythonModules();
     pybind11::module mImogenModule;
 protected:
 

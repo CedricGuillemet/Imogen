@@ -45,6 +45,7 @@ unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, in
 extern Evaluation gEvaluation;
 int gEvaluationTime = 0;
 extern enki::TaskScheduler g_TS;
+extern bool gbIsPlaying;
 void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
 
 struct ImguiAppLog
@@ -850,6 +851,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
         NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
         NodeGraphUpdateScrolling();
         gEvaluationTime = 0;
+        gbIsPlaying = false;
         nodeGraphDelegate.SetAnimTrack(material.mAnimTrack);
         nodeGraphDelegate.mFrameMin = material.mFrameMin;
         nodeGraphDelegate.mFrameMax = material.mFrameMax;
@@ -1381,20 +1383,8 @@ void Imogen::ShowAppMainMenuBar()
                     }
                     catch (pybind11::error_already_set& ex)
                     {
-                        //PyObject *ptype, *pvalue, *ptraceback;
-                        //PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-                        /*if (ex.pvalue) {
-                            PyObject *pstr = PyObject_Str(pvalue);
-                            if (pstr) {
-                                const char* err_msg = PyUnicode_AsUTF8(pstr);
-                                if (err_msg)
-                                    Log(err_msg);
-                            }
-                            //PyErr_Restore(ptype, pvalue, ptraceback);
-                        }
-                        */
+                        Log(ex.what());
                     }
-
                 }
             }
             ImGui::EndMenu();

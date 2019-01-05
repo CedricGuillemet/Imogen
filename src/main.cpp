@@ -301,7 +301,8 @@ int main(int, char**)
                     gbIsPlaying = false;
                 }
             }
-            gCurrentContext->SetTargetDirty(1);
+            gNodeDelegate.SetTime(gEvaluationTime, true);
+            gNodeDelegate.ApplyAnimation(gEvaluationTime);
         }
         gCurrentContext->RunDirty();
         imogen.Show(library, gNodeDelegate, gEvaluation);

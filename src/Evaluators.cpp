@@ -585,6 +585,7 @@ int Evaluators::GetMask(size_t nodeType)
 void Evaluators::InitPythonModules()
 {
     mImogenModule = pybind11::module::import("Imogen");
+    mImogenModule.dec_ref();
 }
 
 void Evaluator::RunPython() const

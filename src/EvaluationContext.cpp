@@ -509,7 +509,6 @@ void EvaluationContext::PreRun()
 {
     mbDirty.resize(gEvaluation.GetStagesCount(), false);
     mbProcessing.resize(gEvaluation.GetStagesCount(), false);
-    mbEnable.resize(gEvaluation.GetStagesCount(), false);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
@@ -562,7 +561,7 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     // run C nodes
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        if (!mbEnable[nodeIndex])
+        if (gEvaluationTime < gNodeDelegate.mNodes[nodeIndex].mStartFrame || gEvaluationTime > gNodeDelegate.mNodes[nodeIndex].mEndFrame)
             continue;
         RunNode(nodeIndex);
     }
@@ -695,12 +694,10 @@ void EvaluationContext::UserAddStage()
     URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), []() {return &gCurrentContext->mStageTarget; });
     URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), []() {return &gCurrentContext->mbDirty; });
     URAdd<bool> undoRedoAddProcessing(int(mbProcessing.size()), []() {return &gCurrentContext->mbProcessing; });
-    URAdd<bool> undoRedoAddEnable(int(mbEnable.size()), []() {return &gCurrentContext->mbEnable; });
 
     mStageTarget.push_back(std::make_shared<RenderTarget>());
     mbDirty.push_back(true);
     mbProcessing.push_back(false);
-    mbEnable.push_back(false);
 }
 
 void EvaluationContext::UserDeleteStage(size_t index)
@@ -708,12 +705,10 @@ void EvaluationContext::UserDeleteStage(size_t index)
     URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), []() {return &gCurrentContext->mStageTarget; });
     URDel<bool> undoRedoDelDirty(int(index), []() {return &gCurrentContext->mbDirty; });
     URDel<bool> undoRedoDelProcessing(int(index), []() {return &gCurrentContext->mbProcessing; });
-    URDel<bool> undoRedoDelEnable(int(index), []() {return &gCurrentContext->mbEnable; });
 
     mStageTarget.erase(mStageTarget.begin() + index);
     mbDirty.erase(mbDirty.begin() + index);
     mbProcessing.erase(mbProcessing.begin() + index);
-    mbEnable.erase(mbEnable.begin() + index);
 }
 
 void EvaluationContext::AllocateComputeBuffer(int target, int elementCount, int elementSize)
@@ -737,11 +732,4 @@ const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size
     if (mComputeBuffers.size() <= index)
         return nullptr;
     return &mComputeBuffers[index];
-}
-
-void EvaluationContext::SetEnable(size_t target, bool enable)
-{
-    if (mbEnable.size() <= target)
-        mbEnable.resize(target + 1);
-    mbEnable[target] = enable;
 }

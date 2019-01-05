@@ -114,17 +114,18 @@ int main(int, char**)
     TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
     gEvaluators.InitPythonModules();
-    pybind11::exec( R"(import sys
-import Imogen
-class CatchImogenIO:
-    def __init__(self):
-        pass
-    def write(self, txt):
-        Imogen.Log(txt)
-catchImogenIO = CatchImogenIO()
-sys.stdout = catchImogenIO
-sys.stderr = catchImogenIO
-print("Python std out catched.\n"))");
+    pybind11::exec( R"(
+        import sys
+        import Imogen
+        class CatchImogenIO:
+            def __init__(self):
+                pass
+            def write(self, txt):
+                Imogen.Log(txt)
+        catchImogenIO = CatchImogenIO()
+        sys.stdout = catchImogenIO
+        sys.stderr = catchImogenIO
+        print("Python stdout, stderr catched.\n"))");
     pybind11::module::import("Plugins");
     /*
     try

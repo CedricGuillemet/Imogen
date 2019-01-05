@@ -576,8 +576,7 @@ void TileNodeEditGraphDelegate::SetTime(int time, bool updateDecoder)
     {
         const ImogenNode& node = mNodes[i];
         gEvaluation.SetStageLocalTime(i, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
-        bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
-        gCurrentContext->SetEnable(i, enabled);
+        //bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
     }
 }
 
@@ -606,6 +605,7 @@ void TileNodeEditGraphDelegate::DoForce()
             for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
             {
                 SetTime(frame, false);
+                ApplyAnimation(frame);
                 EvaluationInfo evaluationInfo;
                 evaluationInfo.forcedDirty = 1;
                 evaluationInfo.uiPass = 0;

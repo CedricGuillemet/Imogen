@@ -240,6 +240,8 @@ template<typename T> struct Animation : public AnimationBase
 
     virtual void GetValue(uint32_t frame, void *destination) 
     {
+        if (mValues.empty())
+            return;
         AnimationPointer pointer = GetPointer(frame, false);
         T *dest = (T*)destination;
         *dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
@@ -272,7 +274,9 @@ template<typename T> struct Animation : public AnimationBase
     {
         AnimationBase::Copy(source);
         Allocate(source->mFrames.size());
-        memcpy(GetData(), source->GetData(), GetValuesByteLength());
+        size_t valuesSize = GetValuesByteLength();
+        if (valuesSize)
+            memcpy(GetData(), source->GetData(), valuesSize);
     }
 
 protected:

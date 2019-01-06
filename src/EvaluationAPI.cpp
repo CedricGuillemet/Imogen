@@ -697,7 +697,7 @@ struct CFunctionMainTask : enki::IPinnedTask
 
 void Evaluation::SetProcessing(int target, int processing)
 {
-    gCurrentContext->StageSetProcessing(target, processing != 0);
+    gCurrentContext->StageSetProcessing(target, processing);
 }
 
 int Evaluation::AllocateComputeBuffer(int target, int elementCount, int elementSize)
@@ -1012,7 +1012,8 @@ int Evaluation::InitRenderer(int target, int mode, void *scene)
 {
     GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
     gEvaluation.mStages[target].scene = scene;
-    auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
+    //auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
+    auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
     gEvaluation.mStages[target].renderer = renderer;
     return EVAL_OK;
 }
@@ -1036,6 +1037,11 @@ int Evaluation::UpdateRenderer(int target)
 
     tgt->BindAsTarget();
     renderer->present();
+
+    float progress = renderer->getProgress();
+    gCurrentContext->StageSetProgress(target, progress);
+    if (progress >= 1.f - FLT_EPSILON)
+        gCurrentContext->StageSetProcessing(target, false);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
 

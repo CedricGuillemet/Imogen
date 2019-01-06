@@ -114,6 +114,7 @@ void EvaluationContext::Clear()
     mComputeBuffers.clear();
     mbDirty.clear();
     mbProcessing.clear();
+    mProgress.clear();
 }
 
 unsigned int EvaluationContext::GetEvaluationTexture(size_t target)
@@ -508,7 +509,8 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 void EvaluationContext::PreRun()
 {
     mbDirty.resize(gEvaluation.GetStagesCount(), false);
-    mbProcessing.resize(gEvaluation.GetStagesCount(), false);
+    mbProcessing.resize(gEvaluation.GetStagesCount(), 0);
+    mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
@@ -523,12 +525,12 @@ void EvaluationContext::RunNode(size_t nodeIndex)
             continue;
         if (mbProcessing[inp])
         {
-            mbProcessing[nodeIndex] = true;
+            mbProcessing[nodeIndex] = 1;
             return;
         }
     }
 
-    mbProcessing[nodeIndex] = false;
+    mbProcessing[nodeIndex] = 0;
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
     mEvaluationInfo.mFrame = gEvaluationTime;
@@ -693,22 +695,26 @@ void EvaluationContext::UserAddStage()
 {
     URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), []() {return &gCurrentContext->mStageTarget; });
     URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), []() {return &gCurrentContext->mbDirty; });
-    URAdd<bool> undoRedoAddProcessing(int(mbProcessing.size()), []() {return &gCurrentContext->mbProcessing; });
+    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), []() {return &gCurrentContext->mbProcessing; });
+    URAdd<float> undoRedoAddProgress(int(mProgress.size()), []() {return &gCurrentContext->mProgress; });
 
     mStageTarget.push_back(std::make_shared<RenderTarget>());
     mbDirty.push_back(true);
-    mbProcessing.push_back(false);
+    mbProcessing.push_back(0);
+    mProgress.push_back(0.f);
 }
 
 void EvaluationContext::UserDeleteStage(size_t index)
 {
     URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), []() {return &gCurrentContext->mStageTarget; });
     URDel<bool> undoRedoDelDirty(int(index), []() {return &gCurrentContext->mbDirty; });
-    URDel<bool> undoRedoDelProcessing(int(index), []() {return &gCurrentContext->mbProcessing; });
+    URDel<int> undoRedoDelProcessing(int(index), []() {return &gCurrentContext->mbProcessing; });
+    URDel<float> undoRedoDelProgress(int(index), []() {return &gCurrentContext->mProgress; });
 
     mStageTarget.erase(mStageTarget.begin() + index);
     mbDirty.erase(mbDirty.begin() + index);
     mbProcessing.erase(mbProcessing.begin() + index);
+    mProgress.erase(mProgress.begin() + index);
 }
 
 void EvaluationContext::AllocateComputeBuffer(int target, int elementCount, int elementSize)
@@ -732,4 +738,21 @@ const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size
     if (mComputeBuffers.size() <= index)
         return nullptr;
     return &mComputeBuffers[index];
+}
+
+void EvaluationContext::StageSetProcessing(size_t target, int processing) 
+{ 
+    mbProcessing.resize(gEvaluation.GetStagesCount(), 0); 
+    if (mbProcessing[target] != processing)
+    {
+        mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+        mProgress[target] = 0.f;
+    }
+    mbProcessing[target] = processing; 
+}
+
+void EvaluationContext::StageSetProgress(size_t target, float progress)
+{
+    mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+    mProgress[target] = progress;
 }

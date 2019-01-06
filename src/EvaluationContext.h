@@ -47,8 +47,10 @@ struct EvaluationContext
     FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
     bool IsSynchronous() const { return mbSynchronousEvaluation; }
     void SetTargetDirty(size_t target, bool onlyChild = false);
-    bool StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return false; return mbProcessing[target]; }
-    void StageSetProcessing(size_t target, bool processing) { mbProcessing.resize(gEvaluation.GetStagesCount(), false); mbProcessing[target] = processing; }
+    int StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return 0; return mbProcessing[target]; }
+    float StageGetProgress(size_t target) const { if (target >= mProgress.size()) return 0.f; return mProgress[target]; }
+    void StageSetProcessing(size_t target, int processing);
+    void StageSetProgress(size_t target, float progress);
 
     void AllocRenderTargetsForEditingPreview();
 
@@ -90,8 +92,8 @@ protected:
     std::vector<ComputeBuffer> mComputeBuffers;
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
     std::vector<bool> mbDirty;
-    std::vector<bool> mbProcessing;
-
+    std::vector<int> mbProcessing;
+    std::vector<float> mProgress;
     EvaluationInfo mEvaluationInfo;
 
     std::vector<int> mStillDirty;

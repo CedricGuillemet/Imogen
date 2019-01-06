@@ -54,7 +54,8 @@ struct NodeGraphDelegate
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
     virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd) = 0;
     virtual bool NodeHasUI(size_t nodeIndex) = 0;
-    virtual bool NodeIsProcesing(size_t nodeIndex) = 0;
+    virtual int NodeIsProcesing(size_t nodeIndex) = 0;
+    virtual float NodeProgress(size_t nodeIndex) = 0;
     virtual bool NodeIsCubemap(size_t nodeIndex) = 0;
     // clipboard
     virtual void CopyNodes(const std::vector<size_t> nodes) = 0;

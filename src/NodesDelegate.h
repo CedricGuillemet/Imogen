@@ -60,7 +60,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
     size_t ComputeNodeParametersSize(size_t nodeTypeIndex);
     bool NodeHasUI(size_t nodeIndex) { return gMetaNodes[mNodes[nodeIndex].mType].mbHasUI; }
-    virtual bool NodeIsProcesing(size_t nodeIndex) { return mEditingContext.StageIsProcessing(nodeIndex); }
+    virtual int NodeIsProcesing(size_t nodeIndex) { return mEditingContext.StageIsProcessing(nodeIndex); }
+    virtual float NodeProgress(size_t nodeIndex) { return mEditingContext.StageGetProgress(nodeIndex); }
     virtual bool NodeIsCubemap(size_t nodeIndex);
     virtual bool NodeIs2D(size_t nodeIndex);
     virtual bool NodeIsCompute(size_t nodeIndex);

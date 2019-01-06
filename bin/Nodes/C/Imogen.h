@@ -115,6 +115,10 @@ int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase
 
 int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
 int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
+// processing values:
+// 0 : no more processing, display node as normal
+// 1 : processing with an animation for node display
+// 2 : display node as normal despite it processing 
 void SetProcessing(int target, int processing);
 
 // compute shader memory allocation

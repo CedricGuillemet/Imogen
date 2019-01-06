@@ -968,7 +968,14 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     float imgSizeComp = std::min(imgSize.x, imgSize.y);
 
     drawList->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
-
+    float progress = gNodeDelegate.NodeProgress(nodeIndex);
+    if (progress > FLT_EPSILON && progress < 1.f - FLT_EPSILON)
+    {
+        ImVec2 progressLineA = node_rect_max - ImVec2(node->Size.x - 2.f, 3.f);
+        ImVec2 progressLineB = progressLineA + ImVec2(node->Size.x - 4.f, 0.f);
+        drawList->AddLine(progressLineA, progressLineB, 0xFF400000, 3.f);
+        drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
+    }
     ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
     if (!nodeIsCompute)
         drawList->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
@@ -988,7 +995,7 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
         marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
     }
 
-    if (gNodeDelegate.NodeIsProcesing(nodeIndex))
+    if (gNodeDelegate.NodeIsProcesing(nodeIndex) == 1)
     {
         drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), nodeIndex)));
     }

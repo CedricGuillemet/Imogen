@@ -1045,9 +1045,11 @@ int Evaluation::UpdateRenderer(int target)
     {
         Vec4 pos = camera->mPosition;
         Vec4 lk = camera->mPosition + camera->mDirection;
-        *rdscene->camera = GLSLPathTracer::Camera(glm::vec3(pos.x, pos.y, pos.z), glm::vec3(lk.x, lk.y, lk.z), 90.f);
-        rdscene->camera->updateCamera();
+        GLSLPathTracer::Camera newCam(glm::vec3(pos.x, pos.y, pos.z), glm::vec3(lk.x, lk.y, lk.z), 90.f);
+        newCam.updateCamera();
+        *rdscene->camera = newCam;
     }
+
     renderer->update(0.0166f);
     auto tgt = gCurrentContext->GetRenderTarget(target);
     renderer->render();

@@ -32,7 +32,8 @@ struct EvaluationContext
     ~EvaluationContext();
 
     void RunAll();
-    void RunBackward(size_t nodeIndex);
+    // return true if any node is in processing state
+    bool RunBackward(size_t nodeIndex);
     void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
     void RunDirty();
 
@@ -76,7 +77,8 @@ protected:
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-    void RunNodeList(const std::vector<size_t>& nodesToEvaluate);
+    // return true if any node is still in processing state
+    bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
     void RunNode(size_t nodeIndex);
 
     void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);

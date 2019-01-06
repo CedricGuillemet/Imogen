@@ -949,14 +949,25 @@ int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 
 int Evaluation::LoadScene(const char *filename, void **pscene)
 {
-    GLSLPathTracer::Scene *scene = new GLSLPathTracer::Scene;
-    *pscene = scene;
+    // todo: make a real good cache system
+    static std::map<std::string, GLSLPathTracer::Scene *> cachedScenes;
+    std::string sFilename(filename);
+    auto iter = cachedScenes.find(sFilename);
+    if (iter != cachedScenes.end())
+    {
+        *pscene = iter->second;
+        return EVAL_OK;
+    }
 
-    if (!GLSLPathTracer::LoadScene(scene, filename))
+    GLSLPathTracer::Scene *scene = GLSLPathTracer::LoadScene(sFilename);
+    if (!scene)
     {
         Log("Unable to load scene\n");
         return EVAL_ERR;
     }
+    cachedScenes.insert(std::make_pair(sFilename, scene));
+    *pscene = scene;
+
     Log("Scene Loaded\n\n");
 
     scene->buildBVH();
@@ -1012,9 +1023,15 @@ int Evaluation::InitRenderer(int target, int mode, void *scene)
 {
     GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
     gEvaluation.mStages[target].scene = scene;
-    //auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
-    auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
-    gEvaluation.mStages[target].renderer = renderer;
+
+    GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)gEvaluation.mStages[target].renderer;
+    if (!currentRenderer)
+    {
+        //auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
+        auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
+        renderer->init();
+        gEvaluation.mStages[target].renderer = renderer;
+    }
     return EVAL_OK;
 }
 
@@ -1040,10 +1057,14 @@ int Evaluation::UpdateRenderer(int target)
 
     float progress = renderer->getProgress();
     gCurrentContext->StageSetProgress(target, progress);
-    if (progress >= 1.f - FLT_EPSILON)
-        gCurrentContext->StageSetProcessing(target, false);
+    bool renderDone = progress >= 1.f - FLT_EPSILON;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
 
-    return EVAL_OK;
+    if (renderDone)
+    {
+        gCurrentContext->StageSetProcessing(target, false);
+        return EVAL_OK;
+    }
+    return EVAL_DIRTY;
 }

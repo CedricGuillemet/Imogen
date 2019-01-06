@@ -91,7 +91,11 @@ namespace GLSLPathTracer
     class Scene
     {
     public:
-        Scene() {};
+        Scene(const std::string filename) : filename(filename)
+            , camera(nullptr) 
+            , gpuBVH(nullptr)
+        {}
+        ~Scene();
         void addCamera(glm::vec3 pos, glm::vec3 lookAt, float fov);
         Camera *camera;
         GPUBVH *gpuBVH;
@@ -104,5 +108,8 @@ namespace GLSLPathTracer
         RenderOptions renderOptions;
         HDRLoaderResult hdrLoaderRes;
         void buildBVH();
+        const std::string& getSceneName() const { return filename; }
+    protected:
+        std::string filename;
     };
 }

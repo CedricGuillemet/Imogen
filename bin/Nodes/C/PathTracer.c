@@ -24,8 +24,6 @@ int main(PathTracer *param, Evaluation *evaluation)
 	}
 	SetEvaluationSize(evaluation->targetIndex, 1024, 1024);
 	SetProcessing(evaluation->targetIndex, 2);
-	if (UpdateRenderer(evaluation->targetIndex) != EVAL_OK)
-		return EVAL_ERR;
-
-	return EVAL_DIRTY;
+	
+	return UpdateRenderer(evaluation->targetIndex);
 }

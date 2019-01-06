@@ -558,14 +558,16 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     mbDirty[nodeIndex] = false;
 }
 
-void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
+bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 {
     // run C nodes
+    bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
         if (gEvaluationTime < gNodeDelegate.mNodes[nodeIndex].mStartFrame || gEvaluationTime > gNodeDelegate.mNodes[nodeIndex].mEndFrame)
             continue;
         RunNode(nodeIndex);
+        anyNodeIsProcessing |= mbProcessing[nodeIndex] != 0;
     }
     // set dirty nodes that tell so
     for (auto index : mStillDirty)
@@ -574,6 +576,7 @@ void EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
+    return anyNodeIsProcessing;
 }
 
 void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo)
@@ -631,7 +634,7 @@ void EvaluationContext::RunAll()
     RunNodeList(evaluationOrderList);
 }
 
-void EvaluationContext::RunBackward(size_t nodeIndex)
+bool EvaluationContext::RunBackward(size_t nodeIndex)
 {
     PreRun();
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
@@ -639,7 +642,7 @@ void EvaluationContext::RunBackward(size_t nodeIndex)
     std::vector<size_t> nodesToEvaluate;
     RecurseBackward(nodeIndex, nodesToEvaluate);
     AllocRenderTargetsForBaking(nodesToEvaluate);
-    RunNodeList(nodesToEvaluate);
+    return RunNodeList(nodesToEvaluate);
 }
 
 FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename, int width, int height)

@@ -1,8 +1,9 @@
 #pragma once
 
 // third-party libraries
-#include <GL/gl3w.h>
 #include <string>
+
+#include "Config.h"
 
 namespace GLSLPathTracer
 {

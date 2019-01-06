@@ -210,7 +210,10 @@ int Evaluation::Evaluate(int target, int width, int height, Image *image)
     EvaluationContext *previousContext = gCurrentContext;
     EvaluationContext context(gEvaluation, true, width, height);
     gCurrentContext = &context;
-    context.RunBackward(target);
+    while (context.RunBackward(target))
+    {
+        // processing... maybe good on next run
+    }
     GetEvaluationImage(target, image);
     gCurrentContext = previousContext;
     return EVAL_OK;

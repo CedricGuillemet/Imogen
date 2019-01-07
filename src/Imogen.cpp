@@ -1070,6 +1070,11 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     virtual void AddPoint(size_t curveIndex, ImVec2 value)
     {
         uint32_t parameterIndex = mParameterIndex[curveIndex];
+
+        /*AnimTrack* animTrack = gNodeDelegate.GetAnimTrack(gNodeDelegate.mSelectedNodeIndex, parameterIndex);
+        unsigned char *tmp = new unsigned char[GetParameterTypeSize(ConTypes(mValueType[curveIndex]))];
+        animTrack->mAnimation->GetValue(uint32_t(value.x), tmp);
+        */
         for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
         {
             if (mParameterIndex[curve] == parameterIndex)
@@ -1084,6 +1089,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 SortValues(curve);
             }
         }
+        //delete[] tmp;
     }
 
     void DeletePoints(const ImVector<ImCurveEdit::EditPoint>& points)

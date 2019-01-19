@@ -577,3 +577,6 @@ inline void Mat4x4::RotationAxis(const Vec4 & axis, float angle)
     m[3][2] = 0.f;
     m[3][3] = 1.f;
 }
+
+void IMessageBox(const char *text, const char *title);
+void DiscoverFiles(const char *extension, const char *directory, std::vector<std::string>& files);

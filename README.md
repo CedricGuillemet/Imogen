@@ -71,4 +71,6 @@ Python 3 - Python.org
 
 pybind 11 - https://github.com/pybind/pybind11
 
+RapidJSON - https://github.com/Tencent/rapidjson
+
 nanosvg - Mikko Mononen https://github.com/memononen/nanosvg

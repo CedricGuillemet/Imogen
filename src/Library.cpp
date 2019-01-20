@@ -23,8 +23,14 @@
 // SOFTWARE.
 //
 
+#include <algorithm>
+#include <iostream>
+#include <fstream>
 #include "Library.h"
 #include "imgui.h"
+#include "rapidjson/rapidjson.h"
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
 
 int Log(const char *szFormat, ...);
 
@@ -72,7 +78,7 @@ template<bool doWrite> struct Serialize
     {
         if (doWrite)
         {
-            uint32_t len = strlen(data.c_str());// uint32_t(data.length());
+            uint32_t len = uint32_t(strlen(data.c_str()));// uint32_t(data.length());
             fwrite(&len, sizeof(uint32_t), 1, fp);
             fwrite(data.c_str(), len, 1, fp);
         }
@@ -286,6 +292,45 @@ size_t GetParameterTypeSize(ConTypes paramType)
     return -1;
 }
 
+static const char* parameterNames[] = {
+    "Float",
+    "Float2",
+    "Float3",
+    "Float4",
+    "Color4",
+    "Int",
+    "Int2",
+    "Ramp",
+    "Angle",
+    "Angle2",
+    "Angle3",
+    "Angle4",
+    "Enum",
+    "Structure",
+    "FilenameRead",
+    "FilenameWrite",
+    "ForceEvaluate",
+    "Bool",
+    "Ramp4",
+    "Camera",
+    "Any",
+};
+
+const char* GetParameterTypeName(ConTypes paramType)
+{
+    return parameterNames[std::min(int(paramType), int(Con_Any) - 1)];
+}
+
+ConTypes GetParameterType(const char* parameterName)
+{
+    for (size_t i = 0; i < Con_Any; i++)
+    {
+        if (!_stricmp(parameterNames[i], parameterName))
+            return ConTypes(i);
+    }
+    return Con_Any;
+}
+
 size_t GetCurveCountPerParameterType(uint32_t paramType)
 {
     switch (paramType)
@@ -470,7 +515,8 @@ size_t GetMetaNodeIndex(const std::string& metaNodeName)
     }
     return iter->second;
 }
-void LoadMetaNodes()
+
+void LoadMetaNodes(const std::vector<std::string>& metaNodeFilenames)
 {
     static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
     static const uint32_t hcGenerator = IM_COL32(150, 200, 150, 255);
@@ -480,12 +526,12 @@ void LoadMetaNodes()
     static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
     static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
 
-
+#if 0
     gMetaNodes = {
 
         {
             "Circle", hcGenerator, 1
-            ,{ {} }
+            ,{ }
         ,{ { "", Con_Float4 } }
         ,{ { "Radius", Con_Float, -.5f,0.5f,0.f,0.f },{ "T", Con_Float } }
         }
@@ -579,7 +625,7 @@ void LoadMetaNodes()
             "Blend", hcBlend, 3
             ,{ { "", Con_Float4 },{ "", Con_Float4 } }
         ,{ { "", Con_Float4 } }
-        ,{ { "A", Con_Float4 },{ "B", Con_Float4 },{ "Operation", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Add\0Multiply\0Darken\0Lighten\0Average\0Screen\0Color Burn\0Color Dodge\0Soft Light\0Subtract\0Difference\0Inverse Difference\0Exclusion\0" } }
+        ,{ { "A", Con_Float4 },{ "B", Con_Float4 },{ "Operation", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Add|Multiply|Darken|Lighten|Average|Screen|Color Burn|Color Dodge|Soft Light|Subtract|Difference|Inverse Difference|Exclusion|" } }
         }
 
         ,
@@ -628,7 +674,7 @@ void LoadMetaNodes()
             "NormalMapBlending", hcBlend, 3
             ,{ { "", Con_Float4 },{ "", Con_Float4 } }
         ,{ { "Out", Con_Float4 } }
-        ,{ { "Technique", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "RNM\0Partial Derivatives\0Whiteout\0UDN\0Unity\0Linear\0Overlay\0" } }
+        ,{ { "Technique", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "RNM|Partial Derivatives|Whiteout|UDN|Unity|Linear|Overlay|" } }
         }
 
         ,
@@ -644,7 +690,7 @@ void LoadMetaNodes()
             "PBR", hcMaterial, 2
             ,{ { "Diffuse", Con_Float4 },{ "Normal", Con_Float4 },{ "Roughness", Con_Float4 },{ "Displacement", Con_Float4 },{ "Cubemap", Con_Float4 } }
         ,{ { "", Con_Float4 } }
-        ,{ { "View", Con_Float2, 1.f,0.f,0.f,1.f, true }, { "Displacement Factor", Con_Float },{ "Geometry", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Door knob\0Sphere\0Cube\0Plane\0Cylinder\0" } }
+        ,{ { "View", Con_Float2, 1.f,0.f,0.f,1.f, true }, { "Displacement Factor", Con_Float },{ "Geometry", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Door knob|Sphere|Cube|Plane|Cylinder|" } }
         }
 
         ,
@@ -653,7 +699,7 @@ void LoadMetaNodes()
             "PolarCoords", hcTransform, 0
             ,{ { "", Con_Float4 } }
         ,{ { "", Con_Float4 } }
-        ,{ { "Type", Con_Enum, 0.f,0.f,0.f,0.f,false, false, "Linear to polar\0Polar to linear\0" } }
+        ,{ { "Type", Con_Enum, 0.f,0.f,0.f,0.f,false, false, "Linear to polar|Polar to linear|" } }
         }
 
         ,
@@ -683,11 +729,11 @@ void LoadMetaNodes()
             "ImageWrite", hcFilter, 6
             ,{ { "", Con_Float4 } }
         ,{}
-        ,{ { "File name", Con_FilenameWrite },{ "Format", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG\0PNG\0TGA\0BMP\0HDR\0DDS\0KTX\0MP4\0" }
-        ,{ "Quality", Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best\0 1\0 2\0 3\0 4\0 5 .. Medium\0 6\0 7\0 8\0 9 .. Lowest\0" }
+        ,{ { "File name", Con_FilenameWrite },{ "Format", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG|PNG|TGA|BMP|HDR|DDS|KTX|MP4|" }
+        ,{ "Quality", Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best| 1| 2| 3| 4| 5 .. Medium| 6| 7| 8| 9 .. Lowest|" }
         ,{ "Width", Con_Int }
         ,{ "Height", Con_Int }
-        ,{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Free\0Keep ratio on Y\0Keep ratio on X\0"}
+        ,{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Free|Keep ratio on Y|Keep ratio on X|"}
         ,{ "Export", Con_ForceEvaluate } }
         }
 
@@ -704,7 +750,7 @@ void LoadMetaNodes()
             "Paint2D", hcPaint, 7
             ,{ { "Brush", Con_Float4 } }
         ,{ { "", Con_Float4 } }
-        ,{ { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
+        ,{ { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256|  512| 1024| 2048| 4096|" } }
         , true
         , true
         }
@@ -729,11 +775,11 @@ void LoadMetaNodes()
             "CubemapFilter", hcFilter, 8
             ,{ { "", Con_Float4 } }
         ,{ { "", Con_Float4 } }
-        ,{ { "Lighting Model", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Phong\0Phong BRDF\0Blinn\0Blinn BRDF\0" }
+        ,{ { "Lighting Model", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Phong|Phong BRDF|Blinn|Blinn BRDF|" }
         ,{ "Exclude Base", Con_Bool }
         ,{ "Gloss scale", Con_Int }
         ,{ "Gloss bias", Con_Int }
-        ,{ "Face size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "   32\0   64\0  128\0  256\0  512\0 1024\0" }
+        ,{ "Face size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "   32|   64|  128|  256|  512| 1024|" }
         }
         }
 
@@ -754,7 +800,7 @@ void LoadMetaNodes()
 , { "rayleigh collection power", Con_Float }
 , { "mie collection power", Con_Float }
 , { "mie distribution", Con_Float }
-, { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" }
+, { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256|  512| 1024| 2048| 4096|" }
             }
         }
 
@@ -764,7 +810,7 @@ void LoadMetaNodes()
             "CubemapView", hcGenerator, 8
             ,{ { "", Con_Float4 } }
         ,{ { "", Con_Float4 } }
-        ,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f, true },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection\0Isometric\0Cross\0Camera\0" } }
+        ,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f, true },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection|Isometric|Cross|Camera|" } }
         }
 
             ,
@@ -772,8 +818,8 @@ void LoadMetaNodes()
                 "EquirectConverter", hcGenerator, 8
                 ,{ { "", Con_Float4 } }
             ,{ { "", Con_Float4 } }
-            ,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Equirect To Cubemap\0Cubemap To Equirect\0" },
-                { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256\0  512\0 1024\0 2048\0 4096\0" } }
+            ,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Equirect To Cubemap|Cubemap To Equirect|" },
+                { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256|  512| 1024| 2048| 4096|" } }
             }
             ,
             {
@@ -796,7 +842,7 @@ void LoadMetaNodes()
                 "Warp", hcTransform, 0
                 ,{ { "", Con_Float4 }, { "Warp", Con_Float4 } }
             ,{ { "", Con_Float4 } }
-            ,{ { "Strength", Con_Float },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "XY Offset\0Rotation-Distance\0" } }
+            ,{ { "Strength", Con_Float },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "XY Offset|Rotation-Distance|" } }
             }
 
             ,
@@ -862,12 +908,311 @@ void LoadMetaNodes()
             ,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Tiled\0Progressive\0" }, { "Camera", Con_Camera } }
             }
     };
+#endif
+
+    for (auto& filename : metaNodeFilenames)
+    {
+        std::vector<MetaNode> metaNodes = ReadMetaNodes(filename.c_str());
+        if (metaNodes.empty())
+        {
+            IMessageBox("Errors while parsing nodes definitions.\nCheck logs.", "Node Parsing Error!");
+            exit(-1);
+        }
+        gMetaNodes.insert(gMetaNodes.end(), metaNodes.begin(), metaNodes.end());
+    }
 
 
     for (size_t i = 0; i < gMetaNodes.size(); i++)
     {
         gMetaNodesIndices[gMetaNodes[i].mName] = i;
     }
+}
+
+void LoadMetaNodes()
+{
+    std::vector<std::string> metaNodeFilenames;
+    DiscoverFiles("json", "Nodes/", metaNodeFilenames);
+    LoadMetaNodes(metaNodeFilenames);
+}
+
+void SaveMetaNodes(const char* filename)
+{
+    // write lib to json -----------------------
+    rapidjson::Document d;
+    d.SetObject();
+    rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+
+    rapidjson::Value nodelist(rapidjson::kArrayType);
+
+    for (auto &node : gMetaNodes)
+    {
+        rapidjson::Value nodeValue;
+        nodeValue.SetObject();
+        nodeValue.AddMember("name", rapidjson::Value(node.mName.c_str(), allocator), allocator);
+        nodeValue.AddMember("category", rapidjson::Value().SetInt(node.mCategory), allocator);
+        {
+            ImColor clr(node.mHeaderColor);
+            rapidjson::Value colorValue(rapidjson::kArrayType);
+            colorValue.PushBack(rapidjson::Value().SetFloat(clr.Value.x), allocator);
+            colorValue.PushBack(rapidjson::Value().SetFloat(clr.Value.y), allocator);
+            colorValue.PushBack(rapidjson::Value().SetFloat(clr.Value.z), allocator);
+            colorValue.PushBack(rapidjson::Value().SetFloat(clr.Value.w), allocator);
+            nodeValue.AddMember("color", colorValue, allocator);
+        }
+
+        std::vector<MetaCon>* cons[] = { &node.mInputs, &node.mOutputs };
+        for (int i = 0; i < 2; i++)
+        {
+            auto inouts = cons[i];
+            if (inouts->empty())
+                continue;
+
+            rapidjson::Value ioValue(rapidjson::kArrayType);
+
+            for (auto &con : *inouts)
+            {
+                rapidjson::Value conValue;
+                conValue.SetObject();
+                conValue.AddMember("name", rapidjson::Value(con.mName.c_str(), allocator), allocator);
+                conValue.AddMember("type", rapidjson::Value(GetParameterTypeName(ConTypes(con.mType)), allocator), allocator);
+                ioValue.PushBack(conValue, allocator);
+            }
+            if (i)
+                nodeValue.AddMember("outputs", ioValue, allocator);
+            else
+                nodeValue.AddMember("inputs", ioValue, allocator);
+        }
+
+        if (!node.mParams.empty())
+        {
+            rapidjson::Value paramValues(rapidjson::kArrayType);
+            for (auto& con : node.mParams)
+            {
+                rapidjson::Value conValue;
+                conValue.SetObject();
+                conValue.AddMember("name", rapidjson::Value(con.mName.c_str(), allocator), allocator);
+                conValue.AddMember("type", rapidjson::Value(GetParameterTypeName(con.mType), allocator), allocator);
+                if (con.mRangeMinX > FLT_EPSILON || con.mRangeMaxX > FLT_EPSILON || con.mRangeMinY > FLT_EPSILON || con.mRangeMaxY > FLT_EPSILON)
+                {
+                    conValue.AddMember("rangeMinX", rapidjson::Value().SetFloat(con.mRangeMinX), allocator);
+                    conValue.AddMember("rangeMaxX", rapidjson::Value().SetFloat(con.mRangeMaxX), allocator);
+                    conValue.AddMember("rangeMinY", rapidjson::Value().SetFloat(con.mRangeMinY), allocator);
+                    conValue.AddMember("rangeMaxY", rapidjson::Value().SetFloat(con.mRangeMaxY), allocator);
+                }
+                if (con.mbRelative)
+                    conValue.AddMember("relative", rapidjson::Value().SetBool(con.mbRelative), allocator);
+                if (con.mbQuadSelect)
+                    conValue.AddMember("quadSelect", rapidjson::Value().SetBool(con.mbQuadSelect), allocator);
+                if (con.mEnumList.size())
+                {
+                    conValue.AddMember("enum", rapidjson::Value(con.mEnumList.c_str(), allocator), allocator);
+                }
+                paramValues.PushBack(conValue, allocator);
+            }
+            nodeValue.AddMember("parameters", paramValues, allocator);
+        }
+        if (node.mbHasUI)
+            nodeValue.AddMember("hasUI", rapidjson::Value().SetBool(node.mbHasUI), allocator);
+        if (node.mbSaveTexture)
+            nodeValue.AddMember("saveTexture", rapidjson::Value().SetBool(node.mbSaveTexture), allocator);
+
+        nodelist.PushBack(nodeValue, allocator);
+    }
+
+    d.AddMember("nodes", nodelist, allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    d.Accept(writer);
+
+    std::ofstream myfile;
+    myfile.open(filename);
+    myfile << buffer.GetString();
+    myfile.close();
+}
+
+std::vector<MetaNode> ReadMetaNodes(const char *filename)
+{
+    // read it back
+    std::vector<MetaNode> serNodes;
+    std::ifstream t(filename);
+    if (!t.good())
+    {
+        Log("%s - Unable to load file.\n", filename);
+        return serNodes;
+    }
+    std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+
+    rapidjson::Document doc;
+    doc.Parse(str.c_str());
+    rapidjson::Value &nodesValue = doc["nodes"];
+    for (rapidjson::SizeType i = 0; i < nodesValue.Size(); i++)
+    {
+        MetaNode curNode;
+        rapidjson::Value& node = nodesValue[i];
+        if (!node.HasMember("name"))
+        {
+            //error
+            Log("Missing name in node %d definition (%s)\n", i, filename);
+            return serNodes;
+        }
+        curNode.mName = node["name"].GetString();
+        if (!node.HasMember("category"))
+        {
+            //error
+            Log("Missing category in node %s definition (%s)\n", curNode.mName.c_str(), filename);
+            return serNodes;
+        }
+        curNode.mCategory = node["category"].GetInt();
+
+        if (node.HasMember("hasUI"))
+            curNode.mbHasUI = node["hasUI"].GetBool();
+        else
+            curNode.mbHasUI = false;
+        if (node.HasMember("saveTexture"))
+            curNode.mbSaveTexture = node["saveTexture"].GetBool();
+        else
+            curNode.mbSaveTexture = false;
+            
+        if (!node.HasMember("color"))
+        {
+            //error
+            Log("Missing color in node %s definition (%s)\n", curNode.mName.c_str(), filename);
+            return serNodes;
+
+        }
+        rapidjson::Value &color = node["color"];
+        float c[4];
+        if (color.Size() != 4)
+        {
+            //error
+            Log("wrong color component count in node %s definition (%s)\n", curNode.mName.c_str(), filename);
+            return serNodes;
+        }
+        for (rapidjson::SizeType i = 0; i < color.Size(); i++)
+        {
+            c[i] = color[i].GetFloat();
+        }
+        curNode.mHeaderColor = ImColor(c[0], c[1], c[2], c[3]).operator ImU32();
+        // inputs/outputs
+        if (node.HasMember("inputs"))
+        {
+            rapidjson::Value &inputs = node["inputs"];
+            for (rapidjson::SizeType i = 0; i < inputs.Size(); i++)
+            {
+                MetaCon metaNode;
+                if (!inputs[i].HasMember("name") || !inputs[i].HasMember("type"))
+                {
+                    //error
+                    Log("Missing name or type in inputs for node %s definition (%s)\n", curNode.mName.c_str(), filename);
+                    return serNodes;
+                }
+
+                metaNode.mName = inputs[i]["name"].GetString();
+                metaNode.mType = GetParameterType(inputs[i]["type"].GetString());
+                if (metaNode.mType == Con_Any)
+                {
+                    //error
+                    Log("Wrong type for %s in inputs for node %s definition (%s)\n", metaNode.mName.c_str(), curNode.mName.c_str(), filename);
+                    return serNodes;
+                }
+                curNode.mInputs.emplace_back(metaNode);
+            }
+        }
+        if (node.HasMember("outputs"))
+        {
+            rapidjson::Value &outputs = node["outputs"];
+            for (rapidjson::SizeType i = 0; i < outputs.Size(); i++)
+            {
+                MetaCon metaNode;
+                if (!outputs[i].HasMember("name") || !outputs[i].HasMember("type"))
+                {
+                    //error
+                    Log("Missing name or type in outputs for node %s definition (%s)\n", curNode.mName.c_str(), filename);
+                    return serNodes;
+                }
+                metaNode.mName = outputs[i]["name"].GetString();
+                metaNode.mType = GetParameterType(outputs[i]["type"].GetString());
+                if (metaNode.mType == Con_Any)
+                {
+                    //error
+                    Log("Wrong type for %s in outputs for node %s definition (%s)\n", metaNode.mName.c_str(), curNode.mName.c_str(), filename);
+                    return serNodes;
+                }
+                curNode.mOutputs.emplace_back(metaNode);
+            }
+        }
+        //parameters
+        if (node.HasMember("parameters"))
+        {
+            rapidjson::Value &params = node["parameters"];
+            for (rapidjson::SizeType i = 0; i < params.Size(); i++)
+            {
+                MetaParameter metaParam;
+                rapidjson::Value &param = params[i];
+                if (!param.HasMember("name") || !param.HasMember("type"))
+                {
+                    //error
+                    Log("Missing name or type in parameters for node %s definition (%s)\n", curNode.mName.c_str(), filename);
+                    return serNodes;
+                }
+                metaParam.mName = param["name"].GetString();
+                metaParam.mType = GetParameterType(param["type"].GetString());
+                if (metaParam.mType == Con_Any)
+                {
+                    //error
+                    Log("Wrong type for %s in parameters for node %s definition (%s)\n", metaParam.mName.c_str(), curNode.mName.c_str(), filename);
+                    return serNodes;
+                }
+
+                if (param.HasMember("rangeMinX") && param.HasMember("rangeMaxX") && param.HasMember("rangeMinY") && param.HasMember("rangeMaxY"))
+                {
+                    metaParam.mRangeMinX = param["rangeMinX"].GetFloat();
+                    metaParam.mRangeMaxX = param["rangeMaxX"].GetFloat();
+                    metaParam.mRangeMinY = param["rangeMinY"].GetFloat();
+                    metaParam.mRangeMaxY = param["rangeMaxY"].GetFloat();
+                }
+                else
+                {
+                    metaParam.mRangeMinX = metaParam.mRangeMinY = metaParam.mRangeMaxX = metaParam.mRangeMaxY = 0.f;
+                }
+                if (param.HasMember("relative"))
+                    metaParam.mbRelative = param["relative"].GetBool();
+                else
+                    metaParam.mbRelative = false;
+                if (param.HasMember("quadSelect"))
+                    metaParam.mbQuadSelect = param["quadSelect"].GetBool();
+                else
+                    metaParam.mbQuadSelect = false;
+                if (param.HasMember("enum"))
+                {
+                    if (metaParam.mType != Con_Enum)
+                    {
+                        //error
+                        Log("Mismatch type for enumerator in parameter %s for node %s definition (%s)\n", metaParam.mName.c_str(), curNode.mName.c_str(), filename);
+                        return serNodes;
+                    }
+                    std::string enumStr = param["enum"].GetString();
+                    if (enumStr.size())
+                    {
+                            metaParam.mEnumList = enumStr;
+                            if (metaParam.mEnumList.back() != '|')
+                                metaParam.mEnumList += '|';
+                    }
+                    else
+                    {
+                        //error
+                        Log("Empty string for enumerator in parameter %s for node %s definition (%s)\n", metaParam.mName.c_str(), curNode.mName.c_str(), filename);
+                        return serNodes;
+                    }
+                }
+                curNode.mParams.emplace_back(metaParam);
+            }
+        }
+
+        serNodes.emplace_back(curNode);
+    }
+    return serNodes;
 }
 
 AnimationBase::AnimationPointer AnimationBase::GetPointer(int32_t frame, bool bSetting) const

@@ -414,6 +414,14 @@ struct MetaCon
 {
     std::string mName;
     int mType;
+    bool operator == (const MetaCon& other) const
+    {
+        if (mName != other.mName)
+            return false;
+        if (mType != other.mType)
+            return false;
+        return true;
+    }
 };
 
 struct MetaParameter
@@ -424,7 +432,30 @@ struct MetaParameter
     float mRangeMinY, mRangeMaxY;
     bool mbRelative;
     bool mbQuadSelect;
-    const char* mEnumList;
+    std::string mEnumList;
+
+    bool operator == (const MetaParameter& other) const
+    {
+        if (mName != other.mName)
+            return false;
+        if (mType != other.mType)
+            return false;
+        if (mRangeMaxX != other.mRangeMaxX)
+            return false;
+        if (mRangeMinX != other.mRangeMinX)
+            return false;
+        if (mRangeMaxY != other.mRangeMaxY)
+            return false;
+        if (mRangeMinY != other.mRangeMinY)
+            return false;
+        if (mbRelative != other.mbRelative)
+            return false;
+        if (mbQuadSelect != other.mbQuadSelect)
+            return false;
+        if (mEnumList != other.mEnumList)
+            return false;
+        return true;
+    }
 };
 
 struct MetaNode
@@ -437,12 +468,34 @@ struct MetaNode
     std::vector<MetaParameter> mParams;
     bool mbHasUI;
     bool mbSaveTexture;
+
+    bool operator == (const MetaNode& other) const
+    {
+        if (mName != other.mName)
+            return false;
+        if (mCategory != other.mCategory)
+            return false;
+        if (mHeaderColor != other.mHeaderColor)
+            return false;
+        if (mInputs != other.mInputs)
+            return false;
+        if (mOutputs != other.mOutputs)
+            return false;
+        if (mParams != other.mParams)
+            return false;
+        if (mbHasUI != other.mbHasUI)
+            return false;
+        if (mbSaveTexture != other.mbSaveTexture)
+            return false;
+        return true;
+    }
 };
 
 extern std::vector<MetaNode> gMetaNodes;
 size_t GetMetaNodeIndex(const std::string& metaNodeName);
 void LoadMetaNodes();
 
+std::vector<MetaNode> ReadMetaNodes(const char *filename);
 unsigned int GetRuntimeId();
 extern Library library;
 

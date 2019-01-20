@@ -512,7 +512,15 @@ void TileNodeEditGraphDelegate::EditNode()
             ImGui::Text(param.mName.c_str());
             break;
         case Con_Enum:
-            dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, param.mEnumList);
+        {
+            std::string cbString = param.mEnumList;
+            for (auto& c : cbString)
+            {
+                if (c == '|')
+                    c = '\0';
+            }
+            dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
+        }
             break;
         case Con_ForceEvaluate:
             if (ImGui::Button(param.mName.c_str()))

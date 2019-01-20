@@ -851,7 +851,11 @@ void TileNodeEditGraphDelegate::MakeKey(int frame, uint32_t nodeIndex, uint32_t 
     {
         URAdd<AnimTrack> urAdd(int(mAnimTrack.size()), [] { return &gNodeDelegate.mAnimTrack; });
         uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mType].mParams[parameterIndex].mType;
-        AnimTrack newTrack{ nodeIndex, parameterIndex, parameterType, AllocateAnimation(parameterType) };
+        AnimTrack newTrack;
+        newTrack.mNodeIndex = nodeIndex;
+        newTrack.mParamIndex = parameterIndex;
+        newTrack.mValueType = parameterType;
+        newTrack.mAnimation = AllocateAnimation(parameterType);
         mAnimTrack.push_back(newTrack);
         animTrack = &mAnimTrack.back();
     }
@@ -994,4 +998,9 @@ float TileNodeEditGraphDelegate::GetParameterComponentValue(size_t index, int pa
         return float((*(Camera*)ptr)[componentIndex]);
     }
     return 0.f;
+}
+
+void TileNodeEditGraphDelegate::SetAnimTrack(const std::vector<AnimTrack>& animTrack) 
+{ 
+    mAnimTrack = animTrack; 
 }

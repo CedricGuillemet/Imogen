@@ -316,6 +316,11 @@ protected:
 
 struct AnimTrack
 {
+    AnimTrack() {}
+    AnimTrack(const AnimTrack& other)
+    {
+        *this = other;
+    }
     uint32_t mNodeIndex;
     uint32_t mParamIndex;
     uint32_t mValueType; // Con_

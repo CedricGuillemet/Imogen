@@ -78,7 +78,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
-    void SetAnimTrack(const std::vector<AnimTrack>& animTrack) { mAnimTrack = animTrack; }
+    void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
 
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);

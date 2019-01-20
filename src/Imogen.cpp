@@ -819,6 +819,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
     material.mFrameMin = nodeGraphDelegate.mFrameMin;
     material.mFrameMax = nodeGraphDelegate.mFrameMax;
 }
+
 void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
     // set new

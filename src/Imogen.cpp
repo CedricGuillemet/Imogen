@@ -969,6 +969,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 mComponentIndex.push_back(uint32_t(curveIndex));
                 mCurveType.push_back(ImCurveEdit::CurveType(curveType));
                 mLabels.push_back(parameterName + GetCurveParameterSuffix(type, int(curveIndex)));
+				mColors.push_back(GetCurveParameterColor(type, int(curveIndex)));
             }
         };
 
@@ -1041,7 +1042,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     virtual bool IsVisible(size_t curveIndex) { return mbVisible[curveIndex]; }
     size_t GetCurveCount() { return mPts.size(); }
     size_t GetPointCount(size_t curveIndex) { return mPts[curveIndex].size(); }
-    uint32_t GetCurveColor(size_t curveIndex) { return 0xFFAAAAAA; }
+    uint32_t GetCurveColor(size_t curveIndex) { return mColors[curveIndex]; }
     ImVec2* GetPoints(size_t curveIndex) { return mPts[curveIndex].data(); }
 
     virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
@@ -1187,6 +1188,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     std::vector<std::vector<ImVec2>> mPts;
     std::vector<std::string> mLabels;
+	std::vector<uint32_t> mColors;
     std::vector<AnimTrack>& mAnimTrack;
     std::vector<uint32_t> mValueType;
     std::vector<uint32_t> mParameterIndex;
@@ -1301,7 +1303,8 @@ struct MySequence : public ImSequencer::SequenceInterface
         {
             ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
             ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-            draw_list->AddText(pta, mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, curveEdit.mLabels[i].c_str());
+			uint32_t curveColor = curveEdit.mColors[i];
+            draw_list->AddText(pta, mbVisible[i] ? curveColor : ((curveColor&0xFFFFFF)+0x80000000), curveEdit.mLabels[i].c_str());
             if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
                 mbVisible[i] = !mbVisible[i];
         }

@@ -417,6 +417,50 @@ const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex)
     return "";
 }
 
+uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex)
+{
+	static const uint32_t colors[] = { 0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFFF0F0F0 };
+	static const uint32_t cameraColors[] = { 0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFFF0F0F0 };
+	switch (paramType)
+	{
+	case Con_Angle:
+	case Con_Float:
+		return 0xFF1040F0;
+	case Con_Angle2:
+	case Con_Float2:
+		return colors[suffixIndex];
+	case Con_Angle3:
+	case Con_Float3:
+		return colors[suffixIndex];
+	case Con_Angle4:
+	case Con_Color4:
+	case Con_Float4:
+		return colors[suffixIndex];
+	case Con_Ramp:
+		return 0xFFAAAAAA;// sizeof(float) * 2 * 8;
+	case Con_Ramp4:
+		return 0xFFAAAAAA;// sizeof(float) * 4 * 8;
+	case Con_Enum:
+		return 0xFFAAAAAA;
+	case Con_Int:
+		return 0xFFAAAAAA;
+	case Con_Int2:
+		return colors[suffixIndex];
+	case Con_FilenameRead:
+	case Con_FilenameWrite:
+		return 0;
+	case Con_ForceEvaluate:
+		return 0;
+	case Con_Bool:
+		return 0xFFF0F0F0;
+	case Con_Camera:
+		return cameraColors[suffixIndex];
+	default:
+		assert(0);
+	}
+	return 0xFFAAAAAA;
+}
+
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex)
 {
     const MetaNode& currentMeta = gMetaNodes[type];

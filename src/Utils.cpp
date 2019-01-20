@@ -24,8 +24,10 @@
 //
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include <SDL.h>
+#include <vector>
 #include "Utils.h"
 #include "Evaluation.h"
+#include "tinydir.h"
 
 void FlipVImage(Image *image)
 {
@@ -442,8 +444,6 @@ void Mat4x4::PerspectiveFovLH2(const float fovy, const float aspect, const float
     m[3][3] = 0.0f;
 }
 
-
-
 void Mat4x4::OrthoOffCenterLH(const float l, float r, float b, const float t, float zn, const float zf)
 {
     m[0][0] = 2 / (r - l);
@@ -481,4 +481,30 @@ void TagTime(const char *tagInfo)
     double v = double(t - lastTime) / double(SDL_GetPerformanceFrequency());
     Log("%s : %5.3f s\n", tagInfo, float(v));
     lastTime = t;
+}
+
+void DiscoverFiles(const char *extension, const char *directory, std::vector<std::string>& files)
+{
+    tinydir_dir dir;
+    tinydir_open(&dir, directory);
+
+    while (dir.has_next)
+    {
+        tinydir_file file;
+        tinydir_readfile(&dir, &file);
+
+        if (!file.is_dir && !strcmp(file.extension, extension))
+        {
+            files.push_back(std::string(directory) + file.name);
+        }
+
+        tinydir_next(&dir);
+    }
+
+    tinydir_close(&dir);
+}
+
+void IMessageBox(const char *text, const char *title)
+{
+    MessageBoxA(NULL, text, title, MB_OK);
 }

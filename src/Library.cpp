@@ -1089,6 +1089,11 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
 
     rapidjson::Document doc;
     doc.Parse(str.c_str());
+    if (doc.HasParseError())
+    {
+        Log("Parsing error in %s\n", filename);
+        return serNodes;
+    }
     rapidjson::Value &nodesValue = doc["nodes"];
     for (rapidjson::SizeType i = 0; i < nodesValue.Size(); i++)
     {

@@ -12,7 +12,7 @@ namespace GLSLPathTracer
         Renderer::init();
 
         sampleCounter = 1;
-        timeToFade = 2.0f;
+        timeToFade = 0.1f;
         fadeTimer = 0.0f;
         lowResTimer = 0.0f;
         lowRes = true;
@@ -170,12 +170,14 @@ namespace GLSLPathTracer
             // Pass 1: Path trace to full-res texture
             //---------------------------------------------------------
             glBindFramebuffer(GL_FRAMEBUFFER, pathTraceFBO);
+            glViewport(0, 0, screenSize.x, screenSize.y);
             quad->Draw(pathTraceShader);
 
             //----------------------------------------------------------
             // Pass 2: Accumulation buffer
             //---------------------------------------------------------
             glBindFramebuffer(GL_FRAMEBUFFER, accumFBO);
+            glViewport(0, 0, screenSize.x, screenSize.y);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, pathTraceTexture);
             quad->Draw(accumShader);

@@ -9,6 +9,7 @@ vec3 hash3( vec2 p )
 
 layout (std140) uniform iqnoiseBlock
 {
+	vec2 translation;
 	float size;
 	float u;
 	float v;
@@ -16,8 +17,9 @@ layout (std140) uniform iqnoiseBlock
 
 float iqnoise()
 {
-    vec2 p = floor(vUV*iqnoiseParam.size);
-    vec2 f = fract(vUV*iqnoiseParam.size);
+	vec2 nuv = vUV + iqnoiseParam.translation;
+    vec2 p = floor(nuv*iqnoiseParam.size);
+    vec2 f = fract(nuv*iqnoiseParam.size);
 		
 	float k = 1.0+63.0*pow(1.0-iqnoiseParam.v,4.0);
 	

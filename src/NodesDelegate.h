@@ -72,8 +72,6 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     virtual void CutNodes(const std::vector<size_t> nodes);
     virtual void PasteNodes();
 
-    
-
     Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mNodes.size()) return NULL; return &mNodes[index].mParameterViewMatrix; }
 
     // animation
@@ -85,6 +83,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     void ApplyAnimation(int frame);
     void ApplyAnimationForNode(size_t nodeIndex, int frame);
     void RemoveAnimation(size_t nodeIndex);
+    void RemovePins(size_t nodeIndex);
+
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
     Camera *GetCameraParameter(size_t index);

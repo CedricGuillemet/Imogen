@@ -254,6 +254,7 @@ void TileNodeEditGraphDelegate::UserDeleteNode(size_t index)
         mNodes.erase(mNodes.begin() + index);
     }
     RemoveAnimation(index);
+    RemovePins(index);
     mEditingContext.UserDeleteStage(index);
     gEvaluation.UserDeleteEvaluation(index);
 }
@@ -511,8 +512,16 @@ bool TileNodeEditGraphDelegate::EditSingleParameter(unsigned int nodeIndex, unsi
     return dirty;
 }
 
+void UpdateDirtyParameter(int index)
+{
+    auto& node = gNodeDelegate.mNodes[index];
+    gEvaluation.SetEvaluationParameters(index, node.mParameters);
+    gCurrentContext->SetTargetDirty(index);
+}
+
 void TileNodeEditGraphDelegate::PinnedEdit()
 {
+    int dirtyNode = -1;
     for (const auto pin : mPinnedParameters)
     {
         unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
@@ -526,9 +535,15 @@ void TileNodeEditGraphDelegate::PinnedEdit()
         ImGui::PushID(171717 + pin);
         const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
         unsigned char *paramBuffer = mNodes[nodeIndex].mParameters.data();
-        paramBuffer += GetParameterOffset(nodeType, parameterIndex);
-        EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam);
+        paramBuffer += GetParameterOffset(uint32_t(nodeType), parameterIndex);
+        if (EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam))
+            dirtyNode = nodeIndex;
+
         ImGui::PopID();
+    }
+    if (dirtyNode != -1)
+    {
+        UpdateDirtyParameter(dirtyNode);
     }
 }
 
@@ -575,15 +590,9 @@ void TileNodeEditGraphDelegate::EditNode()
     if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
-    auto updateDirtyParameter = [](int index) 
-    {
-        auto& node = gNodeDelegate.mNodes[index];
-        gEvaluation.SetEvaluationParameters(index, node.mParameters);
-        gCurrentContext->SetTargetDirty(index);
-    };
     URChange<std::vector<unsigned char> > undoRedoParameter(int(index)
         , [](int index) { return &gNodeDelegate.mNodes[index].mParameters; }
-        , updateDirtyParameter);
+        , UpdateDirtyParameter);
 
     unsigned char *paramBuffer = node.mParameters.data();
     int i = 0;
@@ -600,13 +609,14 @@ void TileNodeEditGraphDelegate::EditNode()
         
     if (dirty)
     {
-        updateDirtyParameter(int(index));
+        UpdateDirtyParameter(int(index));
     }
     else
     {
         undoRedoParameter.Discard();
     }
 }
+
 void TileNodeEditGraphDelegate::SetTimeSlot(size_t index, int frameStart, int frameEnd)
 {
     ImogenNode & node = mNodes[index];
@@ -981,6 +991,19 @@ void TileNodeEditGraphDelegate::RemoveAnimation(size_t nodeIndex)
         int index = tracks[i] - i;
         URDel<AnimTrack> urDel(index, [] { return &gNodeDelegate.mAnimTrack; });
         mAnimTrack.erase(mAnimTrack.begin() + index);
+    }
+}
+
+void TileNodeEditGraphDelegate::RemovePins(size_t nodeIndex)
+{
+    auto iter = mPinnedParameters.begin();
+    for (; iter != mPinnedParameters.end();)
+    {
+        uint32_t pin = *iter;
+        if ( ((pin >> 16) & 0xFFFF) == nodeIndex)
+            iter = mPinnedParameters.erase(iter);
+        else
+            ++iter;
     }
 }
 

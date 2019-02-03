@@ -1191,7 +1191,8 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
     {
         ImVec2 p1 = editingNodeSource;
         ImVec2 p2 = io.MousePos;
-        drawList->AddBezierCurve(p1, p1 + ImVec2(editingInput ?-50.f:+50.f, 0.f), p2 + ImVec2(editingInput ?50.f:-50.f, 0.f), p2, IM_COL32(200, 200, 100, 255), 3.0f);
+        //drawList->AddBezierCurve(p1, p1 + ImVec2(editingInput ?-50.f:+50.f, 0.f), p2 + ImVec2(editingInput ?50.f:-50.f, 0.f), p2, IM_COL32(200, 200, 100, 255), 3.0f);
+        drawList->AddLine(p1, p2, IM_COL32(200, 200, 200, 255), 3.0f);
     }
 
     // Display nodes

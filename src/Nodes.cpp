@@ -745,7 +745,7 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         {
             for (int i = 0; i < ptCount - 1; i++)
             {
-                drawList->AddLine(pts[i], pts[i + 1], pass?col:0xFF000000, (pass?3.f:4.f));
+                drawList->AddLine(pts[i], pts[i + 1], pass?col:0xFF000000, (pass?5.f:7.5f) * factor);
             }
         }
     }

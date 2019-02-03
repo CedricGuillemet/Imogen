@@ -33,6 +33,7 @@
 #include "Evaluation.h"
 #include "imgui_stdlib.h"
 #include "NodesDelegate.h"
+#include <array>
 
 int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
@@ -676,7 +677,77 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
             (p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
             continue;
-        drawList->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, IM_COL32(200, 200, 150, 255), 3.0f * factor);
+        
+        uint32_t col = gMetaNodes[node_inp->mType].mHeaderColor;
+        // curves
+        //drawList->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, 0xFF000000, 4.f * factor);
+        //drawList->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, col, 3.0f * factor);
+
+        // -/-
+        /*
+        ImVec2 p10 = p1 + ImVec2(20.f * factor, 0.f);
+        ImVec2 p20 = p2 - ImVec2(20.f * factor, 0.f);
+
+        ImVec2 dif = p20 - p10;
+        ImVec2 p1a, p1b;
+        if (fabsf(dif.x) > fabsf(dif.y))
+        {
+            p1a = p10 + ImVec2(fabsf(fabsf(dif.x) - fabsf(dif.y)) * 0.5 * sign(dif.x), 0.f);
+            p1b = p1a + ImVec2(fabsf(dif.y) * sign(dif.x) , dif.y);
+        }
+        else
+        {
+            p1a = p10 + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(dif.x)) * 0.5 * sign(dif.y));
+            p1b = p1a + ImVec2(dif.x, fabsf(dif.x) * sign(dif.y));
+        }
+        drawList->AddLine(p1,  p10, col, 3.f * factor);
+        drawList->AddLine(p10, p1a, col, 3.f * factor);
+        drawList->AddLine(p1a, p1b, col, 3.f * factor);
+        drawList->AddLine(p1b, p20, col, 3.f * factor);
+        drawList->AddLine(p20,  p2, col, 3.f * factor);
+        */
+        std::array<ImVec2, 6> pts;
+        int ptCount = 0;
+
+        ImVec2 dif = p2 - p1;
+        ImVec2 p1a, p1b;
+        if (dif.x < 0.f)
+        {
+            ImVec2 p10 = p1 + ImVec2(20.f * factor, 0.f);
+            ImVec2 p20 = p2 - ImVec2(20.f * factor, 0.f);
+
+            dif = p20 - p10;
+            p1a = p10 + ImVec2(0.f, dif.y * 0.5f);
+            p1b = p1a + ImVec2(dif.x, 0.f);
+
+            pts = { p1, p10, p1a, p1b, p20, p2 };
+            ptCount = 6;
+        }
+        else
+        {
+            if (fabsf(dif.x) > fabsf(dif.y))
+            {
+                float d = fabsf(dif.y) * sign(dif.x) * 0.5f;
+                p1a = p1 + ImVec2(d, dif.y * 0.5f);
+                p1b = p1a + ImVec2(fabsf(fabsf(dif.x) - fabsf(d)*2.f) * sign(dif.x), 0.f);
+            }
+            else
+            {
+                float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
+                p1a = p1 + ImVec2(dif.x * 0.5f, d);
+                p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
+            }
+            pts = { p1, p1a, p1b, p2 };
+            ptCount = 4;
+        }
+
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (int i = 0; i < ptCount - 1; i++)
+            {
+                drawList->AddLine(pts[i], pts[i + 1], pass?col:0xFF000000, (pass?3.f:4.f));
+            }
+        }
     }
 }
 

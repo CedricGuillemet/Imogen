@@ -711,10 +711,11 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
 
         ImVec2 dif = p2 - p1;
         ImVec2 p1a, p1b;
-        if (dif.x < 0.f)
+        const float limitx = 12.f * factor;
+        if (dif.x < limitx)
         {
-            ImVec2 p10 = p1 + ImVec2(20.f * factor, 0.f);
-            ImVec2 p20 = p2 - ImVec2(20.f * factor, 0.f);
+            ImVec2 p10 = p1 + ImVec2(limitx, 0.f);
+            ImVec2 p20 = p2 - ImVec2(limitx, 0.f);
 
             dif = p20 - p10;
             p1a = p10 + ImVec2(0.f, dif.y * 0.5f);
@@ -725,17 +726,34 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         }
         else
         {
-            if (fabsf(dif.x) > fabsf(dif.y))
+            if (fabsf(dif.y) < 10.f)
             {
-                float d = fabsf(dif.y) * sign(dif.x) * 0.5f;
-                p1a = p1 + ImVec2(d, dif.y * 0.5f);
-                p1b = p1a + ImVec2(fabsf(fabsf(dif.x) - fabsf(d)*2.f) * sign(dif.x), 0.f);
+                if (fabsf(dif.x) > fabsf(dif.y))
+                {
+                    p1a = p1 + ImVec2(fabsf(fabsf(dif.x) - fabsf(dif.y)) * 0.5f * sign(dif.x), 0.f);
+                    p1b = p1a + ImVec2(fabsf(dif.y) * sign(dif.x), dif.y);
+                }
+                else
+                {
+                    p1a = p1 + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(dif.x)) * 0.5f * sign(dif.y));
+                    p1b = p1a + ImVec2(dif.x, fabsf(dif.x) * sign(dif.y));
+                }
             }
             else
             {
-                float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
-                p1a = p1 + ImVec2(dif.x * 0.5f, d);
-                p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
+                if (fabsf(dif.x) > fabsf(dif.y))
+                {
+                    float d = fabsf(dif.y) * sign(dif.x) * 0.5f;
+                    p1a = p1 + ImVec2(d, dif.y * 0.5f);
+                    p1b = p1a + ImVec2(fabsf(fabsf(dif.x) - fabsf(d)*2.f) * sign(dif.x), 0.f);
+                }
+                else
+                {
+
+                    float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
+                    p1a = p1 + ImVec2(dif.x * 0.5f, d);
+                    p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
+                }
             }
             pts = { p1, p1a, p1b, p2 };
             ptCount = 4;

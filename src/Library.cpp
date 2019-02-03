@@ -44,6 +44,7 @@ enum : uint32_t
     v_nodeTypeName,
     v_frameStartEnd,
     v_animation,
+    v_pinnedParameters,
     v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -62,11 +63,13 @@ template<bool doWrite> struct Serialize
     {
         fp = fopen(szFilename, doWrite ? "wb" : "rb");
     }
+
     ~Serialize()
     {
         if (fp)
             fclose(fp);
     }
+
     template<typename T> void Ser(T& data)
     {
         if (doWrite)
@@ -74,6 +77,7 @@ template<bool doWrite> struct Serialize
         else
             fread(&data, sizeof(T), 1, fp);
     }
+
     void Ser(std::string& data)
     {
         if (doWrite)
@@ -91,6 +95,7 @@ template<bool doWrite> struct Serialize
             data = std::string(data.c_str(), strlen(data.c_str()));
         }
     }
+
     template<typename T> void Ser(std::vector<T>& data)
     {
         uint32_t count = uint32_t(data.size());
@@ -99,6 +104,7 @@ template<bool doWrite> struct Serialize
         for (auto& item : data)
             Ser(&item);
     }
+
     template<typename T> void SerArray(std::vector<T>& data)
     {
         uint32_t count = uint32_t(data.size());
@@ -115,18 +121,22 @@ template<bool doWrite> struct Serialize
             fread(&data[0], count * sizeof(T), 1, fp);
         }
     }
+
     void Ser(std::vector<uint8_t>& data)
     {
         SerArray(data);
     }
+
     void Ser(std::vector<uint32_t>& data)
     {
         SerArray(data);
     }
+
     void Ser(std::vector<int32_t>& data)
     {
         SerArray(data);
     }
+
     void Ser(AnimationBase *animBase)
     {
         ADD(v_animation, animBase->mFrames);
@@ -160,6 +170,7 @@ template<bool doWrite> struct Serialize
         ADD(v_initial, inputSampler->mFilterMin);
         ADD(v_initial, inputSampler->mFilterMag);
     }
+
     void Ser(MaterialNode *materialNode)
     {
         ADD(v_initial, materialNode->mType);
@@ -171,8 +182,8 @@ template<bool doWrite> struct Serialize
         ADD(v_nodeImage, materialNode->mImage);
         ADD(v_frameStartEnd, materialNode->mFrameStart);
         ADD(v_frameStartEnd, materialNode->mFrameEnd);
-
     }
+
     void Ser(MaterialNodeRug *materialNodeRug)
     {
         ADD(v_rugs, materialNodeRug->mPosX);
@@ -182,6 +193,7 @@ template<bool doWrite> struct Serialize
         ADD(v_rugs, materialNodeRug->mColor);
         ADD(v_rugs, materialNodeRug->mComment);
     }
+
     void Ser(MaterialConnection *materialConnection)
     {
         ADD(v_initial, materialConnection->mInputNode);
@@ -189,6 +201,7 @@ template<bool doWrite> struct Serialize
         ADD(v_initial, materialConnection->mInputSlot);
         ADD(v_initial, materialConnection->mOutputSlot);
     }
+
     void Ser(Material *material)
     {
         ADD(v_initial, material->mName);
@@ -200,7 +213,9 @@ template<bool doWrite> struct Serialize
         ADD(v_animation, material->mAnimTrack);
         ADD(v_animation, material->mFrameMin);
         ADD(v_animation, material->mFrameMax);
+        ADD(v_pinnedParameters, material->mPinnedParameters);
     }
+
     bool Ser(Library *library)
     {
         if (!fp)
@@ -213,6 +228,7 @@ template<bool doWrite> struct Serialize
         ADD(v_initial, library->mMaterials);
         return true;
     }
+
     FILE *fp;
     uint32_t dataVersion;
 };

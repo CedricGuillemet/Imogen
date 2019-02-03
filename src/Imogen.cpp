@@ -818,6 +818,7 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
     material.mAnimTrack = nodeGraphDelegate.GetAnimTrack();
     material.mFrameMin = nodeGraphDelegate.mFrameMin;
     material.mFrameMax = nodeGraphDelegate.mFrameMax;
+    material.mPinnedParameters = nodeGraphDelegate.mPinnedParameters;
 }
 
 void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
@@ -856,6 +857,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
         nodeGraphDelegate.SetAnimTrack(material.mAnimTrack);
         nodeGraphDelegate.mFrameMin = material.mFrameMin;
         nodeGraphDelegate.mFrameMax = material.mFrameMax;
+        nodeGraphDelegate.mPinnedParameters = material.mPinnedParameters;
         nodeGraphDelegate.SetTime(gEvaluationTime, true);
         nodeGraphDelegate.ApplyAnimation(gEvaluationTime);
         nodeGraphDelegate.mEditingContext.RunAll();
@@ -1475,6 +1477,12 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
         if (ImGui::Begin("Library"))
         {
             LibraryEdit(library, nodeGraphDelegate, evaluation);
+        }
+        ImGui::End();
+
+        if (ImGui::Begin("Pins"))
+        {
+            nodeGraphDelegate.PinnedEdit();
         }
         ImGui::End();
 

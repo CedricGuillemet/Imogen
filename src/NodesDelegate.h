@@ -89,6 +89,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
     Camera *GetCameraParameter(size_t index);
     float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
+    void PinnedEdit();
     struct ImogenNode
     {
 #ifdef _DEBUG
@@ -134,12 +135,15 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     std::vector<ImogenNode> mNodes;
     std::vector<ImogenNode> mNodesClipboard;
     std::vector<AnimTrack> mAnimTrack;
+    std::vector<uint32_t> mPinnedParameters;
+
     int mFrameMin, mFrameMax;
     bool mbMouseDragging;
 
     ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }
 protected:
     void InitDefault(ImogenNode& node);
+    bool EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param);
 };
 
 extern TileNodeEditGraphDelegate gNodeDelegate;

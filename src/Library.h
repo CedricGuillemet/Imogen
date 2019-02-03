@@ -353,6 +353,7 @@ struct Material
 
     int mFrameMin, mFrameMax;
 
+    std::vector<uint32_t> mPinnedParameters;
     MaterialNode* Get(ASyncId id) { return GetByAsyncId(id, mMaterialNodes); }
 
     //run time
@@ -467,6 +468,7 @@ struct MetaNode
     std::vector<MetaCon> mInputs;
     std::vector<MetaCon> mOutputs;
     std::vector<MetaParameter> mParams;
+
     bool mbHasUI;
     bool mbSaveTexture;
 

@@ -313,6 +313,224 @@ void TileNodeEditGraphDelegate::InitDefault(ImogenNode& node)
         paramBuffer += GetParameterTypeSize(param.mType);
     }
 }
+bool TileNodeEditGraphDelegate::EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param)
+{
+    bool dirty = false;
+    uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
+    auto pinIter = std::find(mPinnedParameters.begin(), mPinnedParameters.end(), parameterPair);
+    bool hasPin = pinIter != mPinnedParameters.end();
+    bool checked = hasPin;
+    if (ImGui::Checkbox("", &checked))
+    {
+        if (hasPin)
+            mPinnedParameters.erase(pinIter);
+        else
+            mPinnedParameters.push_back(parameterPair);
+        std::sort(mPinnedParameters.begin(), mPinnedParameters.end());
+    }
+    ImGui::SameLine();
+    switch (param.mType)
+    {
+    case Con_Float:
+        dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
+        break;
+    case Con_Float2:
+        dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
+        break;
+    case Con_Float3:
+        dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
+        break;
+    case Con_Float4:
+        dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
+        break;
+    case Con_Color4:
+        dirty |= ImGui::ColorPicker4(param.mName.c_str(), (float*)paramBuffer);
+        break;
+    case Con_Int:
+        dirty |= ImGui::InputInt(param.mName.c_str(), (int*)paramBuffer);
+        break;
+    case Con_Int2:
+        dirty |= ImGui::InputInt2(param.mName.c_str(), (int*)paramBuffer);
+        break;
+    case Con_Ramp:
+    {
+        RampEdit curveEditDelegate;
+        curveEditDelegate.mPointCount = 0;
+        for (int k = 0; k < 8; k++)
+        {
+            curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
+            if (k && curveEditDelegate.mPts[k - 1].x > curveEditDelegate.mPts[k].x)
+                break;
+            curveEditDelegate.mPointCount++;
+        }
+        float regionWidth = ImGui::GetWindowContentRegionWidth();
+        if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth), 974))
+        {
+            for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
+            {
+                ((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
+                ((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+            }
+            ((float*)paramBuffer)[0] = 0.f;
+            ((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
+            for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+            {
+                ((float*)paramBuffer)[k * 2] = -1.f;
+            }
+            dirty = true;
+        }
+    }
+    break;
+    case Con_Ramp4:
+    {
+        float regionWidth = ImGui::GetWindowContentRegionWidth();
+        GradientEdit gradientDelegate;
+
+        gradientDelegate.mPointCount = 0;
+
+        for (int k = 0; k < 8; k++)
+        {
+            gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
+            if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
+                break;
+            gradientDelegate.mPointCount++;
+        }
+
+        int colorIndex;
+        dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
+        if (colorIndex != -1)
+        {
+            dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
+        }
+        if (dirty)
+        {
+            for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
+            {
+                ((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
+            }
+            ((ImVec4*)paramBuffer)[0].w = 0.f;
+            ((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
+            for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
+            {
+                ((ImVec4*)paramBuffer)[k].w = -1.f;
+            }
+        }
+    }
+    break;
+    case Con_Angle:
+        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+        dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
+        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+        break;
+    case Con_Angle2:
+        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+        ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+        dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
+        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+        ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+        break;
+    case Con_Angle3:
+        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+        ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+        ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
+        dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
+        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+        ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+        ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
+        break;
+    case Con_Angle4:
+        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+        ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+        ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
+        ((float*)paramBuffer)[3] = RadToDeg(((float*)paramBuffer)[3]);
+        dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
+        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+        ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+        ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
+        ((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
+        break;
+    case Con_FilenameWrite:
+    case Con_FilenameRead:
+        dirty |= ImGui::InputText("", (char*)paramBuffer, 1024);
+        ImGui::SameLine();
+        if (ImGui::Button("..."))
+        {
+            nfdchar_t *outPath = NULL;
+            nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath) : NFD_SaveDialog(NULL, NULL, &outPath);
+
+            if (result == NFD_OKAY)
+            {
+                strcpy((char*)paramBuffer, outPath);
+                free(outPath);
+                dirty = true;
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Text(param.mName.c_str());
+        break;
+    case Con_Enum:
+    {
+        std::string cbString = param.mEnumList;
+        for (auto& c : cbString)
+        {
+            if (c == '|')
+                c = '\0';
+        }
+        dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
+    }
+    break;
+    case Con_ForceEvaluate:
+        if (ImGui::Button(param.mName.c_str()))
+        {
+            EvaluationInfo evaluationInfo;
+            evaluationInfo.forcedDirty = 1;
+            evaluationInfo.uiPass = 0;
+            mEditingContext.RunSingle(nodeIndex, evaluationInfo);
+        }
+        break;
+    case Con_Bool:
+    {
+        bool checked = (*(int*)paramBuffer) != 0;
+        if (ImGui::Checkbox(param.mName.c_str(), &checked))
+        {
+            *(int*)paramBuffer = checked ? 1 : 0;
+            dirty = true;
+        }
+    }
+    break;
+    case Con_Camera:
+        if (ImGui::Button("Reset"))
+        {
+            Camera *cam = (Camera*)paramBuffer;
+            cam->mPosition = Vec4(0.f, 0.f, 0.f);
+            cam->mDirection = Vec4(0.f, 0.f, 1.f);
+            cam->mUp = Vec4(0.f, 1.f, 0.f);
+        }
+        break;
+    }
+    return dirty;
+}
+
+void TileNodeEditGraphDelegate::PinnedEdit()
+{
+    for (const auto pin : mPinnedParameters)
+    {
+        unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
+        unsigned int parameterIndex = pin & 0xFFFF;
+
+        size_t nodeType = mNodes[nodeIndex].mType;
+        const MetaNode& metaNode = gMetaNodes[nodeType];
+        if (parameterIndex >= metaNode.mParams.size())
+            continue;
+        
+        ImGui::PushID(171717 + pin);
+        const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
+        unsigned char *paramBuffer = mNodes[nodeIndex].mParameters.data();
+        paramBuffer += GetParameterOffset(nodeType, parameterIndex);
+        EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam);
+        ImGui::PopID();
+    }
+}
 
 void TileNodeEditGraphDelegate::EditNode()
 {
@@ -371,188 +589,13 @@ void TileNodeEditGraphDelegate::EditNode()
     int i = 0;
     for(const MetaParameter& param : currentMeta.mParams)
     {
-        ImGui::PushID(667889 + i++);
-        switch (param.mType)
-        {
-        case Con_Float:
-            dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
-            break;
-        case Con_Float2:
-            dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
-            break;
-        case Con_Float3:
-            dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
-            break;
-        case Con_Float4:
-            dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
-            break;
-        case Con_Color4:
-            dirty |= ImGui::ColorPicker4(param.mName.c_str(), (float*)paramBuffer);
-            break;
-        case Con_Int:
-            dirty |= ImGui::InputInt(param.mName.c_str(), (int*)paramBuffer);
-            break;
-        case Con_Int2:
-            dirty |= ImGui::InputInt2(param.mName.c_str(), (int*)paramBuffer);
-            break;
-        case Con_Ramp:
-            {
-                RampEdit curveEditDelegate;
-                curveEditDelegate.mPointCount = 0;
-                for (int k = 0; k < 8; k++)
-                {
-                    curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
-                    if (k && curveEditDelegate.mPts[k-1].x > curveEditDelegate.mPts[k].x)
-                        break;
-                    curveEditDelegate.mPointCount++;
-                }
-                float regionWidth = ImGui::GetWindowContentRegionWidth();
-                if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth), 974))
-                {
-                    for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
-                    {
-                        ((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
-                        ((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
-                    }
-                    ((float*)paramBuffer)[0] = 0.f;
-                    ((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
-                    for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
-                    {
-                        ((float*)paramBuffer)[k * 2] = -1.f;
-                    }
-                    dirty = true;
-                }
-            }
-            break;
-        case Con_Ramp4:
-        {
-            float regionWidth = ImGui::GetWindowContentRegionWidth();
-            GradientEdit gradientDelegate;
+        ImGui::PushID(667889 + i);
+        
+        dirty |= EditSingleParameter(unsigned int(index), i, paramBuffer, param);
 
-            gradientDelegate.mPointCount = 0;
-
-            for (int k = 0; k < 8; k++)
-            {
-                gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
-                if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
-                    break;
-                gradientDelegate.mPointCount++;
-            }
-
-            int colorIndex;
-            dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
-            if (colorIndex != -1)
-            {
-                dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
-            }
-            if (dirty)
-            {
-                for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
-                {
-                    ((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
-                }
-                ((ImVec4*)paramBuffer)[0].w = 0.f;
-                ((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
-                for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
-                {
-                    ((ImVec4*)paramBuffer)[k].w = -1.f;
-                }
-            }
-        }
-        break;
-        case Con_Angle:
-            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-            dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
-            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-            break;
-        case Con_Angle2:
-            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-            ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
-            dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
-            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-            ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
-            break;
-        case Con_Angle3:
-            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-            ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
-            ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
-            dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
-            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-            ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
-            ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
-            break;
-        case Con_Angle4:
-            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-            ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
-            ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
-            ((float*)paramBuffer)[3] = RadToDeg(((float*)paramBuffer)[3]);
-            dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
-            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-            ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
-            ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
-            ((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
-            break;
-        case Con_FilenameWrite:
-        case Con_FilenameRead:
-            dirty |= ImGui::InputText("", (char*)paramBuffer, 1024);
-            ImGui::SameLine();
-            if (ImGui::Button("..."))
-            {
-                nfdchar_t *outPath = NULL;
-                nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath) : NFD_SaveDialog(NULL, NULL, &outPath);
-
-                if (result == NFD_OKAY) 
-                {
-                    strcpy((char*)paramBuffer, outPath);
-                    free(outPath);
-                    dirty = true;
-                }
-            }
-            ImGui::SameLine();
-            ImGui::Text(param.mName.c_str());
-            break;
-        case Con_Enum:
-        {
-            std::string cbString = param.mEnumList;
-            for (auto& c : cbString)
-            {
-                if (c == '|')
-                    c = '\0';
-            }
-            dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
-        }
-            break;
-        case Con_ForceEvaluate:
-            if (ImGui::Button(param.mName.c_str()))
-            {
-                EvaluationInfo evaluationInfo;
-                evaluationInfo.forcedDirty = 1;
-                evaluationInfo.uiPass = 0;
-                mEditingContext.RunSingle(index, evaluationInfo);
-            }
-            break;
-        case Con_Bool:
-        {
-            bool checked = (*(int*)paramBuffer) != 0;
-            if (ImGui::Checkbox(param.mName.c_str(), &checked))
-            {
-                *(int*)paramBuffer = checked ? 1 : 0;
-                dirty = true;
-            }
-        }
-        break;
-        case Con_Camera:
-            if (ImGui::Button("Reset"))
-            {
-                Camera *cam = (Camera*)paramBuffer;
-                cam->mPosition = Vec4(0.f, 0.f, 0.f);
-                cam->mDirection = Vec4(0.f, 0.f, 1.f);
-                cam->mUp = Vec4(0.f, 1.f, 0.f);
-            }
-            break;
-        }
         ImGui::PopID();
         paramBuffer += GetParameterTypeSize(param.mType);
+        i++;
     }
         
     if (dirty)

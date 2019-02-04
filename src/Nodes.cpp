@@ -1101,7 +1101,10 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     }
 
     drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
+    drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20));
     drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
+    drawList->PopClipRect();
+
 
     unsigned int stage2D = gEvaluation.GetTexture("Stock/Stage2D.png");
     unsigned int stagecubemap = gEvaluation.GetTexture("Stock/StageCubemap.png");

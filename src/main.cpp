@@ -105,6 +105,7 @@ Evaluation gEvaluation;
 Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
+void InitMDFonts();
 
 int main(int, char**)
 {
@@ -209,7 +210,19 @@ int main(int, char**)
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+
+
+
+
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.Fonts->Clear();
+    // Base font
+    float fontSize_ = 16.f; 
+    io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-SemiBold.ttf", fontSize_);
+    InitMDFonts();
+
+
+    
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -246,10 +259,11 @@ int main(int, char**)
 
     gCPUCount = SDL_GetCPUCount();
 
+    // default Material
+    SetExistingMaterialActive(".default");
+
     TagTime("App init done");
 
-    std::shared_ptr<std::vector<char>> ptr = std::make_shared<std::vector<char>>();
-    size_t s = sizeof(ptr);
     // Main loop
     bool done = false;
     while (!done)

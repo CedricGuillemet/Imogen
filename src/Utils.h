@@ -582,3 +582,4 @@ void IMessageBox(const char *text, const char *title);
 void DiscoverFiles(const char *extension, const char *directory, std::vector<std::string>& files);
 
 inline float sign(float v) { return (v >= 0.f) ? 1.f : -1.f; }
+void OpenShellURL(const std::string &url);

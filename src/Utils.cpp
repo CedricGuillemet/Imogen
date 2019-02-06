@@ -29,6 +29,11 @@
 #include "Evaluation.h"
 #include "tinydir.h"
 
+#ifdef WIN32
+#include <Windows.h>
+#include <shellapi.h>
+#endif
+
 void FlipVImage(Image *image)
 {
     int pixelSize = (image->mFormat == TextureFormat::RGB8) ? 3 : 4;
@@ -507,4 +512,9 @@ void DiscoverFiles(const char *extension, const char *directory, std::vector<std
 void IMessageBox(const char *text, const char *title)
 {
     MessageBoxA(NULL, text, title, MB_OK);
+}
+
+void OpenShellURL(const std::string &url)
+{
+    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }

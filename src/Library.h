@@ -365,6 +365,17 @@ struct Library
 {
     std::vector<Material> mMaterials;
     Material* Get(ASyncId id) { return GetByAsyncId(id, mMaterials); }
+    Material* GetByName(const char* materialName)
+    {
+        for (auto &material : mMaterials)
+        {
+            if (material.mName == materialName)
+            {
+                return &material;
+            }
+        }
+        return nullptr;
+    }
 };
 
 void LoadLib(Library *library, const char *szFilename);

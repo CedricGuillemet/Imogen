@@ -34,12 +34,55 @@
 #include "imgui_stdlib.h"
 #include "NodesDelegate.h"
 #include <array>
+#include "imgui_markdown/imgui_markdown.h"
 
 int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
 
+void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    std::string url(data_.link, data_.linkLength);
+    static const std::string graph = "Graph:";
+    if (url.substr(0, graph.size()) == graph)
+    {
+        std::string materialName = url.substr(graph.size());
+        SetExistingMaterialActive(materialName.c_str());
+    }
+    OpenShellURL(url);
+}
+
+inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    std::string link = data_.link;
+    static const std::string thumbnail = "thumbnail:";
+    if (link.substr(0, thumbnail.size()) == thumbnail)
+    {
+        std::string material = link.substr(thumbnail.size());
+        material = material.substr(0, material.find(')'));
+        Material* libraryMaterial = library.GetByName(material.c_str());
+        if (libraryMaterial)
+        {
+            return { true, (ImTextureID)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100) };
+        }
+    }
+
+    return { false };
+}
+
+static ImGui::MarkdownConfig mdConfig{ LinkCallback, ImageCallback, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
+void InitMDFonts()
+{
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    float fontSize_ = 16.f;
+    // Bold headings H2 and H3
+    mdConfig.headingFormats[1].font = io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-ExtraBold.ttf", fontSize_);
+    mdConfig.headingFormats[2].font = mdConfig.headingFormats[1].font;
+    // bold heading H1
+    float fontSizeH1 = fontSize_ * 1.2f;
+    mdConfig.headingFormats[0].font = io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-ExtraBold.ttf", fontSizeH1);
+}
 
 Node::Node(int type, const ImVec2& pos)
 {
@@ -225,9 +268,17 @@ NodeRug* DisplayRugs(NodeRug *editRug, ImDrawList* drawList, ImVec2 offset, floa
                 }
             }
         }
-        drawList->AddText(io.FontDefault, 13 * ImLerp(1.f, factor, 0.5f), node_rect_min + ImVec2(5, 5), (rug.mColor & 0xFFFFFF) + 0xFF404040, rug.mText.c_str());
+        //drawList->AddText(io.FontDefault, 13 * ImLerp(1.f, factor, 0.5f), node_rect_min + ImVec2(5, 5), (rug.mColor & 0xFFFFFF) + 0xFF404040, rug.mText.c_str());
+        ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, 0x0);
+        ImGui::PushStyleColor(ImGuiCol_Border, 0x0);
+        ImGui::BeginChildFrame(88 + rugIndex, commentSize - NODE_WINDOW_PADDING * 2, ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav);
+        
+        ImGui::Markdown(rug.mText.c_str(), rug.mText.length(), mdConfig);
         drawList->AddRectFilled(node_rect_min, node_rect_max, (rug.mColor&0xFFFFFF)+0x60000000, 10.0f, 15);
         drawList->AddRect(node_rect_min, node_rect_max, (rug.mColor & 0xFFFFFF) + 0x90000000, 10.0f, 15, 2.f);
+        ImGui::EndChildFrame();
+        ImGui::PopStyleColor(2);
         ImGui::PopID();
     }
     return ret;
@@ -1101,7 +1152,7 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     }
 
     drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
-    drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20));
+    drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), true);
     drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
     drawList->PopClipRect();
 
@@ -1158,25 +1209,42 @@ void NodeGraphSelectNode(int selectedNodeIndex)
 
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 {
-    ImGui::BeginGroup();
-
-    ImGuiIO& io = ImGui::GetIO();
     const ImVec2 windowPos = ImGui::GetCursorScreenPos();
     const ImVec2 canvasSize = ImGui::GetWindowSize();
+
     ImRect regionRect(windowPos, windowPos + canvasSize);
 
     HandleZoomScroll(regionRect);
+    ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling * factor;
+
+    {
+        ImGui::BeginChild("rugs_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+        editRug = DisplayRugs(editRug, drawList, offset, factor);
+
+        ImGui::EndChild();
+    }
+    
+    ImGui::SetCursorPos(windowPos);
+    ImGui::BeginGroup();
+
+    
+
+    ImGuiIO& io = ImGui::GetIO();
 
     // Create our child canvas
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1, 1));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
 
-    ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+    ImGui::SetCursorPos(ImVec2(0, 50));
+    ImGui::BeginChild("scrolling_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground);
     ImGui::PushItemWidth(120.0f);
 
-    ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling * factor;
     ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    //editRug = DisplayRugs(editRug, drawList, offset, factor);
 
     // Display grid
     DrawGrid(drawList, windowPos, canvasSize, factor);
@@ -1240,7 +1308,7 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 
     // rugs
     drawList->ChannelsSetCurrent(0);
-    editRug = DisplayRugs(editRug, drawList, offset, factor);
+    
 
     // quad selection
     HandleQuadSelection(drawList, offset, factor, regionRect);

@@ -929,6 +929,26 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
     ImGui::EndChild();
 }
 
+void SetExistingMaterialActive(const char * materialName)
+{
+    Material* libraryMaterial = library.GetByName(materialName);
+    if (libraryMaterial)
+    {
+        auto materialIndex = libraryMaterial - library.mMaterials.data();
+        SetExistingMaterialActive(materialIndex);
+    }
+}
+
+void SetExistingMaterialActive(int materialIndex)
+{
+    if (materialIndex != selectedMaterial && selectedMaterial != -1)
+    {
+        ValidateMaterial(library, gNodeDelegate, selectedMaterial);
+    }
+    selectedMaterial = materialIndex;
+    UpdateNewlySelectedGraph(gNodeDelegate, gEvaluation);
+}
+
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
     AnimCurveEdit(ImVec2& min, ImVec2& max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) :

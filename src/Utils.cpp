@@ -518,3 +518,11 @@ void OpenShellURL(const std::string &url)
 {
     ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
+
+void GetTextureDimension(unsigned int textureId, int *w, int *h)
+{
+    int miplevel = 0;
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, w);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, h);
+}

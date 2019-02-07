@@ -24,6 +24,7 @@ API BREAKING CHANGES
 ====================
 - 2019/02/01 - Changed LinkCallback parameters, see https://github.com/juliettef/imgui_markdown/issues/2
 - 2019/02/05 - Added ImageCallback parameter to ImGui::MarkdownConfig
+- 2019/02/06 - Added useLinkCallback member variable to MarkdownImageData to configure using images as links
 */
 
 /*
@@ -51,14 +52,14 @@ Headers:
 
 Indents: 
 On a new line, at the start of the line, add two spaces per indent.
-??Indent level 1
-????Indent level 2
+��Indent level 1
+����Indent level 2
 
 Unordered lists: 
 On a new line, at the start of the line, add two spaces, an asterisks and a space. 
 For nested lists, add two additional spaces in front of the asterisk per list level increment.
-??*?Unordered List level 1
-????*?Unordered List level 2
+��*�Unordered List level 1
+����*�Unordered List level 2
 
 Links:
 [link description](https://...)
@@ -86,14 +87,17 @@ static ImGui::MarkdownConfig mdConfig{ LinkCallback, ImageCallback, ICON_FA_LINK
 void LinkCallback( ImGui::MarkdownLinkCallbackData data_ )
 {
     std::string url( data_.link, data_.linkLength );
-    ShellExecuteA( NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL );
+    if( !data_.isImage )
+    {
+        ShellExecuteA( NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL );
+    }
 }
 
 inline ImGui::MarkdownImageData ImageCallback( ImGui::MarkdownLinkCallbackData data_ )
 {
     // In your application you would load an image based on data_ input. Here we just use the imgui font texture.
     ImTextureID image = ImGui::GetIO().Fonts->TexID;
-    ImGui::MarkdownImageData imageData{ true, image, ImVec2( 40.0f, 20.0f ) };
+    ImGui::MarkdownImageData imageData{ true, false, image, ImVec2( 40.0f, 20.0f ) };
     return imageData;
 }
 
@@ -150,14 +154,18 @@ namespace ImGui
 
     struct MarkdownLinkCallbackData         // for both links and images
     {
+        const char* text;
+        int         textLength;
         const char* link;
         int         linkLength;
         void*       userData;
+        bool        isImage;
     };
     
     struct MarkdownImageData
     {
-        bool            isValid = false;    // if false, won't draw the image
+        bool            isValid = false;            // if true, will draw the image
+        bool            useLinkCallback = false;    // if true, linkCallback will be called when image is clicked
         ImTextureID     user_texture_id; 
         const ImVec2    size;
         const ImVec2    uv0 = ImVec2( 0, 0 );
@@ -166,19 +174,24 @@ namespace ImGui
         const ImVec4    border_col = ImVec4( 0, 0, 0, 0 );
     };
 
+    typedef void                MarkdownLinkCallback( MarkdownLinkCallbackData data );
+    typedef MarkdownImageData   MarkdownImageCallback( MarkdownLinkCallbackData data );
+
+    struct MarkdownHeadingFormat
+    {
+        ImFont* font; 
+        bool separator; 
+    };
+
     struct MarkdownConfig
     {
-        typedef void                LinkCallback( MarkdownLinkCallbackData data );
-        typedef MarkdownImageData   ImageCallback( MarkdownLinkCallbackData data );
-        struct                      HeadingFormat{ ImFont* font; bool separator; };
-
         static const int NUMHEADINGS = 3;
 
-        LinkCallback*    linkCallback = NULL;
-        ImageCallback*   imageCallback = NULL;
-        const char*      linkIcon = "";
-        HeadingFormat    headingFormats[ NUMHEADINGS ] = { { NULL, true }, { NULL, true }, { NULL, true } };
-        void*            userData = NULL;
+        MarkdownLinkCallback*   linkCallback = NULL;
+        MarkdownImageCallback*  imageCallback = NULL;
+        const char*             linkIcon = "";
+        MarkdownHeadingFormat   headingFormats[ NUMHEADINGS ] = { { NULL, true }, { NULL, true }, { NULL, true } };
+        void*                   userData = NULL;
     };
 
     // External interface
@@ -318,7 +331,7 @@ namespace ImGui
         }
         else if( line_.isHeading )          // render heading
         {
-            MarkdownConfig::HeadingFormat fmt;
+            MarkdownHeadingFormat fmt;
             if( line_.headingCount > mdConfig_.NUMHEADINGS )
             {
                 fmt = mdConfig_.headingFormats[ mdConfig_.NUMHEADINGS - 1 ];
@@ -461,14 +474,17 @@ namespace ImGui
                     line.lineEnd = link.text.start - ( link.isImage ? 2 : 1 );
                     RenderLine( markdown_, line, textRegion, mdConfig_ );
                     line.leadSpaceCount = 0;
+                    link.url.stop = i;
                     line.isUnorderedListStart = false;    // the following text shouldn't have bullets
-
+                    ImGui::SameLine( 0.0f, 0.0f );
                     if( link.isImage )   // it's an image, render it.
                     {
                         bool drawnImage = false;
+                        bool useLinkCallback = false;
                         if( mdConfig_.imageCallback )
                         {
-                            MarkdownImageData imageData = mdConfig_.imageCallback({ markdown_ + link.url.start, link.url.size(), mdConfig_.userData });
+                            MarkdownImageData imageData = mdConfig_.imageCallback({ markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData });
+                            useLinkCallback = imageData.useLinkCallback;
                             if( imageData.isValid )
                             {
                                 ImGui::Image( imageData.user_texture_id, imageData.size, imageData.uv0, imageData.uv1, imageData.tint_col, imageData.border_col );
@@ -477,32 +493,29 @@ namespace ImGui
                         }
                         if( !drawnImage )
                         {
-                            link.url.stop = i;
                             ImGui::Text( "( Image %.*s not loaded )", link.url.size(), markdown_ + link.url.start );
                         }
                         if( ImGui::IsItemHovered() )
                         {
+                            if( ImGui::IsMouseClicked( 0 ) && mdConfig_.linkCallback && useLinkCallback )
+                            {
+                                mdConfig_.linkCallback( { markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, true } );
+                            }
                             ImGui::SetTooltip( "%.*s", link.text.size(), markdown_ + link.text.start );
                         }
                     }
                     else                 // it's a link, render it.
                     {
-                        link.url.stop = i;
-                        ImGui::SameLine( 0.0f, 0.0f );
                         ImGui::PushStyleColor( ImGuiCol_Text, style.Colors[ ImGuiCol_ButtonHovered ] );
                         ImGui::PushTextWrapPos( -1.0f );
-                        const char* text = markdown_ + link.text.start;
-                        ImGui::TextUnformatted( text, text + link.text.size() );
+                        ImGui::TextUnformatted( markdown_ + link.text.start, markdown_ + link.text.start + link.text.size() );
                         ImGui::PopTextWrapPos();
                         ImGui::PopStyleColor();
                         if( ImGui::IsItemHovered() )
                         {
-                            if( ImGui::IsMouseClicked( 0 ))
+                            if( ImGui::IsMouseClicked( 0 ) && mdConfig_.linkCallback )
                             {
-                                if( mdConfig_.linkCallback )
-                                {
-                                    mdConfig_.linkCallback({ markdown_ + link.url.start, link.url.size(), mdConfig_.userData });
-                                }
+                                mdConfig_.linkCallback({ markdown_ + link.text.start, link.text.size(), markdown_ + link.url.start, link.url.size(), mdConfig_.userData, false });
                             }
                             ImGui::UnderLine( style.Colors[ ImGuiCol_ButtonHovered ] );
                             ImGui::SetTooltip( "%s Open in browser\n%.*s", mdConfig_.linkIcon, link.url.size(), markdown_ + link.url.start );
@@ -511,8 +524,8 @@ namespace ImGui
                         {
                             ImGui::UnderLine( style.Colors[ ImGuiCol_Button ] );
                         }
-                        ImGui::SameLine( 0.0f, 0.0f );
                     }
+                    ImGui::SameLine( 0.0f, 0.0f );
                     // reset the link by reinitializing it
                     link = Link();
                     line.lastRenderPosition = i;

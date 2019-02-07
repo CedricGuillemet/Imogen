@@ -340,6 +340,11 @@ int Evaluation::LoadSVG(const char *filename, Image *image, float dpi)
 
 int Evaluation::ReadImage(const char *filename, Image *image)
 {
+    FILE * fp = fopen(filename, "rb");
+    if (!fp)
+        return EVAL_ERR;
+    fclose(fp);
+
     int components;
     unsigned char *bits = stbi_load(filename, &image->mWidth, &image->mHeight, &components, 0);
     if (!bits)

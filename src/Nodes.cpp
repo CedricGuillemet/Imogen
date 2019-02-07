@@ -39,32 +39,50 @@
 int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
 
-static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x)*(a.x - b.x) + (a.y - b.y)*(a.y - b.y)); }
+static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); }
 
 void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
 {
     std::string url(data_.link, data_.linkLength);
-    static const std::string graph = "Graph:";
+    static const std::string graph = "thumbnail:";
     if (url.substr(0, graph.size()) == graph)
     {
         std::string materialName = url.substr(graph.size());
         SetExistingMaterialActive(materialName.c_str());
+        return;
     }
     OpenShellURL(url);
 }
 
 inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData data_)
 {
-    std::string link = data_.link;
+    std::string url(data_.link, data_.linkLength);
     static const std::string thumbnail = "thumbnail:";
-    if (link.substr(0, thumbnail.size()) == thumbnail)
+    if (url.substr(0, thumbnail.size()) == thumbnail)
     {
-        std::string material = link.substr(thumbnail.size());
-        material = material.substr(0, material.find(')'));
+        std::string material = url.substr(thumbnail.size());
         Material* libraryMaterial = library.GetByName(material.c_str());
         if (libraryMaterial)
         {
-            return { true, (ImTextureID)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100) };
+            DecodeThumbnailAsync(libraryMaterial);
+            return { true, true, (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100) };
+        }
+    }
+    else
+    {
+        int percent = 100;
+        size_t sz = url.find('@');
+        if (sz != std::string::npos)
+        {
+            sscanf(url.c_str() + sz + 1, "%d%%", &percent);
+            url = url.substr(0, sz);
+        }
+        unsigned int textureId = gEvaluation.GetTexture(url);
+        if (textureId)
+        {
+            int w, h;
+            GetTextureDimension(textureId, &w, &h);
+            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(w*percent/100, h*percent/100) };
         }
     }
 
@@ -451,7 +469,7 @@ ImVec2 NodeGraphGetNodePos(size_t index)
 
 void NodeGraphUpdateScrolling()
 {
-    if (nodes.empty())
+    if (nodes.empty() && rugs.empty())
         return;
 
     scrolling = nodes[0].Pos;

@@ -583,3 +583,4 @@ void DiscoverFiles(const char *extension, const char *directory, std::vector<std
 
 inline float sign(float v) { return (v >= 0.f) ? 1.f : -1.f; }
 void OpenShellURL(const std::string &url);
+void GetTextureDimension(unsigned int textureId, int *w, int *h);

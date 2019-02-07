@@ -654,6 +654,16 @@ struct DecodeImageTaskSet : enki::ITaskSet
     std::vector<uint8_t> *mSrc;
 };
 
+void DecodeThumbnailAsync(Material * material)
+{
+    static unsigned int defaultTextureId = gEvaluation.GetTexture("Stock/thumbnail-icon.png");
+    if (!material->mThumbnailTextureId)
+    {
+        material->mThumbnailTextureId = defaultTextureId;
+        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material-library.mMaterials.data(), material->mRuntimeUniqueId)));
+    }
+}
+
 template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, Evaluation& evaluation, int viewMode)
 {
     bool ret = false;
@@ -665,7 +675,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
     std::vector<SortedResource<T, Ty>> sortedResources;
     SortedResource<T, Ty>::ComputeSortedResources(res, sortedResources);
-    unsigned int defaultTextureId = evaluation.GetTexture("Stock/thumbnail-icon.png");
+    
     float regionWidth = ImGui::GetWindowContentRegionWidth();
     float currentStep = 0.f;
     float stepSize = (viewMode == 2) ? 64.f : 128.f;
@@ -712,11 +722,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
         ImGui::BeginGroup();
 
         T& resource = res[indexInRes];
-        if (!resource.mThumbnailTextureId)
-        {
-            resource.mThumbnailTextureId = defaultTextureId;
-            g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&resource.mThumbnail, std::make_pair(indexInRes,resource.mRuntimeUniqueId)));
-        }
+        DecodeThumbnailAsync(&resource);
         bool clicked = false;
         switch (viewMode)
         {

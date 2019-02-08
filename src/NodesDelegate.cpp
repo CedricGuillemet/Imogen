@@ -324,10 +324,16 @@ bool TileNodeEditGraphDelegate::EditSingleParameter(unsigned int nodeIndex, unsi
     if (ImGui::Checkbox("", &checked))
     {
         if (hasPin)
+        {
+            URDel<uint32_t> undoRedoDelPin(&(*pinIter)-mPinnedParameters.data(), []() {return &gNodeDelegate.mPinnedParameters;});
             mPinnedParameters.erase(pinIter);
+        }
         else
+        {
+            URAdd<uint32_t> undoRedoAddNode(int(mPinnedParameters.size()), []() {return &gNodeDelegate.mPinnedParameters;});
             mPinnedParameters.push_back(parameterPair);
-        std::sort(mPinnedParameters.begin(), mPinnedParameters.end());
+        }
+        //std::sort(mPinnedParameters.begin(), mPinnedParameters.end());
     }
     ImGui::SameLine();
     switch (param.mType)
@@ -1000,8 +1006,11 @@ void TileNodeEditGraphDelegate::RemovePins(size_t nodeIndex)
     for (; iter != mPinnedParameters.end();)
     {
         uint32_t pin = *iter;
-        if ( ((pin >> 16) & 0xFFFF) == nodeIndex)
+        if (((pin >> 16) & 0xFFFF) == nodeIndex)
+        {
+            URDel<uint32_t> undoRedoDelPin(&(*iter) - mPinnedParameters.data(), []() {return &gNodeDelegate.mPinnedParameters; });
             iter = mPinnedParameters.erase(iter);
+        }
         else
             ++iter;
     }

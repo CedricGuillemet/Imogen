@@ -65,7 +65,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
         if (libraryMaterial)
         {
             DecodeThumbnailAsync(libraryMaterial);
-            return { true, true, (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100) };
+            return { true, true, (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
         }
     }
     else
@@ -82,7 +82,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
         {
             int w, h;
             GetTextureDimension(textureId, &w, &h);
-            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(w*percent/100, h*percent/100) };
+            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(w*percent/100, h*percent/100), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
         }
     }
 

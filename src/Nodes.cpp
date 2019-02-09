@@ -942,14 +942,15 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
         {
             ImVec2 p = offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
             float distance = Distance(p, io.MousePos);
-            bool overCon = (nodeOperation == NO_None || nodeOperation == NO_EditingLink ) && (distance < NODE_SLOT_RADIUS * 2.f) && (distance < closestDistance);
+            bool overCon = (nodeOperation == NO_None || nodeOperation == NO_EditingLink) && (distance < NODE_SLOT_RADIUS * 2.f) && (distance < closestDistance);
 
             const char *conText = con[slot_idx].mName.c_str();
             ImVec2 textSize;
             textSize = ImGui::CalcTextSize(conText);
             ImVec2 textPos = p + ImVec2(-NODE_SLOT_RADIUS * (i ? -1.f : 1.f)*(overCon ? 3.f : 2.f) - (i ? 0 : textSize.x), -textSize.y / 2);
 
-            if (overCon)
+            ImRect nodeRect(offset + node->Pos, offset + node->Pos + node->Size);
+            if (overCon || (nodeRect.Contains(io.MousePos) && slot_idx == 0 && i == 0 && nodeOperation == NO_EditingLink))
             {
                 closestDistance = distance;
                 closestConn = slot_idx;

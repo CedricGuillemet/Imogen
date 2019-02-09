@@ -777,9 +777,10 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         */
         std::array<ImVec2, 6> pts;
         int ptCount = 0;
-
         ImVec2 dif = p2 - p1;
+
         ImVec2 p1a, p1b;
+        float overdrawFactor = 1.f;
         const float limitx = 12.f * factor;
         if (dif.x < limitx)
         {
@@ -792,6 +793,7 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
 
             pts = { p1, p10, p1a, p1b, p20, p2 };
             ptCount = 6;
+            overdrawFactor = 2.f;
         }
         else
         {
@@ -827,12 +829,19 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
             pts = { p1, p1a, p1b, p2 };
             ptCount = 4;
         }
-
         for (int pass = 0; pass < 2; pass++)
         {
             for (int i = 0; i < ptCount - 1; i++)
             {
-                drawList->AddLine(pts[i], pts[i + 1], pass?col:0xFF000000, (pass?5.f:7.5f) * factor);
+                // make sure each segment overdraw a bit so you can't see cracks in joints
+                ImVec2 p1 = pts[i];
+                ImVec2 p2 = pts[i + 1];
+                ImVec2 dif = p2 - p1;
+                float diflen = sqrtf(dif.x*dif.x + dif.y*dif.y);
+                ImVec2 difNorm = dif / ImVec2(diflen, diflen);
+                p1 -= difNorm * overdrawFactor;
+                p2 += difNorm * overdrawFactor;
+                drawList->AddLine(p1, p2, pass?col:0xFF000000, (pass?5.f:7.5f) * factor);
             }
         }
     }

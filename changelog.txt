@@ -1,6 +1,17 @@
 -------------------------------------------------------------------------------
 Imogen 0.9 - codename Hydra Ichi
 
+New:
+- GLSL path tracer (experimental)
+- Edge detection node
+- Improved blur node
+- New connection rendering code
+- Markdown for rugs
+- Default material open at startup
+- JSON node definition
+- Pinned parameters
+- New Voronoi node
+
 -------------------------------------------------------------------------------
 Imogen 0.8 - codename Unicorn Jabu
 

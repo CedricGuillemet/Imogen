@@ -5,8 +5,9 @@ WIP of a GPU Texture generator using dear imgui for UI. Not production ready and
 Basically, add GPU and CPU nodes in a graph to manipulate and generate images. Nodes are hardcoded now but a discovery system is planned.
 Currently nodes can be written in GLSL or C or Python.
 
-![Image of Imogen 0.4](https://i.imgur.com/pmliWGl.png)
-![Image of Imogen 0.4](https://i.imgur.com/jNWsXD6.png)
+
+![Image of Imogen 0.9](https://i.imgur.com/sQfO5Br.png)
+![Image of Imogen 0.9](https://i.imgur.com/jQbx2Yu.png)
 
 Use CMake and VisualStudio to build it. Only Windows system supported for now.
 

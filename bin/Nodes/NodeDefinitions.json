@@ -956,6 +956,31 @@
 			"name": "Square Width",
 			"type": "Float"
 		}]
+	}, {
+		"name": "Kaleidoscope",
+		"category": 0,
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Center",
+			"type": "Float2"
+		},{
+			"name": "Start Angle",
+			"type": "Angle"
+		},{
+			"name": "Splits",
+			"type": "Int"
+		},{
+			"name": "Symetry",
+			"type": "Int"
+		}]
 	}
 	]
 }

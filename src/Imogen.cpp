@@ -839,12 +839,14 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Eval
         {
             MaterialNode& node = material.mMaterialNodes[i];
             NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
+            TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
             if (!node.mImage.empty())
             {
-                TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
                 gCurrentContext->StageSetProcessing(i, true);
                 g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
             }
+            lastNode.mInputSamplers = node.mInputSamplers;
+            gEvaluation.SetEvaluationSampler(i, node.mInputSamplers);
         }
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {

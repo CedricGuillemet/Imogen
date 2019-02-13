@@ -207,12 +207,17 @@ void HandleZoomScroll(ImRect regionRect)
         if (io.MouseWheel > FLT_EPSILON)
             factorTarget *= 1.1f;
     }
+    
     ImVec2 mouseWPosPre = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
     factorTarget = ImClamp(factorTarget, 0.2f, 3.f);
     factor = ImLerp(factor, factorTarget, 0.15f);
     ImVec2 mouseWPosPost = (io.MousePos - ImGui::GetCursorScreenPos()) / factor;
-    scrolling += mouseWPosPost - mouseWPosPre;
+    if (ImGui::IsMousePosValid())
+    {
+        scrolling += mouseWPosPost - mouseWPosPre;
+    }
 }
+
 void NodeGraphClear()
 {
     nodes.clear();

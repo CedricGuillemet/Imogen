@@ -1241,6 +1241,10 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
                 {
                     metaParam.mRangeMinX = metaParam.mRangeMinY = metaParam.mRangeMaxX = metaParam.mRangeMaxY = 0.f;
                 }
+                if (param.HasMember("loop"))
+                    metaParam.mbLoop = param["loop"].GetBool();
+                else
+                    metaParam.mbLoop = true;
                 if (param.HasMember("relative"))
                     metaParam.mbRelative = param["relative"].GetBool();
                 else

@@ -11,7 +11,7 @@ vec4 Transform()
 	rs -= 0.5;
     vec2 ro = vec2(rs.x*cos(rotate) - rs.y * sin(rotate), rs.x*sin(rotate) + rs.y * cos(rotate));
 	ro += 0.5;
-    vec2 nuv = ro;//fract(ro);
+    vec2 nuv = ro;
 	vec4 tex = texture(Sampler0, nuv);
 	return tex;
 }

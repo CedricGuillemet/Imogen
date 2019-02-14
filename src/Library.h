@@ -445,6 +445,7 @@ struct MetaParameter
     float mRangeMinY, mRangeMaxY;
     bool mbRelative;
     bool mbQuadSelect;
+    bool mbLoop;
     std::string mEnumList;
 
     bool operator == (const MetaParameter& other) const

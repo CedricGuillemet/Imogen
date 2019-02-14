@@ -787,8 +787,9 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
             {
                 if (param.mbRelative)
                 {
-                    paramFlt[0] += ImLerp(param.mRangeMinX, param.mRangeMaxX, dx);
-                    paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) + nmin(param.mRangeMinX, param.mRangeMaxX);
+                    paramFlt[0] += (param.mRangeMaxX-param.mRangeMinX) * dx;
+                    if (param.mbLoop)
+                        paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) + nmin(param.mRangeMinX, param.mRangeMaxX);
                 }
                 else
                 {
@@ -799,8 +800,9 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
             {
                 if (param.mbRelative)
                 {
-                    paramFlt[1] += ImLerp(param.mRangeMinY, param.mRangeMaxY, dy);
-                    paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) + nmin(param.mRangeMinY, param.mRangeMaxY);
+                    paramFlt[1] += (param.mRangeMaxY - param.mRangeMinY) * dy;
+                    if (param.mbLoop)
+                        paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) + nmin(param.mRangeMinY, param.mRangeMaxY);
                 }
                 else
                 {

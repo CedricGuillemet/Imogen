@@ -35,9 +35,10 @@
 			"type": "Float2",
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
-			"rangeMinY": 1.0,
-			"rangeMaxY": 0.0,
-			"relative": true
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false
 		}, {
 			"name": "Scale",
 			"type": "Float2"

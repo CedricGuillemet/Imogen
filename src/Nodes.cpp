@@ -595,10 +595,8 @@ static void ContextMenu(ImVec2 offset, int nodeHovered)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
     if (ImGui::BeginPopup("context_menu"))
     {
-
-
         Node* node = nodeHovered != -1 ? &nodes[nodeHovered] : NULL;
-        ImVec2 scene_pos = ImGui::GetMousePosOnOpeningCurrentPopup() - offset;
+        ImVec2 scene_pos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset)/factor;
         if (node)
         {
             ImGui::Text(metaNodes[node->mType].mName.c_str());

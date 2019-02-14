@@ -82,7 +82,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
         {
             int w, h;
             GetTextureDimension(textureId, &w, &h);
-            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(w*percent/100, h*percent/100), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(float(w*percent/100), float(h*percent/100)), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
         }
     }
 
@@ -1240,6 +1240,10 @@ void NodeGraphSelectNode(int selectedNodeIndex)
 
 void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
 {
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);// ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.f);
+
     const ImVec2 windowPos = ImGui::GetCursorScreenPos();
     const ImVec2 canvasSize = ImGui::GetWindowSize();
 
@@ -1382,4 +1386,5 @@ nodeGraphExit:;
     ComputeDelegateSelection();
     
     ImGui::EndGroup();
+    ImGui::PopStyleVar(3);
 }

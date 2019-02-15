@@ -16,7 +16,8 @@ vec4 GetTile0(vec2 uv)
 
 vec2 GetOffset(vec2 uv)
 {
-	float o = float(int(floor(uv.y))&1) * TileParam.offset0.x;
+	float quincunx = float(int(floor(uv.y))&1);
+	float o = mix(TileParam.offset0.x, TileParam.offset1.x, quincunx);
 	return vec2(o,0.);
 }
 

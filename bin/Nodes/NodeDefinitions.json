@@ -982,6 +982,23 @@
 			"name": "Symetry",
 			"type": "Int"
 		}]
+	}, {
+		"name": "Palette",
+		"category": 0,
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Palette",
+			"type": "Enum",
+			"enum": "CGA 0|CGA 1|CGA 2|CGA 3|CGA 4|CGA 5|EGA|Gameboy (mono)|PICO-8|C64|"
+		}]
 	}
 	]
 }

@@ -1374,8 +1374,10 @@ void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
     ContextMenu(offset, contextMenuHoverNode);
     
     // Scrolling
-    if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f) && ImGui::IsWindowFocused())
+    if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f))//&& ImGui::IsWindowFocused())
+    {
         scrolling += io.MouseDelta / factor;
+    }
 
 nodeGraphExit:;
     ImGui::PopItemWidth();

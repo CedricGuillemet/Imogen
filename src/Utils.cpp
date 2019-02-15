@@ -526,3 +526,27 @@ void GetTextureDimension(unsigned int textureId, int *w, int *h)
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, w);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, h);
 }
+
+std::string GetGroup(const std::string &name)
+{
+    for (int i = int(name.length()) - 1; i >= 0; i--)
+    {
+        if (name[i] == '/')
+        {
+            return name.substr(0, i);
+        }
+    }
+    return "";
+}
+
+std::string GetName(const std::string &name)
+{
+    for (int i = int(name.length()) - 1; i >= 0; i--)
+    {
+        if (name[i] == '/')
+        {
+            return name.substr(i + 1);
+        }
+    }
+    return name;
+}

@@ -230,3 +230,4 @@ FFMPEGCodec::Decoder* Evaluation::FindDecoder(const std::string& filename)
     decoder->Open(filename);
     return decoder;
 }
+

@@ -45,6 +45,7 @@
 #include "cmft/clcontext.h"
 #include "cmft/clcontext_internal.h"
 #include "Loader.h"
+#include "UI.h"
 
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
@@ -105,12 +106,15 @@ Evaluation gEvaluation;
 Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
-void InitMDFonts();
+UndoRedoHandler gUndoRedoHandler;
+
 
 int main(int, char**)
 {
     TagTime("App start");
+    // log
     GLSLPathTracer::Log = Log;
+    AddLogOutput(ImConsoleOutput);
     g_TS.Initialize();
     TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
@@ -211,17 +215,9 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
+    ImGuiIO& io = ImGui::GetIO();
 
-
-
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.Fonts->Clear();
-    // Base font
-    float fontSize_ = 16.f; 
-    io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-SemiBold.ttf", fontSize_);
-    InitMDFonts();
-
-
+    InitFonts();
     
     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 

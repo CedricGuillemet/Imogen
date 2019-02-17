@@ -285,7 +285,6 @@ struct Evaluation
     static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
     static void SetProcessing(int target, int processing);
     static int AllocateComputeBuffer(int target, int elementCount, int elementSize);
-    static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd);
     static int LoadSVG(const char *filename, Image *image, float dpi);
     static int LoadScene(const char *filename, void **scene);
     static int SetEvaluationScene(int target, void *scene);
@@ -294,6 +293,9 @@ struct Evaluation
     static int InitRenderer(int target, int mode, void *scene);
     static int UpdateRenderer(int target);
 
+    static void DrawUICubemap(size_t nodeIndex);
+    static void DrawUISingle(size_t nodeIndex);
+    static void DrawUIProgress(size_t nodeIndex);
     // synchronous texture cache
     // use for simple textures(stock) or to replace with a more efficient one
     unsigned int GetTexture(const std::string& filename);

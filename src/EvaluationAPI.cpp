@@ -812,102 +812,6 @@ unsigned int Evaluation::GetTexture(const std::string& filename)
     return textureId;
 }
 
-void Evaluation::NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
-{
-    // Backup GL state
-    GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
-    glActiveTexture(GL_TEXTURE0);
-    GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-#ifdef GL_SAMPLER_BINDING
-    GLint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
-#endif
-    GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-#ifdef GL_POLYGON_MODE
-    GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
-#endif
-    GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
-    GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
-    GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
-    GLenum last_blend_dst_rgb; glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
-    GLenum last_blend_src_alpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
-    GLenum last_blend_dst_alpha; glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
-    GLenum last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
-    GLenum last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
-    GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
-    GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
-    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
-    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
-    ImGuiIO& io = ImGui::GetIO();
-
-    if (!mCallbackRects.empty())
-    {
-        const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
-
-        ImRect cbRect = cb.mOrginalRect;
-        float h = cbRect.Max.y - cbRect.Min.y;
-        float w = cbRect.Max.x - cbRect.Min.x;
-        glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
-
-        cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
-        ImRect clippedRect = cb.mClippedRect;
-        glScissor(int(clippedRect.Min.x), int(io.DisplaySize.y - clippedRect.Max.y), int(clippedRect.Max.x - clippedRect.Min.x), int(clippedRect.Max.y - clippedRect.Min.y));
-        glEnable(GL_SCISSOR_TEST);
-
-        switch (cb.mType)
-        {
-        case CBUI_Node:
-        {
-            EvaluationInfo evaluationInfo;
-            evaluationInfo.forcedDirty = 1;
-            evaluationInfo.uiPass = 1;
-            gCurrentContext->RunSingle(cb.mNodeIndex, evaluationInfo);
-        }
-        break;
-        case CBUI_Progress:
-        {
-            glUseProgram(gEvaluation.mProgressShader);
-            glUniform1f(glGetUniformLocation(gEvaluation.mProgressShader, "time"), float(double(SDL_GetTicks())/1000.0));
-            gFSQuad.Render();
-        }
-        break;
-        case CBUI_Cubemap:
-        {
-            glUseProgram(gEvaluation.mDisplayCubemapShader);
-            int tgt = glGetUniformLocation(gEvaluation.mDisplayCubemapShader, "samplerCubemap");
-            glUniform1i(tgt, 0);
-            glActiveTexture(GL_TEXTURE0);
-
-            glBindTexture(GL_TEXTURE_CUBE_MAP, gCurrentContext->GetEvaluationTexture(cb.mNodeIndex));
-            gFSQuad.Render();
-        }
-        break;
-        }
-    }
-    // Restore modified GL state
-    glUseProgram(last_program);
-    glBindTexture(GL_TEXTURE_2D, last_texture);
-#ifdef GL_SAMPLER_BINDING
-    glBindSampler(0, last_sampler);
-#endif
-    glActiveTexture(last_active_texture);
-    glBindVertexArray(last_vertex_array);
-    glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-    glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
-    glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
-    if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
-    if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
-    if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
-    if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
-#ifdef GL_POLYGON_MODE
-    glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-#endif
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
-    glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 {
     if (target < 0 || target >= gEvaluation.mStages.size())
@@ -1074,4 +978,30 @@ int Evaluation::UpdateRenderer(int target)
         return EVAL_OK;
     }
     return EVAL_DIRTY;
+}
+
+void Evaluation::DrawUIProgress(size_t nodeIndex)
+{
+    glUseProgram(gEvaluation.mProgressShader);
+    glUniform1f(glGetUniformLocation(gEvaluation.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
+    gFSQuad.Render();
+}
+
+void Evaluation::DrawUISingle(size_t nodeIndex)
+{
+    EvaluationInfo evaluationInfo;
+    evaluationInfo.forcedDirty = 1;
+    evaluationInfo.uiPass = 1;
+    gCurrentContext->RunSingle(nodeIndex, evaluationInfo);
+}
+
+void Evaluation::DrawUICubemap(size_t nodeIndex)
+{
+    glUseProgram(gEvaluation.mDisplayCubemapShader);
+    int tgt = glGetUniformLocation(gEvaluation.mDisplayCubemapShader, "samplerCubemap");
+    glUniform1i(tgt, 0);
+    glActiveTexture(GL_TEXTURE0);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, gCurrentContext->GetEvaluationTexture(nodeIndex));
+    gFSQuad.Render();
 }

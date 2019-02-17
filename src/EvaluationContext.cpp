@@ -759,3 +759,4 @@ void EvaluationContext::StageSetProgress(size_t target, float progress)
     mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
     mProgress[target] = progress;
 }
+

@@ -26,6 +26,7 @@
 
 #include <string>
 #include <float.h>
+#include <vector>
 
 struct Image_t;
 typedef struct Image_t Image;
@@ -56,6 +57,10 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 unsigned int LoadShader(const std::string &shaderString, const char *fileName);
 unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const char *fileName);
+
+
+typedef void(*LogOutput)(const char *szText);
+void AddLogOutput(LogOutput output);
 int Log(const char *szFormat, ...);
 template<typename T> T Lerp(T a, T b, float t) { return T(a + (b - a) * t); }
 
@@ -587,3 +592,4 @@ void GetTextureDimension(unsigned int textureId, int *w, int *h);
 
 std::string GetName(const std::string &name);
 std::string GetGroup(const std::string &name);
+

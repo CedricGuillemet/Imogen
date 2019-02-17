@@ -235,7 +235,12 @@ unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const 
     return programHandle;
 }
 
-void DebugLogText(const char *szText);
+
+std::vector<LogOutput> outputs;
+void AddLogOutput(LogOutput output)
+{
+    outputs.push_back(output);
+}
 
 int Log(const char *szFormat, ...)
 {
@@ -251,12 +256,11 @@ int Log(const char *szFormat, ...)
         fprintf(fp, buf);
         fflush(fp);
     }
-    DebugLogText(buf);
+    for (auto output : outputs)
+        output(buf);
     va_end(ptr_arg);
     return 0;
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //matrix will receive the calculated perspective matrix.

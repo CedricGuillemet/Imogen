@@ -35,8 +35,8 @@
 #include "NodesDelegate.h"
 #include <array>
 #include "imgui_markdown/imgui_markdown.h"
+#include "UI.h"
 
-int Log(const char *szFormat, ...);
 void AddExtractedView(size_t nodeIndex);
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); }
@@ -82,25 +82,14 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
         {
             int w, h;
             GetTextureDimension(textureId, &w, &h);
-            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(float(w*percent/100), float(h*percent/100)), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(float(w*percent / 100), float(h*percent / 100)), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
         }
     }
 
     return { false };
 }
 
-static ImGui::MarkdownConfig mdConfig{ LinkCallback, ImageCallback, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
-void InitMDFonts()
-{
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    float fontSize_ = 16.f;
-    // Bold headings H2 and H3
-    mdConfig.headingFormats[1].font = io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-ExtraBold.ttf", fontSize_);
-    mdConfig.headingFormats[2].font = mdConfig.headingFormats[1].font;
-    // bold heading H1
-    float fontSizeH1 = fontSize_ * 1.2f;
-    mdConfig.headingFormats[0].font = io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-ExtraBold.ttf", fontSizeH1);
-}
+ImGui::MarkdownConfig mdConfig = { LinkCallback, ImageCallback, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
 
 Node::Node(int type, const ImVec2& pos)
 {
@@ -1168,11 +1157,13 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
 
     if (gNodeDelegate.NodeIsProcesing(nodeIndex) == 1)
     {
-        drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), nodeIndex)));
+        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), Evaluation::DrawUIProgress, nodeIndex);
+        //drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), nodeIndex)));
     }
     else if (gNodeDelegate.NodeIsCubemap(nodeIndex))
     {
-        drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), nodeIndex)));
+        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), Evaluation::DrawUICubemap, nodeIndex);
+        //drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), nodeIndex)));
     }
     else if (nodeIsCompute)
     {

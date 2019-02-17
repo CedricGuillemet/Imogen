@@ -88,6 +88,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
     Camera *GetCameraParameter(size_t index);
+    int GetIntParameter(size_t index, const char *parameterName, int defaultValue);
     float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
     void PinnedEdit();
     struct ImogenNode

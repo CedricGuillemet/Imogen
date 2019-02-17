@@ -190,7 +190,7 @@ bool TileNodeEditGraphDelegate::EditSingleParameter(unsigned int nodeIndex, unsi
     {
         if (hasPin)
         {
-            URDel<uint32_t> undoRedoDelPin(&(*pinIter)-mPinnedParameters.data(), []() {return &gNodeDelegate.mPinnedParameters;});
+            URDel<uint32_t> undoRedoDelPin(int(&(*pinIter)-mPinnedParameters.data()), []() {return &gNodeDelegate.mPinnedParameters;});
             mPinnedParameters.erase(pinIter);
         }
         else
@@ -875,7 +875,7 @@ void TileNodeEditGraphDelegate::RemovePins(size_t nodeIndex)
         uint32_t pin = *iter;
         if (((pin >> 16) & 0xFFFF) == nodeIndex)
         {
-            URDel<uint32_t> undoRedoDelPin(&(*iter) - mPinnedParameters.data(), []() {return &gNodeDelegate.mPinnedParameters; });
+            URDel<uint32_t> undoRedoDelPin(int(&(*iter) - mPinnedParameters.data()), []() {return &gNodeDelegate.mPinnedParameters; });
             iter = mPinnedParameters.erase(iter);
         }
         else
@@ -904,6 +904,31 @@ Camera *TileNodeEditGraphDelegate::GetCameraParameter(size_t index)
     }
 
     return NULL;
+}
+// TODO : create parameter struct with templated accessors
+int TileNodeEditGraphDelegate::GetIntParameter(size_t index, const char *parameterName, int defaultValue)
+{
+    if (index >= mNodes.size())
+        return NULL;
+    ImogenNode& node = mNodes[index];
+    const MetaNode* metaNodes = gMetaNodes.data();
+    const MetaNode& currentMeta = metaNodes[node.mType];
+    const size_t paramsSize = ComputeNodeParametersSize(node.mType);
+    node.mParameters.resize(paramsSize);
+    unsigned char *paramBuffer = node.mParameters.data();
+    for (const MetaParameter& param : currentMeta.mParams)
+    {
+        if (param.mType == Con_Int)
+        {
+            if (!strcmp(param.mName.c_str(), parameterName))
+            {
+                int *value = (int*)paramBuffer;
+                return *value;
+            }
+        }
+        paramBuffer += GetParameterTypeSize(param.mType);
+    }
+    return defaultValue;
 }
 
 float TileNodeEditGraphDelegate::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)

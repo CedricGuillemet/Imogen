@@ -720,7 +720,7 @@ void SetExistingMaterialActive(const char * materialName)
     if (libraryMaterial)
     {
         auto materialIndex = libraryMaterial - library.mMaterials.data();
-        SetExistingMaterialActive(materialIndex);
+        SetExistingMaterialActive(int(materialIndex));
     }
 }
 

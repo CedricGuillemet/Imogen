@@ -999,6 +999,23 @@
 			"type": "Enum",
 			"enum": "CGA 0|CGA 1|CGA 2|CGA 3|CGA 4|CGA 5|EGA|Gameboy (mono)|PICO-8|C64|"
 		}]
+	},
+	{
+		"name": "ReactionDiffusion",
+		"category": 1,
+		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "passCount",
+			"type": "Int"
+		}]
 	}
 	]
 }

@@ -137,6 +137,21 @@ void RenderTarget::Destroy()
     mGLTexID = 0;
 }
 
+void RenderTarget::Clone(const RenderTarget &other)
+{
+    // TODO: clone other type of render target
+    InitBuffer(other.mImage.mWidth, other.mImage.mHeight, other.mDepthBuffer);
+}
+
+void RenderTarget::Swap(RenderTarget &other)
+{
+    ::Swap(mImage, other.mImage);
+    ::Swap(mGLTexID, other.mGLTexID);
+    ::Swap(mGLTexDepth, other.mGLTexDepth);
+    ::Swap(mDepthBuffer, other.mDepthBuffer);
+    ::Swap(mFbo, other.mFbo);
+}
+
 void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 {
     if ((width == mImage.mWidth) && (mImage.mHeight == height) && mImage.mNumFaces == 1 && (!(depthBuffer ^ (mDepthBuffer != 0))))

@@ -83,7 +83,7 @@ protected:
 
     void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 
-    void BindTextures(const EvaluationStage& evaluationStage, unsigned int program);
+    void BindTextures(const EvaluationStage& evaluationStage, unsigned int program, std::shared_ptr<RenderTarget> reusableTarget);
     void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
     

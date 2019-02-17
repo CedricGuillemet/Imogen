@@ -167,7 +167,7 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
     glBindVertexArray(0);
 }
 
-void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, unsigned int program)
+void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, unsigned int program, std::shared_ptr<RenderTarget> reusableTarget)
 {
     const Input& input = evaluationStage.mInput;
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -190,7 +190,16 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
             }
             glUniform1i(parameter, inputIndex);
 
-            auto tgt = mStageTarget[targetIndex];
+            std::shared_ptr<RenderTarget> tgt;
+            if (inputIndex == 0 && reusableTarget)
+            {
+                tgt = reusableTarget;
+            }
+            else
+            {
+                tgt = mStageTarget[targetIndex];
+            }
+
             if (tgt)
             {
                 const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
@@ -284,7 +293,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
 
-    BindTextures(evaluationStage, program);
+    BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
     glEnable(GL_RASTERIZER_DISCARD);
     glBindVertexArray(feedbackVertexArray);
     glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, destinationBuffer->mBuffer, 0, destinationBuffer->mElementCount * destinationBuffer->mElementSize);
@@ -306,18 +315,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     const Input& input = evaluationStage.mInput;
 
     auto tgt = mStageTarget[index];
-    if (!evaluationInfo.uiPass)
-    {
-        if (tgt->mImage.mNumFaces == 6)
-            tgt->BindAsCubeTarget();
-        else
-            tgt->BindAsTarget();
-    }
-    /*if (evaluationStage.mNodeTypename == "TerrainPreview")
-    {
-        DebugBreak();
-    }
-    */
+
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
     const unsigned int program = evaluator.mGLSLProgram;
     const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
@@ -346,70 +344,96 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
-    size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
-    for (size_t face = 0; face < faceCount; face++)
+    int passCount = gNodeDelegate.GetIntParameter(index, "passCount", 1);
+    auto transientTarget = std::make_shared<RenderTarget>(RenderTarget());
+    if (passCount > 1)
     {
-        if (tgt->mImage.mNumFaces == 6)
-            tgt->BindCubeFace(face);
+        // new transient target
+        transientTarget->Clone(*tgt);
+    }
 
-        memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
-        memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-            
-        glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    for (int passNumber = 0;passNumber < passCount; passNumber++)
+    {
+        if (!evaluationInfo.uiPass)
+        {
+            if (tgt->mImage.mNumFaces == 6)
+                tgt->BindAsCubeTarget();
+            else
+                tgt->BindAsTarget();
+        }
+
+        size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
+        for (size_t face = 0; face < faceCount; face++)
+        {
+            if (tgt->mImage.mNumFaces == 6)
+                tgt->BindCubeFace(face);
+
+            memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
+            memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
+            evaluationInfo.passNumber = passNumber;
+
+            glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+            glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
-        BindTextures(evaluationStage, program);
+            BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
 
-        //
+            //
 #if 0
-        if (evaluationStage.mNodeTypename == "FurDisplay")
-        {
-            glClearDepth(1.f);
-            glDepthFunc(GL_LEQUAL);
-            glEnable(GL_DEPTH_TEST);
-            glClear(GL_COLOR_BUFFER_BIT|(evaluationStage.mbDepthBuffer?GL_DEPTH_BUFFER_BIT:0));
-            
-            /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
-            if (sourceBuffer != -1)
+            if (evaluationStage.mNodeTypename == "FurDisplay")
             {
-                const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
-                unsigned int vao;
-                glGenVertexArrays(1, &vao);
-                glBindVertexArray(vao);
+                glClearDepth(1.f);
+                glDepthFunc(GL_LEQUAL);
+                glEnable(GL_DEPTH_TEST);
+                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
 
-                // blade vertices
-                glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
-                glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
-                glEnableVertexAttribArray(0/*SemUV*/);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                // blade instances
-                const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
-                glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
-                for (unsigned int vp = 0; vp < transformElementCount; vp++)
+                /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
+                if (sourceBuffer != -1)
                 {
-                    glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * vp));
-                    glEnableVertexAttribArray(1 + vp);
+                    const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
+                    unsigned int vao;
+                    glGenVertexArrays(1, &vao);
+                    glBindVertexArray(vao);
+
+                    // blade vertices
+                    glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
+                    glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
+                    glEnableVertexAttribArray(0/*SemUV*/);
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                    // blade instances
+                    const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
+                    glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
+                    for (unsigned int vp = 0; vp < transformElementCount; vp++)
+                    {
+                        glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * vp));
+                        glEnableVertexAttribArray(1 + vp);
+                    }
+
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                    glBindVertexArray(vao);
+                    drawBlades(tess * 2, buffer->mElementCount, transformElementCount);
+                    glBindVertexArray(0);
+                    glDeleteVertexArrays(1, &vao);
                 }
-
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                glBindVertexArray(vao);
-                drawBlades(tess * 2, buffer->mElementCount, transformElementCount);
-                glBindVertexArray(0);
-                glDeleteVertexArrays(1, &vao);
             }
-        }
-        else
+            else
 #endif
-        {
-            gFSQuad.Render();
-        }
+            {
+                gFSQuad.Render();
+            }
+            // swap target for multipass
+            // set previous target as source
+            if (passCount > 1)
+            {
+                transientTarget->Swap(*tgt);
+            }
+        } // passNumber
     }
     glDisable(GL_BLEND);
 }

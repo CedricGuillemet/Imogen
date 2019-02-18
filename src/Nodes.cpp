@@ -613,7 +613,8 @@ static void ContextMenu(ImVec2 offset, int nodeHovered)
             };
 
             static char inputText[64] = { 0 };
-            ImGui::SetKeyboardFocusHere();
+            if (ImGui::IsWindowAppearing())
+                ImGui::SetKeyboardFocusHere();
             ImGui::InputText("", inputText, sizeof(inputText));
             {
                 if (strlen(inputText))

@@ -441,11 +441,13 @@ void TileNodeEditGraphDelegate::EditNode()
             static const char *wrapModes = { "REPEAT\0CLAMP_TO_EDGE\0CLAMP_TO_BORDER\0MIRRORED_REPEAT" };
             static const char *filterModes = { "LINEAR\0NEAREST" };
             ImGui::PushItemWidth(150);
+            ImGui::PushID(99 + i);
             ImGui::Text("Sampler %d", i);
             samplerDirty |= ImGui::Combo("Wrap U", (int*)&inputSampler.mWrapU, wrapModes);
             samplerDirty |= ImGui::Combo("Wrap V", (int*)&inputSampler.mWrapV, wrapModes);
             samplerDirty |= ImGui::Combo("Filter Min", (int*)&inputSampler.mFilterMin, filterModes);
             samplerDirty |= ImGui::Combo("Filter Mag", (int*)&inputSampler.mFilterMag, filterModes);
+            ImGui::PopID();
             ImGui::PopItemWidth();
         }
         if (samplerDirty)

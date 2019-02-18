@@ -39,7 +39,8 @@ vec4 GetTile(vec2 uv)
 			vec4 multiplier = vec4(1.0);
 			if (EvaluationParam.inputIndices[0].y > -1.)
 			{
-				vec2 uvMul = (floor(vUV * TileParam.scale) + vec2(0.5)) / TileParam.scale;
+				vec2 uvMul = (floor(uv + ofs) + vec2(0.5))/ TileParam.scale - (ofs*vec2(0.5))/ TileParam.scale;
+				//return vec4(uvMul, 0., 1.); // debug!
 				multiplier = texture(Sampler1, uvMul);
 			}
 			c += GetTile0(uv - cell0 + ofs) * vec4(multiplier.xyz, 1.0);

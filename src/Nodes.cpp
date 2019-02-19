@@ -613,7 +613,8 @@ static void ContextMenu(ImVec2 offset, int nodeHovered)
             };
 
             static char inputText[64] = { 0 };
-            ImGui::SetKeyboardFocusHere();
+            if (ImGui::IsWindowAppearing())
+                ImGui::SetKeyboardFocusHere();
             ImGui::InputText("", inputText, sizeof(inputText));
             {
                 if (strlen(inputText))
@@ -772,7 +773,7 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         ImVec2 dif = p2 - p1;
 
         ImVec2 p1a, p1b;
-        float overdrawFactor = 1.f;
+        float overdrawFactor = 1.4f;
         const float limitx = 12.f * factor;
         if (dif.x < limitx)
         {
@@ -785,7 +786,7 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
 
             pts = { p1, p10, p1a, p1b, p20, p2 };
             ptCount = 6;
-            overdrawFactor = 2.f;
+            overdrawFactor = 2.6f;
         }
         else
         {
@@ -831,8 +832,8 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
                 ImVec2 dif = p2 - p1;
                 float diflen = sqrtf(dif.x*dif.x + dif.y*dif.y);
                 ImVec2 difNorm = dif / ImVec2(diflen, diflen);
-                p1 -= difNorm * overdrawFactor;
-                p2 += difNorm * overdrawFactor;
+                p1 -= difNorm * overdrawFactor * factor;
+                p2 += difNorm * overdrawFactor * factor;
                 drawList->AddLine(p1, p2, pass?col:0xFF000000, (pass?5.f:7.5f) * factor);
             }
         }

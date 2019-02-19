@@ -1184,38 +1184,134 @@ MySequence mySequence(gNodeDelegate);
 
 void Imogen::ShowAppMainMenuBar()
 {
-    if (ImGui::BeginMainMenuBar())
+    if (ImGui::BeginPopup("Plugins"))
     {
-        if (ImGui::BeginMenu("Plugins"))
+        if (ImGui::MenuItem("Reload plugins")) {}
+        ImGui::Separator();
+        for (auto& plugin : mRegisteredPlugins)
         {
-            if (ImGui::MenuItem("Reload plugins")) {}
-            ImGui::Separator();
-            for (auto& plugin : mRegisteredPlugins)
+            if (ImGui::MenuItem(plugin.mName.c_str())) 
             {
-                if (ImGui::MenuItem(plugin.mName.c_str())) 
+                try
                 {
-                    try
-                    {
-                        pybind11::exec(plugin.mPythonCommand);
-                    }
-                    catch (pybind11::error_already_set& ex)
-                    {
-                        Log(ex.what());
-                    }
+                    pybind11::exec(plugin.mPythonCommand);
+                }
+                catch (pybind11::error_already_set& ex)
+                {
+                    Log(ex.what());
                 }
             }
-            ImGui::EndMenu();
         }
-        ImGui::EndMainMenuBar();
+        ImGui::Separator();
+        unsigned int imogenLogo = gEvaluation.GetTexture("Stock/ImogenLogo.png");
+        ImGui::Image((ImTextureID)(int64_t)imogenLogo, ImVec2(200,86), ImVec2(0,1), ImVec2(1,0));
+        ImGui::EndPopup();
     }
+}
+
+
+static const ImVec2 deltaHeight = ImVec2(0, 32);
+void Imogen::ShowTitleBar()
+{
+    ImGuiIO& io = ImGui::GetIO();
+    
+    ImVec2 butSize = ImVec2(32, 32);
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, 0.f) + deltaHeight);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);// ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.f);
+    ImGui::PushStyleColor(ImGuiCol_Button, 0);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0x80808080);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
+    ImGui::Begin("TitleBar", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::PushID(149);
+    if (ImGui::Button("", butSize))
+    {
+        ImGui::OpenPopup("Plugins");
+    }
+    ShowAppMainMenuBar();
+    ImRect rcMenu(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    ImGui::PopID();
+    ImGui::SameLine();
+    // imogen info strings
+    ImGui::BeginChildFrame(152, ImVec2(io.DisplaySize.x - butSize.x*4.f - 300, 32.f));
+    ImGui::Text("Imogen 0.10");
+    if (selectedMaterial != -1)
+    {
+        Material& material = library.mMaterials[selectedMaterial];
+        ImGui::Text("%s", material.mName.c_str());
+    }
+    ImGui::EndChildFrame();
+    ImGui::SameLine();
+
+    // exporting frame
+    ImGui::BeginChildFrame(153, ImVec2(300.f, 32));
+    if (selectedMaterial != -1)
+    {
+        Material& material = library.mMaterials[selectedMaterial];
+        ImGui::Text("Exporting %s", material.mName.c_str());
+    }
+    ImGui::ProgressBar(0.7f);
+    ImGui::EndChildFrame();
+    /*
+    ImGui::SameLine();
+    // min/max/close buttons
+    ImGui::PushID(150);
+    if (ImGui::Button("", butSize))
+    {
+        extern SDL_Window* window;
+        SDL_MinimizeWindow(window);
+    }
+    ImRect rcMin(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    ImGui::PopID();
+    ImGui::PushID(151);
+    ImGui::SameLine();
+    if (ImGui::Button("", butSize))
+    {
+        extern SDL_Window* window;
+        SDL_MaximizeWindow(window);
+    }
+    ImRect rcMax(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    ImGui::PopID();
+    ImGui::PushID(152);
+    ImGui::SameLine();
+    if (ImGui::Button("", butSize))
+    {
+        SDL_Event sdlevent;
+        sdlevent.type = SDL_QUIT;
+        SDL_PushEvent(&sdlevent);
+    }
+    ImRect rcQuit(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+    ImGui::PopID();
+    */
+    // custom draw icons
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    uint32_t butCol = 0xFFE0E0E0;
+    drawList->AddRectFilled(rcMenu.Min + ImVec2(8, 8), rcMenu.Min + ImVec2(24, 12), butCol);
+    drawList->AddRectFilled(rcMenu.Min + ImVec2(8, 14), rcMenu.Min + ImVec2(24, 18), butCol);
+    drawList->AddRectFilled(rcMenu.Min + ImVec2(8, 20), rcMenu.Min + ImVec2(24, 24), butCol);
+    /*
+    drawList->AddRectFilled(rcMin.Min + ImVec2(12, 18), rcMin.Max - ImVec2(12, 12), butCol);
+    drawList->AddRectFilled(rcMax.Min + ImVec2(12, 12), rcMax.Max - ImVec2(12, 12), butCol);
+    drawList->AddLine(rcQuit.Min + ImVec2(12, 12), rcQuit.Min + ImVec2(20, 20), butCol, 2.f);
+    drawList->AddLine(rcQuit.Min + ImVec2(12, 20), rcQuit.Min + ImVec2(20, 12), butCol, 2.f);
+    */
+    ImGui::End();
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(5);
+    // done
 }
 
 void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
     ImGuiIO& io = ImGui::GetIO();
-    ShowAppMainMenuBar();
-    ImVec2 rc = ImGui::GetItemRectSize();
-    ImVec2 deltaHeight = ImVec2(0, rc.y);
+
+    ShowTitleBar();
+
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
     

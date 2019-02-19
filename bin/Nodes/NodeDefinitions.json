@@ -1012,7 +1012,14 @@
 			"name": "",
 			"type": "Float4"
 		}],
-		"parameters": [{
+		"parameters": [
+			{
+			"name": "difRate",
+			"type": "Float2"
+		},{
+			"name": "feedKill",
+			"type": "Float2"
+		},{
 			"name": "passCount",
 			"type": "Int"
 		}]

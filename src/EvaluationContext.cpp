@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include <SDL.h>
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include <memory>
 #include "EvaluationContext.h"
@@ -784,3 +785,62 @@ void EvaluationContext::StageSetProgress(size_t target, float progress)
     mProgress[target] = progress;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Builder::Builder()
+    : mbRunning(true)
+{
+    mThread = std::thread([&]() {
+        BuildEntries();
+    });
+}
+
+Builder::~Builder()
+{
+    mbRunning = false;
+    mThread.join();
+}
+
+void Builder::Add(const char* graphName)
+{
+    mMutex.lock();
+    mEntries.push_back({ graphName, 0.f });
+    mMutex.unlock();
+}
+
+bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
+{
+    if (mMutex.try_lock())
+    {
+        buildInfo.clear();
+        for (auto& entry : mEntries)
+        {
+            buildInfo.push_back({ entry.mName, entry.mProgress });
+        }
+        mMutex.unlock();
+        return true;
+    }
+    return false;
+}
+
+void Builder::BuildEntries()
+{
+    extern SDL_GLContext glThreadContext;
+    extern SDL_Window* window;
+    SDL_GL_MakeCurrent(window, glThreadContext);
+
+    while (mbRunning)
+    {
+        if (!mEntries.empty())
+        {
+            Sleep(20);
+            auto& entry = *mEntries.begin();
+            entry.mProgress += 0.01f;
+            if (entry.mProgress >= 1.f)
+            {
+                mEntries.erase(mEntries.begin());
+            }
+        }
+        Sleep(100);
+    }
+}

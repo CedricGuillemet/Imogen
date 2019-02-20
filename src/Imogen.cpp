@@ -1211,7 +1211,7 @@ void Imogen::ShowAppMainMenuBar()
 
 
 static const ImVec2 deltaHeight = ImVec2(0, 32);
-void Imogen::ShowTitleBar()
+void Imogen::ShowTitleBar(Builder *builder)
 {
     ImGuiIO& io = ImGui::GetIO();
     
@@ -1248,15 +1248,43 @@ void Imogen::ShowTitleBar()
     ImGui::EndChildFrame();
     ImGui::SameLine();
 
-    // exporting frame
-    ImGui::BeginChildFrame(153, ImVec2(300.f, 32));
-    if (selectedMaterial != -1)
+    // exporting frame / build
+    unsigned int buildIcon = gEvaluation.GetTexture("Stock/Build.png");
+    if (ImGui::ImageButton((ImTextureID)(int64_t)buildIcon, ImVec2(30,30), ImVec2(0,1), ImVec2(1,0)))
     {
-        Material& material = library.mMaterials[selectedMaterial];
-        ImGui::Text("Exporting %s", material.mName.c_str());
+        if (selectedMaterial != -1)
+        {
+            Material& material = library.mMaterials[selectedMaterial];
+            builder->Add(material.mName.c_str());
+        }
     }
-    ImGui::ProgressBar(0.7f);
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text("Add current graph to the build list");
+        ImGui::EndTooltip();
+    }
+    ImGui::SameLine();
+    ImGui::BeginChildFrame(153, ImVec2(300.f, 32));
+    static std::vector<Builder::BuildInfo> buildInfos;
+    builder->UpdateBuildInfo(buildInfos);
+
+    if (!buildInfos.empty())
+    {
+        auto& bi = buildInfos[0];
+        ImGui::Text("Processing %s", bi.mName.c_str());
+        ImGui::ProgressBar(bi.mProgress);
+    }
     ImGui::EndChildFrame();
+    if (ImGui::IsItemHovered() && (buildInfos.size()>1))
+    {
+        ImGui::BeginTooltip();
+        for (auto& bi : buildInfos)
+        {
+            ImGui::Text(bi.mName.c_str());
+        }
+        ImGui::EndTooltip();
+    }
     /*
     ImGui::SameLine();
     // min/max/close buttons
@@ -1306,11 +1334,11 @@ void Imogen::ShowTitleBar()
     // done
 }
 
-void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+void Imogen::Show(Builder *builder, Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    ShowTitleBar();
+    ShowTitleBar(builder);
 
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);

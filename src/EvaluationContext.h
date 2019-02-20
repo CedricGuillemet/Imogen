@@ -25,6 +25,7 @@
 #pragma once
 #include <memory>
 #include <mutex>
+#include <atomic>
 #include "Evaluation.h"
 
 struct EvaluationContext
@@ -110,6 +111,8 @@ extern EvaluationContext *gCurrentContext;
 struct Builder
 {
     Builder();
+    ~Builder();
+
     void Add(const char* graphName);
 
     struct BuildInfo
@@ -122,4 +125,15 @@ struct Builder
     bool UpdateBuildInfo(std::vector<BuildInfo>& buildInfo);
 private:
     std::mutex mMutex;
+    std::thread mThread;
+
+    std::atomic_bool mbRunning;
+
+    struct Entry
+    {
+        std::string mName;
+        float mProgress;
+    };
+    std::vector<Entry> mEntries;
+    void BuildEntries();
 };

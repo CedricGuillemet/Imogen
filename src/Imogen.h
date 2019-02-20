@@ -36,7 +36,7 @@ struct TileNodeEditGraphDelegate;
 struct Evaluation;
 class TextEditor;
 struct Library;
-
+struct Builder;
 
 enum EVALUATOR_TYPE
 {
@@ -68,7 +68,7 @@ struct Imogen
     void Init();
     void Finish();
     
-    void Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+    void Show(Builder *builder, Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
     void ValidateCurrentMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
     void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
@@ -79,7 +79,7 @@ struct Imogen
 protected:
     void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
     void ShowAppMainMenuBar();
-    void ShowTitleBar();
+    void ShowTitleBar(Builder *builder);
 };
 extern Imogen imogen;
 

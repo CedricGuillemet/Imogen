@@ -109,6 +109,8 @@ enki::TaskScheduler g_TS;
 UndoRedoHandler gUndoRedoHandler;
 
 SDL_Window* window;
+SDL_GLContext glThreadContext;
+
 int main(int, char**)
 {
     TagTime("App start");
@@ -177,6 +179,9 @@ int main(int, char**)
         SDL_WINDOW_OPENGL | /*SDL_WINDOW_BORDERLESS |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_UTILITY | SDL_WINDOW_MAXIMIZED/*| SDL_WINDOW_BORDERLESS/* */);
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // Enable vsync
+
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+    glThreadContext = SDL_GL_CreateContext(window);
 
     // Initialize OpenGL loader
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
@@ -256,6 +261,8 @@ int main(int, char**)
 
     gCPUCount = SDL_GetCPUCount();
 
+    Builder *builder = new Builder;
+
     // default Material
     SetExistingMaterialActive(".default");
 
@@ -305,7 +312,7 @@ int main(int, char**)
             gNodeDelegate.ApplyAnimation(gEvaluationTime);
         }
         gCurrentContext->RunDirty();
-        imogen.Show(library, gNodeDelegate, gEvaluation);
+        imogen.Show(builder, library, gNodeDelegate, gEvaluation);
 
         // render everything
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -318,6 +325,7 @@ int main(int, char**)
         g_TS.RunPinnedTasks();
         SDL_GL_SwapWindow(window);
     }
+    delete builder;
 
     clDestroy(clContext);
     // Unload opencl lib.

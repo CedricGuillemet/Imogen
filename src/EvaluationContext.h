@@ -24,6 +24,7 @@
 //
 #pragma once
 #include <memory>
+#include <mutex>
 #include "Evaluation.h"
 
 struct EvaluationContext
@@ -105,3 +106,20 @@ protected:
 };
 
 extern EvaluationContext *gCurrentContext;
+
+struct Builder
+{
+    Builder();
+    void Add(const char* graphName);
+
+    struct BuildInfo
+    {
+        std::string mName;
+        float mProgress;
+    };
+
+    // return true if buildInfo has been updated
+    bool UpdateBuildInfo(std::vector<BuildInfo>& buildInfo);
+private:
+    std::mutex mMutex;
+};

@@ -593,3 +593,9 @@ void GetTextureDimension(unsigned int textureId, int *w, int *h);
 std::string GetName(const std::string &name);
 std::string GetGroup(const std::string &name);
 
+template<typename T> void Swap(T& a, T&b) 
+{ 
+    T temp = a;
+    a = b;
+    b = temp;
+}

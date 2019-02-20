@@ -108,7 +108,7 @@ Imogen imogen;
 enki::TaskScheduler g_TS;
 UndoRedoHandler gUndoRedoHandler;
 
-
+SDL_Window* window;
 int main(int, char**)
 {
     TagTime("App start");
@@ -173,7 +173,8 @@ int main(int, char**)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    SDL_Window* window = SDL_CreateWindow("Imogen 0.10.0", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED);
+    window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720,
+        SDL_WINDOW_OPENGL | /*SDL_WINDOW_BORDERLESS |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_UTILITY | SDL_WINDOW_MAXIMIZED/*| SDL_WINDOW_BORDERLESS/* */);
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // Enable vsync
 

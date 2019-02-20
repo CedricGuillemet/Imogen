@@ -24,7 +24,7 @@ typedef struct Evaluation_t
 	int targetIndex;
 	int forcedDirty;
 	int uiPass;
-	int padding;
+	int passNumber;
 	float mouse[4];
 	int inputIndices[8];	
 	

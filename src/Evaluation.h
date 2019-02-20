@@ -77,7 +77,7 @@ struct EvaluationInfo
     int targetIndex;
     int forcedDirty;
     int uiPass;
-    int padding;
+    int passNumber;
     float mouse[4];
     int inputIndices[8];
     float pad2[4];
@@ -178,6 +178,8 @@ public:
     void BindCubeFace(size_t face);
     void Destroy();
     void CheckFBO();
+    void Clone(const RenderTarget &other);
+    void Swap(RenderTarget &other);
 
 
     Image_t mImage;

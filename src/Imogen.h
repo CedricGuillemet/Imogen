@@ -79,6 +79,7 @@ struct Imogen
 protected:
     void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
     void ShowAppMainMenuBar();
+    void ShowTitleBar();
 };
 extern Imogen imogen;
 

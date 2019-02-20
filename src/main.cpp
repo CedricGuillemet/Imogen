@@ -111,6 +111,11 @@ UndoRedoHandler gUndoRedoHandler;
 SDL_Window* window;
 SDL_GLContext glThreadContext;
 
+void MakeThreadContext()
+{
+    SDL_GL_MakeCurrent(window, glThreadContext);
+}
+
 int main(int, char**)
 {
     TagTime("App start");
@@ -177,11 +182,10 @@ int main(int, char**)
     SDL_GetCurrentDisplayMode(0, &current);
     window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720,
         SDL_WINDOW_OPENGL | /*SDL_WINDOW_BORDERLESS |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_UTILITY | SDL_WINDOW_MAXIMIZED/*| SDL_WINDOW_BORDERLESS/* */);
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_GL_SetSwapInterval(1); // Enable vsync
-
     SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
     glThreadContext = SDL_GL_CreateContext(window);
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    SDL_GL_SetSwapInterval(1); // Enable vsync
 
     // Initialize OpenGL loader
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)

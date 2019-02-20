@@ -1362,13 +1362,12 @@ void Imogen::Show(Builder *builder, Library& library, TileNodeEditGraphDelegate 
 
                 ImGui::PushItemWidth(60);
                 static int previewSize = 0;
-                //ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
-                //ImGui::SameLine();
-                if (ImGui::Button("Do exports"))
+                /*if (ImGui::Button("Do exports"))
                 {
                     nodeGraphDelegate.DoForce();
                 }
                 ImGui::SameLine();
+                */
                 if (ImGui::Button("Save Graph"))
                 {
                     nfdchar_t *outPath = NULL;

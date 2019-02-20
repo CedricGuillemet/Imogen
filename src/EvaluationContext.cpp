@@ -23,7 +23,6 @@
 // SOFTWARE.
 //
 
-#include <SDL.h>
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include <memory>
 #include "EvaluationContext.h"
@@ -823,19 +822,20 @@ bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
     return false;
 }
 
+void MakeThreadContext();
 void Builder::BuildEntries()
 {
-    extern SDL_GLContext glThreadContext;
-    extern SDL_Window* window;
-    SDL_GL_MakeCurrent(window, glThreadContext);
+    MakeThreadContext();
 
     while (mbRunning)
     {
         if (!mEntries.empty())
         {
-            Sleep(20);
+            //Sleep(20);
             auto& entry = *mEntries.begin();
-            entry.mProgress += 0.01f;
+            entry.mProgress = 0.01f;
+            gNodeDelegate.DoForce();
+            entry.mProgress = 1.f;
             if (entry.mProgress >= 1.f)
             {
                 mEntries.erase(mEntries.begin());

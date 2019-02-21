@@ -31,6 +31,7 @@
 #include "NodesDelegate.h"
 #include "Evaluators.h"
 #include "UI.h"
+#include "Utils.h"
 
 TileNodeEditGraphDelegate gNodeDelegate;
 
@@ -561,8 +562,6 @@ void TileNodeEditGraphDelegate::InvalidateParameters()
     }
 }
 
-template<typename T> static inline T nmin(T lhs, T rhs) { return lhs >= rhs ? rhs : lhs; }
-
 void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel)
 {
     if (mSelectedNodeIndex == -1)
@@ -656,7 +655,7 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
                 {
                     paramFlt[0] += (param.mRangeMaxX-param.mRangeMinX) * dx;
                     if (param.mbLoop)
-                        paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) + nmin(param.mRangeMinX, param.mRangeMaxX);
+                        paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) + min(param.mRangeMinX, param.mRangeMaxX);
                 }
                 else
                 {
@@ -669,7 +668,7 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
                 {
                     paramFlt[1] += (param.mRangeMaxY - param.mRangeMinY) * dy;
                     if (param.mbLoop)
-                        paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) + nmin(param.mRangeMinY, param.mRangeMaxY);
+                        paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) + min(param.mRangeMinY, param.mRangeMaxY);
                 }
                 else
                 {

@@ -599,3 +599,5 @@ template<typename T> void Swap(T& a, T&b)
     a = b;
     b = temp;
 }
+
+template<typename T> T min(const T& a, const T& b) { return (a < b) ? a : b; }

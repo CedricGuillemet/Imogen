@@ -24,8 +24,9 @@
 //
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include "Evaluators.h"
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 #include "nfd.h"
+#include "Bitmap.h"
 
 Evaluators gEvaluators;
 
@@ -37,36 +38,36 @@ struct EValuationFunction
 
 static const EValuationFunction evaluationFunctions[] = {
     { "Log", (void*)Log },
-    { "ReadImage", (void*)Evaluation::ReadImage },
-    { "WriteImage", (void*)Evaluation::WriteImage },
-    { "GetEvaluationImage", (void*)Evaluation::GetEvaluationImage },
-    { "SetEvaluationImage", (void*)Evaluation::SetEvaluationImage },
-    { "SetEvaluationImageCube", (void*)Evaluation::SetEvaluationImageCube },
-    { "AllocateImage", (void*)Evaluation::AllocateImage },
-    { "FreeImage", (void*)Evaluation::FreeImage },
-    { "SetThumbnailImage", (void*)Evaluation::SetThumbnailImage },
-    { "Evaluate", (void*)Evaluation::Evaluate},
-    { "SetBlendingMode", (void*)Evaluation::SetBlendingMode},
-    { "EnableDepthBuffer", (void*)Evaluation::EnableDepthBuffer},
-    { "GetEvaluationSize", (void*)Evaluation::GetEvaluationSize},
-    { "SetEvaluationSize", (void*)Evaluation::SetEvaluationSize },
-    { "SetEvaluationCubeSize", (void*)Evaluation::SetEvaluationCubeSize },
-    { "AllocateComputeBuffer", (void*)Evaluation::AllocateComputeBuffer },
-    { "CubemapFilter", (void*)Evaluation::CubemapFilter},
-    { "SetProcessing", (void*)Evaluation::SetProcessing},
-    { "Job", (void*)Evaluation::Job },
-    { "JobMain", (void*)Evaluation::JobMain },
+    { "ReadImage", (void*)Image::Read },
+    { "WriteImage", (void*)Image::Write },
+    { "GetEvaluationImage", (void*)EvaluationStages::GetEvaluationImage },
+    { "SetEvaluationImage", (void*)EvaluationStages::SetEvaluationImage },
+    { "SetEvaluationImageCube", (void*)EvaluationStages::SetEvaluationImageCube },
+    { "AllocateImage", (void*)EvaluationStages::AllocateImage },
+    { "FreeImage", (void*)Image::Free },
+    { "SetThumbnailImage", (void*)EvaluationStages::SetThumbnailImage },
+    { "Evaluate", (void*)EvaluationStages::Evaluate},
+    { "SetBlendingMode", (void*)EvaluationStages::SetBlendingMode},
+    { "EnableDepthBuffer", (void*)EvaluationStages::EnableDepthBuffer},
+    { "GetEvaluationSize", (void*)EvaluationStages::GetEvaluationSize},
+    { "SetEvaluationSize", (void*)EvaluationStages::SetEvaluationSize },
+    { "SetEvaluationCubeSize", (void*)EvaluationStages::SetEvaluationCubeSize },
+    { "AllocateComputeBuffer", (void*)EvaluationStages::AllocateComputeBuffer },
+    { "CubemapFilter", (void*)EvaluationStages::CubemapFilter},
+    { "SetProcessing", (void*)EvaluationStages::SetProcessing},
+    { "Job", (void*)EvaluationStages::Job },
+    { "JobMain", (void*)EvaluationStages::JobMain },
     { "memmove", memmove },
     { "strcpy", strcpy },
     { "strlen", strlen },
     { "fabsf", fabsf },
-    { "LoadSVG", (void*)Evaluation::LoadSVG},
-    { "LoadScene", (void*)Evaluation::LoadScene},
-    { "SetEvaluationScene", (void*)Evaluation::SetEvaluationScene},
-    { "GetEvaluationScene", (void*)Evaluation::GetEvaluationScene},
-    { "GetEvaluationRenderer", (void*)Evaluation::GetEvaluationRenderer},
-    { "InitRenderer", (void*)Evaluation::InitRenderer},
-    { "UpdateRenderer", (void*)Evaluation::UpdateRenderer},
+    { "LoadSVG", (void*)Image::LoadSVG},
+    { "LoadScene", (void*)EvaluationStages::LoadScene},
+    { "SetEvaluationScene", (void*)EvaluationStages::SetEvaluationScene},
+    { "GetEvaluationScene", (void*)EvaluationStages::GetEvaluationScene},
+    { "GetEvaluationRenderer", (void*)EvaluationStages::GetEvaluationRenderer},
+    { "InitRenderer", (void*)EvaluationStages::InitRenderer},
+    { "UpdateRenderer", (void*)EvaluationStages::UpdateRenderer},
 };
 
 static void libtccErrorFunc(void *opaque, const char *msg)
@@ -261,24 +262,24 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return std::string();
     });
     m.def("Log", LogPython );
-    m.def("ReadImage", Evaluation::ReadImage );
-    m.def("WriteImage", Evaluation::WriteImage );
-    m.def("GetEvaluationImage", Evaluation::GetEvaluationImage );
-    m.def("SetEvaluationImage", Evaluation::SetEvaluationImage );
-    m.def("SetEvaluationImageCube", Evaluation::SetEvaluationImageCube );
-    m.def("AllocateImage", Evaluation::AllocateImage );
-    m.def("FreeImage", Evaluation::FreeImage );
-    m.def("SetThumbnailImage", Evaluation::SetThumbnailImage );
-    m.def("Evaluate", Evaluation::Evaluate );
-    m.def("SetBlendingMode", Evaluation::SetBlendingMode );
-    m.def("GetEvaluationSize", Evaluation::GetEvaluationSize );
-    m.def("SetEvaluationSize", Evaluation::SetEvaluationSize );
-    m.def("SetEvaluationCubeSize", Evaluation::SetEvaluationCubeSize );
-    m.def("CubemapFilter", Evaluation::CubemapFilter );
-    m.def("SetProcessing", Evaluation::SetProcessing );
+    m.def("ReadImage", EvaluationStages::ReadImage );
+    m.def("WriteImage", EvaluationStages::WriteImage );
+    m.def("GetEvaluationImage", EvaluationStages::GetEvaluationImage );
+    m.def("SetEvaluationImage", EvaluationStages::SetEvaluationImage );
+    m.def("SetEvaluationImageCube", EvaluationStages::SetEvaluationImageCube );
+    m.def("AllocateImage", EvaluationStages::AllocateImage );
+    m.def("FreeImage", Image::Free );
+    m.def("SetThumbnailImage", EvaluationStages::SetThumbnailImage );
+    m.def("Evaluate", EvaluationStages::Evaluate );
+    m.def("SetBlendingMode", EvaluationStages::SetBlendingMode );
+    m.def("GetEvaluationSize", EvaluationStages::GetEvaluationSize );
+    m.def("SetEvaluationSize", EvaluationStages::SetEvaluationSize );
+    m.def("SetEvaluationCubeSize", EvaluationStages::SetEvaluationCubeSize );
+    m.def("CubemapFilter", EvaluationStages::CubemapFilter );
+    m.def("SetProcessing", EvaluationStages::SetProcessing );
     /*
-    m.def("Job", Evaluation::Job );
-    m.def("JobMain", Evaluation::JobMain );
+    m.def("Job", EvaluationStages::Job );
+    m.def("JobMain", EvaluationStages::JobMain );
     */
     m.def("GetLibraryGraphs", []() {
         auto d = pybind11::list();

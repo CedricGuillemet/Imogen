@@ -35,7 +35,7 @@
 #include "ffmpegCodec.h"
 #include <memory>
 #include "Utils.h"
-
+#include "Bitmap.h"
 
 struct ImDrawList;
 struct ImDrawCmd;
@@ -61,12 +61,6 @@ enum BlendOp
     BLEND_LAST
 };
 
-enum EvaluationStatus
-{
-    EVAL_OK,
-    EVAL_ERR,
-    EVAL_DIRTY,
-};
 
 struct EvaluationInfo
 {
@@ -87,80 +81,6 @@ struct EvaluationInfo
     int mLocalFrame;
 };
 
-struct TextureFormat
-{
-    enum Enum
-    {
-        BGR8,
-        RGB8,
-        RGB16,
-        RGB16F,
-        RGB32F,
-        RGBE,
-
-        BGRA8,
-        RGBA8,
-        RGBA16,
-        RGBA16F,
-        RGBA32F,
-
-        RGBM,
-
-        Count,
-        Null = -1,
-    };
-};
-
-typedef struct Image_t
-{
-    Image_t() : mDecoder(NULL), mBits(NULL), mDataSize(0)
-    {
-    }
-    Image_t(const Image_t& other) : mBits(NULL), mDataSize(0)
-    {
-        *this = other;
-    }
-    ~Image_t() 
-    { 
-        free(mBits);
-    }
-    
-    void *mDecoder;
-    int mWidth, mHeight;
-    uint32_t mDataSize;
-    uint8_t mNumMips;
-    uint8_t mNumFaces;
-    uint8_t mFormat;
-    Image_t& operator = (const Image_t &other)
-    {
-        mDecoder = other.mDecoder;
-        mWidth = other.mWidth;
-        mHeight = other.mHeight;
-        mNumMips = other.mNumMips;
-        mNumFaces = other.mNumFaces;
-        mFormat = other.mFormat;
-        SetBits(other.mBits, other.mDataSize);
-        return *this;
-    }
-    unsigned char *GetBits() const { return mBits; }
-    void SetBits(unsigned char* bits, size_t size) 
-    { 
-        Allocate(size);
-        memcpy(mBits, bits, size); 
-    }
-    void Allocate(size_t size) 
-    {
-        if (mDataSize != size)
-            free(mBits);
-        mBits = (unsigned char*)malloc(size);
-        mDataSize = uint32_t(size);
-    }
-    void Free() {
-        free(mBits); mBits = NULL; mDataSize = 0;
-    }
-protected:
-    unsigned char *mBits;
-} Image;
 
 class RenderTarget
 {
@@ -168,7 +88,7 @@ class RenderTarget
 public:
     RenderTarget() : mGLTexID(0), mGLTexDepth(0), mFbo(0), mDepthBuffer(0)
     {
-        memset(&mImage, 0, sizeof(Image_t));
+        memset(&mImage, 0, sizeof(Image));
     }
 
     void InitBuffer(int width, int height, bool depthBuffer);
@@ -182,7 +102,7 @@ public:
     void Swap(RenderTarget &other);
 
 
-    Image_t mImage;
+    Image mImage;
     unsigned int mGLTexID;
     unsigned int mGLTexDepth;
     TextureID mDepthBuffer;
@@ -224,7 +144,7 @@ struct EvaluationStage
     // scene render
     void *scene;
     void *renderer;
-    Image_t DecodeImage();
+    Image DecodeImage();
 };
 
 enum EvaluationMask
@@ -236,13 +156,9 @@ enum EvaluationMask
 };
 
 // simple API
-struct Evaluation
+struct EvaluationStages
 {
-    Evaluation();
-
-    void Init();
-    void Finish();
-
+    EvaluationStages();
 
     void AddSingleEvaluation(size_t nodeType);
     void UserAddEvaluation(size_t nodeType);
@@ -264,20 +180,15 @@ struct Evaluation
     void SetStageLocalTime(size_t target, int localTime, bool updateDecoder);
 
     // API
-    static int ReadImage(const char *filename, Image *image);
-    static int ReadImageMem(unsigned char *data, size_t dataSize, Image *image);
-    static int WriteImage(const char *filename, Image *image, int format, int quality);
     static int GetEvaluationImage(int target, Image *image);
     static int SetEvaluationImage(int target, Image *image);
     static int SetEvaluationImageCube(int target, Image *image, int cubeFace);
     static int SetThumbnailImage(Image *image);
     static int AllocateImage(Image *image);
-    static int FreeImage(Image *image);
-    static unsigned int UploadImage(Image *image, unsigned int textureId, int cubeFace = -1);
+
     static int Evaluate(int target, int width, int height, Image *image);
     static void SetBlendingMode(int target, int blendSrc, int blendDst);
     static void EnableDepthBuffer(int target, int enable);
-    static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);
     static int SetNodeImage(int target, Image *image);
     static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
     static int SetEvaluationSize(int target, int imageWidth, int imageHeight);
@@ -287,7 +198,7 @@ struct Evaluation
     static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
     static void SetProcessing(int target, int processing);
     static int AllocateComputeBuffer(int target, int elementCount, int elementSize);
-    static int LoadSVG(const char *filename, Image *image, float dpi);
+
     static int LoadScene(const char *filename, void **scene);
     static int SetEvaluationScene(int target, void *scene);
     static int GetEvaluationScene(int target, void **scene);
@@ -298,9 +209,7 @@ struct Evaluation
     static void DrawUICubemap(size_t nodeIndex);
     static void DrawUISingle(size_t nodeIndex);
     static void DrawUIProgress(size_t nodeIndex);
-    // synchronous texture cache
-    // use for simple textures(stock) or to replace with a more efficient one
-    unsigned int GetTexture(const std::string& filename);
+
 
 
     const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
@@ -308,20 +217,19 @@ struct Evaluation
     
     const EvaluationStage& GetEvaluationStage(size_t index) const {    return mStages[index]; }
 
-    // error shader
-    unsigned int mNodeErrorShader;
-protected:
-    void APIInit();
-    std::map<std::string, unsigned int> mSynchronousTextureCache;
+    const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
 
+
+    // Data
+    std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;
-
     std::vector<size_t> mEvaluationOrderList;
+    std::vector<uint32_t> mPinnedParameters;
+    int mFrameMin, mFrameMax;
+
+protected:
     void BindGLSLParameters(EvaluationStage& evaluationStage);
 
-    // ui callback shaders
-    unsigned int mProgressShader;
-    unsigned int mDisplayCubemapShader;
 
 
     // ffmpeg encoders
@@ -332,5 +240,4 @@ protected:
 
 };
 
-extern Evaluation gEvaluation;
 extern FullScreenTriangle gFSQuad;

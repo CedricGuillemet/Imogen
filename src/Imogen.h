@@ -68,7 +68,7 @@ struct Imogen
     void Init();
     void Finish();
     
-    void Show(Builder *builder, Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+    void Show(Builder *builder, Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
     void ValidateCurrentMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
     void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
@@ -77,7 +77,7 @@ struct Imogen
     int GetCurrentMaterialIndex();
 
 protected:
-    void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+    void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate);
     void ShowAppMainMenuBar();
     void ShowTitleBar(Builder *builder);
 };

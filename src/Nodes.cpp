@@ -30,7 +30,7 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 #include "imgui_stdlib.h"
 #include "NodesDelegate.h"
 #include <array>
@@ -77,7 +77,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             sscanf(url.c_str() + sz + 1, "%d%%", &percent);
             url = url.substr(0, sz);
         }
-        unsigned int textureId = gEvaluation.GetTexture(url);
+        unsigned int textureId = gImageCache.GetTexture(url);
         if (textureId)
         {
             int w, h;
@@ -439,7 +439,7 @@ void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<u
 {
     size_t index = nodes.size();
     nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
-    gEvaluation.AddSingleEvaluation(type);
+    
     gNodeDelegate.AddSingleNode(type);
     gNodeDelegate.SetParamBlock(index, parameters);
     gNodeDelegate.SetTimeSlot(index, frameStart, frameEnd);
@@ -1158,12 +1158,12 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
 
     if (gNodeDelegate.NodeIsProcesing(nodeIndex) == 1)
     {
-        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), Evaluation::DrawUIProgress, nodeIndex);
+        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), EvaluationStages::DrawUIProgress, nodeIndex);
         //drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), nodeIndex)));
     }
     else if (gNodeDelegate.NodeIsCubemap(nodeIndex))
     {
-        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), Evaluation::DrawUICubemap, nodeIndex);
+        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), EvaluationStages::DrawUICubemap, nodeIndex);
         //drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), nodeIndex)));
     }
     else if (nodeIsCompute)
@@ -1180,9 +1180,9 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     drawList->PopClipRect();
 
 
-    unsigned int stage2D = gEvaluation.GetTexture("Stock/Stage2D.png");
-    unsigned int stagecubemap = gEvaluation.GetTexture("Stock/StageCubemap.png");
-    unsigned int stageCompute = gEvaluation.GetTexture("Stock/StageCompute.png");
+    unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
+    unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
+    unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
 
     ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
     ImVec2 bmpInfoSize(20, 20);

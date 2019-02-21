@@ -26,11 +26,11 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 
 struct EvaluationContext
 {
-    EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
+    EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
     ~EvaluationContext();
 
     void RunAll();
@@ -72,7 +72,7 @@ struct EvaluationContext
     const ComputeBuffer* GetComputeBuffer(size_t index) const;
     void Clear();
 protected:
-    Evaluation& gEvaluation;
+    EvaluationStages& mEvaluationStages;
 
     void PreRun();
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
@@ -133,6 +133,7 @@ private:
     {
         std::string mName;
         float mProgress;
+        EvaluationStages mEvaluationStages;
     };
     std::vector<Entry> mEntries;
     void BuildEntries();

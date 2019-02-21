@@ -35,7 +35,7 @@
 #include <fcntl.h> 
 #include "Nodes.h"
 #include "NodesDelegate.h"
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 #include "Imogen.h"
 #include "TaskScheduler.h"
 #include "stb_image.h"
@@ -102,7 +102,6 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
     Log("GL Debug (%s - %s) %s \n", typeStr, severityStr, message);
 }
 
-Evaluation gEvaluation;
 Library library;
 Imogen imogen;
 enki::TaskScheduler g_TS;
@@ -259,7 +258,6 @@ int main(int, char**)
     imogen.Init();
     TagTime("Imogen Init");
 
-    gEvaluation.Init();
     TagTime("Evaluation Init");
     gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
@@ -301,11 +299,11 @@ int main(int, char**)
         if (gbIsPlaying)
         {
             gEvaluationTime++;
-            if (gEvaluationTime >= gNodeDelegate.mFrameMax)
+            if (gEvaluationTime >= gNodeDelegate.mEvaluationStages.mFrameMax)
             {
                 if (gPlayLoop)
                 {
-                    gEvaluationTime = gNodeDelegate.mFrameMin;
+                    gEvaluationTime = gNodeDelegate.mEvaluationStages.mFrameMin;
                 }
                 else
                 {
@@ -316,7 +314,7 @@ int main(int, char**)
             gNodeDelegate.ApplyAnimation(gEvaluationTime);
         }
         gCurrentContext->RunDirty();
-        imogen.Show(builder, library, gNodeDelegate, gEvaluation);
+        imogen.Show(builder, library, gNodeDelegate);
 
         // render everything
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -340,7 +338,6 @@ int main(int, char**)
 
     imogen.ValidateCurrentMaterial(library, gNodeDelegate);
     SaveLib(&library, libraryFilename);
-    gEvaluation.Finish();
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

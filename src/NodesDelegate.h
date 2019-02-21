@@ -26,7 +26,7 @@
 #pragma once
 
 #include "Nodes.h"
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 #include "ImCurveEdit.h"
 #include "ImGradient.h"
 #include "Library.h"
@@ -40,8 +40,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 
     virtual void AddSingleNode(size_t type);
     virtual void UserAddNode(size_t type);
-    virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { gEvaluation.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);    }
-    virtual void DelLink(int index, int slot) { gEvaluation.DelEvaluationInput(index, slot); }
+    virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { mEvaluationStages.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);    }
+    virtual void DelLink(int index, int slot) { mEvaluationStages.DelEvaluationInput(index, slot); }
     virtual void UserDeleteNode(size_t index);
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
 
@@ -65,7 +65,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     virtual bool NodeIsCubemap(size_t nodeIndex);
     virtual bool NodeIs2D(size_t nodeIndex);
     virtual bool NodeIsCompute(size_t nodeIndex);
-    virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) { gEvaluation.SetEvaluationOrder(nodeOrderList);    }
+    virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) { mEvaluationStages.SetEvaluationOrder(nodeOrderList);    }
     virtual ImVec2 GetEvaluationSize(size_t nodeIndex);
     
     virtual void CopyNodes(const std::vector<size_t> nodes);
@@ -75,7 +75,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mNodes.size()) return NULL; return &mNodes[index].mParameterViewMatrix; }
 
     // animation
-    const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
+    const std::vector<AnimTrack>& GetAnimTrack() const { return mEvaluationStages.GetAnimTrack(); }
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
 
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
@@ -132,13 +132,13 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     };
 
     EvaluationContext mEditingContext;
+    EvaluationStages mEvaluationStages;
+
+
 
     std::vector<ImogenNode> mNodes;
     std::vector<ImogenNode> mNodesClipboard;
-    std::vector<AnimTrack> mAnimTrack;
-    std::vector<uint32_t> mPinnedParameters;
 
-    int mFrameMin, mFrameMax;
     bool mbMouseDragging;
 
     ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }

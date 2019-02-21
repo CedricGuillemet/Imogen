@@ -28,10 +28,8 @@
 #include <float.h>
 #include <vector>
 
-struct Image_t;
-typedef struct Image_t Image;
 void TagTime(const char *tagInfo);
-void FlipVImage(Image *image);
+
 typedef unsigned int TextureID;
 static const int SemUV0 = 0;
 
@@ -601,3 +599,11 @@ template<typename T> void Swap(T& a, T&b)
 }
 
 template<typename T> T min(const T& a, const T& b) { return (a < b) ? a : b; }
+
+
+enum EvaluationStatus
+{
+    EVAL_OK,
+    EVAL_ERR,
+    EVAL_DIRTY,
+};

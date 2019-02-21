@@ -24,84 +24,25 @@
 //
 
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 #include <vector>
 #include <algorithm>
 #include <assert.h>
 #include <SDL.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-#define NANOSVG_ALL_COLOR_KEYWORDS	// Include full list of color keywords.
-#define NANOSVG_IMPLEMENTATION	// Expands implementation
-#include "nanosvg.h"
-#define NANOSVGRAST_IMPLEMENTATION
-#include "nanosvgrast.h"
+
 
 #include <fstream>
 #include <streambuf>
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "cmft/image.h"
-#include "cmft/cubemapfilter.h"
 #include "TaskScheduler.h"
 #include "NodesDelegate.h"
 #include "cmft/print.h"
-#include "ffmpegCodec.h"
+
 
 extern enki::TaskScheduler g_TS;
-extern cmft::ClContext* clContext;
 
-static const unsigned int glInputFormats[] = {
-        GL_BGR,
-        GL_RGB,
-        GL_RGB16,
-        GL_RGB16F,
-        GL_RGB32F,
-        GL_RGBA, // RGBE
-
-        GL_BGRA,
-        GL_RGBA,
-        GL_RGBA16,
-        GL_RGBA16F,
-        GL_RGBA32F,
-
-        GL_RGBA, // RGBM
-};
-static const unsigned int glInternalFormats[] = {
-    GL_RGB,
-    GL_RGB,
-    GL_RGB16,
-    GL_RGB16F,
-    GL_RGB32F,
-    GL_RGBA, // RGBE
-
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA16,
-    GL_RGBA16F,
-    GL_RGBA32F,
-
-    GL_RGBA, // RGBM
-};
-static const unsigned int glCubeFace[] = {
-    GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-};
-static const unsigned int textureFormatSize[] = {    3,3,6,6,12, 4,4,4,8,8,16,4 };
-static const unsigned int textureComponentCount[] = { 3,3,3,3,3, 4,4,4,4,4,4,4 };
-
-
-unsigned int GetTexelSize(uint8_t fmt)
-{
-    return textureFormatSize[fmt];
-}
 
 
 void RenderTarget::BindAsTarget() const
@@ -274,210 +215,23 @@ void RenderTarget::CheckFBO()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Evaluation::APIInit()
-{
-    std::ifstream prgStr("Stock/ProgressingNode.glsl");
-    std::ifstream cubStr("Stock/DisplayCubemap.glsl");
-    std::ifstream nodeErrStr("Stock/NodeError.glsl");
-
-    mProgressShader = prgStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(prgStr), std::istreambuf_iterator<char>()), "progressShader") : 0;
-    mDisplayCubemapShader = cubStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()), "cubeDisplay") : 0;
-    mNodeErrorShader = nodeErrStr.good() ? LoadShader(std::string(std::istreambuf_iterator<char>(nodeErrStr), std::istreambuf_iterator<char>()), "nodeError") : 0;
-}
-
-static Image_t DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
-{
-    decoder->ReadFrame(frame);
-    Image_t image;
-    image.mDecoder = decoder;
-    image.mNumMips = 1;
-    image.mNumFaces = 1;
-    image.mFormat = TextureFormat::BGR8;
-    image.mWidth = int(decoder->mWidth);
-    image.mHeight = int(decoder->mHeight);
-    size_t lineSize = image.mWidth * 3;
-    size_t imgDataSize = lineSize * image.mHeight;
-    image.Allocate(imgDataSize);
-
-    unsigned char *pdst = image.GetBits();
-    unsigned char *psrc = (unsigned char*)decoder->GetRGBData();
-    if (psrc && pdst)
-    {
-        psrc += imgDataSize - lineSize;
-        for (int j = 0; j < image.mHeight; j++)
-        {
-            memcpy(pdst, psrc, lineSize);
-            pdst += lineSize;
-            psrc -= lineSize;
-        }
-    }
-    return image;
-}
-
-Image_t EvaluationStage::DecodeImage()
+Image EvaluationStage::DecodeImage()
 {
     return ::DecodeImage(mDecoder.get(), mLocalTime);
 }
 
-int Evaluation::LoadSVG(const char *filename, Image *image, float dpi)
+
+
+
+int EvaluationStages::GetEvaluationImage(int target, Image *image)
 {
-    NSVGimage* svgImage;
-    svgImage = nsvgParseFromFile(filename, "px", dpi);
-    if (!svgImage)
-        return EVAL_ERR;
-
-    int width = (int)svgImage->width;
-    int height = (int)svgImage->height;
-
-    // Create rasterizer (can be used to render multiple images).
-    NSVGrasterizer* rast = nsvgCreateRasterizer();
-
-    // Allocate memory for image
-    size_t imgSize = width * height * 4;
-    unsigned char* img = (unsigned char*)malloc(imgSize);
-
-    // Rasterize
-    nsvgRasterize(rast, svgImage, 0, 0, 1, img, width, height, width * 4);
-
-    image->SetBits(img, imgSize);
-    image->mWidth = width;
-    image->mHeight = height;
-    image->mNumMips = 1;
-    image->mNumFaces = 1;
-    image->mFormat = TextureFormat::RGBA8;
-    image->mDecoder = NULL;
-
-    FlipVImage(image);
-    nsvgDelete(svgImage);
-    nsvgDeleteRasterizer(rast);
-    return EVAL_OK;
-}
-
-int Evaluation::ReadImage(const char *filename, Image *image)
-{
-    FILE * fp = fopen(filename, "rb");
-    if (!fp)
-        return EVAL_ERR;
-    fclose(fp);
-
-    int components;
-    unsigned char *bits = stbi_load(filename, &image->mWidth, &image->mHeight, &components, 0);
-    if (!bits)
-    {
-        cmft::Image img;
-        if (!cmft::imageLoad(img, filename))
-        {
-            auto decoder = gEvaluation.FindDecoder(filename);
-            *image = ::DecodeImage(decoder, gEvaluationTime);
-            return EVAL_OK;
-        }
-        cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
-        image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-        image->mWidth = img.m_width;
-        image->mHeight = img.m_height;
-        image->mNumMips = img.m_numMips;
-        image->mNumFaces = img.m_numFaces;
-        image->mFormat = img.m_format;
-        image->mDecoder = NULL;
-        return EVAL_OK;
-    }
-
-    image->SetBits(bits, image->mWidth * image->mHeight * components);
-    image->mNumMips = 1;
-    image->mNumFaces = 1;
-    image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-    image->mDecoder = NULL;
-    return EVAL_OK;
-}
-
-int Evaluation::ReadImageMem(unsigned char *data, size_t dataSize, Image *image)
-{
-    int components;
-    unsigned char *bits = stbi_load_from_memory(data, int(dataSize), &image->mWidth, &image->mHeight, &components, 0);
-    if (!bits)
-        return EVAL_ERR;
-    image->SetBits(bits, image->mWidth * image->mHeight * components);
-    return EVAL_OK;
-}
-
-int Evaluation::WriteImage(const char *filename, Image *image, int format, int quality)
-{
-    int components = textureComponentCount[image->mFormat];
-    switch (format)
-    {
-    case 0:
-        if (!stbi_write_jpg(filename, image->mWidth, image->mHeight, components, image->GetBits(), quality))
-            return EVAL_ERR;
-        break;
-    case 1:
-        if (!stbi_write_png(filename, image->mWidth, image->mHeight, components, image->GetBits(), image->mWidth * components))
-            return EVAL_ERR;
-        break;
-    case 2:
-        if (!stbi_write_tga(filename, image->mWidth, image->mHeight, components, image->GetBits()))
-            return EVAL_ERR;
-        break;
-    case 3:
-        if (!stbi_write_bmp(filename, image->mWidth, image->mHeight, components, image->GetBits()))
-            return EVAL_ERR;
-        break;
-    case 4:
-        //if (stbi_write_hdr(filename, image->width, image->height, image->components, image->bits))
-            return EVAL_ERR;
-        break;
-    case 5:
-    {
-        cmft::Image img;
-        img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
-        img.m_width = image->mWidth;
-        img.m_height = image->mHeight;
-        img.m_numFaces = image->mNumFaces;
-        img.m_numMips = image->mNumMips;
-        img.m_data = image->GetBits();
-        img.m_dataSize = image->mDataSize;
-        if (img.m_format == cmft::TextureFormat::RGBA8)
-            cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
-        else if (img.m_format == cmft::TextureFormat::RGB8)
-            cmft::imageConvert(img, cmft::TextureFormat::BGR8);
-        image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-        if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
-            return EVAL_ERR;
-    }
-        break;
-    case 6:
-    {
-        cmft::Image img;
-        img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
-        img.m_width = image->mWidth;
-        img.m_height = image->mHeight;
-        img.m_numFaces = image->mNumFaces;
-        img.m_numMips = image->mNumMips;
-        img.m_data = image->GetBits();
-        img.m_dataSize = image->mDataSize;
-        if (!cmft::imageSave(img, filename, cmft::ImageFileType::KTX))
-            return EVAL_ERR;
-    }
-    break;
-    case 7:
-    {
-        FFMPEGCodec::Encoder *encoder = gCurrentContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
-        std::string fn(filename);
-        encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);
-    }
-        break;
-    }
-    return EVAL_OK;
-}
-
-int Evaluation::GetEvaluationImage(int target, Image *image)
-{
-    if (target == -1 || target >= gEvaluation.mStages.size())
+    if (target == -1 || target >= gNodeDelegate.mEvaluationStages.mStages.size())
         return EVAL_ERR;
 
     RenderTarget& tgt = *gCurrentContext->GetRenderTarget(target);
 
     // compute total size
-    Image_t& img = tgt.mImage;
+    Image& img = tgt.mImage;
     unsigned int texelSize = GetTexelSize(img.mFormat);
     unsigned int texelFormat = glInternalFormats[img.mFormat];
     uint32_t size = 0;// img.mNumFaces * img.mWidth * img.mHeight * texelSize;
@@ -515,9 +269,9 @@ int Evaluation::GetEvaluationImage(int target, Image *image)
     return EVAL_OK;
 }
 
-int Evaluation::SetEvaluationImage(int target, Image *image)
+int EvaluationStages::SetEvaluationImage(int target, Image *image)
 {
-    EvaluationStage &stage = gEvaluation.mStages[target];
+    EvaluationStage &stage = gNodeDelegate.mEvaluationStages.mStages[target];
     auto tgt = gCurrentContext->GetRenderTarget(target);
     if (!tgt)
         return EVAL_ERR;
@@ -568,7 +322,7 @@ int Evaluation::SetEvaluationImage(int target, Image *image)
     return EVAL_OK;
 }
 
-int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
+int EvaluationStages::SetEvaluationImageCube(int target, Image *image, int cubeFace)
 {
     if (image->mNumFaces != 1)
         return EVAL_ERR;
@@ -581,73 +335,20 @@ int Evaluation::SetEvaluationImageCube(int target, Image *image, int cubeFace)
     return EVAL_OK;
 }
 
-int Evaluation::CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias)
-{
-    cmft::Image img;
-    img.m_data = image->GetBits();
-    img.m_dataSize = image->mDataSize;
-    img.m_numMips = image->mNumMips;
-    img.m_numFaces = image->mNumFaces;
-    img.m_width = image->mWidth;
-    img.m_height = image->mHeight;
-    img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
 
-    extern unsigned int gCPUCount;
 
-    cmft::setWarningPrintf(Log);
-    cmft::setInfoPrintf(Log);
-
-    faceSize = 16;
-    if (!cmft::imageRadianceFilter(img
-        , faceSize // face size
-        , (cmft::LightingModel::Enum)lightingModel
-        , (excludeBase != 0)
-        , uint8_t(log2(faceSize)) // map mip count
-        , glossScale
-        , glossBias
-        , cmft::EdgeFixup::None
-        , gCPUCount
-        , clContext))
-        return EVAL_ERR;
-
-    image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-    image->mNumMips = img.m_numMips;
-    image->mNumFaces = img.m_numFaces;
-    image->mWidth = img.m_width;
-    image->mHeight = img.m_height;
-    image->mFormat = img.m_format;
-    return EVAL_OK;
-}
-
-int Evaluation::AllocateImage(Image *image)
+int EvaluationStages::AllocateImage(Image *image)
 {
     return EVAL_OK;
 }
 
-int Evaluation::FreeImage(Image *image)
-{
-    image->Free();
-    return EVAL_OK;
-}
 
-int Evaluation::EncodePng(Image *image, std::vector<unsigned char> &pngImage)
-{
-    int outlen;
-    int components = 4; // TODO
-    unsigned char *bits = stbi_write_png_to_mem(image->GetBits(), image->mWidth * components, image->mWidth, image->mHeight, components, &outlen);
-    if (!bits)
-        return EVAL_ERR;
-    pngImage.resize(outlen);
-    memcpy(pngImage.data(), bits, outlen);
 
-    free(bits);
-    return EVAL_OK;
-}
 
-int Evaluation::SetThumbnailImage(Image *image)
+int EvaluationStages::SetThumbnailImage(Image *image)
 {
     std::vector<unsigned char> pngImage;
-    if (EncodePng(image, pngImage) == EVAL_ERR)
+    if (Image::EncodePng(image, pngImage) == EVAL_ERR)
         return EVAL_ERR;
 
     extern Library library;
@@ -660,10 +361,10 @@ int Evaluation::SetThumbnailImage(Image *image)
     return EVAL_OK;
 }
 
-int Evaluation::SetNodeImage(int target, Image *image)
+int EvaluationStages::SetNodeImage(int target, Image *image)
 {
     std::vector<unsigned char> pngImage;
-    if (EncodePng(image, pngImage) == EVAL_ERR)
+    if (Image::EncodePng(image, pngImage) == EVAL_ERR)
         return EVAL_ERR;
 
     extern Library library;
@@ -715,18 +416,18 @@ struct CFunctionMainTask : enki::IPinnedTask
     void *mBuffer;
 };
 
-void Evaluation::SetProcessing(int target, int processing)
+void EvaluationStages::SetProcessing(int target, int processing)
 {
     gCurrentContext->StageSetProcessing(target, processing);
 }
 
-int Evaluation::AllocateComputeBuffer(int target, int elementCount, int elementSize)
+int EvaluationStages::AllocateComputeBuffer(int target, int elementCount, int elementSize)
 {
     gCurrentContext->AllocateComputeBuffer(target, elementCount, elementSize);
     return EVAL_OK;
 }
 
-int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
+int EvaluationStages::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
 {
     if (gCurrentContext->IsSynchronous())
     {
@@ -739,7 +440,7 @@ int Evaluation::Job(int(*jobFunction)(void*), void *ptr, unsigned int size)
     return EVAL_OK;
 }
 
-int Evaluation::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size)
+int EvaluationStages::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size)
 {
     if (gCurrentContext->IsSynchronous())
     {
@@ -752,21 +453,21 @@ int Evaluation::JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int si
     return EVAL_OK;
 }
 
-void Evaluation::SetBlendingMode(int target, int blendSrc, int blendDst)
+void EvaluationStages::SetBlendingMode(int target, int blendSrc, int blendDst)
 {
-    EvaluationStage& evaluation = gEvaluation.mStages[target];
+    EvaluationStage& evaluation = gNodeDelegate.mEvaluationStages.mStages[target];
 
     evaluation.mBlendingSrc = blendSrc;
     evaluation.mBlendingDst = blendDst;
 }
 
-void Evaluation::EnableDepthBuffer(int target, int enable)
+void EvaluationStages::EnableDepthBuffer(int target, int enable)
 {
-    EvaluationStage& evaluation = gEvaluation.mStages[target];
+    EvaluationStage& evaluation = gNodeDelegate.mEvaluationStages.mStages[target];
     evaluation.mbDepthBuffer = enable != 0;
 }
 
-void Evaluation::BindGLSLParameters(EvaluationStage& stage)
+void EvaluationStages::BindGLSLParameters(EvaluationStage& stage)
 {
     if (!stage.mParametersBuffer)
     {
@@ -792,44 +493,12 @@ void EvaluationStage::Clear()
     mParametersBuffer = 0;
 }
 
-unsigned int Evaluation::UploadImage(Image *image, unsigned int textureId, int cubeFace)
+
+
+
+int EvaluationStages::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 {
-    if (!textureId)
-        glGenTextures(1, &textureId);
-
-    unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
-    glBindTexture(targetType, textureId);
-
-    unsigned int inputFormat = glInputFormats[image->mFormat];
-    unsigned int internalFormat = glInternalFormats[image->mFormat];
-    glTexImage2D((cubeFace==-1)? GL_TEXTURE_2D: glCubeFace[cubeFace], 0, internalFormat, image->mWidth, image->mHeight, 0, inputFormat, GL_UNSIGNED_BYTE, image->GetBits());
-    TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
-
-    glBindTexture(targetType, 0);
-    return textureId;
-}
-
-unsigned int Evaluation::GetTexture(const std::string& filename)
-{
-    auto iter = mSynchronousTextureCache.find(filename);
-    if (iter != mSynchronousTextureCache.end())
-        return iter->second;
-
-    Image image;
-    unsigned int textureId = 0;
-    if (ReadImage(filename.c_str(), &image) == EVAL_OK)
-    {
-        textureId = UploadImage(&image, 0);
-        FreeImage(&image);
-    }
-
-    mSynchronousTextureCache[filename] = textureId;
-    return textureId;
-}
-
-int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
-{
-    if (target < 0 || target >= gEvaluation.mStages.size())
+    if (target < 0 || target >= gNodeDelegate.mEvaluationStages.mStages.size())
         return EVAL_ERR;
     auto renderTarget = gCurrentContext->GetRenderTarget(target);
     if (!renderTarget)
@@ -839,22 +508,22 @@ int Evaluation::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
     return EVAL_OK;
 }
 
-int Evaluation::SetEvaluationSize(int target, int imageWidth, int imageHeight)
+int EvaluationStages::SetEvaluationSize(int target, int imageWidth, int imageHeight)
 {
-    if (target < 0 || target >= gEvaluation.mStages.size())
+    if (target < 0 || target >= gNodeDelegate.mEvaluationStages.mStages.size())
         return EVAL_ERR;
     auto renderTarget = gCurrentContext->GetRenderTarget(target);
     if (!renderTarget)
         return EVAL_ERR;
     //if (gCurrentContext->GetEvaluationInfo().uiPass)
     //    return EVAL_OK;
-    renderTarget->InitBuffer(imageWidth, imageHeight, gEvaluation.mStages[target].mbDepthBuffer);
+    renderTarget->InitBuffer(imageWidth, imageHeight, gNodeDelegate.mEvaluationStages.mStages[target].mbDepthBuffer);
     return EVAL_OK;
 }
 
-int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
+int EvaluationStages::SetEvaluationCubeSize(int target, int faceWidth)
 {
-    if (target < 0 || target >= gEvaluation.mStages.size())
+    if (target < 0 || target >= gNodeDelegate.mEvaluationStages.mStages.size())
         return EVAL_ERR;
 
     auto renderTarget = gCurrentContext->GetRenderTarget(target);
@@ -871,7 +540,7 @@ int Evaluation::SetEvaluationCubeSize(int target, int faceWidth)
 #include "GPUBVH.h"
 #include "Camera.h"
 
-int Evaluation::LoadScene(const char *filename, void **pscene)
+int EvaluationStages::LoadScene(const char *filename, void **pscene)
 {
     // todo: make a real good cache system
     static std::map<std::string, GLSLPathTracer::Scene *> cachedScenes;
@@ -925,44 +594,44 @@ int Evaluation::LoadScene(const char *filename, void **pscene)
     return EVAL_OK;
 }
 
-int Evaluation::SetEvaluationScene(int target, void *scene)
+int EvaluationStages::SetEvaluationScene(int target, void *scene)
 {
-    gEvaluation.mStages[target].scene = scene;
+    gNodeDelegate.mEvaluationStages.mStages[target].scene = scene;
     return EVAL_OK;
 }
 
-int Evaluation::GetEvaluationScene(int target, void **scene)
+int EvaluationStages::GetEvaluationScene(int target, void **scene)
 {
-    *scene = gEvaluation.mStages[target].scene;
+    *scene = gNodeDelegate.mEvaluationStages.mStages[target].scene;
     return EVAL_OK;
 }
 
-int Evaluation::GetEvaluationRenderer(int target, void **renderer)
+int EvaluationStages::GetEvaluationRenderer(int target, void **renderer)
 {
-    *renderer = gEvaluation.mStages[target].renderer;
+    *renderer = gNodeDelegate.mEvaluationStages.mStages[target].renderer;
     return EVAL_OK;
 }
 
-int Evaluation::InitRenderer(int target, int mode, void *scene)
+int EvaluationStages::InitRenderer(int target, int mode, void *scene)
 {
     GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
-    gEvaluation.mStages[target].scene = scene;
+    gNodeDelegate.mEvaluationStages.mStages[target].scene = scene;
 
-    GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)gEvaluation.mStages[target].renderer;
+    GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)gNodeDelegate.mEvaluationStages.mStages[target].renderer;
     if (!currentRenderer)
     {
         //auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
         auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
         renderer->init();
-        gEvaluation.mStages[target].renderer = renderer;
+        gNodeDelegate.mEvaluationStages.mStages[target].renderer = renderer;
     }
     return EVAL_OK;
 }
 
-int Evaluation::UpdateRenderer(int target)
+int EvaluationStages::UpdateRenderer(int target)
 {
-    GLSLPathTracer::Renderer *renderer = (GLSLPathTracer::Renderer *)gEvaluation.mStages[target].renderer;
-    GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)gEvaluation.mStages[target].scene;
+    GLSLPathTracer::Renderer *renderer = (GLSLPathTracer::Renderer *)gNodeDelegate.mEvaluationStages.mStages[target].renderer;
+    GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)gNodeDelegate.mEvaluationStages.mStages[target].scene;
  
     Camera* camera = gNodeDelegate.GetCameraParameter(target);
     if (camera)
@@ -995,14 +664,14 @@ int Evaluation::UpdateRenderer(int target)
     return EVAL_DIRTY;
 }
 
-void Evaluation::DrawUIProgress(size_t nodeIndex)
+void EvaluationStages::DrawUIProgress(size_t nodeIndex)
 {
-    glUseProgram(gEvaluation.mProgressShader);
-    glUniform1f(glGetUniformLocation(gEvaluation.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
+    glUseProgram(gDefaultShader.mProgressShader);
+    glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
     gFSQuad.Render();
 }
 
-void Evaluation::DrawUISingle(size_t nodeIndex)
+void EvaluationStages::DrawUISingle(size_t nodeIndex)
 {
     EvaluationInfo evaluationInfo;
     evaluationInfo.forcedDirty = 1;
@@ -1010,10 +679,10 @@ void Evaluation::DrawUISingle(size_t nodeIndex)
     gCurrentContext->RunSingle(nodeIndex, evaluationInfo);
 }
 
-void Evaluation::DrawUICubemap(size_t nodeIndex)
+void EvaluationStages::DrawUICubemap(size_t nodeIndex)
 {
-    glUseProgram(gEvaluation.mDisplayCubemapShader);
-    int tgt = glGetUniformLocation(gEvaluation.mDisplayCubemapShader, "samplerCubemap");
+    glUseProgram(gDefaultShader.mDisplayCubemapShader);
+    int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
     glUniform1i(tgt, 0);
     glActiveTexture(GL_TEXTURE0);
 

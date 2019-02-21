@@ -79,8 +79,8 @@ static const float rotMatrices[6][16] = {
 };
 
 
-EvaluationContext::EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
-    : gEvaluation(evaluation)
+EvaluationContext::EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
+    : mEvaluationStages(evaluation)
     , mbSynchronousEvaluation(synchronousEvaluation)
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
@@ -323,7 +323,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
     if (!program)
     {
-        glUseProgram(gEvaluation.mNodeErrorShader);
+        glUseProgram(gDefaultShader.mNodeErrorShader);
         gFSQuad.Render();
         return;
     }
@@ -475,8 +475,8 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, s
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
     // alloc targets
-    mStageTarget.resize(gEvaluation.GetStagesCount(), NULL);
-    for (size_t i = 0; i < gEvaluation.GetStagesCount(); i++)
+    mStageTarget.resize(mEvaluationStages.GetStagesCount(), NULL);
+    for (size_t i = 0; i < mEvaluationStages.GetStagesCount(); i++)
     {
         if (!mStageTarget[i])
         {
@@ -490,19 +490,19 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
     if (!mStageTarget.empty())
         return;
 
-    //auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
-    size_t stageCount = gEvaluation.GetStagesCount();
+    //auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
+    size_t stageCount = mEvaluationStages.GetStagesCount();
     mStageTarget.resize(stageCount, NULL);
     std::vector<std::shared_ptr<RenderTarget> > freeRenderTargets;
     std::vector<int> useCount(stageCount, 0);
     for (size_t i = 0; i < stageCount; i++)
     {
-        useCount[i] = gEvaluation.GetEvaluationStage(i).mUseCountByOthers;
+        useCount[i] = mEvaluationStages.GetEvaluationStage(i).mUseCountByOthers;
     }
 
     for (auto index : nodesToEvaluate)
     {
-        const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(index);
+        const EvaluationStage& evaluation = mEvaluationStages.GetEvaluationStage(index);
         if (!evaluation.mUseCountByOthers)
             continue;
 
@@ -532,14 +532,14 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 }
 void EvaluationContext::PreRun()
 {
-    mbDirty.resize(gEvaluation.GetStagesCount(), false);
-    mbProcessing.resize(gEvaluation.GetStagesCount(), 0);
-    mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
+    mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
-    auto& currentStage = gEvaluation.GetEvaluationStage(nodeIndex);
+    auto& currentStage = mEvaluationStages.GetEvaluationStage(nodeIndex);
     const Input& input = currentStage.mInput;
 
     // check processing 
@@ -617,7 +617,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 
 void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)
 {
-    const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(target);
+    const EvaluationStage& evaluation = mEvaluationStages.GetEvaluationStage(target);
     const Input& input = evaluation.mInput;
 
     for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -636,7 +636,7 @@ void EvaluationContext::RunDirty()
 {
     PreRun();
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-    auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     std::vector<size_t> nodesToEvaluate;
     for (size_t index = 0; index < evaluationOrderList.size(); index++)
     {
@@ -653,7 +653,7 @@ void EvaluationContext::RunAll()
     PreRun();
     // get list of nodes to run
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-    auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     AllocRenderTargetsForEditingPreview();
     RunNodeList(evaluationOrderList);
 }
@@ -688,8 +688,8 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
 
 void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 {
-    mbDirty.resize(gEvaluation.GetStagesCount(), false);
-    auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     mbDirty[target] = true;
     for (size_t i = 0; i < evaluationOrderList.size(); i++)
     {
@@ -703,7 +703,7 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
             if (currentNodeIndex >= mbDirty.size() || mbDirty[currentNodeIndex]) // TODOUNDO
                 continue;
 
-            auto& currentEvaluation = gEvaluation.GetEvaluationStage(currentNodeIndex);
+            auto& currentEvaluation = mEvaluationStages.GetEvaluationStage(currentNodeIndex);
             for (auto inp : currentEvaluation.mInput.mInputs)
             {
                 if (inp >= 0 && mbDirty[inp])
@@ -769,10 +769,10 @@ const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size
 
 void EvaluationContext::StageSetProcessing(size_t target, int processing) 
 { 
-    mbProcessing.resize(gEvaluation.GetStagesCount(), 0); 
+    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0); 
     if (mbProcessing[target] != processing)
     {
-        mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+        mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
         mProgress[target] = 0.f;
     }
     mbProcessing[target] = processing; 
@@ -780,7 +780,7 @@ void EvaluationContext::StageSetProcessing(size_t target, int processing)
 
 void EvaluationContext::StageSetProgress(size_t target, float progress)
 {
-    mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+    mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
     mProgress[target] = progress;
 }
 

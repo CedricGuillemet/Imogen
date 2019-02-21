@@ -23,29 +23,19 @@
 // SOFTWARE.
 //
 
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include <vector>
 #include <algorithm>
 #include <map>
 
-Evaluation::Evaluation() : mProgressShader(0), mDisplayCubemapShader(0), mNodeErrorShader(0)
+EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 {
     
 }
 
-void Evaluation::Init()
-{
-    APIInit();
-}
-
-void Evaluation::Finish()
-{
-
-}
-
-void Evaluation::AddSingleEvaluation(size_t nodeType)
+void EvaluationStages::AddSingleEvaluation(size_t nodeType)
 {
     EvaluationStage evaluation;
 #ifdef _DEBUG
@@ -65,9 +55,9 @@ void Evaluation::AddSingleEvaluation(size_t nodeType)
     mStages.push_back(evaluation);
 }
 
-void Evaluation::StageIsAdded(int index)
+void EvaluationStages::StageIsAdded(int index)
 {
-    for (size_t i = 0;i< gEvaluation.mStages.size();i++)
+    for (size_t i = 0;i< mStages.size();i++)
     {
         if (i == index)
             continue;
@@ -80,7 +70,7 @@ void Evaluation::StageIsAdded(int index)
     }
 }
 
-void Evaluation::StageIsDeleted(int index)
+void EvaluationStages::StageIsDeleted(int index)
 {
     EvaluationStage& ev = gEvaluation.mStages[index];
     ev.Clear();
@@ -96,7 +86,7 @@ void Evaluation::StageIsDeleted(int index)
     }
 }
 
-void Evaluation::UserAddEvaluation(size_t nodeType)
+void EvaluationStages::UserAddEvaluation(size_t nodeType)
 {
     URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()), []() {return &gEvaluation.mStages; },
         StageIsDeleted, StageIsAdded);
@@ -104,7 +94,7 @@ void Evaluation::UserAddEvaluation(size_t nodeType)
     AddSingleEvaluation(nodeType);
 }
 
-void Evaluation::UserDeleteEvaluation(size_t target)
+void EvaluationStages::UserDeleteEvaluation(size_t target)
 {
     URDel<EvaluationStage> undoRedoDelStage(int(target), []() {return &gEvaluation.mStages; },
         StageIsDeleted, StageIsAdded);
@@ -113,7 +103,7 @@ void Evaluation::UserDeleteEvaluation(size_t target)
     mStages.erase(mStages.begin() + target);
 }
 
-void Evaluation::SetEvaluationParameters(size_t target, const std::vector<unsigned char> &parameters)
+void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<unsigned char> &parameters)
 {
     EvaluationStage& stage = mStages[target];
     stage.mParameters = parameters;
@@ -124,13 +114,13 @@ void Evaluation::SetEvaluationParameters(size_t target, const std::vector<unsign
         stage.mDecoder = NULL;
 }
 
-void Evaluation::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
+void EvaluationStages::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
 {
     mStages[target].mInputSamplers = inputSamplers;
     gCurrentContext->SetTargetDirty(target);
 }
 
-void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
+void EvaluationStages::AddEvaluationInput(size_t target, int slot, int source)
 {
     if (mStages[target].mInput.mInputs[slot] == source)
         return;
@@ -139,28 +129,29 @@ void Evaluation::AddEvaluationInput(size_t target, int slot, int source)
     gCurrentContext->SetTargetDirty(target);
 }
 
-void Evaluation::DelEvaluationInput(size_t target, int slot)
+void EvaluationStages::DelEvaluationInput(size_t target, int slot)
 {
     mStages[mStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
     mStages[target].mInput.mInputs[slot] = -1;
     gCurrentContext->SetTargetDirty(target);
 }
 
-void Evaluation::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
+void EvaluationStages::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
 {
     mEvaluationOrderList = nodeOrderList;
 }
 
-void Evaluation::Clear()
+void EvaluationStages::Clear()
 {
     for (auto& ev : mStages)
         ev.Clear();
 
     mStages.clear();
     mEvaluationOrderList.clear();
+    mAnimTrack.clear();
 }
 
-void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown)
+void EvaluationStages::SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown)
 {
     for (auto& ev : mStages)
     {
@@ -176,7 +167,7 @@ void Evaluation::SetMouse(int target, float rx, float ry, bool lButDown, bool rB
     ev.mRButDown = rButDown;
 }
 
-size_t Evaluation::GetEvaluationImageDuration(size_t target)
+size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {
     auto& stage = mStages[target];
     if (!stage.mDecoder)
@@ -188,16 +179,16 @@ size_t Evaluation::GetEvaluationImageDuration(size_t target)
     return stage.mDecoder->mFrameCount;
 }
 
-void Evaluation::SetStageLocalTime(size_t target, int localTime, bool updateDecoder)
+void EvaluationStages::SetStageLocalTime(size_t target, int localTime, bool updateDecoder)
 {
     auto& stage = mStages[target];
     int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
     if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
     {
         stage.mLocalTime = newLocalTime;
-        Image_t image = stage.DecodeImage();
+        Image image = stage.DecodeImage();
         SetEvaluationImage(int(target), &image);
-        FreeImage(&image);
+        Image::Free(&image);
     }
     else
     {
@@ -205,7 +196,7 @@ void Evaluation::SetStageLocalTime(size_t target, int localTime, bool updateDeco
     }
 }
 
-int Evaluation::Evaluate(int target, int width, int height, Image *image)
+int EvaluationStages::Evaluate(int target, int width, int height, Image *image)
 {
     EvaluationContext *previousContext = gCurrentContext;
     EvaluationContext context(gEvaluation, true, width, height);
@@ -219,7 +210,7 @@ int Evaluation::Evaluate(int target, int width, int height, Image *image)
     return EVAL_OK;
 }
 
-FFMPEGCodec::Decoder* Evaluation::FindDecoder(const std::string& filename)
+FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
 {
     for (auto& evaluation : mStages)
     {

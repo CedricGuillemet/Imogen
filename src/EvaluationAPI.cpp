@@ -220,9 +220,6 @@ Image EvaluationStage::DecodeImage()
     return Image::DecodeImage(mDecoder.get(), mLocalTime);
 }
 
-
-
-
 int EvaluationStages::GetEvaluationImage(int target, Image *image)
 {
     if (target == -1 || target >= gNodeDelegate.mEvaluationStages.mStages.size())
@@ -487,9 +484,6 @@ void EvaluationStage::Clear()
         glDeleteBuffers(1, &mParametersBuffer);
     mParametersBuffer = 0;
 }
-
-
-
 
 int EvaluationStages::GetEvaluationSize(int target, int *imageWidth, int *imageHeight)
 {

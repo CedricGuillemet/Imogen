@@ -56,28 +56,28 @@ void TileNodeEditGraphDelegate::Clear()
 {
     mSelectedNodeIndex = -1;
     mEvaluationStages.Clear();
-    mNodes.clear();
+    mEvaluationStages.mStages.clear();
     mEditingContext.Clear();
 }
 
 void TileNodeEditGraphDelegate::SetParamBlock(size_t index, const std::vector<unsigned char>& parameters)
 {
-    ImogenNode & node = mNodes[index];
-    node.mParameters = parameters;
+    auto& stage = mEvaluationStages.mStages[index];
+    stage.mParameters = parameters;
     mEvaluationStages.SetEvaluationParameters(index, parameters);
-    mEvaluationStages.SetEvaluationSampler(index, node.mInputSamplers);
+    mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
 }
 
 void TileNodeEditGraphDelegate::NodeIsAdded(int index)
 {
-    auto& node = gNodeDelegate.mNodes[index];
-    mEvaluationStages.SetEvaluationParameters(index, node.mParameters);
-    mEvaluationStages.SetEvaluationSampler(index, node.mInputSamplers);
+    auto& stage = mEvaluationStages.mStages[index];
+    mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
+    mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
 };
 
 void TileNodeEditGraphDelegate::AddSingleNode(size_t type)
 {
-    mEvaluationStages.AddSingleEvaluation(type);
+    /*mEvaluationStages.AddSingleEvaluation(type);
     const size_t inputCount = gMetaNodes[type].mInputs.size();
 
     ImogenNode node;
@@ -86,19 +86,20 @@ void TileNodeEditGraphDelegate::AddSingleNode(size_t type)
     node.mStartFrame = mEvaluationStages.mFrameMin;
     node.mEndFrame = mEvaluationStages.mFrameMax;
 #ifdef _DEBUG
-    node.mNodeTypename = gMetaNodes[type].mName;
+    node.mTypename = gMetaNodes[type].mName;
 #endif
     InitDefault(node);
     node.mInputSamplers.resize(inputCount);
 
-    mNodes.push_back(node);
+    mEvaluationStages.mStages.push_back(node);
 
-    NodeIsAdded(int(mNodes.size()) - 1);
+    NodeIsAdded(int(mEvaluationStages.mStages.size()) - 1);
+    */
 }
 
 void TileNodeEditGraphDelegate::UserAddNode(size_t type)
 {
-    URAdd<ImogenNode> undoRedoAddNode(int(mNodes.size()), []() {return &gNodeDelegate.mNodes; },
+    URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()), [&]() {return &mEvaluationStages.mStages; },
         [](int) {}, [&](int index) { NodeIsAdded(index); });
 
     mEditingContext.UserAddStage();
@@ -109,10 +110,10 @@ void TileNodeEditGraphDelegate::UserAddNode(size_t type)
 void TileNodeEditGraphDelegate::UserDeleteNode(size_t index)
 {
     {
-        URDel<ImogenNode> undoRedoDelNode(int(index), []() {return &gNodeDelegate.mNodes; },
+        URDel<EvaluationStage> undoRedoDelNode(int(index), [&]() {return &mEvaluationStages.mStages; },
             [](int) {}, [&](int index) {NodeIsAdded(index); });
 
-        mNodes.erase(mNodes.begin() + index);
+        mEvaluationStages.mStages.erase(mEvaluationStages.mStages.begin() + index);
     }
     RemoveAnimation(index);
     RemovePins(index);
@@ -124,13 +125,13 @@ const float PI = 3.14159f;
 float RadToDeg(float a) { return a * 180.f / PI; }
 float DegToRad(float a) { return a / 180.f * PI; }
 
-void TileNodeEditGraphDelegate::InitDefault(ImogenNode& node)
+void TileNodeEditGraphDelegate::InitDefault(EvaluationStage& stage)
 {
     const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[node.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(node.mType);
-    node.mParameters.resize(paramsSize);
-    unsigned char *paramBuffer = node.mParameters.data();
+    const MetaNode& currentMeta = metaNodes[stage.mType];
+    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
+    stage.mParameters.resize(paramsSize);
+    unsigned char *paramBuffer = stage.mParameters.data();
     memset(paramBuffer, 0, paramsSize);
     int i = 0;
     for (const MetaParameter& param : currentMeta.mParams)
@@ -381,8 +382,8 @@ bool TileNodeEditGraphDelegate::EditSingleParameter(unsigned int nodeIndex, unsi
 
 void TileNodeEditGraphDelegate::UpdateDirtyParameter(int index)
 {
-    auto& node = gNodeDelegate.mNodes[index];
-    mEvaluationStages.SetEvaluationParameters(index, node.mParameters);
+    auto &stage = mEvaluationStages.mStages[index];
+    mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
     mEditingContext.SetTargetDirty(index);
 }
 
@@ -394,14 +395,14 @@ void TileNodeEditGraphDelegate::PinnedEdit()
         unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
         unsigned int parameterIndex = pin & 0xFFFF;
 
-        size_t nodeType = mNodes[nodeIndex].mType;
+        size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[nodeType];
         if (parameterIndex >= metaNode.mParams.size())
             continue;
         
         ImGui::PushID(171717 + pin);
         const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
-        unsigned char *paramBuffer = mNodes[nodeIndex].mParameters.data();
+        unsigned char *paramBuffer = mEvaluationStages.mStages[nodeIndex].mParameters.data();
         paramBuffer += GetParameterOffset(uint32_t(nodeType), parameterIndex);
         if (EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam))
             dirtyNode = nodeIndex;
@@ -422,18 +423,18 @@ void TileNodeEditGraphDelegate::EditNode()
     bool dirty = false;
     bool forceEval = false;
     bool samplerDirty = false;
-    ImogenNode& node = mNodes[index];
-    const MetaNode& currentMeta = metaNodes[node.mType];
+    auto &stage = mEvaluationStages.mStages[index];
+    const MetaNode& currentMeta = metaNodes[stage.mType];
         
     if (ImGui::CollapsingHeader("Samplers", 0))
     {
         URChange<std::vector<InputSampler> > undoRedoSampler(int(index)
-            , [&](int index) { return &mNodes[index].mInputSamplers; }
-            , [&](int index) { auto& node = mNodes[index]; mEvaluationStages.SetEvaluationSampler(index, node.mInputSamplers);});
+            , [&](int index) { return &stage.mInputSamplers; }
+            , [&](int index) { auto& node = mEvaluationStages.mStages[index]; mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);});
             
-        for (size_t i = 0; i < node.mInputSamplers.size();i++)
+        for (size_t i = 0; i < stage.mInputSamplers.size();i++)
         {
-            InputSampler& inputSampler = node.mInputSamplers[i];
+            InputSampler& inputSampler = stage.mInputSamplers[i];
             static const char *wrapModes = { "REPEAT\0CLAMP_TO_EDGE\0CLAMP_TO_BORDER\0MIRRORED_REPEAT" };
             static const char *filterModes = { "LINEAR\0NEAREST" };
             ImGui::PushItemWidth(150);
@@ -448,7 +449,7 @@ void TileNodeEditGraphDelegate::EditNode()
         }
         if (samplerDirty)
         {
-            mEvaluationStages.SetEvaluationSampler(index, node.mInputSamplers);
+            mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
         }
         else
         {
@@ -460,10 +461,10 @@ void TileNodeEditGraphDelegate::EditNode()
         return;
 
     URChange<std::vector<unsigned char> > undoRedoParameter(int(index)
-        , [](int index) { return &gNodeDelegate.mNodes[index].mParameters; }
+        , [](int index) { return &gNodeDelegate.mEvaluationStages.mStages[index].mParameters; }
     , [&](int index) {UpdateDirtyParameter(index); });
 
-    unsigned char *paramBuffer = node.mParameters.data();
+    unsigned char *paramBuffer = stage.mParameters.data();
     int i = 0;
     for(const MetaParameter& param : currentMeta.mParams)
     {
@@ -488,24 +489,24 @@ void TileNodeEditGraphDelegate::EditNode()
 
 void TileNodeEditGraphDelegate::SetTimeSlot(size_t index, int frameStart, int frameEnd)
 {
-    ImogenNode & node = mNodes[index];
-    node.mStartFrame = frameStart;
-    node.mEndFrame = frameEnd;
+    auto &stage = mEvaluationStages.mStages[index];
+    stage.mStartFrame = frameStart;
+    stage.mEndFrame = frameEnd;
 }
 
 void TileNodeEditGraphDelegate::SetTimeDuration(size_t index, int duration)
 {
-    ImogenNode & node = mNodes[index];
-    node.mEndFrame = node.mStartFrame + duration;
+    auto &stage = mEvaluationStages.mStages[index];
+    stage.mEndFrame = stage.mStartFrame + duration;
 }
 
 void TileNodeEditGraphDelegate::SetTime(int time, bool updateDecoder)
 {
     gEvaluationTime = time;
-    for (size_t i = 0; i < mNodes.size(); i++)
+    for (size_t i = 0; i < mEvaluationStages.mStages.size(); i++)
     {
-        const ImogenNode& node = mNodes[i];
-        mEvaluationStages.SetStageLocalTime(i, ImClamp(time - node.mStartFrame, 0, node.mEndFrame - node.mStartFrame), updateDecoder);
+        const auto& stage = mEvaluationStages.mStages[i];
+        mEvaluationStages.SetStageLocalTime(i, ImClamp(time - stage.mStartFrame, 0, stage.mEndFrame - stage.mStartFrame), updateDecoder);
         //bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
     }
 }
@@ -515,9 +516,9 @@ void TileNodeEditGraphDelegate::SetTime(int time, bool updateDecoder)
 void TileNodeEditGraphDelegate::DoForce()
 {
     int currentTime = gEvaluationTime;
-    for (size_t i = 0; i < mNodes.size(); i++)
+    for (size_t i = 0; i < mEvaluationStages.mStages.size(); i++)
     {
-        const ImogenNode& node = mNodes[i];
+        const ImogenNode& node = mEvaluationStages.mStages[i];
         const MetaNode& currentMeta = gMetaNodes[node.mType];
         bool forceEval = false;
         for(auto& param : currentMeta.mParams)
@@ -552,10 +553,10 @@ void TileNodeEditGraphDelegate::DoForce()
 */
 void TileNodeEditGraphDelegate::InvalidateParameters()
 {
-    for (size_t i= 0;i<mNodes.size();i++)
+    for (size_t i= 0;i<mEvaluationStages.mStages.size();i++)
     {
-        auto& node = mNodes[i];
-        mEvaluationStages.SetEvaluationParameters(i, node.mParameters);
+        auto& stage = mEvaluationStages.mStages[i];
+        mEvaluationStages.SetEvaluationParameters(i, stage.mParameters);
     }
 }
 
@@ -569,9 +570,9 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
 
     const MetaNode* metaNodes = gMetaNodes.data();
     size_t res = 0;
-    const MetaNode& metaNode = metaNodes[mNodes[mSelectedNodeIndex].mType];
+    const MetaNode& metaNode = metaNodes[mEvaluationStages.mStages[mSelectedNodeIndex].mType];
 
-    unsigned char *paramBuffer = mNodes[mSelectedNodeIndex].mParameters.data();
+    unsigned char *paramBuffer = mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
     bool parametersUseMouse = false;
 
     // camera handling
@@ -616,8 +617,7 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
     }
 
     //
-    
-    paramBuffer = mNodes[mSelectedNodeIndex].mParameters.data();
+    paramBuffer = mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
     if (lButDown)
     {
         for(auto& param : metaNode.mParams)
@@ -679,7 +679,7 @@ void TileNodeEditGraphDelegate::SetMouse(float rx, float ry, float dx, float dy,
     if (metaNode.mbHasUI || parametersUseMouse)
     {
         mEvaluationStages.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
-        mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex, mNodes[mSelectedNodeIndex].mParameters);
+        mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex, mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
         mEditingContext.SetTargetDirty(mSelectedNodeIndex);
     }
 }
@@ -709,7 +709,7 @@ bool TileNodeEditGraphDelegate::NodeIsCompute(size_t nodeIndex)
         return true;
     return false;
     */
-    return (gEvaluators.GetMask(mNodes[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
+    return (gEvaluators.GetMask(mEvaluationStages.mStages[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
 }
 
 bool TileNodeEditGraphDelegate::NodeIsCubemap(size_t nodeIndex)
@@ -729,35 +729,35 @@ ImVec2 TileNodeEditGraphDelegate::GetEvaluationSize(size_t nodeIndex)
 
 void TileNodeEditGraphDelegate::CopyNodes(const std::vector<size_t> nodes)
 {
-    mNodesClipboard.clear();
+    mStagesClipboard.clear();
     for (auto nodeIndex : nodes)
-        mNodesClipboard.push_back(mNodes[nodeIndex]);
+        mStagesClipboard.push_back(mEvaluationStages.mStages[nodeIndex]);
 }
 
 void TileNodeEditGraphDelegate::CutNodes(const std::vector<size_t> nodes)
 {
-    mNodesClipboard.clear();
+    mStagesClipboard.clear();
 }
 
 void TileNodeEditGraphDelegate::PasteNodes()
 {
-    for (auto& sourceNode : mNodesClipboard)
+    for (auto& sourceNode : mStagesClipboard)
     {
-        URAdd<ImogenNode> undoRedoAddNode(int(mNodes.size()), []() {return &gNodeDelegate.mNodes; },
+        URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()), []() {return &gNodeDelegate.mEvaluationStages.mStages; },
             [](int) {}, [&](int index) {NodeIsAdded(index); });
 
         mEditingContext.UserAddStage();
         mEvaluationStages.UserAddEvaluation(sourceNode.mType);
-        size_t target = mNodes.size();
+        size_t target = mEvaluationStages.mStages.size();
         AddSingleNode(sourceNode.mType);
-        auto& node = mNodes.back();
-        node.mParameters = sourceNode.mParameters;
-        node.mInputSamplers = sourceNode.mInputSamplers;
-        node.mStartFrame = sourceNode.mStartFrame;
-        node.mEndFrame = sourceNode.mEndFrame;
+        auto& stage = mEvaluationStages.mStages.back();
+        stage.mParameters = sourceNode.mParameters;
+        stage.mInputSamplers = sourceNode.mInputSamplers;
+        stage.mStartFrame = sourceNode.mStartFrame;
+        stage.mEndFrame = sourceNode.mEndFrame;
         
-        mEvaluationStages.SetEvaluationParameters(target, node.mParameters);
-        mEvaluationStages.SetEvaluationSampler(target, node.mInputSamplers);
+        mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
+        mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
         SetTime(gEvaluationTime, true);
         mEditingContext.SetTargetDirty(target);
     }
@@ -782,7 +782,7 @@ void TileNodeEditGraphDelegate::MakeKey(int frame, uint32_t nodeIndex, uint32_t 
     if (!animTrack)
     {
         URAdd<AnimTrack> urAdd(int(mEvaluationStages.mAnimTrack.size()), [&] { return &mEvaluationStages.mAnimTrack; });
-        uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mType].mParams[parameterIndex].mType;
+        uint32_t parameterType = gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mParams[parameterIndex].mType;
         AnimTrack newTrack;
         newTrack.mNodeIndex = nodeIndex;
         newTrack.mParamIndex = parameterIndex;
@@ -792,9 +792,9 @@ void TileNodeEditGraphDelegate::MakeKey(int frame, uint32_t nodeIndex, uint32_t 
         animTrack = &mEvaluationStages.mAnimTrack.back();
     }
     URChange<AnimTrack> urChange(int(animTrack - mEvaluationStages.mAnimTrack.data()), [&](int index) {return &mEvaluationStages.mAnimTrack[index]; });
-    auto& node = mNodes[nodeIndex];
-    size_t parameterOffset = GetParameterOffset(uint32_t(node.mType), parameterIndex);
-    animTrack->mAnimation->SetValue(frame, &node.mParameters[parameterOffset]);
+    EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
+    size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
+    animTrack->mAnimation->SetValue(frame, &stage.mParameters[parameterOffset]);
 }
 
 void TileNodeEditGraphDelegate::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed)
@@ -805,20 +805,20 @@ void TileNodeEditGraphDelegate::GetKeyedParameters(int frame, uint32_t nodeIndex
 void TileNodeEditGraphDelegate::ApplyAnimationForNode(size_t nodeIndex, int frame)
 {
     bool animatedNodes = false;
-    auto& node = mNodes[nodeIndex];
+    EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
     for (auto& animTrack : mEvaluationStages.mAnimTrack)
     {
         if (animTrack.mNodeIndex == nodeIndex)
         {
-            size_t parameterOffset = GetParameterOffset(uint32_t(node.mType), animTrack.mParamIndex);
-            animTrack.mAnimation->GetValue(frame, &node.mParameters[parameterOffset]);
+            size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+            animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
 
             animatedNodes = true;
         }
     }
     if (animatedNodes)
     {
-        mEvaluationStages.SetEvaluationParameters(nodeIndex, node.mParameters);
+        mEvaluationStages.SetEvaluationParameters(nodeIndex, stage.mParameters);
         mEditingContext.SetTargetDirty(nodeIndex);
     }
 }
@@ -826,19 +826,20 @@ void TileNodeEditGraphDelegate::ApplyAnimationForNode(size_t nodeIndex, int fram
 void TileNodeEditGraphDelegate::ApplyAnimation(int frame)
 {
     std::vector<bool> animatedNodes;
-    animatedNodes.resize(mNodes.size(), false);
+    animatedNodes.resize(mEvaluationStages.mStages.size(), false);
     for (auto& animTrack : mEvaluationStages.mAnimTrack)
     {
-        auto& node = mNodes[animTrack.mNodeIndex];
+        EvaluationStage& stage = mEvaluationStages.mStages[animTrack.mNodeIndex];
+
         animatedNodes[animTrack.mNodeIndex] = true;
-        size_t parameterOffset = GetParameterOffset(uint32_t(node.mType), animTrack.mParamIndex);
-        animTrack.mAnimation->GetValue(frame, &node.mParameters[parameterOffset]);
+        size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+        animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
     }
     for (size_t i = 0; i < animatedNodes.size(); i++)
     {
         if (!animatedNodes[i])
             continue;
-        mEvaluationStages.SetEvaluationParameters(i, mNodes[i].mParameters);
+        mEvaluationStages.SetEvaluationParameters(i, mEvaluationStages.mStages[i].mParameters);
         mEditingContext.SetTargetDirty(i);
     }
 }
@@ -883,14 +884,14 @@ void TileNodeEditGraphDelegate::RemovePins(size_t nodeIndex)
 
 Camera *TileNodeEditGraphDelegate::GetCameraParameter(size_t index)
 {
-    if (index >= mNodes.size()) 
+    if (index >= mEvaluationStages.mStages.size()) 
         return NULL;
-    ImogenNode& node = mNodes[index];
+    EvaluationStage& stage = mEvaluationStages.mStages[index];
     const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[node.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(node.mType);
-    node.mParameters.resize(paramsSize);
-    unsigned char *paramBuffer = node.mParameters.data();
+    const MetaNode& currentMeta = metaNodes[stage.mType];
+    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
+    stage.mParameters.resize(paramsSize);
+    unsigned char *paramBuffer = stage.mParameters.data();
     for (const MetaParameter& param : currentMeta.mParams)
     {
         if (param.mType == Con_Camera)
@@ -906,14 +907,14 @@ Camera *TileNodeEditGraphDelegate::GetCameraParameter(size_t index)
 // TODO : create parameter struct with templated accessors
 int TileNodeEditGraphDelegate::GetIntParameter(size_t index, const char *parameterName, int defaultValue)
 {
-    if (index >= mNodes.size())
+    if (index >= mEvaluationStages.mStages.size())
         return NULL;
-    ImogenNode& node = mNodes[index];
+    EvaluationStage& stage = mEvaluationStages.mStages[index];
     const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[node.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(node.mType);
-    node.mParameters.resize(paramsSize);
-    unsigned char *paramBuffer = node.mParameters.data();
+    const MetaNode& currentMeta = metaNodes[stage.mType];
+    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
+    stage.mParameters.resize(paramsSize);
+    unsigned char *paramBuffer = stage.mParameters.data();
     for (const MetaParameter& param : currentMeta.mParams)
     {
         if (param.mType == Con_Int)
@@ -931,11 +932,11 @@ int TileNodeEditGraphDelegate::GetIntParameter(size_t index, const char *paramet
 
 float TileNodeEditGraphDelegate::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)
 {
-    auto& node = mNodes[index];
-    size_t paramOffset = GetParameterOffset(uint32_t(node.mType), parameterIndex);
-    unsigned char *ptr = &node.mParameters.data()[paramOffset];
+    EvaluationStage& stage = mEvaluationStages.mStages[index];
+    size_t paramOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
+    unsigned char *ptr = &stage.mParameters.data()[paramOffset];
     const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[node.mType];
+    const MetaNode& currentMeta = metaNodes[stage.mType];
     switch (currentMeta.mParams[parameterIndex].mType)
     {
     case Con_Angle:

@@ -390,8 +390,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
         shader.mProgram = program;
-        if (shader.mNodeType != -1)
-            mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
+        if (shader.mType != -1)
+            mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
     }
 
     if (!gEvaluationStateGLSLBuffer)
@@ -438,8 +438,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
         shader.mProgram = program;
-        if (shader.mNodeType != -1)
-            mEvaluatorPerNodeType[shader.mNodeType].mGLSLProgram = program;
+        if (shader.mType != -1)
+            mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
     }
     TagTime("GLSL compute init");
     // C
@@ -497,10 +497,10 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             }
             tcc_delete(s);
 
-            if (program.mNodeType != -1)
+            if (program.mType != -1)
             {
-                mEvaluatorPerNodeType[program.mNodeType].mCFunction = program.mCFunction;
-                mEvaluatorPerNodeType[program.mNodeType].mMem = program.mMem;
+                mEvaluatorPerNodeType[program.mType].mCFunction = program.mCFunction;
+                mEvaluatorPerNodeType[program.mType].mMem = program.mMem;
             }
         }
         catch (...)
@@ -520,8 +520,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         try
         {
             shader.mPyModule = pybind11::module::import("Nodes.Python.testnode");
-            if (shader.mNodeType != -1)
-                mEvaluatorPerNodeType[shader.mNodeType].mPyModule = shader.mPyModule;
+            if (shader.mType != -1)
+                mEvaluatorPerNodeType[shader.mType].mPyModule = shader.mPyModule;
         }
         catch (...)
         {
@@ -555,21 +555,21 @@ int Evaluators::GetMask(size_t nodeType)
     if (iter != mEvaluatorScripts.end())
     {
         mask |= EvaluationGLSL;
-        iter->second.mNodeType = int(nodeType);
+        iter->second.mType = int(nodeType);
         mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
     }
     iter = mEvaluatorScripts.find(nodeName + ".glslc");
     if (iter != mEvaluatorScripts.end())
     {
         mask |= EvaluationGLSLCompute;
-        iter->second.mNodeType = int(nodeType);
+        iter->second.mType = int(nodeType);
         mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
     }
     iter = mEvaluatorScripts.find(nodeName + ".c");
     if (iter != mEvaluatorScripts.end())
     {
         mask |= EvaluationC;
-        iter->second.mNodeType = int(nodeType);
+        iter->second.mType = int(nodeType);
         mEvaluatorPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
         mEvaluatorPerNodeType[nodeType].mMem = iter->second.mMem;
     }
@@ -577,7 +577,7 @@ int Evaluators::GetMask(size_t nodeType)
     if (iter != mEvaluatorScripts.end())
     {
         mask |= EvaluationPython;
-        iter->second.mNodeType = int(nodeType);
+        iter->second.mType = int(nodeType);
         mEvaluatorPerNodeType[nodeType].mPyModule = iter->second.mPyModule;
     }
     return mask;

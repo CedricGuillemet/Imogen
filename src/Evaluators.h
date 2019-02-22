@@ -62,13 +62,13 @@ protected:
 
     struct EvaluatorScript
     {
-        EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
-        EvaluatorScript(const std::string & text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mNodeType(-1) {}
+        EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mType(-1) {}
+        EvaluatorScript(const std::string & text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mType(-1) {}
         std::string mText;
         unsigned int mProgram;
         int(*mCFunction)(void *parameters, void *evaluationInfo);
         void *mMem;
-        int mNodeType;
+        int mType;
         pybind11::module mPyModule;
         
     };

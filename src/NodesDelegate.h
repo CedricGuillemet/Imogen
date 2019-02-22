@@ -59,7 +59,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel);
 
     size_t ComputeNodeParametersSize(size_t nodeTypeIndex);
-    bool NodeHasUI(size_t nodeIndex) { return gMetaNodes[mNodes[nodeIndex].mType].mbHasUI; }
+    bool NodeHasUI(size_t nodeIndex) { return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI; }
     virtual int NodeIsProcesing(size_t nodeIndex) { return mEditingContext.StageIsProcessing(nodeIndex); }
     virtual float NodeProgress(size_t nodeIndex) { return mEditingContext.StageGetProgress(nodeIndex); }
     virtual bool NodeIsCubemap(size_t nodeIndex);
@@ -72,7 +72,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     virtual void CutNodes(const std::vector<size_t> nodes);
     virtual void PasteNodes();
 
-    Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mNodes.size()) return NULL; return &mNodes[index].mParameterViewMatrix; }
+    Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mEvaluationStages.mStages.size()) return NULL; return &mEvaluationStages.mStages[index].mParameterViewMatrix; }
 
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const { return mEvaluationStages.GetAnimTrack(); }
@@ -91,59 +91,19 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     int GetIntParameter(size_t index, const char *parameterName, int defaultValue);
     float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
     void PinnedEdit();
-    struct ImogenNode
-    {
-#ifdef _DEBUG
-        std::string mNodeTypename;
-#endif
-        size_t mType;
-        std::vector<unsigned char> mParameters;
-        unsigned int mRuntimeUniqueId;
-        int mStartFrame, mEndFrame;
-        std::vector<InputSampler> mInputSamplers;
 
-        Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
 
-        bool operator != (const ImogenNode& other) const
-        {
-            if (mType != other.mType)
-                return true;
-            if (mParameters != other.mParameters)
-                return true;
-            if (mRuntimeUniqueId != other.mRuntimeUniqueId)
-                return true;
-            if (mStartFrame != other.mStartFrame)
-                return true;
-            if (mEndFrame != other.mEndFrame)
-                return true;
-            if (mInputSamplers.size() != other.mInputSamplers.size())
-                return true;
-            /*
-            for (size_t i = 0; i < mInputSamplers.size(); i++)
-            {
-                if (mInputSamplers[i] != other.mInputSamplers[i])
-                    return true;
-            }
-            */
-            if (mParameterViewMatrix != other.mParameterViewMatrix)
-                return true;
-            return false;
-        }
-    };
 
     EvaluationContext mEditingContext;
     EvaluationStages mEvaluationStages;
-
-
-
-    std::vector<ImogenNode> mNodes;
-    std::vector<ImogenNode> mNodesClipboard;
-
+    std::vector<EvaluationStage> mStagesClipboard;
     bool mbMouseDragging;
 
-    ImogenNode* Get(ASyncId id) { return GetByAsyncId(id, mNodes); }
+
+
+    EvaluationStage* Get(ASyncId id) { return GetByAsyncId(id, mEvaluationStages.mStages); }
 protected:
-    void InitDefault(ImogenNode& node);
+    void InitDefault(EvaluationStage& stage);
     bool EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param);
     void NodeIsAdded(int index);
     void UpdateDirtyParameter(int index);

@@ -121,10 +121,11 @@ struct Input
 struct EvaluationStage
 {
 #ifdef _DEBUG
-    std::string mNodeTypename;
+    std::string mTypename;
 #endif
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
-    size_t mNodeType;
+    size_t mType;
+    unsigned int mRuntimeUniqueId;
     unsigned int mParametersBuffer;
     std::vector<unsigned char> mParameters;
     Input mInput;
@@ -134,7 +135,10 @@ struct EvaluationStage
     int mBlendingSrc;
     int mBlendingDst;
     int mLocalTime;
+    int mStartFrame, mEndFrame;
     bool mbDepthBuffer;
+    // Camera
+    Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity(); // TODO used?
     // mouse
     float mRx;
     float mRy;
@@ -145,6 +149,32 @@ struct EvaluationStage
     void *scene;
     void *renderer;
     Image DecodeImage();
+
+    bool operator != (const EvaluationStage& other) const
+    {
+        if (mType != other.mType)
+            return true;
+        if (mParameters != other.mParameters)
+            return true;
+        if (mRuntimeUniqueId != other.mRuntimeUniqueId)
+            return true;
+        if (mStartFrame != other.mStartFrame)
+            return true;
+        if (mEndFrame != other.mEndFrame)
+            return true;
+        if (mInputSamplers.size() != other.mInputSamplers.size())
+            return true;
+        /*
+        for (size_t i = 0; i < mInputSamplers.size(); i++)
+        {
+            if (mInputSamplers[i] != other.mInputSamplers[i])
+                return true;
+        }
+        */
+        if (mParameterViewMatrix != other.mParameterViewMatrix)
+            return true;
+        return false;
+    }
 };
 
 enum EvaluationMask
@@ -166,7 +196,7 @@ struct EvaluationStages
 
     //
     size_t GetStagesCount() const { return mStages.size(); }
-    size_t GetStageType(size_t target) const { return mStages[target].mNodeType; }
+    size_t GetStageType(size_t target) const { return mStages[target].mType; }
     size_t GetEvaluationImageDuration(size_t target);
     
     void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);

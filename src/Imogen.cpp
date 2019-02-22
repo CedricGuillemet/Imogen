@@ -331,8 +331,8 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
         }
         else
         {
-            TileNodeEditGraphDelegate::ImogenNode *node = gNodeDelegate.Get(mIdentifier);
-            size_t nodeIndex = node - gNodeDelegate.mNodes.data();
+            auto *node = gNodeDelegate.Get(mIdentifier);
+            size_t nodeIndex = node - gNodeDelegate.mEvaluationStages.mStages.data();
             if (node)
             {
                 EvaluationStages::SetEvaluationImage(int(nodeIndex), mImage);
@@ -548,11 +548,11 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
     if (materialIndex == -1)
         return;
     Material& material = library.mMaterials[materialIndex];
-    material.mMaterialNodes.resize(nodeGraphDelegate.mNodes.size());
+    material.mMaterialNodes.resize(nodeGraphDelegate.mEvaluationStages.mStages.size());
 
-    for (size_t i = 0; i < nodeGraphDelegate.mNodes.size(); i++)
+    for (size_t i = 0; i < nodeGraphDelegate.mEvaluationStages.mStages.size(); i++)
     {
-        TileNodeEditGraphDelegate::ImogenNode srcNode = nodeGraphDelegate.mNodes[i];
+        auto srcNode = nodeGraphDelegate.mEvaluationStages.mStages[i];
         MaterialNode &dstNode = material.mMaterialNodes[i];
         MetaNode& metaNode = gMetaNodes[srcNode.mType];
         dstNode.mRuntimeUniqueId = GetRuntimeId();
@@ -615,7 +615,7 @@ void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate)
         {
             MaterialNode& node = material.mMaterialNodes[i];
             NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
-            TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
+            auto& lastNode = nodeGraphDelegate.mEvaluationStages.mStages.back();
             if (!node.mImage.empty())
             {
                 gCurrentContext->StageSetProcessing(i, true);
@@ -738,7 +738,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     AnimCurveEdit(ImVec2& min, ImVec2& max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) :
         mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible), mNodeIndex(nodeIndex)
     {
-        size_t type = gNodeDelegate.mNodes[nodeIndex].mType;
+        size_t type = gNodeDelegate.mEvaluationStages.mStages[nodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
         std::vector<bool> parameterAddressed(metaNode.mParams.size(), false);
 
@@ -755,7 +755,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 if (!animation || animation->mFrames.empty())
                 {
                     curvePts.resize(2);
-                    auto& node = gNodeDelegate.mNodes[mNodeIndex];
+                    auto& node = gNodeDelegate.mEvaluationStages.mStages[mNodeIndex];
                     float value = gNodeDelegate.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
                     curvePts[0] = ImVec2(float(node.mStartFrame) + 0.5f, value);
                     curvePts[1] = ImVec2(float(node.mEndFrame) + 0.5f, value);
@@ -796,7 +796,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     void BakeValuesToAnimationTrack()
     {
-        size_t type = gNodeDelegate.mNodes[mNodeIndex].mType;
+        size_t type = gNodeDelegate.mEvaluationStages.mStages[mNodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
 
         for (size_t curve = 0; curve < mPts.size(); )
@@ -1036,7 +1036,7 @@ struct MySequence : public ImSequencer::SequenceInterface
     virtual void BeginEdit(int index)
     {
         assert(undoRedoChange == nullptr);
-        undoRedoChange = new URChange<TileNodeEditGraphDelegate::ImogenNode>(index, [](int index) { return &gNodeDelegate.mNodes[index]; });
+        undoRedoChange = new URChange<EvaluationStage>(index, [](int index) { return &gNodeDelegate.mEvaluationStages.mStages[index]; });
     }
     virtual void EndEdit()
     {
@@ -1062,9 +1062,9 @@ struct MySequence : public ImSequencer::SequenceInterface
         if (color)
             *color = gMetaNodes[nodeType].mHeaderColor;
         if (start)
-            *start = &mNodeGraphDelegate.mNodes[index].mStartFrame;
+            *start = &mNodeGraphDelegate.mEvaluationStages.mStages[index].mStartFrame;
         if (end)
-            *end = &mNodeGraphDelegate.mNodes[index].mEndFrame;
+            *end = &mNodeGraphDelegate.mEvaluationStages.mStages[index].mEndFrame;
         if (type)
             *type = int(nodeType);
     }
@@ -1177,7 +1177,7 @@ struct MySequence : public ImSequencer::SequenceInterface
     ImVec2 setKeyFrameOrValue;
     ImVec2 getKeyFrameOrValue;
     float mCurveMin, mCurveMax;
-    URChange<TileNodeEditGraphDelegate::ImogenNode> *undoRedoChange;
+    URChange<EvaluationStage> *undoRedoChange;
 };
 MySequence mySequence(gNodeDelegate);
 
@@ -1508,13 +1508,13 @@ void Imogen::Show(Builder *builder, Library& library, TileNodeEditGraphDelegate 
             int timeMask[2] = { 0,0 };
             if (selectedEntry != -1)
             {
-                timeMask[0] = gNodeDelegate.mNodes[selectedEntry].mStartFrame;
-                timeMask[1] = gNodeDelegate.mNodes[selectedEntry].mEndFrame;
+                timeMask[0] = gNodeDelegate.mEvaluationStages.mStages[selectedEntry].mStartFrame;
+                timeMask[1] = gNodeDelegate.mEvaluationStages.mStages[selectedEntry].mEndFrame;
             }
             ImGui::PushItemWidth(120);
             if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
             {
-                URChange<TileNodeEditGraphDelegate::ImogenNode> undoRedoChange(selectedEntry, [](int index) { return &gNodeDelegate.mNodes[index]; });
+                URChange<EvaluationStage> undoRedoChange(selectedEntry, [](int index) { return &gNodeDelegate.mEvaluationStages.mStages[index]; });
                 timeMask[1] = ImMax(timeMask[1], timeMask[0]);
                 timeMask[0] = ImMin(timeMask[1], timeMask[0]);
                 gNodeDelegate.SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
@@ -1527,7 +1527,7 @@ void Imogen::Show(Builder *builder, Library& library, TileNodeEditGraphDelegate 
             {
                 nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
                 NodeGraphSelectNode(selectedEntry);
-                auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
+                auto& imoNode = nodeGraphDelegate.mEvaluationStages.mStages[selectedEntry];
                 gNodeDelegate.mEvaluationStages.SetStageLocalTime(selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
             }
             if (currentTime != gEvaluationTime)
@@ -1545,7 +1545,7 @@ void Imogen::Show(Builder *builder, Library& library, TileNodeEditGraphDelegate 
         for (auto& extraction : mExtratedViews)
         {
             char tmps[512];
-            sprintf(tmps, "%s_View_%03d", gMetaNodes[nodeGraphDelegate.mNodes[extraction.mNodeIndex].mType].mName.c_str(), index);
+            sprintf(tmps, "%s_View_%03d", gMetaNodes[nodeGraphDelegate.mEvaluationStages.mStages[extraction.mNodeIndex].mType].mName.c_str(), index);
             bool open = true;
             if (extraction.mFirstFrame)
             {

@@ -252,7 +252,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         UploadVertices(bladeVertices, sizeof(bladeVertices));
     }
 
-    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
 
     // allocate buffer
@@ -316,7 +316,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
     auto tgt = mStageTarget[index];
 
-    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
     const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
     unsigned int blend[] = { GL_ONE, GL_ZERO };
@@ -384,7 +384,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
             //
 #if 0
-            if (evaluationStage.mNodeTypename == "FurDisplay")
+            if (evaluationStage.mTypename == "FurDisplay")
             {
                 glClearDepth(1.f);
                 glDepthFunc(GL_LEQUAL);
@@ -442,7 +442,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 {
     try // todo: find a better solution than a try catch
     {
-        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
         if (evaluator.mCFunction)
         {
             int res = evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo);
@@ -462,7 +462,7 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, s
 {
     try // todo: find a better solution than a try catch
     {
-        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
         evaluator.RunPython();
     }
     catch (...)
@@ -588,7 +588,7 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        if (gEvaluationTime < gNodeDelegate.mNodes[nodeIndex].mStartFrame || gEvaluationTime > gNodeDelegate.mNodes[nodeIndex].mEndFrame)
+        if (gEvaluationTime < mEvaluationStages.mStages[nodeIndex].mStartFrame || gEvaluationTime > mEvaluationStages.mStages[nodeIndex].mEndFrame)
             continue;
         RunNode(nodeIndex);
         anyNodeIsProcessing |= mbProcessing[nodeIndex] != 0;

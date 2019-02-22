@@ -33,7 +33,7 @@
 #include "imgui_internal.h"
 #include "Library.h"
 
-struct TileNodeEditGraphDelegate;
+struct NodeGraphControler;
 struct Evaluation;
 class TextEditor;
 struct Library;
@@ -69,8 +69,8 @@ struct Imogen
     void Init();
     void Finish();
     
-    void Show(Builder *builder, Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
-    void ValidateCurrentMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
+    void Show(Builder *builder, Library& library, NodeGraphControler &NodeGraphControler);
+    void ValidateCurrentMaterial(Library& library, NodeGraphControler &NodeGraphControler);
     void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
@@ -78,7 +78,7 @@ struct Imogen
     int GetCurrentMaterialIndex();
 
 protected:
-    void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate);
+    void HandleEditor(TextEditor &editor, NodeGraphControler &NodeGraphControler);
     void ShowAppMainMenuBar();
     void ShowTitleBar(Builder *builder);
 };

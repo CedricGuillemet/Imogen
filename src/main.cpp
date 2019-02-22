@@ -33,8 +33,8 @@
 #include <stdlib.h>
 #include <io.h> 
 #include <fcntl.h> 
-#include "Nodes.h"
-#include "NodesDelegate.h"
+#include "NodeGraph.h"
+#include "NodeGraphControler.h"
 #include "EvaluationStages.h"
 #include "Imogen.h"
 #include "TaskScheduler.h"

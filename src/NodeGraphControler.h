@@ -25,16 +25,16 @@
 
 #pragma once
 
-#include "Nodes.h"
+#include "NodeGraph.h"
 #include "EvaluationStages.h"
 #include "ImCurveEdit.h"
 #include "ImGradient.h"
 #include "Library.h"
 #include "EvaluationContext.h"
 
-struct TileNodeEditGraphDelegate : public NodeGraphDelegate
+struct NodeGraphControler : public NodeGraphControlerBase
 {
-    TileNodeEditGraphDelegate();
+    NodeGraphControler();
 
     void Clear();
 
@@ -109,4 +109,4 @@ protected:
     void UpdateDirtyParameter(int index);
 };
 
-extern TileNodeEditGraphDelegate gNodeDelegate;
+extern NodeGraphControler gNodeDelegate;

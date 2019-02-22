@@ -27,7 +27,7 @@
 #include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
-#include "NodesDelegate.h"
+#include "NodeGraphControler.h"
 
 EvaluationContext *gCurrentContext = NULL;
 

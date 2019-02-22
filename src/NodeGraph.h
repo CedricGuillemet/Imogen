@@ -29,9 +29,9 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-struct NodeGraphDelegate
+struct NodeGraphControlerBase
 {
-    NodeGraphDelegate() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
+    NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
     {}
 
     int mSelectedNodeIndex;
@@ -116,15 +116,15 @@ struct NodeRug
     }
 };
 
-void NodeGraph(NodeGraphDelegate *delegate, bool enabled);
+void NodeGraph(NodeGraphControlerBase *delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
 const std::vector<NodeLink>& NodeGraphGetLinks();
 const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd);
+void NodeGraphAddNode(NodeGraphControlerBase *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd);
 void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
-void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
-void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);
+void NodeGraphAddLink(NodeGraphControlerBase *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
+void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase *delegate);
 void NodeGraphUpdateScrolling();
 void NodeGraphSelectNode(int selectedNodeIndex);

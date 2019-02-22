@@ -26,13 +26,13 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <math.h>
-#include "Nodes.h"
+#include "NodeGraph.h"
 #include <vector>
 #include <algorithm>
 #include <assert.h>
 #include "EvaluationStages.h"
 #include "imgui_stdlib.h"
-#include "NodesDelegate.h"
+#include "NodeGraphControler.h"
 #include <array>
 #include "imgui_markdown/imgui_markdown.h"
 #include "UI.h"
@@ -425,7 +425,7 @@ bool RecurseIsLinked(int from, int to)
     return false;
 }
 
-void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
+void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase *delegate)
 {
     mOrders = ComputeEvaluationOrder(links, nodes.size());
     std::sort(mOrders.begin(), mOrders.end());
@@ -435,7 +435,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate)
     gNodeDelegate.UpdateEvaluationList(nodeOrderList);
 }
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd)
+void NodeGraphAddNode(NodeGraphControlerBase *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd)
 {
     size_t index = nodes.size();
     nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
@@ -445,7 +445,7 @@ void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<u
     gNodeDelegate.SetTimeSlot(index, frameStart, frameEnd);
 }
 
-void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
+void NodeGraphAddLink(NodeGraphControlerBase *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
 {
     NodeLink nl;
     nl.InputIdx = InputIdx;
@@ -1230,7 +1230,7 @@ void NodeGraphSelectNode(int selectedNodeIndex)
     }
 }
 
-void NodeGraph(NodeGraphDelegate *delegate, bool enabled)
+void NodeGraph(NodeGraphControlerBase *delegate, bool enabled)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);// ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));

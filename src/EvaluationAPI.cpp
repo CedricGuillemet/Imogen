@@ -37,7 +37,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "TaskScheduler.h"
-#include "NodesDelegate.h"
+#include "NodeGraphControler.h"
 #include "cmft/print.h"
 
 

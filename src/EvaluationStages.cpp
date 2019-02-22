@@ -61,7 +61,7 @@ void EvaluationStages::StageIsAdded(int index)
     {
         if (i == index)
             continue;
-        auto& evaluation = gEvaluation.mStages[i];
+        auto& evaluation = mStages[i];
         for (auto& inp : evaluation.mInput.mInputs)
         {
             if (inp >= index)
@@ -72,11 +72,11 @@ void EvaluationStages::StageIsAdded(int index)
 
 void EvaluationStages::StageIsDeleted(int index)
 {
-    EvaluationStage& ev = gEvaluation.mStages[index];
+    EvaluationStage& ev = mStages[index];
     ev.Clear();
 
     // shift all connections
-    for (auto& evaluation : gEvaluation.mStages)
+    for (auto& evaluation : mStages)
     {
         for (auto& inp : evaluation.mInput.mInputs)
         {
@@ -88,16 +88,16 @@ void EvaluationStages::StageIsDeleted(int index)
 
 void EvaluationStages::UserAddEvaluation(size_t nodeType)
 {
-    URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()), []() {return &gEvaluation.mStages; },
-        StageIsDeleted, StageIsAdded);
+    URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()), [&]() {return &mStages; },
+        [&](int index) {StageIsDeleted(index); }, [&](int index) {StageIsAdded(index); });
 
     AddSingleEvaluation(nodeType);
 }
 
 void EvaluationStages::UserDeleteEvaluation(size_t target)
 {
-    URDel<EvaluationStage> undoRedoDelStage(int(target), []() {return &gEvaluation.mStages; },
-        StageIsDeleted, StageIsAdded);
+    URDel<EvaluationStage> undoRedoDelStage(int(target), [&]() {return &mStages; },
+        [&](int index) {StageIsDeleted(index); }, [&](int index) {StageIsAdded(index); });
 
     StageIsDeleted(int(target));
     mStages.erase(mStages.begin() + target);
@@ -195,11 +195,11 @@ void EvaluationStages::SetStageLocalTime(size_t target, int localTime, bool upda
         stage.mLocalTime = newLocalTime;
     }
 }
-
+/*
 int EvaluationStages::Evaluate(int target, int width, int height, Image *image)
 {
     EvaluationContext *previousContext = gCurrentContext;
-    EvaluationContext context(gEvaluation, true, width, height);
+    EvaluationContext context(*this, true, width, height);
     gCurrentContext = &context;
     while (context.RunBackward(target))
     {
@@ -209,7 +209,7 @@ int EvaluationStages::Evaluate(int target, int width, int height, Image *image)
     gCurrentContext = previousContext;
     return EVAL_OK;
 }
-
+*/
 FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
 {
     for (auto& evaluation : mStages)

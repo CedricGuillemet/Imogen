@@ -834,7 +834,7 @@ void Builder::BuildEntries()
             //Sleep(20);
             auto& entry = *mEntries.begin();
             entry.mProgress = 0.01f;
-            gNodeDelegate.DoForce();
+            //gNodeDelegate.DoForce();
             entry.mProgress = 1.f;
             if (entry.mProgress >= 1.f)
             {

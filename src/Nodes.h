@@ -50,7 +50,7 @@ struct NodeGraphDelegate
     // node deleted
     virtual void UserDeleteNode(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) = 0;
-    virtual void DoForce() = 0;
+
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
     virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd) = 0;
     virtual bool NodeHasUI(size_t nodeIndex) = 0;

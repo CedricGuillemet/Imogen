@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <functional>
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "Library.h"
@@ -198,7 +199,7 @@ inline UndoRedo::~UndoRedo()
 
 template<typename T> struct URChange : public UndoRedo
 {
-    URChange(int index, T* (*GetElements)(int index), void(*Changed)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), Changed(Changed)
+    URChange(int index, std::function<T*(int index)> GetElements, std::function<void(int index)> Changed = [](int index) {}) : GetElements(GetElements), mIndex(index), Changed(Changed)
     {
         if (gUndoRedoHandler.mbProcessing)
             return;
@@ -237,8 +238,8 @@ template<typename T> struct URChange : public UndoRedo
     T mPostDo;
     int mIndex;
 
-    T* (*GetElements)(int index);
-    void(*Changed)(int index);
+    std::function<T*(int index)> GetElements;
+    std::function<void(int index)> Changed;
 };
 
 
@@ -269,7 +270,8 @@ struct URDummy : public UndoRedo
 
 template<typename T> struct URDel : public UndoRedo
 {
-    URDel(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index) = [](int index) {}, void(*OnNew)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+    URDel(int index, std::function<std::vector<T>* ()> GetElements, std::function<void(int index)> OnDelete = [](int index) {}, std::function<void(int index)> OnNew = [](int index) {}) :
+        GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
     {
         if (gUndoRedoHandler.mbProcessing)
             return;
@@ -299,14 +301,15 @@ template<typename T> struct URDel : public UndoRedo
     T mDeletedElement;
     int mIndex;
 
-    std::vector<T>* (*GetElements)();
-    void(*OnDelete)(int index);
-    void(*OnNew)(int index);
+    std::function<std::vector<T>* ()> GetElements;
+    std::function<void(int index)> OnDelete;
+    std::function<void(int index)> OnNew;
 };
 
 template<typename T> struct URAdd : public UndoRedo
 {
-    URAdd(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index)  = [](int index) {}, void(*OnNew)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+    URAdd(int index, std::function<std::vector<T>* ()> GetElements, std::function<void(int index)> OnDelete = [](int index) {}, std::function<void(int index)> OnNew = [](int index) {}) :
+        GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
     {
     }
     virtual ~URAdd()
@@ -334,7 +337,7 @@ template<typename T> struct URAdd : public UndoRedo
     T mAddedElement;
     int mIndex;
 
-    std::vector<T>* (*GetElements)();
-    void(*OnDelete)(int index);
-    void(*OnNew)(int index);
+    std::function<std::vector<T>* ()> GetElements;
+    std::function<void(int index)> OnDelete;
+    std::function<void(int index)> OnNew;
 };

@@ -46,14 +46,14 @@ static const EValuationFunction evaluationFunctions[] = {
     { "AllocateImage", (void*)EvaluationStages::AllocateImage },
     { "FreeImage", (void*)Image::Free },
     { "SetThumbnailImage", (void*)EvaluationStages::SetThumbnailImage },
-    { "Evaluate", (void*)EvaluationStages::Evaluate},
+    //{ "Evaluate", (void*)EvaluationStages::Evaluate},
     { "SetBlendingMode", (void*)EvaluationStages::SetBlendingMode},
     { "EnableDepthBuffer", (void*)EvaluationStages::EnableDepthBuffer},
     { "GetEvaluationSize", (void*)EvaluationStages::GetEvaluationSize},
     { "SetEvaluationSize", (void*)EvaluationStages::SetEvaluationSize },
     { "SetEvaluationCubeSize", (void*)EvaluationStages::SetEvaluationCubeSize },
     { "AllocateComputeBuffer", (void*)EvaluationStages::AllocateComputeBuffer },
-    { "CubemapFilter", (void*)EvaluationStages::CubemapFilter},
+    { "CubemapFilter", (void*)Image::CubemapFilter},
     { "SetProcessing", (void*)EvaluationStages::SetProcessing},
     { "Job", (void*)EvaluationStages::Job },
     { "JobMain", (void*)EvaluationStages::JobMain },
@@ -262,20 +262,20 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return std::string();
     });
     m.def("Log", LogPython );
-    m.def("ReadImage", EvaluationStages::ReadImage );
-    m.def("WriteImage", EvaluationStages::WriteImage );
+    m.def("ReadImage", Image::Read );
+    m.def("WriteImage", Image::Write );
     m.def("GetEvaluationImage", EvaluationStages::GetEvaluationImage );
     m.def("SetEvaluationImage", EvaluationStages::SetEvaluationImage );
     m.def("SetEvaluationImageCube", EvaluationStages::SetEvaluationImageCube );
     m.def("AllocateImage", EvaluationStages::AllocateImage );
     m.def("FreeImage", Image::Free );
     m.def("SetThumbnailImage", EvaluationStages::SetThumbnailImage );
-    m.def("Evaluate", EvaluationStages::Evaluate );
+    //m.def("Evaluate", EvaluationStages::Evaluate );
     m.def("SetBlendingMode", EvaluationStages::SetBlendingMode );
     m.def("GetEvaluationSize", EvaluationStages::GetEvaluationSize );
     m.def("SetEvaluationSize", EvaluationStages::SetEvaluationSize );
     m.def("SetEvaluationCubeSize", EvaluationStages::SetEvaluationCubeSize );
-    m.def("CubemapFilter", EvaluationStages::CubemapFilter );
+    m.def("CubemapFilter", Image::CubemapFilter );
     m.def("SetProcessing", EvaluationStages::SetProcessing );
     /*
     m.def("Job", EvaluationStages::Job );

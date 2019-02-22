@@ -40,11 +40,14 @@
 
 #include "cmft/image.h"
 #include "cmft/cubemapfilter.h"
+#include "cmft/print.h"
 #include "ffmpegCodec.h"
 
 extern cmft::ClContext* clContext;
+ImageCache gImageCache;
+DefaultShaders gDefaultShader;
 
-static const unsigned int glInputFormats[] = {
+const unsigned int glInputFormats[] = {
         GL_BGR,
         GL_RGB,
         GL_RGB16,
@@ -60,7 +63,7 @@ static const unsigned int glInputFormats[] = {
 
         GL_RGBA, // RGBM
 };
-static const unsigned int glInternalFormats[] = {
+const unsigned int glInternalFormats[] = {
     GL_RGB,
     GL_RGB,
     GL_RGB16,
@@ -76,7 +79,7 @@ static const unsigned int glInternalFormats[] = {
 
     GL_RGBA, // RGBM
 };
-static const unsigned int glCubeFace[] = {
+const unsigned int glCubeFace[] = {
     GL_TEXTURE_CUBE_MAP_POSITIVE_X,
     GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
     GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
@@ -84,16 +87,10 @@ static const unsigned int glCubeFace[] = {
     GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
     GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
 };
-static const unsigned int textureFormatSize[] = { 3,3,6,6,12, 4,4,4,8,8,16,4 };
-static const unsigned int textureComponentCount[] = { 3,3,3,3,3, 4,4,4,4,4,4,4 };
+const unsigned int textureFormatSize[] = { 3,3,6,6,12, 4,4,4,8,8,16,4 };
+const unsigned int textureComponentCount[] = { 3,3,3,3,3, 4,4,4,4,4,4,4 };
 
-
-unsigned int GetTexelSize(uint8_t fmt)
-{
-    return textureFormatSize[fmt];
-}
-
-static Image DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
+Image Image::DecodeImage(FFMPEGCodec::Decoder *decoder, int frame)
 {
     decoder->ReadFrame(frame);
     Image image;
@@ -170,8 +167,9 @@ int Image::Read(const char *filename, Image *image)
         cmft::Image img;
         if (!cmft::imageLoad(img, filename))
         {
-            auto decoder = gNodeDelegate.mEvaluationStages.FindDecoder(filename);
-            *image = ::DecodeImage(decoder, gEvaluationTime);
+            // TODO
+            //auto decoder = gNodeDelegate.mEvaluationStages.FindDecoder(filename);
+            //*image = Image::DecodeImage(decoder, gEvaluationTime);
             return EVAL_OK;
         }
         cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
@@ -195,7 +193,7 @@ int Image::Read(const char *filename, Image *image)
 
 int Image::Free(Image *image)
 {
-    image->Free();
+    image->DoFree();
     return EVAL_OK;
 }
 
@@ -301,9 +299,10 @@ int Image::Write(const char *filename, Image *image, int format, int quality)
     break;
     case 7:
     {
-        FFMPEGCodec::Encoder *encoder = gCurrentContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
+        // TODO
+        /*FFMPEGCodec::Encoder *encoder = gCurrentContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
         std::string fn(filename);
-        encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);
+        encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);*/
     }
     break;
     }

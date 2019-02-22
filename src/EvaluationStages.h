@@ -186,14 +186,13 @@ struct EvaluationStages
     static int SetThumbnailImage(Image *image);
     static int AllocateImage(Image *image);
 
-    static int Evaluate(int target, int width, int height, Image *image);
+    //static int Evaluate(int target, int width, int height, Image *image);
     static void SetBlendingMode(int target, int blendSrc, int blendDst);
     static void EnableDepthBuffer(int target, int enable);
     static int SetNodeImage(int target, Image *image);
     static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
     static int SetEvaluationSize(int target, int imageWidth, int imageHeight);
     static int SetEvaluationCubeSize(int target, int faceWidth);
-    static int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
     static int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
     static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
     static void SetProcessing(int target, int processing);
@@ -235,8 +234,8 @@ protected:
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 
-    static void StageIsAdded(int index);
-    static void StageIsDeleted(int index);
+    void StageIsAdded(int index);
+    void StageIsDeleted(int index);
 
 };
 

@@ -217,7 +217,7 @@ void RenderTarget::CheckFBO()
 
 Image EvaluationStage::DecodeImage()
 {
-    return ::DecodeImage(mDecoder.get(), mLocalTime);
+    return Image::DecodeImage(mDecoder.get(), mLocalTime);
 }
 
 
@@ -232,7 +232,7 @@ int EvaluationStages::GetEvaluationImage(int target, Image *image)
 
     // compute total size
     Image& img = tgt.mImage;
-    unsigned int texelSize = GetTexelSize(img.mFormat);
+    unsigned int texelSize = textureFormatSize[img.mFormat];
     unsigned int texelFormat = glInternalFormats[img.mFormat];
     uint32_t size = 0;// img.mNumFaces * img.mWidth * img.mHeight * texelSize;
     for (int i = 0;i<img.mNumMips;i++)
@@ -275,7 +275,7 @@ int EvaluationStages::SetEvaluationImage(int target, Image *image)
     auto tgt = gCurrentContext->GetRenderTarget(target);
     if (!tgt)
         return EVAL_ERR;
-    unsigned int texelSize = GetTexelSize(image->mFormat);
+    unsigned int texelSize = textureFormatSize[image->mFormat];
     unsigned int inputFormat = glInputFormats[image->mFormat];
     unsigned int internalFormat = glInternalFormats[image->mFormat];
     unsigned char *ptr = image->GetBits();
@@ -330,20 +330,15 @@ int EvaluationStages::SetEvaluationImageCube(int target, Image *image, int cubeF
 
     tgt.InitCube(image->mWidth);
 
-    UploadImage(image, tgt.mGLTexID, cubeFace);
+    Image::Upload(image, tgt.mGLTexID, cubeFace);
     gCurrentContext->SetTargetDirty(target, true);
     return EVAL_OK;
 }
-
-
 
 int EvaluationStages::AllocateImage(Image *image)
 {
     return EVAL_OK;
 }
-
-
-
 
 int EvaluationStages::SetThumbnailImage(Image *image)
 {

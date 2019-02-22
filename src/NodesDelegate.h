@@ -53,7 +53,7 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
     void SetTimeDuration(size_t index, int duration);
     void SetTime(int time, bool updateDecoder);
 
-    virtual void DoForce();
+    //virtual void DoForce();
     void InvalidateParameters();
 
     void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel);
@@ -145,6 +145,8 @@ struct TileNodeEditGraphDelegate : public NodeGraphDelegate
 protected:
     void InitDefault(ImogenNode& node);
     bool EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param);
+    void NodeIsAdded(int index);
+    void UpdateDirtyParameter(int index);
 };
 
 extern TileNodeEditGraphDelegate gNodeDelegate;

@@ -26,7 +26,13 @@
 #pragma once
 #include <string>
 #include <map>
+#include <vector>
 #include <string.h>
+
+namespace FFMPEGCodec
+{
+    class Decoder;
+};
 
 struct TextureFormat
 {
@@ -96,7 +102,7 @@ struct Image
         mBits = (unsigned char*)malloc(size);
         mDataSize = uint32_t(size);
     }
-    void Free() {
+    void DoFree() {
         free(mBits); mBits = NULL; mDataSize = 0;
     }
 
@@ -109,12 +115,15 @@ struct Image
     static int Write(const char *filename, Image *image, int format, int quality);
     static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);
     static int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
+    static Image DecodeImage(FFMPEGCodec::Decoder *decoder, int frame);
 
 protected:
     unsigned char *mBits;
 };
 
-
+extern const unsigned int glInternalFormats[];
+extern const unsigned int glInputFormats[];
+extern const unsigned int textureFormatSize[];
 
 struct ImageCache
 {

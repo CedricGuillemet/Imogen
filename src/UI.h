@@ -179,7 +179,7 @@ void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUV
 
 namespace DrawUICallbacks
 {
-    static void DrawUICubemap(size_t nodeIndex);
-    static void DrawUISingle(size_t nodeIndex);
-    static void DrawUIProgress(size_t nodeIndex);
+    void DrawUICubemap(size_t nodeIndex);
+    void DrawUISingle(size_t nodeIndex);
+    void DrawUIProgress(size_t nodeIndex);
 }

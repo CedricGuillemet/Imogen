@@ -30,6 +30,17 @@
 #include "EvaluationContext.h"
 #include "TaskScheduler.h"
 #include <vector>
+#include <map>
+#include <string>
+
+
+
+#include "Scene.h"
+#include "Loader.h"
+#include "TiledRenderer.h"
+#include "ProgressiveRenderer.h"
+#include "GPUBVH.h"
+#include "Camera.h"
 
 Evaluators gEvaluators;
 extern enki::TaskScheduler g_TS;
@@ -825,14 +836,6 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-
-#include "Scene.h"
-#include "Loader.h"
-#include "TiledRenderer.h"
-#include "ProgressiveRenderer.h"
-#include "GPUBVH.h"
-#include "Camera.h"
-
     int LoadScene(const char *filename, void **pscene)
     {
         // todo: make a real good cache system
@@ -920,14 +923,14 @@ namespace EvaluationAPI
         }
 
         renderer->update(0.0166f);
-        auto tgt = o->GetRenderTarget(target);
+        auto tgt = evaluationContext->GetRenderTarget(target);
         renderer->render();
 
         tgt->BindAsTarget();
         renderer->present();
 
         float progress = renderer->getProgress();
-        o->StageSetProgress(target, progress);
+        evaluationContext->StageSetProgress(target, progress);
         bool renderDone = progress >= 1.f - FLT_EPSILON;
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(0);

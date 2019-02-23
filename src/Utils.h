@@ -49,6 +49,7 @@ protected:
 };
 
 
+
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode);
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);

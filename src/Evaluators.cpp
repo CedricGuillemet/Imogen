@@ -665,17 +665,17 @@ namespace EvaluationAPI
     }
 
 
-    void SetBlendingMode(EvaluationStages *evaluationStages, int target, int blendSrc, int blendDst)
+    void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst)
     {
-        EvaluationStage& evaluation = evaluationStages->mStages[target];
+        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
 
         evaluation.mBlendingSrc = blendSrc;
         evaluation.mBlendingDst = blendDst;
     }
 
-    void EnableDepthBuffer(EvaluationStages *evaluationStages, int target, int enable)
+    void EnableDepthBuffer(EvaluationContext *evaluationContext, int target, int enable)
     {
-        EvaluationStage& evaluation = evaluationStages->mStages[target];
+        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
         evaluation.mbDepthBuffer = enable != 0;
     }
 
@@ -718,21 +718,21 @@ namespace EvaluationAPI
     }
 
 
-    int SetEvaluationScene(EvaluationStages *evaluationStages, int target, void *scene)
+    int SetEvaluationScene(EvaluationContext *evaluationContext, int target, void *scene)
     {
-        evaluationStages->mStages[target].scene = scene;
+        evaluationContext->mEvaluationStages.mStages[target].scene = scene;
         return EVAL_OK;
     }
 
-    int GetEvaluationScene(EvaluationStages *evaluationStages, int target, void **scene)
+    int GetEvaluationScene(EvaluationContext *evaluationContext, int target, void **scene)
     {
-        *scene = evaluationStages->mStages[target].scene;
+        *scene = evaluationContext->mEvaluationStages.mStages[target].scene;
         return EVAL_OK;
     }
 
-    int GetEvaluationRenderer(EvaluationStages *evaluationStages, int target, void **renderer)
+    int GetEvaluationRenderer(EvaluationContext *evaluationContext, int target, void **renderer)
     {
-        *renderer = evaluationStages->mStages[target].renderer;
+        *renderer = evaluationContext->mEvaluationStages.mStages[target].renderer;
         return EVAL_OK;
     }
 
@@ -890,18 +890,18 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int InitRenderer(EvaluationStages *evaluationStages, int target, int mode, void *scene)
+    int InitRenderer(EvaluationContext *evaluationContext, int target, int mode, void *scene)
     {
         GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
-        evaluationStages->mStages[target].scene = scene;
+        evaluationContext->mEvaluationStages.mStages[target].scene = scene;
 
-        GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)evaluationStages->mStages[target].renderer;
+        GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)evaluationContext->mEvaluationStages.mStages[target].renderer;
         if (!currentRenderer)
         {
             //auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
             auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
             renderer->init();
-            evaluationStages->mStages[target].renderer = renderer;
+            evaluationContext->mEvaluationStages.mStages[target].renderer = renderer;
         }
         return EVAL_OK;
     }

@@ -148,3 +148,31 @@ struct DefaultShaders
 };
 
 extern DefaultShaders gDefaultShader;
+
+
+class RenderTarget
+{
+
+public:
+    RenderTarget() : mGLTexID(0), mGLTexDepth(0), mFbo(0), mDepthBuffer(0)
+    {
+        memset(&mImage, 0, sizeof(Image));
+    }
+
+    void InitBuffer(int width, int height, bool depthBuffer);
+    void InitCube(int width);
+    void BindAsTarget() const;
+    void BindAsCubeTarget() const;
+    void BindCubeFace(size_t face);
+    void Destroy();
+    void CheckFBO();
+    void Clone(const RenderTarget &other);
+    void Swap(RenderTarget &other);
+
+
+    Image mImage;
+    unsigned int mGLTexID;
+    unsigned int mGLTexDepth;
+    unsigned int mDepthBuffer;
+    unsigned int mFbo;
+};

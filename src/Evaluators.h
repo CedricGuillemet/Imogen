@@ -93,8 +93,8 @@ namespace EvaluationAPI
     int AllocateImage(Image *image);
 
     //static int Evaluate(int target, int width, int height, Image *image);
-    void SetBlendingMode(EvaluationStages *evaluationStages, int target, int blendSrc, int blendDst);
-    void EnableDepthBuffer(EvaluationStages *evaluationStages, int target, int enable);
+    void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst);
+    void EnableDepthBuffer(EvaluationContext *evaluationContext, int target, int enable);
     int SetNodeImage(int target, Image *image);
     int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
     int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight);
@@ -105,10 +105,10 @@ namespace EvaluationAPI
     int AllocateComputeBuffer(EvaluationContext *context, int target, int elementCount, int elementSize);
 
     int LoadScene(const char *filename, void **scene);
-    int SetEvaluationScene(EvaluationStages *evaluationStages, int target, void *scene);
-    int GetEvaluationScene(EvaluationStages *evaluationStages, int target, void **scene);
-    int GetEvaluationRenderer(EvaluationStages *evaluationStages, int target, void **renderer);
-    int InitRenderer(EvaluationStages *evaluationStages, int target, int mode, void *scene);
+    int SetEvaluationScene(EvaluationContext *evaluationContext, int target, void *scene);
+    int GetEvaluationScene(EvaluationContext *evaluationContext, int target, void **scene);
+    int GetEvaluationRenderer(EvaluationContext *evaluationContext, int target, void **renderer);
+    int InitRenderer(EvaluationContext *evaluationContext, int target, int mode, void *scene);
     int UpdateRenderer(EvaluationContext *evaluationContext, int target);
 
 }

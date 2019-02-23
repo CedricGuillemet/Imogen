@@ -269,3 +269,35 @@ int EvaluationStages::GetIntParameter(size_t index, const char *parameterName, i
     return defaultValue;
 }
 
+
+Image EvaluationStage::DecodeImage()
+{
+    return Image::DecodeImage(mDecoder.get(), mLocalTime);
+}
+
+
+void EvaluationStages::BindGLSLParameters(EvaluationStage& stage)
+{
+    if (!stage.mParametersBuffer)
+    {
+        glGenBuffers(1, &stage.mParametersBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+
+        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    else
+    {
+        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+}
+
+void EvaluationStage::Clear()
+{
+    if (gEvaluationMask&EvaluationGLSL)
+        glDeleteBuffers(1, &mParametersBuffer);
+    mParametersBuffer = 0;
+}

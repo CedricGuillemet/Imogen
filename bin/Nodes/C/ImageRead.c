@@ -18,6 +18,7 @@ typedef struct JobData_t
 	int targetIndex;
 	int face;
 	int isCube;
+	void *context;
 	Image image;
 } JobData;
 
@@ -25,14 +26,14 @@ int UploadImageJob(JobData *data)
 {
 	if (data->isCube)
 	{
-		SetEvaluationImageCube(data->targetIndex, &data->image, data->face);
+		SetEvaluationImageCube(data->context, data->targetIndex, &data->image, data->face);
 	}
 	else
 	{
-		SetEvaluationImage(data->targetIndex, &data->image);
+		SetEvaluationImage(data->context, data->targetIndex, &data->image);
 	}
 	FreeImage(&data->image);
-	SetProcessing(data->targetIndex, 0);
+	SetProcessing(data->context, data->targetIndex, 0);
 	return EVAL_OK;
 }
 
@@ -41,28 +42,29 @@ int ReadJob(JobData *data)
 	if (ReadImage(data->filename, &data->image) == EVAL_OK)
 	{
 		JobData dataUp = *data;
-		JobMain(UploadImageJob, &dataUp, sizeof(JobData));
+		JobMain(data->context, UploadImageJob, &dataUp, sizeof(JobData));
 	}
 	else
-		SetProcessing(data->targetIndex, 0);
+		SetProcessing(data->context, data->targetIndex, 0);
 	return EVAL_OK;
 }
 
-int main(ImageRead *param, Evaluation *evaluation)
+int main(ImageRead *param, Evaluation *evaluation, void *context)
 {
 	int i;
 	char *files[6] = {param->posxfile, param->negxfile, param->negyfile, param->posyfile, param->poszfile, param->negzfile};
 	
 	if (strlen(param->filename))
 	{
-		SetProcessing(evaluation->targetIndex, 1);
+		SetProcessing(data->context, evaluation->targetIndex, 1);
 		JobData data;
 		strcpy(data.filename, param->filename);
 		data.targetIndex = evaluation->targetIndex;
 		data.face = 0;
 		data.isCube = 0;
 		data.image.bits = 0;
-		Job(ReadJob, &data, sizeof(JobData));
+		data.context = context;
+		Job(context, ReadJob, &data, sizeof(JobData));
 	}
 	else
 	{
@@ -71,7 +73,7 @@ int main(ImageRead *param, Evaluation *evaluation)
 			if (!strlen(files[i]))
 				return EVAL_OK;
 		}
-		SetProcessing(evaluation->targetIndex, 1);
+		SetProcessing(context, evaluation->targetIndex, 1);
 		for (i = 0;i<6;i++)
 		{
 			JobData data;
@@ -80,7 +82,8 @@ int main(ImageRead *param, Evaluation *evaluation)
 			data.face = CUBEMAP_POSX + i;
 			data.isCube = 1;
 			data.image.bits = 0;
-			Job(ReadJob, &data, sizeof(JobData));
+			data.context = context;
+			Job(context, ReadJob, &data, sizeof(JobData));
 		}		
 	}
 

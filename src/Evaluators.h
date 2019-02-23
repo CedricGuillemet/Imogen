@@ -34,7 +34,7 @@ struct Evaluator
 {
     Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0) {}
     unsigned int mGLSLProgram;
-    int(*mCFunction)(void *parameters, void *evaluationInfo);
+    int(*mCFunction)(void *parameters, void *evaluationInfo, void *context);
     void *mMem;
     pybind11::module mPyModule;
 
@@ -66,7 +66,7 @@ protected:
         EvaluatorScript(const std::string & text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mType(-1) {}
         std::string mText;
         unsigned int mProgram;
-        int(*mCFunction)(void *parameters, void *evaluationInfo);
+        int(*mCFunction)(void *parameters, void *evaluationInfo, void *context);
         void *mMem;
         int mType;
         pybind11::module mPyModule;

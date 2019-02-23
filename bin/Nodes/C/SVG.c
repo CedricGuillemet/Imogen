@@ -6,7 +6,7 @@ typedef struct SVG_t
 	float dpi;
 } SVG;
 
-int main(SVG *param, Evaluation *evaluation)
+int main(SVG *param, Evaluation *evaluation, void *context)
 {
 	Image image;
 	image.bits = 0;
@@ -17,7 +17,7 @@ int main(SVG *param, Evaluation *evaluation)
 	{
 		if (LoadSVG(param->filename, &image, param->dpi) == EVAL_OK)
 		{
-			SetEvaluationImage(evaluation->targetIndex, &image);
+			SetEvaluationImage(context, evaluation->targetIndex, &image);
 		}
 	}
 	return EVAL_OK;

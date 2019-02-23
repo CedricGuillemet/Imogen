@@ -88,10 +88,10 @@ int ReadImage(char *filename, Image *image);
 // writes an allocated image
 int WriteImage(char *filename, Image *image, int format, int quality);
 // call FreeImage when done
-int GetEvaluationImage(int target, Image *image);
+int GetEvaluationImage(void* context, int target, Image *image);
 // 
-int SetEvaluationImage(int target, Image *image);
-int SetEvaluationImageCube(int target, Image *image, int cubeFace);
+int SetEvaluationImage(void* context, int target, Image *image);
+int SetEvaluationImageCube(void* context, int target, Image *image, int cubeFace);
 // call FreeImage when done
 // set the bits pointer with an allocated memory
 int AllocateImage(Image *image);
@@ -104,32 +104,32 @@ int SetThumbnailImage(Image *image);
 
 // force evaluation of a target with a specified size
 // no guarantee that the resulting Image will have that size.
-int Evaluate(int target, int width, int height, Image *image);
+int Evaluate(void* context, int target, int width, int height, Image *image);
 
-void SetBlendingMode(int target, int blendSrc, int blendDst);
-void EnableDepthBuffer(int target, int enable);
-int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
-int SetEvaluationSize(int target, int imageWidth, int imageHeight);
-int SetEvaluationCubeSize(int target, int faceWidth);
+void SetBlendingMode(void* context, int target, int blendSrc, int blendDst);
+void EnableDepthBuffer(void* context, int target, int enable);
+int GetEvaluationSize(void* context, int target, int *imageWidth, int *imageHeight);
+int SetEvaluationSize(void* context, int target, int imageWidth, int imageHeight);
+int SetEvaluationCubeSize(void* context, int target, int faceWidth);
 int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 
-int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
-int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
+int Job(void* context, int(*jobFunction)(void*), void *ptr, unsigned int size);
+int JobMain(void* context, int(*jobMainFunction)(void*), void *ptr, unsigned int size);
 // processing values:
 // 0 : no more processing, display node as normal
 // 1 : processing with an animation for node display
 // 2 : display node as normal despite it processing 
-void SetProcessing(int target, int processing);
+void SetProcessing(void* context, int target, int processing);
 
 // compute shader memory allocation
-int AllocateComputeBuffer(int target, int elementCount, int elementSize);
+int AllocateComputeBuffer(void* context, int target, int elementCount, int elementSize);
 
 int LoadScene(const char *filename, void **scene);
-int SetEvaluationScene(int target, void *scene);
-int GetEvaluationScene(int target, void **scene);
-int GetEvaluationRenderer(int target, void **renderer);
-int InitRenderer(int target, int mode, void *scene);
-int UpdateRenderer(int target);
+int SetEvaluationScene(void* context, int target, void *scene);
+int GetEvaluationScene(void* context, int target, void **scene);
+int GetEvaluationRenderer(void* context, int target, void **renderer);
+int InitRenderer(void* context, int target, int mode, void *scene);
+int UpdateRenderer(void* context, int target);
 
 #define EVAL_OK 0
 #define EVAL_ERR 1

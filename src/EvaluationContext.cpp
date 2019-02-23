@@ -443,7 +443,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
         const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
         if (evaluator.mCFunction)
         {
-            int res = evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo);
+            int res = evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo, this);
             if (res == EVAL_DIRTY)
             {
                 mStillDirty.push_back(uint32_t(index));

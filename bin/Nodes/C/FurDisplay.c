@@ -1,7 +1,7 @@
 #include "Imogen.h"
 
-int main(void *param, Evaluation *evaluation)
+int main(void *param, Evaluation *evaluation, void *context)
 {
-	EnableDepthBuffer(evaluation->targetIndex, 1);
+	EnableDepthBuffer(context, evaluation->targetIndex, 1);
 	return EVAL_OK;
 }

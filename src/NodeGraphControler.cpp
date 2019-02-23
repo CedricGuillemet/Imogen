@@ -717,7 +717,7 @@ bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex)
 ImVec2 NodeGraphControler::GetEvaluationSize(size_t nodeIndex)
 {
     int imageWidth(1), imageHeight(1);
-    EvaluationStages::GetEvaluationSize(&mEvaluationStages, int(nodeIndex), &imageWidth, &imageHeight);
+    EvaluationAPI::GetEvaluationSize(&mEditingContext, int(nodeIndex), &imageWidth, &imageHeight);
     return ImVec2(float(imageWidth), float(imageHeight));
 }
 

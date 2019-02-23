@@ -1158,13 +1158,11 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
 
     if (controler->NodeIsProcesing(nodeIndex) == 1)
     {
-        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), EvaluationStages::DrawUIProgress, nodeIndex);
-        //drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Progress, ImRect(imgPos, imgPosMax), nodeIndex)));
+        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), DrawUICallbacks::DrawUIProgress, nodeIndex);
     }
     else if (controler->NodeIsCubemap(nodeIndex))
     {
-        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), EvaluationStages::DrawUICubemap, nodeIndex);
-        //drawList->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Cubemap, ImRect(imgPos + marge, imgPosMax - marge), nodeIndex)));
+        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), DrawUICallbacks::DrawUICubemap, nodeIndex);
     }
     else if (nodeIsCompute)
     {

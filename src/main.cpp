@@ -103,8 +103,7 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
 }
 
 Library library;
-NodeGraphControler nodeGraphControler;
-Imogen imogen(&nodeGraphControler);
+
 enki::TaskScheduler g_TS;
 UndoRedoHandler gUndoRedoHandler;
 
@@ -123,6 +122,10 @@ int main(int, char**)
     GLSLPathTracer::Log = Log;
     AddLogOutput(ImConsoleOutput);
     g_TS.Initialize();
+
+    NodeGraphControler nodeGraphControler;
+    Imogen imogen(&nodeGraphControler);
+
     TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
     gEvaluators.InitPythonModules();
@@ -314,7 +317,7 @@ int main(int, char**)
             nodeGraphControler.SetTime(gEvaluationTime, true);
             nodeGraphControler.ApplyAnimation(gEvaluationTime);
         }
-        gCurrentContext->RunDirty();
+        nodeGraphControler.mEditingContext.RunDirty();
         imogen.Show(builder, library);
 
         // render everything

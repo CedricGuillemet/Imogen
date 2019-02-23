@@ -79,3 +79,36 @@ protected:
 };
 
 extern Evaluators gEvaluators;
+struct EvaluationContext;
+struct Image;
+struct EvaluationStages;
+
+namespace EvaluationAPI
+{
+    // API
+    static int GetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image);
+    static int SetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image);
+    static int SetEvaluationImageCube(EvaluationContext *evaluationContext, int target, Image *image, int cubeFace);
+    static int SetThumbnailImage(Image *image);
+    static int AllocateImage(Image *image);
+
+    //static int Evaluate(int target, int width, int height, Image *image);
+    static void SetBlendingMode(EvaluationStages *evaluationStages, int target, int blendSrc, int blendDst);
+    static void EnableDepthBuffer(EvaluationStages *evaluationStages, int target, int enable);
+    static int SetNodeImage(int target, Image *image);
+    static int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
+    static int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight);
+    static int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth);
+    static int Job(EvaluationContext *evaluationContext, int(*jobFunction)(void*), void *ptr, unsigned int size);
+    static int JobMain(EvaluationContext *evaluationContext, int(*jobMainFunction)(void*), void *ptr, unsigned int size);
+    static void SetProcessing(EvaluationContext *context, int target, int processing);
+    static int AllocateComputeBuffer(EvaluationContext *context, int target, int elementCount, int elementSize);
+
+    static int LoadScene(const char *filename, void **scene);
+    static int SetEvaluationScene(EvaluationStages *evaluationStages, int target, void *scene);
+    static int GetEvaluationScene(EvaluationStages *evaluationStages, int target, void **scene);
+    static int GetEvaluationRenderer(EvaluationStages *evaluationStages, int target, void **renderer);
+    static int InitRenderer(EvaluationStages *evaluationStages, int target, int mode, void *scene);
+    static int UpdateRenderer(EvaluationContext *evaluationContext, int target);
+
+}

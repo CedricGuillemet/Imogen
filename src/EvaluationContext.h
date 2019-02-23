@@ -71,9 +71,10 @@ struct EvaluationContext
 
     const ComputeBuffer* GetComputeBuffer(size_t index) const;
     void Clear();
-protected:
+
     EvaluationStages& mEvaluationStages;
 
+protected:
     void PreRun();
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
@@ -105,8 +106,6 @@ protected:
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
 };
-
-extern EvaluationContext *gCurrentContext;
 
 struct Builder
 {

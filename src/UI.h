@@ -176,3 +176,10 @@ void InitCallbackRects();
 
 //
 void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUVCoord, ImVec2 displayedTextureSize);
+
+namespace DrawUICallbacks
+{
+    static void DrawUICubemap(size_t nodeIndex);
+    static void DrawUISingle(size_t nodeIndex);
+    static void DrawUIProgress(size_t nodeIndex);
+}

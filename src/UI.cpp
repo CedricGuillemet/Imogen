@@ -341,3 +341,34 @@ void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUV
     ImGui::EndGroup();
     ImGui::EndTooltip();
 }
+
+namespace DrawUICallbacks
+{
+    // TODO
+    void DrawUIProgress(size_t nodeIndex)
+    {
+        /*glUseProgram(gDefaultShader.mProgressShader);
+        glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
+        gFSQuad.Render();*/
+    }
+
+    void DrawUISingle(size_t nodeIndex)
+    {
+        /*EvaluationInfo evaluationInfo;
+        evaluationInfo.forcedDirty = 1;
+        evaluationInfo.uiPass = 1;
+        gCurrentContext->RunSingle(nodeIndex, evaluationInfo);*/
+    }
+
+    void DrawUICubemap(size_t nodeIndex)
+    {
+        /*glUseProgram(gDefaultShader.mDisplayCubemapShader);
+        int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
+        glUniform1i(tgt, 0);
+        glActiveTexture(GL_TEXTURE0);
+
+        glBindTexture(GL_TEXTURE_CUBE_MAP, gCurrentContext->GetEvaluationTexture(nodeIndex));
+        gFSQuad.Render();
+        */
+    }
+}

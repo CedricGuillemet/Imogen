@@ -29,8 +29,6 @@
 #include "Evaluators.h"
 #include "NodeGraphControler.h"
 
-EvaluationContext *gCurrentContext = NULL;
-
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
 static const char* sampler2DName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
@@ -720,10 +718,10 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 
 void EvaluationContext::UserAddStage()
 {
-    URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), []() {return &gCurrentContext->mStageTarget; });
-    URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), []() {return &gCurrentContext->mbDirty; });
-    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), []() {return &gCurrentContext->mbProcessing; });
-    URAdd<float> undoRedoAddProgress(int(mProgress.size()), []() {return &gCurrentContext->mProgress; });
+    URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), [&]() {return &mStageTarget; });
+    URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), [&]() {return &mbDirty; });
+    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), [&]() {return &mbProcessing; });
+    URAdd<float> undoRedoAddProgress(int(mProgress.size()), [&]() {return &mProgress; });
 
     mStageTarget.push_back(std::make_shared<RenderTarget>());
     mbDirty.push_back(true);
@@ -733,10 +731,10 @@ void EvaluationContext::UserAddStage()
 
 void EvaluationContext::UserDeleteStage(size_t index)
 {
-    URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), []() {return &gCurrentContext->mStageTarget; });
-    URDel<bool> undoRedoDelDirty(int(index), []() {return &gCurrentContext->mbDirty; });
-    URDel<int> undoRedoDelProcessing(int(index), []() {return &gCurrentContext->mbProcessing; });
-    URDel<float> undoRedoDelProgress(int(index), []() {return &gCurrentContext->mProgress; });
+    URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), [&]() {return &mStageTarget; });
+    URDel<bool> undoRedoDelDirty(int(index), [&]() {return &mbDirty; });
+    URDel<int> undoRedoDelProcessing(int(index), [&]() {return &mbProcessing; });
+    URDel<float> undoRedoDelProgress(int(index), [&]() {return &mProgress; });
 
     mStageTarget.erase(mStageTarget.begin() + index);
     mbDirty.erase(mbDirty.begin() + index);

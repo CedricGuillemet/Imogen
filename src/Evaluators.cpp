@@ -27,8 +27,12 @@
 #include "EvaluationStages.h"
 #include "nfd.h"
 #include "Bitmap.h"
+#include "EvaluationContext.h"
+#include "TaskScheduler.h"
+#include <vector>
 
 Evaluators gEvaluators;
+extern enki::TaskScheduler g_TS;
 
 struct EValuationFunction
 {
@@ -40,34 +44,34 @@ static const EValuationFunction evaluationFunctions[] = {
     { "Log", (void*)Log },
     { "ReadImage", (void*)Image::Read },
     { "WriteImage", (void*)Image::Write },
-    { "GetEvaluationImage", (void*)EvaluationStages::GetEvaluationImage },
-    { "SetEvaluationImage", (void*)EvaluationStages::SetEvaluationImage },
-    { "SetEvaluationImageCube", (void*)EvaluationStages::SetEvaluationImageCube },
-    { "AllocateImage", (void*)EvaluationStages::AllocateImage },
+    { "GetEvaluationImage", (void*)EvaluationAPI::GetEvaluationImage },
+    { "SetEvaluationImage", (void*)EvaluationAPI::SetEvaluationImage },
+    { "SetEvaluationImageCube", (void*)EvaluationAPI::SetEvaluationImageCube },
+    { "AllocateImage", (void*)EvaluationAPI::AllocateImage },
     { "FreeImage", (void*)Image::Free },
-    { "SetThumbnailImage", (void*)EvaluationStages::SetThumbnailImage },
+    { "SetThumbnailImage", (void*)EvaluationAPI::SetThumbnailImage },
     //{ "Evaluate", (void*)EvaluationStages::Evaluate},
-    { "SetBlendingMode", (void*)EvaluationStages::SetBlendingMode},
-    { "EnableDepthBuffer", (void*)EvaluationStages::EnableDepthBuffer},
-    { "GetEvaluationSize", (void*)EvaluationStages::GetEvaluationSize},
-    { "SetEvaluationSize", (void*)EvaluationStages::SetEvaluationSize },
-    { "SetEvaluationCubeSize", (void*)EvaluationStages::SetEvaluationCubeSize },
-    { "AllocateComputeBuffer", (void*)EvaluationStages::AllocateComputeBuffer },
+    { "SetBlendingMode", (void*)EvaluationAPI::SetBlendingMode},
+    { "EnableDepthBuffer", (void*)EvaluationAPI::EnableDepthBuffer},
+    { "GetEvaluationSize", (void*)EvaluationAPI::GetEvaluationSize},
+    { "SetEvaluationSize", (void*)EvaluationAPI::SetEvaluationSize },
+    { "SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize },
+    { "AllocateComputeBuffer", (void*)EvaluationAPI::AllocateComputeBuffer },
     { "CubemapFilter", (void*)Image::CubemapFilter},
-    { "SetProcessing", (void*)EvaluationStages::SetProcessing},
-    { "Job", (void*)EvaluationStages::Job },
-    { "JobMain", (void*)EvaluationStages::JobMain },
+    { "SetProcessing", (void*)EvaluationAPI::SetProcessing},
+    { "Job", (void*)EvaluationAPI::Job },
+    { "JobMain", (void*)EvaluationAPI::JobMain },
     { "memmove", memmove },
     { "strcpy", strcpy },
     { "strlen", strlen },
     { "fabsf", fabsf },
     { "LoadSVG", (void*)Image::LoadSVG},
-    { "LoadScene", (void*)EvaluationStages::LoadScene},
-    { "SetEvaluationScene", (void*)EvaluationStages::SetEvaluationScene},
-    { "GetEvaluationScene", (void*)EvaluationStages::GetEvaluationScene},
-    { "GetEvaluationRenderer", (void*)EvaluationStages::GetEvaluationRenderer},
-    { "InitRenderer", (void*)EvaluationStages::InitRenderer},
-    { "UpdateRenderer", (void*)EvaluationStages::UpdateRenderer},
+    { "LoadScene", (void*)EvaluationAPI::LoadScene},
+    { "SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
+    { "GetEvaluationScene", (void*)EvaluationAPI::GetEvaluationScene},
+    { "GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
+    { "InitRenderer", (void*)EvaluationAPI::InitRenderer},
+    { "UpdateRenderer", (void*)EvaluationAPI::UpdateRenderer},
 };
 
 static void libtccErrorFunc(void *opaque, const char *msg)
@@ -264,19 +268,19 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("Log", LogPython );
     m.def("ReadImage", Image::Read );
     m.def("WriteImage", Image::Write );
-    m.def("GetEvaluationImage", EvaluationStages::GetEvaluationImage );
-    m.def("SetEvaluationImage", EvaluationStages::SetEvaluationImage );
-    m.def("SetEvaluationImageCube", EvaluationStages::SetEvaluationImageCube );
-    m.def("AllocateImage", EvaluationStages::AllocateImage );
+    m.def("GetEvaluationImage", EvaluationAPI::GetEvaluationImage );
+    m.def("SetEvaluationImage", EvaluationAPI::SetEvaluationImage );
+    m.def("SetEvaluationImageCube", EvaluationAPI::SetEvaluationImageCube );
+    m.def("AllocateImage", EvaluationAPI::AllocateImage );
     m.def("FreeImage", Image::Free );
-    m.def("SetThumbnailImage", EvaluationStages::SetThumbnailImage );
+    m.def("SetThumbnailImage", EvaluationAPI::SetThumbnailImage );
     //m.def("Evaluate", EvaluationStages::Evaluate );
-    m.def("SetBlendingMode", EvaluationStages::SetBlendingMode );
-    m.def("GetEvaluationSize", EvaluationStages::GetEvaluationSize );
-    m.def("SetEvaluationSize", EvaluationStages::SetEvaluationSize );
-    m.def("SetEvaluationCubeSize", EvaluationStages::SetEvaluationCubeSize );
+    m.def("SetBlendingMode", EvaluationAPI::SetBlendingMode );
+    m.def("GetEvaluationSize", EvaluationAPI::GetEvaluationSize );
+    m.def("SetEvaluationSize", EvaluationAPI::SetEvaluationSize );
+    m.def("SetEvaluationCubeSize", EvaluationAPI::SetEvaluationCubeSize );
     m.def("CubemapFilter", Image::CubemapFilter );
-    m.def("SetProcessing", EvaluationStages::SetProcessing );
+    m.def("SetProcessing", EvaluationAPI::SetProcessing );
     /*
     m.def("Job", EvaluationStages::Job );
     m.def("JobMain", EvaluationStages::JobMain );
@@ -594,3 +598,422 @@ void Evaluator::RunPython() const
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
 }
 
+namespace EvaluationAPI
+{
+
+    int SetEvaluationImageCube(EvaluationContext *evaluationContext, int target, Image *image, int cubeFace)
+    {
+        if (image->mNumFaces != 1)
+            return EVAL_ERR;
+        RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
+
+        tgt.InitCube(image->mWidth);
+
+        Image::Upload(image, tgt.mGLTexID, cubeFace);
+        evaluationContext->SetTargetDirty(target, true);
+        return EVAL_OK;
+    }
+
+    int AllocateImage(Image *image)
+    {
+        return EVAL_OK;
+    }
+
+    int SetThumbnailImage(Image *image)
+    {
+        std::vector<unsigned char> pngImage;
+        if (Image::EncodePng(image, pngImage) == EVAL_ERR)
+            return EVAL_ERR;
+        /* TODO
+        extern Library library;
+        extern Imogen imogen;
+
+        int materialIndex = imogen.GetCurrentMaterialIndex();
+        Material & material = library.mMaterials[materialIndex];
+        material.mThumbnail = pngImage;
+        material.mThumbnailTextureId = 0;
+        */
+        return EVAL_OK;
+    }
+
+    int SetNodeImage(int target, Image *image)
+    {
+        std::vector<unsigned char> pngImage;
+        if (Image::EncodePng(image, pngImage) == EVAL_ERR)
+            return EVAL_ERR;
+
+        /* TODO
+        extern Library library;
+        extern Imogen imogen;
+
+        int materialIndex = imogen.GetCurrentMaterialIndex();
+        Material & material = library.mMaterials[materialIndex];
+        material.mMaterialNodes[target].mImage = pngImage;
+        */
+        return EVAL_OK;
+    }
+
+
+    void SetBlendingMode(EvaluationStages *evaluationStages, int target, int blendSrc, int blendDst)
+    {
+        EvaluationStage& evaluation = evaluationStages->mStages[target];
+
+        evaluation.mBlendingSrc = blendSrc;
+        evaluation.mBlendingDst = blendDst;
+    }
+
+    void EnableDepthBuffer(EvaluationStages *evaluationStages, int target, int enable)
+    {
+        EvaluationStage& evaluation = evaluationStages->mStages[target];
+        evaluation.mbDepthBuffer = enable != 0;
+    }
+
+
+    int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight)
+    {
+        if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+            return EVAL_ERR;
+        auto renderTarget = evaluationContext->GetRenderTarget(target);
+        if (!renderTarget)
+            return EVAL_ERR;
+        *imageWidth = renderTarget->mImage.mWidth;
+        *imageHeight = renderTarget->mImage.mHeight;
+        return EVAL_OK;
+    }
+
+    int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight)
+    {
+        if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+            return EVAL_ERR;
+        auto renderTarget = evaluationContext->GetRenderTarget(target);
+        if (!renderTarget)
+            return EVAL_ERR;
+        //if (gCurrentContext->GetEvaluationInfo().uiPass)
+        //    return EVAL_OK;
+        renderTarget->InitBuffer(imageWidth, imageHeight, evaluationContext->mEvaluationStages.mStages[target].mbDepthBuffer);
+        return EVAL_OK;
+    }
+
+    int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth)
+    {
+        if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+            return EVAL_ERR;
+
+        auto renderTarget = evaluationContext->GetRenderTarget(target);
+        if (!renderTarget)
+            return EVAL_ERR;
+        renderTarget->InitCube(faceWidth);
+        return EVAL_OK;
+    }
+
+
+    int SetEvaluationScene(EvaluationStages *evaluationStages, int target, void *scene)
+    {
+        evaluationStages->mStages[target].scene = scene;
+        return EVAL_OK;
+    }
+
+    int GetEvaluationScene(EvaluationStages *evaluationStages, int target, void **scene)
+    {
+        *scene = evaluationStages->mStages[target].scene;
+        return EVAL_OK;
+    }
+
+    int GetEvaluationRenderer(EvaluationStages *evaluationStages, int target, void **renderer)
+    {
+        *renderer = evaluationStages->mStages[target].renderer;
+        return EVAL_OK;
+    }
+
+
+    int GetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image)
+    {
+        if (target == -1 || target >= evaluationContext->mEvaluationStages.mStages.size())
+            return EVAL_ERR;
+
+        RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
+
+        // compute total size
+        Image& img = tgt.mImage;
+        unsigned int texelSize = textureFormatSize[img.mFormat];
+        unsigned int texelFormat = glInternalFormats[img.mFormat];
+        uint32_t size = 0;// img.mNumFaces * img.mWidth * img.mHeight * texelSize;
+        for (int i = 0; i < img.mNumMips; i++)
+            size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+
+        image->Allocate(size);
+        image->mWidth = img.mWidth;
+        image->mHeight = img.mHeight;
+        image->mNumMips = img.mNumMips;
+        image->mFormat = img.mFormat;
+        image->mNumFaces = img.mNumFaces;
+
+        glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
+        unsigned char *ptr = image->GetBits();
+        if (img.mNumFaces == 1)
+        {
+            for (int i = 0; i < img.mNumMips; i++)
+            {
+                glGetTexImage(GL_TEXTURE_2D, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
+                ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+            }
+        }
+        else
+        {
+            for (int cube = 0; cube < img.mNumFaces; cube++)
+            {
+                for (int i = 0; i < img.mNumMips; i++)
+                {
+                    glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + cube, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
+                    ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+                }
+            }
+        }
+        return EVAL_OK;
+    }
+
+    int SetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image)
+    {
+        EvaluationStage &stage = evaluationContext->mEvaluationStages.mStages[target];
+        auto tgt = evaluationContext->GetRenderTarget(target);
+        if (!tgt)
+            return EVAL_ERR;
+        unsigned int texelSize = textureFormatSize[image->mFormat];
+        unsigned int inputFormat = glInputFormats[image->mFormat];
+        unsigned int internalFormat = glInternalFormats[image->mFormat];
+        unsigned char *ptr = image->GetBits();
+        if (image->mNumFaces == 1)
+        {
+            tgt->InitBuffer(image->mWidth, image->mHeight, stage.mbDepthBuffer);
+
+            glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
+
+            for (int i = 0; i < image->mNumMips; i++)
+            {
+                glTexImage2D(GL_TEXTURE_2D, i, internalFormat, image->mWidth >> i, image->mHeight >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
+                ptr += (image->mWidth >> i) * (image->mHeight >> i) * texelSize;
+            }
+
+            if (image->mNumMips > 1)
+                TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+            else
+                TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
+        }
+        else
+        {
+            tgt->InitCube(image->mWidth);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
+
+            for (int face = 0; face < image->mNumFaces; face++)
+            {
+                for (int i = 0; i < image->mNumMips; i++)
+                {
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, i, internalFormat, image->mWidth >> i, image->mWidth >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
+                    ptr += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
+                }
+            }
+
+            if (image->mNumMips > 1)
+                TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
+            else
+                TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
+
+        }
+        if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
+            stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
+        evaluationContext->SetTargetDirty(target, true);
+        return EVAL_OK;
+    }
+
+
+#include "Scene.h"
+#include "Loader.h"
+#include "TiledRenderer.h"
+#include "ProgressiveRenderer.h"
+#include "GPUBVH.h"
+#include "Camera.h"
+
+    int LoadScene(const char *filename, void **pscene)
+    {
+        // todo: make a real good cache system
+        static std::map<std::string, GLSLPathTracer::Scene *> cachedScenes;
+        std::string sFilename(filename);
+        auto iter = cachedScenes.find(sFilename);
+        if (iter != cachedScenes.end())
+        {
+            *pscene = iter->second;
+            return EVAL_OK;
+        }
+
+        GLSLPathTracer::Scene *scene = GLSLPathTracer::LoadScene(sFilename);
+        if (!scene)
+        {
+            Log("Unable to load scene\n");
+            return EVAL_ERR;
+        }
+        cachedScenes.insert(std::make_pair(sFilename, scene));
+        *pscene = scene;
+
+        Log("Scene Loaded\n\n");
+
+        scene->buildBVH();
+
+        // --------Print info on memory usage ------------- //
+
+        Log("Triangles: %d\n", scene->triangleIndices.size());
+        Log("Triangle Indices: %d\n", scene->gpuBVH->bvhTriangleIndices.size());
+        Log("Vertices: %d\n", scene->vertexData.size());
+
+        long long scene_data_bytes =
+            sizeof(GLSLPathTracer::GPUBVHNode) * scene->gpuBVH->bvh->getNumNodes() +
+            sizeof(GLSLPathTracer::TriangleData) * scene->gpuBVH->bvhTriangleIndices.size() +
+            sizeof(GLSLPathTracer::VertexData) * scene->vertexData.size() +
+            sizeof(GLSLPathTracer::NormalTexData) * scene->normalTexData.size() +
+            sizeof(GLSLPathTracer::MaterialData) * scene->materialData.size() +
+            sizeof(GLSLPathTracer::LightData) * scene->lightData.size();
+
+        Log("GPU Memory used for BVH and scene data: %d MB\n", scene_data_bytes / 1048576);
+
+        long long tex_data_bytes =
+            scene->texData.albedoTextureSize.x * scene->texData.albedoTextureSize.y * scene->texData.albedoTexCount * 3 +
+            scene->texData.metallicRoughnessTextureSize.x * scene->texData.metallicRoughnessTextureSize.y * scene->texData.metallicRoughnessTexCount * 3 +
+            scene->texData.normalTextureSize.x * scene->texData.normalTextureSize.y * scene->texData.normalTexCount * 3 +
+            scene->hdrLoaderRes.width * scene->hdrLoaderRes.height * sizeof(GL_FLOAT) * 3;
+
+        Log("GPU Memory used for Textures: %d MB\n", tex_data_bytes / 1048576);
+
+        Log("Total GPU Memory used: %d MB\n", (scene_data_bytes + tex_data_bytes) / 1048576);
+
+        return EVAL_OK;
+    }
+
+    int InitRenderer(EvaluationStages *evaluationStages, int target, int mode, void *scene)
+    {
+        GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
+        evaluationStages->mStages[target].scene = scene;
+
+        GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)evaluationStages->mStages[target].renderer;
+        if (!currentRenderer)
+        {
+            //auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
+            auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
+            renderer->init();
+            evaluationStages->mStages[target].renderer = renderer;
+        }
+        return EVAL_OK;
+    }
+
+    int UpdateRenderer(EvaluationContext *evaluationContext, int target)
+    {
+        auto& eval = evaluationContext->mEvaluationStages;
+        GLSLPathTracer::Renderer *renderer = (GLSLPathTracer::Renderer *)eval.mStages[target].renderer;
+        GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)eval.mStages[target].scene;
+
+        Camera* camera = eval.GetCameraParameter(target);
+        if (camera)
+        {
+            Vec4 pos = camera->mPosition;
+            Vec4 lk = camera->mPosition + camera->mDirection;
+            GLSLPathTracer::Camera newCam(glm::vec3(pos.x, pos.y, pos.z), glm::vec3(lk.x, lk.y, lk.z), 90.f);
+            newCam.updateCamera();
+            *rdscene->camera = newCam;
+        }
+
+        renderer->update(0.0166f);
+        auto tgt = o->GetRenderTarget(target);
+        renderer->render();
+
+        tgt->BindAsTarget();
+        renderer->present();
+
+        float progress = renderer->getProgress();
+        o->StageSetProgress(target, progress);
+        bool renderDone = progress >= 1.f - FLT_EPSILON;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glUseProgram(0);
+
+        if (renderDone)
+        {
+            evaluationContext->StageSetProcessing(target, false);
+            return EVAL_OK;
+        }
+        return EVAL_DIRTY;
+    }
+
+    void SetProcessing(EvaluationContext *context, int target, int processing)
+    {
+        context->StageSetProcessing(target, processing);
+    }
+
+    int AllocateComputeBuffer(EvaluationContext *context, int target, int elementCount, int elementSize)
+    {
+        context->AllocateComputeBuffer(target, elementCount, elementSize);
+        return EVAL_OK;
+    }
+
+
+    typedef int(*jobFunction)(void*);
+
+    struct CFunctionTaskSet : enki::ITaskSet
+    {
+        CFunctionTaskSet(jobFunction function, void *ptr, unsigned int size) : enki::ITaskSet()
+            , mFunction(function)
+            , mBuffer(malloc(size))
+        {
+            memcpy(mBuffer, ptr, size);
+        }
+        virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+        {
+            mFunction(mBuffer);
+            free(mBuffer);
+            delete this;
+        }
+        jobFunction mFunction;
+        void *mBuffer;
+    };
+
+    struct CFunctionMainTask : enki::IPinnedTask
+    {
+        CFunctionMainTask(jobFunction function, void *ptr, unsigned int size)
+            : enki::IPinnedTask(0) // set pinned thread to 0
+            , mFunction(function)
+            , mBuffer(malloc(size))
+        {
+            memcpy(mBuffer, ptr, size);
+        }
+        virtual void Execute()
+        {
+            mFunction(mBuffer);
+            free(mBuffer);
+            delete this;
+        }
+        jobFunction mFunction;
+        void *mBuffer;
+    };
+
+    int Job(EvaluationContext *evaluationContext, int(*jobFunction)(void*), void *ptr, unsigned int size)
+    {
+        if (evaluationContext->IsSynchronous())
+        {
+            return jobFunction(ptr);
+        }
+        else
+        {
+            g_TS.AddTaskSetToPipe(new CFunctionTaskSet(jobFunction, ptr, size));
+        }
+        return EVAL_OK;
+    }
+
+    int JobMain(EvaluationContext *evaluationContext, int(*jobMainFunction)(void*), void *ptr, unsigned int size)
+    {
+        if (evaluationContext->IsSynchronous())
+        {
+            return jobMainFunction(ptr);
+        }
+        else
+        {
+            g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
+        }
+        return EVAL_OK;
+    }
+}

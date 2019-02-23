@@ -98,7 +98,7 @@ void Imogen::HandleEditor(TextEditor &editor)
         t.close();
 
         gEvaluators.SetEvaluators(mEvaluatorFiles);
-        gCurrentContext->RunAll();
+        mNodeGraphControler->mEditingContext.RunAll();
     }
 
     ImGui::SameLine();
@@ -124,19 +124,19 @@ void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool
     // make 2 evaluation for node to get the UI pass image size
     if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
     {
-        gCurrentContext->AllocRenderTargetsForEditingPreview();
+        nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview();
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        gCurrentContext->RunSingle(selNode, evaluationInfo);
+        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
     }
-    EvaluationStages::GetEvaluationSize(&nodeGraphControler.mEvaluationStages, selNode, &imageWidth, &imageHeight);
+    EvaluationAPI::GetEvaluationSize(&nodeGraphControler.mEditingContext, selNode, &imageWidth, &imageHeight);
     if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
     {
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 0;
-        gCurrentContext->RunSingle(selNode, evaluationInfo);
+        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
     }
     ImTextureID displayedTexture = 0;
     ImRect rc;
@@ -154,7 +154,7 @@ void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
             //draw_list->AddCallback((ImDrawCallback)(EvaluationStages::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
-            AddUICustomDraw(draw_list, rc, EvaluationStages::DrawUISingle, selNode);
+            AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode);
 
             mouseUVCoord = (io.MousePos - rc.Min) / rc.GetSize();
             mouseUVCoord.y = 1.f - mouseUVCoord.y;
@@ -223,11 +223,11 @@ void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
             if (selNode != -1 && nodeGraphControler.NodeIsCubemap(selNode))
             {
-                AddUICustomDraw(draw_list, rc, EvaluationStages::DrawUICubemap, selNode);
+                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUICubemap, selNode);
             }
             else if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
             {
-                AddUICustomDraw(draw_list, rc, EvaluationStages::DrawUISingle, selNode);
+                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode);
             }
         }
     }
@@ -242,7 +242,7 @@ void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool
         {
             if (!pickerImage.GetBits())
             {
-                EvaluationStages::GetEvaluationImage(&nodeGraphControler.mEvaluationStages, selNode, &pickerImage);
+                EvaluationAPI::GetEvaluationImage(&nodeGraphControler.mEditingContext, selNode, &pickerImage);
                 Log("Texel view Get image\n");
             }
             int width = pickerImage.mWidth;
@@ -333,9 +333,9 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
             size_t nodeIndex = node - mControler->mEvaluationStages.mStages.data();
             if (node)
             {
-                EvaluationStages::SetEvaluationImage(&mControler->mEvaluationStages, int(nodeIndex), mImage);
+                EvaluationAPI::SetEvaluationImage(&mControler->mEditingContext, int(nodeIndex), mImage);
                 mControler->mEvaluationStages.SetEvaluationParameters(nodeIndex, node->mParameters);
-                gCurrentContext->StageSetProcessing(nodeIndex, false);
+                mControler->mEditingContext.StageSetProcessing(nodeIndex, false);
             }
             Image::Free(mImage);
         }
@@ -568,7 +568,7 @@ void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, 
         if (metaNode.mbSaveTexture)
         {
             Image image;
-            if (EvaluationStages::GetEvaluationImage(&nodeGraphControler.mEvaluationStages, int(i), &image) == EVAL_OK)
+            if (EvaluationAPI::GetEvaluationImage(&nodeGraphControler.mEditingContext, int(i), &image) == EVAL_OK)
             {
                 g_TS.AddTaskSetToPipe(new EncodeImageTaskSet(image, std::make_pair(materialIndex, material.mRuntimeUniqueId), std::make_pair(i, dstNode.mRuntimeUniqueId)));
             }
@@ -627,7 +627,7 @@ void Imogen::UpdateNewlySelectedGraph()
             auto& lastNode = mNodeGraphControler->mEvaluationStages.mStages.back();
             if (!node.mImage.empty())
             {
-                gCurrentContext->StageSetProcessing(i, true);
+                mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
                 g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
             }
             lastNode.mInputSamplers = node.mInputSamplers;

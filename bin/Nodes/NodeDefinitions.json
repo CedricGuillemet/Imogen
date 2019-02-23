@@ -1007,6 +1007,10 @@
 		"inputs": [{
 			"name": "",
 			"type": "Float4"
+		},
+		{
+			"name": "Spawn",
+			"type": "Float4"
 		}],
 		"outputs": [{
 			"name": "",

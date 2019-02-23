@@ -5,37 +5,24 @@ layout (std140) uniform ReactionDiffusionBlock
 	int PassCount;
 };
 
-
-
-
-/*vec2 difRate = vec2(1.,.25);
-
-#define FEED .0367;
-#define KILL .0649;
-*/
-
-//float zoom = .9997;
-
 vec4 getSample(vec2 uv, vec2 offset)
 {
-	return texture(Sampler0, uv + offset * vec2(0.001, 0.001)/*EvaluationParam.viewport*/);
+	return texture(Sampler0, uv + offset / vec2(1024.));
 }
 
 vec4 pass(vec2 uv)
 {
-	//uv =( uv - vec2(.5)) * zoom + vec2(.5);
-
-    vec4 current = getSample(uv, vec2(0.));
+    vec4 current = texture(Sampler0, uv);
     
-    vec4 cumul = current * -1.;
+    vec4 laplacian = current * -1.;
     
-    cumul += (   getSample(uv, vec2( 1., 0.) )
+    laplacian += (   getSample(uv, vec2( 1., 0.) )
                + getSample(uv, vec2(-1., 0.) )
                + getSample(uv, vec2( 0., 1.) )
                + getSample(uv, vec2( 0.,-1.) )
              ) * .2;
 
-    cumul += (
+    laplacian += (
         getSample(uv, vec2( 1., 1.) ) +
         getSample(uv, vec2( 1.,-1.) ) +
         getSample(uv, vec2(-1., 1.) ) +
@@ -43,24 +30,26 @@ vec4 pass(vec2 uv)
        )*.05;
     
     
-    float feed = feedKill.x;
-    float kill = feedKill.y;
-   
-    vec4 lap =  cumul;
-    float newR = current.r + (difRate.r * lap.r - current.r * current.g * current.g + feed * (1. - current.r));
-    float newG = current.g + (difRate.g * lap.g + current.r * current.g * current.g - (kill + feed) * current.g);
-    
-    newR = clamp(newR,0.,1.);
-    newG = clamp(newG,0.,1.);
-    
-	current = vec4(newR,newG,0.,1.);
+    float feed = 0.055;//feedKill.x;
+    float kill = 0.062;//feedKill.y;
+	float da = 1.;
+	float db = 0.5;
 	
-	    	uv -= 0.5;
-    	float f = step(length(uv),.25) - step(length(uv),.24);
-    	f *=  .25 + fract(atan(uv.y,uv.x)*.5) * .25;// * sin(iTime*.1);
-        current = max(current, vec4(0.,1.,0.,1.) * f);
+	float a = current.x;
+	float b = current.y;
 	
-    return current;
+    float ap = a + (da * laplacian.x - a * b * b + feed * (1. - a));
+    float bp = b + (db * laplacian.y + a * b * b - (kill + feed) * b);
+    
+    //ap = clamp(ap,0.,1.);
+    //bp = clamp(bp,0.,1.);
+    
+	//float spawn = texture(Sampler1, uv).y;
+	
+	//bp = max(bp, spawn);
+	bp += (length(uv-vec2(0.5))<0.1)?0.01:0.0;
+	
+	return vec4(ap, bp, 0., 1.);
 }
 	
 vec4 ReactionDiffusion()

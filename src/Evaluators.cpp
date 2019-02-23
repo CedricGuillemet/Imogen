@@ -233,7 +233,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return d;
     });
     m.def("RegisterPlugin", [](std::string& name, std::string command) {
-        imogen.mRegisteredPlugins.push_back({ name, command });
+        //imogen.mRegisteredPlugins.push_back({ name, command }); TODO
         Log("Plugin registered : %s \n", name.c_str());
     });
     m.def("FileDialogRead", []() {

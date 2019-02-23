@@ -32,8 +32,6 @@
 #include "UI.h"
 #include "Utils.h"
 
-NodeGraphControler gNodeDelegate;
-
 NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024)
 {
     mCategoriesCount = 10;
@@ -65,6 +63,7 @@ void NodeGraphControler::SetParamBlock(size_t index, const std::vector<unsigned 
     stage.mParameters = parameters;
     mEvaluationStages.SetEvaluationParameters(index, parameters);
     mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
+    mEditingContext.SetTargetDirty(index);
 }
 
 void NodeGraphControler::NodeIsAdded(int index)
@@ -72,6 +71,7 @@ void NodeGraphControler::NodeIsAdded(int index)
     auto& stage = mEvaluationStages.mStages[index];
     mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
     mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
+    mEditingContext.SetTargetDirty(index);
 };
 
 void NodeGraphControler::AddSingleNode(size_t type)
@@ -429,7 +429,11 @@ void NodeGraphControler::EditNode()
     {
         URChange<std::vector<InputSampler> > undoRedoSampler(int(index)
             , [&](int index) { return &stage.mInputSamplers; }
-            , [&](int index) { auto& node = mEvaluationStages.mStages[index]; mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);});
+            , [&](int index) { 
+                auto& node = mEvaluationStages.mStages[index]; 
+                mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
+                mEditingContext.SetTargetDirty(index);
+        });
             
         for (size_t i = 0; i < stage.mInputSamplers.size();i++)
         {
@@ -449,6 +453,7 @@ void NodeGraphControler::EditNode()
         if (samplerDirty)
         {
             mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
+            mEditingContext.SetTargetDirty(index);
         }
         else
         {
@@ -683,16 +688,6 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     }
 }
 
-size_t NodeGraphControler::ComputeNodeParametersSize(size_t nodeTypeIndex)
-{
-    size_t res = 0;
-    for(auto& param : gMetaNodes[nodeTypeIndex].mParams)
-    {
-        res += GetParameterTypeSize(param.mType);
-    }
-    return res;
-}
-
 bool NodeGraphControler::NodeIs2D(size_t nodeIndex)
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
@@ -722,7 +717,7 @@ bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex)
 ImVec2 NodeGraphControler::GetEvaluationSize(size_t nodeIndex)
 {
     int imageWidth(1), imageHeight(1);
-    mEvaluationStages.GetEvaluationSize(int(nodeIndex), &imageWidth, &imageHeight);
+    EvaluationStages::GetEvaluationSize(&mEvaluationStages, int(nodeIndex), &imageWidth, &imageHeight);
     return ImVec2(float(imageWidth), float(imageHeight));
 }
 
@@ -757,6 +752,7 @@ void NodeGraphControler::PasteNodes()
         
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
         mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
+        //mEditingContext.SetTargetDirty(target);
         SetTime(gEvaluationTime, true);
         mEditingContext.SetTargetDirty(target);
     }
@@ -879,54 +875,6 @@ void NodeGraphControler::RemovePins(size_t nodeIndex)
         else
             ++iter;
     }
-}
-
-Camera *NodeGraphControler::GetCameraParameter(size_t index)
-{
-    if (index >= mEvaluationStages.mStages.size()) 
-        return NULL;
-    EvaluationStage& stage = mEvaluationStages.mStages[index];
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    stage.mParameters.resize(paramsSize);
-    unsigned char *paramBuffer = stage.mParameters.data();
-    for (const MetaParameter& param : currentMeta.mParams)
-    {
-        if (param.mType == Con_Camera)
-        {
-            Camera *cam = (Camera*)paramBuffer;
-            return cam;
-        }
-        paramBuffer += GetParameterTypeSize(param.mType);
-    }
-
-    return NULL;
-}
-// TODO : create parameter struct with templated accessors
-int NodeGraphControler::GetIntParameter(size_t index, const char *parameterName, int defaultValue)
-{
-    if (index >= mEvaluationStages.mStages.size())
-        return NULL;
-    EvaluationStage& stage = mEvaluationStages.mStages[index];
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    stage.mParameters.resize(paramsSize);
-    unsigned char *paramBuffer = stage.mParameters.data();
-    for (const MetaParameter& param : currentMeta.mParams)
-    {
-        if (param.mType == Con_Int)
-        {
-            if (!strcmp(param.mName.c_str(), parameterName))
-            {
-                int *value = (int*)paramBuffer;
-                return *value;
-            }
-        }
-        paramBuffer += GetParameterTypeSize(param.mType);
-    }
-    return defaultValue;
 }
 
 float NodeGraphControler::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)

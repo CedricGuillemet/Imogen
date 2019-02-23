@@ -40,8 +40,8 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual void AddSingleNode(size_t type);
     virtual void UserAddNode(size_t type);
-    virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { mEvaluationStages.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);    }
-    virtual void DelLink(int index, int slot) { mEvaluationStages.DelEvaluationInput(index, slot); }
+    virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { mEvaluationStages.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx); mEditingContext.SetTargetDirty(OutputIdx); }
+    virtual void DelLink(int index, int slot) { mEvaluationStages.DelEvaluationInput(index, slot); mEditingContext.SetTargetDirty(index); }
     virtual void UserDeleteNode(size_t index);
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
 
@@ -58,7 +58,6 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel);
 
-    size_t ComputeNodeParametersSize(size_t nodeTypeIndex);
     bool NodeHasUI(size_t nodeIndex) { return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI; }
     virtual int NodeIsProcesing(size_t nodeIndex) { return mEditingContext.StageIsProcessing(nodeIndex); }
     virtual float NodeProgress(size_t nodeIndex) { return mEditingContext.StageGetProgress(nodeIndex); }
@@ -72,7 +71,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual void CutNodes(const std::vector<size_t> nodes);
     virtual void PasteNodes();
 
-    Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mEvaluationStages.mStages.size()) return NULL; return &mEvaluationStages.mStages[index].mParameterViewMatrix; }
+    
 
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const { return mEvaluationStages.GetAnimTrack(); }
@@ -87,8 +86,6 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
-    Camera *GetCameraParameter(size_t index);
-    int GetIntParameter(size_t index, const char *parameterName, int defaultValue);
     float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
     void PinnedEdit();
 
@@ -108,5 +105,3 @@ protected:
     void NodeIsAdded(int index);
     void UpdateDirtyParameter(int index);
 };
-
-extern NodeGraphControler gNodeDelegate;

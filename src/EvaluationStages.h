@@ -210,30 +210,30 @@ struct EvaluationStages
     void SetStageLocalTime(size_t target, int localTime, bool updateDecoder);
 
     // API
-    static int GetEvaluationImage(int target, Image *image);
-    static int SetEvaluationImage(int target, Image *image);
+    static int GetEvaluationImage(EvaluationStages *evaluationStages, int target, Image *image);
+    static int SetEvaluationImage(EvaluationStages *evaluationStages, int target, Image *image);
     static int SetEvaluationImageCube(int target, Image *image, int cubeFace);
     static int SetThumbnailImage(Image *image);
     static int AllocateImage(Image *image);
 
     //static int Evaluate(int target, int width, int height, Image *image);
-    static void SetBlendingMode(int target, int blendSrc, int blendDst);
-    static void EnableDepthBuffer(int target, int enable);
+    static void SetBlendingMode(EvaluationStages *evaluationStages, int target, int blendSrc, int blendDst);
+    static void EnableDepthBuffer(EvaluationStages *evaluationStages, int target, int enable);
     static int SetNodeImage(int target, Image *image);
-    static int GetEvaluationSize(int target, int *imageWidth, int *imageHeight);
-    static int SetEvaluationSize(int target, int imageWidth, int imageHeight);
-    static int SetEvaluationCubeSize(int target, int faceWidth);
+    static int GetEvaluationSize(EvaluationStages *evaluationStages, int target, int *imageWidth, int *imageHeight);
+    static int SetEvaluationSize(EvaluationStages *evaluationStages, int target, int imageWidth, int imageHeight);
+    static int SetEvaluationCubeSize(EvaluationStages *evaluationStages, int target, int faceWidth);
     static int Job(int(*jobFunction)(void*), void *ptr, unsigned int size);
     static int JobMain(int(*jobMainFunction)(void*), void *ptr, unsigned int size);
     static void SetProcessing(int target, int processing);
     static int AllocateComputeBuffer(int target, int elementCount, int elementSize);
 
     static int LoadScene(const char *filename, void **scene);
-    static int SetEvaluationScene(int target, void *scene);
-    static int GetEvaluationScene(int target, void **scene);
-    static int GetEvaluationRenderer(int target, void **renderer);
-    static int InitRenderer(int target, int mode, void *scene);
-    static int UpdateRenderer(int target);
+    static int SetEvaluationScene(EvaluationStages *evaluationStages, int target, void *scene);
+    static int GetEvaluationScene(EvaluationStages *evaluationStages, int target, void **scene);
+    static int GetEvaluationRenderer(EvaluationStages *evaluationStages, int target, void **renderer);
+    static int InitRenderer(EvaluationStages *evaluationStages, int target, int mode, void *scene);
+    static int UpdateRenderer(EvaluationStages *evaluationStages, int target);
 
     static void DrawUICubemap(size_t nodeIndex);
     static void DrawUISingle(size_t nodeIndex);
@@ -247,8 +247,9 @@ struct EvaluationStages
     const EvaluationStage& GetEvaluationStage(size_t index) const {    return mStages[index]; }
 
     const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
-
-
+    Camera *GetCameraParameter(size_t index);
+    int GetIntParameter(size_t index, const char *parameterName, int defaultValue);
+    Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mStages.size()) return NULL; return &mStages[index].mParameterViewMatrix; }
     // Data
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;

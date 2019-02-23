@@ -57,6 +57,9 @@ struct NodeGraphControlerBase
     virtual int NodeIsProcesing(size_t nodeIndex) = 0;
     virtual float NodeProgress(size_t nodeIndex) = 0;
     virtual bool NodeIsCubemap(size_t nodeIndex) = 0;
+    virtual bool NodeIs2D(size_t nodeIndex) = 0;
+    virtual bool NodeIsCompute(size_t nodeIndex) = 0;
+
     // clipboard
     virtual void CopyNodes(const std::vector<size_t> nodes) = 0;
     virtual void CutNodes(const std::vector<size_t> nodes) = 0;

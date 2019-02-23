@@ -338,13 +338,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
     glUseProgram(program);
 
-    Camera *camera = gNodeDelegate.GetCameraParameter(index);
+    Camera *camera = mEvaluationStages.GetCameraParameter(index);
     if (camera)
     {
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
-    int passCount = gNodeDelegate.GetIntParameter(index, "passCount", 1);
+    int passCount = mEvaluationStages.GetIntParameter(index, "passCount", 1);
     auto transientTarget = std::make_shared<RenderTarget>(RenderTarget());
     if (passCount > 1)
     {

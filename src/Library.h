@@ -422,7 +422,10 @@ const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex);
 AnimationBase *AllocateAnimation(uint32_t valueType);
 CurveType GetCurveTypeForParameterType(ConTypes paramType);
-void DecodeThumbnailAsync(Material * material);
+struct NodeGraphControler;
+void DecodeThumbnailAsync(Material * material, NodeGraphControler *nodeGraphControler);
+size_t ComputeNodeParametersSize(size_t nodeType);
+
 struct MetaCon
 {
     std::string mName;

@@ -576,6 +576,17 @@ size_t GetMetaNodeIndex(const std::string& metaNodeName)
     return iter->second;
 }
 
+size_t ComputeNodeParametersSize(size_t nodeType)
+{
+    size_t res = 0;
+    for (auto& param : gMetaNodes[nodeType].mParams)
+    {
+        res += GetParameterTypeSize(param.mType);
+    }
+    return res;
+}
+
+
 void LoadMetaNodes(const std::vector<std::string>& metaNodeFilenames)
 {
     static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);

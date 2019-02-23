@@ -38,6 +38,7 @@ struct Evaluation;
 class TextEditor;
 struct Library;
 struct Builder;
+struct MySequence;
 
 enum EVALUATOR_TYPE
 {
@@ -63,30 +64,36 @@ struct RegisteredPlugin
 
 struct Imogen
 {
-    Imogen();
+    Imogen(NodeGraphControler *nodeGraphControler);
     ~Imogen();
 
     void Init();
     void Finish();
     
-    void Show(Builder *builder, Library& library, NodeGraphControler &NodeGraphControler);
-    void ValidateCurrentMaterial(Library& library, NodeGraphControler &NodeGraphControler);
+    void Show(Builder *builder, Library& library);
+    void ValidateCurrentMaterial(Library& library);
     void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
     std::vector<RegisteredPlugin> mRegisteredPlugins;
     int GetCurrentMaterialIndex();
+    void SetExistingMaterialActive(int materialIndex);
+    void SetExistingMaterialActive(const char * materialName);
 
 protected:
-    void HandleEditor(TextEditor &editor, NodeGraphControler &NodeGraphControler);
+    void HandleEditor(TextEditor &editor);
     void ShowAppMainMenuBar();
     void ShowTitleBar(Builder *builder);
+    void LibraryEdit(Library& library);
+    void ClearAll();
+    void UpdateNewlySelectedGraph();
+
+    MySequence *mSequence;
+    NodeGraphControler *mNodeGraphControler;
 };
-extern Imogen imogen;
+//extern Imogen imogen;
 
 extern int gEvaluationTime;
-void SetExistingMaterialActive(int materialIndex);
-void SetExistingMaterialActive(const char * materialName);
 
 struct UndoRedo
 {

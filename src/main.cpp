@@ -103,7 +103,8 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
 }
 
 Library library;
-Imogen imogen;
+NodeGraphControler nodeGraphControler;
+Imogen imogen(&nodeGraphControler);
 enki::TaskScheduler g_TS;
 UndoRedoHandler gUndoRedoHandler;
 
@@ -266,7 +267,7 @@ int main(int, char**)
     Builder *builder = new Builder;
 
     // default Material
-    SetExistingMaterialActive(".default");
+    imogen.SetExistingMaterialActive(".default");
 
     TagTime("App init done");
 
@@ -299,22 +300,22 @@ int main(int, char**)
         if (gbIsPlaying)
         {
             gEvaluationTime++;
-            if (gEvaluationTime >= gNodeDelegate.mEvaluationStages.mFrameMax)
+            if (gEvaluationTime >= nodeGraphControler.mEvaluationStages.mFrameMax)
             {
                 if (gPlayLoop)
                 {
-                    gEvaluationTime = gNodeDelegate.mEvaluationStages.mFrameMin;
+                    gEvaluationTime = nodeGraphControler.mEvaluationStages.mFrameMin;
                 }
                 else
                 {
                     gbIsPlaying = false;
                 }
             }
-            gNodeDelegate.SetTime(gEvaluationTime, true);
-            gNodeDelegate.ApplyAnimation(gEvaluationTime);
+            nodeGraphControler.SetTime(gEvaluationTime, true);
+            nodeGraphControler.ApplyAnimation(gEvaluationTime);
         }
         gCurrentContext->RunDirty();
-        imogen.Show(builder, library, gNodeDelegate);
+        imogen.Show(builder, library);
 
         // render everything
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -336,7 +337,7 @@ int main(int, char**)
         cmft::clUnload();
     }
 
-    imogen.ValidateCurrentMaterial(library, gNodeDelegate);
+    imogen.ValidateCurrentMaterial(library);
     SaveLib(&library, libraryFilename);
 
     // Cleanup

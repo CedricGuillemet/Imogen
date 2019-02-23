@@ -38,58 +38,9 @@
 #include "UI.h"
 
 void AddExtractedView(size_t nodeIndex);
+extern ImGui::MarkdownConfig mdConfig;
 
 static inline float Distance(ImVec2& a, ImVec2& b) { return sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y)); }
-
-void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
-{
-    std::string url(data_.link, data_.linkLength);
-    static const std::string graph = "thumbnail:";
-    if (url.substr(0, graph.size()) == graph)
-    {
-        std::string materialName = url.substr(graph.size());
-        //SetExistingMaterialActive(materialName.c_str()); TODO
-        return;
-    }
-    OpenShellURL(url);
-}
-
-inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData data_)
-{
-    std::string url(data_.link, data_.linkLength);
-    static const std::string thumbnail = "thumbnail:";
-    if (url.substr(0, thumbnail.size()) == thumbnail)
-    {
-        std::string material = url.substr(thumbnail.size());
-        Material* libraryMaterial = library.GetByName(material.c_str());
-        if (libraryMaterial)
-        {
-            //DecodeThumbnailAsync(libraryMaterial); TODO
-            return { true, true, (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
-        }
-    }
-    else
-    {
-        int percent = 100;
-        size_t sz = url.find('@');
-        if (sz != std::string::npos)
-        {
-            sscanf(url.c_str() + sz + 1, "%d%%", &percent);
-            url = url.substr(0, sz);
-        }
-        unsigned int textureId = gImageCache.GetTexture(url);
-        if (textureId)
-        {
-            int w, h;
-            GetTextureDimension(textureId, &w, &h);
-            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(float(w*percent / 100), float(h*percent / 100)), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
-        }
-    }
-
-    return { false };
-}
-
-ImGui::MarkdownConfig mdConfig = { LinkCallback, ImageCallback, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
 
 Node::Node(int type, const ImVec2& pos)
 {

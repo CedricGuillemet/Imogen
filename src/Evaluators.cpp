@@ -630,23 +630,22 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int SetThumbnailImage(Image *image)
+    int SetThumbnailImage(EvaluationContext *context, Image *image)
     {
         std::vector<unsigned char> pngImage;
         if (Image::EncodePng(image, pngImage) == EVAL_ERR)
             return EVAL_ERR;
-        /* TODO
-        extern Library library;
-        extern Imogen imogen;
 
-        int materialIndex = imogen.GetCurrentMaterialIndex();
-        Material & material = library.mMaterials[materialIndex];
-        material.mThumbnail = pngImage;
-        material.mThumbnailTextureId = 0;
-        */
+        Material * material = library.Get(std::make_pair(0, context->GetMaterialUniqueId()));
+        if (material)
+        {
+            material->mThumbnail = pngImage;
+            material->mThumbnailTextureId = 0;
+        }
         return EVAL_OK;
     }
-
+#if 0 
+    looks like unused
     int SetNodeImage(int target, Image *image)
     {
         std::vector<unsigned char> pngImage;
@@ -663,7 +662,7 @@ namespace EvaluationAPI
         */
         return EVAL_OK;
     }
-
+#endif
 
     void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst)
     {

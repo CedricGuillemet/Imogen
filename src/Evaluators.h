@@ -89,13 +89,13 @@ namespace EvaluationAPI
     int GetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image);
     int SetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image);
     int SetEvaluationImageCube(EvaluationContext *evaluationContext, int target, Image *image, int cubeFace);
-    int SetThumbnailImage(Image *image);
+    int SetThumbnailImage(EvaluationContext *evaluationContext, Image *image);
     int AllocateImage(Image *image);
 
     //static int Evaluate(int target, int width, int height, Image *image);
     void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst);
     void EnableDepthBuffer(EvaluationContext *evaluationContext, int target, int enable);
-    int SetNodeImage(int target, Image *image);
+    //int SetNodeImage(int target, Image *image);
     int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
     int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight);
     int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth);

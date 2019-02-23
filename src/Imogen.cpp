@@ -41,11 +41,64 @@
 #include "Evaluators.h"
 #include "nfd.h"
 #include "UI.h"
+#include "imgui_markdown/imgui_markdown.h"
 
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
 int gEvaluationTime = 0;
 extern enki::TaskScheduler g_TS;
 extern bool gbIsPlaying;
+
+
+
+void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    std::string url(data_.link, data_.linkLength);
+    static const std::string graph = "thumbnail:";
+    if (url.substr(0, graph.size()) == graph)
+    {
+        std::string materialName = url.substr(graph.size());
+        ((Imogen*)data_.userData)->SetExistingMaterialActive(materialName.c_str());
+        return;
+    }
+    OpenShellURL(url);
+}
+
+inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    std::string url(data_.link, data_.linkLength);
+    static const std::string thumbnail = "thumbnail:";
+    if (url.substr(0, thumbnail.size()) == thumbnail)
+    {
+        std::string material = url.substr(thumbnail.size());
+        Material* libraryMaterial = library.GetByName(material.c_str());
+        if (libraryMaterial)
+        {
+            ((Imogen*)data_.userData)->DecodeThumbnailAsync(libraryMaterial);
+            return { true, true, (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+        }
+    }
+    else
+    {
+        int percent = 100;
+        size_t sz = url.find('@');
+        if (sz != std::string::npos)
+        {
+            sscanf(url.c_str() + sz + 1, "%d%%", &percent);
+            url = url.substr(0, sz);
+        }
+        unsigned int textureId = gImageCache.GetTexture(url);
+        if (textureId)
+        {
+            int w, h;
+            GetTextureDimension(textureId, &w, &h);
+            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(float(w*percent / 100), float(h*percent / 100)), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+        }
+    }
+
+    return { false };
+}
+
+ImGui::MarkdownConfig mdConfig = { LinkCallback, ImageCallback, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
 
 struct ExtractedView
 {
@@ -439,17 +492,17 @@ struct DecodeImageTaskSet : enki::ITaskSet
     NodeGraphControler *mNodeGraphControler;
 };
 
-void DecodeThumbnailAsync(Material * material, NodeGraphControler *nodeGraphControler)
+void Imogen::DecodeThumbnailAsync(Material * material)
 {
     static unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
     if (!material->mThumbnailTextureId)
     {
         material->mThumbnailTextureId = defaultTextureId;
-        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material-library.mMaterials.data(), material->mRuntimeUniqueId), nodeGraphControler));
+        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material-library.mMaterials.data(), material->mRuntimeUniqueId), mNodeGraphControler));
     }
 }
 
-template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, int viewMode, NodeGraphControler *nodeGraphControler)
+template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, int viewMode, Imogen *imogen)
 {
     bool ret = false;
     if (!ImGui::TreeNodeEx(szName, ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
@@ -507,7 +560,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
         ImGui::BeginGroup();
 
         T& resource = res[indexInRes];
-        DecodeThumbnailAsync(&resource, nodeGraphControler);
+        imogen->DecodeThumbnailAsync(&resource);
         bool clicked = false;
         switch (viewMode)
         {
@@ -653,6 +706,7 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mEvaluationStages.mPinnedParameters = material.mPinnedParameters;
         mNodeGraphControler->SetTime(gEvaluationTime, true);
         mNodeGraphControler->ApplyAnimation(gEvaluationTime);
+        mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mThumbnailTextureId);
         mNodeGraphControler->mEditingContext.RunAll();
     }
 }
@@ -709,7 +763,7 @@ void Imogen::LibraryEdit(Library& library)
     }
 
     ImGui::BeginChild("TV");
-    if (TVRes(library.mMaterials, "Graphs", selectedMaterial, 0, libraryViewMode, mNodeGraphControler))
+    if (TVRes(library.mMaterials, "Graphs", selectedMaterial, 0, libraryViewMode, this))
     {
         mNodeGraphControler->mSelectedNodeIndex = -1;
         // save previous
@@ -1538,7 +1592,7 @@ void Imogen::Show(Builder *builder, Library& library)
                 mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
                 NodeGraphSelectNode(selectedEntry);
                 auto& imoNode = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry];
-                mNodeGraphControler->mEvaluationStages.SetStageLocalTime(selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
+                mNodeGraphControler->mEvaluationStages.SetStageLocalTime(&mNodeGraphControler->mEditingContext, selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
             }
             if (currentTime != gEvaluationTime)
             {
@@ -1612,6 +1666,7 @@ Imogen::Imogen(NodeGraphControler *nodeGraphControler) :
     mNodeGraphControler(nodeGraphControler)
 {
     mSequence = new MySequence(*nodeGraphControler);
+    mdConfig.userData = this;
 }
 
 Imogen::~Imogen()

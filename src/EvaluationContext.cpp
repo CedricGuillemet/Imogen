@@ -82,6 +82,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation, bool synchron
     , mbSynchronousEvaluation(synchronousEvaluation)
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
+    , mRuntimeUniqueId(-1)
 {
 
 }

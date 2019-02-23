@@ -79,7 +79,7 @@ struct Imogen
     int GetCurrentMaterialIndex();
     void SetExistingMaterialActive(int materialIndex);
     void SetExistingMaterialActive(const char * materialName);
-
+    void DecodeThumbnailAsync(Material * material);
 protected:
     void HandleEditor(TextEditor &editor);
     void ShowAppMainMenuBar();
@@ -91,7 +91,7 @@ protected:
     MySequence *mSequence;
     NodeGraphControler *mNodeGraphControler;
 };
-//extern Imogen imogen;
+
 
 extern int gEvaluationTime;
 

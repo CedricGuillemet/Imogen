@@ -510,7 +510,7 @@ void NodeGraphControler::SetTime(int time, bool updateDecoder)
     for (size_t i = 0; i < mEvaluationStages.mStages.size(); i++)
     {
         const auto& stage = mEvaluationStages.mStages[i];
-        mEvaluationStages.SetStageLocalTime(i, ImClamp(time - stage.mStartFrame, 0, stage.mEndFrame - stage.mStartFrame), updateDecoder);
+        mEvaluationStages.SetStageLocalTime(&mEditingContext, i, ImClamp(time - stage.mStartFrame, 0, stage.mEndFrame - stage.mStartFrame), updateDecoder);
         //bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
     }
 }

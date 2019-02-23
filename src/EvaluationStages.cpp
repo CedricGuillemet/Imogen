@@ -177,7 +177,7 @@ size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
     return stage.mDecoder->mFrameCount;
 }
 
-void EvaluationStages::SetStageLocalTime(size_t target, int localTime, bool updateDecoder)
+void EvaluationStages::SetStageLocalTime(EvaluationContext *evaluationContext, size_t target, int localTime, bool updateDecoder)
 {
     auto& stage = mStages[target];
     int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
@@ -185,7 +185,7 @@ void EvaluationStages::SetStageLocalTime(size_t target, int localTime, bool upda
     {
         stage.mLocalTime = newLocalTime;
         Image image = stage.DecodeImage();
-        //SetEvaluationImage(this, int(target), &image); TODO
+        EvaluationAPI::SetEvaluationImage(evaluationContext, int(target), &image);
         Image::Free(&image);
     }
     else

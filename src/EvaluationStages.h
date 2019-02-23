@@ -39,7 +39,7 @@
 
 struct ImDrawList;
 struct ImDrawCmd;
-
+struct EvaluationContext;
 
 enum BlendOp
 {
@@ -111,7 +111,7 @@ struct EvaluationStage
     int mStartFrame, mEndFrame;
     bool mbDepthBuffer;
     // Camera
-    Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity(); // TODO used?
+    Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
     // mouse
     float mRx;
     float mRy;
@@ -180,7 +180,7 @@ struct EvaluationStages
     void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
     void Clear();
     
-    void SetStageLocalTime(size_t target, int localTime, bool updateDecoder);
+    void SetStageLocalTime(EvaluationContext *evaluationContext, size_t target, int localTime, bool updateDecoder);
 
     
 

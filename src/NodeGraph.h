@@ -78,6 +78,7 @@ struct Node
 
     ImVec2 GetInputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
     ImVec2 GetOutputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor + Size.x, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
+    ImRect GetNodeRect(float factor) { return ImRect(Pos * factor, Pos * factor + Size); }
 };
 
 struct NodeLink

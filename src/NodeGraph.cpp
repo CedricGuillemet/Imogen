@@ -978,7 +978,7 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
                     }
                 }
             }
-            if (nodeOperation == NO_None && io.MouseDown[0])
+            if (nodeOperation == NO_None && ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && io.MouseClicked[0])
             {
                 nodeOperation = NO_EditingLink;
                 editingInput = i == 0;

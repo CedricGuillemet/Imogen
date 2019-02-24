@@ -29,7 +29,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
+#include <GL/gl3w.h>
 
 EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 {
@@ -40,19 +40,26 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
 {
     EvaluationStage evaluation;
 #ifdef _DEBUG
-    evaluation.mTypename          = gMetaNodes[nodeType].mName;;
+    evaluation.mTypename              = gMetaNodes[nodeType].mName;;
 #endif
     evaluation.mDecoder               = NULL;
     evaluation.mUseCountByOthers      = 0;
-    evaluation.mType              = nodeType;
+    evaluation.mType                  = nodeType;
     evaluation.mParametersBuffer      = 0;
     evaluation.mBlendingSrc           = ONE;
     evaluation.mBlendingDst           = ZERO;
     evaluation.mLocalTime             = 0;
     evaluation.gEvaluationMask        = gEvaluators.GetMask(nodeType);
     evaluation.mbDepthBuffer          = false;
-    evaluation.scene = nullptr;
-    evaluation.renderer = nullptr;
+    evaluation.scene                  = nullptr;
+    evaluation.renderer               = nullptr;
+    evaluation.mRuntimeUniqueId       = GetRuntimeId();
+    const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
+    evaluation.mInputSamplers.resize(inputCount);
+    evaluation.mStartFrame            = mFrameMin;
+    evaluation.mEndFrame              = mFrameMax;
+
+    InitDefaultParameters(evaluation);
     mStages.push_back(evaluation);
 }
 
@@ -193,21 +200,7 @@ void EvaluationStages::SetStageLocalTime(EvaluationContext *evaluationContext, s
         stage.mLocalTime = newLocalTime;
     }
 }
-/* TODO
-int EvaluationStages::Evaluate(int target, int width, int height, Image *image)
-{
-    EvaluationContext *previousContext = gCurrentContext;
-    EvaluationContext context(*this, true, width, height);
-    gCurrentContext = &context;
-    while (context.RunBackward(target))
-    {
-        // processing... maybe good on next run
-    }
-    GetEvaluationImage(target, image);
-    gCurrentContext = previousContext;
-    return EVAL_OK;
-}
-*/
+
 FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
 {
     for (auto& evaluation : mStages)
@@ -219,7 +212,6 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
     decoder->Open(filename);
     return decoder;
 }
-
 
 Camera *EvaluationStages::GetCameraParameter(size_t index)
 {
@@ -269,12 +261,62 @@ int EvaluationStages::GetIntParameter(size_t index, const char *parameterName, i
     return defaultValue;
 }
 
+void EvaluationStages::InitDefaultParameters(EvaluationStage& stage)
+{
+    const MetaNode* metaNodes = gMetaNodes.data();
+    const MetaNode& currentMeta = metaNodes[stage.mType];
+    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
+    stage.mParameters.resize(paramsSize);
+    unsigned char *paramBuffer = stage.mParameters.data();
+    memset(paramBuffer, 0, paramsSize);
+    int i = 0;
+    for (const MetaParameter& param : currentMeta.mParams)
+    {
+        if (!_stricmp(param.mName.c_str(), "scale"))
+        {
+            float* pf = (float*)paramBuffer;
+            switch (param.mType)
+            {
+            case Con_Float:
+                pf[0] = 1.f;
+                break;
+            case Con_Float2:
+                pf[1] = pf[0] = 1.f;
+                break;
+            case Con_Float3:
+                pf[2] = pf[1] = pf[0] = 1.f;
+                break;
+            case Con_Float4:
+                pf[3] = pf[2] = pf[1] = pf[0] = 1.f;
+                break;
+            }
+        }
+        switch (param.mType)
+        {
+        case Con_Ramp:
+            ((ImVec2*)paramBuffer)[0] = ImVec2(0, 0);
+            ((ImVec2*)paramBuffer)[1] = ImVec2(1, 1);
+            break;
+        case Con_Ramp4:
+            ((ImVec4*)paramBuffer)[0] = ImVec4(0, 0, 0, 0);
+            ((ImVec4*)paramBuffer)[1] = ImVec4(1, 1, 1, 1);
+            break;
+        case Con_Camera:
+        {
+            Camera *cam = (Camera*)paramBuffer;
+            cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
+            cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
+        }
+        break;
+        }
+        paramBuffer += GetParameterTypeSize(param.mType);
+    }
+}
 
 Image EvaluationStage::DecodeImage()
 {
     return Image::DecodeImage(mDecoder.get(), mLocalTime);
 }
-
 
 void EvaluationStages::BindGLSLParameters(EvaluationStage& stage)
 {
@@ -301,3 +343,4 @@ void EvaluationStage::Clear()
         glDeleteBuffers(1, &mParametersBuffer);
     mParametersBuffer = 0;
 }
+

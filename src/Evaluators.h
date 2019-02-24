@@ -122,4 +122,5 @@ namespace EvaluationAPI
 
     int Read(EvaluationContext *evaluationContext, const char *filename, Image *image);
     int Write(EvaluationContext *evaluationContext, const char *filename, Image *image, int format, int quality);
+    int Evaluate(EvaluationContext *evaluationContext, int target, int width, int height, Image *image);
 }

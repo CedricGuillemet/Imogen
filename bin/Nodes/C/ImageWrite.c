@@ -18,7 +18,7 @@ int main(ImageWrite *param, Evaluation *evaluation, void *context)
 	
 	image.bits = 0;
 	// set info stock image
-	if (ReadImage(stockImages[param->format], &image) == EVAL_OK)
+	if (ReadImage(context, stockImages[param->format], &image) == EVAL_OK)
 	{
 		if (SetEvaluationImage(context, evaluation->targetIndex, &image) == EVAL_OK)
 		{

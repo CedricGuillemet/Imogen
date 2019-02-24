@@ -15,7 +15,7 @@ typedef struct JobData_t
 int ReadSceneJob(JobData *data)
 {
 	void *scene;
-	if (LoadScene(data->context, data->filename, &scene) == EVAL_OK)
+	if (LoadScene(data->filename, &scene) == EVAL_OK)
 	{
 		SetEvaluationScene(data->context, data->targetIndex, scene);
 	}

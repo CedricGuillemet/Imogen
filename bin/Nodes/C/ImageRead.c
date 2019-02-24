@@ -56,7 +56,7 @@ int main(ImageRead *param, Evaluation *evaluation, void *context)
 	
 	if (strlen(param->filename))
 	{
-		SetProcessing(data->context, evaluation->targetIndex, 1);
+		SetProcessing(context, evaluation->targetIndex, 1);
 		JobData data;
 		strcpy(data.filename, param->filename);
 		data.targetIndex = evaluation->targetIndex;

@@ -76,24 +76,8 @@ void NodeGraphControler::NodeIsAdded(int index)
 
 void NodeGraphControler::AddSingleNode(size_t type)
 {
-    /*mEvaluationStages.AddSingleEvaluation(type);
-    const size_t inputCount = gMetaNodes[type].mInputs.size();
-
-    ImogenNode node;
-    node.mRuntimeUniqueId = GetRuntimeId();
-    node.mType = type;
-    node.mStartFrame = mEvaluationStages.mFrameMin;
-    node.mEndFrame = mEvaluationStages.mFrameMax;
-#ifdef _DEBUG
-    node.mTypename = gMetaNodes[type].mName;
-#endif
-    InitDefault(node);
-    node.mInputSamplers.resize(inputCount);
-
-    mEvaluationStages.mStages.push_back(node);
-
+    mEvaluationStages.AddSingleEvaluation(type);
     NodeIsAdded(int(mEvaluationStages.mStages.size()) - 1);
-    */
 }
 
 void NodeGraphControler::UserAddNode(size_t type)
@@ -124,57 +108,6 @@ const float PI = 3.14159f;
 float RadToDeg(float a) { return a * 180.f / PI; }
 float DegToRad(float a) { return a / 180.f * PI; }
 
-void NodeGraphControler::InitDefault(EvaluationStage& stage)
-{
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    stage.mParameters.resize(paramsSize);
-    unsigned char *paramBuffer = stage.mParameters.data();
-    memset(paramBuffer, 0, paramsSize);
-    int i = 0;
-    for (const MetaParameter& param : currentMeta.mParams)
-    {
-        if (!_stricmp(param.mName.c_str(), "scale"))
-        {
-            float* pf = (float*)paramBuffer;
-            switch (param.mType)
-            {
-            case Con_Float:
-                pf[0] = 1.f;
-                break;
-            case Con_Float2:
-                pf[1] = pf[0] = 1.f;
-                break;
-            case Con_Float3:
-                pf[2] = pf[1] = pf[0] = 1.f;
-                break;
-            case Con_Float4:
-                pf[3] = pf[2] = pf[1] = pf[0] = 1.f;
-                break;
-            }
-        }
-        switch (param.mType)
-        {
-            case Con_Ramp:
-                ((ImVec2*)paramBuffer)[0] = ImVec2(0, 0);
-                ((ImVec2*)paramBuffer)[1] = ImVec2(1, 1);
-                break;
-            case Con_Ramp4:
-                ((ImVec4*)paramBuffer)[0] = ImVec4(0, 0, 0, 0);
-                ((ImVec4*)paramBuffer)[1] = ImVec4(1, 1, 1, 1);
-                break;
-            case Con_Camera:
-            {
-                Camera *cam = (Camera*)paramBuffer;
-                cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
-                cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
-            }
-            break;
-        }
-        paramBuffer += GetParameterTypeSize(param.mType);
-    }
-}
 bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param)
 {
     bool dirty = false;

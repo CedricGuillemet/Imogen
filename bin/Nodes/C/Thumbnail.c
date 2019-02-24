@@ -4,7 +4,7 @@ int main(void *param, Evaluation *evaluation, void *context)
 {
 	Image image;
 	image.bits = 0;
-	if (ReadImage("Stock/thumbnail-icon.png", &image) == EVAL_OK)
+	if (ReadImage(context, "Stock/thumbnail-icon.png", &image) == EVAL_OK)
 	{
 		if (SetEvaluationImage(context, evaluation->targetIndex, &image) == EVAL_OK)
 		{

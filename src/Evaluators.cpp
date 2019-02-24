@@ -61,7 +61,7 @@ static const EValuationFunction evaluationFunctions[] = {
     { "AllocateImage", (void*)EvaluationAPI::AllocateImage },
     { "FreeImage", (void*)Image::Free },
     { "SetThumbnailImage", (void*)EvaluationAPI::SetThumbnailImage },
-    //{ "Evaluate", (void*)EvaluationStages::Evaluate},
+    { "Evaluate", (void*)EvaluationAPI::Evaluate},
     { "SetBlendingMode", (void*)EvaluationAPI::SetBlendingMode},
     { "EnableDepthBuffer", (void*)EvaluationAPI::EnableDepthBuffer},
     { "GetEvaluationSize", (void*)EvaluationAPI::GetEvaluationSize},
@@ -285,7 +285,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("AllocateImage", EvaluationAPI::AllocateImage );
     m.def("FreeImage", Image::Free );
     m.def("SetThumbnailImage", EvaluationAPI::SetThumbnailImage );
-    //m.def("Evaluate", EvaluationStages::Evaluate );
+    m.def("Evaluate", EvaluationAPI::Evaluate );
     m.def("SetBlendingMode", EvaluationAPI::SetBlendingMode );
     m.def("GetEvaluationSize", EvaluationAPI::GetEvaluationSize );
     m.def("SetEvaluationSize", EvaluationAPI::SetEvaluationSize );
@@ -1041,4 +1041,20 @@ namespace EvaluationAPI
         
         return Image::Write(filename, image, format, quality);
     }
+
+    int Evaluate(EvaluationContext *evaluationContext, int target, int width, int height, Image *image)
+    {
+        /*EvaluationContext *previousContext = gCurrentContext;
+        EvaluationContext context(*this, true, width, height);
+        gCurrentContext = &context;
+        while (context.RunBackward(target))
+        {
+            // processing... maybe good on next run
+        }
+        GetEvaluationImage(target, image);
+        gCurrentContext = previousContext;
+        */
+        return EVAL_OK;
+    }
+
 }

@@ -1107,21 +1107,7 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
         marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
     }
 
-    if (controler->NodeIsProcesing(nodeIndex) == 1)
-    {
-        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), DrawUICallbacks::DrawUIProgress, nodeIndex);
-    }
-    else if (controler->NodeIsCubemap(nodeIndex))
-    {
-        AddUICustomDraw(drawList, ImRect(imgPos, imgPosMax), DrawUICallbacks::DrawUICubemap, nodeIndex);
-    }
-    else if (nodeIsCompute)
-    {
-    }
-    else
-    {
-        drawList->AddImage((ImTextureID)(int64_t)(controler->GetNodeTexture(size_t(nodeIndex))), imgPos + marge, imgPosMax - marge, ImVec2(0, 1), ImVec2(1, 0));
-    }
+    controler->DrawNodeImage(drawList, ImRect(imgPos, imgPosMax), marge, nodeIndex);
 
     drawList->AddRectFilled(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
     drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), true);

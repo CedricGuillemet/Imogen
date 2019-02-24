@@ -39,7 +39,7 @@ int UploadImageJob(JobData *data)
 
 int ReadJob(JobData *data)
 {
-	if (ReadImage(data->filename, &data->image) == EVAL_OK)
+	if (ReadImage(data->context, data->filename, &data->image) == EVAL_OK)
 	{
 		JobData dataUp = *data;
 		JobMain(data->context, UploadImageJob, &dataUp, sizeof(JobData));

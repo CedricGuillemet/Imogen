@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include <SDL.h>
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include <memory>
 #include "EvaluationContext.h"
@@ -841,5 +842,34 @@ void Builder::BuildEntries()
             }
         }
         Sleep(100);
+    }
+}
+
+namespace DrawUICallbacks
+{
+    void DrawUIProgress(EvaluationContext *context, size_t nodeIndex)
+    {
+        glUseProgram(gDefaultShader.mProgressShader);
+        glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
+        gFSQuad.Render();
+    }
+
+    void DrawUISingle(EvaluationContext *context, size_t nodeIndex)
+    {
+        EvaluationInfo evaluationInfo;
+        evaluationInfo.forcedDirty = 1;
+        evaluationInfo.uiPass = 1;
+        context->RunSingle(nodeIndex, evaluationInfo);
+    }
+
+    void DrawUICubemap(EvaluationContext *context, size_t nodeIndex)
+    {
+        glUseProgram(gDefaultShader.mDisplayCubemapShader);
+        int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
+        glUniform1i(tgt, 0);
+        glActiveTexture(GL_TEXTURE0);
+
+        glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
+        gFSQuad.Render();
     }
 }

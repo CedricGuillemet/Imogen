@@ -84,9 +84,9 @@ enum CubeMapFace
 };
 
 // call FreeImage when done
-int ReadImage(char *filename, Image *image);
+int ReadImage(void* context, char *filename, Image *image);
 // writes an allocated image
-int WriteImage(char *filename, Image *image, int format, int quality);
+int WriteImage(void* context, char *filename, Image *image, int format, int quality);
 // call FreeImage when done
 int GetEvaluationImage(void* context, int target, Image *image);
 // 

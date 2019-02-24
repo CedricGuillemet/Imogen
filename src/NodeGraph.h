@@ -59,6 +59,7 @@ struct NodeGraphControlerBase
     virtual bool NodeIsCubemap(size_t nodeIndex) = 0;
     virtual bool NodeIs2D(size_t nodeIndex) = 0;
     virtual bool NodeIsCompute(size_t nodeIndex) = 0;
+    virtual void DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex) = 0;
 
     // clipboard
     virtual void CopyNodes(const std::vector<size_t> nodes) = 0;

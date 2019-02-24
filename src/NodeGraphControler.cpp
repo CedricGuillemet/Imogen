@@ -925,3 +925,22 @@ void NodeGraphControler::SetAnimTrack(const std::vector<AnimTrack>& animTrack)
 { 
     mEvaluationStages.mAnimTrack = animTrack;
 }
+
+void NodeGraphControler::DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex)
+{
+    if (NodeIsProcesing(nodeIndex) == 1)
+    {
+        AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUIProgress, nodeIndex, &mEditingContext);
+    }
+    else if (NodeIsCubemap(nodeIndex))
+    {
+        AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUICubemap, nodeIndex, &mEditingContext);
+    }
+    else if (NodeIsCompute(nodeIndex))
+    {
+    }
+    else
+    {
+        drawList->AddImage((ImTextureID)(int64_t)(GetNodeTexture(size_t(nodeIndex))), rc.Min + marge, rc.Max - marge, ImVec2(0, 1), ImVec2(1, 0));
+    }
+}

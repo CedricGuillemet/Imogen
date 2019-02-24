@@ -48,7 +48,7 @@ int gEvaluationTime = 0;
 extern enki::TaskScheduler g_TS;
 extern bool gbIsPlaying;
 
-
+std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
 {
@@ -206,8 +206,8 @@ void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool
             ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            //draw_list->AddCallback((ImDrawCallback)(EvaluationStages::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
-            AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode);
+
+            AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
 
             mouseUVCoord = (io.MousePos - rc.Min) / rc.GetSize();
             mouseUVCoord.y = 1.f - mouseUVCoord.y;
@@ -276,11 +276,11 @@ void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
             if (selNode != -1 && nodeGraphControler.NodeIsCubemap(selNode))
             {
-                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUICubemap, selNode);
+                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUICubemap, selNode, &nodeGraphControler.mEditingContext);
             }
             else if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
             {
-                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode);
+                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
             }
         }
     }

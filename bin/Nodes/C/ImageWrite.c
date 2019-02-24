@@ -47,7 +47,7 @@ int main(ImageWrite *param, Evaluation *evaluation, void *context)
 	image.bits = 0;
 	if (Evaluate(context, evaluation->inputIndices[0], param->width, param->height, &image) == EVAL_OK)
 	{
-		if (WriteImage(param->filename, &image, param->format, param->quality) == EVAL_OK)
+		if (WriteImage(context, param->filename, &image, param->format, param->quality) == EVAL_OK)
 		{	
 			FreeImage(&image);
 			Log("Image %s saved.\n", param->filename);

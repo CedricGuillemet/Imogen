@@ -66,7 +66,8 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual bool NodeIsCompute(size_t nodeIndex);
     virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) { mEvaluationStages.SetEvaluationOrder(nodeOrderList);    }
     virtual ImVec2 GetEvaluationSize(size_t nodeIndex);
-    
+    virtual void DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex);
+
     virtual void CopyNodes(const std::vector<size_t> nodes);
     virtual void CutNodes(const std::vector<size_t> nodes);
     virtual void PasteNodes();

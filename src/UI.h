@@ -170,16 +170,11 @@ private:
 // draw callbacks
 struct ImRect;
 struct ImDrawList;
-typedef void(*NodeUICallBackFunc)(size_t nodeIndex);
-void AddUICustomDraw(ImDrawList *drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex);
+struct EvaluationContext;
+typedef void(*NodeUICallBackFunc)(EvaluationContext *context, size_t nodeIndex);
+void AddUICustomDraw(ImDrawList *drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext *context);
 void InitCallbackRects();
 
 //
 void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUVCoord, ImVec2 displayedTextureSize);
 
-namespace DrawUICallbacks
-{
-    void DrawUICubemap(size_t nodeIndex);
-    void DrawUISingle(size_t nodeIndex);
-    void DrawUIProgress(size_t nodeIndex);
-}

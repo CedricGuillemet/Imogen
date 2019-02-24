@@ -140,3 +140,10 @@ private:
     std::vector<Entry> mEntries;
     void BuildEntries();
 };
+
+namespace DrawUICallbacks
+{
+    void DrawUICubemap(EvaluationContext *context, size_t nodeIndex);
+    void DrawUISingle(EvaluationContext *context, size_t nodeIndex);
+    void DrawUIProgress(EvaluationContext *context, size_t nodeIndex);
+}

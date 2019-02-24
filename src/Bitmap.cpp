@@ -167,10 +167,7 @@ int Image::Read(const char *filename, Image *image)
         cmft::Image img;
         if (!cmft::imageLoad(img, filename))
         {
-            // TODO
-            //auto decoder = gNodeDelegate.mEvaluationStages.FindDecoder(filename);
-            //*image = Image::DecodeImage(decoder, gEvaluationTime);
-            return EVAL_OK;
+            return EVAL_ERR;
         }
         cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
         image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
@@ -299,10 +296,7 @@ int Image::Write(const char *filename, Image *image, int format, int quality)
     break;
     case 7:
     {
-        // TODO
-        /*FFMPEGCodec::Encoder *encoder = gCurrentContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
-        std::string fn(filename);
-        encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);*/
+        assert(0);
     }
     break;
     }

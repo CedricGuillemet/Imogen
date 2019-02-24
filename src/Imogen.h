@@ -61,6 +61,7 @@ struct RegisteredPlugin
     std::string mName;
     std::string mPythonCommand;
 };
+extern std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 struct Imogen
 {
@@ -75,7 +76,7 @@ struct Imogen
     void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
-    std::vector<RegisteredPlugin> mRegisteredPlugins;
+    
     int GetCurrentMaterialIndex();
     void SetExistingMaterialActive(int materialIndex);
     void SetExistingMaterialActive(const char * materialName);

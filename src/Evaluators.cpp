@@ -53,8 +53,8 @@ struct EValuationFunction
 
 static const EValuationFunction evaluationFunctions[] = {
     { "Log", (void*)Log },
-    { "ReadImage", (void*)Image::Read },
-    { "WriteImage", (void*)Image::Write },
+    { "ReadImage", (void*)EvaluationAPI::Read },
+    { "WriteImage", (void*)EvaluationAPI::Write },
     { "GetEvaluationImage", (void*)EvaluationAPI::GetEvaluationImage },
     { "SetEvaluationImage", (void*)EvaluationAPI::SetEvaluationImage },
     { "SetEvaluationImageCube", (void*)EvaluationAPI::SetEvaluationImageCube },
@@ -248,7 +248,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return d;
     });
     m.def("RegisterPlugin", [](std::string& name, std::string command) {
-        //imogen.mRegisteredPlugins.push_back({ name, command }); TODO
+        mRegisteredPlugins.push_back({ name, command });
         Log("Plugin registered : %s \n", name.c_str());
     });
     m.def("FileDialogRead", []() {
@@ -1017,5 +1017,28 @@ namespace EvaluationAPI
             g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
         }
         return EVAL_OK;
+    }
+
+    int Read(EvaluationContext *evaluationContext, const char *filename, Image *image)
+    {
+        if (Image::Read(filename, image) == EVAL_OK)
+            return EVAL_OK;
+        // try to load movie
+        auto decoder = evaluationContext->mEvaluationStages.FindDecoder(filename);
+        *image = Image::DecodeImage(decoder, gEvaluationTime);
+        return EVAL_OK;
+    }
+
+    int Write(EvaluationContext *evaluationContext, const char *filename, Image *image, int format, int quality)
+    {
+        if (format == 7)
+        {
+            FFMPEGCodec::Encoder *encoder = evaluationContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
+            std::string fn(filename);
+            encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);
+            return EVAL_OK;
+        }
+        
+        return Image::Write(filename, image, format, quality);
     }
 }

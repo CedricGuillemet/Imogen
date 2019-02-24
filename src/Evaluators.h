@@ -30,6 +30,15 @@
 #include "Imogen.h"
 #include "pybind11/embed.h"
 
+
+enum EvaluationMask
+{
+    EvaluationC = 1 << 0,
+    EvaluationGLSL = 1 << 1,
+    EvaluationPython = 1 << 2,
+    EvaluationGLSLCompute = 1 << 3,
+};
+
 struct Evaluator
 {
     Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0) {}
@@ -111,4 +120,6 @@ namespace EvaluationAPI
     int InitRenderer(EvaluationContext *evaluationContext, int target, int mode, void *scene);
     int UpdateRenderer(EvaluationContext *evaluationContext, int target);
 
+    int Read(EvaluationContext *evaluationContext, const char *filename, Image *image);
+    int Write(EvaluationContext *evaluationContext, const char *filename, Image *image, int format, int quality);
 }

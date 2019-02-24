@@ -150,14 +150,6 @@ struct EvaluationStage
     }
 };
 
-enum EvaluationMask
-{
-    EvaluationC = 1 << 0,
-    EvaluationGLSL = 1 << 1,
-    EvaluationPython = 1 << 2,
-    EvaluationGLSLCompute = 1 << 3,
-};
-
 // simple API
 struct EvaluationStages
 {
@@ -195,6 +187,10 @@ struct EvaluationStages
     Camera *GetCameraParameter(size_t index);
     int GetIntParameter(size_t index, const char *parameterName, int defaultValue);
     Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mStages.size()) return NULL; return &mStages[index].mParameterViewMatrix; }
+
+    // ffmpeg encoders
+    FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
+
     // Data
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;
@@ -205,14 +201,8 @@ struct EvaluationStages
 protected:
     void BindGLSLParameters(EvaluationStage& evaluationStage);
 
-
-
-    // ffmpeg encoders
-    FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
-
     void StageIsAdded(int index);
     void StageIsDeleted(int index);
-
 };
 
 extern FullScreenTriangle gFSQuad;

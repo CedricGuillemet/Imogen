@@ -132,6 +132,7 @@ enum NodeOperation
     NO_EditInput,
     NO_MovingRug,
     NO_SizingRug,
+    NO_PanView,
 };
 NodeOperation nodeOperation = NO_None;
 
@@ -1167,7 +1168,7 @@ void NodeGraphSelectNode(int selectedNodeIndex)
 
 void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);// ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.f);
 
@@ -1206,8 +1207,6 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    //editRug = DisplayRugs(editRug, drawList, offset, factor);
-
     // Display grid
     DrawGrid(drawList, windowPos, canvasSize, factor);
 
@@ -1224,7 +1223,6 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
     {
         ImVec2 p1 = editingNodeSource;
         ImVec2 p2 = io.MousePos;
-        //drawList->AddBezierCurve(p1, p1 + ImVec2(editingInput ?-50.f:+50.f, 0.f), p2 + ImVec2(editingInput ?50.f:-50.f, 0.f), p2, IM_COL32(200, 200, 100, 255), 3.0f);
         drawList->AddLine(p1, p2, IM_COL32(200, 200, 200, 255), 3.0f);
     }
 
@@ -1284,8 +1282,17 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
     }
     
     // releasing mouse button means it's done in any operation
-    if (nodeOperation != NO_None && !io.MouseDown[0])
+    if (nodeOperation == NO_PanView )
+    {
+        if (!io.MouseDown[2])
+        {
+            nodeOperation = NO_None;
+        }
+    }
+    else if (nodeOperation != NO_None && !io.MouseDown[0])
+    {
         nodeOperation = NO_None;
+    }
 
     // Open context menu
     bool openContextMenu = false;
@@ -1301,7 +1308,11 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
     ContextMenu(offset, contextMenuHoverNode, controler);
     
     // Scrolling
-    if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && ImGui::IsMouseDragging(2, 0.0f))//&& ImGui::IsWindowFocused())
+    if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && io.MouseClicked[2] && nodeOperation == NO_None)//&& ImGui::IsWindowFocused())
+    {
+        nodeOperation = NO_PanView;
+    }
+    if (nodeOperation == NO_PanView)
     {
         scrolling += io.MouseDelta / factor;
     }

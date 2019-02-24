@@ -72,8 +72,6 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual void CutNodes(const std::vector<size_t> nodes);
     virtual void PasteNodes();
 
-    
-
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const { return mEvaluationStages.GetAnimTrack(); }
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
@@ -91,17 +89,14 @@ struct NodeGraphControler : public NodeGraphControlerBase
     void PinnedEdit();
 
 
-
     EvaluationContext mEditingContext;
     EvaluationStages mEvaluationStages;
     std::vector<EvaluationStage> mStagesClipboard;
     bool mbMouseDragging;
 
-
-
     EvaluationStage* Get(ASyncId id) { return GetByAsyncId(id, mEvaluationStages.mStages); }
+
 protected:
-    void InitDefault(EvaluationStage& stage);
     bool EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param);
     void NodeIsAdded(int index);
     void UpdateDirtyParameter(int index);

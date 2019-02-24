@@ -32,9 +32,6 @@
 #include <vector>
 #include <map>
 #include <string>
-
-
-
 #include "Scene.h"
 #include "Loader.h"
 #include "TiledRenderer.h"

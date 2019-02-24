@@ -904,7 +904,7 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
             ImVec2 textPos = p + ImVec2(-NODE_SLOT_RADIUS * (i ? -1.f : 1.f)*(overCon ? 3.f : 2.f) - (i ? 0 : textSize.x), -textSize.y / 2);
 
             ImRect nodeRect = node->GetNodeRect(factor);
-            if (overCon || (nodeRect.Contains(io.MousePos - offset) && closestConn == -1 && (editingInput == i) && nodeOperation == NO_EditingLink))
+            if (overCon || (nodeRect.Contains(io.MousePos - offset) && closestConn == -1 && (editingInput == (i!=0)) && nodeOperation == NO_EditingLink))
             {
                 closestDistance = distance;
                 closestConn = slot_idx;
@@ -1227,6 +1227,7 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
     }
 
     // Display nodes
+    drawList->PushClipRect(regionRect.Min, regionRect.Max, true);
     int hoveredNode = -1;
     for (int i = 0; i < 2; i++)
     {
@@ -1235,12 +1236,12 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
             Node* node = &nodes[nodeIndex];
             if (node->mbSelected != (i != 0))
                 continue;
-            ImVec2 node_rect_min = offset + node->Pos * factor;
 
             // node view clipping
-            ImVec2 p1 = node_rect_min;
-            ImVec2 p2 = node_rect_min + ImVec2(100, 100) * factor;
-            if (!regionRect.Overlaps(ImRect(p1, p2)))
+            ImRect nodeRect = node->GetNodeRect(factor);
+            nodeRect.Min += offset;
+            nodeRect.Max += offset;
+            if (!regionRect.Overlaps(nodeRect))
                 continue;
 
             ImGui::PushID(nodeIndex);
@@ -1255,6 +1256,7 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
             ImGui::PopID();
         }
     }
+    drawList->PopClipRect();
 
     if (nodeOperation == NO_MovingNodes)
     {

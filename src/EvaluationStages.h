@@ -183,11 +183,24 @@ struct EvaluationStages
     
     const EvaluationStage& GetEvaluationStage(size_t index) const {    return mStages[index]; }
 
-    const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
+    
     Camera *GetCameraParameter(size_t index);
     int GetIntParameter(size_t index, const char *parameterName, int defaultValue);
     Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mStages.size()) return NULL; return &mStages[index].mParameterViewMatrix; }
+    float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
 
+    // animation
+    const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
+    void ApplyAnimationForNode(EvaluationContext *context, size_t nodeIndex, int frame);
+    void ApplyAnimation(EvaluationContext *context, int frame);
+    void RemoveAnimation(size_t nodeIndex);
+    void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
+    void SetTime(EvaluationContext *evaluationContext, int time, bool updateDecoder);
+
+    // pins
+    void RemovePins(size_t nodeIndex);
+
+        
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 

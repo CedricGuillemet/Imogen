@@ -337,6 +337,146 @@ void EvaluationStages::BindGLSLParameters(EvaluationStage& stage)
     }
 }
 
+void EvaluationStages::ApplyAnimationForNode(EvaluationContext *context, size_t nodeIndex, int frame)
+{
+    bool animatedNodes = false;
+    EvaluationStage& stage = mStages[nodeIndex];
+    for (auto& animTrack : mAnimTrack)
+    {
+        if (animTrack.mNodeIndex == nodeIndex)
+        {
+            size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+            animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
+
+            animatedNodes = true;
+        }
+    }
+    if (animatedNodes)
+    {
+        SetEvaluationParameters(nodeIndex, stage.mParameters);
+        context->SetTargetDirty(nodeIndex);
+    }
+}
+
+void EvaluationStages::ApplyAnimation(EvaluationContext *context, int frame)
+{
+    std::vector<bool> animatedNodes;
+    animatedNodes.resize(mStages.size(), false);
+    for (auto& animTrack : mAnimTrack)
+    {
+        EvaluationStage& stage = mStages[animTrack.mNodeIndex];
+
+        animatedNodes[animTrack.mNodeIndex] = true;
+        size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+        animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
+    }
+    for (size_t i = 0; i < animatedNodes.size(); i++)
+    {
+        if (!animatedNodes[i])
+            continue;
+        SetEvaluationParameters(i, mStages[i].mParameters);
+        context->SetTargetDirty(i);
+    }
+}
+
+void EvaluationStages::RemoveAnimation(size_t nodeIndex)
+{
+    if (mAnimTrack.empty())
+        return;
+    std::vector<int> tracks;
+    for (int i = 0; i < int(mAnimTrack.size()); i++)
+    {
+        const AnimTrack& animTrack = mAnimTrack[i];
+        if (animTrack.mNodeIndex == nodeIndex)
+            tracks.push_back(i);
+    }
+    if (tracks.empty())
+        return;
+
+    for (int i = 0; i < int(tracks.size()); i++)
+    {
+        int index = tracks[i] - i;
+        URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; });
+        mAnimTrack.erase(mAnimTrack.begin() + index);
+    }
+}
+
+void EvaluationStages::RemovePins(size_t nodeIndex)
+{
+    auto iter = mPinnedParameters.begin();
+    for (; iter != mPinnedParameters.end();)
+    {
+        uint32_t pin = *iter;
+        if (((pin >> 16) & 0xFFFF) == nodeIndex)
+        {
+            URDel<uint32_t> undoRedoDelPin(int(&(*iter) - mPinnedParameters.data()), [&]() {return &mPinnedParameters; });
+            iter = mPinnedParameters.erase(iter);
+        }
+        else
+            ++iter;
+    }
+}
+
+float EvaluationStages::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)
+{
+    EvaluationStage& stage = mStages[index];
+    size_t paramOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
+    unsigned char *ptr = &stage.mParameters.data()[paramOffset];
+    const MetaNode* metaNodes = gMetaNodes.data();
+    const MetaNode& currentMeta = metaNodes[stage.mType];
+    switch (currentMeta.mParams[parameterIndex].mType)
+    {
+    case Con_Angle:
+    case Con_Float:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle2:
+    case Con_Float2:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle3:
+    case Con_Float3:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle4:
+    case Con_Color4:
+    case Con_Float4:
+        return ((float*)ptr)[componentIndex];
+    case Con_Ramp:
+        return 0;
+    case Con_Ramp4:
+        return 0;
+    case Con_Enum:
+    case Con_Int:
+        return float(((int*)ptr)[componentIndex]);
+    case Con_Int2:
+        return float(((int*)ptr)[componentIndex]);
+    case Con_FilenameRead:
+    case Con_FilenameWrite:
+        return 0;
+    case Con_ForceEvaluate:
+        return 0;
+    case Con_Bool:
+        return float(((bool*)ptr)[componentIndex]);
+    case Con_Camera:
+        return float((*(Camera*)ptr)[componentIndex]);
+    }
+    return 0.f;
+}
+
+void EvaluationStages::SetAnimTrack(const std::vector<AnimTrack>& animTrack)
+{
+    mAnimTrack = animTrack;
+}
+
+void EvaluationStages::SetTime(EvaluationContext *evaluationContext, int time, bool updateDecoder)
+{
+    gEvaluationTime = time;
+    for (size_t i = 0; i < mStages.size(); i++)
+    {
+        const auto& stage = mStages[i];
+        SetStageLocalTime(evaluationContext, i, ImClamp(time - stage.mStartFrame, 0, stage.mEndFrame - stage.mStartFrame), updateDecoder);
+        //bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
+    }
+}
+
 void EvaluationStage::Clear()
 {
     if (gEvaluationMask&EvaluationGLSL)

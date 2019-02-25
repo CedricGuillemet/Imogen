@@ -608,7 +608,6 @@ void Evaluator::RunPython() const
 
 namespace EvaluationAPI
 {
-
     int SetEvaluationImageCube(EvaluationContext *evaluationContext, int target, Image *image, int cubeFace)
     {
         if (image->mNumFaces != 1)
@@ -675,7 +674,6 @@ namespace EvaluationAPI
         evaluation.mbDepthBuffer = enable != 0;
     }
 
-
     int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
@@ -731,7 +729,6 @@ namespace EvaluationAPI
         *renderer = evaluationContext->mEvaluationStages.mStages[target].renderer;
         return EVAL_OK;
     }
-
 
     int GetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image)
     {
@@ -950,7 +947,6 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-
     typedef int(*jobFunction)(void*);
 
     struct CFunctionTaskSet : enki::ITaskSet
@@ -1041,17 +1037,12 @@ namespace EvaluationAPI
 
     int Evaluate(EvaluationContext *evaluationContext, int target, int width, int height, Image *image)
     {
-        /*EvaluationContext *previousContext = gCurrentContext;
-        EvaluationContext context(*this, true, width, height);
-        gCurrentContext = &context;
+        EvaluationContext context(evaluationContext->mEvaluationStages, true, width, height);
         while (context.RunBackward(target))
         {
             // processing... maybe good on next run
         }
-        GetEvaluationImage(target, image);
-        gCurrentContext = previousContext;
-        */
+        GetEvaluationImage(evaluationContext, target, image);
         return EVAL_OK;
     }
-
 }

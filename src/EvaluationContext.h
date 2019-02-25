@@ -115,7 +115,7 @@ struct Builder
     Builder();
     ~Builder();
 
-    void Add(const char* graphName);
+    void Add(const char* graphName, EvaluationStages& stages);
 
     struct BuildInfo
     {
@@ -139,6 +139,7 @@ private:
     };
     std::vector<Entry> mEntries;
     void BuildEntries();
+    void DoBuild(Entry& entry);
 };
 
 namespace DrawUICallbacks

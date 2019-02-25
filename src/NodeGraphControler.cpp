@@ -98,8 +98,8 @@ void NodeGraphControler::UserDeleteNode(size_t index)
 
         mEvaluationStages.mStages.erase(mEvaluationStages.mStages.begin() + index);
     }
-    RemoveAnimation(index);
-    RemovePins(index);
+    mEvaluationStages.RemoveAnimation(index);
+    mEvaluationStages.RemovePins(index);
     mEditingContext.UserDeleteStage(index);
     mEvaluationStages.UserDeleteEvaluation(index);
 }
@@ -437,57 +437,6 @@ void NodeGraphControler::SetTimeDuration(size_t index, int duration)
     stage.mEndFrame = stage.mStartFrame + duration;
 }
 
-void NodeGraphControler::SetTime(int time, bool updateDecoder)
-{
-    gEvaluationTime = time;
-    for (size_t i = 0; i < mEvaluationStages.mStages.size(); i++)
-    {
-        const auto& stage = mEvaluationStages.mStages[i];
-        mEvaluationStages.SetStageLocalTime(&mEditingContext, i, ImClamp(time - stage.mStartFrame, 0, stage.mEndFrame - stage.mStartFrame), updateDecoder);
-        //bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
-    }
-}
-
-/* TODO */
-/*
-void NodeGraphControler::DoForce()
-{
-    int currentTime = gEvaluationTime;
-    for (size_t i = 0; i < mEvaluationStages.mStages.size(); i++)
-    {
-        const ImogenNode& node = mEvaluationStages.mStages[i];
-        const MetaNode& currentMeta = gMetaNodes[node.mType];
-        bool forceEval = false;
-        for(auto& param : currentMeta.mParams)
-        {
-            if (!param.mName.c_str())
-                break;
-            if (param.mType == Con_ForceEvaluate)
-            {
-                forceEval = true;
-                break;
-            }
-        }
-        if (forceEval)
-        {
-            EvaluationContext writeContext(mEvaluationStages, true, 1024, 1024);
-            gCurrentContext = &writeContext;
-            for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
-            {
-                SetTime(frame, false);
-                ApplyAnimation(frame);
-                EvaluationInfo evaluationInfo;
-                evaluationInfo.forcedDirty = 1;
-                evaluationInfo.uiPass = 0;
-                writeContext.RunSingle(i, evaluationInfo);
-            }
-            gCurrentContext = &mEditingContext;
-        }
-    }
-    SetTime(currentTime, true);
-    InvalidateParameters();
-}
-*/
 void NodeGraphControler::InvalidateParameters()
 {
     for (size_t i= 0;i<mEvaluationStages.mStages.size();i++)
@@ -686,7 +635,7 @@ void NodeGraphControler::PasteNodes()
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
         mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
         //mEditingContext.SetTargetDirty(target);
-        SetTime(gEvaluationTime, true);
+        mEvaluationStages.SetTime(&mEditingContext, gEvaluationTime, true);
         mEditingContext.SetTargetDirty(target);
     }
 }
@@ -728,135 +677,6 @@ void NodeGraphControler::MakeKey(int frame, uint32_t nodeIndex, uint32_t paramet
 void NodeGraphControler::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed)
 {
 
-}
-
-void NodeGraphControler::ApplyAnimationForNode(size_t nodeIndex, int frame)
-{
-    bool animatedNodes = false;
-    EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
-    for (auto& animTrack : mEvaluationStages.mAnimTrack)
-    {
-        if (animTrack.mNodeIndex == nodeIndex)
-        {
-            size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-            animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
-
-            animatedNodes = true;
-        }
-    }
-    if (animatedNodes)
-    {
-        mEvaluationStages.SetEvaluationParameters(nodeIndex, stage.mParameters);
-        mEditingContext.SetTargetDirty(nodeIndex);
-    }
-}
-
-void NodeGraphControler::ApplyAnimation(int frame)
-{
-    std::vector<bool> animatedNodes;
-    animatedNodes.resize(mEvaluationStages.mStages.size(), false);
-    for (auto& animTrack : mEvaluationStages.mAnimTrack)
-    {
-        EvaluationStage& stage = mEvaluationStages.mStages[animTrack.mNodeIndex];
-
-        animatedNodes[animTrack.mNodeIndex] = true;
-        size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-        animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
-    }
-    for (size_t i = 0; i < animatedNodes.size(); i++)
-    {
-        if (!animatedNodes[i])
-            continue;
-        mEvaluationStages.SetEvaluationParameters(i, mEvaluationStages.mStages[i].mParameters);
-        mEditingContext.SetTargetDirty(i);
-    }
-}
-
-void NodeGraphControler::RemoveAnimation(size_t nodeIndex)
-{
-    if (mEvaluationStages.mAnimTrack.empty())
-        return;
-    std::vector<int> tracks;
-    for (int i = 0; i < int(mEvaluationStages.mAnimTrack.size()); i++)
-    {
-        const AnimTrack& animTrack = mEvaluationStages.mAnimTrack[i];
-        if (animTrack.mNodeIndex == nodeIndex)
-            tracks.push_back(i);
-    }
-    if (tracks.empty())
-        return;
-
-    for (int i = 0; i < int(tracks.size()); i++)
-    {
-        int index = tracks[i] - i;
-        URDel<AnimTrack> urDel(index, [&] { return &mEvaluationStages.mAnimTrack; });
-        mEvaluationStages.mAnimTrack.erase(mEvaluationStages.mAnimTrack.begin() + index);
-    }
-}
-
-void NodeGraphControler::RemovePins(size_t nodeIndex)
-{
-    auto iter = mEvaluationStages.mPinnedParameters.begin();
-    for (; iter != mEvaluationStages.mPinnedParameters.end();)
-    {
-        uint32_t pin = *iter;
-        if (((pin >> 16) & 0xFFFF) == nodeIndex)
-        {
-            URDel<uint32_t> undoRedoDelPin(int(&(*iter) - mEvaluationStages.mPinnedParameters.data()), [&]() {return &mEvaluationStages.mPinnedParameters; });
-            iter = mEvaluationStages.mPinnedParameters.erase(iter);
-        }
-        else
-            ++iter;
-    }
-}
-
-float NodeGraphControler::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)
-{
-    EvaluationStage& stage = mEvaluationStages.mStages[index];
-    size_t paramOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
-    unsigned char *ptr = &stage.mParameters.data()[paramOffset];
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    switch (currentMeta.mParams[parameterIndex].mType)
-    {
-    case Con_Angle:
-    case Con_Float:
-        return ((float*)ptr)[componentIndex];
-    case Con_Angle2:
-    case Con_Float2:
-        return ((float*)ptr)[componentIndex];
-    case Con_Angle3:
-    case Con_Float3:
-        return ((float*)ptr)[componentIndex];
-    case Con_Angle4:
-    case Con_Color4:
-    case Con_Float4:
-        return ((float*)ptr)[componentIndex];
-    case Con_Ramp:
-        return 0;
-    case Con_Ramp4:
-        return 0;
-    case Con_Enum:
-    case Con_Int:
-        return float(((int*)ptr)[componentIndex]);
-    case Con_Int2:
-        return float(((int*)ptr)[componentIndex]);
-    case Con_FilenameRead:
-    case Con_FilenameWrite:
-        return 0;
-    case Con_ForceEvaluate:
-        return 0;
-    case Con_Bool:
-        return float(((bool*)ptr)[componentIndex]);
-    case Con_Camera:
-        return float((*(Camera*)ptr)[componentIndex]);
-    }
-    return 0.f;
-}
-
-void NodeGraphControler::SetAnimTrack(const std::vector<AnimTrack>& animTrack) 
-{ 
-    mEvaluationStages.mAnimTrack = animTrack;
 }
 
 void NodeGraphControler::DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex)

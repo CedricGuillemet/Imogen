@@ -314,8 +314,8 @@ int main(int, char**)
                     gbIsPlaying = false;
                 }
             }
-            nodeGraphControler.SetTime(gEvaluationTime, true);
-            nodeGraphControler.ApplyAnimation(gEvaluationTime);
+            nodeGraphControler.mEvaluationStages.SetTime(&nodeGraphControler.mEditingContext, gEvaluationTime, true);
+            nodeGraphControler.mEvaluationStages.ApplyAnimation(&nodeGraphControler.mEditingContext, gEvaluationTime);
         }
         nodeGraphControler.mEditingContext.RunDirty();
         imogen.Show(builder, library);

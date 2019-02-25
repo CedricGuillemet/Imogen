@@ -51,9 +51,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd);
     void SetTimeDuration(size_t index, int duration);
-    void SetTime(int time, bool updateDecoder);
 
-    //virtual void DoForce();
     void InvalidateParameters();
 
     void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel);
@@ -74,18 +72,13 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const { return mEvaluationStages.GetAnimTrack(); }
-    void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
+    
 
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);
-    void ApplyAnimation(int frame);
-    void ApplyAnimationForNode(size_t nodeIndex, int frame);
-    void RemoveAnimation(size_t nodeIndex);
-    void RemovePins(size_t nodeIndex);
 
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
-    float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
     void PinnedEdit();
 
 

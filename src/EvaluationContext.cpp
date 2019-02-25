@@ -800,10 +800,10 @@ Builder::~Builder()
     mThread.join();
 }
 
-void Builder::Add(const char* graphName)
+void Builder::Add(const char* graphName, EvaluationStages& stages)
 {
     mMutex.lock();
-    mEntries.push_back({ graphName, 0.f });
+    mEntries.push_back({ graphName, 0.f, stages });
     mMutex.unlock();
 }
 
@@ -822,6 +822,44 @@ bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
     return false;
 }
 
+void Builder::DoBuild(Entry& entry)
+{
+    auto& evaluationStages = entry.mEvaluationStages;
+    size_t stageCount = evaluationStages.mStages.size();
+    for (size_t i = 0; i < stageCount; i++)
+    {
+        const auto& node = evaluationStages.mStages[i];
+        const MetaNode& currentMeta = gMetaNodes[node.mType];
+        bool forceEval = false;
+        for (auto& param : currentMeta.mParams)
+        {
+            if (!param.mName.c_str())
+                break;
+            if (param.mType == Con_ForceEvaluate)
+            {
+                forceEval = true;
+                break;
+            }
+        }
+        if (forceEval)
+        {
+            EvaluationContext writeContext(evaluationStages, true, 1024, 1024);
+            for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
+            {
+                evaluationStages.SetTime(&writeContext, frame, false);
+                evaluationStages.ApplyAnimation(&writeContext, frame);
+                EvaluationInfo evaluationInfo;
+                evaluationInfo.forcedDirty = 1;
+                evaluationInfo.uiPass = 0;
+                writeContext.RunSingle(i, evaluationInfo);
+            }
+        }
+        entry.mProgress = float(i + 1) / float(stageCount);
+        if (!mbRunning)
+            break;
+    }
+}
+
 void MakeThreadContext();
 void Builder::BuildEntries()
 {
@@ -831,10 +869,9 @@ void Builder::BuildEntries()
     {
         if (!mEntries.empty())
         {
-            //Sleep(20);
             auto& entry = *mEntries.begin();
             entry.mProgress = 0.01f;
-            //gNodeDelegate.DoForce();
+            DoBuild(entry);
             entry.mProgress = 1.f;
             if (entry.mProgress >= 1.f)
             {
@@ -844,6 +881,8 @@ void Builder::BuildEntries()
         Sleep(100);
     }
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 namespace DrawUICallbacks
 {

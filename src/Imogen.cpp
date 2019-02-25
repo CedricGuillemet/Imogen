@@ -700,12 +700,12 @@ void Imogen::UpdateNewlySelectedGraph()
         NodeGraphUpdateScrolling();
         gEvaluationTime = 0;
         gbIsPlaying = false;
-        mNodeGraphControler->SetAnimTrack(material.mAnimTrack);
+        mNodeGraphControler->mEvaluationStages.SetAnimTrack(material.mAnimTrack);
         mNodeGraphControler->mEvaluationStages.mFrameMin = material.mFrameMin;
         mNodeGraphControler->mEvaluationStages.mFrameMax = material.mFrameMax;
         mNodeGraphControler->mEvaluationStages.mPinnedParameters = material.mPinnedParameters;
-        mNodeGraphControler->SetTime(gEvaluationTime, true);
-        mNodeGraphControler->ApplyAnimation(gEvaluationTime);
+        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, gEvaluationTime, true);
+        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, gEvaluationTime);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mThumbnailTextureId);
         mNodeGraphControler->mEditingContext.RunAll();
     }
@@ -820,7 +820,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 {
                     curvePts.resize(2);
                     auto& node = mNodeGraphControler.mEvaluationStages.mStages[mNodeIndex];
-                    float value = mNodeGraphControler.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
+                    float value = mNodeGraphControler.mEvaluationStages.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
                     curvePts[0] = ImVec2(float(node.mStartFrame) + 0.5f, value);
                     curvePts[1] = ImVec2(float(node.mEndFrame) + 0.5f, value);
                 }
@@ -902,7 +902,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 curve++;
             } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
         }
-        mNodeGraphControler.ApplyAnimationForNode(mNodeIndex, gEvaluationTime);
+        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(&mNodeGraphControler.mEditingContext, mNodeIndex, gEvaluationTime);
     }
 
     virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return mCurveType[curveIndex]; }
@@ -1107,7 +1107,7 @@ struct MySequence : public ImSequencer::SequenceInterface
     {
         delete undoRedoChange;
         undoRedoChange = NULL;
-        mNodeGraphControler.SetTime(gEvaluationTime, false);
+        mNodeGraphControler.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, gEvaluationTime, false);
     }
 
     virtual int GetItemCount() const { return (int)mNodeGraphControler.mEvaluationStages.GetStagesCount(); }
@@ -1318,7 +1318,7 @@ void Imogen::ShowTitleBar(Builder *builder)
         if (selectedMaterial != -1)
         {
             Material& material = library.mMaterials[selectedMaterial];
-            builder->Add(material.mName.c_str());
+            builder->Add(material.mName.c_str(), mNodeGraphControler->mEvaluationStages);
         }
     }
     if (ImGui::IsItemHovered())
@@ -1597,8 +1597,8 @@ void Imogen::Show(Builder *builder, Library& library)
             if (currentTime != gEvaluationTime)
             {
                 gEvaluationTime = currentTime;
-                mNodeGraphControler->SetTime(currentTime, true);
-                mNodeGraphControler->ApplyAnimation(currentTime);
+                mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, currentTime, true);
+                mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, currentTime);
             }
         }
         ImGui::End();

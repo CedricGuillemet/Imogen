@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -29,8 +29,8 @@
 #include "TextEditor.h"
 #include <fstream>
 #include <streambuf>
-#include "Evaluation.h"
-#include "NodesDelegate.h"
+#include "EvaluationStages.h"
+#include "NodeGraphControler.h"
 #include "Library.h"
 #include "TaskScheduler.h"
 #include "stb_image.h"
@@ -41,15 +41,64 @@
 #include "Evaluators.h"
 #include "nfd.h"
 #include "UI.h"
+#include "imgui_markdown/imgui_markdown.h"
 
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
-extern Evaluation gEvaluation;
 int gEvaluationTime = 0;
 extern enki::TaskScheduler g_TS;
 extern bool gbIsPlaying;
-void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
 
+std::vector<RegisteredPlugin> mRegisteredPlugins;
 
+void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    std::string url(data_.link, data_.linkLength);
+    static const std::string graph = "thumbnail:";
+    if (url.substr(0, graph.size()) == graph)
+    {
+        std::string materialName = url.substr(graph.size());
+        ((Imogen*)data_.userData)->SetExistingMaterialActive(materialName.c_str());
+        return;
+    }
+    OpenShellURL(url);
+}
+
+inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    std::string url(data_.link, data_.linkLength);
+    static const std::string thumbnail = "thumbnail:";
+    if (url.substr(0, thumbnail.size()) == thumbnail)
+    {
+        std::string material = url.substr(thumbnail.size());
+        Material* libraryMaterial = library.GetByName(material.c_str());
+        if (libraryMaterial)
+        {
+            ((Imogen*)data_.userData)->DecodeThumbnailAsync(libraryMaterial);
+            return { true, true, (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+        }
+    }
+    else
+    {
+        int percent = 100;
+        size_t sz = url.find('@');
+        if (sz != std::string::npos)
+        {
+            sscanf(url.c_str() + sz + 1, "%d%%", &percent);
+            url = url.substr(0, sz);
+        }
+        unsigned int textureId = gImageCache.GetTexture(url);
+        if (textureId)
+        {
+            int w, h;
+            GetTextureDimension(textureId, &w, &h);
+            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(float(w*percent / 100), float(h*percent / 100)), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+        }
+    }
+
+    return { false };
+}
+
+ImGui::MarkdownConfig mdConfig = { LinkCallback, ImageCallback, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
 
 struct ExtractedView
 {
@@ -68,7 +117,7 @@ void ClearExtractedViews()
 
 TextEditor editor;
 
-void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+void Imogen::HandleEditor(TextEditor &editor)
 {
     static int currentShaderIndex = -1;
 
@@ -102,7 +151,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
         t.close();
 
         gEvaluators.SetEvaluators(mEvaluatorFiles);
-        gCurrentContext->RunAll();
+        mNodeGraphControler->mEditingContext.RunAll();
     }
 
     ImGui::SameLine();
@@ -115,7 +164,7 @@ void Imogen::HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGra
 
 }
 
-void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluation, bool forceUI = false)
+void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI = false)
 {
     ImGuiIO& io = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -126,21 +175,21 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
     int imageWidth(1), imageHeight(1);
 
     // make 2 evaluation for node to get the UI pass image size
-    if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+    if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
     {
-        gCurrentContext->AllocRenderTargetsForEditingPreview();
+        nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview();
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        gCurrentContext->RunSingle(selNode, evaluationInfo);
+        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
     }
-    Evaluation::GetEvaluationSize(selNode, &imageWidth, &imageHeight);
-    if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+    EvaluationAPI::GetEvaluationSize(&nodeGraphControler.mEditingContext, selNode, &imageWidth, &imageHeight);
+    if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
     {
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 0;
-        gCurrentContext->RunSingle(selNode, evaluationInfo);
+        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
     }
     ImTextureID displayedTexture = 0;
     ImRect rc;
@@ -157,24 +206,24 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
             ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            //draw_list->AddCallback((ImDrawCallback)(Evaluation::NodeUICallBack), (void*)(AddNodeUICallbackRect(CBUI_Node, rc, selNode)));
-            AddUICustomDraw(draw_list, rc, Evaluation::DrawUISingle, selNode);
+
+            AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
 
             mouseUVCoord = (io.MousePos - rc.Min) / rc.GetSize();
             mouseUVCoord.y = 1.f - mouseUVCoord.y;
         }
         else
         {
-            if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+            if (selNode != -1 && nodeGraphControler.NodeIsCubemap(selNode))
             {
                 ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
             }
             else
             {
-                displayedTexture = (ImTextureID)(int64_t)((selNode != -1) ? nodeGraphDelegate.mEditingContext.GetEvaluationTexture(selNode) : 0);
+                displayedTexture = (ImTextureID)(int64_t)((selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode) : 0);
                 if (displayedTexture)
                 {
-                    auto tgt = nodeGraphDelegate.mEditingContext.GetRenderTarget(selNode);
+                    auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
                     displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
                 }
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
@@ -183,8 +232,8 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
                 mouseUVCoord = ImVec2(mouseUVPosv.x, mouseUVPosv.y);
 
                 Vec4 uva(0, 0), uvb(1, 1);
-                Mat4x4* viewMatrix = nodeGraphDelegate.GetParameterViewMatrix(selNode);
-                Camera *nodeCamera = nodeGraphDelegate.GetCameraParameter(selNode);
+                Mat4x4* viewMatrix = nodeGraphControler.mEvaluationStages.GetParameterViewMatrix(selNode);
+                Camera *nodeCamera = nodeGraphControler.mEvaluationStages.GetCameraParameter(selNode);
                 if (viewMatrix && !nodeCamera)
                 {
                     Mat4x4& res = *viewMatrix;
@@ -225,13 +274,13 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            if (selNode != -1 && nodeGraphDelegate.NodeIsCubemap(selNode))
+            if (selNode != -1 && nodeGraphControler.NodeIsCubemap(selNode))
             {
-                AddUICustomDraw(draw_list, rc, Evaluation::DrawUICubemap, selNode);
+                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUICubemap, selNode, &nodeGraphControler.mEditingContext);
             }
-            else if (selNode != -1 && nodeGraphDelegate.NodeHasUI(selNode))
+            else if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
             {
-                AddUICustomDraw(draw_list, rc, Evaluation::DrawUISingle, selNode);
+                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
             }
         }
     }
@@ -246,7 +295,7 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
         {
             if (!pickerImage.GetBits())
             {
-                Evaluation::GetEvaluationImage(selNode, &pickerImage);
+                EvaluationAPI::GetEvaluationImage(&nodeGraphControler.mEditingContext, selNode, &pickerImage);
                 Log("Texel view Get image\n");
             }
             int width = pickerImage.mWidth;
@@ -256,10 +305,10 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
         }
         else if (ImGui::IsWindowFocused())
         {
-            Evaluation::FreeImage(&pickerImage);
+            Image::Free(&pickerImage);
             ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
             ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-            nodeGraphDelegate.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
+            nodeGraphControler.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
         }
         lastSentExit = -1;
     }
@@ -268,25 +317,25 @@ void RenderPreviewNode(int selNode, TileNodeEditGraphDelegate& nodeGraphDelegate
         if (lastSentExit != selNode)
         {
             lastSentExit = selNode;
-            nodeGraphDelegate.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
+            nodeGraphControler.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
         }
     }
 }
 
-void NodeEdit(TileNodeEditGraphDelegate& nodeGraphDelegate, Evaluation& evaluation)
+void NodeEdit(NodeGraphControler& NodeGraphControler)
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    int selNode = nodeGraphDelegate.mSelectedNodeIndex;
+    int selNode = NodeGraphControler.mSelectedNodeIndex;
     if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
     {
-        RenderPreviewNode(selNode, nodeGraphDelegate, evaluation);
+        RenderPreviewNode(selNode, NodeGraphControler);
     }
 
     if (selNode == -1)
         ImGui::CollapsingHeader("No Selection", 0, ImGuiTreeNodeFlags_DefaultOpen);
     else
-        nodeGraphDelegate.EditNode();
+        NodeGraphControler.EditNode();
 }
 
 template <typename T, typename Ty> struct SortedResource
@@ -313,17 +362,18 @@ template <typename T, typename Ty> struct SortedResource
 
 struct PinnedTaskUploadImage : enki::IPinnedTask
 {
-    PinnedTaskUploadImage(Image *image, ASyncId identifier, bool isThumbnail)
+    PinnedTaskUploadImage(Image *image, ASyncId identifier, bool isThumbnail, NodeGraphControler *controler)
         : enki::IPinnedTask(0) // set pinned thread to 0
         , mImage(image)
         , mIdentifier(identifier)
         , mbIsThumbnail(isThumbnail)
+        , mControler(controler)
     {
     }
 
     virtual void Execute()
     {
-        unsigned int textureId = Evaluation::UploadImage(mImage, 0);
+        unsigned int textureId = Image::Upload(mImage, 0);
         if (mbIsThumbnail)
         {
             Material* material = library.Get(mIdentifier);
@@ -332,25 +382,30 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
         }
         else
         {
-            TileNodeEditGraphDelegate::ImogenNode *node = gNodeDelegate.Get(mIdentifier);
-            size_t nodeIndex = node - gNodeDelegate.mNodes.data();
+            auto *node = mControler->Get(mIdentifier);
+            size_t nodeIndex = node - mControler->mEvaluationStages.mStages.data();
             if (node)
             {
-                Evaluation::SetEvaluationImage(int(nodeIndex), mImage);
-                gEvaluation.SetEvaluationParameters(nodeIndex, node->mParameters);
-                gCurrentContext->StageSetProcessing(nodeIndex, false);
+                EvaluationAPI::SetEvaluationImage(&mControler->mEditingContext, int(nodeIndex), mImage);
+                mControler->mEvaluationStages.SetEvaluationParameters(nodeIndex, node->mParameters);
+                mControler->mEditingContext.StageSetProcessing(nodeIndex, false);
             }
-            Evaluation::FreeImage(mImage);
+            Image::Free(mImage);
         }
     }
     Image *mImage;
+    NodeGraphControler *mControler;
     ASyncId mIdentifier;
     bool mbIsThumbnail;
 };
 
 struct DecodeThumbnailTaskSet : enki::ITaskSet
 {
-    DecodeThumbnailTaskSet(std::vector<uint8_t> *src, ASyncId identifier) : enki::ITaskSet(), mIdentifier(identifier), mSrc(src)
+    DecodeThumbnailTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) : 
+        enki::ITaskSet()
+        , mIdentifier(identifier)
+        , mSrc(src)
+        , mNodeGraphControler(nodeGraphControler)
     {
     }
     virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
@@ -364,15 +419,16 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
             image.mNumFaces = 1;
             image.mNumMips = 1;
             image.mFormat = (components == 4) ? TextureFormat::RGBA8 : TextureFormat::RGB8;
-            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true);
+            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
-            Evaluation::FreeImage(&image);
+            Image::Free(&image);
         }
         delete this;
     }
     ASyncId mIdentifier;
     std::vector<uint8_t> *mSrc;
+    NodeGraphControler *mNodeGraphControler;
 };
 
 struct EncodeImageTaskSet : enki::ITaskSet
@@ -407,7 +463,11 @@ struct EncodeImageTaskSet : enki::ITaskSet
 
 struct DecodeImageTaskSet : enki::ITaskSet
 {
-    DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier) : enki::ITaskSet(), mIdentifier(identifier), mSrc(src)
+    DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) : 
+        enki::ITaskSet()
+        , mIdentifier(identifier)
+        , mSrc(src)
+        , mNodeGraphControler(nodeGraphControler)
     {
     }
     virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
@@ -421,7 +481,7 @@ struct DecodeImageTaskSet : enki::ITaskSet
             image.mNumFaces = 1;
             image.mNumMips = 1;
             image.mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false);
+            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
         }
@@ -429,19 +489,20 @@ struct DecodeImageTaskSet : enki::ITaskSet
     }
     ASyncId mIdentifier;
     std::vector<uint8_t> *mSrc;
+    NodeGraphControler *mNodeGraphControler;
 };
 
-void DecodeThumbnailAsync(Material * material)
+void Imogen::DecodeThumbnailAsync(Material * material)
 {
-    static unsigned int defaultTextureId = gEvaluation.GetTexture("Stock/thumbnail-icon.png");
+    static unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
     if (!material->mThumbnailTextureId)
     {
         material->mThumbnailTextureId = defaultTextureId;
-        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material-library.mMaterials.data(), material->mRuntimeUniqueId)));
+        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material-library.mMaterials.data(), material->mRuntimeUniqueId), mNodeGraphControler));
     }
 }
 
-template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, Evaluation& evaluation, int viewMode)
+template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, int viewMode, Imogen *imogen)
 {
     bool ret = false;
     if (!ImGui::TreeNodeEx(szName, ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
@@ -499,7 +560,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
         ImGui::BeginGroup();
 
         T& resource = res[indexInRes];
-        DecodeThumbnailAsync(&resource);
+        imogen->DecodeThumbnailAsync(&resource);
         bool clicked = false;
         switch (viewMode)
         {
@@ -544,23 +605,23 @@ int Imogen::GetCurrentMaterialIndex()
 {
     return selectedMaterial;
 }
-void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, int materialIndex)
+void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, int materialIndex)
 {
     if (materialIndex == -1)
         return;
     Material& material = library.mMaterials[materialIndex];
-    material.mMaterialNodes.resize(nodeGraphDelegate.mNodes.size());
+    material.mMaterialNodes.resize(nodeGraphControler.mEvaluationStages.mStages.size());
 
-    for (size_t i = 0; i < nodeGraphDelegate.mNodes.size(); i++)
+    for (size_t i = 0; i < nodeGraphControler.mEvaluationStages.mStages.size(); i++)
     {
-        TileNodeEditGraphDelegate::ImogenNode srcNode = nodeGraphDelegate.mNodes[i];
+        auto srcNode = nodeGraphControler.mEvaluationStages.mStages[i];
         MaterialNode &dstNode = material.mMaterialNodes[i];
         MetaNode& metaNode = gMetaNodes[srcNode.mType];
         dstNode.mRuntimeUniqueId = GetRuntimeId();
         if (metaNode.mbSaveTexture)
         {
             Image image;
-            if (Evaluation::GetEvaluationImage(int(i), &image) == EVAL_OK)
+            if (EvaluationAPI::GetEvaluationImage(&nodeGraphControler.mEditingContext, int(i), &image) == EVAL_OK)
             {
                 g_TS.AddTaskSetToPipe(new EncodeImageTaskSet(image, std::make_pair(materialIndex, material.mRuntimeUniqueId), std::make_pair(i, dstNode.mRuntimeUniqueId)));
             }
@@ -598,58 +659,59 @@ void ValidateMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDele
         rug.mColor = rugs[i].mColor;
         rug.mComment = rugs[i].mText;
     }
-    material.mAnimTrack = nodeGraphDelegate.GetAnimTrack();
-    material.mFrameMin = nodeGraphDelegate.mFrameMin;
-    material.mFrameMax = nodeGraphDelegate.mFrameMax;
-    material.mPinnedParameters = nodeGraphDelegate.mPinnedParameters;
+    material.mAnimTrack = nodeGraphControler.GetAnimTrack();
+    material.mFrameMin = nodeGraphControler.mEvaluationStages.mFrameMin;
+    material.mFrameMax = nodeGraphControler.mEvaluationStages.mFrameMax;
+    material.mPinnedParameters = nodeGraphControler.mEvaluationStages.mPinnedParameters;
 }
 
-void UpdateNewlySelectedGraph(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+void Imogen::UpdateNewlySelectedGraph()
 {
     // set new
     if (selectedMaterial != -1)
     {
-        ClearAll(nodeGraphDelegate, evaluation);
+        ClearAll();
 
         Material& material = library.mMaterials[selectedMaterial];
         for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
         {
             MaterialNode& node = material.mMaterialNodes[i];
-            NodeGraphAddNode(&nodeGraphDelegate, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
-            TileNodeEditGraphDelegate::ImogenNode& lastNode = nodeGraphDelegate.mNodes.back();
+            NodeGraphAddNode(mNodeGraphControler, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
+            auto& lastNode = mNodeGraphControler->mEvaluationStages.mStages.back();
             if (!node.mImage.empty())
             {
-                gCurrentContext->StageSetProcessing(i, true);
-                g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId)));
+                mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
+                g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
             }
             lastNode.mInputSamplers = node.mInputSamplers;
-            gEvaluation.SetEvaluationSampler(i, node.mInputSamplers);
+            mNodeGraphControler->mEvaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
         }
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
             MaterialConnection& materialConnection = material.mMaterialConnections[i];
-            NodeGraphAddLink(&nodeGraphDelegate, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
+            NodeGraphAddLink(mNodeGraphControler, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
         }
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {
             MaterialNodeRug& rug = material.mMaterialRugs[i];
             NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
         }
-        NodeGraphUpdateEvaluationOrder(&nodeGraphDelegate);
+        NodeGraphUpdateEvaluationOrder(mNodeGraphControler);
         NodeGraphUpdateScrolling();
         gEvaluationTime = 0;
         gbIsPlaying = false;
-        nodeGraphDelegate.SetAnimTrack(material.mAnimTrack);
-        nodeGraphDelegate.mFrameMin = material.mFrameMin;
-        nodeGraphDelegate.mFrameMax = material.mFrameMax;
-        nodeGraphDelegate.mPinnedParameters = material.mPinnedParameters;
-        nodeGraphDelegate.SetTime(gEvaluationTime, true);
-        nodeGraphDelegate.ApplyAnimation(gEvaluationTime);
-        nodeGraphDelegate.mEditingContext.RunAll();
+        mNodeGraphControler->mEvaluationStages.SetAnimTrack(material.mAnimTrack);
+        mNodeGraphControler->mEvaluationStages.mFrameMin = material.mFrameMin;
+        mNodeGraphControler->mEvaluationStages.mFrameMax = material.mFrameMax;
+        mNodeGraphControler->mEvaluationStages.mPinnedParameters = material.mPinnedParameters;
+        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, gEvaluationTime, true);
+        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, gEvaluationTime);
+        mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mThumbnailTextureId);
+        mNodeGraphControler->mEditingContext.RunAll();
     }
 }
 
-void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+void Imogen::LibraryEdit(Library& library)
 {
     int previousSelection = selectedMaterial;
     if (ImGui::Button("New Graph"))
@@ -662,10 +724,10 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
         
         if (previousSelection != -1)
         {
-            ValidateMaterial(library, nodeGraphDelegate, previousSelection);
+            ValidateMaterial(library, *mNodeGraphControler, previousSelection);
         }
         selectedMaterial = int(library.mMaterials.size()) - 1;
-        ClearAll(nodeGraphDelegate, evaluation);
+        ClearAll();
     }
     ImGui::SameLine();
     if (ImGui::Button("Import"))
@@ -687,7 +749,7 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
     }
     ImGui::SameLine();
     static int libraryViewMode = 1;
-    unsigned int libraryViewTextureId = evaluation.GetTexture("Stock/library-view.png");
+    unsigned int libraryViewTextureId = gImageCache.GetTexture("Stock/library-view.png");
     static const ImVec2 iconSize(16.f, 16.f);
     for (int i = 0; i < 4; i++)
     {
@@ -701,20 +763,20 @@ void LibraryEdit(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate,
     }
 
     ImGui::BeginChild("TV");
-    if (TVRes(library.mMaterials, "Graphs", selectedMaterial, 0, evaluation, libraryViewMode))
+    if (TVRes(library.mMaterials, "Graphs", selectedMaterial, 0, libraryViewMode, this))
     {
-        nodeGraphDelegate.mSelectedNodeIndex = -1;
+        mNodeGraphControler->mSelectedNodeIndex = -1;
         // save previous
         if (previousSelection != -1)
         {
-            ValidateMaterial(library, nodeGraphDelegate, previousSelection);
+            ValidateMaterial(library, *mNodeGraphControler, previousSelection);
         }
-        UpdateNewlySelectedGraph(nodeGraphDelegate, evaluation);
+        UpdateNewlySelectedGraph();
     }
     ImGui::EndChild();
 }
 
-void SetExistingMaterialActive(const char * materialName)
+void Imogen::SetExistingMaterialActive(const char * materialName)
 {
     Material* libraryMaterial = library.GetByName(materialName);
     if (libraryMaterial)
@@ -724,22 +786,23 @@ void SetExistingMaterialActive(const char * materialName)
     }
 }
 
-void SetExistingMaterialActive(int materialIndex)
+void Imogen::SetExistingMaterialActive(int materialIndex)
 {
     if (materialIndex != selectedMaterial && selectedMaterial != -1)
     {
-        ValidateMaterial(library, gNodeDelegate, selectedMaterial);
+        ValidateMaterial(library, *mNodeGraphControler, selectedMaterial);
     }
     selectedMaterial = materialIndex;
-    UpdateNewlySelectedGraph(gNodeDelegate, gEvaluation);
+    UpdateNewlySelectedGraph();
 }
 
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
-    AnimCurveEdit(ImVec2& min, ImVec2& max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) :
+    AnimCurveEdit(NodeGraphControler &NodeGraphControler, ImVec2& min, ImVec2& max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) :
+        mNodeGraphControler(NodeGraphControler),
         mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible), mNodeIndex(nodeIndex)
     {
-        size_t type = gNodeDelegate.mNodes[nodeIndex].mType;
+        size_t type = mNodeGraphControler.mEvaluationStages.mStages[nodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
         std::vector<bool> parameterAddressed(metaNode.mParams.size(), false);
 
@@ -756,8 +819,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 if (!animation || animation->mFrames.empty())
                 {
                     curvePts.resize(2);
-                    auto& node = gNodeDelegate.mNodes[mNodeIndex];
-                    float value = gNodeDelegate.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
+                    auto& node = mNodeGraphControler.mEvaluationStages.mStages[mNodeIndex];
+                    float value = mNodeGraphControler.mEvaluationStages.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
                     curvePts[0] = ImVec2(float(node.mStartFrame) + 0.5f, value);
                     curvePts[1] = ImVec2(float(node.mEndFrame) + 0.5f, value);
                 }
@@ -797,12 +860,12 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     void BakeValuesToAnimationTrack()
     {
-        size_t type = gNodeDelegate.mNodes[mNodeIndex].mType;
+        size_t type = mNodeGraphControler.mEvaluationStages.mStages[mNodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
 
         for (size_t curve = 0; curve < mPts.size(); )
         {
-            AnimTrack &animTrack = *gNodeDelegate.GetAnimTrack(mNodeIndex, mParameterIndex[curve]);
+            AnimTrack &animTrack = *mNodeGraphControler.GetAnimTrack(mNodeIndex, mParameterIndex[curve]);
             animTrack.mNodeIndex = mNodeIndex;
             animTrack.mParamIndex = mParameterIndex[curve];
             animTrack.mValueType = mValueType[curve];
@@ -839,7 +902,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 curve++;
             } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
         }
-        gNodeDelegate.ApplyAnimationForNode(mNodeIndex, gEvaluationTime);
+        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(&mNodeGraphControler.mEditingContext, mNodeIndex, gEvaluationTime);
     }
 
     virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return mCurveType[curveIndex]; }
@@ -930,11 +993,11 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             uint32_t parameterIndex = mParameterIndex[curve];
             bool parameterFound = false;
             int index = 0;
-            for (auto& track : gNodeDelegate.mAnimTrack)
+            for (auto& track : mNodeGraphControler.mEvaluationStages.mAnimTrack)
             {
-                if (track.mNodeIndex == gNodeDelegate.mSelectedNodeIndex && track.mParamIndex == parameterIndex)
+                if (track.mNodeIndex == mNodeGraphControler.mSelectedNodeIndex && track.mParamIndex == parameterIndex)
                 {
-                    undoRedoEditCurves.push_back(new URChange<AnimTrack>(index, [](int index) { return &gNodeDelegate.mAnimTrack[index]; }));
+                    undoRedoEditCurves.push_back(new URChange<AnimTrack>(index, [&](int index) { return &mNodeGraphControler.mEvaluationStages.mAnimTrack[index]; }));
                     parameterFound = true;
                     break;
                 }
@@ -942,7 +1005,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             }
             if (!parameterFound)
             {
-                undoRedoEditCurves.push_back(new URAdd<AnimTrack>(index, []() { return &gNodeDelegate.mAnimTrack; }));
+                undoRedoEditCurves.push_back(new URAdd<AnimTrack>(index, [&]() { return &mNodeGraphControler.mEvaluationStages.mAnimTrack; }));
                 AnimTrack animTrack;
                 animTrack.mNodeIndex = mNodeIndex;
                 animTrack.mParamIndex = mParameterIndex[curve];
@@ -1005,6 +1068,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     ImVec2 &mMin, &mMax;
     int mNodeIndex;
+    NodeGraphControler &mNodeGraphControler;
 
 private:
     void SortValues(size_t curveIndex)
@@ -1020,7 +1084,7 @@ std::vector<UndoRedo *> AnimCurveEdit::undoRedoEditCurves;
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
-    MySequence(TileNodeEditGraphDelegate &nodeGraphDelegate) : mNodeGraphDelegate(nodeGraphDelegate), setKeyFrameOrValue(FLT_MAX, FLT_MAX){}
+    MySequence(NodeGraphControler &NodeGraphControler) : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX){}
 
     void Clear()
     {
@@ -1031,41 +1095,41 @@ struct MySequence : public ImSequencer::SequenceInterface
         mCurveMin = 0.f;
         mCurveMax = 1.f;
     }
-    virtual int GetFrameMin() const { return gNodeDelegate.mFrameMin; }
-    virtual int GetFrameMax() const { return gNodeDelegate.mFrameMax; }
+    virtual int GetFrameMin() const { return mNodeGraphControler.mEvaluationStages.mFrameMin; }
+    virtual int GetFrameMax() const { return mNodeGraphControler.mEvaluationStages.mFrameMax; }
 
     virtual void BeginEdit(int index)
     {
         assert(undoRedoChange == nullptr);
-        undoRedoChange = new URChange<TileNodeEditGraphDelegate::ImogenNode>(index, [](int index) { return &gNodeDelegate.mNodes[index]; });
+        undoRedoChange = new URChange<EvaluationStage>(index, [&](int index) { return &mNodeGraphControler.mEvaluationStages.mStages[index]; });
     }
     virtual void EndEdit()
     {
         delete undoRedoChange;
         undoRedoChange = NULL;
-        gNodeDelegate.SetTime(gEvaluationTime, false);
+        mNodeGraphControler.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, gEvaluationTime, false);
     }
 
-    virtual int GetItemCount() const { return (int)gEvaluation.GetStagesCount(); }
+    virtual int GetItemCount() const { return (int)mNodeGraphControler.mEvaluationStages.GetStagesCount(); }
 
     virtual int GetItemTypeCount() const { return 0; }
     virtual const char *GetItemTypeName(int typeIndex) const { return NULL; }
     virtual const char *GetItemLabel(int index) const
     {
-        size_t nodeType = gEvaluation.GetStageType(index);
+        size_t nodeType = mNodeGraphControler.mEvaluationStages.GetStageType(index);
         return gMetaNodes[nodeType].mName.c_str();
     }
 
     virtual void Get(int index, int** start, int** end, int *type, unsigned int *color)
     {
-        size_t nodeType = gEvaluation.GetStageType(index);
+        size_t nodeType = mNodeGraphControler.mEvaluationStages.GetStageType(index);
 
         if (color)
             *color = gMetaNodes[nodeType].mHeaderColor;
         if (start)
-            *start = &mNodeGraphDelegate.mNodes[index].mStartFrame;
+            *start = &mNodeGraphControler.mEvaluationStages.mStages[index].mStartFrame;
         if (end)
-            *end = &mNodeGraphDelegate.mNodes[index].mEndFrame;
+            *end = &mNodeGraphControler.mEvaluationStages.mStages[index].mEndFrame;
         if (type)
             *type = int(nodeType);
     }
@@ -1101,9 +1165,9 @@ struct MySequence : public ImSequencer::SequenceInterface
             mbVisible.clear();
         }
 
-        ImVec2 curveMin(float(gNodeDelegate.mFrameMin), mCurveMin);
-        ImVec2 curveMax(float(gNodeDelegate.mFrameMax), mCurveMax);
-        AnimCurveEdit curveEdit(curveMin, curveMax, gNodeDelegate.mAnimTrack, mbVisible, index);
+        ImVec2 curveMin(float(mNodeGraphControler.mEvaluationStages.mFrameMin), mCurveMin);
+        ImVec2 curveMax(float(mNodeGraphControler.mEvaluationStages.mFrameMax), mCurveMax);
+        AnimCurveEdit curveEdit(mNodeGraphControler, curveMin, curveMax, mNodeGraphControler.mEvaluationStages.mAnimTrack, mbVisible, index);
         mbVisible.resize(curveEdit.GetCurveCount(), true);
         draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
         for (int i = 0; i < curveEdit.GetCurveCount(); i++)
@@ -1142,7 +1206,7 @@ struct MySequence : public ImSequencer::SequenceInterface
                 int keyIndex = selPoint.pointIndex;
                 ImVec2 keyValue = curveEdit.mPts[selPoint.curveIndex][keyIndex];
                 uint32_t parameterIndex = curveEdit.mParameterIndex[selPoint.curveIndex];
-                AnimTrack* animTrack = gNodeDelegate.GetAnimTrack(gNodeDelegate.mSelectedNodeIndex, parameterIndex);
+                AnimTrack* animTrack = mNodeGraphControler.GetAnimTrack(mNodeGraphControler.mSelectedNodeIndex, parameterIndex);
                 //UndoRedo *undoRedo = nullptr;
                 //undoRedo = new URChange<AnimTrack>(int(animTrack - gNodeDelegate.GetAnimTrack().data()), [](int index) { return &gNodeDelegate.mAnimTrack[index]; });
 
@@ -1170,7 +1234,7 @@ struct MySequence : public ImSequencer::SequenceInterface
         mCurveMax = curveMax.y;
     }
 
-    TileNodeEditGraphDelegate &mNodeGraphDelegate;
+    NodeGraphControler &mNodeGraphControler;
     std::vector<bool> mbExpansions;
     std::vector<bool> mbVisible;
     ImVector<ImCurveEdit::EditPoint> mSelectedCurvePoints;
@@ -1178,9 +1242,8 @@ struct MySequence : public ImSequencer::SequenceInterface
     ImVec2 setKeyFrameOrValue;
     ImVec2 getKeyFrameOrValue;
     float mCurveMin, mCurveMax;
-    URChange<TileNodeEditGraphDelegate::ImogenNode> *undoRedoChange;
+    URChange<EvaluationStage> *undoRedoChange;
 };
-MySequence mySequence(gNodeDelegate);
 
 void Imogen::ShowAppMainMenuBar()
 {
@@ -1203,7 +1266,7 @@ void Imogen::ShowAppMainMenuBar()
             }
         }
         ImGui::Separator();
-        unsigned int imogenLogo = gEvaluation.GetTexture("Stock/ImogenLogo.png");
+        unsigned int imogenLogo = gImageCache.GetTexture("Stock/ImogenLogo.png");
         ImGui::Image((ImTextureID)(int64_t)imogenLogo, ImVec2(200,86), ImVec2(0,1), ImVec2(1,0));
         ImGui::EndPopup();
     }
@@ -1211,7 +1274,7 @@ void Imogen::ShowAppMainMenuBar()
 
 
 static const ImVec2 deltaHeight = ImVec2(0, 32);
-void Imogen::ShowTitleBar()
+void Imogen::ShowTitleBar(Builder *builder)
 {
     ImGuiIO& io = ImGui::GetIO();
     
@@ -1248,15 +1311,43 @@ void Imogen::ShowTitleBar()
     ImGui::EndChildFrame();
     ImGui::SameLine();
 
-    // exporting frame
-    ImGui::BeginChildFrame(153, ImVec2(300.f, 32));
-    if (selectedMaterial != -1)
+    // exporting frame / build
+    unsigned int buildIcon = gImageCache.GetTexture("Stock/Build.png");
+    if (ImGui::ImageButton((ImTextureID)(int64_t)buildIcon, ImVec2(30,30), ImVec2(0,1), ImVec2(1,0)))
     {
-        Material& material = library.mMaterials[selectedMaterial];
-        ImGui::Text("Exporting %s", material.mName.c_str());
+        if (selectedMaterial != -1)
+        {
+            Material& material = library.mMaterials[selectedMaterial];
+            builder->Add(material.mName.c_str(), mNodeGraphControler->mEvaluationStages);
+        }
     }
-    ImGui::ProgressBar(0.7f);
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text("Add current graph to the build list");
+        ImGui::EndTooltip();
+    }
+    ImGui::SameLine();
+    ImGui::BeginChildFrame(153, ImVec2(300.f, 32));
+    static std::vector<Builder::BuildInfo> buildInfos;
+    builder->UpdateBuildInfo(buildInfos);
+
+    if (!buildInfos.empty())
+    {
+        auto& bi = buildInfos[0];
+        ImGui::Text("Processing %s", bi.mName.c_str());
+        ImGui::ProgressBar(bi.mProgress);
+    }
     ImGui::EndChildFrame();
+    if (ImGui::IsItemHovered() && (buildInfos.size()>1))
+    {
+        ImGui::BeginTooltip();
+        for (auto& bi : buildInfos)
+        {
+            ImGui::Text(bi.mName.c_str());
+        }
+        ImGui::EndTooltip();
+    }
     /*
     ImGui::SameLine();
     // min/max/close buttons
@@ -1306,11 +1397,11 @@ void Imogen::ShowTitleBar()
     // done
 }
 
-void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+void Imogen::Show(Builder *builder, Library& library)
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    ShowTitleBar();
+    ShowTitleBar(builder);
 
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
@@ -1334,13 +1425,12 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
                 ImGui::PushItemWidth(60);
                 static int previewSize = 0;
-                //ImGui::Combo("Preview size", &previewSize, "  128\0  256\0  512\0 1024\0 2048\0 4096\0");
-                //ImGui::SameLine();
-                if (ImGui::Button("Do exports"))
+                /*if (ImGui::Button("Do exports"))
                 {
-                    nodeGraphDelegate.DoForce();
+                    NodeGraphControler.DoForce();
                 }
                 ImGui::SameLine();
+                */
                 if (ImGui::Button("Save Graph"))
                 {
                     nfdchar_t *outPath = NULL;
@@ -1361,29 +1451,29 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
                 {
                     library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
                     selectedMaterial = int(library.mMaterials.size()) - 1;
-                    UpdateNewlySelectedGraph(nodeGraphDelegate, evaluation);
+                    UpdateNewlySelectedGraph();
                 }
                 ImGui::PopItemWidth();
             }
-            NodeGraph(&nodeGraphDelegate, selectedMaterial != -1);    
+            NodeGraph(mNodeGraphControler, selectedMaterial != -1);
         }
         ImGui::End();
 
         if (ImGui::Begin("Shaders"))
         {
-            HandleEditor(editor, nodeGraphDelegate, evaluation);
+            HandleEditor(editor);
         }
         ImGui::End();
 
         if (ImGui::Begin("Library"))
         {
-            LibraryEdit(library, nodeGraphDelegate, evaluation);
+            LibraryEdit(library);
         }
         ImGui::End();
 
         if (ImGui::Begin("Pins"))
         {
-            nodeGraphDelegate.PinnedEdit();
+            mNodeGraphControler->PinnedEdit();
         }
         ImGui::End();
 
@@ -1393,7 +1483,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             const ImVec2 windowPos = ImGui::GetCursorScreenPos();
             const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
-            NodeEdit(nodeGraphDelegate, evaluation);
+            NodeEdit(*mNodeGraphControler);
         }
         ImGui::End();
 
@@ -1405,17 +1495,17 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
         if (ImGui::Begin("Timeline"))
         {
-            int selectedEntry = nodeGraphDelegate.mSelectedNodeIndex;
+            int selectedEntry = mNodeGraphControler->mSelectedNodeIndex;
             static int firstFrame = 0;
             int currentTime = gEvaluationTime;
 
             ImGui::PushItemWidth(80);
             ImGui::PushID(200);
-            ImGui::InputInt("", &gNodeDelegate.mFrameMin, 0, 0);
+            ImGui::InputInt("", &mNodeGraphControler->mEvaluationStages.mFrameMin, 0, 0);
             ImGui::PopID();
             ImGui::SameLine();
             if (ImGui::Button("|<"))
-                currentTime = gNodeDelegate.mFrameMin;
+                currentTime = mNodeGraphControler->mEvaluationStages.mFrameMin;
             ImGui::SameLine();
             if (ImGui::Button("<"))
                 currentTime--;
@@ -1432,20 +1522,20 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
                 currentTime++;
             ImGui::SameLine();
             if (ImGui::Button(">|"))
-                currentTime = gNodeDelegate.mFrameMax;
+                currentTime = mNodeGraphControler->mEvaluationStages.mFrameMax;
             ImGui::SameLine();
             extern bool gbIsPlaying;
             if (ImGui::Button(gbIsPlaying ? "Stop" : "Play"))
             {
                 if (!gbIsPlaying)
                 {
-                    currentTime = gNodeDelegate.mFrameMin;
+                    currentTime = mNodeGraphControler->mEvaluationStages.mFrameMin;
                 }
                 gbIsPlaying = !gbIsPlaying;
             }
             extern bool gPlayLoop;
-            unsigned int playNoLoopTextureId = evaluation.GetTexture("Stock/PlayNoLoop.png");
-            unsigned int playLoopTextureId = evaluation.GetTexture("Stock/PlayLoop.png");
+            unsigned int playNoLoopTextureId = gImageCache.GetTexture("Stock/PlayNoLoop.png");
+            unsigned int playLoopTextureId = gImageCache.GetTexture("Stock/PlayLoop.png");
 
             ImGui::SameLine();
             if (ImGui::ImageButton((ImTextureID)(uint64_t)(gPlayLoop ? playLoopTextureId : playNoLoopTextureId), ImVec2(16.f, 16.f)))
@@ -1453,62 +1543,62 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
 
             ImGui::SameLine();
             ImGui::PushID(202);
-            ImGui::InputInt("", &gNodeDelegate.mFrameMax, 0, 0);
+            ImGui::InputInt("", &mNodeGraphControler->mEvaluationStages.mFrameMax, 0, 0);
             ImGui::PopID();
             ImGui::SameLine();
             currentTime = ImMax(currentTime, 0);
             ImGui::SameLine(0, 40.f);
             if (ImGui::Button("Make Key") && selectedEntry != -1)
             {
-                nodeGraphDelegate.MakeKey(currentTime, uint32_t(selectedEntry), 0);
+                mNodeGraphControler->MakeKey(currentTime, uint32_t(selectedEntry), 0);
             }
 
             ImGui::SameLine(0, 50.f);
             
-            int setf = (mySequence.getKeyFrameOrValue.x<FLT_MAX)? int(mySequence.getKeyFrameOrValue.x):0;
+            int setf = (mSequence->getKeyFrameOrValue.x<FLT_MAX)? int(mSequence->getKeyFrameOrValue.x):0;
             ImGui::PushID(203);
             if (ImGui::InputInt("", &setf, 0, 0))
             {
-                mySequence.setKeyFrameOrValue.x = float(setf);
+                mSequence->setKeyFrameOrValue.x = float(setf);
             }
             ImGui::SameLine();
-            float setv = (mySequence.getKeyFrameOrValue.y < FLT_MAX) ? mySequence.getKeyFrameOrValue.y : 0.f;
+            float setv = (mSequence->getKeyFrameOrValue.y < FLT_MAX) ? mSequence->getKeyFrameOrValue.y : 0.f;
             if (ImGui::InputFloat("Key", &setv))
             {
-                mySequence.setKeyFrameOrValue.y = setv;
+                mSequence->setKeyFrameOrValue.y = setv;
             }
             ImGui::PopID();
             ImGui::SameLine();
             int timeMask[2] = { 0,0 };
             if (selectedEntry != -1)
             {
-                timeMask[0] = gNodeDelegate.mNodes[selectedEntry].mStartFrame;
-                timeMask[1] = gNodeDelegate.mNodes[selectedEntry].mEndFrame;
+                timeMask[0] = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry].mStartFrame;
+                timeMask[1] = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry].mEndFrame;
             }
             ImGui::PushItemWidth(120);
             if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
             {
-                URChange<TileNodeEditGraphDelegate::ImogenNode> undoRedoChange(selectedEntry, [](int index) { return &gNodeDelegate.mNodes[index]; });
+                URChange<EvaluationStage> undoRedoChange(selectedEntry, [&](int index) { return &mNodeGraphControler->mEvaluationStages.mStages[index]; });
                 timeMask[1] = ImMax(timeMask[1], timeMask[0]);
                 timeMask[0] = ImMin(timeMask[1], timeMask[0]);
-                gNodeDelegate.SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
+                mNodeGraphControler->SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
             }
             ImGui::PopItemWidth();
             ImGui::PopItemWidth();
 
-            Sequencer(&mySequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
+            Sequencer(mSequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
             if (selectedEntry != -1)
             {
-                nodeGraphDelegate.mSelectedNodeIndex = selectedEntry;
+                mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
                 NodeGraphSelectNode(selectedEntry);
-                auto& imoNode = nodeGraphDelegate.mNodes[selectedEntry];
-                gEvaluation.SetStageLocalTime(selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
+                auto& imoNode = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry];
+                mNodeGraphControler->mEvaluationStages.SetStageLocalTime(&mNodeGraphControler->mEditingContext, selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
             }
             if (currentTime != gEvaluationTime)
             {
                 gEvaluationTime = currentTime;
-                nodeGraphDelegate.SetTime(currentTime, true);
-                nodeGraphDelegate.ApplyAnimation(currentTime);
+                mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, currentTime, true);
+                mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, currentTime);
             }
         }
         ImGui::End();
@@ -1519,7 +1609,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
         for (auto& extraction : mExtratedViews)
         {
             char tmps[512];
-            sprintf(tmps, "%s_View_%03d", gMetaNodes[nodeGraphDelegate.mNodes[extraction.mNodeIndex].mType].mName.c_str(), index);
+            sprintf(tmps, "%s_View_%03d", gMetaNodes[mNodeGraphControler->mEvaluationStages.mStages[extraction.mNodeIndex].mType].mName.c_str(), index);
             bool open = true;
             if (extraction.mFirstFrame)
             {
@@ -1529,7 +1619,7 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
             //ImGui::SetNextWindowFocus();
             if (ImGui::Begin(tmps, &open))
             {
-                RenderPreviewNode(int(extraction.mNodeIndex), nodeGraphDelegate, evaluation, false);
+                RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, false);
             }
             ImGui::End();
             if (!open)
@@ -1546,9 +1636,9 @@ void Imogen::Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate
     }
 }
 
-void Imogen::ValidateCurrentMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate)
+void Imogen::ValidateCurrentMaterial(Library& library)
 {
-    ValidateMaterial(library, nodeGraphDelegate, selectedMaterial);
+    ValidateMaterial(library, *mNodeGraphControler, selectedMaterial);
 }
 
 void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)
@@ -1572,13 +1662,16 @@ void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUAT
     tinydir_close(&dir);
 }
 
-Imogen::Imogen()
+Imogen::Imogen(NodeGraphControler *nodeGraphControler) :
+    mNodeGraphControler(nodeGraphControler)
 {
+    mSequence = new MySequence(*nodeGraphControler);
+    mdConfig.userData = this;
 }
 
 Imogen::~Imogen()
 {
-
+    delete mSequence;
 }
 
 void Imogen::Init()
@@ -1599,15 +1692,14 @@ void Imogen::Finish()
 
 }
 
-void ClearAll(TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation)
+void Imogen::ClearAll()
 {
-    nodeGraphDelegate.Clear();
-    evaluation.Clear();
+    mNodeGraphControler->Clear();
     NodeGraphClear();
     InitCallbackRects();
     ClearExtractedViews();
     gUndoRedoHandler.Clear();
-    mySequence.Clear();
+    mSequence->Clear();
 }
 
 

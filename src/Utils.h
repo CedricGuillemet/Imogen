@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -28,10 +28,8 @@
 #include <float.h>
 #include <vector>
 
-struct Image_t;
-typedef struct Image_t Image;
 void TagTime(const char *tagInfo);
-void FlipVImage(Image *image);
+
 typedef unsigned int TextureID;
 static const int SemUV0 = 0;
 
@@ -46,9 +44,12 @@ public:
     }
     void Init();
     void Render();
+    void Finish();
 protected:
     TextureID mGLFullScreenVertexArrayName;
+    TextureID mFsVA;
 };
+
 
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode);
@@ -599,3 +600,13 @@ template<typename T> void Swap(T& a, T&b)
     a = b;
     b = temp;
 }
+
+template<typename T> T min(const T& a, const T& b) { return (a < b) ? a : b; }
+
+
+enum EvaluationStatus
+{
+    EVAL_OK,
+    EVAL_ERR,
+    EVAL_DIRTY,
+};

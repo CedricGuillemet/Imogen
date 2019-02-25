@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -33,9 +33,9 @@
 #include <stdlib.h>
 #include <io.h> 
 #include <fcntl.h> 
-#include "Nodes.h"
-#include "NodesDelegate.h"
-#include "Evaluation.h"
+#include "NodeGraph.h"
+#include "NodeGraphControler.h"
+#include "EvaluationStages.h"
 #include "Imogen.h"
 #include "TaskScheduler.h"
 #include "stb_image.h"
@@ -102,13 +102,19 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
     Log("GL Debug (%s - %s) %s \n", typeStr, severityStr, message);
 }
 
-Evaluation gEvaluation;
 Library library;
-Imogen imogen;
+
 enki::TaskScheduler g_TS;
 UndoRedoHandler gUndoRedoHandler;
 
 SDL_Window* window;
+SDL_GLContext glThreadContext;
+
+void MakeThreadContext()
+{
+    SDL_GL_MakeCurrent(window, glThreadContext);
+}
+
 int main(int, char**)
 {
     TagTime("App start");
@@ -116,6 +122,7 @@ int main(int, char**)
     GLSLPathTracer::Log = Log;
     AddLogOutput(ImConsoleOutput);
     g_TS.Initialize();
+
     TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
     gEvaluators.InitPythonModules();
@@ -175,6 +182,8 @@ int main(int, char**)
     SDL_GetCurrentDisplayMode(0, &current);
     window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720,
         SDL_WINDOW_OPENGL | /*SDL_WINDOW_BORDERLESS |*/ SDL_WINDOW_RESIZABLE | SDL_WINDOW_UTILITY | SDL_WINDOW_MAXIMIZED/*| SDL_WINDOW_BORDERLESS/* */);
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+    glThreadContext = SDL_GL_CreateContext(window);
     SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_GL_SetSwapInterval(1); // Enable vsync
 
@@ -191,6 +200,9 @@ int main(int, char**)
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
         return 1;
     }
+
+    NodeGraphControler nodeGraphControler;
+    Imogen imogen(&nodeGraphControler);
 
     // open cl context
     int32_t clLoaded = 0;
@@ -237,8 +249,6 @@ int main(int, char**)
         &unusedIds,
         true);
 
-    gFSQuad.Init();
-
     // Setup style
     ImGui::StyleColorsDark();
 
@@ -250,14 +260,15 @@ int main(int, char**)
     imogen.Init();
     TagTime("Imogen Init");
 
-    gEvaluation.Init();
     TagTime("Evaluation Init");
     gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
 
     gCPUCount = SDL_GetCPUCount();
 
+    Builder *builder = new Builder;
+
     // default Material
-    SetExistingMaterialActive(".default");
+    imogen.SetExistingMaterialActive(".default");
 
     TagTime("App init done");
 
@@ -290,22 +301,22 @@ int main(int, char**)
         if (gbIsPlaying)
         {
             gEvaluationTime++;
-            if (gEvaluationTime >= gNodeDelegate.mFrameMax)
+            if (gEvaluationTime >= nodeGraphControler.mEvaluationStages.mFrameMax)
             {
                 if (gPlayLoop)
                 {
-                    gEvaluationTime = gNodeDelegate.mFrameMin;
+                    gEvaluationTime = nodeGraphControler.mEvaluationStages.mFrameMin;
                 }
                 else
                 {
                     gbIsPlaying = false;
                 }
             }
-            gNodeDelegate.SetTime(gEvaluationTime, true);
-            gNodeDelegate.ApplyAnimation(gEvaluationTime);
+            nodeGraphControler.mEvaluationStages.SetTime(&nodeGraphControler.mEditingContext, gEvaluationTime, true);
+            nodeGraphControler.mEvaluationStages.ApplyAnimation(&nodeGraphControler.mEditingContext, gEvaluationTime);
         }
-        gCurrentContext->RunDirty();
-        imogen.Show(library, gNodeDelegate, gEvaluation);
+        nodeGraphControler.mEditingContext.RunDirty();
+        imogen.Show(builder, library);
 
         // render everything
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
@@ -318,6 +329,7 @@ int main(int, char**)
         g_TS.RunPinnedTasks();
         SDL_GL_SwapWindow(window);
     }
+    delete builder;
 
     clDestroy(clContext);
     // Unload opencl lib.
@@ -326,9 +338,8 @@ int main(int, char**)
         cmft::clUnload();
     }
 
-    imogen.ValidateCurrentMaterial(library, gNodeDelegate);
+    imogen.ValidateCurrentMaterial(library);
     SaveLib(&library, libraryFilename);
-    gEvaluation.Finish();
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

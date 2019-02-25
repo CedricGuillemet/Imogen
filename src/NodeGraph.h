@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -29,9 +29,9 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-struct NodeGraphDelegate
+struct NodeGraphControlerBase
 {
-    NodeGraphDelegate() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
+    NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
     {}
 
     int mSelectedNodeIndex;
@@ -50,13 +50,17 @@ struct NodeGraphDelegate
     // node deleted
     virtual void UserDeleteNode(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) = 0;
-    virtual void DoForce() = 0;
+
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
     virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd) = 0;
     virtual bool NodeHasUI(size_t nodeIndex) = 0;
     virtual int NodeIsProcesing(size_t nodeIndex) = 0;
     virtual float NodeProgress(size_t nodeIndex) = 0;
     virtual bool NodeIsCubemap(size_t nodeIndex) = 0;
+    virtual bool NodeIs2D(size_t nodeIndex) = 0;
+    virtual bool NodeIsCompute(size_t nodeIndex) = 0;
+    virtual void DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex) = 0;
+
     // clipboard
     virtual void CopyNodes(const std::vector<size_t> nodes) = 0;
     virtual void CutNodes(const std::vector<size_t> nodes) = 0;
@@ -74,6 +78,7 @@ struct Node
 
     ImVec2 GetInputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
     ImVec2 GetOutputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor + Size.x, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
+    ImRect GetNodeRect(float factor) { return ImRect(Pos * factor, Pos * factor + Size); }
 };
 
 struct NodeLink
@@ -116,15 +121,15 @@ struct NodeRug
     }
 };
 
-void NodeGraph(NodeGraphDelegate *delegate, bool enabled);
+void NodeGraph(NodeGraphControlerBase *delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
 const std::vector<NodeLink>& NodeGraphGetLinks();
 const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphDelegate *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd);
+void NodeGraphAddNode(NodeGraphControlerBase *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd);
 void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
-void NodeGraphAddLink(NodeGraphDelegate *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
-void NodeGraphUpdateEvaluationOrder(NodeGraphDelegate *delegate);
+void NodeGraphAddLink(NodeGraphControlerBase *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
+void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase *delegate);
 void NodeGraphUpdateScrolling();
 void NodeGraphSelectNode(int selectedNodeIndex);

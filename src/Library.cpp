@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -575,6 +575,17 @@ size_t GetMetaNodeIndex(const std::string& metaNodeName)
     }
     return iter->second;
 }
+
+size_t ComputeNodeParametersSize(size_t nodeType)
+{
+    size_t res = 0;
+    for (auto& param : gMetaNodes[nodeType].mParams)
+    {
+        res += GetParameterTypeSize(param.mType);
+    }
+    return res;
+}
+
 
 void LoadMetaNodes(const std::vector<std::string>& metaNodeFilenames)
 {

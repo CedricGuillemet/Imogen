@@ -1,7 +1,7 @@
 #include "Imogen.h"
 
-int main(void *param, Evaluation *evaluation)
+int main(void *param, Evaluation *evaluation, void *context)
 {
-	SetEvaluationSize(evaluation->targetIndex, 512, 64);
+	SetEvaluationSize(context, evaluation->targetIndex, 512, 64);
 	return EVAL_OK;
 }

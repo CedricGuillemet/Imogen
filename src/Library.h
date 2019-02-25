@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -422,7 +422,10 @@ const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex);
 AnimationBase *AllocateAnimation(uint32_t valueType);
 CurveType GetCurveTypeForParameterType(ConTypes paramType);
-void DecodeThumbnailAsync(Material * material);
+struct NodeGraphControler;
+void DecodeThumbnailAsync(Material * material, NodeGraphControler *nodeGraphControler);
+size_t ComputeNodeParametersSize(size_t nodeType);
+
 struct MetaCon
 {
     std::string mName;

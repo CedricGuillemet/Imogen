@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -170,9 +170,11 @@ private:
 // draw callbacks
 struct ImRect;
 struct ImDrawList;
-typedef void(*NodeUICallBackFunc)(size_t nodeIndex);
-void AddUICustomDraw(ImDrawList *drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex);
+struct EvaluationContext;
+typedef void(*NodeUICallBackFunc)(EvaluationContext *context, size_t nodeIndex);
+void AddUICustomDraw(ImDrawList *drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext *context);
 void InitCallbackRects();
 
 //
 void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUVCoord, ImVec2 displayedTextureSize);
+

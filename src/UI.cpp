@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -200,6 +200,7 @@ struct ImogenDrawCallback
     ImRect mClippedRect;
     ImRect mOrginalRect;
     size_t mNodeIndex;
+    EvaluationContext *mEvaluationContext;
 };
 
 std::vector<ImogenDrawCallback> mCallbackRects;
@@ -235,7 +236,7 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 
     if (!mCallbackRects.empty())
     {
-        const ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
+        ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
 
         ImRect cbRect = cb.mOrginalRect;
         float h = cbRect.Max.y - cbRect.Min.y;
@@ -247,7 +248,7 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
         glScissor(int(clippedRect.Min.x), int(io.DisplaySize.y - clippedRect.Max.y), int(clippedRect.Max.x - clippedRect.Min.x), int(clippedRect.Max.y - clippedRect.Min.y));
         glEnable(GL_SCISSOR_TEST);
 
-        cb.mFunc(cb.mNodeIndex);
+        cb.mFunc(cb.mEvaluationContext, cb.mNodeIndex);
     }
     // Restore modified GL state
     glUseProgram(last_program);
@@ -276,7 +277,7 @@ void InitCallbackRects()
 {
     mCallbackRects.clear();
 }
-size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t nodeIndex)
+size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t nodeIndex, EvaluationContext *context)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 mi = draw_list->GetClipRectMin();
@@ -284,13 +285,13 @@ size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t
 
     ImRect rc = rect;
     rc.ClipWith(ImRect(mi, ma));
-    mCallbackRects.push_back({ func, rc, rect, nodeIndex });
+    mCallbackRects.push_back({ func, rc, rect, nodeIndex, context });
     return mCallbackRects.size() - 1;
 }
 
-void AddUICustomDraw(ImDrawList *drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex)
+void AddUICustomDraw(ImDrawList *drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext *context)
 {
-    drawList->AddCallback((ImDrawCallback)(NodeUICallBack), (void*)(AddNodeUICallbackRect(func, rc, nodeIndex)));
+    drawList->AddCallback((ImDrawCallback)(NodeUICallBack), (void*)(AddNodeUICallbackRect(func, rc, nodeIndex, context)));
 }
 
 void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUVCoord, ImVec2 displayedTextureSize)
@@ -341,3 +342,4 @@ void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUV
     ImGui::EndGroup();
     ImGui::EndTooltip();
 }
+

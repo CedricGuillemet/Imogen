@@ -7,16 +7,16 @@ typedef struct EquirectConverter_t
 } EquirectConverter;
 
 
-int main(EquirectConverter *param, Evaluation *evaluation)
+int main(EquirectConverter *param, Evaluation *evaluation, void *context)
 {
 	int size = 256 << param->size;
 	if (param->mode == 0)
 	{
-		SetEvaluationCubeSize(evaluation->targetIndex, size);
+		SetEvaluationCubeSize(context, evaluation->targetIndex, size);
 	}
 	else
 	{
-		SetEvaluationSize(evaluation->targetIndex, size, size);
+		SetEvaluationSize(context, evaluation->targetIndex, size, size);
 	}
 	return EVAL_OK;
 }

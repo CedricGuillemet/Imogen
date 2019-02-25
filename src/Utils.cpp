@@ -55,16 +55,14 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 void FullScreenTriangle::Init()
 {
-    TextureID fsVA;
-
     float fsVts[] = { 0.f,0.f, 2.f,0.f, 0.f,2.f };
-    glGenBuffers(1, &fsVA);
-    glBindBuffer(GL_ARRAY_BUFFER, fsVA);
+    glGenBuffers(1, &mFsVA);
+    glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(float) * 2, fsVts, GL_STATIC_DRAW);
 
     glGenVertexArrays(1, &mGLFullScreenVertexArrayName);
     glBindVertexArray(mGLFullScreenVertexArrayName);
-    glBindBuffer(GL_ARRAY_BUFFER, fsVA);
+    glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(SemUV0);
     glBindVertexArray(0);
@@ -79,7 +77,11 @@ void FullScreenTriangle::Render()
     glBindVertexArray(0);
 }
 
-FullScreenTriangle gFSQuad;
+void FullScreenTriangle::Finish()
+{
+    glDeleteBuffers(1, &mFsVA);
+    glDeleteVertexArrays(1, &mGLFullScreenVertexArrayName);
+}
 
 unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 {

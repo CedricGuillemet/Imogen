@@ -123,9 +123,6 @@ int main(int, char**)
     AddLogOutput(ImConsoleOutput);
     g_TS.Initialize();
 
-    NodeGraphControler nodeGraphControler;
-    Imogen imogen(&nodeGraphControler);
-
     TagTime("Enki TS Init");
     pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
     gEvaluators.InitPythonModules();
@@ -204,6 +201,9 @@ int main(int, char**)
         return 1;
     }
 
+    NodeGraphControler nodeGraphControler;
+    Imogen imogen(&nodeGraphControler);
+
     // open cl context
     int32_t clLoaded = 0;
     clLoaded = cmft::clLoad();
@@ -248,8 +248,6 @@ int main(int, char**)
         0,
         &unusedIds,
         true);
-
-    gFSQuad.Init();
 
     // Setup style
     ImGui::StyleColorsDark();

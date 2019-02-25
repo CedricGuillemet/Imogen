@@ -44,8 +44,10 @@ public:
     }
     void Init();
     void Render();
+    void Finish();
 protected:
     TextureID mGLFullScreenVertexArrayName;
+    TextureID mFsVA;
 };
 
 

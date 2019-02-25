@@ -74,7 +74,10 @@ struct EvaluationContext
 
     unsigned int GetMaterialUniqueId() const { return mRuntimeUniqueId; }
     void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
+
+
     EvaluationStages& mEvaluationStages;
+    FullScreenTriangle mFSQuad;
 
 protected:
     void PreRun();
@@ -107,7 +110,7 @@ protected:
     int mDefaultWidth;
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
-    unsigned int mRuntimeUniqueId; // material unique Id
+    unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
 };
 
 struct Builder

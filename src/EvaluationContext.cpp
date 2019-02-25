@@ -85,7 +85,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation, bool synchron
     , mDefaultHeight(defaultHeight)
     , mRuntimeUniqueId(-1)
 {
-
+    mFSQuad.Init();
 }
 
 EvaluationContext::~EvaluationContext()
@@ -96,6 +96,7 @@ EvaluationContext::~EvaluationContext()
         delete stream.second;
     }
     mWriteStreams.clear();
+    mFSQuad.Finish();
 }
 
 static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage &evaluationStage)
@@ -324,7 +325,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     if (!program)
     {
         glUseProgram(gDefaultShader.mNodeErrorShader);
-        gFSQuad.Render();
+        mFSQuad.Render();
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -425,7 +426,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             else
 #endif
             {
-                gFSQuad.Render();
+                mFSQuad.Render();
             }
             // swap target for multipass
             // set previous target as source
@@ -890,7 +891,7 @@ namespace DrawUICallbacks
     {
         glUseProgram(gDefaultShader.mProgressShader);
         glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
-        gFSQuad.Render();
+        context->mFSQuad.Render();
     }
 
     void DrawUISingle(EvaluationContext *context, size_t nodeIndex)
@@ -909,6 +910,6 @@ namespace DrawUICallbacks
         glActiveTexture(GL_TEXTURE0);
 
         glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
-        gFSQuad.Render();
+        context->mFSQuad.Render();
     }
 }

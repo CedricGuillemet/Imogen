@@ -218,5 +218,3 @@ protected:
     void StageIsDeleted(int index);
     void InitDefaultParameters(EvaluationStage& stage);
 };
-
-extern FullScreenTriangle gFSQuad;

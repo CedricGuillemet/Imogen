@@ -1042,7 +1042,7 @@ namespace EvaluationAPI
         {
             // processing... maybe good on next run
         }
-        GetEvaluationImage(evaluationContext, target, image);
+        GetEvaluationImage(&context, target, image);
         return EVAL_OK;
     }
 }

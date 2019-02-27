@@ -677,7 +677,7 @@ static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase *
     }
 }
 
-static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float factor, const ImRect regionRect)
+static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float factor, const ImRect regionRect, int hoveredNode)
 {
     for (int link_idx = 0; link_idx < links.size(); link_idx++)
     {
@@ -692,7 +692,8 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
             (p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
             continue;
         
-        uint32_t col = gMetaNodes[node_inp->mType].mHeaderColor;
+        bool highlightCons = hoveredNode == link->InputIdx || hoveredNode == link->OutputIdx;
+        uint32_t col = gMetaNodes[node_inp->mType].mHeaderColor | (highlightCons ? 0xF0F0F0 : 0);;
         // curves
         //drawList->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, 0xFF000000, 4.f * factor);
         //drawList->AddBezierCurve(p1, p1 + ImVec2(+50, 0) * factor, p2 + ImVec2(-50, 0) * factor, p2, col, 3.0f * factor);
@@ -774,6 +775,7 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
             pts = { p1, p1a, p1b, p2 };
             ptCount = 4;
         }
+        float highLightFactor = factor * highlightCons ? 2.0f : 1.f;
         for (int pass = 0; pass < 2; pass++)
         {
             for (int i = 0; i < ptCount - 1; i++)
@@ -784,9 +786,9 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
                 ImVec2 dif = p2 - p1;
                 float diflen = sqrtf(dif.x*dif.x + dif.y*dif.y);
                 ImVec2 difNorm = dif / ImVec2(diflen, diflen);
-                p1 -= difNorm * overdrawFactor * factor;
-                p2 += difNorm * overdrawFactor * factor;
-                drawList->AddLine(p1, p2, pass?col:0xFF000000, (pass?5.f:7.5f) * factor);
+                p1 -= difNorm * overdrawFactor * highLightFactor;
+                p2 += difNorm * overdrawFactor * highLightFactor;
+                drawList->AddLine(p1, p2, pass?col:0xFF000000, (pass?5.f:7.5f) * highLightFactor);
             }
         }
     }
@@ -1213,10 +1215,11 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
     if (!enabled)
         goto nodeGraphExit;
 
+    static int hoveredNode = -1;
     // Display links
     drawList->ChannelsSplit(3);
     drawList->ChannelsSetCurrent(1); // Background
-    DisplayLinks(drawList, offset, factor, regionRect);
+    DisplayLinks(drawList, offset, factor, regionRect, hoveredNode);
 
     // edit node link
     if (nodeOperation == NO_EditingLink)
@@ -1228,7 +1231,7 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
 
     // Display nodes
     drawList->PushClipRect(regionRect.Min, regionRect.Max, true);
-    int hoveredNode = -1;
+    hoveredNode = -1;
     for (int i = 0; i < 2; i++)
     {
         for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
@@ -1329,4 +1332,111 @@ nodeGraphExit:;
     
     ImGui::EndGroup();
     ImGui::PopStyleVar(3);
+}
+
+
+struct NodePosition
+{
+    int mLayer;
+    int mStackIndex;
+};
+
+void RecurseNodeGraphLayout(std::vector<NodePosition>& positions, std::map<int, int> &stacks, const std::vector<NodeLink> &links, size_t currentIndex, int currentLayer)
+{
+    if (positions[currentIndex].mLayer == -1)
+    {
+        positions[currentIndex].mLayer = currentLayer;
+        int layer = positions[currentIndex].mLayer = currentLayer;
+        if (stacks.find(layer) != stacks.end())
+            stacks[layer] ++;
+        else
+            stacks[layer] = 0;
+        positions[currentIndex].mStackIndex = stacks[currentLayer];
+    }
+    else
+    {
+        //already hooked node
+        if (currentLayer > positions[currentIndex].mLayer)
+        {
+            // remove stack at current pos
+            int currentStack = positions[currentIndex].mStackIndex;
+            for (auto & pos : positions)
+            {
+                if (pos.mLayer == positions[currentIndex].mLayer && pos.mStackIndex > currentStack)
+                {
+                    pos.mStackIndex--;
+                    stacks[pos.mLayer]--;
+                }
+            }
+            // apply new one
+            int layer = positions[currentIndex].mLayer = currentLayer;
+            if (stacks.find(layer) != stacks.end())
+                stacks[layer] ++;
+            else
+                stacks[layer] = 0;
+            positions[currentIndex].mStackIndex = stacks[currentLayer];
+
+        }
+    }
+
+    for (auto & link : links)
+    {
+        if (link.OutputIdx == currentIndex)
+        {
+            RecurseNodeGraphLayout(positions, stacks, links, link.InputIdx, currentLayer + 1);
+        }
+    }
+}
+
+void NodeGraphLayout()
+{
+    URDummy dummy;
+    std::vector<size_t> nodeOrderList(mOrders.size());
+
+    // get stack/layer pos
+    std::vector<NodePosition> nodePositions(nodes.size(), { -1,-1 });
+    std::map<int, int> stacks;
+    ImRect sourceRect, destRect;
+    std::vector<URChange<Node>*> undos(nodes.size());
+
+    // compute source bounds
+    for (unsigned int i = 0; i < nodes.size(); i++)
+    {
+        const Node& node = nodes[i];
+        sourceRect.Add(ImRect(node.Pos, node.Pos + node.Size));
+        undos[i] = new URChange<Node>(i, [](int index) {return &nodes[index]; }, [](int) {});
+    }
+    
+    for (unsigned int i = 0; i < nodes.size(); i++)
+    {
+        size_t nodeIndex = mOrders[nodes.size() - i - 1].mNodeIndex;
+        RecurseNodeGraphLayout(nodePositions, stacks, links, nodeIndex, 0);
+    }
+
+    // set x,y position from layer/stack
+    for (unsigned int i = 0; i < nodes.size(); i++)
+    {
+        size_t nodeIndex = mOrders[i].mNodeIndex;
+        auto& layout = nodePositions[nodeIndex];
+        nodes[nodeIndex].Pos = ImVec2(-layout.mLayer * 180.f, layout.mStackIndex * 140.f);
+    }
+
+    //new bounds
+    for (auto& node : nodes)
+    {
+        destRect.Add(ImRect(node.Pos, node.Pos + node.Size));
+    }
+
+    // move all nodes
+    ImVec2 offset = sourceRect.GetCenter() - destRect.GetCenter();
+    for (auto& node : nodes)
+    {
+        node.Pos += offset;
+    }
+
+    // finish undo
+    for (auto & undo : undos)
+    {
+        delete undo;
+    }
 }

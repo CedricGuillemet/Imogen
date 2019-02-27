@@ -1453,6 +1453,11 @@ void Imogen::Show(Builder *builder, Library& library)
                     selectedMaterial = int(library.mMaterials.size()) - 1;
                     UpdateNewlySelectedGraph();
                 }
+                ImGui::SameLine();
+                if (ImGui::Button("Layout"))
+                {
+                    NodeGraphLayout();
+                }
                 ImGui::PopItemWidth();
             }
             NodeGraph(mNodeGraphControler, selectedMaterial != -1);

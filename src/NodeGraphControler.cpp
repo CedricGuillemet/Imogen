@@ -86,7 +86,7 @@ void NodeGraphControler::UserAddNode(size_t type)
         [](int) {}, [&](int index) { NodeIsAdded(index); });
 
     mEditingContext.UserAddStage();
-    mEvaluationStages.UserAddEvaluation(type);
+    //mEvaluationStages.UserAddEvaluation(type);
     AddSingleNode(type);
 }
 

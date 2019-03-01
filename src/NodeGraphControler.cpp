@@ -108,10 +108,8 @@ const float PI = 3.14159f;
 float RadToDeg(float a) { return a * 180.f / PI; }
 float DegToRad(float a) { return a / 180.f * PI; }
 
-bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param)
+void NodeGraphControler::HandlePin(uint32_t parameterPair)
 {
-    bool dirty = false;
-    uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
     auto pinIter = std::find(mEvaluationStages.mPinnedParameters.begin(), mEvaluationStages.mPinnedParameters.end(), parameterPair);
     bool hasPin = pinIter != mEvaluationStages.mPinnedParameters.end();
     bool checked = hasPin;
@@ -119,16 +117,22 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned in
     {
         if (hasPin)
         {
-            URDel<uint32_t> undoRedoDelPin(int(&(*pinIter)-mEvaluationStages.mPinnedParameters.data()), [&]() {return &mEvaluationStages.mPinnedParameters;});
+            URDel<uint32_t> undoRedoDelPin(int(&(*pinIter) - mEvaluationStages.mPinnedParameters.data()), [&]() {return &mEvaluationStages.mPinnedParameters; });
             mEvaluationStages.mPinnedParameters.erase(pinIter);
         }
         else
         {
-            URAdd<uint32_t> undoRedoAddNode(int(mEvaluationStages.mPinnedParameters.size()), [&]() {return &mEvaluationStages.mPinnedParameters;});
+            URAdd<uint32_t> undoRedoAddNode(int(mEvaluationStages.mPinnedParameters.size()), [&]() {return &mEvaluationStages.mPinnedParameters; });
             mEvaluationStages.mPinnedParameters.push_back(parameterPair);
         }
-        //std::sort(mPinnedParameters.begin(), mPinnedParameters.end());
     }
+}
+
+bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param)
+{
+    bool dirty = false;
+    uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
+    HandlePin(parameterPair);
     ImGui::SameLine();
     switch (param.mType)
     {
@@ -347,7 +351,7 @@ void NodeGraphControler::PinnedEdit()
     }
 }
 
-void NodeGraphControler::EditNode()
+void NodeGraphControler::EditNodeParameters()
 {
     size_t index = mSelectedNodeIndex;
 
@@ -421,6 +425,45 @@ void NodeGraphControler::EditNode()
     else
     {
         undoRedoParameter.Discard();
+    }
+}
+
+void NodeGraphControler::NodeEdit()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (mSelectedNodeIndex == -1)
+    {
+        for (const auto pin : mEvaluationStages.mPinnedParameters)
+        {
+            unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
+            unsigned int parameterIndex = pin & 0xFFFF;
+            if (parameterIndex != 0xDEAD)
+                continue;
+
+            ImGui::PushID(1717171 + nodeIndex);
+            uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
+            HandlePin(parameterPair);
+            ImGui::SameLine();
+            Imogen::RenderPreviewNode(nodeIndex, *this);
+            ImGui::PopID();
+        }
+
+        PinnedEdit();
+    }
+    else
+    {
+        if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::PushID(1717171);
+            uint32_t parameterPair = (uint32_t(mSelectedNodeIndex) << 16) + 0xDEAD;
+            HandlePin(parameterPair);
+            ImGui::SameLine();
+            Imogen::RenderPreviewNode(mSelectedNodeIndex, *this);
+            ImGui::PopID();
+        }
+
+        EditNodeParameters();
     }
 }
 

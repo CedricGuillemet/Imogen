@@ -47,7 +47,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(index); }
 
-    void EditNode();
+    
 
     virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd);
     void SetTimeDuration(size_t index, int duration);
@@ -88,9 +88,12 @@ struct NodeGraphControler : public NodeGraphControlerBase
     bool mbMouseDragging;
 
     EvaluationStage* Get(ASyncId id) { return GetByAsyncId(id, mEvaluationStages.mStages); }
+    void NodeEdit();
 
 protected:
     bool EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param);
     void NodeIsAdded(int index);
     void UpdateDirtyParameter(int index);
+    void EditNodeParameters();
+    void HandlePin(uint32_t parameterPair);
 };

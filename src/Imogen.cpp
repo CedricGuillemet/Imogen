@@ -164,7 +164,7 @@ void Imogen::HandleEditor(TextEditor &editor)
 
 }
 
-void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI = false)
+void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI)
 {
     ImGuiIO& io = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -320,22 +320,6 @@ void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool
             nodeGraphControler.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
         }
     }
-}
-
-void NodeEdit(NodeGraphControler& NodeGraphControler)
-{
-    ImGuiIO& io = ImGui::GetIO();
-
-    int selNode = NodeGraphControler.mSelectedNodeIndex;
-    if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        RenderPreviewNode(selNode, NodeGraphControler);
-    }
-
-    if (selNode == -1)
-        ImGui::CollapsingHeader("No Selection", 0, ImGuiTreeNodeFlags_DefaultOpen);
-    else
-        NodeGraphControler.EditNode();
 }
 
 template <typename T, typename Ty> struct SortedResource
@@ -1476,19 +1460,14 @@ void Imogen::Show(Builder *builder, Library& library)
         }
         ImGui::End();
 
-        if (ImGui::Begin("Pins"))
-        {
-            mNodeGraphControler->PinnedEdit();
-        }
-        ImGui::End();
-
         ImGui::SetWindowSize(ImVec2(300, 300));
         if (ImGui::Begin("Parameters"))
         {
             const ImVec2 windowPos = ImGui::GetCursorScreenPos();
             const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
 
-            NodeEdit(*mNodeGraphControler);
+            //NodeEdit(*mNodeGraphControler);
+            mNodeGraphControler->NodeEdit();
         }
         ImGui::End();
 

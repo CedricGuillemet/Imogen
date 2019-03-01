@@ -171,7 +171,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0xFF000000);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
     ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
-    float w = ImGui::GetWindowContentRegionWidth();
+    float w = ImGui::GetContentRegionAvailWidth();
     int imageWidth(1), imageHeight(1);
 
     // make 2 evaluation for node to get the UI pass image size

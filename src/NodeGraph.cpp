@@ -552,7 +552,7 @@ static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase *
         {
             auto AddNode = [&](int i)
             {
-                auto addDelNodeLambda = [&controler](int)
+                auto addDelNodeLambda = [controler](int)
                 {
                     NodeGraphUpdateEvaluationOrder(controler);
                     controler->mSelectedNodeIndex = -1;
@@ -866,13 +866,13 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
     static int editingNodeIndex;
     static int editingSlotIndex;
 
-    auto deleteLink = [&controler](int index)
+    auto deleteLink = [controler](int index)
     {
         NodeLink& link = links[index];
         controler->DelLink(link.OutputIdx, link.OutputSlot);
         NodeGraphUpdateEvaluationOrder(controler);
     };
-    auto addLink = [&controler](int index)
+    auto addLink = [controler](int index)
     {
         NodeLink& link = links[index];
         controler->AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);

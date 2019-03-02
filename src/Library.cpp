@@ -902,6 +902,64 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
                         return serNodes;
                     }
                 }
+                if (param.HasMember("default"))
+                {
+                    size_t paramSize = GetParameterTypeSize(metaParam.mType);
+                    metaParam.mDefaultValue.resize(paramSize);
+                    std::string defaultStr = param["default"].GetString();
+                    float *pf = (float*)metaParam.mDefaultValue.data();
+                    int *pi = (int*)metaParam.mDefaultValue.data();
+                    Camera *cam = (Camera*)metaParam.mDefaultValue.data();
+                    ImVec2 *iv2 = (ImVec2*)metaParam.mDefaultValue.data();
+                    ImVec4 *iv4 = (ImVec4*)metaParam.mDefaultValue.data();
+                    switch (metaParam.mType)
+                    {
+                    case Con_Angle:
+                    case Con_Float:
+                        sscanf(defaultStr.c_str(), "%f", pf);
+                        break;
+                    case Con_Angle2:
+                    case Con_Float2:
+                        sscanf(defaultStr.c_str(), "%f,%f", &pf[0], &pf[1]);
+                        break;
+                    case Con_Angle3:
+                    case Con_Float3:
+                        sscanf(defaultStr.c_str(), "%f,%f,%f", &pf[0], &pf[1], &pf[2]);
+                        break;
+                    case Con_Color4:
+                    case Con_Float4:
+                    case Con_Angle4:
+                        sscanf(defaultStr.c_str(), "%f,%f,%f,%f", &pf[0], &pf[1], &pf[2], &pf[3]);
+                        break;
+                    case Con_Enum:
+                    case Con_Int:
+                        sscanf(defaultStr.c_str(), "%d", &pi[0]);
+                        break;
+                    case Con_Int2:
+                        sscanf(defaultStr.c_str(), "%d,%d", &pi[0], &pi[1]);
+                        break;
+                    case Con_Ramp:
+                        iv2[0] = ImVec2(0, 0);
+                        iv2[1] = ImVec2(1, 1);
+                        break;
+                    case Con_Ramp4:
+                        iv4[0] = ImVec4(0, 0, 0, 0);
+                        iv4[1] = ImVec4(1, 1, 1, 1);
+                        break;
+                    case Con_Structure:
+                    case Con_FilenameRead:
+                    case Con_FilenameWrite:
+                    case Con_ForceEvaluate:
+                    case Con_Camera:
+                        cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
+                        cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
+                        break;
+                    case Con_Bool:
+                        pi[0] = (defaultStr == "true")?1:0;
+                        break;
+                    }
+                }
+
                 curNode.mParams.emplace_back(metaParam);
             }
         }

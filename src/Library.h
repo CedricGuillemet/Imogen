@@ -450,7 +450,7 @@ struct MetaParameter
     bool mbQuadSelect;
     bool mbLoop;
     std::string mEnumList;
-
+    std::vector<unsigned char> mDefaultValue;
     bool operator == (const MetaParameter& other) const
     {
         if (mName != other.mName)

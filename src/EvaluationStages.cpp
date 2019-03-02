@@ -272,43 +272,11 @@ void EvaluationStages::InitDefaultParameters(EvaluationStage& stage)
     int i = 0;
     for (const MetaParameter& param : currentMeta.mParams)
     {
-        if (!_stricmp(param.mName.c_str(), "scale"))
+        if (!param.mDefaultValue.empty())
         {
-            float* pf = (float*)paramBuffer;
-            switch (param.mType)
-            {
-            case Con_Float:
-                pf[0] = 1.f;
-                break;
-            case Con_Float2:
-                pf[1] = pf[0] = 1.f;
-                break;
-            case Con_Float3:
-                pf[2] = pf[1] = pf[0] = 1.f;
-                break;
-            case Con_Float4:
-                pf[3] = pf[2] = pf[1] = pf[0] = 1.f;
-                break;
-            }
+            memcpy(paramBuffer, param.mDefaultValue.data(), param.mDefaultValue.size());
         }
-        switch (param.mType)
-        {
-        case Con_Ramp:
-            ((ImVec2*)paramBuffer)[0] = ImVec2(0, 0);
-            ((ImVec2*)paramBuffer)[1] = ImVec2(1, 1);
-            break;
-        case Con_Ramp4:
-            ((ImVec4*)paramBuffer)[0] = ImVec4(0, 0, 0, 0);
-            ((ImVec4*)paramBuffer)[1] = ImVec4(1, 1, 1, 1);
-            break;
-        case Con_Camera:
-        {
-            Camera *cam = (Camera*)paramBuffer;
-            cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
-            cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
-        }
-        break;
-        }
+
         paramBuffer += GetParameterTypeSize(param.mType);
     }
 }

@@ -1,7 +1,31 @@
 layout (std140) uniform PaletteBlock
 {
 	int paletteIndex;
+	float ditherStrength;
 } PaletteParam;
+
+float find_closest(int x, int y, float c0)
+{
+	int dither[8][8] = {
+		{ 0, 32, 8, 40, 2, 34, 10, 42}, /* 8x8 Bayer ordered dithering */
+		{48, 16, 56, 24, 50, 18, 58, 26}, /* pattern. Each input pixel */
+		{12, 44, 4, 36, 14, 46, 6, 38}, /* is scaled to the 0..63 range */
+		{60, 28, 52, 20, 62, 30, 54, 22}, /* before looking in this table */
+		{ 3, 35, 11, 43, 1, 33, 9, 41}, /* to determine the action. */
+		{51, 19, 59, 27, 49, 17, 57, 25},
+		{15, 47, 7, 39, 13, 45, 5, 37},
+		{63, 31, 55, 23, 61, 29, 53, 21} }; 
+
+	float limit = 0.0;
+	if(x < 8)
+	{
+		limit = (dither[x][y]+1)/64.0;
+	}
+
+	if(c0 < limit)
+		return 0.0;
+	return 1.0;
+}
 
 vec4 hex(int u_color)
 {
@@ -167,6 +191,19 @@ vec4 GetC64(vec4 original)
 vec4 Palette()
 {
 	vec4 color = texture(Sampler0, vUV);
+
+	vec3 rgb = color.rgb;
+	vec2 xy = gl_FragCoord.xy;
+	int x = int(mod(xy.x, 8));
+	int y = int(mod(xy.y, 8));
+
+	vec3 ditheredRGB;
+	ditheredRGB.r = find_closest(x, y, rgb.r);
+	ditheredRGB.g = find_closest(x, y, rgb.g);
+	ditheredRGB.b = find_closest(x, y, rgb.b);
+	float r = 0.25;
+	color = vec4(mix(color.rgb, ditheredRGB, PaletteParam.ditherStrength), 1.0);
+	
 
 	if (PaletteParam.paletteIndex < 6)
 		return GetCGA(color, PaletteParam.paletteIndex);

@@ -117,6 +117,9 @@ void MakeThreadContext()
 
 int main(int, char**)
 {
+    // locale for sscanf
+    setlocale(LC_ALL, "C");
+
     TagTime("App start");
     // log
     GLSLPathTracer::Log = Log;

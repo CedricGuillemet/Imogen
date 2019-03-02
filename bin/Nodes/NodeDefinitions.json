@@ -13,7 +13,8 @@
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
 			"rangeMinY": 0.0,
-			"rangeMaxY": 0.0
+			"rangeMaxY": 0.0,
+			"default": "0.25"
 		}, {
 			"name": "T",
 			"type": "Float"
@@ -41,7 +42,8 @@
 			"loop": false
 		}, {
 			"name": "Scale",
-			"type": "Float2"
+			"type": "Float2",
+			"default": "1.0,1.0"
 		}, {
 			"name": "Rotation",
 			"type": "Angle"
@@ -130,7 +132,8 @@
 		}],
 		"parameters": [{
 			"name": "scale",
-			"type": "Float"
+			"type": "Float",
+			"default": "1.0"
 		}]
 	}, {
 		"name": "Blur",
@@ -297,7 +300,8 @@
 		}],
 		"parameters": [{
 			"name": "Ramp",
-			"type": "Ramp"
+			"type": "Ramp",
+			"default": ""
 		}]
 	}, {
 		"name": "Tile",
@@ -325,7 +329,8 @@
 			"type": "Float2"
 		}, {
 			"name": "Scale",
-			"type": "Float"
+			"type": "Float",
+			"default": "1.0"
 		}]
 	}, {
 		"name": "Color",
@@ -745,7 +750,8 @@
 		}],
 		"parameters": [{
 			"name": "Gradient",
-			"type": "Ramp4"
+			"type": "Ramp4",
+			"default": ""
 		}]
 	}, {
 		"name": "Warp",
@@ -793,7 +799,8 @@
 		}],
 		"parameters": [{
 			"name": "Camera",
-			"type": "Camera"
+			"type": "Camera",
+			"default":""
 		}]
 	}, {
 		"name": "AO",
@@ -856,7 +863,8 @@
 		}],
 		"parameters": [{
 			"name": "Camera",
-			"type": "Camera"
+			"type": "Camera",
+			"default": ""
 		}]
 	}, {
 		"name": "FurIntegrator",
@@ -915,7 +923,8 @@
 			"enum": "Tiled|Progressive|"
 			}, {
 			"name" : "Camera",
-			"type": "Camera"
+			"type": "Camera",
+			"default": ""
 		}]
 	}, {
 		"name": "EdgeDetect",
@@ -998,6 +1007,10 @@
 			"name": "Palette",
 			"type": "Enum",
 			"enum": "CGA 0|CGA 1|CGA 2|CGA 3|CGA 4|CGA 5|EGA|Gameboy (mono)|PICO-8|C64|"
+		},
+		{
+			"name": "Dither Strength",
+			"type": "Float"
 		}]
 	},
 	{

@@ -237,10 +237,12 @@
 		}],
 		"parameters": [{
 			"name": "A",
-			"type": "Float4"
+			"type": "Float4",
+			"default":"1.0,1.0,1.0,1.0"
 		}, {
 			"name": "B",
-			"type": "Float4"
+			"type": "Float4",
+			"default":"1.0,1.0,1.0,1.0"
 		}, {
 			"name": "Operation",
 			"type": "Enum",
@@ -980,7 +982,8 @@
 		}],
 		"parameters": [{
 			"name": "Center",
-			"type": "Float2"
+			"type": "Float2",
+			"default":"0.5,0.5"
 		},{
 			"name": "Start Angle",
 			"type": "Angle"

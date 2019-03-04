@@ -32,7 +32,7 @@
 #include "UI.h"
 #include "Utils.h"
 
-NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024)
+NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 256, 256)
 {
     mCategoriesCount = 10;
     static const char *categories[] = {
@@ -92,12 +92,12 @@ void NodeGraphControler::UserAddNode(size_t type)
 
 void NodeGraphControler::UserDeleteNode(size_t index)
 {
-    {
+    /*{
         URDel<EvaluationStage> undoRedoDelNode(int(index), [&]() {return &mEvaluationStages.mStages; },
             [](int) {}, [&](int index) {NodeIsAdded(index); });
 
-        mEvaluationStages.mStages.erase(mEvaluationStages.mStages.begin() + index);
-    }
+        //mEvaluationStages.mStages.erase(mEvaluationStages.mStages.begin() + index);
+    }*/
     mEvaluationStages.RemoveAnimation(index);
     mEvaluationStages.RemovePins(index);
     mEditingContext.UserDeleteStage(index);

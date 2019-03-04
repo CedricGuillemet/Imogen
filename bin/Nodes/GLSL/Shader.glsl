@@ -24,14 +24,15 @@ layout (std140) uniform EvaluationBlock
 	mat4 viewRot;
 	mat4 viewProjection;
 	mat4 viewInverse;
+	vec4 viewport;
+	
 	int targetIndex;
 	int forcedDirty;
 	int	uiPass;
-	int padding;
+	int passNumber;
 	vec4 mouse; // x,y, lbut down, rbut down
 	ivec4 inputIndices[2];
 	
-	vec2 viewport;
 	int frame;
 	int localFrame;
 } EvaluationParam;

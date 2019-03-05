@@ -90,9 +90,25 @@ protected:
     void LibraryEdit(Library& library);
     void ClearAll();
     void UpdateNewlySelectedGraph();
+    void ShowTimeLine();
+    void ShowNodeGraph();
+
+    static void ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line_start);
+    static void WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
+    static void* ReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name);
 
     MySequence *mSequence;
     NodeGraphControler *mNodeGraphControler;
+
+    bool mbShowTimeline = false;
+    bool mbShowLibrary = false;
+    bool mbShowNodes = false;
+    bool mbShowShaders = false;
+    bool mbShowLog = false;
+    bool mbShowParameters = false;
+    int mLibraryViewMode = 1;
+
+    static Imogen *instance;
 };
 
 

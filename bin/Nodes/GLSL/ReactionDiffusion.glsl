@@ -1,58 +1,62 @@
+// adapted from https://www.shadertoy.com/view/4sccRj
 layout (std140) uniform ReactionDiffusionBlock
 {
-	vec2 difRate;
-	vec2 feedKill;
+	float boost;
+	float divisor;
+	float colorStep;
 	int PassCount;
 };
 
-vec4 getSample(vec2 uv, vec2 offset)
+vec4 getSample(vec2 offset)
 {
-	return texture(Sampler0, uv + offset / vec2(1024.));
+	return vec4(texture(Sampler0, (gl_FragCoord.xy + offset) / EvaluationParam.viewport.xy).xyz, 1.0);
 }
+
+vec4 T(float u, float v)
+{
+	return getSample(vec2(u,v));
+}
+
+float f(float i)
+{
+    return exp(-i*i/4.)/sqrt(4.*PI);
+}
+
+#define F(i) (f(i))
+
+#define GH(i) T(i, 0)*F(float(i))
+#define GV(i) T(0, i)*F(float(i))
+#define BLURH (GH(-4) + GH(-3) + GH(-2) + GH(-1) + GH(0) + GH(1) + GH(2) + GH(3) + GH(4))
+#define BLURV (GV(-4) + GV(-3) + GV(-2) + GV(-1) + GV(0) + GV(1) + GV(2) + GV(3) + GV(4))
 
 vec4 pass(vec2 uv)
 {
-    vec4 current = texture(Sampler0, uv);
-    
-    vec4 laplacian = current * -1.;
-    
-    laplacian += (   getSample(uv, vec2( 1., 0.) )
-               + getSample(uv, vec2(-1., 0.) )
-               + getSample(uv, vec2( 0., 1.) )
-               + getSample(uv, vec2( 0.,-1.) )
-             ) * .2;
-
-    laplacian += (
-        getSample(uv, vec2( 1., 1.) ) +
-        getSample(uv, vec2( 1.,-1.) ) +
-        getSample(uv, vec2(-1., 1.) ) +
-        getSample(uv, vec2(-1.,-1.) ) 
-       )*.05;
-    
-    
-    float feed = 0.055;//feedKill.x;
-    float kill = 0.062;//feedKill.y;
-	float da = 1.;
-	float db = 0.5;
-	
-	float a = current.x;
-	float b = current.y;
-	
-    float ap = a + (da * laplacian.x - a * b * b + feed * (1. - a));
-    float bp = b + (db * laplacian.y + a * b * b - (kill + feed) * b);
-    
-    //ap = clamp(ap,0.,1.);
-    //bp = clamp(bp,0.,1.);
-    
-	//float spawn = texture(Sampler1, uv).y;
-	
-	//bp = max(bp, spawn);
-	bp += (length(uv-vec2(0.5))<0.1)?0.01:0.0;
-	
-	return vec4(ap, bp, 0., 1.);
+	vec4 col = T(-1, -1)*0.05 + T( 0, -1)*0.20 + T( 1, -1)*0.05 +
+               T(-1,  0)*0.20 - T( 0,  0)*1.00 + T( 1,  0)*0.20 +
+               T(-1,  1)*0.05 + T( 0,  1)*0.20 + T( 1,  1)*0.05;
+    col /= 8.0;
+    col = T(0, 0) - col*50.0;
+    col -= 0.5;
+    col = col*boost;
+    col = smoothstep(vec4(-0.5), vec4(0.5), col);
+    col = mix(col, vec4(length(col.xyz)/sqrt(divisor)), colorStep);
+	return col;
 }
 	
 vec4 ReactionDiffusion()
 {
+	int ip = EvaluationParam.passNumber%3;
+	if (ip == 0)
+	{
+		vec4 col = BLURH;
+		col /= col.w;
+		return col;
+	}
+	if (ip == 1)
+	{
+		vec4 col = BLURV;
+		col /= col.w;
+		return col;
+	}
 	return pass(vUV);
 }

@@ -237,10 +237,12 @@
 		}],
 		"parameters": [{
 			"name": "A",
-			"type": "Float4"
+			"type": "Float4",
+			"default":"1.0,1.0,1.0,1.0"
 		}, {
 			"name": "B",
-			"type": "Float4"
+			"type": "Float4",
+			"default":"1.0,1.0,1.0,1.0"
 		}, {
 			"name": "Operation",
 			"type": "Enum",
@@ -374,7 +376,13 @@
 		}],
 		"parameters": [{
 			"name": "Translation",
-			"type": "Float2"
+			"type": "Float2",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false
 		},{
 			"name": "Size",
 			"type": "Float"
@@ -980,7 +988,8 @@
 		}],
 		"parameters": [{
 			"name": "Center",
-			"type": "Float2"
+			"type": "Float2",
+			"default":"0.5,0.5"
 		},{
 			"name": "Start Angle",
 			"type": "Angle"
@@ -1020,10 +1029,6 @@
 		"inputs": [{
 			"name": "",
 			"type": "Float4"
-		},
-		{
-			"name": "Spawn",
-			"type": "Float4"
 		}],
 		"outputs": [{
 			"name": "",
@@ -1031,14 +1036,21 @@
 		}],
 		"parameters": [
 			{
-			"name": "difRate",
-			"type": "Float2"
+			"name": "boost",
+			"type": "Float",
+			"default":"0.7"
 		},{
-			"name": "feedKill",
-			"type": "Float2"
+			"name": "divisor",
+			"type": "Float",
+			"default":"3.0"
+		},{
+			"name": "colorStep",
+			"type": "Float",
+			"default":"0.01"
 		},{
 			"name": "passCount",
-			"type": "Int"
+			"type": "Int",
+			"default":"1002"
 		}]
 	}
 	]

@@ -67,6 +67,7 @@ struct EvaluationInfo
     float viewRot[16];
     float viewProjection[16];
     float viewInverse[16];
+    float viewport[4];
 
     int targetIndex;
     int forcedDirty;
@@ -75,8 +76,7 @@ struct EvaluationInfo
     float mouse[4];
     int inputIndices[8];
     float pad2[4];
-    
-    float viewport[2];
+
     int mFrame;
     int mLocalFrame;
 };

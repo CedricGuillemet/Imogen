@@ -371,6 +371,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
             memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
             memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
+            evaluationInfo.viewport[0] = float(tgt->mImage.mWidth);
+            evaluationInfo.viewport[1] = float(tgt->mImage.mHeight);
             evaluationInfo.passNumber = passNumber;
 
             glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
@@ -430,7 +432,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             }
             // swap target for multipass
             // set previous target as source
-            if (passCount > 1)
+            if (passCount > 1 && passNumber != (passCount-1) )
             {
                 transientTarget->Swap(*tgt);
             }

@@ -20,6 +20,7 @@ typedef struct Evaluation_t
 	float inv_view_rot[16];
 	float viewProjection[16];
 	float viewInverse[16];
+	float viewport[4];
 	
 	int targetIndex;
 	int forcedDirty;
@@ -28,7 +29,6 @@ typedef struct Evaluation_t
 	float mouse[4];
 	int inputIndices[8];	
 	
-	float viewport[2];
 	int frame;
 	int localFrame;
 } Evaluation;

@@ -5,6 +5,7 @@ layout (std140) uniform ReactionDiffusionBlock
 	float divisor;
 	float colorStep;
 	int PassCount;
+	int size;
 };
 
 vec4 getSample(vec2 offset)

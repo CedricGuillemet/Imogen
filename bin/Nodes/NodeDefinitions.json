@@ -1051,6 +1051,10 @@
 			"name": "passCount",
 			"type": "Int",
 			"default":"1002"
+		},{
+			"name": "Size",
+			"type": "Enum",
+			"enum": "  256|  512| 1024| 2048| 4096|"
 		}]
 	}
 	]

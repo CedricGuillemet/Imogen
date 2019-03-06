@@ -204,6 +204,10 @@ int main(int, char**)
         return 1;
     }
 
+    // Setup Dear ImGui binding
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
     NodeGraphControler nodeGraphControler;
     Imogen imogen(&nodeGraphControler);
 
@@ -227,9 +231,7 @@ int main(int, char**)
     }
     TagTime("OpenCL Init");
 
-    // Setup Dear ImGui binding
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
+
 
     ImGuiIO& io = ImGui::GetIO();
 
@@ -288,6 +290,8 @@ int main(int, char**)
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
                 done = true;
         }
+        if (io.KeyCtrl && ImGui::IsKeyPressed(SDL_SCANCODE_L))
+            NodeGraphLayout();
         // undo/redo
         if (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Z))
             gUndoRedoHandler.Undo();

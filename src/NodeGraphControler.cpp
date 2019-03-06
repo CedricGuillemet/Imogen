@@ -32,7 +32,7 @@
 #include "UI.h"
 #include "Utils.h"
 
-NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 256, 256)
+NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024)
 {
     mCategoriesCount = 10;
     static const char *categories[] = {

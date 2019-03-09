@@ -1,6 +1,27 @@
 -------------------------------------------------------------------------------
 Imogen - 0.10 codename Wolf Nachi
 
+New:
+- Threaded evaluation system for exports
+- Reaction Diffusion node
+- Kaleidoscope (symetry/mirror) node
+- Palette node (c64, pico-8, CGA ...) with optional dithering
+- Show/hide windows
+- Main menu accessible by the top left button
+- New header
+- Auto layout nodes
+- Default node parameter values can be defined in the node definition JSON
+- Multipass nodes
+- Pinned parameters and node previews are visible when no node is selected
+
+Fixed:
+- Better Tile node
+- Fixed mouse interaction with Transform node
+- Fixed undo/redo 
+- Fix Nan in node graph editor when window loses focus
+- Fix node creation position when zoom is different of 1
+- Click to close context menu in node graph editor
+
 -------------------------------------------------------------------------------
 Imogen 0.9 - codename Hydra Ichi
 

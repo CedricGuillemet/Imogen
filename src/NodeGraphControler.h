@@ -86,6 +86,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
     EvaluationStages mEvaluationStages;
     std::vector<EvaluationStage> mStagesClipboard;
     bool mbMouseDragging;
+    URChange<std::vector<unsigned char> > *mUndoRedoParamSetMouse;
 
     EvaluationStage* Get(ASyncId id) { return GetByAsyncId(id, mEvaluationStages.mStages); }
     void NodeEdit();

@@ -32,7 +32,7 @@
 #include "UI.h"
 #include "Utils.h"
 
-NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024)
+NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
 {
     mCategoriesCount = 10;
     static const char *categories[] = {
@@ -86,18 +86,12 @@ void NodeGraphControler::UserAddNode(size_t type)
         [](int) {}, [&](int index) { NodeIsAdded(index); });
 
     mEditingContext.UserAddStage();
-    //mEvaluationStages.UserAddEvaluation(type);
     AddSingleNode(type);
 }
 
 void NodeGraphControler::UserDeleteNode(size_t index)
 {
-    /*{
-        URDel<EvaluationStage> undoRedoDelNode(int(index), [&]() {return &mEvaluationStages.mStages; },
-            [](int) {}, [&](int index) {NodeIsAdded(index); });
-
-        //mEvaluationStages.mStages.erase(mEvaluationStages.mStages.begin() + index);
-    }*/
+    URDummy urdummy;
     mEvaluationStages.RemoveAnimation(index);
     mEvaluationStages.RemovePins(index);
     mEditingContext.UserDeleteStage(index);
@@ -497,6 +491,17 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     if (!lButDown)
         mbMouseDragging = false;
 
+    if ((!lButDown && !rButDown) && mUndoRedoParamSetMouse)
+    {
+        delete mUndoRedoParamSetMouse;
+        mUndoRedoParamSetMouse = nullptr;
+    }
+    if ((lButDown || rButDown) && !mUndoRedoParamSetMouse)
+    {
+        mUndoRedoParamSetMouse = new URChange<std::vector<unsigned char> > (mSelectedNodeIndex
+            , [&](int index) { return &mEvaluationStages.mStages[index].mParameters; }
+        , [&](int index) {UpdateDirtyParameter(index); });
+    }
     const MetaNode* metaNodes = gMetaNodes.data();
     size_t res = 0;
     const MetaNode& metaNode = metaNodes[mEvaluationStages.mStages[mSelectedNodeIndex].mType];

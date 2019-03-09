@@ -446,7 +446,7 @@ static void DeleteSelectedNodes(NodeGraphControlerBase *controler)
         if (!nodes[selection].mbSelected)
             continue;
         URDel<Node> undoRedoDelNode(int(selection), []() {return &nodes; }
-            , [&controler](int index) {
+            , [controler](int index) {
             // recompute link indices
             for (int id = 0; id < links.size(); id++)
             {
@@ -458,7 +458,7 @@ static void DeleteSelectedNodes(NodeGraphControlerBase *controler)
             NodeGraphUpdateEvaluationOrder(controler);
             controler->mSelectedNodeIndex = -1;
         }
-            , [&controler](int index) {
+            , [controler](int index) {
             // recompute link indices
             for (int id = 0; id < links.size(); id++)
             {
@@ -485,12 +485,12 @@ static void DeleteSelectedNodes(NodeGraphControlerBase *controler)
             if (link.InputIdx == selection || link.OutputIdx == selection)
             {
                 URDel<NodeLink> undoRedoDelNodeLink(int(i), []() {return &links; }
-                    , [&controler](int index)
+                    , [controler](int index)
                 {
                     NodeLink& link = links[index];
                     controler->DelLink(link.OutputIdx, link.OutputSlot);
                 }
-                    , [&controler](int index)
+                    , [controler](int index)
                 {
                     NodeLink& link = links[index];
                     controler->AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);

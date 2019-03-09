@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -28,15 +28,17 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <functional>
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "Library.h"
 
-struct TileNodeEditGraphDelegate;
+struct NodeGraphControler;
 struct Evaluation;
 class TextEditor;
 struct Library;
-
+struct Builder;
+struct MySequence;
 
 enum EVALUATOR_TYPE
 {
@@ -59,49 +61,58 @@ struct RegisteredPlugin
     std::string mName;
     std::string mPythonCommand;
 };
+extern std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 struct Imogen
 {
-    Imogen();
+    Imogen(NodeGraphControler *nodeGraphControler);
     ~Imogen();
 
     void Init();
     void Finish();
     
-    void Show(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
-    void ValidateCurrentMaterial(Library& library, TileNodeEditGraphDelegate &nodeGraphDelegate);
+    void Show(Builder *builder, Library& library);
+    void ValidateCurrentMaterial(Library& library);
     void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
-    std::vector<RegisteredPlugin> mRegisteredPlugins;
+    
     int GetCurrentMaterialIndex();
+    void SetExistingMaterialActive(int materialIndex);
+    void SetExistingMaterialActive(const char * materialName);
+    void DecodeThumbnailAsync(Material * material);
 
+    static void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI = false);
 protected:
-    void HandleEditor(TextEditor &editor, TileNodeEditGraphDelegate &nodeGraphDelegate, Evaluation& evaluation);
+    void HandleEditor(TextEditor &editor);
     void ShowAppMainMenuBar();
-};
-extern Imogen imogen;
+    void ShowTitleBar(Builder *builder);
+    void LibraryEdit(Library& library);
+    void ClearAll();
+    void UpdateNewlySelectedGraph();
+    void ShowTimeLine();
+    void ShowNodeGraph();
 
-void DebugLogText(const char *szText);
-enum CallbackDisplayType
-{
-    CBUI_Node,
-    CBUI_Progress,
-    CBUI_Cubemap
+    static void ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line_start);
+    static void WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
+    static void* ReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name);
+
+    MySequence *mSequence;
+    NodeGraphControler *mNodeGraphControler;
+
+    bool mbShowTimeline = false;
+    bool mbShowLibrary = false;
+    bool mbShowNodes = false;
+    bool mbShowShaders = false;
+    bool mbShowLog = false;
+    bool mbShowParameters = false;
+    int mLibraryViewMode = 1;
+
+    static Imogen *instance;
 };
-struct ImogenDrawCallback
-{
-    CallbackDisplayType mType;
-    ImRect mClippedRect;
-    ImRect mOrginalRect;
-    size_t mNodeIndex;
-};
-extern std::vector<ImogenDrawCallback> mCallbackRects;
-void InitCallbackRects();
-size_t AddNodeUICallbackRect(CallbackDisplayType type, const ImRect& rect, size_t nodeIndex);
+
+
 extern int gEvaluationTime;
-void SetExistingMaterialActive(int materialIndex);
-void SetExistingMaterialActive(const char * materialName);
 
 struct UndoRedo
 {
@@ -214,7 +225,7 @@ inline UndoRedo::~UndoRedo()
 
 template<typename T> struct URChange : public UndoRedo
 {
-    URChange(int index, T* (*GetElements)(int index), void(*Changed)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), Changed(Changed)
+    URChange(int index, std::function<T*(int index)> GetElements, std::function<void(int index)> Changed = [](int index) {}) : GetElements(GetElements), mIndex(index), Changed(Changed)
     {
         if (gUndoRedoHandler.mbProcessing)
             return;
@@ -253,8 +264,8 @@ template<typename T> struct URChange : public UndoRedo
     T mPostDo;
     int mIndex;
 
-    T* (*GetElements)(int index);
-    void(*Changed)(int index);
+    std::function<T*(int index)> GetElements;
+    std::function<void(int index)> Changed;
 };
 
 
@@ -285,7 +296,8 @@ struct URDummy : public UndoRedo
 
 template<typename T> struct URDel : public UndoRedo
 {
-    URDel(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index) = [](int index) {}, void(*OnNew)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+    URDel(int index, std::function<std::vector<T>* ()> GetElements, std::function<void(int index)> OnDelete = [](int index) {}, std::function<void(int index)> OnNew = [](int index) {}) :
+        GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
     {
         if (gUndoRedoHandler.mbProcessing)
             return;
@@ -315,14 +327,15 @@ template<typename T> struct URDel : public UndoRedo
     T mDeletedElement;
     int mIndex;
 
-    std::vector<T>* (*GetElements)();
-    void(*OnDelete)(int index);
-    void(*OnNew)(int index);
+    std::function<std::vector<T>* ()> GetElements;
+    std::function<void(int index)> OnDelete;
+    std::function<void(int index)> OnNew;
 };
 
 template<typename T> struct URAdd : public UndoRedo
 {
-    URAdd(int index, std::vector<T>* (*GetElements)(), void(*OnDelete)(int index)  = [](int index) {}, void(*OnNew)(int index) = [](int index) {}) : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+    URAdd(int index, std::function<std::vector<T>* ()> GetElements, std::function<void(int index)> OnDelete = [](int index) {}, std::function<void(int index)> OnNew = [](int index) {}) :
+        GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
     {
     }
     virtual ~URAdd()
@@ -350,7 +363,7 @@ template<typename T> struct URAdd : public UndoRedo
     T mAddedElement;
     int mIndex;
 
-    std::vector<T>* (*GetElements)();
-    void(*OnDelete)(int index);
-    void(*OnNew)(int index);
+    std::function<std::vector<T>* ()> GetElements;
+    std::function<void(int index)> OnDelete;
+    std::function<void(int index)> OnNew;
 };

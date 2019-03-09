@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -576,6 +576,17 @@ size_t GetMetaNodeIndex(const std::string& metaNodeName)
     return iter->second;
 }
 
+size_t ComputeNodeParametersSize(size_t nodeType)
+{
+    size_t res = 0;
+    for (auto& param : gMetaNodes[nodeType].mParams)
+    {
+        res += GetParameterTypeSize(param.mType);
+    }
+    return res;
+}
+
+
 void LoadMetaNodes(const std::vector<std::string>& metaNodeFilenames)
 {
     static const uint32_t hcTransform = IM_COL32(200, 200, 200, 255);
@@ -585,390 +596,6 @@ void LoadMetaNodes(const std::vector<std::string>& metaNodeFilenames)
     static const uint32_t hcFilter = IM_COL32(200, 200, 150, 255);
     static const uint32_t hcNoise = IM_COL32(150, 250, 150, 255);
     static const uint32_t hcPaint = IM_COL32(100, 250, 180, 255);
-
-#if 0
-    gMetaNodes = {
-
-        {
-            "Circle", hcGenerator, 1
-            ,{ }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Radius", Con_Float, -.5f,0.5f,0.f,0.f },{ "T", Con_Float } }
-        }
-        ,
-        {
-            "Transform", hcTransform, 0
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Translate", Con_Float2, 1.f,0.f,1.f,0.f, true },{ "Scale", Con_Float2 },{ "Rotation", Con_Angle } }
-        }
-        ,
-        {
-            "Square", hcGenerator, 1
-            ,{ {} }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Width", Con_Float, -.5f,0.5f,0.f,0.f } }
-        }
-        ,
-        {
-            "Checker", hcGenerator, 1
-            ,{ {} }
-        ,{ { "", Con_Float4 } }
-        ,{}
-        }
-        ,
-        {
-            "Sine", hcGenerator, 1
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Frequency", Con_Float },{ "Angle", Con_Angle } }
-        }
-
-        ,
-        {
-            "SmoothStep", hcFilter, 4
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Low", Con_Float },{ "High", Con_Float } }
-        }
-
-        ,
-        {
-            "Pixelize", hcTransform, 0
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "scale", Con_Float } }
-        }
-
-        ,
-        {
-            "Blur", hcFilter, 4
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "angle", Con_Float },{ "strength", Con_Float } }
-        }
-
-        ,
-        {
-            "NormalMap", hcFilter, 4
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "spread", Con_Float } }
-        }
-
-        ,
-        {
-            "LambertMaterial", hcMaterial, 2
-            ,{ { "Diffuse", Con_Float4 },{ "Equirect sky", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f } }
-        }
-
-        ,
-        {
-            "MADD", hcBlend, 3
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Mul Color", Con_Color4 },{ "Add Color", Con_Color4 } }
-        }
-
-        ,
-        {
-            "Hexagon", hcGenerator, 1
-            ,{}
-        ,{ { "", Con_Float4 } }
-        ,{}
-        }
-
-        ,
-        {
-            "Blend", hcBlend, 3
-            ,{ { "", Con_Float4 },{ "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "A", Con_Float4 },{ "B", Con_Float4 },{ "Operation", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Add|Multiply|Darken|Lighten|Average|Screen|Color Burn|Color Dodge|Soft Light|Subtract|Difference|Inverse Difference|Exclusion|" } }
-        }
-
-        ,
-        {
-            "Invert", hcFilter, 4
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{}
-        }
-
-        ,
-        {
-            "CircleSplatter", hcGenerator, 1
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Distance", Con_Float2 },{ "Radius", Con_Float2 },{ "Angle", Con_Angle2 },{ "Count", Con_Float } }
-        }
-
-        ,
-        {
-            "Ramp", hcFilter, 4
-            ,{ { "", Con_Float4 },{ "Gradient", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Ramp", Con_Ramp } }
-        }
-
-        ,
-        {
-            "Tile", hcTransform, 0
-            ,{ { "", Con_Float4 }, { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Offset 0", Con_Float2 },{ "Offset 1", Con_Float2 },{ "Overlap", Con_Float2 },{ "Scale", Con_Float } }
-        }
-
-        ,
-        {
-            "Color", hcGenerator, -1
-            ,{}
-        ,{ { "", Con_Float4 } }
-        ,{ { "Color", Con_Color4 } }
-        }
-
-
-        ,
-        {
-            "NormalMapBlending", hcBlend, 3
-            ,{ { "", Con_Float4 },{ "", Con_Float4 } }
-        ,{ { "Out", Con_Float4 } }
-        ,{ { "Technique", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "RNM|Partial Derivatives|Whiteout|UDN|Unity|Linear|Overlay|" } }
-        }
-
-        ,
-        {
-            "iqnoise", hcNoise, 5
-            ,{}
-        ,{ { "", Con_Float4 } }
-        ,{ { "Size", Con_Float },{ "U", Con_Float},{ "V", Con_Float} }
-        }
-
-        ,
-        {
-            "PBR", hcMaterial, 2
-            ,{ { "Diffuse", Con_Float4 },{ "Normal", Con_Float4 },{ "Roughness", Con_Float4 },{ "Displacement", Con_Float4 },{ "Cubemap", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "View", Con_Float2, 1.f,0.f,0.f,1.f, true }, { "Displacement Factor", Con_Float },{ "Geometry", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Door knob|Sphere|Cube|Plane|Cylinder|" } }
-        }
-
-        ,
-
-        {
-            "PolarCoords", hcTransform, 0
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Type", Con_Enum, 0.f,0.f,0.f,0.f,false, false, "Linear to polar|Polar to linear|" } }
-        }
-
-        ,
-        {
-            "Clamp", hcFilter, 4
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Min", Con_Float4 },{ "Max", Con_Float4 } }
-        }
-
-        ,
-        {
-            "ImageRead", hcFilter, 6
-            ,{}
-        ,{ { "", Con_Float4 } }
-        ,{ { "File name", Con_FilenameRead }
-        ,{ "+X File name", Con_FilenameRead }
-        ,{ "-X File name", Con_FilenameRead }
-        ,{ "+Y File name", Con_FilenameRead }
-        ,{ "-Y File name", Con_FilenameRead }
-        ,{ "+Z File name", Con_FilenameRead }
-        ,{ "-Z File name", Con_FilenameRead } }
-        }
-
-        ,
-        {
-            "ImageWrite", hcFilter, 6
-            ,{ { "", Con_Float4 } }
-        ,{}
-        ,{ { "File name", Con_FilenameWrite },{ "Format", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "JPEG|PNG|TGA|BMP|HDR|DDS|KTX|MP4|" }
-        ,{ "Quality", Con_Enum, 0.f,0.f,0.f,0.f, false, false, " 0 .. Best| 1| 2| 3| 4| 5 .. Medium| 6| 7| 8| 9 .. Lowest|" }
-        ,{ "Width", Con_Int }
-        ,{ "Height", Con_Int }
-        ,{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Free|Keep ratio on Y|Keep ratio on X|"}
-        ,{ "Export", Con_ForceEvaluate } }
-        }
-
-        ,
-        {
-            "Thumbnail", hcFilter, 6
-            ,{ { "", Con_Float4 } }
-        ,{}
-        ,{ { "Make", Con_ForceEvaluate } }
-        }
-
-        ,
-        {
-            "Paint2D", hcPaint, 7
-            ,{ { "Brush", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256|  512| 1024| 2048| 4096|" } }
-        , true
-        , true
-        }
-        ,
-        {
-            "Swirl", hcTransform, 0
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Angles", Con_Angle2 } }
-        }
-        ,
-        {
-            "Crop", hcTransform, 0
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Quad", Con_Float4, 0.f,1.f,0.f,1.f, false, true } }
-        , true
-        }
-
-        ,
-        {
-            "CubemapFilter", hcFilter, 8
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "Lighting Model", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Phong|Phong BRDF|Blinn|Blinn BRDF|" }
-        ,{ "Exclude Base", Con_Bool }
-        ,{ "Gloss scale", Con_Int }
-        ,{ "Gloss bias", Con_Int }
-        ,{ "Face size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "   32|   64|  128|  256|  512| 1024|" }
-        }
-        }
-
-        ,
-        {
-            "PhysicalSky", hcGenerator, 8
-            ,{}
-        ,{ { "", Con_Float4 } }
-        ,{ { "ambient", Con_Float4 }
-, { "lightdir", Con_Float4 }
-, { "Kr", Con_Float4 }
-, { "rayleigh brightness", Con_Float }
-, { "mie brightness", Con_Float }
-, { "spot brightness", Con_Float }
-, { "scatter strength", Con_Float }
-, { "rayleigh strength", Con_Float }
-, { "mie strength" , Con_Float }
-, { "rayleigh collection power", Con_Float }
-, { "mie collection power", Con_Float }
-, { "mie distribution", Con_Float }
-, { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256|  512| 1024| 2048| 4096|" }
-            }
-        }
-
-
-        ,
-        {
-            "CubemapView", hcGenerator, 8
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ { "view", Con_Float2, 1.f,0.f,0.f,1.f, true },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Projection|Isometric|Cross|Camera|" } }
-        }
-
-            ,
-            {
-                "EquirectConverter", hcGenerator, 8
-                ,{ { "", Con_Float4 } }
-            ,{ { "", Con_Float4 } }
-            ,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Equirect To Cubemap|Cubemap To Equirect|" },
-                { "Size", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "  256|  512| 1024| 2048| 4096|" } }
-            }
-            ,
-            {
-                "NGon", hcGenerator, 1
-                ,{  }
-            ,{ { "", Con_Float4 } }
-            ,{ {"Sides", Con_Int}, { "Radius", Con_Float, -.5f,0.5f,0.f,0.f },{ "T", Con_Float } }
-            }
-
-            ,
-            {
-                "GradientBuilder", hcGenerator, 1
-                ,{  }
-            ,{ { "", Con_Float4 } }
-            ,{ { "Gradient", Con_Ramp4 } }
-            }
-
-            ,
-            {
-                "Warp", hcTransform, 0
-                ,{ { "", Con_Float4 }, { "Warp", Con_Float4 } }
-            ,{ { "", Con_Float4 } }
-            ,{ { "Strength", Con_Float },{ "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "XY Offset|Rotation-Distance|" } }
-            }
-
-            ,
-            {
-                "TerrainPreview", hcMaterial, 2
-                ,{ { "Height", Con_Float4 }, { "Diffuse", Con_Float4 }, { "AO", Con_Float4 }, { "Cubemap", Con_Float4 } }
-            ,{ { "", Con_Float4 } }
-            ,{ { "Camera", Con_Camera } }
-            }
-
-            ,
-            {
-                "AO", hcFilter, 4
-                ,{ { "", Con_Float4 } }
-            ,{ { "", Con_Float4 } }
-        ,{  { "strength", Con_Float }, { "area", Con_Float }, { "falloff", Con_Float }, { "radius", Con_Float }}
-        }
-
-
-            ,
-        {
-            "FurGenerator", hcFilter, 9
-            ,{ { "Color", Con_Float4 }, { "Length", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{  { "Hair count", Con_Int }, { "Length factor", Con_Float }}
-        }
-
-            ,
-        {
-            "FurDisplay", hcFilter, 9
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{  { "Camera", Con_Camera }}
-        }
-            ,
-        {
-            "FurIntegrator", hcFilter, 9
-            ,{ { "", Con_Float4 } }
-        ,{ { "", Con_Float4 } }
-        ,{ }
-        }
-
-            ,
-        {
-            "SVG", hcFilter, 6
-            ,{ }
-        ,{ { "", Con_Float4 } }
-        ,{ { "File name", Con_FilenameRead }, { "DPI", Con_Float}}
-        }
-            ,
-        {
-            "SceneLoader", hcFilter, 6
-            ,{ }
-        ,{ { "", Con_Float4 } }
-        ,{ { "File name", Con_FilenameRead }}
-        }
-
-            ,
-            {
-                "PathTracer", hcMaterial, 2
-                ,{ { "", Con_Float4 } }
-            ,{ { "", Con_Float4 } }
-            ,{ { "Mode", Con_Enum, 0.f,0.f,0.f,0.f, false, false, "Tiled\0Progressive\0" }, { "Camera", Con_Camera } }
-            }
-    };
-#endif
 
     for (auto& filename : metaNodeFilenames)
     {
@@ -1241,6 +868,10 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
                 {
                     metaParam.mRangeMinX = metaParam.mRangeMinY = metaParam.mRangeMaxX = metaParam.mRangeMaxY = 0.f;
                 }
+                if (param.HasMember("loop"))
+                    metaParam.mbLoop = param["loop"].GetBool();
+                else
+                    metaParam.mbLoop = true;
                 if (param.HasMember("relative"))
                     metaParam.mbRelative = param["relative"].GetBool();
                 else
@@ -1271,6 +902,64 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
                         return serNodes;
                     }
                 }
+                if (param.HasMember("default"))
+                {
+                    size_t paramSize = GetParameterTypeSize(metaParam.mType);
+                    metaParam.mDefaultValue.resize(paramSize);
+                    std::string defaultStr = param["default"].GetString();
+                    float *pf = (float*)metaParam.mDefaultValue.data();
+                    int *pi = (int*)metaParam.mDefaultValue.data();
+                    Camera *cam = (Camera*)metaParam.mDefaultValue.data();
+                    ImVec2 *iv2 = (ImVec2*)metaParam.mDefaultValue.data();
+                    ImVec4 *iv4 = (ImVec4*)metaParam.mDefaultValue.data();
+                    switch (metaParam.mType)
+                    {
+                    case Con_Angle:
+                    case Con_Float:
+                        sscanf(defaultStr.c_str(), "%f", pf);
+                        break;
+                    case Con_Angle2:
+                    case Con_Float2:
+                        sscanf(defaultStr.c_str(), "%f,%f", &pf[0], &pf[1]);
+                        break;
+                    case Con_Angle3:
+                    case Con_Float3:
+                        sscanf(defaultStr.c_str(), "%f,%f,%f", &pf[0], &pf[1], &pf[2]);
+                        break;
+                    case Con_Color4:
+                    case Con_Float4:
+                    case Con_Angle4:
+                        sscanf(defaultStr.c_str(), "%f,%f,%f,%f", &pf[0], &pf[1], &pf[2], &pf[3]);
+                        break;
+                    case Con_Enum:
+                    case Con_Int:
+                        sscanf(defaultStr.c_str(), "%d", &pi[0]);
+                        break;
+                    case Con_Int2:
+                        sscanf(defaultStr.c_str(), "%d,%d", &pi[0], &pi[1]);
+                        break;
+                    case Con_Ramp:
+                        iv2[0] = ImVec2(0, 0);
+                        iv2[1] = ImVec2(1, 1);
+                        break;
+                    case Con_Ramp4:
+                        iv4[0] = ImVec4(0, 0, 0, 0);
+                        iv4[1] = ImVec4(1, 1, 1, 1);
+                        break;
+                    case Con_Structure:
+                    case Con_FilenameRead:
+                    case Con_FilenameWrite:
+                    case Con_ForceEvaluate:
+                    case Con_Camera:
+                        cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
+                        cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
+                        break;
+                    case Con_Bool:
+                        pi[0] = (defaultStr == "true")?1:0;
+                        break;
+                    }
+                }
+
                 curNode.mParams.emplace_back(metaParam);
             }
         }

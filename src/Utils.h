@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -26,11 +26,10 @@
 
 #include <string>
 #include <float.h>
+#include <vector>
 
-struct Image_t;
-typedef struct Image_t Image;
 void TagTime(const char *tagInfo);
-void FlipVImage(Image *image);
+
 typedef unsigned int TextureID;
 static const int SemUV0 = 0;
 
@@ -45,9 +44,12 @@ public:
     }
     void Init();
     void Render();
+    void Finish();
 protected:
     TextureID mGLFullScreenVertexArrayName;
+    TextureID mFsVA;
 };
+
 
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode);
@@ -56,6 +58,10 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 unsigned int LoadShader(const std::string &shaderString, const char *fileName);
 unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const char *fileName);
+
+
+typedef void(*LogOutput)(const char *szText);
+void AddLogOutput(LogOutput output);
 int Log(const char *szFormat, ...);
 template<typename T> T Lerp(T a, T b, float t) { return T(a + (b - a) * t); }
 
@@ -584,3 +590,23 @@ void DiscoverFiles(const char *extension, const char *directory, std::vector<std
 inline float sign(float v) { return (v >= 0.f) ? 1.f : -1.f; }
 void OpenShellURL(const std::string &url);
 void GetTextureDimension(unsigned int textureId, int *w, int *h);
+
+std::string GetName(const std::string &name);
+std::string GetGroup(const std::string &name);
+
+template<typename T> void Swap(T& a, T&b) 
+{ 
+    T temp = a;
+    a = b;
+    b = temp;
+}
+
+template<typename T> T min(const T& a, const T& b) { return (a < b) ? a : b; }
+
+
+enum EvaluationStatus
+{
+    EVAL_OK,
+    EVAL_ERR,
+    EVAL_DIRTY,
+};

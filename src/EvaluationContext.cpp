@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -23,13 +23,12 @@
 // SOFTWARE.
 //
 
+#include <SDL.h>
 #include <GL/gl3w.h>    // Initialize with gl3wInit()
 #include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
-#include "NodesDelegate.h"
-
-EvaluationContext *gCurrentContext = NULL;
+#include "NodeGraphControler.h"
 
 static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
 static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
@@ -79,13 +78,14 @@ static const float rotMatrices[6][16] = {
 };
 
 
-EvaluationContext::EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
-    : gEvaluation(evaluation)
+EvaluationContext::EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
+    : mEvaluationStages(evaluation)
     , mbSynchronousEvaluation(synchronousEvaluation)
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
+    , mRuntimeUniqueId(-1)
 {
-
+    mFSQuad.Init();
 }
 
 EvaluationContext::~EvaluationContext()
@@ -96,6 +96,7 @@ EvaluationContext::~EvaluationContext()
         delete stream.second;
     }
     mWriteStreams.clear();
+    mFSQuad.Finish();
 }
 
 static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage &evaluationStage)
@@ -167,7 +168,7 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
     glBindVertexArray(0);
 }
 
-void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, unsigned int program)
+void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, unsigned int program, std::shared_ptr<RenderTarget> reusableTarget)
 {
     const Input& input = evaluationStage.mInput;
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -190,7 +191,16 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
             }
             glUniform1i(parameter, inputIndex);
 
-            auto tgt = mStageTarget[targetIndex];
+            std::shared_ptr<RenderTarget> tgt;
+            if (inputIndex == 0 && reusableTarget)
+            {
+                tgt = reusableTarget;
+            }
+            else
+            {
+                tgt = mStageTarget[targetIndex];
+            }
+
             if (tgt)
             {
                 const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
@@ -243,7 +253,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         UploadVertices(bladeVertices, sizeof(bladeVertices));
     }
 
-    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
 
     // allocate buffer
@@ -284,7 +294,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
 
-    BindTextures(evaluationStage, program);
+    BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
     glEnable(GL_RASTERIZER_DISCARD);
     glBindVertexArray(feedbackVertexArray);
     glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, destinationBuffer->mBuffer, 0, destinationBuffer->mElementCount * destinationBuffer->mElementSize);
@@ -306,27 +316,16 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     const Input& input = evaluationStage.mInput;
 
     auto tgt = mStageTarget[index];
-    if (!evaluationInfo.uiPass)
-    {
-        if (tgt->mImage.mNumFaces == 6)
-            tgt->BindAsCubeTarget();
-        else
-            tgt->BindAsTarget();
-    }
-    /*if (evaluationStage.mNodeTypename == "TerrainPreview")
-    {
-        DebugBreak();
-    }
-    */
-    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+
+    const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
     const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
     unsigned int blend[] = { GL_ONE, GL_ZERO };
 
     if (!program)
     {
-        glUseProgram(gEvaluation.mNodeErrorShader);
-        gFSQuad.Render();
+        glUseProgram(gDefaultShader.mNodeErrorShader);
+        mFSQuad.Render();
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -340,76 +339,104 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
     glUseProgram(program);
 
-    Camera *camera = gNodeDelegate.GetCameraParameter(index);
+    Camera *camera = mEvaluationStages.GetCameraParameter(index);
     if (camera)
     {
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
-    size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
-    for (size_t face = 0; face < faceCount; face++)
+    int passCount = mEvaluationStages.GetIntParameter(index, "passCount", 1);
+    auto transientTarget = std::make_shared<RenderTarget>(RenderTarget());
+    if (passCount > 1)
     {
-        if (tgt->mImage.mNumFaces == 6)
-            tgt->BindCubeFace(face);
+        // new transient target
+        transientTarget->Clone(*tgt);
+    }
 
-        memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
-        memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-            
-        glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    for (int passNumber = 0;passNumber < passCount; passNumber++)
+    {
+        if (!evaluationInfo.uiPass)
+        {
+            if (tgt->mImage.mNumFaces == 6)
+                tgt->BindAsCubeTarget();
+            else
+                tgt->BindAsTarget();
+        }
+
+        size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
+        for (size_t face = 0; face < faceCount; face++)
+        {
+            if (tgt->mImage.mNumFaces == 6)
+                tgt->BindCubeFace(face);
+
+            memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
+            memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
+            evaluationInfo.viewport[0] = float(tgt->mImage.mWidth);
+            evaluationInfo.viewport[1] = float(tgt->mImage.mHeight);
+            evaluationInfo.passNumber = passNumber;
+
+            glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+            glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
 
-        BindTextures(evaluationStage, program);
+            BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
 
-        //
+            //
 #if 0
-        if (evaluationStage.mNodeTypename == "FurDisplay")
-        {
-            glClearDepth(1.f);
-            glDepthFunc(GL_LEQUAL);
-            glEnable(GL_DEPTH_TEST);
-            glClear(GL_COLOR_BUFFER_BIT|(evaluationStage.mbDepthBuffer?GL_DEPTH_BUFFER_BIT:0));
-            
-            /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
-            if (sourceBuffer != -1)
+            if (evaluationStage.mTypename == "FurDisplay")
             {
-                const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
-                unsigned int vao;
-                glGenVertexArrays(1, &vao);
-                glBindVertexArray(vao);
+                glClearDepth(1.f);
+                glDepthFunc(GL_LEQUAL);
+                glEnable(GL_DEPTH_TEST);
+                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
 
-                // blade vertices
-                glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
-                glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
-                glEnableVertexAttribArray(0/*SemUV*/);
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                // blade instances
-                const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
-                glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
-                for (unsigned int vp = 0; vp < transformElementCount; vp++)
+                /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
+                if (sourceBuffer != -1)
                 {
-                    glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * vp));
-                    glEnableVertexAttribArray(1 + vp);
+                    const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
+                    unsigned int vao;
+                    glGenVertexArrays(1, &vao);
+                    glBindVertexArray(vao);
+
+                    // blade vertices
+                    glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
+                    glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
+                    glEnableVertexAttribArray(0/*SemUV*/);
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                    // blade instances
+                    const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
+                    glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
+                    for (unsigned int vp = 0; vp < transformElementCount; vp++)
+                    {
+                        glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * vp));
+                        glEnableVertexAttribArray(1 + vp);
+                    }
+
+                    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                    glBindVertexArray(vao);
+                    drawBlades(tess * 2, buffer->mElementCount, transformElementCount);
+                    glBindVertexArray(0);
+                    glDeleteVertexArrays(1, &vao);
                 }
-
-                glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                glBindVertexArray(vao);
-                drawBlades(tess * 2, buffer->mElementCount, transformElementCount);
-                glBindVertexArray(0);
-                glDeleteVertexArrays(1, &vao);
             }
-        }
-        else
+            else
 #endif
-        {
-            gFSQuad.Render();
-        }
+            {
+                mFSQuad.Render();
+            }
+            // swap target for multipass
+            // set previous target as source
+            if (passCount > 1 && passNumber != (passCount-1) )
+            {
+                transientTarget->Swap(*tgt);
+            }
+        } // passNumber
     }
     glDisable(GL_BLEND);
 }
@@ -418,10 +445,10 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 {
     try // todo: find a better solution than a try catch
     {
-        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
         if (evaluator.mCFunction)
         {
-            int res = evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo);
+            int res = evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo, this);
             if (res == EVAL_DIRTY)
             {
                 mStillDirty.push_back(uint32_t(index));
@@ -438,7 +465,7 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, s
 {
     try // todo: find a better solution than a try catch
     {
-        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mNodeType);
+        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
         evaluator.RunPython();
     }
     catch (...)
@@ -451,8 +478,8 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, s
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
     // alloc targets
-    mStageTarget.resize(gEvaluation.GetStagesCount(), NULL);
-    for (size_t i = 0; i < gEvaluation.GetStagesCount(); i++)
+    mStageTarget.resize(mEvaluationStages.GetStagesCount(), NULL);
+    for (size_t i = 0; i < mEvaluationStages.GetStagesCount(); i++)
     {
         if (!mStageTarget[i])
         {
@@ -466,19 +493,19 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
     if (!mStageTarget.empty())
         return;
 
-    //auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
-    size_t stageCount = gEvaluation.GetStagesCount();
+    //auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
+    size_t stageCount = mEvaluationStages.GetStagesCount();
     mStageTarget.resize(stageCount, NULL);
     std::vector<std::shared_ptr<RenderTarget> > freeRenderTargets;
     std::vector<int> useCount(stageCount, 0);
     for (size_t i = 0; i < stageCount; i++)
     {
-        useCount[i] = gEvaluation.GetEvaluationStage(i).mUseCountByOthers;
+        useCount[i] = mEvaluationStages.GetEvaluationStage(i).mUseCountByOthers;
     }
 
     for (auto index : nodesToEvaluate)
     {
-        const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(index);
+        const EvaluationStage& evaluation = mEvaluationStages.GetEvaluationStage(index);
         if (!evaluation.mUseCountByOthers)
             continue;
 
@@ -508,14 +535,14 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 }
 void EvaluationContext::PreRun()
 {
-    mbDirty.resize(gEvaluation.GetStagesCount(), false);
-    mbProcessing.resize(gEvaluation.GetStagesCount(), 0);
-    mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
+    mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
-    auto& currentStage = gEvaluation.GetEvaluationStage(nodeIndex);
+    auto& currentStage = mEvaluationStages.GetEvaluationStage(nodeIndex);
     const Input& input = currentStage.mInput;
 
     // check processing 
@@ -564,7 +591,7 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        if (gEvaluationTime < gNodeDelegate.mNodes[nodeIndex].mStartFrame || gEvaluationTime > gNodeDelegate.mNodes[nodeIndex].mEndFrame)
+        if (gEvaluationTime < mEvaluationStages.mStages[nodeIndex].mStartFrame || gEvaluationTime > mEvaluationStages.mStages[nodeIndex].mEndFrame)
             continue;
         RunNode(nodeIndex);
         anyNodeIsProcessing |= mbProcessing[nodeIndex] != 0;
@@ -593,7 +620,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 
 void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)
 {
-    const EvaluationStage& evaluation = gEvaluation.GetEvaluationStage(target);
+    const EvaluationStage& evaluation = mEvaluationStages.GetEvaluationStage(target);
     const Input& input = evaluation.mInput;
 
     for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -612,7 +639,7 @@ void EvaluationContext::RunDirty()
 {
     PreRun();
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-    auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     std::vector<size_t> nodesToEvaluate;
     for (size_t index = 0; index < evaluationOrderList.size(); index++)
     {
@@ -629,7 +656,7 @@ void EvaluationContext::RunAll()
     PreRun();
     // get list of nodes to run
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-    auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     AllocRenderTargetsForEditingPreview();
     RunNodeList(evaluationOrderList);
 }
@@ -664,8 +691,8 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
 
 void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 {
-    mbDirty.resize(gEvaluation.GetStagesCount(), false);
-    auto evaluationOrderList = gEvaluation.GetForwardEvaluationOrder();
+    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     mbDirty[target] = true;
     for (size_t i = 0; i < evaluationOrderList.size(); i++)
     {
@@ -679,7 +706,7 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
             if (currentNodeIndex >= mbDirty.size() || mbDirty[currentNodeIndex]) // TODOUNDO
                 continue;
 
-            auto& currentEvaluation = gEvaluation.GetEvaluationStage(currentNodeIndex);
+            auto& currentEvaluation = mEvaluationStages.GetEvaluationStage(currentNodeIndex);
             for (auto inp : currentEvaluation.mInput.mInputs)
             {
                 if (inp >= 0 && mbDirty[inp])
@@ -696,10 +723,10 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
 
 void EvaluationContext::UserAddStage()
 {
-    URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), []() {return &gCurrentContext->mStageTarget; });
-    URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), []() {return &gCurrentContext->mbDirty; });
-    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), []() {return &gCurrentContext->mbProcessing; });
-    URAdd<float> undoRedoAddProgress(int(mProgress.size()), []() {return &gCurrentContext->mProgress; });
+    URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), [&]() {return &mStageTarget; });
+    URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), [&]() {return &mbDirty; });
+    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), [&]() {return &mbProcessing; });
+    URAdd<float> undoRedoAddProgress(int(mProgress.size()), [&]() {return &mProgress; });
 
     mStageTarget.push_back(std::make_shared<RenderTarget>());
     mbDirty.push_back(true);
@@ -709,10 +736,10 @@ void EvaluationContext::UserAddStage()
 
 void EvaluationContext::UserDeleteStage(size_t index)
 {
-    URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), []() {return &gCurrentContext->mStageTarget; });
-    URDel<bool> undoRedoDelDirty(int(index), []() {return &gCurrentContext->mbDirty; });
-    URDel<int> undoRedoDelProcessing(int(index), []() {return &gCurrentContext->mbProcessing; });
-    URDel<float> undoRedoDelProgress(int(index), []() {return &gCurrentContext->mProgress; });
+    URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), [&]() {return &mStageTarget; });
+    URDel<bool> undoRedoDelDirty(int(index), [&]() {return &mbDirty; });
+    URDel<int> undoRedoDelProcessing(int(index), [&]() {return &mbProcessing; });
+    URDel<float> undoRedoDelProgress(int(index), [&]() {return &mProgress; });
 
     mStageTarget.erase(mStageTarget.begin() + index);
     mbDirty.erase(mbDirty.begin() + index);
@@ -745,10 +772,10 @@ const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size
 
 void EvaluationContext::StageSetProcessing(size_t target, int processing) 
 { 
-    mbProcessing.resize(gEvaluation.GetStagesCount(), 0); 
+    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0); 
     if (mbProcessing[target] != processing)
     {
-        mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+        mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
         mProgress[target] = 0.f;
     }
     mbProcessing[target] = processing; 
@@ -756,6 +783,135 @@ void EvaluationContext::StageSetProcessing(size_t target, int processing)
 
 void EvaluationContext::StageSetProgress(size_t target, float progress)
 {
-    mProgress.resize(gEvaluation.GetStagesCount(), 0.f);
+    mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
     mProgress[target] = progress;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Builder::Builder()
+    : mbRunning(true)
+{
+    mThread = std::thread([&]() {
+        BuildEntries();
+    });
+}
+
+Builder::~Builder()
+{
+    mbRunning = false;
+    mThread.join();
+}
+
+void Builder::Add(const char* graphName, EvaluationStages& stages)
+{
+    mMutex.lock();
+    mEntries.push_back({ graphName, 0.f, stages });
+    mMutex.unlock();
+}
+
+bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
+{
+    if (mMutex.try_lock())
+    {
+        buildInfo.clear();
+        for (auto& entry : mEntries)
+        {
+            buildInfo.push_back({ entry.mName, entry.mProgress });
+        }
+        mMutex.unlock();
+        return true;
+    }
+    return false;
+}
+
+void Builder::DoBuild(Entry& entry)
+{
+    auto& evaluationStages = entry.mEvaluationStages;
+    size_t stageCount = evaluationStages.mStages.size();
+    for (size_t i = 0; i < stageCount; i++)
+    {
+        const auto& node = evaluationStages.mStages[i];
+        const MetaNode& currentMeta = gMetaNodes[node.mType];
+        bool forceEval = false;
+        for (auto& param : currentMeta.mParams)
+        {
+            if (!param.mName.c_str())
+                break;
+            if (param.mType == Con_ForceEvaluate)
+            {
+                forceEval = true;
+                break;
+            }
+        }
+        if (forceEval)
+        {
+            EvaluationContext writeContext(evaluationStages, true, 1024, 1024);
+            for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
+            {
+                evaluationStages.SetTime(&writeContext, frame, false);
+                evaluationStages.ApplyAnimation(&writeContext, frame);
+                EvaluationInfo evaluationInfo;
+                evaluationInfo.forcedDirty = 1;
+                evaluationInfo.uiPass = 0;
+                writeContext.RunSingle(i, evaluationInfo);
+            }
+        }
+        entry.mProgress = float(i + 1) / float(stageCount);
+        if (!mbRunning)
+            break;
+    }
+}
+
+void MakeThreadContext();
+void Builder::BuildEntries()
+{
+    MakeThreadContext();
+
+    while (mbRunning)
+    {
+        if (!mEntries.empty())
+        {
+            auto& entry = *mEntries.begin();
+            entry.mProgress = 0.01f;
+            DoBuild(entry);
+            entry.mProgress = 1.f;
+            if (entry.mProgress >= 1.f)
+            {
+                mEntries.erase(mEntries.begin());
+            }
+        }
+        Sleep(100);
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+namespace DrawUICallbacks
+{
+    void DrawUIProgress(EvaluationContext *context, size_t nodeIndex)
+    {
+        glUseProgram(gDefaultShader.mProgressShader);
+        glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
+        context->mFSQuad.Render();
+    }
+
+    void DrawUISingle(EvaluationContext *context, size_t nodeIndex)
+    {
+        EvaluationInfo evaluationInfo;
+        evaluationInfo.forcedDirty = 1;
+        evaluationInfo.uiPass = 1;
+        context->RunSingle(nodeIndex, evaluationInfo);
+    }
+
+    void DrawUICubemap(EvaluationContext *context, size_t nodeIndex)
+    {
+        glUseProgram(gDefaultShader.mDisplayCubemapShader);
+        int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
+        glUniform1i(tgt, 0);
+        glActiveTexture(GL_TEXTURE0);
+
+        glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
+        context->mFSQuad.Render();
+    }
 }

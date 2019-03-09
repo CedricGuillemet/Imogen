@@ -10,9 +10,9 @@ typedef struct PhysicalSky_t
 } PhysicalSky;
 
 
-int main(PhysicalSky *param, Evaluation *evaluation)
+int main(PhysicalSky *param, Evaluation *evaluation, void *context)
 {
 	int size = 256 << param->size;
-	SetEvaluationCubeSize(evaluation->targetIndex, size);
+	SetEvaluationCubeSize(context, evaluation->targetIndex, size);
 	return EVAL_OK;
 }

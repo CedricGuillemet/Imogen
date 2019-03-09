@@ -13,7 +13,8 @@
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
 			"rangeMinY": 0.0,
-			"rangeMaxY": 0.0
+			"rangeMaxY": 0.0,
+			"default": "0.25"
 		}, {
 			"name": "T",
 			"type": "Float"
@@ -35,12 +36,14 @@
 			"type": "Float2",
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
-			"rangeMinY": 1.0,
-			"rangeMaxY": 0.0,
-			"relative": true
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false
 		}, {
 			"name": "Scale",
-			"type": "Float2"
+			"type": "Float2",
+			"default": "1.0,1.0"
 		}, {
 			"name": "Rotation",
 			"type": "Angle"
@@ -129,7 +132,8 @@
 		}],
 		"parameters": [{
 			"name": "scale",
-			"type": "Float"
+			"type": "Float",
+			"default": "1.0"
 		}]
 	}, {
 		"name": "Blur",
@@ -233,10 +237,12 @@
 		}],
 		"parameters": [{
 			"name": "A",
-			"type": "Float4"
+			"type": "Float4",
+			"default":"1.0,1.0,1.0,1.0"
 		}, {
 			"name": "B",
-			"type": "Float4"
+			"type": "Float4",
+			"default":"1.0,1.0,1.0,1.0"
 		}, {
 			"name": "Operation",
 			"type": "Enum",
@@ -296,7 +302,8 @@
 		}],
 		"parameters": [{
 			"name": "Ramp",
-			"type": "Ramp"
+			"type": "Ramp",
+			"default": ""
 		}]
 	}, {
 		"name": "Tile",
@@ -324,7 +331,8 @@
 			"type": "Float2"
 		}, {
 			"name": "Scale",
-			"type": "Float"
+			"type": "Float",
+			"default": "1.0"
 		}]
 	}, {
 		"name": "Color",
@@ -368,7 +376,13 @@
 		}],
 		"parameters": [{
 			"name": "Translation",
-			"type": "Float2"
+			"type": "Float2",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false
 		},{
 			"name": "Size",
 			"type": "Float"
@@ -744,7 +758,8 @@
 		}],
 		"parameters": [{
 			"name": "Gradient",
-			"type": "Ramp4"
+			"type": "Ramp4",
+			"default": ""
 		}]
 	}, {
 		"name": "Warp",
@@ -792,7 +807,8 @@
 		}],
 		"parameters": [{
 			"name": "Camera",
-			"type": "Camera"
+			"type": "Camera",
+			"default":""
 		}]
 	}, {
 		"name": "AO",
@@ -855,7 +871,8 @@
 		}],
 		"parameters": [{
 			"name": "Camera",
-			"type": "Camera"
+			"type": "Camera",
+			"default": ""
 		}]
 	}, {
 		"name": "FurIntegrator",
@@ -914,7 +931,8 @@
 			"enum": "Tiled|Progressive|"
 			}, {
 			"name" : "Camera",
-			"type": "Camera"
+			"type": "Camera",
+			"default": ""
 		}]
 	}, {
 		"name": "EdgeDetect",
@@ -955,6 +973,88 @@
 		}, {
 			"name": "Square Width",
 			"type": "Float"
+		}]
+	}, {
+		"name": "Kaleidoscope",
+		"category": 0,
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Center",
+			"type": "Float2",
+			"default":"0.5,0.5"
+		},{
+			"name": "Start Angle",
+			"type": "Angle"
+		},{
+			"name": "Splits",
+			"type": "Int"
+		},{
+			"name": "Symetry",
+			"type": "Int"
+		}]
+	}, {
+		"name": "Palette",
+		"category": 0,
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Palette",
+			"type": "Enum",
+			"enum": "CGA 0|CGA 1|CGA 2|CGA 3|CGA 4|CGA 5|EGA|Gameboy (mono)|PICO-8|C64|"
+		},
+		{
+			"name": "Dither Strength",
+			"type": "Float"
+		}]
+	},
+	{
+		"name": "ReactionDiffusion",
+		"category": 1,
+		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [
+			{
+			"name": "boost",
+			"type": "Float",
+			"default":"0.7"
+		},{
+			"name": "divisor",
+			"type": "Float",
+			"default":"3.0"
+		},{
+			"name": "colorStep",
+			"type": "Float",
+			"default":"0.01"
+		},{
+			"name": "passCount",
+			"type": "Int",
+			"default":"1002"
+		},{
+			"name": "Size",
+			"type": "Enum",
+			"enum": "  256|  512| 1024| 2048| 4096|"
 		}]
 	}
 	]

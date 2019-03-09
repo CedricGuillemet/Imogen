@@ -9,6 +9,7 @@ typedef struct JobData_t
 {
 	char filename[1024];
 	int targetIndex;
+	void *context;
 } JobData;
 
 int ReadSceneJob(JobData *data)
@@ -16,21 +17,22 @@ int ReadSceneJob(JobData *data)
 	void *scene;
 	if (LoadScene(data->filename, &scene) == EVAL_OK)
 	{
-		SetEvaluationScene(data->targetIndex, scene);
+		SetEvaluationScene(data->context, data->targetIndex, scene);
 	}
-	SetProcessing(data->targetIndex, 0);
+	SetProcessing(data->context, data->targetIndex, 0);
 	return EVAL_OK;
 }
 
-int main(SceneLoader *param, Evaluation *evaluation)
+int main(SceneLoader *param, Evaluation *evaluation, void *context)
 {
 	if (strlen(param->filename))
 	{
-		SetProcessing(evaluation->targetIndex, 1);
+		SetProcessing(context, evaluation->targetIndex, 1);
 		JobData data;
 		strcpy(data.filename, param->filename);
 		data.targetIndex = evaluation->targetIndex;
-		Job(ReadSceneJob, &data, sizeof(JobData));
+		data.context = context;
+		Job(context, ReadSceneJob, &data, sizeof(JobData));
 	}
 	return EVAL_OK;
 }

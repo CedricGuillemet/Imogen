@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -24,11 +24,13 @@
 //
 #pragma once
 #include <memory>
-#include "Evaluation.h"
+#include <mutex>
+#include <atomic>
+#include "EvaluationStages.h"
 
 struct EvaluationContext
 {
-    EvaluationContext(Evaluation& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
+    EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
     ~EvaluationContext();
 
     void RunAll();
@@ -69,9 +71,15 @@ struct EvaluationContext
 
     const ComputeBuffer* GetComputeBuffer(size_t index) const;
     void Clear();
-protected:
-    Evaluation& gEvaluation;
 
+    unsigned int GetMaterialUniqueId() const { return mRuntimeUniqueId; }
+    void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
+
+
+    EvaluationStages& mEvaluationStages;
+    FullScreenTriangle mFSQuad;
+
+protected:
     void PreRun();
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
@@ -83,7 +91,7 @@ protected:
 
     void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 
-    void BindTextures(const EvaluationStage& evaluationStage, unsigned int program);
+    void BindTextures(const EvaluationStage& evaluationStage, unsigned int program, std::shared_ptr<RenderTarget> reusableTarget);
     void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
     
@@ -102,6 +110,44 @@ protected:
     int mDefaultWidth;
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
+    unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
 };
 
-extern EvaluationContext *gCurrentContext;
+struct Builder
+{
+    Builder();
+    ~Builder();
+
+    void Add(const char* graphName, EvaluationStages& stages);
+
+    struct BuildInfo
+    {
+        std::string mName;
+        float mProgress;
+    };
+
+    // return true if buildInfo has been updated
+    bool UpdateBuildInfo(std::vector<BuildInfo>& buildInfo);
+private:
+    std::mutex mMutex;
+    std::thread mThread;
+
+    std::atomic_bool mbRunning;
+
+    struct Entry
+    {
+        std::string mName;
+        float mProgress;
+        EvaluationStages mEvaluationStages;
+    };
+    std::vector<Entry> mEntries;
+    void BuildEntries();
+    void DoBuild(Entry& entry);
+};
+
+namespace DrawUICallbacks
+{
+    void DrawUICubemap(EvaluationContext *context, size_t nodeIndex);
+    void DrawUISingle(EvaluationContext *context, size_t nodeIndex);
+    void DrawUIProgress(EvaluationContext *context, size_t nodeIndex);
+}

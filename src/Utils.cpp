@@ -2,7 +2,7 @@
 //
 // The MIT License(MIT)
 // 
-// Copyright(c) 2018 Cedric Guillemet
+// Copyright(c) 2019 Cedric Guillemet
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
@@ -26,7 +26,7 @@
 #include <SDL.h>
 #include <vector>
 #include "Utils.h"
-#include "Evaluation.h"
+#include "EvaluationStages.h"
 #include "tinydir.h"
 
 #ifdef WIN32
@@ -34,20 +34,6 @@
 #include <shellapi.h>
 #endif
 
-void FlipVImage(Image *image)
-{
-    int pixelSize = (image->mFormat == TextureFormat::RGB8) ? 3 : 4;
-    int stride = image->mWidth * pixelSize;
-    for (int y = 0; y < image->mHeight / 2; y++)
-    {
-        for (int x = 0; x < stride; x++)
-        {
-            unsigned char * p1 = &image->GetBits()[y * stride + x];
-            unsigned char * p2 = &image->GetBits()[(image->mHeight - 1 - y) * stride + x];
-            ImSwap(*p1, *p2);
-        }
-    }
-}
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {
@@ -69,16 +55,14 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 void FullScreenTriangle::Init()
 {
-    TextureID fsVA;
-
     float fsVts[] = { 0.f,0.f, 2.f,0.f, 0.f,2.f };
-    glGenBuffers(1, &fsVA);
-    glBindBuffer(GL_ARRAY_BUFFER, fsVA);
+    glGenBuffers(1, &mFsVA);
+    glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(float) * 2, fsVts, GL_STATIC_DRAW);
 
     glGenVertexArrays(1, &mGLFullScreenVertexArrayName);
     glBindVertexArray(mGLFullScreenVertexArrayName);
-    glBindBuffer(GL_ARRAY_BUFFER, fsVA);
+    glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(SemUV0);
     glBindVertexArray(0);
@@ -93,7 +77,11 @@ void FullScreenTriangle::Render()
     glBindVertexArray(0);
 }
 
-FullScreenTriangle gFSQuad;
+void FullScreenTriangle::Finish()
+{
+    glDeleteBuffers(1, &mFsVA);
+    glDeleteVertexArrays(1, &mGLFullScreenVertexArrayName);
+}
 
 unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 {
@@ -235,7 +223,12 @@ unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const 
     return programHandle;
 }
 
-void DebugLogText(const char *szText);
+
+std::vector<LogOutput> outputs;
+void AddLogOutput(LogOutput output)
+{
+    outputs.push_back(output);
+}
 
 int Log(const char *szFormat, ...)
 {
@@ -251,12 +244,11 @@ int Log(const char *szFormat, ...)
         fprintf(fp, buf);
         fflush(fp);
     }
-    DebugLogText(buf);
+    for (auto output : outputs)
+        output(buf);
     va_end(ptr_arg);
     return 0;
 }
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //matrix will receive the calculated perspective matrix.
@@ -526,3 +518,29 @@ void GetTextureDimension(unsigned int textureId, int *w, int *h)
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, w);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, h);
 }
+
+std::string GetGroup(const std::string &name)
+{
+    for (int i = int(name.length()) - 1; i >= 0; i--)
+    {
+        if (name[i] == '/')
+        {
+            return name.substr(0, i);
+        }
+    }
+    return "";
+}
+
+std::string GetName(const std::string &name)
+{
+    for (int i = int(name.length()) - 1; i >= 0; i--)
+    {
+        if (name[i] == '/')
+        {
+            return name.substr(i + 1);
+        }
+    }
+    return name;
+}
+
+

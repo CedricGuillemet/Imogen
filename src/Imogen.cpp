@@ -692,7 +692,7 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mEvaluationStages.mPinnedParameters = material.mPinnedParameters;
         mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, gEvaluationTime, true);
         mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, gEvaluationTime);
-        mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mThumbnailTextureId);
+        mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
         mNodeGraphControler->mEditingContext.RunAll();
     }
 }

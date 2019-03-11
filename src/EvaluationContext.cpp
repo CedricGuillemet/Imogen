@@ -386,7 +386,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
 
             //
-#if 0
             if (evaluationStage.mTypename == "FurDisplay")
             {
                 glClearDepth(1.f);
@@ -426,7 +425,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
                 }
             }
             else
-#endif
             {
                 mFSQuad.Render();
             }

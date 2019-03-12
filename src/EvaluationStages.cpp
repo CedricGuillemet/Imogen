@@ -442,6 +442,7 @@ void EvaluationStages::SetTime(EvaluationContext *evaluationContext, int time, b
         const auto& stage = mStages[i];
         SetStageLocalTime(evaluationContext, i, ImClamp(time - stage.mStartFrame, 0, stage.mEndFrame - stage.mStartFrame), updateDecoder);
         //bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
+        evaluationContext->SetTargetDirty(i);
     }
 }
 

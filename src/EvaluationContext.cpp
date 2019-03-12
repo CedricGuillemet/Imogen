@@ -225,8 +225,10 @@ int  EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluation
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         int targetIndex = input.mInputs[inputIndex];
-        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer)
+        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer && mActive[targetIndex])
+        {
             return targetIndex;
+        }
     }
     return -1;
 }
@@ -259,27 +261,46 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     // allocate buffer
     unsigned int feedbackVertexArray = 0;
     ComputeBuffer* destinationBuffer = NULL;
+    ComputeBuffer* sourceBuffer = NULL;
+    ComputeBuffer tempBuffer;
     int computeBufferIndex = GetBindedComputeBuffer(evaluationStage);
     if (computeBufferIndex != -1)
     {
-        AllocateComputeBuffer(int(index), mComputeBuffers[computeBufferIndex].mElementCount, mComputeBuffers[computeBufferIndex].mElementSize);
- 
-        /// build source VAO
-        glGenVertexArrays(1, &feedbackVertexArray);
-        glBindVertexArray(feedbackVertexArray);
-        glBindBuffer(GL_ARRAY_BUFFER, mComputeBuffers[computeBufferIndex].mBuffer);
-        const int transformElementCount = mComputeBuffers[computeBufferIndex].mElementSize / (4 * sizeof(float));
-        for (int i = 0; i < transformElementCount;i++)
+        if (mComputeBuffers.size() <= index || (!mComputeBuffers[index].mBuffer))
         {
-            glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
-            glEnableVertexAttribArray(i);
+            // only allocate if needed
+            AllocateComputeBuffer(int(index), mComputeBuffers[computeBufferIndex].mElementCount, mComputeBuffers[computeBufferIndex].mElementSize);
         }
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glBindVertexArray(0);
+        sourceBuffer = &mComputeBuffers[computeBufferIndex];
+        
     }
+    else
+    {
+        // 
+        Swap(mComputeBuffers[index], tempBuffer);
+
+        AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
+        sourceBuffer = &tempBuffer;
+    }
+
     if (mComputeBuffers.size() <= index)
         return; // no compute buffer destination, no source either -> non connected node -> early exit
+
+    /// build source VAO
+    glGenVertexArrays(1, &feedbackVertexArray);
+    glBindVertexArray(feedbackVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, sourceBuffer->mBuffer);
+    const int transformElementCount = sourceBuffer->mElementSize / (4 * sizeof(float));
+    for (int i = 0; i < transformElementCount; i++)
+    {
+        glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
+        glEnableVertexAttribArray(i);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindVertexArray(0);
+
+
     destinationBuffer = &mComputeBuffers[index];
 
     // compute buffer
@@ -309,6 +330,11 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
 
     if (feedbackVertexArray)
         glDeleteVertexArrays(1, &feedbackVertexArray);
+
+    if (tempBuffer.mBuffer)
+    {
+        glDeleteBuffers(1, &tempBuffer.mBuffer);
+    }
 }
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
@@ -536,6 +562,7 @@ void EvaluationContext::PreRun()
     mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
     mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
     mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
+    mActive.resize(mEvaluationStages.GetStagesCount(), false);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
@@ -589,7 +616,8 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        if (gEvaluationTime < mEvaluationStages.mStages[nodeIndex].mStartFrame || gEvaluationTime > mEvaluationStages.mStages[nodeIndex].mEndFrame)
+        mActive[nodeIndex] = gEvaluationTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame && gEvaluationTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
+        if (!mActive[nodeIndex])
             continue;
         RunNode(nodeIndex);
         anyNodeIsProcessing |= mbProcessing[nodeIndex] != 0;

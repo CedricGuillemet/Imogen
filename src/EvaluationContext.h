@@ -104,6 +104,7 @@ protected:
     std::vector<bool> mbDirty;
     std::vector<int> mbProcessing;
     std::vector<float> mProgress;
+    std::vector<bool> mActive;
     EvaluationInfo mEvaluationInfo;
 
     std::vector<int> mStillDirty;

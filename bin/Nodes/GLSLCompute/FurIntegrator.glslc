@@ -34,8 +34,8 @@ void main()
 	
 	float frm = float(EvaluationParam.frame);
 	float len = inCompute3.w;
-	outCompute0 = inCompute0 + vec4(0., frm, 0., 0.);
-	outCompute1 = inCompute1;
+	outCompute0 = inCompute0 + vec4(0., 0.01, 0., 0.);
+	outCompute1 = inCompute1 + vec4(0.01, 0., 0., 0.);
 	
 	vec3 idealPos1 = inCompute0.xyz + norm0 * len;
 	vec3 curSeg = inCompute2.xyz - inCompute0.xyz;

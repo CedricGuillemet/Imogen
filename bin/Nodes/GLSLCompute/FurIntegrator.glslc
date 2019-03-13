@@ -34,12 +34,12 @@ void main()
 	
 	float frm = float(EvaluationParam.frame);
 	float len = inCompute3.w;
-	outCompute0 = inCompute0 + vec4(0., 0.01, 0., 0.);
-	outCompute1 = inCompute1 + vec4(0.01, 0., 0., 0.);
+	outCompute0 = inCompute0;// + vec4(0., 0.01, 0., 0.);
+	outCompute1 = inCompute1;// + vec4(0.01, 0., 0., 0.);
 	
-	vec3 idealPos1 = inCompute0.xyz + norm0 * len;
+	vec3 idealPos1 = inCompute0.xyz + norm0 * len + vec3(0.,-1.,0.) * len * 0.4;
 	vec3 curSeg = inCompute2.xyz - inCompute0.xyz;
-	vec3 idealPos2 = inCompute2.xyz + normalize(curSeg) * len;
+	vec3 idealPos2 = inCompute2.xyz + normalize(curSeg) * len  + vec3(0.,-1.,0.) * len * 0.8;
 	
 	outCompute2 = vec4(mix(inCompute2.xyz, idealPos1, stifness), inCompute2.w);
 	outCompute3 = vec4(mix(inCompute3.xyz, idealPos2, stifness), inCompute3.w);

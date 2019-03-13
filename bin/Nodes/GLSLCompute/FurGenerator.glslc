@@ -17,10 +17,10 @@ void main()
 {
 	float n = float(gl_VertexID);
 	vec2 uv = vec2(mod(n, 32.0), floor(n/32.0)) / 32.0;
-	uv *= 10.;
+	uv *= 4.;
 	
 	vec4 color = texture(Sampler0, uv);
-	float length = texture(Sampler1, uv).x * 2.0;
+	float length = texture(Sampler1, uv).x * max(FurGeneratorParam.lengthFactor, 6.);
 	
 	float ng = n * 2.9781;
 	vec4 gp = vec4(uv.x, 0., uv.y, 0.) * 8.0;

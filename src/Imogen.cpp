@@ -42,7 +42,7 @@
 #include "nfd.h"
 #include "UI.h"
 #include "imgui_markdown/imgui_markdown.h"
-
+#include "imHotKey.h"
 
 Imogen *Imogen::instance = nullptr;
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
@@ -1231,8 +1231,16 @@ struct MySequence : public ImSequencer::SequenceInterface
     URChange<EvaluationStage> *undoRedoChange;
 };
 
+static std::vector<ImHotKey::HotKey> hotkeys = { { "Layout", "Reorder nodes in a simpler layout", 0xFFFF261D}
+        ,{"Save", "Save the current graph", 0xFFFF1F1D}
+        ,{"Load", "Load an existing graph file", 0xFFFF181D}
+        ,{"Play/Stop", "Play or stop the animation from the current graph", 0xFFFFFF3F}
+        ,{"SetKey", "Make a new animation key with the current parameters values at the current time", 0xFFFFFF1F}
+};
+
 void Imogen::ShowAppMainMenuBar()
 {
+    bool showHK = false;
     if (ImGui::BeginPopup("Plugins"))
     {
         unsigned int imogenLogo = gImageCache.GetTexture("Stock/ImogenLogo.png");
@@ -1275,12 +1283,21 @@ void Imogen::ShowAppMainMenuBar()
         {
             NodeGraphLayout();
         }
-        /*if (ImGui::MenuItem("Windows"))
+        if (ImGui::BeginMenu("Settings"))
         {
+            if (ImGui::MenuItem("Hot Keys"))
+            {
+                showHK = true;
+            }
 
-        }*/
+            ImGui::EndMenu();
+        }
+
         ImGui::EndPopup();
     }
+    if (showHK)
+        ImGui::OpenPopup("HotKeys Editor");
+    ImHotKey::Edit(hotkeys.data(), hotkeys.size(), "HotKeys Editor");
 }
 
 

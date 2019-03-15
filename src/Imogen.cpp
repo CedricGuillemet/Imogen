@@ -302,7 +302,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             }
             int width = pickerImage.mWidth;
             int height = pickerImage.mHeight;
-            
+
             ImageZoomTooltip(width, height, pickerImage.GetBits(), mouseUVCoord, displayedTextureSize);
         }
         else if (ImGui::IsWindowFocused())
@@ -334,7 +334,7 @@ template <typename T, typename Ty> struct SortedResource
     const std::vector<T, Ty>* mRes;
     bool operator < (const SortedResource& other) const
     {
-        return (*mRes)[mIndex].mName<(*mRes)[other.mIndex].mName;
+        return (*mRes)[mIndex].mName < (*mRes)[other.mIndex].mName;
     }
 
     static void ComputeSortedResources(const std::vector<T, Ty>& res, std::vector<SortedResource>& sortedResources)
@@ -387,7 +387,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 
 struct DecodeThumbnailTaskSet : enki::ITaskSet
 {
-    DecodeThumbnailTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) : 
+    DecodeThumbnailTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) :
         enki::ITaskSet()
         , mIdentifier(identifier)
         , mSrc(src)
@@ -449,7 +449,7 @@ struct EncodeImageTaskSet : enki::ITaskSet
 
 struct DecodeImageTaskSet : enki::ITaskSet
 {
-    DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) : 
+    DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) :
         enki::ITaskSet()
         , mIdentifier(identifier)
         , mSrc(src)
@@ -484,7 +484,7 @@ void Imogen::DecodeThumbnailAsync(Material * material)
     if (!material->mThumbnailTextureId)
     {
         material->mThumbnailTextureId = defaultTextureId;
-        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material-library.mMaterials.data(), material->mRuntimeUniqueId), mNodeGraphControler));
+        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId), mNodeGraphControler));
     }
 }
 
@@ -499,7 +499,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
     std::vector<SortedResource<T, Ty>> sortedResources;
     SortedResource<T, Ty>::ComputeSortedResources(res, sortedResources);
-    
+
     float regionWidth = ImGui::GetWindowContentRegionWidth();
     float currentStep = 0.f;
     float stepSize = (viewMode == 2) ? 64.f : 128.f;
@@ -511,7 +511,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
         std::string grp = GetGroup(res[indexInRes].mName);
 
-        if ( grp != currentGroup)
+        if (grp != currentGroup)
         {
             if (currentGroup.length() && !currentGroupIsSkipped)
                 ImGui::TreePop();
@@ -707,7 +707,7 @@ void Imogen::LibraryEdit(Library& library)
         back.mName = "Name_Of_New_Graph";
         back.mThumbnailTextureId = 0;
         back.mRuntimeUniqueId = GetRuntimeId();
-        
+
         if (previousSelection != -1)
         {
             ValidateMaterial(library, *mNodeGraphControler, previousSelection);
@@ -825,7 +825,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 mComponentIndex.push_back(uint32_t(curveIndex));
                 mCurveType.push_back(ImCurveEdit::CurveType(curveType));
                 mLabels.push_back(parameterName + GetCurveParameterSuffix(type, int(curveIndex)));
-				mColors.push_back(GetCurveParameterColor(type, int(curveIndex)));
+                mColors.push_back(GetCurveParameterColor(type, int(curveIndex)));
             }
         };
 
@@ -973,8 +973,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     {
         assert(gUndoRedoHandler.mCurrent == nullptr);
         URDummy urDummy;
-       
-        for (size_t curve = 0;curve< mParameterIndex.size();curve++)
+
+        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
         {
             uint32_t parameterIndex = mParameterIndex[curve];
             bool parameterFound = false;
@@ -1002,7 +1002,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         }
     }
 
-    virtual void EndEdit() 
+    virtual void EndEdit()
     {
         for (auto ur : undoRedoEditCurves)
             delete ur;
@@ -1044,7 +1044,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     std::vector<std::vector<ImVec2>> mPts;
     std::vector<std::string> mLabels;
-	std::vector<uint32_t> mColors;
+    std::vector<uint32_t> mColors;
     std::vector<AnimTrack>& mAnimTrack;
     std::vector<uint32_t> mValueType;
     std::vector<uint32_t> mParameterIndex;
@@ -1123,13 +1123,13 @@ struct MySequence : public ImSequencer::SequenceInterface
     virtual void Del(int index) { }
     virtual void Duplicate(int index) { }
 
-    virtual size_t GetCustomHeight(int index) 
-    { 
+    virtual size_t GetCustomHeight(int index)
+    {
         if (index >= mbExpansions.size())
             return false;
-        return mbExpansions[index]? 300 : 0;
+        return mbExpansions[index] ? 300 : 0;
     }
-    virtual void DoubleClick(int index) 
+    virtual void DoubleClick(int index)
     {
         if (index >= mbExpansions.size())
             mbExpansions.resize(index + 1, false);
@@ -1160,8 +1160,8 @@ struct MySequence : public ImSequencer::SequenceInterface
         {
             ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
             ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-			uint32_t curveColor = curveEdit.mColors[i];
-            draw_list->AddText(pta, mbVisible[i] ? curveColor : ((curveColor&0xFFFFFF)+0x80000000), curveEdit.mLabels[i].c_str());
+            uint32_t curveColor = curveEdit.mColors[i];
+            draw_list->AddText(pta, mbVisible[i] ? curveColor : ((curveColor & 0xFFFFFF) + 0x80000000), curveEdit.mLabels[i].c_str());
             if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
                 mbVisible[i] = !mbVisible[i];
         }
@@ -1231,11 +1231,32 @@ struct MySequence : public ImSequencer::SequenceInterface
     URChange<EvaluationStage> *undoRedoChange;
 };
 
-static std::vector<ImHotKey::HotKey> hotkeys = { { "Layout", "Reorder nodes in a simpler layout", 0xFFFF261D}
-        ,{"Save", "Save the current graph", 0xFFFF1F1D}
-        ,{"Load", "Load an existing graph file", 0xFFFF181D}
-        ,{"Play/Stop", "Play or stop the animation from the current graph", 0xFFFFFF3F}
-        ,{"SetKey", "Make a new animation key with the current parameters values at the current time", 0xFFFFFF1F}
+static std::vector<ImHotKey::HotKey> hotkeys = {
+ {"Layout","Reorder nodes in a simpler layout"}
+,{"PlayPause","Play or Stop current animation"}
+,{"AnimationFirstFrame","Set current time to the first frame of animation"}
+,{"AnimationNextFrame","Move to the next animation frame"}
+,{"AnimationPreviousFrame","Move to previous animation frame"}
+,{"MaterialExport","Export current material to a file"}
+,{"materialImport","Import a material file in the library"}
+,{"ToggleLibrary","Show or hide Libaray window"}
+,{"ToggleNodeGraph","Show or hide Node graph window"}
+,{"ToggleLogger","Show or hide Logger window"}
+,{"ToggleSequencer","Show or hide Sequencer window"}
+,{"ToggleParametrs","Show or hide Parameters window"}
+,{"ToggleEditor","Show or hide shader editor window"}
+,{"MaterialNew","Create a new graph"}
+,{"ReloadShaders","Save shaders and hot reload them"}
+,{"DeleteSelectedNodes","Delete selected nodes in the current graph"}
+,{"AnimationSetKey","Make a new animation key with the current parameters values at the current time"}
+,{"HotKeyEditor","Open the Hotkey editor window"}
+,{"NewNodePopup","Open the new node menu"}
+,{"Undo","Undo the last operation"}
+,{"Redo","Redo the last undo"}
+,{"Copy","Copy the selected nodes"}
+,{"Cut","Cut the selected nodes"}
+,{"Paste","Paste previously copy/cut nodes"}
+,{"BuildMaterial","Build current material"}
 };
 
 void Imogen::ShowAppMainMenuBar()
@@ -1251,7 +1272,7 @@ void Imogen::ShowAppMainMenuBar()
         ImGui::Separator();
         for (auto& plugin : mRegisteredPlugins)
         {
-            if (ImGui::MenuItem(plugin.mName.c_str())) 
+            if (ImGui::MenuItem(plugin.mName.c_str()))
             {
                 try
                 {
@@ -1305,7 +1326,7 @@ static const ImVec2 deltaHeight = ImVec2(0, 32);
 void Imogen::ShowTitleBar(Builder *builder)
 {
     ImGuiIO& io = ImGui::GetIO();
-    
+
     ImVec2 butSize = ImVec2(32, 32);
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, 0.f) + deltaHeight);
@@ -1341,7 +1362,7 @@ void Imogen::ShowTitleBar(Builder *builder)
 
     // exporting frame / build
     unsigned int buildIcon = gImageCache.GetTexture("Stock/Build.png");
-    if (ImGui::ImageButton((ImTextureID)(int64_t)buildIcon, ImVec2(30,30), ImVec2(0,1), ImVec2(1,0)))
+    if (ImGui::ImageButton((ImTextureID)(int64_t)buildIcon, ImVec2(30, 30), ImVec2(0, 1), ImVec2(1, 0)))
     {
         if (selectedMaterial != -1)
         {
@@ -1367,7 +1388,7 @@ void Imogen::ShowTitleBar(Builder *builder)
         ImGui::ProgressBar(bi.mProgress);
     }
     ImGui::EndChildFrame();
-    if (ImGui::IsItemHovered() && (buildInfos.size()>1))
+    if (ImGui::IsItemHovered() && (buildInfos.size() > 1))
     {
         ImGui::BeginTooltip();
         for (auto& bi : buildInfos)
@@ -1580,7 +1601,7 @@ void Imogen::Show(Builder *builder, Library& library)
 
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
-    
+
     if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus))
     {
         static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
@@ -1751,6 +1772,19 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
         {
             userdata->imogen->mLibraryViewMode = active;
         }
+        else
+        {
+            for (auto& hotkey : hotkeys)
+            {
+                unsigned int functionKeys;
+                char tmps[128];
+                sprintf(tmps, "%s=0x%%x", hotkey.functionName);
+                if (sscanf(line_start, tmps, &functionKeys) == 1)
+                {
+                    hotkey.functionKeys = functionKeys;
+                }
+            }
+        }
     }
 }
 
@@ -1764,6 +1798,11 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     buf->appendf("ShowLog=%d\n", instance->mbShowLog ? 1 : 0);
     buf->appendf("ShowParameters=%d\n", instance->mbShowParameters ? 1 : 0);
     buf->appendf("LibraryViewMode=%d\n", instance->mLibraryViewMode);
+
+    for (const auto& hotkey : hotkeys)
+    {
+        buf->appendf("%s=0x%x\n", hotkey.functionName, hotkey.functionKeys);
+    }
 }
 
 Imogen::Imogen(NodeGraphControler *nodeGraphControler) :

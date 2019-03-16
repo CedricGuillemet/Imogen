@@ -1261,18 +1261,30 @@ static std::vector<ImHotKey::HotKey> hotkeys = {
 
 void Imogen::ShowAppMainMenuBar()
 {
-    bool showHK = false;
-    if (ImGui::BeginPopup("Plugins"))
+    ImGuiIO& io = ImGui::GetIO();
+
+    static const ImVec2 buttonSize(440, 30);
+
+    static float currentPos = -440.f;
+    ImGui::SetNextWindowSize(ImVec2(440, io.DisplaySize.y - 32));
+    ImGui::SetNextWindowPos(ImVec2(currentPos, 32));
+    if (!ImGui::BeginPopupModal("MainMenu", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar))
     {
-        unsigned int imogenLogo = gImageCache.GetTexture("Stock/ImogenLogo.png");
-        ImGui::Image((ImTextureID)(int64_t)imogenLogo, ImVec2(200, 86), ImVec2(0, 1), ImVec2(1, 0));
+        currentPos = -440;
+        return;
+    }
+    currentPos = ImLerp(currentPos, 0.f, 0.2f);
 
+    if (ImGui::CollapsingHeader("Plugins", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::Button("Reload Plugins", buttonSize))
+        {
 
-        if (ImGui::MenuItem("Reload plugins")) {}
+        }
         ImGui::Separator();
         for (auto& plugin : mRegisteredPlugins)
         {
-            if (ImGui::MenuItem(plugin.mName.c_str()))
+            if (ImGui::Button(plugin.mName.c_str(), buttonSize))
             {
                 try
                 {
@@ -1284,41 +1296,50 @@ void Imogen::ShowAppMainMenuBar()
                 }
             }
         }
-        ImGui::Separator();
-        if (ImGui::BeginMenu("Windows"))
-        {
-            //ImGui::MenuItem("Metrics", NULL);
-            //ImGui::MenuItem("Style Editor", NULL);
-            //ImGui::MenuItem("About Dear ImGui", NULL);
+    }
 
-            ImGui::Checkbox("Timeline", &mbShowTimeline);
-            ImGui::Checkbox("Library", &mbShowLibrary);
-            ImGui::Checkbox("Nodes", &mbShowNodes);
-            ImGui::Checkbox("Shaders", &mbShowShaders);
-            ImGui::Checkbox("Log", &mbShowLog);
-            ImGui::Checkbox("Parameters", &mbShowParameters);
-
-            ImGui::EndMenu();
-        }
-        if (ImGui::MenuItem("Layout Nodes", "CTRL + L"))
+    if (ImGui::CollapsingHeader("Graph", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::Button("Layout", buttonSize))
         {
             NodeGraphLayout();
         }
-        if (ImGui::BeginMenu("Settings"))
+        if (ImGui::Button("Export", buttonSize))
         {
-            if (ImGui::MenuItem("Hot Keys"))
-            {
-                showHK = true;
-            }
 
-            ImGui::EndMenu();
         }
+        if (ImGui::Button("Import", buttonSize))
+        {
 
-        ImGui::EndPopup();
+        }
     }
-    if (showHK)
-        ImGui::OpenPopup("HotKeys Editor");
+
+    if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::Button("Hot keys editor", buttonSize))
+        {
+            ImGui::OpenPopup("HotKeys Editor");
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Windows", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Checkbox("Timeline", &mbShowTimeline);
+        ImGui::Checkbox("Library", &mbShowLibrary);
+        ImGui::Checkbox("Nodes", &mbShowNodes);
+        ImGui::Checkbox("Shaders", &mbShowShaders);
+        ImGui::Checkbox("Log", &mbShowLog);
+        ImGui::Checkbox("Parameters", &mbShowParameters);
+    }
+
     ImHotKey::Edit(hotkeys.data(), hotkeys.size(), "HotKeys Editor");
+
+    ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y-32));
+    if (io.MouseClicked[0] && !windowRect.Contains(io.MousePos) && !ImGui::IsPopupOpen("HotKeys Editor"))
+    {
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
 }
 
 
@@ -1343,7 +1364,14 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::PushID(149);
     if (ImGui::Button("", butSize))
     {
-        ImGui::OpenPopup("Plugins");
+        if (ImGui::IsPopupOpen("MainMenu"))
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        else
+        {
+            ImGui::OpenPopup("MainMenu");
+        }
     }
     ShowAppMainMenuBar();
     ImRect rcMenu(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());

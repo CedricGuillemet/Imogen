@@ -1259,6 +1259,9 @@ static std::vector<ImHotKey::HotKey> hotkeys = {
 ,{"BuildMaterial","Build current material"}
 };
 
+
+static float currentDest = -440.f;
+
 void Imogen::ShowAppMainMenuBar()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -1266,6 +1269,8 @@ void Imogen::ShowAppMainMenuBar()
     static const ImVec2 buttonSize(440, 30);
 
     static float currentPos = -440.f;
+    currentPos = ImLerp(currentPos, currentDest, 0.2f);
+
     ImGui::SetNextWindowSize(ImVec2(440, io.DisplaySize.y - 32));
     ImGui::SetNextWindowPos(ImVec2(currentPos, 32));
     if (!ImGui::BeginPopupModal("MainMenu", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar))
@@ -1273,7 +1278,6 @@ void Imogen::ShowAppMainMenuBar()
         currentPos = -440;
         return;
     }
-    currentPos = ImLerp(currentPos, 0.f, 0.2f);
 
     if (ImGui::CollapsingHeader("Plugins", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -1335,10 +1339,15 @@ void Imogen::ShowAppMainMenuBar()
     ImHotKey::Edit(hotkeys.data(), hotkeys.size(), "HotKeys Editor");
 
     ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y-32));
-    if (io.MouseClicked[0] && !windowRect.Contains(io.MousePos) && !ImGui::IsPopupOpen("HotKeys Editor"))
+    if ((io.MouseClicked[0] && !windowRect.Contains(io.MousePos) && !ImGui::IsPopupOpen("HotKeys Editor")))
+    {
+        currentDest = -440;
+    }
+    if (currentPos <= -439.f && currentDest < -400.f)
     {
         ImGui::CloseCurrentPopup();
     }
+
     ImGui::EndPopup();
 }
 
@@ -1366,10 +1375,11 @@ void Imogen::ShowTitleBar(Builder *builder)
     {
         if (ImGui::IsPopupOpen("MainMenu"))
         {
-            ImGui::CloseCurrentPopup();
+            currentDest = -440.f;
         }
         else
         {
+            currentDest = 0.f;
             ImGui::OpenPopup("MainMenu");
         }
     }

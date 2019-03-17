@@ -1231,51 +1231,122 @@ struct MySequence : public ImSequencer::SequenceInterface
     URChange<EvaluationStage> *undoRedoChange;
 };
 
-static std::vector<ImHotKey::HotKey> hotkeys = {
- {"Layout","Reorder nodes in a simpler layout"}
-,{"PlayPause","Play or Stop current animation"}
-,{"AnimationFirstFrame","Set current time to the first frame of animation"}
-,{"AnimationNextFrame","Move to the next animation frame"}
-,{"AnimationPreviousFrame","Move to previous animation frame"}
-,{"MaterialExport","Export current material to a file"}
-,{"materialImport","Import a material file in the library"}
-,{"ToggleLibrary","Show or hide Libaray window"}
-,{"ToggleNodeGraph","Show or hide Node graph window"}
-,{"ToggleLogger","Show or hide Logger window"}
-,{"ToggleSequencer","Show or hide Sequencer window"}
-,{"ToggleParametrs","Show or hide Parameters window"}
-,{"ToggleEditor","Show or hide shader editor window"}
-,{"MaterialNew","Create a new graph"}
-,{"ReloadShaders","Save shaders and hot reload them"}
-,{"DeleteSelectedNodes","Delete selected nodes in the current graph"}
-,{"AnimationSetKey","Make a new animation key with the current parameters values at the current time"}
-,{"HotKeyEditor","Open the Hotkey editor window"}
-,{"NewNodePopup","Open the new node menu"}
-,{"Undo","Undo the last operation"}
-,{"Redo","Redo the last undo"}
-,{"Copy","Copy the selected nodes"}
-,{"Cut","Cut the selected nodes"}
-,{"Paste","Paste previously copy/cut nodes"}
-,{"BuildMaterial","Build current material"}
-};
+std::vector<ImHotKey::HotKey> mHotkeys;
+
+void Imogen::Init()
+{
+    SetStyle();
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
+
+    DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+    DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
+    DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
+    DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+    DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+
+    struct HotKeyFunction
+    {
+        const char *name;
+        const char *lib;
+        std::function<void()> function;
+    };
+    static const std::vector<HotKeyFunction> hotKeyFunctions = {
+        {"Layout"
+            ,"Reorder nodes in a simpler layout"
+            , []() { NodeGraphLayout(); }}
+        ,{"PlayPause","Play or Stop current animation", []() {}}
+        ,{"AnimationFirstFrame","Set current time to the first frame of animation", []() {}}
+        ,{"AnimationNextFrame","Move to the next animation frame", []() {}}
+        ,{"AnimationPreviousFrame","Move to previous animation frame", []() {}}
+        ,{"MaterialExport","Export current material to a file", []() {}}
+        ,{"MaterialImport","Import a material file in the library", []() {}}
+        , { "ToggleLibrary"
+            ,"Show or hide Libaray window"
+            , [&]() { mbShowLibrary = !mbShowLibrary; } }
+        , { "ToggleNodeGraph"
+            ,"Show or hide Node graph window"
+            , [&]() { mbShowNodes = !mbShowNodes; } }
+        , { "ToggleLogger"
+            ,"Show or hide Logger window"
+            , [&]() { mbShowLog = !mbShowLog; } }
+        , { "ToggleSequencer"
+            ,"Show or hide Sequencer window"
+            , [&]() { mbShowTimeline = !mbShowTimeline; } }
+        , { "ToggleParameters"
+            ,"Show or hide Parameters window"
+            , [&]() { mbShowParameters = !mbShowParameters; } }
+        , { "ToggleEditor"
+            ,"Show or hide shader editor window"
+            , [&]() { mbShowShaders = !mbShowShaders; } }
+        ,{"MaterialNew","Create a new graph", []() {}}
+        ,{"ReloadShaders","Save shaders and hot reload them", []() {}}
+        ,{"DeleteSelectedNodes","Delete selected nodes in the current graph", []() {}}
+        ,{"AnimationSetKey","Make a new animation key with the current parameters values at the current time", []() {}}
+        ,{"HotKeyEditor","Open the Hotkey editor window", []() {}}
+        ,{"NewNodePopup","Open the new node menu", []() {}}
+        ,{"Undo"
+            ,"Undo the last operation"
+            , []() { gUndoRedoHandler.Undo(); }}
+        ,{"Redo"
+            ,"Redo the last undo"
+            , []() { gUndoRedoHandler.Redo(); }}
+        ,{"Copy","Copy the selected nodes", []() {}}
+        ,{"Cut","Cut the selected nodes", []() {}}
+        ,{"Paste","Paste previously copy/cut nodes", []() {}}
+        ,{"BuildMaterial","Build current material", []() {}}
+        };
+    mHotkeys.reserve(hotKeyFunctions.size());
+    mHotkeyFunctions.reserve(hotKeyFunctions.size());
+    for (const auto& hotKeyFunction : hotKeyFunctions)
+    {
+        mHotkeys.push_back({hotKeyFunction.name, hotKeyFunction.lib});
+        mHotkeyFunctions.push_back(hotKeyFunction.function);
+    }
+}
+
+void Imogen::Finish()
+{
+
+}
 
 
-static float currentDest = -440.f;
+const char *GetShortCutLib(const char *functionName)
+{
+    static char tmps[512];
+    for (int i = 0; i < mHotkeys.size(); i++)
+    {
+        if (!strcmp(mHotkeys[i].functionName, functionName))
+        {
+            ImHotKey::GetHotKeyLib(mHotkeys[i].functionKeys, tmps, sizeof(tmps), mHotkeys[i].functionName);
+            return tmps;
+        }
+    }
+    return "*FUNCTION_ERROR*";
+}
 
+void Imogen::HandleHotKeys()
+{
+    int hotkeyIndex = ImHotKey::GetHotKey(mHotkeys.data(), mHotkeys.size());
+    if (hotkeyIndex == -1)
+        return;
+    mHotkeyFunctions[hotkeyIndex]();
+}
+
+static const ImVec2 deltaHeight = ImVec2(0, 32);
 void Imogen::ShowAppMainMenuBar()
 {
     ImGuiIO& io = ImGui::GetIO();
 
     static const ImVec2 buttonSize(440, 30);
+    
+    mMainMenuPos = ImLerp(mMainMenuPos, mMainMenuDest, 0.2f);
 
-    static float currentPos = -440.f;
-    currentPos = ImLerp(currentPos, currentDest, 0.2f);
-
-    ImGui::SetNextWindowSize(ImVec2(440, io.DisplaySize.y - 32));
-    ImGui::SetNextWindowPos(ImVec2(currentPos, 32));
+    ImGui::SetNextWindowSize(ImVec2(440, io.DisplaySize.y - deltaHeight.y));
+    ImGui::SetNextWindowPos(ImVec2(mMainMenuPos, deltaHeight.y));
     if (!ImGui::BeginPopupModal("MainMenu", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar))
     {
-        currentPos = -440;
+        mMainMenuPos = -440;
         return;
     }
 
@@ -1304,15 +1375,15 @@ void Imogen::ShowAppMainMenuBar()
 
     if (ImGui::CollapsingHeader("Graph", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        if (ImGui::Button("Layout", buttonSize))
+        if (ImGui::Button(GetShortCutLib("Layout"), buttonSize))
         {
             NodeGraphLayout();
         }
-        if (ImGui::Button("Export", buttonSize))
+        if (ImGui::Button(GetShortCutLib("MaterialExport"), buttonSize))
         {
 
         }
-        if (ImGui::Button("Import", buttonSize))
+        if (ImGui::Button(GetShortCutLib("MaterialImport"), buttonSize))
         {
 
         }
@@ -1320,7 +1391,7 @@ void Imogen::ShowAppMainMenuBar()
 
     if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        if (ImGui::Button("Hot keys editor", buttonSize))
+        if (ImGui::Button(GetShortCutLib("HotKeyEditor"), buttonSize))
         {
             ImGui::OpenPopup("HotKeys Editor");
         }
@@ -1328,22 +1399,22 @@ void Imogen::ShowAppMainMenuBar()
 
     if (ImGui::CollapsingHeader("Windows", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::Checkbox("Timeline", &mbShowTimeline);
-        ImGui::Checkbox("Library", &mbShowLibrary);
-        ImGui::Checkbox("Nodes", &mbShowNodes);
-        ImGui::Checkbox("Shaders", &mbShowShaders);
-        ImGui::Checkbox("Log", &mbShowLog);
-        ImGui::Checkbox("Parameters", &mbShowParameters);
+        ImGui::Checkbox(GetShortCutLib("ToggleLibrary"), &mbShowLibrary);
+        ImGui::Checkbox(GetShortCutLib("ToggleNodeGraph"), &mbShowNodes);
+        ImGui::Checkbox(GetShortCutLib("ToggleLogger"), &mbShowLog);
+        ImGui::Checkbox(GetShortCutLib("ToggleSequencer"), &mbShowTimeline);
+        ImGui::Checkbox(GetShortCutLib("ToggleParameters"), &mbShowParameters);
+        ImGui::Checkbox(GetShortCutLib("ToggleEditor"), &mbShowShaders);
     }
 
-    ImHotKey::Edit(hotkeys.data(), hotkeys.size(), "HotKeys Editor");
+    ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 
     ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y-32));
     if ((io.MouseClicked[0] && !windowRect.Contains(io.MousePos) && !ImGui::IsPopupOpen("HotKeys Editor")))
     {
-        currentDest = -440;
+        mMainMenuDest = -440;
     }
-    if (currentPos <= -439.f && currentDest < -400.f)
+    if (mMainMenuPos <= -439.f && mMainMenuDest < -400.f)
     {
         ImGui::CloseCurrentPopup();
     }
@@ -1351,8 +1422,6 @@ void Imogen::ShowAppMainMenuBar()
     ImGui::EndPopup();
 }
 
-
-static const ImVec2 deltaHeight = ImVec2(0, 32);
 void Imogen::ShowTitleBar(Builder *builder)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -1361,7 +1430,7 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, 0.f) + deltaHeight);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);// ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
@@ -1375,11 +1444,11 @@ void Imogen::ShowTitleBar(Builder *builder)
     {
         if (ImGui::IsPopupOpen("MainMenu"))
         {
-            currentDest = -440.f;
+            mMainMenuDest = -440.f;
         }
         else
         {
-            currentDest = 0.f;
+            mMainMenuDest = 0.f;
             ImGui::OpenPopup("MainMenu");
         }
     }
@@ -1812,7 +1881,7 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
         }
         else
         {
-            for (auto& hotkey : hotkeys)
+            for (auto& hotkey : mHotkeys)
             {
                 unsigned int functionKeys;
                 char tmps[128];
@@ -1837,7 +1906,7 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     buf->appendf("ShowParameters=%d\n", instance->mbShowParameters ? 1 : 0);
     buf->appendf("LibraryViewMode=%d\n", instance->mLibraryViewMode);
 
-    for (const auto& hotkey : hotkeys)
+    for (const auto& hotkey : mHotkeys)
     {
         buf->appendf("%s=0x%x\n", hotkey.functionName, hotkey.functionKeys);
     }
@@ -1865,24 +1934,6 @@ Imogen::~Imogen()
     delete mSequence;
 }
 
-void Imogen::Init()
-{
-    SetStyle();
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-
-    DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
-    DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
-    DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
-    DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-    DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-}
-
-void Imogen::Finish()
-{
-
-}
-
 void Imogen::ClearAll()
 {
     mNodeGraphControler->Clear();
@@ -1892,5 +1943,4 @@ void Imogen::ClearAll()
     gUndoRedoHandler.Clear();
     mSequence->Clear();
 }
-
 

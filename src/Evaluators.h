@@ -48,6 +48,7 @@ struct Evaluator
     pybind11::module mPyModule;
 
     void RunPython() const;
+    
 
 #ifdef _DEBUG
     std::string mName;
@@ -59,6 +60,7 @@ struct Evaluators
     Evaluators() : gEvaluationStateGLSLBuffer(0) {}
     void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
     std::string GetEvaluator(const std::string& filename);
+    static void InitPython();
     int GetMask(size_t nodeType);
     void ClearEvaluators();
 

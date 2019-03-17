@@ -601,6 +601,25 @@ void Evaluators::InitPythonModules()
     mImogenModule.dec_ref();
 }
 
+void Evaluators::InitPython()
+{
+    pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
+    gEvaluators.InitPythonModules();
+    pybind11::exec(R"(
+        import sys
+        import Imogen
+        class CatchImogenIO:
+            def __init__(self):
+                pass
+            def write(self, txt):
+                Imogen.Log(txt)
+        catchImogenIO = CatchImogenIO()
+        sys.stdout = catchImogenIO
+        sys.stderr = catchImogenIO
+        print("Python stdout, stderr catched.\n"))");
+    pybind11::module::import("Plugins");
+}
+
 void Evaluator::RunPython() const
 {
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());

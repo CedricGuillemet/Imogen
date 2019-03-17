@@ -83,6 +83,8 @@ struct Imogen
     void DecodeThumbnailAsync(Material * material);
 
     static void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI = false);
+    void HandleHotKeys();
+
 protected:
     void HandleEditor(TextEditor &editor);
     void ShowAppMainMenuBar();
@@ -107,6 +109,12 @@ protected:
     bool mbShowLog = false;
     bool mbShowParameters = false;
     int mLibraryViewMode = 1;
+
+    float mMainMenuDest = -440.f;
+    float mMainMenuPos = -440.f;
+
+    
+    std::vector<std::function<void()> > mHotkeyFunctions;
 
     static Imogen *instance;
 };

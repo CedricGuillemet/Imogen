@@ -10,6 +10,11 @@
 		"parameters": [{
 			"name": "File name",
 			"type": "FilenameRead"
+		},
+		{
+			"name": "Camera",
+			"type": "Camera",
+			"default":""
 		}]
 	}
 ]

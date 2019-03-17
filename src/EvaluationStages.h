@@ -100,16 +100,34 @@ struct Scene
         {
             enum
             {
-                UV = 1 << 0,
+                POS = 1 << 0,
+                NORM = 1 << 1,
+                COL = 1 << 2,
+                UV = 1 << 3,
             };
         };
-        unsigned int mVerticesCount;
-        unsigned int mVA = 0;
-        unsigned int mIndexCount;
-        unsigned int mIA = 0;
-        unsigned int mVertexFormat;
-        unsigned int mVertexCount;
-        void Init(const void *vertices, unsigned int vertexCount, unsigned int format, const void *indices = nullptr);
+        struct Buffer
+        {
+            unsigned int id;
+            unsigned int format;
+            unsigned int stride;
+            unsigned int count;
+        };
+        struct IndexBuffer
+        {
+            unsigned int id;
+            unsigned int stride;
+            unsigned int count;
+        };
+        struct Primitive
+        {
+            std::vector<Buffer> mBuffers;
+            IndexBuffer mIndexBuffer = { 0, 0, 0 };
+            void AddBuffer(const void *data, unsigned int format, unsigned int stride, unsigned int count);
+            void AddIndexBuffer(const void *data, unsigned int stride, unsigned int count);
+            void Draw() const;
+        };
+        std::vector<Primitive> mPrimitives;
         void Draw() const;
     };
     std::vector<Mesh> mMeshes;

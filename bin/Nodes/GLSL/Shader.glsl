@@ -3,21 +3,6 @@
 
 #define TwoPI (PI*2)
 
-#ifdef VERTEX_SHADER
-
-layout(location = 0)in vec2 inUV;
-out vec2 vUV;
-
-void main()
-{
-    gl_Position = vec4(inUV.xy*2.0-1.0,0.5,1.0); 
-	vUV = inUV;
-}
-
-#endif
-
-
-#ifdef FRAGMENT_SHADER
 
 layout (std140) uniform EvaluationBlock
 {
@@ -36,6 +21,27 @@ layout (std140) uniform EvaluationBlock
 	int frame;
 	int localFrame;
 } EvaluationParam;
+
+#ifdef VERTEX_SHADER
+
+layout(location = 0)in vec2 inUV;
+layout(location = 1)in vec4 inColor;
+layout(location = 2)in vec3 inPosition;
+layout(location = 3)in vec3 inNormal;
+
+out vec2 vUV;
+
+void main()
+{
+    //gl_Position = vec4(inUV.xy*2.0-1.0,0.5,1.0); 
+	gl_Position = viewProjection * vec4(inPosition.xyz, 1.0);
+	vUV = inUV;
+}
+
+#endif
+
+
+#ifdef FRAGMENT_SHADER
 
 struct Camera
 {

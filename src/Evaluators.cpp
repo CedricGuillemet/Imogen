@@ -1049,6 +1049,22 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
+    inline char* ReadFile(const char *szFileName, int &bufSize)
+    {
+        FILE *fp = fopen(szFileName, "rb");
+        if (fp)
+        {
+            fseek(fp, 0, SEEK_END);
+            bufSize = ftell(fp);
+            fseek(fp, 0, SEEK_SET);
+            char *buf = new char[bufSize];
+            fread(buf, bufSize, 1, fp);
+            fclose(fp);
+            return buf;
+        }
+        return NULL;
+    }
+
     int ReadGLTF(EvaluationContext *evaluationContext, const char *filename, Scene **scene)
     {
         cgltf_options options = { 0 };
@@ -1056,11 +1072,69 @@ namespace EvaluationAPI
         cgltf_result result = cgltf_parse_file(&options, filename, &data);
         if (result == cgltf_result_success)
         {
-            /* TODO make awesome stuff */
+            std::map<std::string, const char*> binaries;
+            Scene *sc = new Scene;
+            sc->mMeshes.resize(data->meshes_count);
+            for (unsigned int i = 0; i < data->meshes_count; i++)
+            {
+                
+                auto& gltfMesh = data->meshes[i];
+                auto& mesh = sc->mMeshes[i];
+                mesh.mPrimitives.resize(gltfMesh.primitives_count);
+                // attributes
+                for (unsigned int j = 0; j < gltfMesh.primitives_count; j++)
+                {
+                    auto &gltfPrim = gltfMesh.primitives[j];
+                    auto &prim = mesh.mPrimitives[j];
+                    
+                    for (unsigned int k = 0; k < gltfPrim.attributes_count; k++)
+                    {
+                        unsigned int format = 0;
+                        auto attr = gltfPrim.attributes[k];
+                        switch (attr.type)
+                        {
+                        case cgltf_attribute_type_position: format = Scene::Mesh::Format::POS; break;
+                        case cgltf_attribute_type_normal: format = Scene::Mesh::Format::NORM; break;
+                        case cgltf_attribute_type_texcoord: format = Scene::Mesh::Format::UV; break;
+                        case cgltf_attribute_type_color: format = Scene::Mesh::Format::COL; break;
+                        }
+
+                        const std::string uri(attr.data->buffer_view->buffer->uri);
+                        auto iter = binaries.find(uri);
+                        if (iter == binaries.end())
+                        {
+                            int bufSize;
+                            binaries[uri] = ReadFile("D:/Dev/Imogen/bin/Media/Mesh/cartoon_head002/scene.bin", bufSize);
+                        }
+                        const char *binary = binaries[uri];
+                        const char* buffer = binary + attr.data->buffer_view->offset;
+                        prim.AddBuffer(buffer, format, attr.data->stride, attr.data->count);
+                    }
+
+                    // indices
+                    const std::string uri(gltfPrim.indices->buffer_view->buffer->uri);
+                    auto iter = binaries.find(uri);
+                    if (iter == binaries.end())
+                    {
+                        int bufSize;
+                        binaries[uri] = ReadFile("D:/Dev/Imogen/bin/Media/Mesh/cartoon_head002/scene.bin", bufSize);
+                    }
+                    const char *binary = binaries[uri];
+                    const char* buffer = binary + gltfPrim.indices->buffer_view->offset;
+                    prim.AddIndexBuffer(buffer, gltfPrim.indices->stride, gltfPrim.indices->count);
+                }
+            }
+
+            for (auto& bin : binaries)
+            {
+                delete[] bin.second;
+            }
             cgltf_free(data);
+            *scene = sc;
             return EVAL_OK;
         }
         return EVAL_ERR;
     }
 
 }
+

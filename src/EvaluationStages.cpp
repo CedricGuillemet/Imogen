@@ -57,8 +57,10 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
         defaultScene = new Scene;
         defaultScene->mMeshes.resize(1);
         auto& mesh = defaultScene->mMeshes.back();
+        mesh.mPrimitives.resize(1);
+        auto& prim = mesh.mPrimitives.back();
         static const float fsVts[] = { 0.f,0.f, 2.f,0.f, 0.f,2.f };
-        mesh.Init(fsVts, 3, Scene::Mesh::Format::UV);
+        prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2*sizeof(float), 3);
     }
     evaluation.mScene                 = defaultScene;
     evaluation.renderer               = nullptr;
@@ -464,54 +466,82 @@ void EvaluationStage::Clear()
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
-void Scene::Mesh::Draw() const
+void Scene::Mesh::Primitive::Draw() const
 {
-    if (!mIA)
+    unsigned int vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    for (auto& buffer : mBuffers)
     {
-        unsigned int vao;
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, mVA);
-        if (mVertexFormat & Format::UV)
+        glBindBuffer(GL_ARRAY_BUFFER, buffer.id);
+        switch (buffer.format)
         {
+        case Format::UV:
             glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(SemUV0);
+            break;
+        case Format::COL:
+            glVertexAttribPointer(SemUV0+1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(SemUV0+1);
+            break;
+        case Format::POS:
+            glVertexAttribPointer(SemUV0 + 2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(SemUV0 + 2);
+            break;
+        case Format::NORM:
+            glVertexAttribPointer(SemUV0 + 3, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(SemUV0 + 3);
+            break;
         }
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    
+
+    glBindVertexArray(vao);
+
+    if (!mIndexBuffer.id)
+    {
+        glDrawArrays(GL_TRIANGLES, 0, mBuffers[0].count);
+    }
+    else
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer.id);
+        glDrawElements(GL_TRIANGLES, mIndexBuffer.count/3, (mIndexBuffer.stride==4)?GL_UNSIGNED_INT:GL_UNSIGNED_SHORT, (void*)0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, mVertexCount);
-        glBindVertexArray(0);
+    glDeleteVertexArrays(1, &vao);
+}
+void Scene::Mesh::Primitive::AddBuffer(const void *data, unsigned int format, unsigned int stride, unsigned int count)
+{
+    unsigned int va;
+    glGenBuffers(1, &va);
+    glBindBuffer(GL_ARRAY_BUFFER, va);
+    glBufferData(GL_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    mBuffers.push_back({ va, format, stride, count });
+}
 
-        glDeleteVertexArrays(1, &vao);
+void Scene::Mesh::Primitive::AddIndexBuffer(const void *data, unsigned int stride, unsigned int count)
+{
+    unsigned int ia;
+    glGenBuffers(1, &ia);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ia);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    mIndexBuffer = { ia, stride, count };
+}
+void Scene::Mesh::Draw() const
+{
+    for (auto& prim : mPrimitives)
+    {
+        prim.Draw();
     }
 }
-
-unsigned int GetVertexSize(unsigned format)
-{
-    unsigned int size = 0;
-    if (format&Scene::Mesh::Format::UV)
-        size += 2 * sizeof(float);
-
-    return size;
-}
-
-void Scene::Mesh::Init(const void *vertices, unsigned int vertexCount, unsigned int format, const void *indices)
-{
-    if (mVA)
-        glDeleteBuffers(1, &mVA);
-
-    glGenBuffers(1, &mVA);
-    glBindBuffer(GL_ARRAY_BUFFER, mVA);
-    unsigned int vertexSize = GetVertexSize(format);
-    glBufferData(GL_ARRAY_BUFFER, vertexSize * vertexCount, vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    mVertexFormat = format;
-    mVertexCount = vertexCount;
-}
-    
 void Scene::Draw() const
 {
     for (auto& mesh : mMeshes)

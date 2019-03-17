@@ -43,7 +43,8 @@ int main(GLTFRead *param, Evaluation *evaluation, void *context)
 		strcpy(data.filename, param->filename);
 		data.targetIndex = evaluation->targetIndex;
 		data.context = context;
-		Job(context, ReadJob, &data, sizeof(JobData));
+		ReadJob(&data);
+		//Job(context, ReadJob, &data, sizeof(JobData));
 	}
 
 	return EVAL_OK;

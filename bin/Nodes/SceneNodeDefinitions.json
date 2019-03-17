@@ -1,0 +1,16 @@
+{
+	"nodes": [{
+		"name": "GLTFRead",
+		"category": 6,
+		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "File name",
+			"type": "FilenameRead"
+		}]
+	}
+]
+}

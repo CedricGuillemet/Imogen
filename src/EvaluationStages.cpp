@@ -51,7 +51,16 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     evaluation.mLocalTime             = 0;
     evaluation.gEvaluationMask        = gEvaluators.GetMask(nodeType);
     evaluation.mbDepthBuffer          = false;
-    evaluation.scene                  = nullptr;
+    static Scene* defaultScene = nullptr;
+    if (!defaultScene)
+    {
+        defaultScene = new Scene;
+        defaultScene->mMeshes.resize(1);
+        auto& mesh = defaultScene->mMeshes.back();
+        static const float fsVts[] = { 0.f,0.f, 2.f,0.f, 0.f,2.f };
+        mesh.Init(fsVts, 3, Scene::Mesh::Format::UV);
+    }
+    evaluation.mScene                 = defaultScene;
     evaluation.renderer               = nullptr;
     evaluation.mRuntimeUniqueId       = GetRuntimeId();
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
@@ -451,5 +460,63 @@ void EvaluationStage::Clear()
     if (gEvaluationMask&EvaluationGLSL)
         glDeleteBuffers(1, &mParametersBuffer);
     mParametersBuffer = 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+
+void Scene::Mesh::Draw() const
+{
+    if (!mIA)
+    {
+        unsigned int vao;
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, mVA);
+        if (mVertexFormat & Format::UV)
+        {
+            glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(SemUV0);
+        }
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, mVertexCount);
+        glBindVertexArray(0);
+
+        glDeleteVertexArrays(1, &vao);
+    }
+}
+
+unsigned int GetVertexSize(unsigned format)
+{
+    unsigned int size = 0;
+    if (format&Scene::Mesh::Format::UV)
+        size += 2 * sizeof(float);
+
+    return size;
+}
+
+void Scene::Mesh::Init(const void *vertices, unsigned int vertexCount, unsigned int format, const void *indices)
+{
+    if (mVA)
+        glDeleteBuffers(1, &mVA);
+
+    glGenBuffers(1, &mVA);
+    glBindBuffer(GL_ARRAY_BUFFER, mVA);
+    unsigned int vertexSize = GetVertexSize(format);
+    glBufferData(GL_ARRAY_BUFFER, vertexSize * vertexCount, vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    mVertexFormat = format;
+    mVertexCount = vertexCount;
+}
+    
+void Scene::Draw() const
+{
+    for (auto& mesh : mMeshes)
+    {
+        mesh.Draw();
+    }
 }
 

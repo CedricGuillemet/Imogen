@@ -131,6 +131,9 @@ int GetEvaluationRenderer(void *context, int target, void **renderer);
 int InitRenderer(void *context, int target, int mode, void *scene);
 int UpdateRenderer(void *context, int target);
 
+int ReadGLTF(void *evaluationContext, char *filename, void **scene);
+
+	
 #define EVAL_OK 0
 #define EVAL_ERR 1
 #define EVAL_DIRTY 2

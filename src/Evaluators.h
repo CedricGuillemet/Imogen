@@ -91,6 +91,7 @@ extern Evaluators gEvaluators;
 struct EvaluationContext;
 struct Image;
 struct EvaluationStages;
+struct Scene;
 
 namespace EvaluationAPI
 {
@@ -123,4 +124,6 @@ namespace EvaluationAPI
     int Read(EvaluationContext *evaluationContext, const char *filename, Image *image);
     int Write(EvaluationContext *evaluationContext, const char *filename, Image *image, int format, int quality);
     int Evaluate(EvaluationContext *evaluationContext, int target, int width, int height, Image *image);
+
+    int ReadGLTF(EvaluationContext *evaluationContext, const char *filename, Scene **scene);
 }

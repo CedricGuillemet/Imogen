@@ -91,6 +91,31 @@ struct Input
     int mInputs[8];
 };
 
+
+struct Scene
+{
+    struct Mesh
+    {
+        struct Format
+        {
+            enum
+            {
+                UV = 1 << 0,
+            };
+        };
+        unsigned int mVerticesCount;
+        unsigned int mVA = 0;
+        unsigned int mIndexCount;
+        unsigned int mIA = 0;
+        unsigned int mVertexFormat;
+        unsigned int mVertexCount;
+        void Init(const void *vertices, unsigned int vertexCount, unsigned int format, const void *indices = nullptr);
+        void Draw() const;
+    };
+    std::vector<Mesh> mMeshes;
+    void Draw() const;
+};
+
 struct EvaluationStage
 {
 #ifdef _DEBUG
@@ -119,7 +144,7 @@ struct EvaluationStage
     bool mRButDown;
     void Clear();
     // scene render
-    void *scene;
+    void *mScene;
     void *renderer;
     Image DecodeImage();
 

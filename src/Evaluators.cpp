@@ -38,6 +38,8 @@
 #include "ProgressiveRenderer.h"
 #include "GPUBVH.h"
 #include "Camera.h"
+#define CGLTF_IMPLEMENTATION
+#include "cgltf.h"
 
 Evaluators gEvaluators;
 extern enki::TaskScheduler g_TS;
@@ -80,6 +82,7 @@ static const EValuationFunction evaluationFunctions[] = {
     { "GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
     { "InitRenderer", (void*)EvaluationAPI::InitRenderer},
     { "UpdateRenderer", (void*)EvaluationAPI::UpdateRenderer},
+    { "ReadGLTF", (void*)EvaluationAPI::ReadGLTF},
 };
 
 static void libtccErrorFunc(void *opaque, const char *msg)
@@ -714,13 +717,13 @@ namespace EvaluationAPI
 
     int SetEvaluationScene(EvaluationContext *evaluationContext, int target, void *scene)
     {
-        evaluationContext->mEvaluationStages.mStages[target].scene = scene;
+        evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
         return EVAL_OK;
     }
 
     int GetEvaluationScene(EvaluationContext *evaluationContext, int target, void **scene)
     {
-        *scene = evaluationContext->mEvaluationStages.mStages[target].scene;
+        *scene = evaluationContext->mEvaluationStages.mStages[target].mScene;
         return EVAL_OK;
     }
 
@@ -886,7 +889,7 @@ namespace EvaluationAPI
     int InitRenderer(EvaluationContext *evaluationContext, int target, int mode, void *scene)
     {
         GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
-        evaluationContext->mEvaluationStages.mStages[target].scene = scene;
+        evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
 
         GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)evaluationContext->mEvaluationStages.mStages[target].renderer;
         if (!currentRenderer)
@@ -903,7 +906,7 @@ namespace EvaluationAPI
     {
         auto& eval = evaluationContext->mEvaluationStages;
         GLSLPathTracer::Renderer *renderer = (GLSLPathTracer::Renderer *)eval.mStages[target].renderer;
-        GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)eval.mStages[target].scene;
+        GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)eval.mStages[target].mScene;
 
         Camera* camera = eval.GetCameraParameter(target);
         if (camera)
@@ -1045,4 +1048,19 @@ namespace EvaluationAPI
         GetEvaluationImage(&context, target, image);
         return EVAL_OK;
     }
+
+    int ReadGLTF(EvaluationContext *evaluationContext, const char *filename, Scene **scene)
+    {
+        cgltf_options options = { 0 };
+        cgltf_data* data = NULL;
+        cgltf_result result = cgltf_parse_file(&options, filename, &data);
+        if (result == cgltf_result_success)
+        {
+            /* TODO make awesome stuff */
+            cgltf_free(data);
+            return EVAL_OK;
+        }
+        return EVAL_ERR;
+    }
+
 }

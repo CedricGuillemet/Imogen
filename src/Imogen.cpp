@@ -649,6 +649,7 @@ void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, 
     material.mFrameMin = nodeGraphControler.mEvaluationStages.mFrameMin;
     material.mFrameMax = nodeGraphControler.mEvaluationStages.mFrameMax;
     material.mPinnedParameters = nodeGraphControler.mEvaluationStages.mPinnedParameters;
+    material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 
 void Imogen::UpdateNewlySelectedGraph()
@@ -690,6 +691,7 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mEvaluationStages.mFrameMin = material.mFrameMin;
         mNodeGraphControler->mEvaluationStages.mFrameMax = material.mFrameMax;
         mNodeGraphControler->mEvaluationStages.mPinnedParameters = material.mPinnedParameters;
+        mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, gEvaluationTime, true);
         mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, gEvaluationTime);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);

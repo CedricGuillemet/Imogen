@@ -45,6 +45,7 @@ enum : uint32_t
     v_frameStartEnd,
     v_animation,
     v_pinnedParameters,
+    v_backgroundNode,
     v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
@@ -214,6 +215,7 @@ template<bool doWrite> struct Serialize
         ADD(v_animation, material->mFrameMin);
         ADD(v_animation, material->mFrameMax);
         ADD(v_pinnedParameters, material->mPinnedParameters);
+        ADD(v_backgroundNode, material->mBackgroundNode);
     }
 
     bool Ser(Library *library)

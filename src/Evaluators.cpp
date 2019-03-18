@@ -1084,7 +1084,7 @@ namespace EvaluationAPI
     {
         cgltf_options options = { 0 };
         cgltf_data* data = NULL;
-        cgltf_result result = cgltf_parse_file(&options, filename, &data);
+        cgltf_result result = cgltf_parse_file(&options, filename/*"D:/Dev/Imogen/bin/Media/Mesh/BoxTextured/BoxTextured.gltf"*/, &data);
         if (result == cgltf_result_success)
         {
             std::map<std::string, const char*> binaries;
@@ -1119,10 +1119,11 @@ namespace EvaluationAPI
                         if (iter == binaries.end())
                         {
                             int bufSize;
+                            //binaries[uri] = ReadFile("D:/Dev/Imogen/bin/Media/Mesh/BoxTextured/BoxTextured0.bin", bufSize);
                             binaries[uri] = ReadFile("D:/Dev/Imogen/bin/Media/Mesh/cartoon_head002/scene.bin", bufSize);
                         }
                         const char *binary = binaries[uri];
-                        const char* buffer = binary + attr.data->buffer_view->offset;
+                        const char* buffer = binary + attr.data->buffer_view->offset + attr.data->offset;
                         prim.AddBuffer(buffer, format, attr.data->stride, attr.data->count);
                     }
 
@@ -1132,10 +1133,11 @@ namespace EvaluationAPI
                     if (iter == binaries.end())
                     {
                         int bufSize;
+                        //binaries[uri] = ReadFile("D:/Dev/Imogen/bin/Media/Mesh/BoxTextured/BoxTextured0.bin", bufSize);
                         binaries[uri] = ReadFile("D:/Dev/Imogen/bin/Media/Mesh/cartoon_head002/scene.bin", bufSize);
                     }
                     const char *binary = binaries[uri];
-                    const char* buffer = binary + gltfPrim.indices->buffer_view->offset;
+                    const char* buffer = binary + gltfPrim.indices->buffer_view->offset + gltfPrim.indices->offset;
                     prim.AddIndexBuffer(buffer, gltfPrim.indices->stride, gltfPrim.indices->count);
                 }
             }

@@ -36,6 +36,10 @@ int main(GLTFRead *param, Evaluation *evaluation, void *context)
 {
 	int i;
 	
+	EnableDepthBuffer(context, evaluation->targetIndex, 1);
+	EnableFrameClear(context, evaluation->targetIndex, 1);
+	SetVertexSpace(context, evaluation->targetIndex, vertexSpace_World);
+	
 	if (strlen(param->filename))
 	{
 		SetProcessing(context, evaluation->targetIndex, 1);

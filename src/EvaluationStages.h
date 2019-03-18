@@ -62,26 +62,6 @@ enum BlendOp
 };
 
 
-struct EvaluationInfo
-{
-    float viewRot[16];
-    float viewProjection[16];
-    float viewInverse[16];
-    float viewport[4];
-
-    int targetIndex;
-    int forcedDirty;
-    int uiPass;
-    int passNumber;
-    float mouse[4];
-    int inputIndices[8];
-    float pad2[4];
-
-    int mFrame;
-    int mLocalFrame;
-};
-
-
 struct Input
 {
     Input()
@@ -152,7 +132,9 @@ struct EvaluationStage
     int mBlendingDst;
     int mLocalTime;
     int mStartFrame, mEndFrame;
+    int mVertexSpace; // UV, worldspace
     bool mbDepthBuffer;
+    bool mbClearBuffer;
     // Camera
     Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
     // mouse

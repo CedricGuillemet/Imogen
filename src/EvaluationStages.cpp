@@ -51,6 +51,8 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     evaluation.mLocalTime             = 0;
     evaluation.gEvaluationMask        = gEvaluators.GetMask(nodeType);
     evaluation.mbDepthBuffer          = false;
+    evaluation.mbClearBuffer          = false;
+    evaluation.mVertexSpace           = 0;
     static Scene* defaultScene = nullptr;
     if (!defaultScene)
     {
@@ -478,19 +480,19 @@ void Scene::Mesh::Primitive::Draw() const
         switch (buffer.format)
         {
         case Format::UV:
-            glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 8, 0);
             glEnableVertexAttribArray(SemUV0);
             break;
         case Format::COL:
-            glVertexAttribPointer(SemUV0+1, 4, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(SemUV0+1, 4, GL_FLOAT, GL_FALSE, 16, 0);
             glEnableVertexAttribArray(SemUV0+1);
             break;
         case Format::POS:
-            glVertexAttribPointer(SemUV0 + 2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(SemUV0 + 2, 3, GL_FLOAT, GL_FALSE, 12, 0);
             glEnableVertexAttribArray(SemUV0 + 2);
             break;
         case Format::NORM:
-            glVertexAttribPointer(SemUV0 + 3, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glVertexAttribPointer(SemUV0 + 3, 3, GL_FLOAT, GL_FALSE, 12, 0);
             glEnableVertexAttribArray(SemUV0 + 3);
             break;
         }
@@ -508,7 +510,7 @@ void Scene::Mesh::Primitive::Draw() const
     else
     {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer.id);
-        glDrawElements(GL_TRIANGLES, mIndexBuffer.count/3, (mIndexBuffer.stride==4)?GL_UNSIGNED_INT:GL_UNSIGNED_SHORT, (void*)0);
+        glDrawElements(GL_TRIANGLES, mIndexBuffer.count, (mIndexBuffer.stride==4)?GL_UNSIGNED_INT:GL_UNSIGNED_SHORT, (void*)0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
     glBindVertexArray(0);

@@ -63,6 +63,9 @@ static const EValuationFunction evaluationFunctions[] = {
     { "Evaluate", (void*)EvaluationAPI::Evaluate},
     { "SetBlendingMode", (void*)EvaluationAPI::SetBlendingMode},
     { "EnableDepthBuffer", (void*)EvaluationAPI::EnableDepthBuffer},
+    { "EnableFrameClear", (void*)EvaluationAPI::EnableFrameClear},
+    { "SetVertexSpace", (void*)EvaluationAPI::SetVertexSpace},
+    
     { "GetEvaluationSize", (void*)EvaluationAPI::GetEvaluationSize},
     { "SetEvaluationSize", (void*)EvaluationAPI::SetEvaluationSize },
     { "SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize },
@@ -675,6 +678,18 @@ namespace EvaluationAPI
     {
         EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
         evaluation.mbDepthBuffer = enable != 0;
+    }
+
+    void EnableFrameClear(EvaluationContext *evaluationContext, int target, int enable)
+    {
+        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
+        evaluation.mbClearBuffer = enable != 0;
+    }
+
+    void SetVertexSpace(EvaluationContext *evaluationContext, int target, int vertexSpace)
+    {
+        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
+        evaluation.mVertexSpace = vertexSpace;
     }
 
     int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight)

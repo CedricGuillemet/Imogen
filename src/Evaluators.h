@@ -105,6 +105,9 @@ namespace EvaluationAPI
     //static int Evaluate(int target, int width, int height, Image *image);
     void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst);
     void EnableDepthBuffer(EvaluationContext *evaluationContext, int target, int enable);
+    void EnableFrameClear(EvaluationContext *evaluationContext, int target, int enable);
+    void SetVertexSpace(EvaluationContext *evaluationContext, int target, int vertexSpace);
+    
     //int SetNodeImage(int target, Image *image);
     int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
     int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight);

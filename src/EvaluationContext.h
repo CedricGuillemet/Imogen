@@ -28,6 +28,26 @@
 #include <atomic>
 #include "EvaluationStages.h"
 
+struct EvaluationInfo
+{
+    float viewRot[16];
+    float viewProjection[16];
+    float viewInverse[16];
+    float viewport[4];
+
+    int targetIndex;
+    int forcedDirty;
+    int uiPass;
+    int passNumber;
+    float mouse[4];
+    int inputIndices[8];
+
+    int mFrame;
+    int mLocalFrame;
+    int mVertexSpace;
+    int dummy;
+};
+
 struct EvaluationContext
 {
     EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);

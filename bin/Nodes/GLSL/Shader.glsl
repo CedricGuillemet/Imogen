@@ -15,11 +15,14 @@ layout (std140) uniform EvaluationBlock
 	int forcedDirty;
 	int	uiPass;
 	int passNumber;
+	
 	vec4 mouse; // x,y, lbut down, rbut down
 	ivec4 inputIndices[2];
 	
 	int frame;
 	int localFrame;
+	int mVertexSpace;
+	int dummy;
 } EvaluationParam;
 
 #ifdef VERTEX_SHADER
@@ -30,12 +33,24 @@ layout(location = 2)in vec3 inPosition;
 layout(location = 3)in vec3 inNormal;
 
 out vec2 vUV;
-
+out vec3 vWorldPosition;
+out vec3 vWorldNormal;
+out vec4 vColor;
 void main()
 {
-    //gl_Position = vec4(inUV.xy*2.0-1.0,0.5,1.0); 
-	gl_Position = viewProjection * vec4(inPosition.xyz, 1.0);
+	if (EvaluationParam.mVertexSpace == 1)
+    {
+		gl_Position = EvaluationParam.viewProjection * vec4(inPosition.xyz, 1.0);
+	}
+	else
+	{
+		gl_Position = vec4(inUV.xy*2.0-1.0,0.5,1.0); 
+	}
+	
 	vUV = inUV;
+	vColor = inColor;
+	vWorldNormal = inNormal;
+	vWorldPosition = inPosition;
 }
 
 #endif
@@ -53,6 +68,9 @@ struct Camera
 
 layout(location=0) out vec4 outPixDiffuse;
 in vec2 vUV;
+in vec3 vWorldPosition;
+in vec3 vWorldNormal;
+in vec4 vColor;
 
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;

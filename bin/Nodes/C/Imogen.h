@@ -31,6 +31,8 @@ typedef struct Evaluation_t
 	
 	int frame;
 	int localFrame;
+	int vertexSpace;
+	int dummy;
 } Evaluation;
 
 enum BlendOp
@@ -108,6 +110,12 @@ int Evaluate(void *context, int target, int width, int height, Image *image);
 
 void SetBlendingMode(void *context, int target, int blendSrc, int blendDst);
 void EnableDepthBuffer(void *context, int target, int enable);
+void EnableFrameClear(void *context, int target, int enable);
+
+int vertexSpace_UV = 0;
+int vertexSpace_World = 1;
+void SetVertexSpace(void *context, int target, int vertexMode);
+
 int GetEvaluationSize(void *context, int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(void *context, int target, int imageWidth, int imageHeight);
 int SetEvaluationCubeSize(void *context, int target, int faceWidth);

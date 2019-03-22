@@ -586,11 +586,6 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
     return ret;
 }
 
-static int selectedMaterial = -1;
-int Imogen::GetCurrentMaterialIndex()
-{
-    return selectedMaterial;
-}
 void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, int materialIndex)
 {
     if (materialIndex == -1)
@@ -655,11 +650,11 @@ void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, 
 void Imogen::UpdateNewlySelectedGraph()
 {
     // set new
-    if (selectedMaterial != -1)
+    if (mSelectedMaterial != -1)
     {
         ClearAll();
 
-        Material& material = library.mMaterials[selectedMaterial];
+        Material& material = library.mMaterials[mSelectedMaterial];
         for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
         {
             MaterialNode& node = material.mMaterialNodes[i];
@@ -699,41 +694,52 @@ void Imogen::UpdateNewlySelectedGraph()
     }
 }
 
+void Imogen::NewGraph()
+{
+    int previousSelection = mSelectedMaterial;
+    library.mMaterials.push_back(Material());
+    Material& back = library.mMaterials.back();
+    back.mName = "Name_Of_New_Graph";
+    back.mThumbnailTextureId = 0;
+    back.mRuntimeUniqueId = GetRuntimeId();
+
+    if (previousSelection != -1)
+    {
+        ValidateMaterial(library, *mNodeGraphControler, previousSelection);
+    }
+    mSelectedMaterial = int(library.mMaterials.size()) - 1;
+    ClearAll();
+}
+
+void Imogen::ImportGraph()
+{
+    nfdchar_t *outPath = NULL;
+    nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
+
+    if (result == NFD_OKAY)
+    {
+        Library tempLibrary;
+        LoadLib(&tempLibrary, outPath);
+        for (auto& material : tempLibrary.mMaterials)
+        {
+            Log("Importing Graph %s\n", material.mName.c_str());
+            library.mMaterials.push_back(material);
+        }
+        free(outPath);
+    }
+}
+
 void Imogen::LibraryEdit(Library& library)
 {
-    int previousSelection = selectedMaterial;
+    int previousSelection = mSelectedMaterial;
     if (ImGui::Button("New Graph"))
     {
-        library.mMaterials.push_back(Material());
-        Material& back = library.mMaterials.back();
-        back.mName = "Name_Of_New_Graph";
-        back.mThumbnailTextureId = 0;
-        back.mRuntimeUniqueId = GetRuntimeId();
-
-        if (previousSelection != -1)
-        {
-            ValidateMaterial(library, *mNodeGraphControler, previousSelection);
-        }
-        selectedMaterial = int(library.mMaterials.size()) - 1;
-        ClearAll();
+        NewGraph();
     }
     ImGui::SameLine();
     if (ImGui::Button("Import"))
     {
-        nfdchar_t *outPath = NULL;
-        nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
-
-        if (result == NFD_OKAY)
-        {
-            Library tempLibrary;
-            LoadLib(&tempLibrary, outPath);
-            for (auto& material : tempLibrary.mMaterials)
-            {
-                Log("Importing Graph %s\n", material.mName.c_str());
-                library.mMaterials.push_back(material);
-            }
-            free(outPath);
-        }
+        ImportGraph();
     }
     ImGui::SameLine();
 
@@ -751,7 +757,7 @@ void Imogen::LibraryEdit(Library& library)
     }
 
     ImGui::BeginChild("TV");
-    if (TVRes(library.mMaterials, "Graphs", selectedMaterial, 0, mLibraryViewMode, this))
+    if (TVRes(library.mMaterials, "Graphs", mSelectedMaterial, 0, mLibraryViewMode, this))
     {
         mNodeGraphControler->mSelectedNodeIndex = -1;
         // save previous
@@ -776,11 +782,11 @@ void Imogen::SetExistingMaterialActive(const char * materialName)
 
 void Imogen::SetExistingMaterialActive(int materialIndex)
 {
-    if (materialIndex != selectedMaterial && selectedMaterial != -1)
+    if (materialIndex != mSelectedMaterial && mSelectedMaterial != -1)
     {
-        ValidateMaterial(library, *mNodeGraphControler, selectedMaterial);
+        ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
     }
-    selectedMaterial = materialIndex;
+    mSelectedMaterial = materialIndex;
     UpdateNewlySelectedGraph();
 }
 
@@ -1281,11 +1287,15 @@ void Imogen::Init()
         , { "ToggleEditor"
             ,"Show or hide shader editor window"
             , [&]() { mbShowShaders = !mbShowShaders; } }
-        ,{"MaterialNew","Create a new graph", []() {}}
+        ,{"MaterialNew","Create a new graph", [&]() { NewGraph(); }}
         ,{"ReloadShaders","Save shaders and hot reload them", []() {}}
         ,{"DeleteSelectedNodes","Delete selected nodes in the current graph", []() {}}
         ,{"AnimationSetKey","Make a new animation key with the current parameters values at the current time", []() {}}
-        ,{"HotKeyEditor","Open the Hotkey editor window", []() {}}
+        ,{"HotKeyEditor"
+            , "Open the Hotkey editor window"
+            , [&]() { 
+                ImGui::OpenPopup("HotKeys Editor"); 
+            }}
         ,{"NewNodePopup","Open the new node menu", []() {}}
         ,{"Undo"
             ,"Undo the last operation"
@@ -1296,7 +1306,9 @@ void Imogen::Init()
         ,{"Copy","Copy the selected nodes", []() {}}
         ,{"Cut","Cut the selected nodes", []() {}}
         ,{"Paste","Paste previously copy/cut nodes", []() {}}
-        ,{"BuildMaterial","Build current material", []() {}}
+        ,{"BuildMaterial"
+            ,"Build current material"
+            , [&]() { BuildCurrentMaterial(mBuilder); }}
         };
     mHotkeys.reserve(hotKeyFunctions.size());
     mHotkeyFunctions.reserve(hotKeyFunctions.size());
@@ -1377,15 +1389,15 @@ void Imogen::ShowAppMainMenuBar()
 
     if (ImGui::CollapsingHeader("Graph", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        if (ImGui::Button(GetShortCutLib("Layout"), buttonSize))
+        if (Button("Layout", "Layout", buttonSize))
         {
             NodeGraphLayout();
         }
-        if (ImGui::Button(GetShortCutLib("MaterialExport"), buttonSize))
+        if (Button("MaterialExport", "Export Material", buttonSize))
         {
 
         }
-        if (ImGui::Button(GetShortCutLib("MaterialImport"), buttonSize))
+        if (Button("MaterialImport", "Import Material", buttonSize))
         {
 
         }
@@ -1393,9 +1405,9 @@ void Imogen::ShowAppMainMenuBar()
 
     if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        if (ImGui::Button(GetShortCutLib("HotKeyEditor"), buttonSize))
+        if (Button("HotKeyEditor", "Hot Keys Editor", buttonSize))
         {
-            ImGui::OpenPopup("HotKeys Editor");
+            mNewPopup = "HotKeys Editor";
         }
     }
 
@@ -1408,8 +1420,6 @@ void Imogen::ShowAppMainMenuBar()
         ImGui::Checkbox(GetShortCutLib("ToggleParameters"), &mbShowParameters);
         ImGui::Checkbox(GetShortCutLib("ToggleEditor"), &mbShowShaders);
     }
-
-    ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 
     ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y-32));
     if ((io.MouseClicked[0] && !windowRect.Contains(io.MousePos) && !ImGui::IsPopupOpen("HotKeys Editor")))
@@ -1424,9 +1434,74 @@ void Imogen::ShowAppMainMenuBar()
     ImGui::EndPopup();
 }
 
+void Imogen::BuildCurrentMaterial(Builder *builder)
+{
+    if (mSelectedMaterial != -1)
+    {
+        Material& material = library.mMaterials[mSelectedMaterial];
+        builder->Add(material.mName.c_str(), mNodeGraphControler->mEvaluationStages);
+    }
+}
+
+int Imogen::GetFunctionByName(const char *functionName) const
+{
+    for (unsigned int i = 0;i<mHotkeys.size();i++)
+    {
+        const auto& hotkey = mHotkeys[i];
+        if (!strcmp(hotkey.functionName, functionName))
+            return i;
+    }
+    return -1;
+}
+
+bool Imogen::ImageButton(const char *functionName, unsigned int icon, ImVec2 size)
+{
+    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon, size, ImVec2(0, 1), ImVec2(1, 0));
+    if (ImGui::IsItemHovered())
+    {
+        int functionIndex = GetFunctionByName(functionName);
+        if (functionIndex != -1)
+        {
+            char lib[512];
+            auto& hotkey = mHotkeys[functionIndex];
+            ImHotKey::GetHotKeyLib(hotkey.functionKeys, lib, sizeof(lib));
+            ImGui::BeginTooltip();
+            ImGui::Text("%s [%s]", hotkey.functionLib, lib);
+            ImGui::EndTooltip();
+        }
+    }
+    return res;
+}
+
+bool Imogen::Button(const char *functionName, const char *label, ImVec2 size)
+{
+    bool res = ImGui::Button(label, size);
+    if (ImGui::IsItemHovered())
+    {
+        int functionIndex = GetFunctionByName(functionName);
+        if (functionIndex != -1)
+        {
+            char lib[512];
+            auto& hotkey = mHotkeys[functionIndex];
+            ImHotKey::GetHotKeyLib(hotkey.functionKeys, lib, sizeof(lib));
+            ImGui::BeginTooltip();
+            ImGui::Text("%s [%s]", hotkey.functionLib, lib);
+            ImGui::EndTooltip();
+        }
+    }
+    return res;
+}
+
 void Imogen::ShowTitleBar(Builder *builder)
 {
     ImGuiIO& io = ImGui::GetIO();
+
+    if (mNewPopup)
+    {
+        ImGui::OpenPopup(mNewPopup);
+        mNewPopup = nullptr;
+    }
+
 
     ImVec2 butSize = ImVec2(32, 32);
     ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -1461,9 +1536,9 @@ void Imogen::ShowTitleBar(Builder *builder)
     // imogen info strings
     ImGui::BeginChildFrame(152, ImVec2(io.DisplaySize.x - butSize.x*4.f - 300, 32.f));
     ImGui::Text("Imogen 0.11");
-    if (selectedMaterial != -1)
+    if (mSelectedMaterial != -1)
     {
-        Material& material = library.mMaterials[selectedMaterial];
+        Material& material = library.mMaterials[mSelectedMaterial];
         ImGui::Text("%s", material.mName.c_str());
     }
     ImGui::EndChildFrame();
@@ -1471,19 +1546,9 @@ void Imogen::ShowTitleBar(Builder *builder)
 
     // exporting frame / build
     unsigned int buildIcon = gImageCache.GetTexture("Stock/Build.png");
-    if (ImGui::ImageButton((ImTextureID)(int64_t)buildIcon, ImVec2(30, 30), ImVec2(0, 1), ImVec2(1, 0)))
+    if (ImageButton("BuildMaterial", buildIcon, ImVec2(30, 30)))
     {
-        if (selectedMaterial != -1)
-        {
-            Material& material = library.mMaterials[selectedMaterial];
-            builder->Add(material.mName.c_str(), mNodeGraphControler->mEvaluationStages);
-        }
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("Add current graph to the build list");
-        ImGui::EndTooltip();
+        BuildCurrentMaterial(builder);
     }
     ImGui::SameLine();
     ImGui::BeginChildFrame(153, ImVec2(300.f, 32));
@@ -1552,6 +1617,8 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::End();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(5);
+
+    
     // done
 }
 
@@ -1666,9 +1733,9 @@ void Imogen::ShowTimeLine()
 
 void Imogen::ShowNodeGraph()
 {
-    if (selectedMaterial != -1)
+    if (mSelectedMaterial != -1)
     {
-        Material& material = library.mMaterials[selectedMaterial];
+        Material& material = library.mMaterials[mSelectedMaterial];
         ImGui::PushItemWidth(150);
         ImGui::InputText("Name", &material.mName);
         ImGui::SameLine();
@@ -1683,7 +1750,7 @@ void Imogen::ShowNodeGraph()
             if (result == NFD_OKAY)
             {
                 Library tempLibrary;
-                Material& material = library.mMaterials[selectedMaterial];
+                Material& material = library.mMaterials[mSelectedMaterial];
                 tempLibrary.mMaterials.push_back(material);
                 SaveLib(&tempLibrary, outPath);
                 Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
@@ -1693,19 +1760,19 @@ void Imogen::ShowNodeGraph()
         ImGui::SameLine();
         if (ImGui::Button("Delete Graph"))
         {
-            library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
-            selectedMaterial = int(library.mMaterials.size()) - 1;
+            library.mMaterials.erase(library.mMaterials.begin() + mSelectedMaterial);
+            mSelectedMaterial = int(library.mMaterials.size()) - 1;
             UpdateNewlySelectedGraph();
         }
         ImGui::PopItemWidth();
     }
-    NodeGraph(mNodeGraphControler, selectedMaterial != -1);
+    NodeGraph(mNodeGraphControler, mSelectedMaterial != -1);
 }
 
 void Imogen::Show(Builder *builder, Library& library)
 {
     ImGuiIO& io = ImGui::GetIO();
-
+    mBuilder = builder;
     ShowTitleBar(builder);
 
     ImGui::SetNextWindowPos(deltaHeight);
@@ -1799,11 +1866,12 @@ void Imogen::Show(Builder *builder, Library& library)
 
         ImGui::End();
     }
+    ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 }
 
 void Imogen::ValidateCurrentMaterial(Library& library)
 {
-    ValidateMaterial(library, *mNodeGraphControler, selectedMaterial);
+    ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
 }
 
 void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)

@@ -77,7 +77,6 @@ struct Imogen
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
     
-    int GetCurrentMaterialIndex();
     void SetExistingMaterialActive(int materialIndex);
     void SetExistingMaterialActive(const char * materialName);
     void DecodeThumbnailAsync(Material * material);
@@ -94,6 +93,14 @@ protected:
     void UpdateNewlySelectedGraph();
     void ShowTimeLine();
     void ShowNodeGraph();
+    void BuildCurrentMaterial(Builder *builder);
+
+    void NewGraph();
+    void ImportGraph();
+
+    int GetFunctionByName(const char *functionName) const;
+    bool ImageButton(const char *functionName, unsigned int icon, ImVec2 size);
+    bool Button(const char *functionName, const char *label, ImVec2 size);
 
     static void ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line_start);
     static void WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
@@ -101,7 +108,7 @@ protected:
 
     MySequence *mSequence;
     NodeGraphControler *mNodeGraphControler;
-
+    Builder *mBuilder;
     bool mbShowTimeline = false;
     bool mbShowLibrary = false;
     bool mbShowNodes = false;
@@ -113,7 +120,9 @@ protected:
     float mMainMenuDest = -440.f;
     float mMainMenuPos = -440.f;
 
-    
+    char *mNewPopup = nullptr;
+    int mSelectedMaterial = -1;
+
     std::vector<std::function<void()> > mHotkeyFunctions;
 
     static Imogen *instance;

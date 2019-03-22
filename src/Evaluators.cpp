@@ -659,25 +659,6 @@ namespace EvaluationAPI
         }
         return EVAL_OK;
     }
-#if 0 
-    looks like unused
-    int SetNodeImage(int target, Image *image)
-    {
-        std::vector<unsigned char> pngImage;
-        if (Image::EncodePng(image, pngImage) == EVAL_ERR)
-            return EVAL_ERR;
-
-        /* TODO
-        extern Library library;
-        extern Imogen imogen;
-
-        int materialIndex = imogen.GetCurrentMaterialIndex();
-        Material & material = library.mMaterials[materialIndex];
-        material.mMaterialNodes[target].mImage = pngImage;
-        */
-        return EVAL_OK;
-    }
-#endif
 
     void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst)
     {

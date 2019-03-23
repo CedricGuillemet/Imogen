@@ -53,10 +53,10 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     evaluation.mbDepthBuffer          = false;
     evaluation.mbClearBuffer          = false;
     evaluation.mVertexSpace           = 0;
-    static Scene* defaultScene = nullptr;
+    static std::shared_ptr<Scene> defaultScene;
     if (!defaultScene)
     {
-        defaultScene = new Scene;
+        defaultScene = std::make_shared<Scene>();
         defaultScene->mMeshes.resize(1);
         auto& mesh = defaultScene->mMeshes.back();
         mesh.mPrimitives.resize(1);
@@ -68,7 +68,7 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
         defaultScene->mWorldTransforms[0].Identity();
         defaultScene->mMeshIndex.resize(1, 0);
     }
-    evaluation.mScene                 = defaultScene;
+    evaluation.mGScene                = defaultScene;
     evaluation.renderer               = nullptr;
     evaluation.mRuntimeUniqueId       = GetRuntimeId();
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
@@ -568,5 +568,5 @@ void Scene::Draw(EvaluationInfo& evaluationInfo) const
 
 Scene::~Scene()
 {
-
+    // todo : clear ia/va
 }

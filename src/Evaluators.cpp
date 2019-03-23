@@ -729,24 +729,27 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    std::map<Scene*, std::weak_ptr<Scene>> gScenePointerCache;
     std::map<std::string, std::weak_ptr<Scene>> gSceneCache;
 
     int SetEvaluationScene(EvaluationContext *evaluationContext, int target, void *scene)
     {
-        auto iter = gScenePointerCache.find((Scene*)scene);
-        if (iter == gScenePointerCache.end() && (!iter->second.expired()))
+        const std::string& name = ((Scene*)scene)->mName;
+        auto& stage = evaluationContext->mEvaluationStages.mStages[target];
+        auto iter = gSceneCache.find(name);
+        if (iter == gSceneCache.end() || iter->second.expired())
         {
-            return EVAL_ERR;
+            stage.mGScene = std::shared_ptr<Scene>((Scene*)scene);
+            gSceneCache.insert(std::make_pair(name, stage.mGScene));
+            return EVAL_OK;
         }
-
-        evaluationContext->mEvaluationStages.mStages[target].mGScene = iter->second.lock();
+        
+        stage.mGScene = iter->second.lock();
         return EVAL_OK;
     }
 
     int GetEvaluationScene(EvaluationContext *evaluationContext, int target, void **scene)
     {
-        *scene = evaluationContext->mEvaluationStages.mStages[target].mScene;
+        *scene = evaluationContext->mEvaluationStages.mStages[target].mGScene.get();
         return EVAL_OK;
     }
 
@@ -1092,13 +1095,10 @@ namespace EvaluationAPI
     {
         std::string strFilename(filename);
         auto iter = gSceneCache.find(strFilename);
-        if (iter != gSceneCache.end())
+        if (iter != gSceneCache.end() && (!iter->second.expired()))
         {
-            if (!iter->second.expired())
-            {
-                *scene = iter->second.lock().get();
-                return EVAL_OK;
-            }
+            *scene = iter->second.lock().get();
+            return EVAL_OK;
         }
         cgltf_options options = { 0 };
         cgltf_data* data = NULL;
@@ -1110,9 +1110,10 @@ namespace EvaluationAPI
         if (result != cgltf_result_success)
             return EVAL_ERR;
 
-        std::shared_ptr<Scene> sc(new Scene);
-        gSceneCache.insert(std::make_pair(strFilename, sc));
-        gScenePointerCache.insert(std::make_pair(sc.get(), sc));
+        Scene* sc = new Scene;
+        sc->mName = strFilename;
+        //gSceneCache.insert(std::make_pair(strFilename, sc));
+        //gScenePointerCache.insert(std::make_pair(sc.get(), sc));
 
         sc->mMeshes.resize(data->meshes_count);
         for (unsigned int i = 0; i < data->meshes_count; i++)
@@ -1165,7 +1166,7 @@ namespace EvaluationAPI
 
 
         cgltf_free(data);
-        *scene = sc.get();
+        *scene = sc;
         return EVAL_OK;
     }
 

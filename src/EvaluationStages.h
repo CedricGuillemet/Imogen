@@ -116,7 +116,7 @@ struct Scene
     std::vector<Mesh> mMeshes;
     std::vector<Mat4x4> mWorldTransforms;
     std::vector<int> mMeshIndex;
-
+    std::string mName;
     void Draw(EvaluationInfo& evaluationInfo) const;
 };
 
@@ -150,7 +150,7 @@ struct EvaluationStage
     bool mRButDown;
     void Clear();
     // scene render
-    void *mScene;
+    void *mScene; // for path tracer
     std::shared_ptr<Scene> mGScene;
     void *renderer;
     Image DecodeImage();

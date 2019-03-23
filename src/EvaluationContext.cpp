@@ -353,7 +353,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     {
         glUseProgram(gDefaultShader.mNodeErrorShader);
         //mFSQuad.Render();
-        ((Scene*)evaluationStage.mScene)->Draw();
+        ((Scene*)evaluationStage.mScene)->Draw(evaluationInfo);
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -463,7 +463,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             else
             {
                 //mFSQuad.Render();
-                ((Scene*)evaluationStage.mScene)->Draw();
+                ((Scene*)evaluationStage.mScene)->Draw(evaluationInfo);
             }
             // swap target for multipass
             // set previous target as source

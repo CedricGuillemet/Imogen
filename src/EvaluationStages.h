@@ -40,6 +40,7 @@
 struct ImDrawList;
 struct ImDrawCmd;
 struct EvaluationContext;
+struct EvaluationInfo;
 
 enum BlendOp
 {
@@ -74,6 +75,8 @@ struct Input
 
 struct Scene
 {
+    Scene() {}
+    virtual ~Scene();
     struct Mesh
     {
         struct Format
@@ -111,7 +114,10 @@ struct Scene
         void Draw() const;
     };
     std::vector<Mesh> mMeshes;
-    void Draw() const;
+    std::vector<Mat4x4> mWorldTransforms;
+    std::vector<int> mMeshIndex;
+
+    void Draw(EvaluationInfo& evaluationInfo) const;
 };
 
 struct EvaluationStage
@@ -145,6 +151,7 @@ struct EvaluationStage
     void Clear();
     // scene render
     void *mScene;
+    std::shared_ptr<Scene> mGScene;
     void *renderer;
     Image DecodeImage();
 

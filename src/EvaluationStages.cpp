@@ -63,6 +63,10 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
         auto& prim = mesh.mPrimitives.back();
         static const float fsVts[] = { 0.f,0.f, 2.f,0.f, 0.f,2.f };
         prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2*sizeof(float), 3);
+        // add node and transform
+        defaultScene->mWorldTransforms.resize(1);
+        defaultScene->mWorldTransforms[0].Identity();
+        defaultScene->mMeshIndex.resize(1, 0);
     }
     evaluation.mScene                 = defaultScene;
     evaluation.renderer               = nullptr;
@@ -544,11 +548,25 @@ void Scene::Mesh::Draw() const
         prim.Draw();
     }
 }
-void Scene::Draw() const
+void Scene::Draw(EvaluationInfo& evaluationInfo) const
 {
-    for (auto& mesh : mMeshes)
+    for (unsigned int i = 0; i < mMeshIndex.size(); i++)
     {
-        mesh.Draw();
+        int index = mMeshIndex[i];
+        if (index == -1)
+            continue;
+
+        glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+        memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
+        FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        mMeshes[index].Draw();
     }
 }
 
+Scene::~Scene()
+{
+
+}

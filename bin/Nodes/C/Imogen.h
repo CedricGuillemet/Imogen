@@ -20,6 +20,8 @@ typedef struct Evaluation_t
 	float inv_view_rot[16];
 	float viewProjection[16];
 	float viewInverse[16];
+	float model[16];
+	float modelViewProjection[16];
 	float viewport[4];
 	
 	int targetIndex;

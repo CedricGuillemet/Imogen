@@ -729,10 +729,18 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
+    std::map<Scene*, std::weak_ptr<Scene>> gScenePointerCache;
+    std::map<std::string, std::weak_ptr<Scene>> gSceneCache;
 
     int SetEvaluationScene(EvaluationContext *evaluationContext, int target, void *scene)
     {
-        evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
+        auto iter = gScenePointerCache.find((Scene*)scene);
+        if (iter == gScenePointerCache.end() && (!iter->second.expired()))
+        {
+            return EVAL_ERR;
+        }
+
+        evaluationContext->mEvaluationStages.mStages[target].mGScene = iter->second.lock();
         return EVAL_OK;
     }
 
@@ -1082,6 +1090,16 @@ namespace EvaluationAPI
 
     int ReadGLTF(EvaluationContext *evaluationContext, const char *filename, Scene **scene)
     {
+        std::string strFilename(filename);
+        auto iter = gSceneCache.find(strFilename);
+        if (iter != gSceneCache.end())
+        {
+            if (!iter->second.expired())
+            {
+                *scene = iter->second.lock().get();
+                return EVAL_OK;
+            }
+        }
         cgltf_options options = { 0 };
         cgltf_data* data = NULL;
         cgltf_result result = cgltf_parse_file(&options, filename, &data);
@@ -1092,7 +1110,10 @@ namespace EvaluationAPI
         if (result != cgltf_result_success)
             return EVAL_ERR;
 
-        Scene *sc = new Scene;
+        std::shared_ptr<Scene> sc(new Scene);
+        gSceneCache.insert(std::make_pair(strFilename, sc));
+        gScenePointerCache.insert(std::make_pair(sc.get(), sc));
+
         sc->mMeshes.resize(data->meshes_count);
         for (unsigned int i = 0; i < data->meshes_count; i++)
         {
@@ -1126,8 +1147,25 @@ namespace EvaluationAPI
             }
         }
 
+        sc->mWorldTransforms.resize(data->nodes_count);
+        sc->mMeshIndex.resize(data->nodes_count, -1);
+
+        // transforms
+        for (unsigned int i = 0; i < data->nodes_count; i++)
+        {
+            cgltf_node_transform_world(&data->nodes[i], sc->mWorldTransforms[i]);
+        }
+        
+        for (unsigned int i = 0; i < data->nodes_count; i++)
+        {
+            if (!data->nodes[i].mesh)
+                continue;
+            sc->mMeshIndex[i] = int(data->nodes[i].mesh - data->meshes);
+        }
+
+
         cgltf_free(data);
-        *scene = sc;
+        *scene = sc.get();
         return EVAL_OK;
     }
 

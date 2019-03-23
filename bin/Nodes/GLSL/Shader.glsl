@@ -9,6 +9,8 @@ layout (std140) uniform EvaluationBlock
 	mat4 viewRot;
 	mat4 viewProjection;
 	mat4 viewInverse;
+	mat4 model;
+	mat4 modelViewProjection;
 	vec4 viewport;
 	
 	int targetIndex;
@@ -40,7 +42,7 @@ void main()
 {
 	if (EvaluationParam.mVertexSpace == 1)
     {
-		gl_Position = EvaluationParam.viewProjection * vec4(inPosition.xyz, 1.0);
+		gl_Position = EvaluationParam.modelViewProjection * vec4(inPosition.xyz, 1.0);
 	}
 	else
 	{
@@ -49,8 +51,8 @@ void main()
 	
 	vUV = inUV;
 	vColor = inColor;
-	vWorldNormal = inNormal;
-	vWorldPosition = inPosition;
+	vWorldNormal = (EvaluationParam.model * vec4(inNormal, 0.0)).xyz;
+	vWorldPosition = (EvaluationParam.model * vec4(inPosition, 1.0)).xyz;
 }
 
 #endif

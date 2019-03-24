@@ -732,12 +732,12 @@ void Imogen::ImportGraph()
 void Imogen::LibraryEdit(Library& library)
 {
     int previousSelection = mSelectedMaterial;
-    if (ImGui::Button("New Graph"))
+    if (Button("MaterialNew", "New Material", ImVec2(0, 0)))
     {
         NewGraph();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Import"))
+    if (Button("MaterialImport", "Import Material", ImVec2(0,0)))//ImGui::Button("Import"))
     {
         ImportGraph();
     }
@@ -1268,7 +1268,9 @@ void Imogen::Init()
         ,{"AnimationNextFrame","Move to the next animation frame", []() {}}
         ,{"AnimationPreviousFrame","Move to previous animation frame", []() {}}
         ,{"MaterialExport","Export current material to a file", []() {}}
-        ,{"MaterialImport","Import a material file in the library", []() {}}
+        ,{"MaterialImport"
+            ,"Import a material file in the library"
+            , [&]() { ImportGraph(); }}
         , { "ToggleLibrary"
             ,"Show or hide Libaray window"
             , [&]() { mbShowLibrary = !mbShowLibrary; } }

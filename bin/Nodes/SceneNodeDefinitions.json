@@ -16,6 +16,33 @@
 			"type": "Camera",
 			"default":""
 		}]
-	}
+	},{
+	"name": "Paint3D",
+		"category": 7,
+		"color": [0.3921568989753723, 0.9803922176361084, 0.7058823704719544, 1.0],
+		"inputs": [{
+			"name": "Model",
+			"type": "Float4"
+		}, {
+			"name": "Brush",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Size",
+			"type": "Enum",
+			"enum": "  256|  512| 1024| 2048| 4096|"
+		},
+		{
+			"name": "Camera",
+			"type": "Camera",
+			"default":""
+		}],
+		"hasUI": true,
+		"saveTexture": true
+		}
 ]
 }

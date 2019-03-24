@@ -174,7 +174,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         glActiveTexture(GL_TEXTURE0 + inputIndex);
-        int targetIndex = input.mInputs[inputIndex];
+        int targetIndex = input.mOverrideInputs[inputIndex];
+        if (targetIndex < 0)
+            targetIndex = input.mInputs[inputIndex];
         if (targetIndex < 0)
         {
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -414,8 +416,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
             BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
 
-            glEnable(GL_CULL_FACE);
-            glCullFace(GL_BACK);
+            glDisable(GL_CULL_FACE);
+            //glCullFace(GL_BACK);
             glClearDepth(1.f);
             if (evaluationStage.mbClearBuffer)
             {

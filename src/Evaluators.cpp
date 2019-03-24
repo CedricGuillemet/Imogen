@@ -65,7 +65,7 @@ static const EValuationFunction evaluationFunctions[] = {
     { "EnableDepthBuffer", (void*)EvaluationAPI::EnableDepthBuffer},
     { "EnableFrameClear", (void*)EvaluationAPI::EnableFrameClear},
     { "SetVertexSpace", (void*)EvaluationAPI::SetVertexSpace},
-    
+
     { "GetEvaluationSize", (void*)EvaluationAPI::GetEvaluationSize},
     { "SetEvaluationSize", (void*)EvaluationAPI::SetEvaluationSize },
     { "SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize },
@@ -83,6 +83,7 @@ static const EValuationFunction evaluationFunctions[] = {
     { "SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
     { "GetEvaluationScene", (void*)EvaluationAPI::GetEvaluationScene},
     { "GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
+    { "OverrideInput", (void*)EvaluationAPI::OverrideInput},
     { "InitRenderer", (void*)EvaluationAPI::InitRenderer},
     { "UpdateRenderer", (void*)EvaluationAPI::UpdateRenderer},
     { "ReadGLTF", (void*)EvaluationAPI::ReadGLTF},
@@ -749,13 +750,23 @@ namespace EvaluationAPI
 
     int GetEvaluationScene(EvaluationContext *evaluationContext, int target, void **scene)
     {
-        *scene = evaluationContext->mEvaluationStages.mStages[target].mGScene.get();
-        return EVAL_OK;
+        if (target >= 0 && target < evaluationContext->mEvaluationStages.mStages.size())
+        {
+            *scene = evaluationContext->mEvaluationStages.mStages[target].mGScene.get();
+            return EVAL_OK;
+        }
+        return EVAL_ERR;
     }
 
     int GetEvaluationRenderer(EvaluationContext *evaluationContext, int target, void **renderer)
     {
         *renderer = evaluationContext->mEvaluationStages.mStages[target].renderer;
+        return EVAL_OK;
+    }
+
+    int OverrideInput(EvaluationContext *evaluationContext, int target, int inputIndex, int newInputTarget)
+    {
+        evaluationContext->mEvaluationStages.mStages[target].mInput.mOverrideInputs[inputIndex] = newInputTarget;
         return EVAL_OK;
     }
 

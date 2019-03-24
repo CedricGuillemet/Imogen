@@ -68,8 +68,10 @@ struct Input
     Input()
     {
         memset(mInputs, -1, sizeof(int) * 8);
+        memset(mOverrideInputs, -1, sizeof(int) * 8);
     }
     int mInputs[8];
+    int mOverrideInputs[8];
 };
 
 

@@ -87,6 +87,9 @@ enum CubeMapFace
 	CUBEMAP_NEGZ,
 };
 
+int vertexSpace_UV = 0;
+int vertexSpace_World = 1;
+
 // call FreeImage when done
 int ReadImage(void* context, char *filename, Image *image);
 // writes an allocated image
@@ -114,13 +117,13 @@ void SetBlendingMode(void *context, int target, int blendSrc, int blendDst);
 void EnableDepthBuffer(void *context, int target, int enable);
 void EnableFrameClear(void *context, int target, int enable);
 
-int vertexSpace_UV = 0;
-int vertexSpace_World = 1;
 void SetVertexSpace(void *context, int target, int vertexMode);
 
 int GetEvaluationSize(void *context, int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(void *context, int target, int imageWidth, int imageHeight);
 int SetEvaluationCubeSize(void *context, int target, int faceWidth);
+
+int OverrideInput(void *context, int target, int inputIndex, int newInputTarget);
 int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 
 int Job(void *context, int(*jobFunction)(void*), void *ptr, unsigned int size);

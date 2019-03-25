@@ -93,6 +93,7 @@ extern Evaluators gEvaluators;
 struct EvaluationContext;
 struct Image;
 struct EvaluationStages;
+struct Scene;
 
 namespace EvaluationAPI
 {
@@ -106,6 +107,10 @@ namespace EvaluationAPI
     //static int Evaluate(int target, int width, int height, Image *image);
     void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst);
     void EnableDepthBuffer(EvaluationContext *evaluationContext, int target, int enable);
+    void EnableFrameClear(EvaluationContext *evaluationContext, int target, int enable);
+    void SetVertexSpace(EvaluationContext *evaluationContext, int target, int vertexSpace);
+    int OverrideInput(EvaluationContext *evaluationContext, int target, int inputIndex, int newInputTarget);
+
     //int SetNodeImage(int target, Image *image);
     int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
     int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight);
@@ -125,4 +130,6 @@ namespace EvaluationAPI
     int Read(EvaluationContext *evaluationContext, const char *filename, Image *image);
     int Write(EvaluationContext *evaluationContext, const char *filename, Image *image, int format, int quality);
     int Evaluate(EvaluationContext *evaluationContext, int target, int width, int height, Image *image);
+
+    int ReadGLTF(EvaluationContext *evaluationContext, const char *filename, Scene **scene);
 }

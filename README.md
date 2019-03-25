@@ -79,3 +79,5 @@ nanosvg - Mikko Mononen https://github.com/memononen/nanosvg
 GLSL-PathTracer - knightcrawler25 https://github.com/knightcrawler25/GLSL-PathTracer
 
 imgui_markdown - Juliette Foucaut https://github.com/juliettef/imgui_markdown
+
+CGLTF - Johannes Kuhlmann https://github.com/jkuhlmann/cgltf

@@ -70,6 +70,8 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual void CutNodes(const std::vector<size_t> nodes);
     virtual void PasteNodes();
 
+    virtual bool RenderBackground();
+
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const { return mEvaluationStages.GetAnimTrack(); }
     
@@ -85,6 +87,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
     EvaluationContext mEditingContext;
     EvaluationStages mEvaluationStages;
     std::vector<EvaluationStage> mStagesClipboard;
+    int mBackgroundNode;
     bool mbMouseDragging;
     URChange<std::vector<unsigned char> > *mUndoRedoParamSetMouse;
 

@@ -1056,6 +1056,44 @@
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|"
 		}]
+	},
+	{
+		"name": "Disolve",
+		"category": 1,
+		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [
+		{
+			"name": "passCount",
+			"type": "Int",
+			"default":"1"
+		},{
+			"name": "Frequency",
+			"type": "Float",
+			"default":"1.6"
+		},{
+			"name": "Strength",
+			"type": "Float",
+			"default":"0.25"
+		},{
+			"name": "Randomization",
+			"type": "Float",
+			"default":"40.0"
+		},{
+			"name": "VerticalShift",
+			"type": "Float",
+			"default":"0.05"
+		}
+		
+		
+			]
 	}
 	]
 }

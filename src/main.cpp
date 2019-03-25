@@ -127,21 +127,7 @@ int main(int, char**)
     g_TS.Initialize();
 
     TagTime("Enki TS Init");
-    pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
-    gEvaluators.InitPythonModules();
-    pybind11::exec( R"(
-        import sys
-        import Imogen
-        class CatchImogenIO:
-            def __init__(self):
-                pass
-            def write(self, txt):
-                Imogen.Log(txt)
-        catchImogenIO = CatchImogenIO()
-        sys.stdout = catchImogenIO
-        sys.stderr = catchImogenIO
-        print("Python stdout, stderr catched.\n"))");
-    pybind11::module::import("Plugins");
+    Evaluators::InitPython();
 
     TagTime("Python interpreter Init");
     LoadMetaNodes();
@@ -290,20 +276,14 @@ int main(int, char**)
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
                 done = true;
         }
-        if (io.KeyCtrl && ImGui::IsKeyPressed(SDL_SCANCODE_L))
-            NodeGraphLayout();
-        // undo/redo
-        if (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Z))
-            gUndoRedoHandler.Undo();
-        if ((io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressedMap(ImGuiKey_Z)) ||
-            (io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_Y)) )
-            gUndoRedoHandler.Redo();
+        
 
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(window);
         ImGui::NewFrame();
         InitCallbackRects();
+        imogen.HandleHotKeys();
 
         if (gbIsPlaying)
         {

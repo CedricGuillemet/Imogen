@@ -544,3 +544,12 @@ std::string GetName(const std::string &name)
 }
 
 
+std::string GetBasePath(const char *path)
+{
+    std::string res;
+    char drive[16];
+    char dir[MAX_PATH];
+    _splitpath(path, drive, dir, 0, 0);
+    res = std::string(drive) + dir;
+    return res;
+}

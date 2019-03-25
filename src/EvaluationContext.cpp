@@ -174,7 +174,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         glActiveTexture(GL_TEXTURE0 + inputIndex);
-        int targetIndex = input.mInputs[inputIndex];
+        int targetIndex = input.mOverrideInputs[inputIndex];
+        if (targetIndex < 0)
+            targetIndex = input.mInputs[inputIndex];
         if (targetIndex < 0)
         {
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -307,6 +309,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glUseProgram(program);
 
     glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+    evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
     glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -351,7 +354,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     if (!program)
     {
         glUseProgram(gDefaultShader.mNodeErrorShader);
-        mFSQuad.Render();
+        //mFSQuad.Render();
+        evaluationStage.mGScene->Draw(evaluationInfo);
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -402,6 +406,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             evaluationInfo.passNumber = passNumber;
 
             glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+            evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
             glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -411,14 +416,21 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
             BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
 
+            glDisable(GL_CULL_FACE);
+            //glCullFace(GL_BACK);
+            glClearDepth(1.f);
+            if (evaluationStage.mbClearBuffer)
+            {
+                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
+            }
+            if (evaluationStage.mbDepthBuffer)
+            {
+                glDepthFunc(GL_LEQUAL);
+                glEnable(GL_DEPTH_TEST);
+            }
             //
             if (evaluationStage.mTypename == "FurDisplay")
             {
-                glClearDepth(1.f);
-                glDepthFunc(GL_LEQUAL);
-                glEnable(GL_DEPTH_TEST);
-                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
-
                 /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
                 if (sourceBuffer != -1)
                 {
@@ -452,7 +464,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             }
             else
             {
-                mFSQuad.Render();
+                evaluationStage.mGScene->Draw(evaluationInfo);
             }
             // swap target for multipass
             // set previous target as source

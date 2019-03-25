@@ -130,7 +130,6 @@ struct MaterialNode
 
     uint32_t mFrameStart;
     uint32_t mFrameEnd;
-
     // runtime
     unsigned int mRuntimeUniqueId;
 };
@@ -355,6 +354,8 @@ struct Material
 
     std::vector<uint32_t> mPinnedParameters;
     MaterialNode* Get(ASyncId id) { return GetByAsyncId(id, mMaterialNodes); }
+
+    uint32_t mBackgroundNode;
 
     //run time
     unsigned int mThumbnailTextureId;

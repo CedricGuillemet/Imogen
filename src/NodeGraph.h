@@ -60,6 +60,8 @@ struct NodeGraphControlerBase
     virtual bool NodeIs2D(size_t nodeIndex) = 0;
     virtual bool NodeIsCompute(size_t nodeIndex) = 0;
     virtual void DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex) = 0;
+    // return false if background must be rendered by node graph
+    virtual bool RenderBackground() = 0;
 
     // clipboard
     virtual void CopyNodes(const std::vector<size_t> nodes) = 0;

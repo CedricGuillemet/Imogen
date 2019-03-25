@@ -32,7 +32,7 @@
 #include "UI.h"
 #include "Utils.h"
 
-NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
+NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 256, 256), mUndoRedoParamSetMouse(nullptr)
 {
     mCategoriesCount = 10;
     static const char *categories[] = {
@@ -52,6 +52,7 @@ NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingConte
 void NodeGraphControler::Clear()
 {
     mSelectedNodeIndex = -1;
+    mBackgroundNode = -1;
     mEvaluationStages.Clear();
     mEvaluationStages.mStages.clear();
     mEditingContext.Clear();
@@ -96,6 +97,14 @@ void NodeGraphControler::UserDeleteNode(size_t index)
     mEvaluationStages.RemovePins(index);
     mEditingContext.UserDeleteStage(index);
     mEvaluationStages.UserDeleteEvaluation(index);
+    if (mBackgroundNode == index)
+    {
+        mBackgroundNode = -1;
+    }
+    else if (mBackgroundNode > index)
+    {
+        mBackgroundNode--;
+    }
 }
     
 const float PI = 3.14159f;
@@ -451,7 +460,16 @@ void NodeGraphControler::NodeEdit()
         {
             ImGui::PushID(1717171);
             uint32_t parameterPair = (uint32_t(mSelectedNodeIndex) << 16) + 0xDEAD;
+            ImGui::BeginGroup();
             HandlePin(parameterPair);
+            unsigned int maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
+            bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
+            float ofs = selectedNodeAsBackground?0.5f:0.f;
+            if (ImGui::ImageButton((ImTextureID)(uint64_t)maxiMini, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
+            {
+                mBackgroundNode = selectedNodeAsBackground ? -1 : mSelectedNodeIndex;
+            }
+            ImGui::EndGroup();
             ImGui::SameLine();
             Imogen::RenderPreviewNode(mSelectedNodeIndex, *this);
             ImGui::PopID();
@@ -744,4 +762,14 @@ void NodeGraphControler::DrawNodeImage(ImDrawList *drawList, const ImRect &rc, c
     {
         drawList->AddImage((ImTextureID)(int64_t)(GetNodeTexture(size_t(nodeIndex))), rc.Min + marge, rc.Max - marge, ImVec2(0, 1), ImVec2(1, 0));
     }
+}
+
+bool NodeGraphControler::RenderBackground()
+{
+    if (mBackgroundNode != -1)
+    {
+        Imogen::RenderPreviewNode(mBackgroundNode, *this);
+        return true;
+    }
+    return false;
 }

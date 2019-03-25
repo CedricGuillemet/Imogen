@@ -134,9 +134,10 @@ namespace ImHotKey
         va_end(args);
     }
 
-    static void GetHotKeyLib(unsigned int functionKeys, char* buffer, size_t bufferSize)
+    static void GetHotKeyLib(unsigned int functionKeys, char* buffer, size_t bufferSize, const char *functionLib = nullptr)
     {
         static const char* str[4] = { "%s", "%s + %s", "%s + %s +%s", "%s + %s + %s + %s" };
+        static const char* strLib[4] = { "%s (%s)", "%s (%s + %s)", "%s (%s + %s +%s)", "%s (%s + %s + %s + %s)" };
         static const char* lib[4];
         int scanCodeCount = 0;
         for (int i = 0; i < 4; i++)
@@ -154,8 +155,17 @@ namespace ImHotKey
             buffer[0] = 0;
             return;
         }
-        const char* fmt = str[scanCodeCount-1];
-        HotKeySPrintf(buffer, bufferSize, fmt, lib[0], lib[1], lib[2], lib[3]);
+        
+        if (functionLib)
+        {
+            const char* fmt = strLib[scanCodeCount - 1];
+            HotKeySPrintf(buffer, bufferSize, fmt, functionLib, lib[0], lib[1], lib[2], lib[3]);
+        }
+        else
+        {
+            const char* fmt = str[scanCodeCount - 1];
+            HotKeySPrintf(buffer, bufferSize, fmt, lib[0], lib[1], lib[2], lib[3]);
+        }
     }
 
     static void Edit(HotKey *hotkey, size_t hotkeyCount, const char *popupModal)
@@ -172,10 +182,9 @@ namespace ImHotKey
         ImGui::BeginChildFrame(127, ImVec2(220, -1));
         for(size_t i = 0;i< hotkeyCount;i++)
         {
-            char hotKeyLib[128], selectableText[128];
-            GetHotKeyLib(hotkey[i].functionKeys, hotKeyLib, sizeof(hotKeyLib));
-            HotKeySPrintf(selectableText, sizeof(selectableText), "%s (%s)", hotkey[i].functionName, hotKeyLib);
-            if (ImGui::Selectable(selectableText, editingHotkey == int(i)) || editingHotkey == -1)
+            char hotKeyLib[128];
+            GetHotKeyLib(hotkey[i].functionKeys, hotKeyLib, sizeof(hotKeyLib), hotkey[i].functionName);
+            if (ImGui::Selectable(hotKeyLib, editingHotkey == int(i)) || editingHotkey == -1)
             {
                 editingHotkey = int(i);
                 memset(keyDown, 0, sizeof(keyDown));
@@ -323,16 +332,21 @@ namespace ImHotKey
 
         unsigned int newHotKey = GetOrderedScanCodes(scanCodes, order);
 
-        if (scanCodeCount && newHotKey != lastHotKey)
+        if (scanCodeCount)
         {
-            for (size_t i = 0; i < hotkeyCount; i++)
+            if (newHotKey != lastHotKey)
             {
-                if (hotkey[i].functionKeys == newHotKey)
+                for (size_t i = 0; i < hotkeyCount; i++)
                 {
-                    lastHotKey = newHotKey;
-                    return int(i);
+                    if (hotkey[i].functionKeys == newHotKey)
+                    {
+                        lastHotKey = newHotKey;
+                        return int(i);
+                    }
                 }
+                lastHotKey = 0xFFFFFFFF;
             }
+            return -1;
         }
         lastHotKey = 0xFFFFFFFF;
         return -1;

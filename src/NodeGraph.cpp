@@ -1209,8 +1209,11 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    // Display grid
-    DrawGrid(drawList, windowPos, canvasSize, factor);
+    // Background or Display grid
+    if (!controler->RenderBackground())
+    {
+        DrawGrid(drawList, windowPos, canvasSize, factor);
+    }
 
     if (!enabled)
         goto nodeGraphExit;

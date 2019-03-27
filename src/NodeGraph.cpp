@@ -726,7 +726,6 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         ImVec2 dif = p2 - p1;
 
         ImVec2 p1a, p1b;
-        float overdrawFactor = 1.4f;
         const float limitx = 12.f * factor;
         if (dif.x < limitx)
         {
@@ -739,7 +738,6 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
 
             pts = { p1, p10, p1a, p1b, p20, p2 };
             ptCount = 6;
-            overdrawFactor = 2.6f;
         }
         else
         {
@@ -766,7 +764,6 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
                 }
                 else
                 {
-
                     float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
                     p1a = p1 + ImVec2(dif.x * 0.5f, d);
                     p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
@@ -778,18 +775,7 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         float highLightFactor = factor * highlightCons ? 2.0f : 1.f;
         for (int pass = 0; pass < 2; pass++)
         {
-            for (int i = 0; i < ptCount - 1; i++)
-            {
-                // make sure each segment overdraw a bit so you can't see cracks in joints
-                ImVec2 p1 = pts[i];
-                ImVec2 p2 = pts[i + 1];
-                ImVec2 dif = p2 - p1;
-                float diflen = sqrtf(dif.x*dif.x + dif.y*dif.y);
-                ImVec2 difNorm = dif / ImVec2(diflen, diflen);
-                p1 -= difNorm * overdrawFactor * highLightFactor;
-                p2 += difNorm * overdrawFactor * highLightFactor;
-                drawList->AddLine(p1, p2, pass?col:0xFF000000, (pass?5.f:7.5f) * highLightFactor);
-            }
+            drawList->AddPolyline(pts.data(), ptCount, pass ? col : 0xFF000000, false, (pass ? 5.f : 7.5f) * highLightFactor);
         }
     }
 }

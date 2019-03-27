@@ -61,6 +61,9 @@ struct EvaluationContext
     void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
     void RunDirty();
 
+    int GetCurrentTime() const { return mCurrentTime; }
+    void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
+
     unsigned int GetEvaluationTexture(size_t target);
     std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
     { 
@@ -134,6 +137,7 @@ protected:
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
     unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
+    int mCurrentTime;
 };
 
 struct Builder

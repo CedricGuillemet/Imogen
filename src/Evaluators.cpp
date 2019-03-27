@@ -1059,7 +1059,7 @@ namespace EvaluationAPI
             return EVAL_OK;
         // try to load movie
         auto decoder = evaluationContext->mEvaluationStages.FindDecoder(filename);
-        *image = Image::DecodeImage(decoder, gEvaluationTime);
+        *image = Image::DecodeImage(decoder, evaluationContext->GetCurrentTime());
         return EVAL_OK;
     }
 
@@ -1151,12 +1151,12 @@ namespace EvaluationAPI
                     case cgltf_attribute_type_color: format = Scene::Mesh::Format::COL; break;
                     }
                     const char* buffer = ((char*)attr.data->buffer_view->buffer->data) + attr.data->buffer_view->offset + attr.data->offset;
-                    prim.AddBuffer(buffer, format, attr.data->stride, attr.data->count);
+                    prim.AddBuffer(buffer, format, (unsigned int)attr.data->stride, (unsigned int)attr.data->count);
                 }
 
                 // indices
                 const char* buffer = ((char*)gltfPrim.indices->buffer_view->buffer->data) + gltfPrim.indices->buffer_view->offset + gltfPrim.indices->offset;
-                prim.AddIndexBuffer(buffer, gltfPrim.indices->stride, gltfPrim.indices->count);
+                prim.AddIndexBuffer(buffer, (unsigned int)gltfPrim.indices->stride, (unsigned int)gltfPrim.indices->count);
             }
         }
 

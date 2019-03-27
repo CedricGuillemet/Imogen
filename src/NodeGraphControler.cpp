@@ -700,8 +700,7 @@ void NodeGraphControler::PasteNodes()
         
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
         mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
-        //mEditingContext.SetTargetDirty(target);
-        mEvaluationStages.SetTime(&mEditingContext, gEvaluationTime, true);
+        mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
         mEditingContext.SetTargetDirty(target);
     }
 }

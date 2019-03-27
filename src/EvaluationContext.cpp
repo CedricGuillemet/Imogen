@@ -597,7 +597,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     mbProcessing[nodeIndex] = 0;
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
-    mEvaluationInfo.mFrame = gEvaluationTime;
+    mEvaluationInfo.mFrame = mCurrentTime;
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetMouseInfos(mEvaluationInfo, currentStage);
 
@@ -628,7 +628,7 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        mActive[nodeIndex] = gEvaluationTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame && gEvaluationTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
+        mActive[nodeIndex] = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame && mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
         if (!mActive[nodeIndex])
             continue;
         RunNode(nodeIndex);
@@ -887,6 +887,7 @@ void Builder::DoBuild(Entry& entry)
             EvaluationContext writeContext(evaluationStages, true, 1024, 1024);
             for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
             {
+                writeContext.SetCurrentTime(frame);
                 evaluationStages.SetTime(&writeContext, frame, false);
                 evaluationStages.ApplyAnimation(&writeContext, frame);
                 EvaluationInfo evaluationInfo;

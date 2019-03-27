@@ -453,7 +453,6 @@ void EvaluationStages::SetAnimTrack(const std::vector<AnimTrack>& animTrack)
 
 void EvaluationStages::SetTime(EvaluationContext *evaluationContext, int time, bool updateDecoder)
 {
-    gEvaluationTime = time;
     for (size_t i = 0; i < mStages.size(); i++)
     {
         const auto& stage = mStages[i];

@@ -1,6 +1,17 @@
 -------------------------------------------------------------------------------
 Imogen - 0.11 codename Lionet Ban
 
+New:
+- Hotkey editor
+- New main menu
+- GLTF scene loader
+- 3D paint node (WIP)
+- Disolve node
+
+Fixed:
+- Thumbnail creation
+- Crash when selecting a node in the timeline
+
 -------------------------------------------------------------------------------
 Imogen - 0.10 codename Wolf Nachi
 

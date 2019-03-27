@@ -1,8 +1,8 @@
 # Imogen
 GPU/CPU Texture Generator
 
-WIP of a GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.
-Basically, add GPU and CPU nodes in a graph to manipulate and generate images. Nodes are hardcoded now but a discovery system is planned.
+GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.
+Basically, add GPU and CPU nodes in a graph to manipulate and generate images.
 Currently nodes can be written in GLSL or C or Python.
 
 
@@ -17,6 +17,7 @@ Features:
 - edit/change node shaders inside the app
 - bake textures to .png, .jpg, .tga, .bmp, .hdr, mp4
 - PBR preview
+- timeline for parameters animation
 
 Currently implemented nodes
 - circle and square generator

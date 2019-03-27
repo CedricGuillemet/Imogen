@@ -664,6 +664,7 @@ void Imogen::UpdateNewlySelectedGraph()
         NodeGraphUpdateScrolling();
         mCurrentTime = 0;
         mbIsPlaying = false;
+        mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
         mNodeGraphControler->mEvaluationStages.SetAnimTrack(material.mAnimTrack);
         mNodeGraphControler->mEvaluationStages.mFrameMin = material.mFrameMin;
         mNodeGraphControler->mEvaluationStages.mFrameMax = material.mFrameMax;
@@ -1917,9 +1918,10 @@ void Imogen::Playback(bool timeHasChanged)
         }
     }
 
+    mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
+
     if (timeHasChanged || mbIsPlaying)
     {
-        mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
         mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
     }

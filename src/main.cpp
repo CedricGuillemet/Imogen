@@ -105,7 +105,7 @@ Library library;
 
 enki::TaskScheduler g_TS;
 UndoRedoHandler gUndoRedoHandler;
-
+Builder *builder;
 SDL_Window* window;
 SDL_GLContext glThreadContext;
 
@@ -253,7 +253,7 @@ int main(int, char**)
 
     gCPUCount = SDL_GetCPUCount();
 
-    Builder *builder = new Builder;
+    builder = new Builder;
 
     // default Material
     imogen.SetExistingMaterialActive(".default");

@@ -127,6 +127,11 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return d;
 
     });
+    graph.def("Build", [](PyGraph& pyGraph) {
+        extern Builder *builder;
+        Material* material = pyGraph.mGraph;
+        builder->Add(material);
+    });
     auto node = pybind11::class_<PyNode>(m, "Node");
     node.def("GetType", [](PyNode& node) {
         std::string& s = node.mNode->mTypeName;

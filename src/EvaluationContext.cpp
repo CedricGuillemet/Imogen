@@ -848,6 +848,48 @@ void Builder::Add(const char* graphName, EvaluationStages& stages)
     mMutex.unlock();
 }
 
+EvaluationStages BuildEvaluationFromMaterial(Material &material)
+{
+    EvaluationStages evaluationStages;
+    for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
+    {
+        MaterialNode& node = material.mMaterialNodes[i];
+        //NodeGraphAddNode(mNodeGraphControler, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
+        evaluationStages.AddSingleEvaluation(node.mType);
+        auto& lastNode = evaluationStages.mStages.back();
+        lastNode.mParameters = node.mParameters;
+        lastNode.mInputSamplers = node.mInputSamplers;
+        evaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
+    }
+    for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
+    {
+        MaterialConnection& materialConnection = material.mMaterialConnections[i];
+        evaluationStages.AddEvaluationInput(materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode);
+    }
+
+    evaluationStages.SetAnimTrack(material.mAnimTrack);
+    evaluationStages.mFrameMin = material.mFrameMin;
+    evaluationStages.mFrameMax = material.mFrameMax;
+    evaluationStages.mPinnedParameters = material.mPinnedParameters;
+    //evaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
+    //evaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
+
+    return evaluationStages;
+}
+
+void Builder::Add(Material *material)
+{
+    try
+    {
+        Add(material->mName.c_str(), BuildEvaluationFromMaterial(*material));
+    }
+    catch (std::exception e)
+    {
+        Log("Exception : %s\n", e.what());
+    }
+
+}
+
 bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
 {
     if (mMutex.try_lock())
@@ -909,16 +951,20 @@ void Builder::BuildEntries()
 
     while (mbRunning)
     {
-        if (!mEntries.empty())
+        if (mMutex.try_lock())
         {
-            auto& entry = *mEntries.begin();
-            entry.mProgress = 0.01f;
-            DoBuild(entry);
-            entry.mProgress = 1.f;
-            if (entry.mProgress >= 1.f)
+            if (!mEntries.empty())
             {
-                mEntries.erase(mEntries.begin());
+                auto& entry = *mEntries.begin();
+                entry.mProgress = 0.01f;
+                DoBuild(entry);
+                entry.mProgress = 1.f;
+                if (entry.mProgress >= 1.f)
+                {
+                    mEntries.erase(mEntries.begin());
+                }
             }
+            mMutex.unlock();
         }
         Sleep(100);
     }

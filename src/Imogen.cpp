@@ -682,7 +682,7 @@ void Imogen::NewMaterial()
     int previousSelection = mSelectedMaterial;
     library.mMaterials.push_back(Material());
     Material& back = library.mMaterials.back();
-    back.mName = "Name_Of_New_Graph";
+    back.mName = "Name_Of_New_Material";
     back.mThumbnailTextureId = 0;
     back.mRuntimeUniqueId = GetRuntimeId();
 

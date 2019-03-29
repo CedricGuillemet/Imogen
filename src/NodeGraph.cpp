@@ -399,6 +399,12 @@ void NodeGraphAddNode(NodeGraphControlerBase *controler, int type, const std::ve
 
 void NodeGraphAddLink(NodeGraphControlerBase *controler, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
 {
+    if (InputIdx >= nodes.size() || OutputIdx >= nodes.size())
+    {
+        Log("Error : Link node index doesn't correspond to an existing node.");
+        return;
+    }
+
     NodeLink nl;
     nl.InputIdx = InputIdx;
     nl.InputSlot = InputSlot;
@@ -855,7 +861,7 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
 }
 
 
-void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler)
+bool HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler)
 {
     static int editingNodeIndex;
     static int editingSlotIndex;
@@ -1002,6 +1008,7 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
             }
         }
     }
+    return hoverSlot;
 }
 
 static void DrawGrid(ImDrawList* drawList, ImVec2 windowPos, const ImVec2 canvasSize, const float factor)
@@ -1015,7 +1022,7 @@ static void DrawGrid(ImDrawList* drawList, ImVec2 windowPos, const ImVec2 canvas
 }
 
 // return true if node is hovered
-static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler)
+static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler, bool overInput)
 {
     ImGuiIO& io = ImGui::GetIO();
     const MetaNode* metaNodes = gMetaNodes.data();
@@ -1043,7 +1050,7 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     ImGui::SetCursorScreenPos(node_rect_min);
     ImGui::InvisibleButton("node", node->Size);
     bool nodeHovered = false;
-    if (ImGui::IsItemHovered() && nodeOperation == NO_None)
+    if (ImGui::IsItemHovered() && nodeOperation == NO_None && !overInput)
     {
         nodeHovered = true;
     }
@@ -1251,10 +1258,11 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
             // Display node contents first
             drawList->ChannelsSetCurrent(2); // Foreground
 
-            if (DrawNode(drawList, nodeIndex, offset, factor, controler))
+            bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler);
+
+            if (DrawNode(drawList, nodeIndex, offset, factor, controler, overInput))
                 hoveredNode = nodeIndex;
 
-            HandleConnections(drawList, nodeIndex, offset, factor, controler);
             ImGui::PopID();
         }
     }

@@ -146,7 +146,7 @@ void EvaluationStages::SetEvaluationSampler(size_t target, const std::vector<Inp
 
 void EvaluationStages::AddEvaluationInput(size_t target, int slot, int source)
 {
-    if (mStages[target].mInput.mInputs[slot] == source)
+    if (mStages.size() <= target || mStages[target].mInput.mInputs[slot] == source)
         return;
     mStages[target].mInput.mInputs[slot] = source;
     mStages[source].mUseCountByOthers++;

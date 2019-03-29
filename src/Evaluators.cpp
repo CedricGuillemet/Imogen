@@ -698,7 +698,7 @@ namespace EvaluationAPI
         evaluation.mVertexSpace = vertexSpace;
     }
 
-    int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight)
+    int GetEvaluationSize(const EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;

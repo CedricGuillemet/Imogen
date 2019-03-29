@@ -72,6 +72,13 @@ struct EvaluationContext
         return mStageTarget[target]; 
     }
 
+    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
+    {
+        if (target >= mStageTarget.size())
+            return NULL;
+        return mStageTarget[target];
+    }
+
     FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
     bool IsSynchronous() const { return mbSynchronousEvaluation; }
     void SetTargetDirty(size_t target, bool onlyChild = false);

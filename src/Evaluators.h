@@ -112,7 +112,7 @@ namespace EvaluationAPI
     int OverrideInput(EvaluationContext *evaluationContext, int target, int inputIndex, int newInputTarget);
 
     //int SetNodeImage(int target, Image *image);
-    int GetEvaluationSize(EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
+    int GetEvaluationSize(const EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
     int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight);
     int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth);
     int Job(EvaluationContext *evaluationContext, int(*jobFunction)(void*), void *ptr, unsigned int size);

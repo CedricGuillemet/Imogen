@@ -854,7 +854,6 @@ EvaluationStages BuildEvaluationFromMaterial(Material &material)
     for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
     {
         MaterialNode& node = material.mMaterialNodes[i];
-        //NodeGraphAddNode(mNodeGraphControler, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
         evaluationStages.AddSingleEvaluation(node.mType);
         auto& lastNode = evaluationStages.mStages.back();
         lastNode.mParameters = node.mParameters;
@@ -864,15 +863,13 @@ EvaluationStages BuildEvaluationFromMaterial(Material &material)
     for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
     {
         MaterialConnection& materialConnection = material.mMaterialConnections[i];
-        evaluationStages.AddEvaluationInput(materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode);
+        evaluationStages.AddEvaluationInput(materialConnection.mOutputNode, materialConnection.mInputSlot, materialConnection.mInputNode);
     }
 
     evaluationStages.SetAnimTrack(material.mAnimTrack);
     evaluationStages.mFrameMin = material.mFrameMin;
     evaluationStages.mFrameMax = material.mFrameMax;
     evaluationStages.mPinnedParameters = material.mPinnedParameters;
-    //evaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
-    //evaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
 
     return evaluationStages;
 }
@@ -887,7 +884,6 @@ void Builder::Add(Material *material)
     {
         Log("Exception : %s\n", e.what());
     }
-
 }
 
 bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)

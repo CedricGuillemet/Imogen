@@ -741,36 +741,44 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         }
         else
         {
-            if (fabsf(dif.y) < 10.f)
+            if (fabsf(dif.y) < 1.f)
             {
-                if (fabsf(dif.x) > fabsf(dif.y))
-                {
-                    p1a = p1 + ImVec2(fabsf(fabsf(dif.x) - fabsf(dif.y)) * 0.5f * sign(dif.x), 0.f);
-                    p1b = p1a + ImVec2(fabsf(dif.y) * sign(dif.x), dif.y);
-                }
-                else
-                {
-                    p1a = p1 + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(dif.x)) * 0.5f * sign(dif.y));
-                    p1b = p1a + ImVec2(dif.x, fabsf(dif.x) * sign(dif.y));
-                }
+                pts = { p1, (p1+p2)*0.5f, p2 };
+                ptCount = 3;
             }
             else
             {
-                if (fabsf(dif.x) > fabsf(dif.y))
+                if (fabsf(dif.y) < 10.f)
                 {
-                    float d = fabsf(dif.y) * sign(dif.x) * 0.5f;
-                    p1a = p1 + ImVec2(d, dif.y * 0.5f);
-                    p1b = p1a + ImVec2(fabsf(fabsf(dif.x) - fabsf(d)*2.f) * sign(dif.x), 0.f);
+                    if (fabsf(dif.x) > fabsf(dif.y))
+                    {
+                        p1a = p1 + ImVec2(fabsf(fabsf(dif.x) - fabsf(dif.y)) * 0.5f * sign(dif.x), 0.f);
+                        p1b = p1a + ImVec2(fabsf(dif.y) * sign(dif.x), dif.y);
+                    }
+                    else
+                    {
+                        p1a = p1 + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(dif.x)) * 0.5f * sign(dif.y));
+                        p1b = p1a + ImVec2(dif.x, fabsf(dif.x) * sign(dif.y));
+                    }
                 }
                 else
                 {
-                    float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
-                    p1a = p1 + ImVec2(dif.x * 0.5f, d);
-                    p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
+                    if (fabsf(dif.x) > fabsf(dif.y))
+                    {
+                        float d = fabsf(dif.y) * sign(dif.x) * 0.5f;
+                        p1a = p1 + ImVec2(d, dif.y * 0.5f);
+                        p1b = p1a + ImVec2(fabsf(fabsf(dif.x) - fabsf(d)*2.f) * sign(dif.x), 0.f);
+                    }
+                    else
+                    {
+                        float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
+                        p1a = p1 + ImVec2(dif.x * 0.5f, d);
+                        p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
+                    }
                 }
+                pts = { p1, p1a, p1b, p2 };
+                ptCount = 4;
             }
-            pts = { p1, p1a, p1b, p2 };
-            ptCount = 4;
         }
         float highLightFactor = factor * highlightCons ? 2.0f : 1.f;
         for (int pass = 0; pass < 2; pass++)
@@ -966,7 +974,9 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
                     }
                 }
             }
-            if (nodeOperation == NO_None && ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && io.MouseClicked[0])
+            // when ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() is uncommented, one can't click the node input/output when 
+            // mouse is over the node itself.
+            if (nodeOperation == NO_None && /*ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() &&*/ io.MouseClicked[0])
             {
                 nodeOperation = NO_EditingLink;
                 editingInput = i == 0;

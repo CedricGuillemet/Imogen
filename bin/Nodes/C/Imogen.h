@@ -20,6 +20,8 @@ typedef struct Evaluation_t
 	float inv_view_rot[16];
 	float viewProjection[16];
 	float viewInverse[16];
+	float model[16];
+	float modelViewProjection[16];
 	float viewport[4];
 	
 	int targetIndex;
@@ -31,6 +33,8 @@ typedef struct Evaluation_t
 	
 	int frame;
 	int localFrame;
+	int vertexSpace;
+	int dummy;
 } Evaluation;
 
 enum BlendOp
@@ -83,6 +87,9 @@ enum CubeMapFace
 	CUBEMAP_NEGZ,
 };
 
+int vertexSpace_UV = 0;
+int vertexSpace_World = 1;
+
 // call FreeImage when done
 int ReadImage(void* context, char *filename, Image *image);
 // writes an allocated image
@@ -108,9 +115,15 @@ int Evaluate(void *context, int target, int width, int height, Image *image);
 
 void SetBlendingMode(void *context, int target, int blendSrc, int blendDst);
 void EnableDepthBuffer(void *context, int target, int enable);
+void EnableFrameClear(void *context, int target, int enable);
+
+void SetVertexSpace(void *context, int target, int vertexMode);
+
 int GetEvaluationSize(void *context, int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(void *context, int target, int imageWidth, int imageHeight);
 int SetEvaluationCubeSize(void *context, int target, int faceWidth);
+
+int OverrideInput(void *context, int target, int inputIndex, int newInputTarget);
 int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 
 int Job(void *context, int(*jobFunction)(void*), void *ptr, unsigned int size);
@@ -131,6 +144,9 @@ int GetEvaluationRenderer(void *context, int target, void **renderer);
 int InitRenderer(void *context, int target, int mode, void *scene);
 int UpdateRenderer(void *context, int target);
 
+int ReadGLTF(void *evaluationContext, char *filename, void **scene);
+
+	
 #define EVAL_OK 0
 #define EVAL_ERR 1
 #define EVAL_DIRTY 2

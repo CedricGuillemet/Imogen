@@ -40,6 +40,7 @@
 struct ImDrawList;
 struct ImDrawCmd;
 struct EvaluationContext;
+struct EvaluationInfo;
 
 enum BlendOp
 {
@@ -62,33 +63,63 @@ enum BlendOp
 };
 
 
-struct EvaluationInfo
-{
-    float viewRot[16];
-    float viewProjection[16];
-    float viewInverse[16];
-    float viewport[4];
-
-    int targetIndex;
-    int forcedDirty;
-    int uiPass;
-    int passNumber;
-    float mouse[4];
-    int inputIndices[8];
-    float pad2[4];
-
-    int mFrame;
-    int mLocalFrame;
-};
-
-
 struct Input
 {
     Input()
     {
         memset(mInputs, -1, sizeof(int) * 8);
+        memset(mOverrideInputs, -1, sizeof(int) * 8);
     }
     int mInputs[8];
+    int mOverrideInputs[8];
+};
+
+
+struct Scene
+{
+    Scene() {}
+    virtual ~Scene();
+    struct Mesh
+    {
+        struct Format
+        {
+            enum
+            {
+                POS = 1 << 0,
+                NORM = 1 << 1,
+                COL = 1 << 2,
+                UV = 1 << 3,
+            };
+        };
+        struct Buffer
+        {
+            unsigned int id;
+            unsigned int format;
+            unsigned int stride;
+            unsigned int count;
+        };
+        struct IndexBuffer
+        {
+            unsigned int id;
+            unsigned int stride;
+            unsigned int count;
+        };
+        struct Primitive
+        {
+            std::vector<Buffer> mBuffers;
+            IndexBuffer mIndexBuffer = { 0, 0, 0 };
+            void AddBuffer(const void *data, unsigned int format, unsigned int stride, unsigned int count);
+            void AddIndexBuffer(const void *data, unsigned int stride, unsigned int count);
+            void Draw() const;
+        };
+        std::vector<Primitive> mPrimitives;
+        void Draw() const;
+    };
+    std::vector<Mesh> mMeshes;
+    std::vector<Mat4x4> mWorldTransforms;
+    std::vector<int> mMeshIndex;
+    std::string mName;
+    void Draw(EvaluationInfo& evaluationInfo) const;
 };
 
 struct EvaluationStage
@@ -109,7 +140,9 @@ struct EvaluationStage
     int mBlendingDst;
     int mLocalTime;
     int mStartFrame, mEndFrame;
+    int mVertexSpace; // UV, worldspace
     bool mbDepthBuffer;
+    bool mbClearBuffer;
     // Camera
     Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
     // mouse
@@ -119,7 +152,8 @@ struct EvaluationStage
     bool mRButDown;
     void Clear();
     // scene render
-    void *scene;
+    void *mScene; // for path tracer
+    std::shared_ptr<Scene> mGScene;
     void *renderer;
     Image DecodeImage();
 

@@ -40,7 +40,14 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual void AddSingleNode(size_t type);
     virtual void UserAddNode(size_t type);
-    virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) { mEvaluationStages.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx); mEditingContext.SetTargetDirty(OutputIdx); }
+    virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) 
+    { 
+        if (OutputIdx >= mEvaluationStages.mStages.size())
+            return;
+
+        mEvaluationStages.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx); 
+        mEditingContext.SetTargetDirty(OutputIdx); 
+    }
     virtual void DelLink(int index, int slot) { mEvaluationStages.DelEvaluationInput(index, slot); mEditingContext.SetTargetDirty(index); }
     virtual void UserDeleteNode(size_t index);
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
@@ -56,14 +63,19 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel);
 
-    bool NodeHasUI(size_t nodeIndex) { return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI; }
-    virtual int NodeIsProcesing(size_t nodeIndex) { return mEditingContext.StageIsProcessing(nodeIndex); }
-    virtual float NodeProgress(size_t nodeIndex) { return mEditingContext.StageGetProgress(nodeIndex); }
-    virtual bool NodeIsCubemap(size_t nodeIndex);
-    virtual bool NodeIs2D(size_t nodeIndex);
-    virtual bool NodeIsCompute(size_t nodeIndex);
+    bool NodeHasUI(size_t nodeIndex) const
+    { 
+        if (mEvaluationStages.mStages.size() <= nodeIndex)
+            return false;
+        return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI; 
+    }
+    virtual int NodeIsProcesing(size_t nodeIndex) const { return mEditingContext.StageIsProcessing(nodeIndex); }
+    virtual float NodeProgress(size_t nodeIndex) const { return mEditingContext.StageGetProgress(nodeIndex); }
+    virtual bool NodeIsCubemap(size_t nodeIndex) const;
+    virtual bool NodeIs2D(size_t nodeIndex) const;
+    virtual bool NodeIsCompute(size_t nodeIndex) const;
     virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) { mEvaluationStages.SetEvaluationOrder(nodeOrderList);    }
-    virtual ImVec2 GetEvaluationSize(size_t nodeIndex);
+    virtual ImVec2 GetEvaluationSize(size_t nodeIndex) const;
     virtual void DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex);
 
     virtual void CopyNodes(const std::vector<size_t> nodes);

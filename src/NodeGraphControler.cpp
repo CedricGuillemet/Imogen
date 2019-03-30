@@ -32,7 +32,7 @@
 #include "UI.h"
 #include "Utils.h"
 
-NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 256, 256), mUndoRedoParamSetMouse(nullptr)
+NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
 {
     mCategoriesCount = 10;
     static const char *categories[] = {
@@ -97,11 +97,11 @@ void NodeGraphControler::UserDeleteNode(size_t index)
     mEvaluationStages.RemovePins(index);
     mEditingContext.UserDeleteStage(index);
     mEvaluationStages.UserDeleteEvaluation(index);
-    if (mBackgroundNode == index)
+    if (mBackgroundNode == int(index))
     {
         mBackgroundNode = -1;
     }
-    else if (mBackgroundNode > index)
+    else if (mBackgroundNode > int(index))
     {
         mBackgroundNode--;
     }
@@ -636,7 +636,7 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     }
 }
 
-bool NodeGraphControler::NodeIs2D(size_t nodeIndex)
+bool NodeGraphControler::NodeIs2D(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
@@ -644,7 +644,7 @@ bool NodeGraphControler::NodeIs2D(size_t nodeIndex)
     return false;
 }
 
-bool NodeGraphControler::NodeIsCompute(size_t nodeIndex)
+bool NodeGraphControler::NodeIsCompute(size_t nodeIndex) const
 {
     /*auto buffer = mEditingContext.GetComputeBuffer(nodeIndex);
     if (buffer)
@@ -654,7 +654,7 @@ bool NodeGraphControler::NodeIsCompute(size_t nodeIndex)
     return (gEvaluators.GetMask(mEvaluationStages.mStages[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
 }
 
-bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex)
+bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
@@ -662,7 +662,7 @@ bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex)
     return false;
 }
 
-ImVec2 NodeGraphControler::GetEvaluationSize(size_t nodeIndex)
+ImVec2 NodeGraphControler::GetEvaluationSize(size_t nodeIndex) const
 {
     int imageWidth(1), imageHeight(1);
     EvaluationAPI::GetEvaluationSize(&mEditingContext, int(nodeIndex), &imageWidth, &imageHeight);
@@ -700,8 +700,7 @@ void NodeGraphControler::PasteNodes()
         
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
         mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
-        //mEditingContext.SetTargetDirty(target);
-        mEvaluationStages.SetTime(&mEditingContext, gEvaluationTime, true);
+        mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
         mEditingContext.SetTargetDirty(target);
     }
 }

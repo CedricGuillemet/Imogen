@@ -94,9 +94,13 @@ protected:
     void ShowTimeLine();
     void ShowNodeGraph();
     void BuildCurrentMaterial(Builder *builder);
+    void PlayPause();
 
-    void NewGraph();
-    void ImportGraph();
+    void NewMaterial();
+    void ImportMaterial();
+    void ExportMaterial();
+
+    void Playback(bool timeHasChanged);
 
     int GetFunctionByName(const char *functionName) const;
     bool ImageButton(const char *functionName, unsigned int icon, ImVec2 size);
@@ -106,6 +110,7 @@ protected:
     static void WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
     static void* ReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name);
 
+    TextEditor *mEditor;
     MySequence *mSequence;
     NodeGraphControler *mNodeGraphControler;
     Builder *mBuilder;
@@ -122,14 +127,16 @@ protected:
 
     char *mNewPopup = nullptr;
     int mSelectedMaterial = -1;
+    int mCurrentShaderIndex = -1;
+
+    bool mbIsPlaying = false;
+    bool mbPlayLoop = false;
+    int mCurrentTime = 0;
 
     std::vector<std::function<void()> > mHotkeyFunctions;
 
     static Imogen *instance;
 };
-
-
-extern int gEvaluationTime;
 
 struct UndoRedo
 {

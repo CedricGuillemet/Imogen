@@ -49,8 +49,7 @@
 
 unsigned int gCPUCount = 1;
 cmft::ClContext* clContext = NULL;
-bool gbIsPlaying = false;
-bool gPlayLoop = false;
+
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
     GLenum type,
     GLuint id,
@@ -106,7 +105,7 @@ Library library;
 
 enki::TaskScheduler g_TS;
 UndoRedoHandler gUndoRedoHandler;
-
+Builder *builder;
 SDL_Window* window;
 SDL_GLContext glThreadContext;
 
@@ -217,8 +216,6 @@ int main(int, char**)
     }
     TagTime("OpenCL Init");
 
-
-
     ImGuiIO& io = ImGui::GetIO();
 
     InitFonts();
@@ -256,7 +253,7 @@ int main(int, char**)
 
     gCPUCount = SDL_GetCPUCount();
 
-    Builder *builder = new Builder;
+    builder = new Builder;
 
     // default Material
     imogen.SetExistingMaterialActive(".default");
@@ -285,23 +282,7 @@ int main(int, char**)
         InitCallbackRects();
         imogen.HandleHotKeys();
 
-        if (gbIsPlaying)
-        {
-            gEvaluationTime++;
-            if (gEvaluationTime >= nodeGraphControler.mEvaluationStages.mFrameMax)
-            {
-                if (gPlayLoop)
-                {
-                    gEvaluationTime = nodeGraphControler.mEvaluationStages.mFrameMin;
-                }
-                else
-                {
-                    gbIsPlaying = false;
-                }
-            }
-            nodeGraphControler.mEvaluationStages.SetTime(&nodeGraphControler.mEditingContext, gEvaluationTime, true);
-            nodeGraphControler.mEvaluationStages.ApplyAnimation(&nodeGraphControler.mEditingContext, gEvaluationTime);
-        }
+        
         nodeGraphControler.mEditingContext.RunDirty();
         imogen.Show(builder, library);
 

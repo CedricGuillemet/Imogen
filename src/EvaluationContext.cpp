@@ -174,7 +174,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         glActiveTexture(GL_TEXTURE0 + inputIndex);
-        int targetIndex = input.mInputs[inputIndex];
+        int targetIndex = input.mOverrideInputs[inputIndex];
+        if (targetIndex < 0)
+            targetIndex = input.mInputs[inputIndex];
         if (targetIndex < 0)
         {
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -307,6 +309,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glUseProgram(program);
 
     glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+    evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
     glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -351,7 +354,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     if (!program)
     {
         glUseProgram(gDefaultShader.mNodeErrorShader);
-        mFSQuad.Render();
+        //mFSQuad.Render();
+        evaluationStage.mGScene->Draw(evaluationInfo);
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -402,6 +406,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             evaluationInfo.passNumber = passNumber;
 
             glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+            evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
             glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -411,14 +416,21 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
             BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
 
+            glDisable(GL_CULL_FACE);
+            //glCullFace(GL_BACK);
+            glClearDepth(1.f);
+            if (evaluationStage.mbClearBuffer)
+            {
+                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
+            }
+            if (evaluationStage.mbDepthBuffer)
+            {
+                glDepthFunc(GL_LEQUAL);
+                glEnable(GL_DEPTH_TEST);
+            }
             //
             if (evaluationStage.mTypename == "FurDisplay")
             {
-                glClearDepth(1.f);
-                glDepthFunc(GL_LEQUAL);
-                glEnable(GL_DEPTH_TEST);
-                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
-
                 /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
                 if (sourceBuffer != -1)
                 {
@@ -452,7 +464,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             }
             else
             {
-                mFSQuad.Render();
+                evaluationStage.mGScene->Draw(evaluationInfo);
             }
             // swap target for multipass
             // set previous target as source
@@ -585,7 +597,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     mbProcessing[nodeIndex] = 0;
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
-    mEvaluationInfo.mFrame = gEvaluationTime;
+    mEvaluationInfo.mFrame = mCurrentTime;
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetMouseInfos(mEvaluationInfo, currentStage);
 
@@ -616,7 +628,7 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        mActive[nodeIndex] = gEvaluationTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame && gEvaluationTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
+        mActive[nodeIndex] = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame && mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
         if (!mActive[nodeIndex])
             continue;
         RunNode(nodeIndex);
@@ -836,6 +848,44 @@ void Builder::Add(const char* graphName, EvaluationStages& stages)
     mMutex.unlock();
 }
 
+EvaluationStages BuildEvaluationFromMaterial(Material &material)
+{
+    EvaluationStages evaluationStages;
+    for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
+    {
+        MaterialNode& node = material.mMaterialNodes[i];
+        evaluationStages.AddSingleEvaluation(node.mType);
+        auto& lastNode = evaluationStages.mStages.back();
+        lastNode.mParameters = node.mParameters;
+        lastNode.mInputSamplers = node.mInputSamplers;
+        evaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
+    }
+    for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
+    {
+        MaterialConnection& materialConnection = material.mMaterialConnections[i];
+        evaluationStages.AddEvaluationInput(materialConnection.mOutputNode, materialConnection.mInputSlot, materialConnection.mInputNode);
+    }
+
+    evaluationStages.SetAnimTrack(material.mAnimTrack);
+    evaluationStages.mFrameMin = material.mFrameMin;
+    evaluationStages.mFrameMax = material.mFrameMax;
+    evaluationStages.mPinnedParameters = material.mPinnedParameters;
+
+    return evaluationStages;
+}
+
+void Builder::Add(Material *material)
+{
+    try
+    {
+        Add(material->mName.c_str(), BuildEvaluationFromMaterial(*material));
+    }
+    catch (std::exception e)
+    {
+        Log("Exception : %s\n", e.what());
+    }
+}
+
 bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
 {
     if (mMutex.try_lock())
@@ -875,6 +925,7 @@ void Builder::DoBuild(Entry& entry)
             EvaluationContext writeContext(evaluationStages, true, 1024, 1024);
             for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
             {
+                writeContext.SetCurrentTime(frame);
                 evaluationStages.SetTime(&writeContext, frame, false);
                 evaluationStages.ApplyAnimation(&writeContext, frame);
                 EvaluationInfo evaluationInfo;
@@ -896,16 +947,20 @@ void Builder::BuildEntries()
 
     while (mbRunning)
     {
-        if (!mEntries.empty())
+        if (mMutex.try_lock())
         {
-            auto& entry = *mEntries.begin();
-            entry.mProgress = 0.01f;
-            DoBuild(entry);
-            entry.mProgress = 1.f;
-            if (entry.mProgress >= 1.f)
+            if (!mEntries.empty())
             {
-                mEntries.erase(mEntries.begin());
+                auto& entry = *mEntries.begin();
+                entry.mProgress = 0.01f;
+                DoBuild(entry);
+                entry.mProgress = 1.f;
+                if (entry.mProgress >= 1.f)
+                {
+                    mEntries.erase(mEntries.begin());
+                }
             }
+            mMutex.unlock();
         }
         Sleep(100);
     }

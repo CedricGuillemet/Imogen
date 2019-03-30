@@ -28,6 +28,28 @@
 #include <atomic>
 #include "EvaluationStages.h"
 
+struct EvaluationInfo
+{
+    float viewRot[16];
+    float viewProjection[16];
+    float viewInverse[16];
+    float model[16];
+    float modelViewProjection[16];
+    float viewport[4];
+
+    int targetIndex;
+    int forcedDirty;
+    int uiPass;
+    int passNumber;
+    float mouse[4];
+    int inputIndices[8];
+
+    int mFrame;
+    int mLocalFrame;
+    int mVertexSpace;
+    int dummy;
+};
+
 struct EvaluationContext
 {
     EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
@@ -39,12 +61,22 @@ struct EvaluationContext
     void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
     void RunDirty();
 
+    int GetCurrentTime() const { return mCurrentTime; }
+    void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
+
     unsigned int GetEvaluationTexture(size_t target);
     std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
     { 
         if (target >= mStageTarget.size())
             return NULL;
         return mStageTarget[target]; 
+    }
+
+    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
+    {
+        if (target >= mStageTarget.size())
+            return NULL;
+        return mStageTarget[target];
     }
 
     FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
@@ -112,6 +144,7 @@ protected:
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
     unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
+    int mCurrentTime;
 };
 
 struct Builder
@@ -120,7 +153,7 @@ struct Builder
     ~Builder();
 
     void Add(const char* graphName, EvaluationStages& stages);
-
+    void Add(Material *material);
     struct BuildInfo
     {
         std::string mName;

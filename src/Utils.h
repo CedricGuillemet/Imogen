@@ -610,3 +610,5 @@ enum EvaluationStatus
     EVAL_ERR,
     EVAL_DIRTY,
 };
+
+std::string GetBasePath(const char *path);

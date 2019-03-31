@@ -1551,7 +1551,7 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::SameLine();
     // imogen info strings
     ImGui::BeginChildFrame(152, ImVec2(io.DisplaySize.x - butSize.x*4.f - 300, 32.f));
-    ImGui::Text("Imogen 0.11");
+    ImGui::Text("Imogen 0.12");
     if (mSelectedMaterial != -1)
     {
         Material& material = library.mMaterials[mSelectedMaterial];

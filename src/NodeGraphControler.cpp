@@ -52,6 +52,7 @@ NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingConte
 void NodeGraphControler::Clear()
 {
     mSelectedNodeIndex = -1;
+    mBackgroundNode = -1;
     mEvaluationStages.Clear();
     mEvaluationStages.mStages.clear();
     mEditingContext.Clear();
@@ -96,12 +97,16 @@ void NodeGraphControler::UserDeleteNode(size_t index)
     mEvaluationStages.RemovePins(index);
     mEditingContext.UserDeleteStage(index);
     mEvaluationStages.UserDeleteEvaluation(index);
+    if (mBackgroundNode == int(index))
+    {
+        mBackgroundNode = -1;
+    }
+    else if (mBackgroundNode > int(index))
+    {
+        mBackgroundNode--;
+    }
 }
     
-const float PI = 3.14159f;
-float RadToDeg(float a) { return a * 180.f / PI; }
-float DegToRad(float a) { return a / 180.f * PI; }
-
 void NodeGraphControler::HandlePin(uint32_t parameterPair)
 {
     auto pinIter = std::find(mEvaluationStages.mPinnedParameters.begin(), mEvaluationStages.mPinnedParameters.end(), parameterPair);
@@ -451,7 +456,16 @@ void NodeGraphControler::NodeEdit()
         {
             ImGui::PushID(1717171);
             uint32_t parameterPair = (uint32_t(mSelectedNodeIndex) << 16) + 0xDEAD;
+            ImGui::BeginGroup();
             HandlePin(parameterPair);
+            unsigned int maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
+            bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
+            float ofs = selectedNodeAsBackground?0.5f:0.f;
+            if (ImGui::ImageButton((ImTextureID)(uint64_t)maxiMini, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
+            {
+                mBackgroundNode = selectedNodeAsBackground ? -1 : mSelectedNodeIndex;
+            }
+            ImGui::EndGroup();
             ImGui::SameLine();
             Imogen::RenderPreviewNode(mSelectedNodeIndex, *this);
             ImGui::PopID();
@@ -618,7 +632,7 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     }
 }
 
-bool NodeGraphControler::NodeIs2D(size_t nodeIndex)
+bool NodeGraphControler::NodeIs2D(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
@@ -626,7 +640,7 @@ bool NodeGraphControler::NodeIs2D(size_t nodeIndex)
     return false;
 }
 
-bool NodeGraphControler::NodeIsCompute(size_t nodeIndex)
+bool NodeGraphControler::NodeIsCompute(size_t nodeIndex) const
 {
     /*auto buffer = mEditingContext.GetComputeBuffer(nodeIndex);
     if (buffer)
@@ -636,7 +650,7 @@ bool NodeGraphControler::NodeIsCompute(size_t nodeIndex)
     return (gEvaluators.GetMask(mEvaluationStages.mStages[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
 }
 
-bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex)
+bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
@@ -644,7 +658,7 @@ bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex)
     return false;
 }
 
-ImVec2 NodeGraphControler::GetEvaluationSize(size_t nodeIndex)
+ImVec2 NodeGraphControler::GetEvaluationSize(size_t nodeIndex) const
 {
     int imageWidth(1), imageHeight(1);
     EvaluationAPI::GetEvaluationSize(&mEditingContext, int(nodeIndex), &imageWidth, &imageHeight);
@@ -682,8 +696,7 @@ void NodeGraphControler::PasteNodes()
         
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
         mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
-        //mEditingContext.SetTargetDirty(target);
-        mEvaluationStages.SetTime(&mEditingContext, gEvaluationTime, true);
+        mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
         mEditingContext.SetTargetDirty(target);
     }
 }
@@ -744,4 +757,14 @@ void NodeGraphControler::DrawNodeImage(ImDrawList *drawList, const ImRect &rc, c
     {
         drawList->AddImage((ImTextureID)(int64_t)(GetNodeTexture(size_t(nodeIndex))), rc.Min + marge, rc.Max - marge, ImVec2(0, 1), ImVec2(1, 0));
     }
+}
+
+bool NodeGraphControler::RenderBackground()
+{
+    if (mBackgroundNode != -1)
+    {
+        Imogen::RenderPreviewNode(mBackgroundNode, *this, true);
+        return true;
+    }
+    return false;
 }

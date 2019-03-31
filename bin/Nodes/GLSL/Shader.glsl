@@ -3,39 +3,62 @@
 
 #define TwoPI (PI*2)
 
-#ifdef VERTEX_SHADER
-
-layout(location = 0)in vec2 inUV;
-out vec2 vUV;
-
-void main()
-{
-    gl_Position = vec4(inUV.xy*2.0-1.0,0.5,1.0); 
-	vUV = inUV;
-}
-
-#endif
-
-
-#ifdef FRAGMENT_SHADER
 
 layout (std140) uniform EvaluationBlock
 {
 	mat4 viewRot;
 	mat4 viewProjection;
 	mat4 viewInverse;
+	mat4 model;
+	mat4 modelViewProjection;
 	vec4 viewport;
 	
 	int targetIndex;
 	int forcedDirty;
 	int	uiPass;
 	int passNumber;
+	
 	vec4 mouse; // x,y, lbut down, rbut down
 	ivec4 inputIndices[2];
 	
 	int frame;
 	int localFrame;
+	int mVertexSpace;
+	int dummy;
 } EvaluationParam;
+
+#ifdef VERTEX_SHADER
+
+layout(location = 0)in vec2 inUV;
+layout(location = 1)in vec4 inColor;
+layout(location = 2)in vec3 inPosition;
+layout(location = 3)in vec3 inNormal;
+
+out vec2 vUV;
+out vec3 vWorldPosition;
+out vec3 vWorldNormal;
+out vec4 vColor;
+void main()
+{
+	if (EvaluationParam.mVertexSpace == 1)
+    {
+		gl_Position = EvaluationParam.modelViewProjection * vec4(inPosition.xyz, 1.0);
+	}
+	else
+	{
+		gl_Position = vec4(inUV.xy*2.0-1.0,0.5,1.0); 
+	}
+	
+	vUV = inUV;
+	vColor = inColor;
+	vWorldNormal = (EvaluationParam.model * vec4(inNormal, 0.0)).xyz;
+	vWorldPosition = (EvaluationParam.model * vec4(inPosition, 1.0)).xyz;
+}
+
+#endif
+
+
+#ifdef FRAGMENT_SHADER
 
 struct Camera
 {
@@ -47,6 +70,9 @@ struct Camera
 
 layout(location=0) out vec4 outPixDiffuse;
 in vec2 vUV;
+in vec3 vWorldPosition;
+in vec3 vWorldNormal;
+in vec4 vColor;
 
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;

@@ -174,7 +174,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         glActiveTexture(GL_TEXTURE0 + inputIndex);
-        int targetIndex = input.mInputs[inputIndex];
+        int targetIndex = input.mOverrideInputs[inputIndex];
+        if (targetIndex < 0)
+            targetIndex = input.mInputs[inputIndex];
         if (targetIndex < 0)
         {
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -225,8 +227,10 @@ int  EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluation
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         int targetIndex = input.mInputs[inputIndex];
-        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer)
+        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer && mActive[targetIndex])
+        {
             return targetIndex;
+        }
     }
     return -1;
 }
@@ -259,33 +263,53 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     // allocate buffer
     unsigned int feedbackVertexArray = 0;
     ComputeBuffer* destinationBuffer = NULL;
+    ComputeBuffer* sourceBuffer = NULL;
+    ComputeBuffer tempBuffer;
     int computeBufferIndex = GetBindedComputeBuffer(evaluationStage);
     if (computeBufferIndex != -1)
     {
-        AllocateComputeBuffer(int(index), mComputeBuffers[computeBufferIndex].mElementCount, mComputeBuffers[computeBufferIndex].mElementSize);
- 
-        /// build source VAO
-        glGenVertexArrays(1, &feedbackVertexArray);
-        glBindVertexArray(feedbackVertexArray);
-        glBindBuffer(GL_ARRAY_BUFFER, mComputeBuffers[computeBufferIndex].mBuffer);
-        const int transformElementCount = mComputeBuffers[computeBufferIndex].mElementSize / (4 * sizeof(float));
-        for (int i = 0; i < transformElementCount;i++)
+        if (mComputeBuffers.size() <= index || (!mComputeBuffers[index].mBuffer))
         {
-            glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
-            glEnableVertexAttribArray(i);
+            // only allocate if needed
+            AllocateComputeBuffer(int(index), mComputeBuffers[computeBufferIndex].mElementCount, mComputeBuffers[computeBufferIndex].mElementSize);
         }
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glBindVertexArray(0);
+        sourceBuffer = &mComputeBuffers[computeBufferIndex];
+        
     }
+    else
+    {
+        // 
+        Swap(mComputeBuffers[index], tempBuffer);
+
+        AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
+        sourceBuffer = &tempBuffer;
+    }
+
     if (mComputeBuffers.size() <= index)
         return; // no compute buffer destination, no source either -> non connected node -> early exit
+
+    /// build source VAO
+    glGenVertexArrays(1, &feedbackVertexArray);
+    glBindVertexArray(feedbackVertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, sourceBuffer->mBuffer);
+    const int transformElementCount = sourceBuffer->mElementSize / (4 * sizeof(float));
+    for (int i = 0; i < transformElementCount; i++)
+    {
+        glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
+        glEnableVertexAttribArray(i);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glBindVertexArray(0);
+
+
     destinationBuffer = &mComputeBuffers[index];
 
     // compute buffer
     glUseProgram(program);
 
     glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+    evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
     glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -309,6 +333,11 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
 
     if (feedbackVertexArray)
         glDeleteVertexArrays(1, &feedbackVertexArray);
+
+    if (tempBuffer.mBuffer)
+    {
+        glDeleteBuffers(1, &tempBuffer.mBuffer);
+    }
 }
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
@@ -325,7 +354,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     if (!program)
     {
         glUseProgram(gDefaultShader.mNodeErrorShader);
-        mFSQuad.Render();
+        //mFSQuad.Render();
+        evaluationStage.mGScene->Draw(evaluationInfo);
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -376,6 +406,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             evaluationInfo.passNumber = passNumber;
 
             glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+            evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
             glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
             glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -385,15 +416,21 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
             BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
 
-            //
-#if 0
-            if (evaluationStage.mTypename == "FurDisplay")
+            glDisable(GL_CULL_FACE);
+            //glCullFace(GL_BACK);
+            glClearDepth(1.f);
+            if (evaluationStage.mbClearBuffer)
             {
-                glClearDepth(1.f);
+                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
+            }
+            if (evaluationStage.mbDepthBuffer)
+            {
                 glDepthFunc(GL_LEQUAL);
                 glEnable(GL_DEPTH_TEST);
-                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
-
+            }
+            //
+            if (evaluationStage.mTypename == "FurDisplay")
+            {
                 /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
                 if (sourceBuffer != -1)
                 {
@@ -426,9 +463,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
                 }
             }
             else
-#endif
             {
-                mFSQuad.Render();
+                evaluationStage.mGScene->Draw(evaluationInfo);
             }
             // swap target for multipass
             // set previous target as source
@@ -538,6 +574,7 @@ void EvaluationContext::PreRun()
     mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
     mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
     mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
+    mActive.resize(mEvaluationStages.GetStagesCount(), false);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
@@ -560,7 +597,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     mbProcessing[nodeIndex] = 0;
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
-    mEvaluationInfo.mFrame = gEvaluationTime;
+    mEvaluationInfo.mFrame = mCurrentTime;
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetMouseInfos(mEvaluationInfo, currentStage);
 
@@ -591,7 +628,8 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        if (gEvaluationTime < mEvaluationStages.mStages[nodeIndex].mStartFrame || gEvaluationTime > mEvaluationStages.mStages[nodeIndex].mEndFrame)
+        mActive[nodeIndex] = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame && mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
+        if (!mActive[nodeIndex])
             continue;
         RunNode(nodeIndex);
         anyNodeIsProcessing |= mbProcessing[nodeIndex] != 0;
@@ -810,6 +848,44 @@ void Builder::Add(const char* graphName, EvaluationStages& stages)
     mMutex.unlock();
 }
 
+EvaluationStages BuildEvaluationFromMaterial(Material &material)
+{
+    EvaluationStages evaluationStages;
+    for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
+    {
+        MaterialNode& node = material.mMaterialNodes[i];
+        evaluationStages.AddSingleEvaluation(node.mType);
+        auto& lastNode = evaluationStages.mStages.back();
+        lastNode.mParameters = node.mParameters;
+        lastNode.mInputSamplers = node.mInputSamplers;
+        evaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
+    }
+    for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
+    {
+        MaterialConnection& materialConnection = material.mMaterialConnections[i];
+        evaluationStages.AddEvaluationInput(materialConnection.mOutputNode, materialConnection.mInputSlot, materialConnection.mInputNode);
+    }
+
+    evaluationStages.SetAnimTrack(material.mAnimTrack);
+    evaluationStages.mFrameMin = material.mFrameMin;
+    evaluationStages.mFrameMax = material.mFrameMax;
+    evaluationStages.mPinnedParameters = material.mPinnedParameters;
+
+    return evaluationStages;
+}
+
+void Builder::Add(Material *material)
+{
+    try
+    {
+        Add(material->mName.c_str(), BuildEvaluationFromMaterial(*material));
+    }
+    catch (std::exception e)
+    {
+        Log("Exception : %s\n", e.what());
+    }
+}
+
 bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
 {
     if (mMutex.try_lock())
@@ -849,6 +925,7 @@ void Builder::DoBuild(Entry& entry)
             EvaluationContext writeContext(evaluationStages, true, 1024, 1024);
             for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
             {
+                writeContext.SetCurrentTime(frame);
                 evaluationStages.SetTime(&writeContext, frame, false);
                 evaluationStages.ApplyAnimation(&writeContext, frame);
                 EvaluationInfo evaluationInfo;
@@ -870,16 +947,20 @@ void Builder::BuildEntries()
 
     while (mbRunning)
     {
-        if (!mEntries.empty())
+        if (mMutex.try_lock())
         {
-            auto& entry = *mEntries.begin();
-            entry.mProgress = 0.01f;
-            DoBuild(entry);
-            entry.mProgress = 1.f;
-            if (entry.mProgress >= 1.f)
+            if (!mEntries.empty())
             {
-                mEntries.erase(mEntries.begin());
+                auto& entry = *mEntries.begin();
+                entry.mProgress = 0.01f;
+                DoBuild(entry);
+                entry.mProgress = 1.f;
+                if (entry.mProgress >= 1.f)
+                {
+                    mEntries.erase(mEntries.begin());
+                }
             }
+            mMutex.unlock();
         }
         Sleep(100);
     }

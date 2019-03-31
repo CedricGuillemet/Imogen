@@ -42,13 +42,12 @@
 #include "nfd.h"
 #include "UI.h"
 #include "imgui_markdown/imgui_markdown.h"
-
+#include "imHotKey.h"
 
 Imogen *Imogen::instance = nullptr;
 unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
-int gEvaluationTime = 0;
+
 extern enki::TaskScheduler g_TS;
-extern bool gbIsPlaying;
 
 std::vector<RegisteredPlugin> mRegisteredPlugins;
 
@@ -117,44 +116,28 @@ void ClearExtractedViews()
     mExtratedViews.clear();
 }
 
-TextEditor editor;
-
 void Imogen::HandleEditor(TextEditor &editor)
 {
-    static int currentShaderIndex = -1;
-
-    if (currentShaderIndex == -1)
+    if (mCurrentShaderIndex == -1)
     {
-        currentShaderIndex = 0;
-        editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
+        mCurrentShaderIndex = 0;
+        editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[mCurrentShaderIndex].mFilename));
     }
     auto cpos = editor.GetCursorPosition();
     ImGui::BeginChild(13, ImVec2(250, 800));
     for (size_t i = 0; i < mEvaluatorFiles.size(); i++)
     {
-        bool selected = i == currentShaderIndex;
+        bool selected = i == mCurrentShaderIndex;
         if (ImGui::Selectable(mEvaluatorFiles[i].mFilename.c_str(), &selected))
         {
-            currentShaderIndex = int(i);
-            editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[currentShaderIndex].mFilename));
+            mCurrentShaderIndex = int(i);
+            editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[mCurrentShaderIndex].mFilename));
             editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates());
         }
     }
     ImGui::EndChild();
     ImGui::SameLine();
     ImGui::BeginChild(14);
-    // save
-    if (ImGui::IsKeyReleased(SDL_SCANCODE_F5))
-    {
-        auto textToSave = editor.GetText();
-
-        std::ofstream t(mEvaluatorFiles[currentShaderIndex].mDirectory + mEvaluatorFiles[currentShaderIndex].mFilename, std::ofstream::out);
-        t << textToSave;
-        t.close();
-
-        gEvaluators.SetEvaluators(mEvaluatorFiles);
-        mNodeGraphControler->mEditingContext.RunAll();
-    }
 
     ImGui::SameLine();
     ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | F5 to save and update nodes", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
@@ -163,7 +146,6 @@ void Imogen::HandleEditor(TextEditor &editor)
         editor.GetLanguageDefinition().mName.c_str());
     editor.Render("TextEditor");
     ImGui::EndChild();
-
 }
 
 void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI)
@@ -302,7 +284,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             }
             int width = pickerImage.mWidth;
             int height = pickerImage.mHeight;
-            
+
             ImageZoomTooltip(width, height, pickerImage.GetBits(), mouseUVCoord, displayedTextureSize);
         }
         else if (ImGui::IsWindowFocused())
@@ -334,7 +316,7 @@ template <typename T, typename Ty> struct SortedResource
     const std::vector<T, Ty>* mRes;
     bool operator < (const SortedResource& other) const
     {
-        return (*mRes)[mIndex].mName<(*mRes)[other.mIndex].mName;
+        return (*mRes)[mIndex].mName < (*mRes)[other.mIndex].mName;
     }
 
     static void ComputeSortedResources(const std::vector<T, Ty>& res, std::vector<SortedResource>& sortedResources)
@@ -387,7 +369,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
 
 struct DecodeThumbnailTaskSet : enki::ITaskSet
 {
-    DecodeThumbnailTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) : 
+    DecodeThumbnailTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) :
         enki::ITaskSet()
         , mIdentifier(identifier)
         , mSrc(src)
@@ -449,7 +431,7 @@ struct EncodeImageTaskSet : enki::ITaskSet
 
 struct DecodeImageTaskSet : enki::ITaskSet
 {
-    DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) : 
+    DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) :
         enki::ITaskSet()
         , mIdentifier(identifier)
         , mSrc(src)
@@ -484,7 +466,7 @@ void Imogen::DecodeThumbnailAsync(Material * material)
     if (!material->mThumbnailTextureId)
     {
         material->mThumbnailTextureId = defaultTextureId;
-        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material-library.mMaterials.data(), material->mRuntimeUniqueId), mNodeGraphControler));
+        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId), mNodeGraphControler));
     }
 }
 
@@ -499,7 +481,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
     std::vector<SortedResource<T, Ty>> sortedResources;
     SortedResource<T, Ty>::ComputeSortedResources(res, sortedResources);
-    
+
     float regionWidth = ImGui::GetWindowContentRegionWidth();
     float currentStep = 0.f;
     float stepSize = (viewMode == 2) ? 64.f : 128.f;
@@ -511,7 +493,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
 
         std::string grp = GetGroup(res[indexInRes].mName);
 
-        if ( grp != currentGroup)
+        if (grp != currentGroup)
         {
             if (currentGroup.length() && !currentGroupIsSkipped)
                 ImGui::TreePop();
@@ -586,11 +568,6 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
     return ret;
 }
 
-static int selectedMaterial = -1;
-int Imogen::GetCurrentMaterialIndex()
-{
-    return selectedMaterial;
-}
 void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, int materialIndex)
 {
     if (materialIndex == -1)
@@ -649,19 +626,22 @@ void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, 
     material.mFrameMin = nodeGraphControler.mEvaluationStages.mFrameMin;
     material.mFrameMax = nodeGraphControler.mEvaluationStages.mFrameMax;
     material.mPinnedParameters = nodeGraphControler.mEvaluationStages.mPinnedParameters;
+    material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 
 void Imogen::UpdateNewlySelectedGraph()
 {
     // set new
-    if (selectedMaterial != -1)
+    if (mSelectedMaterial != -1)
     {
         ClearAll();
 
-        Material& material = library.mMaterials[selectedMaterial];
+        Material& material = library.mMaterials[mSelectedMaterial];
         for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
         {
             MaterialNode& node = material.mMaterialNodes[i];
+            if (node.mType == 0xFFFFFFFF)
+                continue;
             NodeGraphAddNode(mNodeGraphControler, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
             auto& lastNode = mNodeGraphControler->mEvaluationStages.mStages.back();
             if (!node.mImage.empty())
@@ -684,54 +664,67 @@ void Imogen::UpdateNewlySelectedGraph()
         }
         NodeGraphUpdateEvaluationOrder(mNodeGraphControler);
         NodeGraphUpdateScrolling();
-        gEvaluationTime = 0;
-        gbIsPlaying = false;
+        mCurrentTime = 0;
+        mbIsPlaying = false;
+        mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
         mNodeGraphControler->mEvaluationStages.SetAnimTrack(material.mAnimTrack);
         mNodeGraphControler->mEvaluationStages.mFrameMin = material.mFrameMin;
         mNodeGraphControler->mEvaluationStages.mFrameMax = material.mFrameMax;
         mNodeGraphControler->mEvaluationStages.mPinnedParameters = material.mPinnedParameters;
-        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, gEvaluationTime, true);
-        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, gEvaluationTime);
-        mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mThumbnailTextureId);
+        mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
+        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
+        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
+        mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
         mNodeGraphControler->mEditingContext.RunAll();
+    }
+}
+
+void Imogen::NewMaterial()
+{
+    int previousSelection = mSelectedMaterial;
+    library.mMaterials.push_back(Material());
+    Material& back = library.mMaterials.back();
+    back.mName = "Name_Of_New_Material";
+    back.mThumbnailTextureId = 0;
+    back.mRuntimeUniqueId = GetRuntimeId();
+
+    if (previousSelection != -1)
+    {
+        ValidateMaterial(library, *mNodeGraphControler, previousSelection);
+    }
+    mSelectedMaterial = int(library.mMaterials.size()) - 1;
+    ClearAll();
+}
+
+void Imogen::ImportMaterial()
+{
+    nfdchar_t *outPath = NULL;
+    nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
+
+    if (result == NFD_OKAY)
+    {
+        Library tempLibrary;
+        LoadLib(&tempLibrary, outPath);
+        for (auto& material : tempLibrary.mMaterials)
+        {
+            Log("Importing Graph %s\n", material.mName.c_str());
+            library.mMaterials.push_back(material);
+        }
+        free(outPath);
     }
 }
 
 void Imogen::LibraryEdit(Library& library)
 {
-    int previousSelection = selectedMaterial;
-    if (ImGui::Button("New Graph"))
+    int previousSelection = mSelectedMaterial;
+    if (Button("MaterialNew", "New Material", ImVec2(0, 0)))
     {
-        library.mMaterials.push_back(Material());
-        Material& back = library.mMaterials.back();
-        back.mName = "Name_Of_New_Graph";
-        back.mThumbnailTextureId = 0;
-        back.mRuntimeUniqueId = GetRuntimeId();
-        
-        if (previousSelection != -1)
-        {
-            ValidateMaterial(library, *mNodeGraphControler, previousSelection);
-        }
-        selectedMaterial = int(library.mMaterials.size()) - 1;
-        ClearAll();
+        NewMaterial();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Import"))
+    if (Button("MaterialImport", "Import Material", ImVec2(0,0)))//ImGui::Button("Import"))
     {
-        nfdchar_t *outPath = NULL;
-        nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
-
-        if (result == NFD_OKAY)
-        {
-            Library tempLibrary;
-            LoadLib(&tempLibrary, outPath);
-            for (auto& material : tempLibrary.mMaterials)
-            {
-                Log("Importing Graph %s\n", material.mName.c_str());
-                library.mMaterials.push_back(material);
-            }
-            free(outPath);
-        }
+        ImportMaterial();
     }
     ImGui::SameLine();
 
@@ -749,7 +742,7 @@ void Imogen::LibraryEdit(Library& library)
     }
 
     ImGui::BeginChild("TV");
-    if (TVRes(library.mMaterials, "Graphs", selectedMaterial, 0, mLibraryViewMode, this))
+    if (TVRes(library.mMaterials, "Graphs", mSelectedMaterial, 0, mLibraryViewMode, this))
     {
         mNodeGraphControler->mSelectedNodeIndex = -1;
         // save previous
@@ -774,19 +767,19 @@ void Imogen::SetExistingMaterialActive(const char * materialName)
 
 void Imogen::SetExistingMaterialActive(int materialIndex)
 {
-    if (materialIndex != selectedMaterial && selectedMaterial != -1)
+    if (materialIndex != mSelectedMaterial && mSelectedMaterial != -1)
     {
-        ValidateMaterial(library, *mNodeGraphControler, selectedMaterial);
+        ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
     }
-    selectedMaterial = materialIndex;
+    mSelectedMaterial = materialIndex;
     UpdateNewlySelectedGraph();
 }
 
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
-    AnimCurveEdit(NodeGraphControler &NodeGraphControler, ImVec2& min, ImVec2& max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex) :
+    AnimCurveEdit(NodeGraphControler &NodeGraphControler, ImVec2& min, ImVec2& max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex, int currentTime) :
         mNodeGraphControler(NodeGraphControler),
-        mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible), mNodeIndex(nodeIndex)
+        mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible), mNodeIndex(nodeIndex), mCurrentTime(currentTime)
     {
         size_t type = mNodeGraphControler.mEvaluationStages.mStages[nodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
@@ -825,7 +818,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 mComponentIndex.push_back(uint32_t(curveIndex));
                 mCurveType.push_back(ImCurveEdit::CurveType(curveType));
                 mLabels.push_back(parameterName + GetCurveParameterSuffix(type, int(curveIndex)));
-				mColors.push_back(GetCurveParameterColor(type, int(curveIndex)));
+                mColors.push_back(GetCurveParameterColor(type, int(curveIndex)));
             }
         };
 
@@ -888,7 +881,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 curve++;
             } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
         }
-        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(&mNodeGraphControler.mEditingContext, mNodeIndex, gEvaluationTime);
+        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(&mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);
     }
 
     virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return mCurveType[curveIndex]; }
@@ -973,8 +966,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     {
         assert(gUndoRedoHandler.mCurrent == nullptr);
         URDummy urDummy;
-       
-        for (size_t curve = 0;curve< mParameterIndex.size();curve++)
+
+        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
         {
             uint32_t parameterIndex = mParameterIndex[curve];
             bool parameterFound = false;
@@ -1002,7 +995,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         }
     }
 
-    virtual void EndEdit() 
+    virtual void EndEdit()
     {
         for (auto ur : undoRedoEditCurves)
             delete ur;
@@ -1044,7 +1037,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     std::vector<std::vector<ImVec2>> mPts;
     std::vector<std::string> mLabels;
-	std::vector<uint32_t> mColors;
+    std::vector<uint32_t> mColors;
     std::vector<AnimTrack>& mAnimTrack;
     std::vector<uint32_t> mValueType;
     std::vector<uint32_t> mParameterIndex;
@@ -1054,6 +1047,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     ImVec2 &mMin, &mMax;
     int mNodeIndex;
+    int mCurrentTime;
     NodeGraphControler &mNodeGraphControler;
 
 private:
@@ -1070,8 +1064,8 @@ std::vector<UndoRedo *> AnimCurveEdit::undoRedoEditCurves;
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
-    MySequence(NodeGraphControler &NodeGraphControler) : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX){}
-
+    MySequence(NodeGraphControler &NodeGraphControler) : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX), undoRedoChange(nullptr) {}
+    
     void Clear()
     {
         mbExpansions.clear();
@@ -1081,6 +1075,8 @@ struct MySequence : public ImSequencer::SequenceInterface
         mCurveMin = 0.f;
         mCurveMax = 1.f;
     }
+
+    void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
     virtual int GetFrameMin() const { return mNodeGraphControler.mEvaluationStages.mFrameMin; }
     virtual int GetFrameMax() const { return mNodeGraphControler.mEvaluationStages.mFrameMax; }
 
@@ -1093,7 +1089,7 @@ struct MySequence : public ImSequencer::SequenceInterface
     {
         delete undoRedoChange;
         undoRedoChange = NULL;
-        mNodeGraphControler.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, gEvaluationTime, false);
+        mNodeGraphControler.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, mCurrentTime, false);
     }
 
     virtual int GetItemCount() const { return (int)mNodeGraphControler.mEvaluationStages.GetStagesCount(); }
@@ -1123,13 +1119,13 @@ struct MySequence : public ImSequencer::SequenceInterface
     virtual void Del(int index) { }
     virtual void Duplicate(int index) { }
 
-    virtual size_t GetCustomHeight(int index) 
-    { 
+    virtual size_t GetCustomHeight(int index)
+    {
         if (index >= mbExpansions.size())
             return false;
-        return mbExpansions[index]? 300 : 0;
+        return mbExpansions[index] ? 300 : 0;
     }
-    virtual void DoubleClick(int index) 
+    virtual void DoubleClick(int index)
     {
         if (index >= mbExpansions.size())
             mbExpansions.resize(index + 1, false);
@@ -1153,15 +1149,15 @@ struct MySequence : public ImSequencer::SequenceInterface
 
         ImVec2 curveMin(float(mNodeGraphControler.mEvaluationStages.mFrameMin), mCurveMin);
         ImVec2 curveMax(float(mNodeGraphControler.mEvaluationStages.mFrameMax), mCurveMax);
-        AnimCurveEdit curveEdit(mNodeGraphControler, curveMin, curveMax, mNodeGraphControler.mEvaluationStages.mAnimTrack, mbVisible, index);
+        AnimCurveEdit curveEdit(mNodeGraphControler, curveMin, curveMax, mNodeGraphControler.mEvaluationStages.mAnimTrack, mbVisible, index, mCurrentTime);
         mbVisible.resize(curveEdit.GetCurveCount(), true);
         draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
         for (int i = 0; i < curveEdit.GetCurveCount(); i++)
         {
             ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
             ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-			uint32_t curveColor = curveEdit.mColors[i];
-            draw_list->AddText(pta, mbVisible[i] ? curveColor : ((curveColor&0xFFFFFF)+0x80000000), curveEdit.mLabels[i].c_str());
+            uint32_t curveColor = curveEdit.mColors[i];
+            draw_list->AddText(pta, mbVisible[i] ? curveColor : ((curveColor & 0xFFFFFF) + 0x80000000), curveEdit.mLabels[i].c_str());
             if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
                 mbVisible[i] = !mbVisible[i];
         }
@@ -1228,22 +1224,172 @@ struct MySequence : public ImSequencer::SequenceInterface
     ImVec2 setKeyFrameOrValue;
     ImVec2 getKeyFrameOrValue;
     float mCurveMin, mCurveMax;
+    int mCurrentTime;
     URChange<EvaluationStage> *undoRedoChange;
 };
 
+std::vector<ImHotKey::HotKey> mHotkeys;
+
+void Imogen::Init()
+{
+    SetStyle();
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    mEditor->SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
+
+    DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+    DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
+    DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
+    DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+    DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+
+    struct HotKeyFunction
+    {
+        const char *name;
+        const char *lib;
+        std::function<void()> function;
+    };
+    static const std::vector<HotKeyFunction> hotKeyFunctions = {
+        {"Layout"
+            ,"Reorder nodes in a simpler layout"
+            , []() { NodeGraphLayout(); }}
+        ,{"PlayPause"
+            ,"Play or Stop current animation"
+            , [&]() { PlayPause();  }}
+        ,{"AnimationFirstFrame"
+            ,"Set current time to the first frame of animation"
+            , [&]() { mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMin; }}
+        ,{"AnimationNextFrame"
+            ,"Move to the next animation frame"
+            , [&]() { mCurrentTime++; }}
+        ,{"AnimationPreviousFrame"
+            ,"Move to previous animation frame"
+            , [&]() { mCurrentTime--; }}
+        ,{"MaterialExport"
+            ,"Export current material to a file"
+            , [&]() { ExportMaterial(); }}
+        ,{"MaterialImport"
+            ,"Import a material file in the library"
+            , [&]() { ImportMaterial(); }}
+        , { "ToggleLibrary"
+            ,"Show or hide Libaray window"
+            , [&]() { mbShowLibrary = !mbShowLibrary; } }
+        , { "ToggleNodeGraph"
+            ,"Show or hide Node graph window"
+            , [&]() { mbShowNodes = !mbShowNodes; } }
+        , { "ToggleLogger"
+            ,"Show or hide Logger window"
+            , [&]() { mbShowLog = !mbShowLog; } }
+        , { "ToggleSequencer"
+            ,"Show or hide Sequencer window"
+            , [&]() { mbShowTimeline = !mbShowTimeline; } }
+        , { "ToggleParameters"
+            ,"Show or hide Parameters window"
+            , [&]() { mbShowParameters = !mbShowParameters; } }
+        , { "ToggleEditor"
+            ,"Show or hide shader editor window"
+            , [&]() { mbShowShaders = !mbShowShaders; } }
+        ,{"MaterialNew"
+            ,"Create a new graph"
+            , [&]() { NewMaterial(); }}
+        ,{"ReloadShaders"
+            ,"Save shaders and hot reload them"
+            , [&]() { 
+                auto textToSave = mEditor->GetText();
+
+                std::ofstream t(mEvaluatorFiles[mCurrentShaderIndex].mDirectory + mEvaluatorFiles[mCurrentShaderIndex].mFilename, std::ofstream::out);
+                t << textToSave;
+                t.close();
+
+                gEvaluators.SetEvaluators(mEvaluatorFiles);
+                mNodeGraphControler->mEditingContext.RunAll();
+            }}
+        ,{"DeleteSelectedNodes","Delete selected nodes in the current graph", []() {}}
+        ,{"AnimationSetKey"
+            ,"Make a new animation key with the current parameters values at the current time"
+            , [&]() { mNodeGraphControler->MakeKey(mCurrentTime, uint32_t(mNodeGraphControler->mSelectedNodeIndex), 0); }}
+        ,{"HotKeyEditor"
+            , "Open the Hotkey editor window"
+            , [&]() { 
+                ImGui::OpenPopup("HotKeys Editor"); 
+            }}
+        ,{"NewNodePopup","Open the new node menu", []() {}}
+        ,{"Undo"
+            ,"Undo the last operation"
+            , []() { gUndoRedoHandler.Undo(); }}
+        ,{"Redo"
+            ,"Redo the last undo"
+            , []() { gUndoRedoHandler.Redo(); }}
+        ,{"Copy","Copy the selected nodes", []() {}}
+        ,{"Cut","Cut the selected nodes", []() {}}
+        ,{"Paste","Paste previously copy/cut nodes", []() {}}
+        ,{"BuildMaterial"
+            ,"Build current material"
+            , [&]() { BuildCurrentMaterial(mBuilder); }}
+        };
+    mHotkeys.reserve(hotKeyFunctions.size());
+    mHotkeyFunctions.reserve(hotKeyFunctions.size());
+    for (const auto& hotKeyFunction : hotKeyFunctions)
+    {
+        mHotkeys.push_back({hotKeyFunction.name, hotKeyFunction.lib});
+        mHotkeyFunctions.push_back(hotKeyFunction.function);
+    }
+}
+
+void Imogen::Finish()
+{
+
+}
+
+
+const char *GetShortCutLib(const char *functionName)
+{
+    static char tmps[512];
+    for (int i = 0; i < mHotkeys.size(); i++)
+    {
+        if (!strcmp(mHotkeys[i].functionName, functionName))
+        {
+            ImHotKey::GetHotKeyLib(mHotkeys[i].functionKeys, tmps, sizeof(tmps), mHotkeys[i].functionName);
+            return tmps;
+        }
+    }
+    return "*FUNCTION_ERROR*";
+}
+
+void Imogen::HandleHotKeys()
+{
+    int hotkeyIndex = ImHotKey::GetHotKey(mHotkeys.data(), mHotkeys.size());
+    if (hotkeyIndex == -1)
+        return;
+    mHotkeyFunctions[hotkeyIndex]();
+}
+
+static const ImVec2 deltaHeight = ImVec2(0, 32);
 void Imogen::ShowAppMainMenuBar()
 {
-    if (ImGui::BeginPopup("Plugins"))
+    ImGuiIO& io = ImGui::GetIO();
+
+    static const ImVec2 buttonSize(440, 30);
+    
+    mMainMenuPos = ImLerp(mMainMenuPos, mMainMenuDest, 0.2f);
+
+    ImGui::SetNextWindowSize(ImVec2(440, io.DisplaySize.y - deltaHeight.y));
+    ImGui::SetNextWindowPos(ImVec2(mMainMenuPos, deltaHeight.y));
+    if (!ImGui::BeginPopupModal("MainMenu", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar))
     {
-        unsigned int imogenLogo = gImageCache.GetTexture("Stock/ImogenLogo.png");
-        ImGui::Image((ImTextureID)(int64_t)imogenLogo, ImVec2(200, 86), ImVec2(0, 1), ImVec2(1, 0));
+        mMainMenuPos = -440;
+        return;
+    }
 
+    if (ImGui::CollapsingHeader("Plugins", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::Button("Reload Plugins", buttonSize))
+        {
 
-        if (ImGui::MenuItem("Reload plugins")) {}
+        }
         ImGui::Separator();
         for (auto& plugin : mRegisteredPlugins)
         {
-            if (ImGui::MenuItem(plugin.mName.c_str())) 
+            if (ImGui::Button(plugin.mName.c_str(), buttonSize))
             {
                 try
                 {
@@ -1255,45 +1401,129 @@ void Imogen::ShowAppMainMenuBar()
                 }
             }
         }
-        ImGui::Separator();
-        if (ImGui::BeginMenu("Windows"))
-        {
-            //ImGui::MenuItem("Metrics", NULL);
-            //ImGui::MenuItem("Style Editor", NULL);
-            //ImGui::MenuItem("About Dear ImGui", NULL);
+    }
 
-            ImGui::Checkbox("Timeline", &mbShowTimeline);
-            ImGui::Checkbox("Library", &mbShowLibrary);
-            ImGui::Checkbox("Nodes", &mbShowNodes);
-            ImGui::Checkbox("Shaders", &mbShowShaders);
-            ImGui::Checkbox("Log", &mbShowLog);
-            ImGui::Checkbox("Parameters", &mbShowParameters);
-
-            ImGui::EndMenu();
-        }
-        if (ImGui::MenuItem("Layout Nodes", "CTRL + L"))
+    if (ImGui::CollapsingHeader("Graph", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (Button("Layout", "Layout", buttonSize))
         {
             NodeGraphLayout();
         }
-        /*if (ImGui::MenuItem("Windows"))
+        if (Button("MaterialExport", "Export Material", buttonSize))
         {
 
-        }*/
-        ImGui::EndPopup();
+        }
+        if (Button("MaterialImport", "Import Material", buttonSize))
+        {
+
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (Button("HotKeyEditor", "Hot Keys Editor", buttonSize))
+        {
+            mNewPopup = "HotKeys Editor";
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Windows", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Checkbox(GetShortCutLib("ToggleLibrary"), &mbShowLibrary);
+        ImGui::Checkbox(GetShortCutLib("ToggleNodeGraph"), &mbShowNodes);
+        ImGui::Checkbox(GetShortCutLib("ToggleLogger"), &mbShowLog);
+        ImGui::Checkbox(GetShortCutLib("ToggleSequencer"), &mbShowTimeline);
+        ImGui::Checkbox(GetShortCutLib("ToggleParameters"), &mbShowParameters);
+        ImGui::Checkbox(GetShortCutLib("ToggleEditor"), &mbShowShaders);
+    }
+
+    ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y-32));
+    if ((io.MouseClicked[0] && !windowRect.Contains(io.MousePos) && !ImGui::IsPopupOpen("HotKeys Editor")))
+    {
+        mMainMenuDest = -440;
+    }
+    if (mMainMenuPos <= -439.f && mMainMenuDest < -400.f)
+    {
+        ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+}
+
+void Imogen::BuildCurrentMaterial(Builder *builder)
+{
+    if (mSelectedMaterial != -1)
+    {
+        Material& material = library.mMaterials[mSelectedMaterial];
+        builder->Add(material.mName.c_str(), mNodeGraphControler->mEvaluationStages);
     }
 }
 
+int Imogen::GetFunctionByName(const char *functionName) const
+{
+    for (unsigned int i = 0;i<mHotkeys.size();i++)
+    {
+        const auto& hotkey = mHotkeys[i];
+        if (!strcmp(hotkey.functionName, functionName))
+            return i;
+    }
+    return -1;
+}
 
-static const ImVec2 deltaHeight = ImVec2(0, 32);
+bool Imogen::ImageButton(const char *functionName, unsigned int icon, ImVec2 size)
+{
+    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon, size, ImVec2(0, 1), ImVec2(1, 0));
+    if (ImGui::IsItemHovered())
+    {
+        int functionIndex = GetFunctionByName(functionName);
+        if (functionIndex != -1)
+        {
+            char lib[512];
+            auto& hotkey = mHotkeys[functionIndex];
+            ImHotKey::GetHotKeyLib(hotkey.functionKeys, lib, sizeof(lib));
+            ImGui::BeginTooltip();
+            ImGui::Text("%s [%s]", hotkey.functionLib, lib);
+            ImGui::EndTooltip();
+        }
+    }
+    return res;
+}
+
+bool Imogen::Button(const char *functionName, const char *label, ImVec2 size)
+{
+    bool res = ImGui::Button(label, size);
+    if (ImGui::IsItemHovered())
+    {
+        int functionIndex = GetFunctionByName(functionName);
+        if (functionIndex != -1)
+        {
+            char lib[512];
+            auto& hotkey = mHotkeys[functionIndex];
+            ImHotKey::GetHotKeyLib(hotkey.functionKeys, lib, sizeof(lib));
+            ImGui::BeginTooltip();
+            ImGui::Text("%s [%s]", hotkey.functionLib, lib);
+            ImGui::EndTooltip();
+        }
+    }
+    return res;
+}
+
 void Imogen::ShowTitleBar(Builder *builder)
 {
     ImGuiIO& io = ImGui::GetIO();
-    
+
+    if (mNewPopup)
+    {
+        ImGui::OpenPopup(mNewPopup);
+        mNewPopup = nullptr;
+    }
+
+
     ImVec2 butSize = ImVec2(32, 32);
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x, 0.f) + deltaHeight);
 
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);// ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.f, 0.f));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
@@ -1305,7 +1535,15 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::PushID(149);
     if (ImGui::Button("", butSize))
     {
-        ImGui::OpenPopup("Plugins");
+        if (ImGui::IsPopupOpen("MainMenu"))
+        {
+            mMainMenuDest = -440.f;
+        }
+        else
+        {
+            mMainMenuDest = 0.f;
+            ImGui::OpenPopup("MainMenu");
+        }
     }
     ShowAppMainMenuBar();
     ImRect rcMenu(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
@@ -1313,10 +1551,10 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::SameLine();
     // imogen info strings
     ImGui::BeginChildFrame(152, ImVec2(io.DisplaySize.x - butSize.x*4.f - 300, 32.f));
-    ImGui::Text("Imogen 0.10");
-    if (selectedMaterial != -1)
+    ImGui::Text("Imogen 0.11");
+    if (mSelectedMaterial != -1)
     {
-        Material& material = library.mMaterials[selectedMaterial];
+        Material& material = library.mMaterials[mSelectedMaterial];
         ImGui::Text("%s", material.mName.c_str());
     }
     ImGui::EndChildFrame();
@@ -1324,19 +1562,9 @@ void Imogen::ShowTitleBar(Builder *builder)
 
     // exporting frame / build
     unsigned int buildIcon = gImageCache.GetTexture("Stock/Build.png");
-    if (ImGui::ImageButton((ImTextureID)(int64_t)buildIcon, ImVec2(30,30), ImVec2(0,1), ImVec2(1,0)))
+    if (ImageButton("BuildMaterial", buildIcon, ImVec2(30, 30)))
     {
-        if (selectedMaterial != -1)
-        {
-            Material& material = library.mMaterials[selectedMaterial];
-            builder->Add(material.mName.c_str(), mNodeGraphControler->mEvaluationStages);
-        }
-    }
-    if (ImGui::IsItemHovered())
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text("Add current graph to the build list");
-        ImGui::EndTooltip();
+        BuildCurrentMaterial(builder);
     }
     ImGui::SameLine();
     ImGui::BeginChildFrame(153, ImVec2(300.f, 32));
@@ -1350,7 +1578,7 @@ void Imogen::ShowTitleBar(Builder *builder)
         ImGui::ProgressBar(bi.mProgress);
     }
     ImGui::EndChildFrame();
-    if (ImGui::IsItemHovered() && (buildInfos.size()>1))
+    if (ImGui::IsItemHovered() && (buildInfos.size() > 1))
     {
         ImGui::BeginTooltip();
         for (auto& bi : buildInfos)
@@ -1405,67 +1633,84 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::End();
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(5);
+
+    
     // done
+}
+
+void Imogen::PlayPause()
+{
+    if (!mbIsPlaying)
+    {
+        mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMin;
+    }
+    mbIsPlaying = !mbIsPlaying;
 }
 
 void Imogen::ShowTimeLine()
 {
     int selectedEntry = mNodeGraphControler->mSelectedNodeIndex;
     static int firstFrame = 0;
-    int currentTime = gEvaluationTime;
+
+    mSequence->SetCurrentTime(mCurrentTime);
 
     ImGui::PushItemWidth(80);
     ImGui::PushID(200);
     ImGui::InputInt("", &mNodeGraphControler->mEvaluationStages.mFrameMin, 0, 0);
     ImGui::PopID();
     ImGui::SameLine();
-    if (ImGui::Button("|<"))
-        currentTime = mNodeGraphControler->mEvaluationStages.mFrameMin;
+    if (Button("AnimationFirstFrame", "|<", ImVec2(0, 0)))
+    {
+        mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMin;
+    }
     ImGui::SameLine();
-    if (ImGui::Button("<"))
-        currentTime--;
+    if (Button("AnimationPreviousFrame", "<", ImVec2(0, 0)))
+    {
+        mCurrentTime--;
+    }
     ImGui::SameLine();
 
     ImGui::PushID(201);
-    if (ImGui::InputInt("", &currentTime, 0, 0, 0))
+    if (ImGui::InputInt("", &mCurrentTime, 0, 0, 0))
     {
     }
     ImGui::PopID();
 
     ImGui::SameLine();
-    if (ImGui::Button(">"))
-        currentTime++;
+    if (Button("AnimationNextFrame", ">", ImVec2(0,0)))
+    {
+        mCurrentTime++;
+    }
     ImGui::SameLine();
     if (ImGui::Button(">|"))
-        currentTime = mNodeGraphControler->mEvaluationStages.mFrameMax;
-    ImGui::SameLine();
-    extern bool gbIsPlaying;
-    if (ImGui::Button(gbIsPlaying ? "Stop" : "Play"))
     {
-        if (!gbIsPlaying)
-        {
-            currentTime = mNodeGraphControler->mEvaluationStages.mFrameMin;
-        }
-        gbIsPlaying = !gbIsPlaying;
+        mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMax;
     }
-    extern bool gPlayLoop;
+    ImGui::SameLine();
+    
+    if (Button("PlayPause", mbIsPlaying ? "Stop" : "Play", ImVec2(0, 0)))
+    {
+        PlayPause();
+    }
+
     unsigned int playNoLoopTextureId = gImageCache.GetTexture("Stock/PlayNoLoop.png");
     unsigned int playLoopTextureId = gImageCache.GetTexture("Stock/PlayLoop.png");
 
     ImGui::SameLine();
-    if (ImGui::ImageButton((ImTextureID)(uint64_t)(gPlayLoop ? playLoopTextureId : playNoLoopTextureId), ImVec2(16.f, 16.f)))
-        gPlayLoop = !gPlayLoop;
+    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureId : playNoLoopTextureId), ImVec2(16.f, 16.f)))
+    {
+        mbPlayLoop = !mbPlayLoop;
+    }
 
     ImGui::SameLine();
     ImGui::PushID(202);
     ImGui::InputInt("", &mNodeGraphControler->mEvaluationStages.mFrameMax, 0, 0);
     ImGui::PopID();
     ImGui::SameLine();
-    currentTime = ImMax(currentTime, 0);
     ImGui::SameLine(0, 40.f);
-    if (ImGui::Button("Make Key") && selectedEntry != -1)
+    if (Button("AnimationSetKey", "Make Key", ImVec2(0,0)) && selectedEntry != -1)
     {
-        mNodeGraphControler->MakeKey(currentTime, uint32_t(selectedEntry), 0);
+        mNodeGraphControler->MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
     }
 
     ImGui::SameLine(0, 50.f);
@@ -1501,69 +1746,69 @@ void Imogen::ShowTimeLine()
     ImGui::PopItemWidth();
     ImGui::PopItemWidth();
 
-    Sequencer(mSequence, &currentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
+    Sequencer(mSequence, &mCurrentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
     if (selectedEntry != -1)
     {
         mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
         NodeGraphSelectNode(selectedEntry);
         auto& imoNode = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry];
-        mNodeGraphControler->mEvaluationStages.SetStageLocalTime(&mNodeGraphControler->mEditingContext, selectedEntry, ImClamp(currentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
-    }
-    if (currentTime != gEvaluationTime)
-    {
-        gEvaluationTime = currentTime;
-        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, currentTime, true);
-        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, currentTime);
+        mNodeGraphControler->mEvaluationStages.SetStageLocalTime(&mNodeGraphControler->mEditingContext, selectedEntry, ImClamp(mCurrentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
     }
 }
 
 void Imogen::ShowNodeGraph()
 {
-    if (selectedMaterial != -1)
+    if (mSelectedMaterial != -1)
     {
-        Material& material = library.mMaterials[selectedMaterial];
+        Material& material = library.mMaterials[mSelectedMaterial];
         ImGui::PushItemWidth(150);
         ImGui::InputText("Name", &material.mName);
         ImGui::SameLine();
         ImGui::PopItemWidth();
 
         ImGui::PushItemWidth(60);
-        if (ImGui::Button("Save Graph"))
+        if (Button("MaterialExport", "Export Material", ImVec2(0,0)))
         {
-            nfdchar_t *outPath = NULL;
-            nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
-
-            if (result == NFD_OKAY)
-            {
-                Library tempLibrary;
-                Material& material = library.mMaterials[selectedMaterial];
-                tempLibrary.mMaterials.push_back(material);
-                SaveLib(&tempLibrary, outPath);
-                Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
-                free(outPath);
-            }
+            ExportMaterial();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Delete Graph"))
+        if (ImGui::Button("Delete Material"))
         {
-            library.mMaterials.erase(library.mMaterials.begin() + selectedMaterial);
-            selectedMaterial = int(library.mMaterials.size()) - 1;
+            library.mMaterials.erase(library.mMaterials.begin() + mSelectedMaterial);
+            mSelectedMaterial = int(library.mMaterials.size()) - 1;
             UpdateNewlySelectedGraph();
         }
         ImGui::PopItemWidth();
     }
-    NodeGraph(mNodeGraphControler, selectedMaterial != -1);
+    NodeGraph(mNodeGraphControler, mSelectedMaterial != -1);
+}
+
+void Imogen::ExportMaterial()
+{
+    nfdchar_t *outPath = NULL;
+    nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
+
+    if (result == NFD_OKAY)
+    {
+        Library tempLibrary;
+        Material& material = library.mMaterials[mSelectedMaterial];
+        tempLibrary.mMaterials.push_back(material);
+        SaveLib(&tempLibrary, outPath);
+        Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
+        free(outPath);
+    }
 }
 
 void Imogen::Show(Builder *builder, Library& library)
 {
+    int currentTime = mCurrentTime;
     ImGuiIO& io = ImGui::GetIO();
-
+    mBuilder = builder;
     ShowTitleBar(builder);
 
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
-    
+
     if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus))
     {
         static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
@@ -1582,7 +1827,7 @@ void Imogen::Show(Builder *builder, Library& library)
         {
             if (ImGui::Begin("Shaders", &mbShowShaders))
             {
-                HandleEditor(editor);
+                HandleEditor(*mEditor);
             }
             ImGui::End();
         }
@@ -1652,11 +1897,41 @@ void Imogen::Show(Builder *builder, Library& library)
 
         ImGui::End();
     }
+    ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
+
+    Playback(currentTime != mCurrentTime);
+}
+
+void Imogen::Playback(bool timeHasChanged)
+{
+    if (mbIsPlaying)
+    {
+        mCurrentTime++;
+        if (mCurrentTime >= mNodeGraphControler->mEvaluationStages.mFrameMax)
+        {
+            if (mbPlayLoop)
+            {
+                mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMin;
+            }
+            else
+            {
+                mbIsPlaying = false;
+            }
+        }
+    }
+
+    mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
+
+    if (timeHasChanged || mbIsPlaying)
+    {
+        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
+        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
+    }
 }
 
 void Imogen::ValidateCurrentMaterial(Library& library)
 {
-    ValidateMaterial(library, *mNodeGraphControler, selectedMaterial);
+    ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
 }
 
 void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)
@@ -1734,6 +2009,19 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
         {
             userdata->imogen->mLibraryViewMode = active;
         }
+        else
+        {
+            for (auto& hotkey : mHotkeys)
+            {
+                unsigned int functionKeys;
+                char tmps[128];
+                sprintf(tmps, "%s=0x%%x", hotkey.functionName);
+                if (sscanf(line_start, tmps, &functionKeys) == 1)
+                {
+                    hotkey.functionKeys = functionKeys;
+                }
+            }
+        }
     }
 }
 
@@ -1747,12 +2035,18 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     buf->appendf("ShowLog=%d\n", instance->mbShowLog ? 1 : 0);
     buf->appendf("ShowParameters=%d\n", instance->mbShowParameters ? 1 : 0);
     buf->appendf("LibraryViewMode=%d\n", instance->mLibraryViewMode);
+
+    for (const auto& hotkey : mHotkeys)
+    {
+        buf->appendf("%s=0x%x\n", hotkey.functionName, hotkey.functionKeys);
+    }
 }
 
 Imogen::Imogen(NodeGraphControler *nodeGraphControler) :
     mNodeGraphControler(nodeGraphControler)
 {
     mSequence = new MySequence(*nodeGraphControler);
+    mEditor = new TextEditor;
     mdConfig.userData = this;
 
     ImGuiContext& g = *GImGui;
@@ -1769,24 +2063,7 @@ Imogen::Imogen(NodeGraphControler *nodeGraphControler) :
 Imogen::~Imogen()
 {
     delete mSequence;
-}
-
-void Imogen::Init()
-{
-    SetStyle();
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    editor.SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
-
-    DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
-    DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
-    DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
-    DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-    DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-}
-
-void Imogen::Finish()
-{
-
+    delete mEditor;
 }
 
 void Imogen::ClearAll()
@@ -1798,5 +2075,4 @@ void Imogen::ClearAll()
     gUndoRedoHandler.Clear();
     mSequence->Clear();
 }
-
 

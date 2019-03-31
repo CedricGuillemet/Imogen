@@ -399,6 +399,12 @@ void NodeGraphAddNode(NodeGraphControlerBase *controler, int type, const std::ve
 
 void NodeGraphAddLink(NodeGraphControlerBase *controler, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
 {
+    if (InputIdx >= nodes.size() || OutputIdx >= nodes.size())
+    {
+        Log("Error : Link node index doesn't correspond to an existing node.");
+        return;
+    }
+
     NodeLink nl;
     nl.InputIdx = InputIdx;
     nl.InputSlot = InputSlot;
@@ -726,7 +732,6 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
         ImVec2 dif = p2 - p1;
 
         ImVec2 p1a, p1b;
-        float overdrawFactor = 1.4f;
         const float limitx = 12.f * factor;
         if (dif.x < limitx)
         {
@@ -739,57 +744,52 @@ static void DisplayLinks(ImDrawList* drawList, const ImVec2 offset, const float 
 
             pts = { p1, p10, p1a, p1b, p20, p2 };
             ptCount = 6;
-            overdrawFactor = 2.6f;
         }
         else
         {
-            if (fabsf(dif.y) < 10.f)
+            if (fabsf(dif.y) < 1.f)
             {
-                if (fabsf(dif.x) > fabsf(dif.y))
-                {
-                    p1a = p1 + ImVec2(fabsf(fabsf(dif.x) - fabsf(dif.y)) * 0.5f * sign(dif.x), 0.f);
-                    p1b = p1a + ImVec2(fabsf(dif.y) * sign(dif.x), dif.y);
-                }
-                else
-                {
-                    p1a = p1 + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(dif.x)) * 0.5f * sign(dif.y));
-                    p1b = p1a + ImVec2(dif.x, fabsf(dif.x) * sign(dif.y));
-                }
+                pts = { p1, (p1+p2)*0.5f, p2 };
+                ptCount = 3;
             }
             else
             {
-                if (fabsf(dif.x) > fabsf(dif.y))
+                if (fabsf(dif.y) < 10.f)
                 {
-                    float d = fabsf(dif.y) * sign(dif.x) * 0.5f;
-                    p1a = p1 + ImVec2(d, dif.y * 0.5f);
-                    p1b = p1a + ImVec2(fabsf(fabsf(dif.x) - fabsf(d)*2.f) * sign(dif.x), 0.f);
+                    if (fabsf(dif.x) > fabsf(dif.y))
+                    {
+                        p1a = p1 + ImVec2(fabsf(fabsf(dif.x) - fabsf(dif.y)) * 0.5f * sign(dif.x), 0.f);
+                        p1b = p1a + ImVec2(fabsf(dif.y) * sign(dif.x), dif.y);
+                    }
+                    else
+                    {
+                        p1a = p1 + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(dif.x)) * 0.5f * sign(dif.y));
+                        p1b = p1a + ImVec2(dif.x, fabsf(dif.x) * sign(dif.y));
+                    }
                 }
                 else
                 {
-
-                    float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
-                    p1a = p1 + ImVec2(dif.x * 0.5f, d);
-                    p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
+                    if (fabsf(dif.x) > fabsf(dif.y))
+                    {
+                        float d = fabsf(dif.y) * sign(dif.x) * 0.5f;
+                        p1a = p1 + ImVec2(d, dif.y * 0.5f);
+                        p1b = p1a + ImVec2(fabsf(fabsf(dif.x) - fabsf(d)*2.f) * sign(dif.x), 0.f);
+                    }
+                    else
+                    {
+                        float d = fabsf(dif.x) * sign(dif.y) * 0.5f;
+                        p1a = p1 + ImVec2(dif.x * 0.5f, d);
+                        p1b = p1a + ImVec2(0.f, fabsf(fabsf(dif.y) - fabsf(d)*2.f) * sign(dif.y));
+                    }
                 }
+                pts = { p1, p1a, p1b, p2 };
+                ptCount = 4;
             }
-            pts = { p1, p1a, p1b, p2 };
-            ptCount = 4;
         }
         float highLightFactor = factor * highlightCons ? 2.0f : 1.f;
         for (int pass = 0; pass < 2; pass++)
         {
-            for (int i = 0; i < ptCount - 1; i++)
-            {
-                // make sure each segment overdraw a bit so you can't see cracks in joints
-                ImVec2 p1 = pts[i];
-                ImVec2 p2 = pts[i + 1];
-                ImVec2 dif = p2 - p1;
-                float diflen = sqrtf(dif.x*dif.x + dif.y*dif.y);
-                ImVec2 difNorm = dif / ImVec2(diflen, diflen);
-                p1 -= difNorm * overdrawFactor * highLightFactor;
-                p2 += difNorm * overdrawFactor * highLightFactor;
-                drawList->AddLine(p1, p2, pass?col:0xFF000000, (pass?5.f:7.5f) * highLightFactor);
-            }
+            drawList->AddPolyline(pts.data(), ptCount, pass ? col : 0xFF000000, false, (pass ? 5.f : 7.5f) * highLightFactor);
         }
     }
 }
@@ -861,7 +861,7 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
 }
 
 
-void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler)
+bool HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler)
 {
     static int editingNodeIndex;
     static int editingSlotIndex;
@@ -980,7 +980,9 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
                     }
                 }
             }
-            if (nodeOperation == NO_None && ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && io.MouseClicked[0])
+            // when ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() is uncommented, one can't click the node input/output when 
+            // mouse is over the node itself.
+            if (nodeOperation == NO_None && /*ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() &&*/ io.MouseClicked[0])
             {
                 nodeOperation = NO_EditingLink;
                 editingInput = i == 0;
@@ -1006,6 +1008,7 @@ void HandleConnections(ImDrawList* drawList, int nodeIndex, const ImVec2 offset,
             }
         }
     }
+    return hoverSlot;
 }
 
 static void DrawGrid(ImDrawList* drawList, ImVec2 windowPos, const ImVec2 canvasSize, const float factor)
@@ -1019,7 +1022,7 @@ static void DrawGrid(ImDrawList* drawList, ImVec2 windowPos, const ImVec2 canvas
 }
 
 // return true if node is hovered
-static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler)
+static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase *controler, bool overInput)
 {
     ImGuiIO& io = ImGui::GetIO();
     const MetaNode* metaNodes = gMetaNodes.data();
@@ -1047,7 +1050,7 @@ static bool DrawNode(ImDrawList* drawList, int nodeIndex, const ImVec2 offset, c
     ImGui::SetCursorScreenPos(node_rect_min);
     ImGui::InvisibleButton("node", node->Size);
     bool nodeHovered = false;
-    if (ImGui::IsItemHovered() && nodeOperation == NO_None)
+    if (ImGui::IsItemHovered() && nodeOperation == NO_None && !overInput)
     {
         nodeHovered = true;
     }
@@ -1209,8 +1212,11 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-    // Display grid
-    DrawGrid(drawList, windowPos, canvasSize, factor);
+    // Background or Display grid
+    if (!controler->RenderBackground())
+    {
+        DrawGrid(drawList, windowPos, canvasSize, factor);
+    }
 
     if (!enabled)
         goto nodeGraphExit;
@@ -1252,10 +1258,11 @@ void NodeGraph(NodeGraphControlerBase *controler, bool enabled)
             // Display node contents first
             drawList->ChannelsSetCurrent(2); // Foreground
 
-            if (DrawNode(drawList, nodeIndex, offset, factor, controler))
+            bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler);
+
+            if (DrawNode(drawList, nodeIndex, offset, factor, controler, overInput))
                 hoveredNode = nodeIndex;
 
-            HandleConnections(drawList, nodeIndex, offset, factor, controler);
             ImGui::PopID();
         }
     }

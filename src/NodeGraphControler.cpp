@@ -131,6 +131,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned in
 {
     bool dirty = false;
     uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
+    ImGui::PushID(parameterPair * 4);
     HandlePin(parameterPair);
     ImGui::SameLine();
     switch (param.mType)
@@ -255,6 +256,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned in
         break;
     case Con_FilenameWrite:
     case Con_FilenameRead:
+        ImGui::PushID(parameterPair * 4 + 1);
         dirty |= ImGui::InputText("", (char*)paramBuffer, 1024);
         ImGui::SameLine();
         if (ImGui::Button("..."))
@@ -269,6 +271,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned in
                 dirty = true;
             }
         }
+        ImGui::PopID();
         ImGui::SameLine();
         ImGui::Text(param.mName.c_str());
         break;
@@ -312,6 +315,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned in
         }
         break;
     }
+    ImGui::PopID();
     return dirty;
 }
 

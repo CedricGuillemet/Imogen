@@ -110,6 +110,8 @@ namespace ImCurveEdit
       static std::set<EditPoint> selection;
       static bool overSelectedPoint = false;
 
+      int ret = 0;
+
       ImGuiIO& io = ImGui::GetIO();
       ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0,0));
       ImGui::PushStyleColor(ImGuiCol_Border, 0);
@@ -290,6 +292,7 @@ namespace ImCurveEdit
                   }
               }
               pointsMoved = true;
+              ret = 1;
               auto prevSelection = selection;
               int originalIndex = 0;
               for (auto& sel : prevSelection)
@@ -324,6 +327,7 @@ namespace ImCurveEdit
          delegate.BeginEdit(overCurve);
          delegate.AddPoint(overCurve, np);
          delegate.EndEdit();
+         ret = 1;
       }
 
       // move curve
@@ -348,6 +352,7 @@ namespace ImCurveEdit
             {
                delegate.EditPoint(movingCurve, int(p), rangeToPoint(pointToRange(originalPoints[p]) + (io.MousePos - mousePosOrigin) * sizeOfPixel));
             }
+            ret = 1;
          }
          if (!io.MouseDown[0])
          {
@@ -415,6 +420,6 @@ namespace ImCurveEdit
           for (auto& point : selection)
               (*selectedPoints)[index++] = point;
       }
-      return 0;
+      return ret;
    }
 }

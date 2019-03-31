@@ -310,6 +310,8 @@ int main(int, char**)
     imogen.ValidateCurrentMaterial(library);
     SaveLib(&library, libraryFilename);
 
+    g_TS.WaitforAllAndShutdown();
+
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplSDL2_Shutdown();
@@ -322,6 +324,6 @@ int main(int, char**)
     SDL_Quit();
 
     pybind11::finalize_interpreter();
-    g_TS.WaitforAllAndShutdown();
+    
     return 0;
 }

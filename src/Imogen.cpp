@@ -1883,7 +1883,7 @@ void Imogen::Show(Builder *builder, Library& library)
             }
             if (ImGui::Begin(tmps, &open))
             {
-                RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, false);
+                RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, true);
             }
             ImGui::End();
             if (!open)

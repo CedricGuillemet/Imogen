@@ -1084,6 +1084,7 @@ namespace EvaluationAPI
     int Evaluate(EvaluationContext *evaluationContext, int target, int width, int height, Image *image)
     {
         EvaluationContext context(evaluationContext->mEvaluationStages, true, width, height);
+        context.SetCurrentTime(evaluationContext->GetCurrentTime());
         while (context.RunBackward(target))
         {
             // processing... maybe good on next run

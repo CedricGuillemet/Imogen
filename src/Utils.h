@@ -612,3 +612,7 @@ enum EvaluationStatus
 };
 
 std::string GetBasePath(const char *path);
+
+static const float PI = 3.141592f;
+inline float RadToDeg(float a) { return a * 180.f / PI; }
+inline float DegToRad(float a) { return a / 180.f * PI; }

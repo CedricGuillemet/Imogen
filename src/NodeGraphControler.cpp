@@ -107,10 +107,6 @@ void NodeGraphControler::UserDeleteNode(size_t index)
     }
 }
     
-const float PI = 3.14159f;
-float RadToDeg(float a) { return a * 180.f / PI; }
-float DegToRad(float a) { return a / 180.f * PI; }
-
 void NodeGraphControler::HandlePin(uint32_t parameterPair)
 {
     auto pinIter = std::find(mEvaluationStages.mPinnedParameters.begin(), mEvaluationStages.mPinnedParameters.end(), parameterPair);

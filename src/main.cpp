@@ -246,6 +246,7 @@ int main(int, char**)
     TagTime("Library loaded");
 
     imogen.Init();
+    gDefaultShader.Init();
     TagTime("Imogen Init");
 
     TagTime("Evaluation Init");

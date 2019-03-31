@@ -78,10 +78,12 @@ static const EValuationFunction evaluationFunctions[] = {
     { "strcpy", strcpy },
     { "strlen", strlen },
     { "fabsf", fabsf },
+    { "strcmp", strcmp },
     { "LoadSVG", (void*)Image::LoadSVG},
     { "LoadScene", (void*)EvaluationAPI::LoadScene},
     { "SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
     { "GetEvaluationScene", (void*)EvaluationAPI::GetEvaluationScene},
+    { "GetEvaluationSceneName", (void*)EvaluationAPI::GetEvaluationSceneName},
     { "GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
     { "OverrideInput", (void*)EvaluationAPI::OverrideInput},
     { "InitRenderer", (void*)EvaluationAPI::InitRenderer},
@@ -746,10 +748,15 @@ namespace EvaluationAPI
         {
             stage.mGScene = std::shared_ptr<Scene>((Scene*)scene);
             gSceneCache.insert(std::make_pair(name, stage.mGScene));
+            evaluationContext->SetTargetDirty(target);
             return EVAL_OK;
         }
         
-        stage.mGScene = iter->second.lock();
+        if (stage.mGScene != iter->second.lock())
+        {
+            stage.mGScene = iter->second.lock();
+            evaluationContext->SetTargetDirty(target);
+        }
         return EVAL_OK;
     }
 
@@ -761,6 +768,17 @@ namespace EvaluationAPI
             return EVAL_OK;
         }
         return EVAL_ERR;
+    }
+
+    const char* GetEvaluationSceneName(EvaluationContext *evaluationContext, int target)
+    {
+        void *scene;
+        if (GetEvaluationScene(evaluationContext, target, &scene) == EVAL_OK && scene)
+        {
+            const std::string& name = ((Scene*)scene)->mName;
+            return name.c_str();
+        }
+        return "";
     }
 
     int GetEvaluationRenderer(EvaluationContext *evaluationContext, int target, void **renderer)

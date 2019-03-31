@@ -1,6 +1,7 @@
 int Log(const char *szFormat, ...);
-char * strcpy ( char * destination, const char * source );
-int strlen ( const char * str );
+char * strcpy (char * destination, const char * source);
+int strcmp(char *str1, char *str2);
+int strlen (const char * str);
 float fabsf(float value);
 
 typedef struct Image_t
@@ -140,6 +141,7 @@ int AllocateComputeBuffer(void *context, int target, int elementCount, int eleme
 int LoadScene(const char *filename, void **scene);
 int SetEvaluationScene(void *context, int target, void *scene);
 int GetEvaluationScene(void *context, int target, void **scene);
+char* GetEvaluationSceneName(void *context, int target);
 int GetEvaluationRenderer(void *context, int target, void **renderer);
 int InitRenderer(void *context, int target, int mode, void *scene);
 int UpdateRenderer(void *context, int target);

@@ -123,6 +123,7 @@ namespace EvaluationAPI
     int LoadScene(const char *filename, void **scene);
     int SetEvaluationScene(EvaluationContext *evaluationContext, int target, void *scene);
     int GetEvaluationScene(EvaluationContext *evaluationContext, int target, void **scene);
+    const char* GetEvaluationSceneName(EvaluationContext *evaluationContext, int target);
     int GetEvaluationRenderer(EvaluationContext *evaluationContext, int target, void **renderer);
     int InitRenderer(EvaluationContext *evaluationContext, int target, int mode, void *scene);
     int UpdateRenderer(EvaluationContext *evaluationContext, int target);

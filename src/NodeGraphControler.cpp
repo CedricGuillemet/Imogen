@@ -767,7 +767,7 @@ bool NodeGraphControler::RenderBackground()
 {
     if (mBackgroundNode != -1)
     {
-        Imogen::RenderPreviewNode(mBackgroundNode, *this);
+        Imogen::RenderPreviewNode(mBackgroundNode, *this, true);
         return true;
     }
     return false;

@@ -308,9 +308,11 @@ int main(int, char**)
     }
 
     imogen.ValidateCurrentMaterial(library);
-    SaveLib(&library, libraryFilename);
 
     g_TS.WaitforAllAndShutdown();
+    
+    // save lib after all TS thread done in case a job adds something to the library (ie, thumbnail, paint 2D/3D)
+    SaveLib(&library, libraryFilename);
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

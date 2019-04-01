@@ -64,7 +64,7 @@ void NodeGraphControler::SetParamBlock(size_t index, const std::vector<unsigned 
     stage.mParameters = parameters;
     mEvaluationStages.SetEvaluationParameters(index, parameters);
     mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
-    mEditingContext.SetTargetDirty(index);
+    mEditingContext.SetTargetDirty(index, Dirty::Parameter);
 }
 
 void NodeGraphControler::NodeIsAdded(int index)
@@ -72,7 +72,7 @@ void NodeGraphControler::NodeIsAdded(int index)
     auto& stage = mEvaluationStages.mStages[index];
     mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
     mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
-    mEditingContext.SetTargetDirty(index);
+    mEditingContext.SetTargetDirty(index, Dirty::Input);
 };
 
 void NodeGraphControler::AddSingleNode(size_t type)
@@ -323,7 +323,7 @@ void NodeGraphControler::UpdateDirtyParameter(int index)
 {
     auto &stage = mEvaluationStages.mStages[index];
     mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
-    mEditingContext.SetTargetDirty(index);
+    mEditingContext.SetTargetDirty(index, Dirty::Parameter);
 }
 
 void NodeGraphControler::PinnedEdit()
@@ -372,7 +372,7 @@ void NodeGraphControler::EditNodeParameters()
             , [&](int index) { 
                 auto& node = mEvaluationStages.mStages[index]; 
                 mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
-                mEditingContext.SetTargetDirty(index);
+                mEditingContext.SetTargetDirty(index, Dirty::Sampler);
         });
             
         for (size_t i = 0; i < stage.mInputSamplers.size();i++)
@@ -393,7 +393,7 @@ void NodeGraphControler::EditNodeParameters()
         if (samplerDirty)
         {
             mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
-            mEditingContext.SetTargetDirty(index);
+            mEditingContext.SetTargetDirty(index, Dirty::Sampler);
         }
         else
         {
@@ -632,7 +632,7 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     {
         mEvaluationStages.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
         mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex, mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
-        mEditingContext.SetTargetDirty(mSelectedNodeIndex);
+        mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
     }
 }
 
@@ -701,7 +701,7 @@ void NodeGraphControler::PasteNodes()
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
         mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
         mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
-        mEditingContext.SetTargetDirty(target);
+        mEditingContext.SetTargetDirty(target, Dirty::All);
     }
 }
 

@@ -748,14 +748,14 @@ namespace EvaluationAPI
         {
             stage.mGScene = std::shared_ptr<Scene>((Scene*)scene);
             gSceneCache.insert(std::make_pair(name, stage.mGScene));
-            evaluationContext->SetTargetDirty(target);
+            evaluationContext->SetTargetDirty(target, Dirty::Input);
             return EVAL_OK;
         }
         
         if (stage.mGScene != iter->second.lock())
         {
             stage.mGScene = iter->second.lock();
-            evaluationContext->SetTargetDirty(target);
+            evaluationContext->SetTargetDirty(target, Dirty::Input);
         }
         return EVAL_OK;
     }

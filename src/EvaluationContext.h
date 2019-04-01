@@ -47,8 +47,23 @@ struct EvaluationInfo
     int mFrame;
     int mLocalFrame;
     int mVertexSpace;
-    int dummy;
+    int mDirtyFlag;
 };
+
+struct Dirty
+{
+    enum
+    {
+        Input = 1 << 0,
+        Parameter = 1 << 1,
+        Mouse = 1 << 2,
+        Camera = 1 << 3,
+        Time = 1 << 4,
+        Sampler = 1 << 5,
+        All = 0xFF
+    };
+};
+typedef unsigned char DirtyFlag;
 
 struct EvaluationContext
 {
@@ -81,7 +96,7 @@ struct EvaluationContext
 
     FFMPEGCodec::Encoder *GetEncoder(const std::string &filename, int width, int height);
     bool IsSynchronous() const { return mbSynchronousEvaluation; }
-    void SetTargetDirty(size_t target, bool onlyChild = false);
+    void SetTargetDirty(size_t target, DirtyFlag dirtyflag, bool onlyChild = false);
     int StageIsProcessing(size_t target) const { if (target >= mbProcessing.size()) return 0; return mbProcessing[target]; }
     float StageGetProgress(size_t target) const { if (target >= mProgress.size()) return 0.f; return mProgress[target]; }
     void StageSetProcessing(size_t target, int processing);
@@ -133,7 +148,7 @@ protected:
     std::vector<std::shared_ptr<RenderTarget> > mStageTarget; // 1 per stage
     std::vector<ComputeBuffer> mComputeBuffers;
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
-    std::vector<bool> mbDirty;
+    std::vector<DirtyFlag> mDirtyFlags;
     std::vector<int> mbProcessing;
     std::vector<float> mProgress;
     std::vector<bool> mActive;

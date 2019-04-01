@@ -35,7 +35,7 @@ typedef struct Evaluation_t
 	int frame;
 	int localFrame;
 	int vertexSpace;
-	int dummy;
+	int dirtyFlag;
 } Evaluation;
 
 enum BlendOp

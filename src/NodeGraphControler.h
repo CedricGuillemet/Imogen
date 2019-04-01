@@ -46,9 +46,9 @@ struct NodeGraphControler : public NodeGraphControlerBase
             return;
 
         mEvaluationStages.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx); 
-        mEditingContext.SetTargetDirty(OutputIdx); 
+        mEditingContext.SetTargetDirty(OutputIdx, Dirty::Input); 
     }
-    virtual void DelLink(int index, int slot) { mEvaluationStages.DelEvaluationInput(index, slot); mEditingContext.SetTargetDirty(index); }
+    virtual void DelLink(int index, int slot) { mEvaluationStages.DelEvaluationInput(index, slot); mEditingContext.SetTargetDirty(index, Dirty::Input); }
     virtual void UserDeleteNode(size_t index);
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
 

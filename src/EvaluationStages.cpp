@@ -339,7 +339,7 @@ void EvaluationStages::ApplyAnimationForNode(EvaluationContext *context, size_t 
     if (animatedNodes)
     {
         SetEvaluationParameters(nodeIndex, stage.mParameters);
-        context->SetTargetDirty(nodeIndex);
+        context->SetTargetDirty(nodeIndex, Dirty::Parameter);
     }
 }
 
@@ -360,7 +360,7 @@ void EvaluationStages::ApplyAnimation(EvaluationContext *context, int frame)
         if (!animatedNodes[i])
             continue;
         SetEvaluationParameters(i, mStages[i].mParameters);
-        context->SetTargetDirty(i);
+        context->SetTargetDirty(i, Dirty::Parameter);
     }
 }
 
@@ -458,7 +458,7 @@ void EvaluationStages::SetTime(EvaluationContext *evaluationContext, int time, b
         const auto& stage = mStages[i];
         SetStageLocalTime(evaluationContext, i, ImClamp(time - stage.mStartFrame, 0, stage.mEndFrame - stage.mStartFrame), updateDecoder);
         //bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
-        evaluationContext->SetTargetDirty(i);
+        evaluationContext->SetTargetDirty(i, Dirty::Time);
     }
 }
 

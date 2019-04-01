@@ -24,7 +24,7 @@ layout (std140) uniform EvaluationBlock
 	int frame;
 	int localFrame;
 	int mVertexSpace;
-	int dummy;
+	int dirtyFlag;
 } EvaluationParam;
 
 #ifdef VERTEX_SHADER

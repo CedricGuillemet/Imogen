@@ -113,7 +113,7 @@ void EvaluationContext::Clear()
     for (auto& buffer : mComputeBuffers)
         glDeleteBuffers(1, &buffer.mBuffer);
     mComputeBuffers.clear();
-    mbDirty.clear();
+    mDirtyFlags.clear();
     mbProcessing.clear();
     mProgress.clear();
 }
@@ -571,7 +571,7 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 }
 void EvaluationContext::PreRun()
 {
-    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
     mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
     mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
     mActive.resize(mEvaluationStages.GetStagesCount(), false);
@@ -598,6 +598,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
     mEvaluationInfo.mFrame = mCurrentTime;
+    mEvaluationInfo.mDirtyFlag = mDirtyFlags[nodeIndex];
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetMouseInfos(mEvaluationInfo, currentStage);
 
@@ -619,7 +620,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
         EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
     }
-    mbDirty[nodeIndex] = false;
+    mDirtyFlags[nodeIndex] = 0;
 }
 
 bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
@@ -636,7 +637,7 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     }
     // set dirty nodes that tell so
     for (auto index : mStillDirty)
-        SetTargetDirty(index);
+        SetTargetDirty(index, Dirty::Input);
     mStillDirty.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -682,7 +683,7 @@ void EvaluationContext::RunDirty()
     for (size_t index = 0; index < evaluationOrderList.size(); index++)
     {
         size_t currentNodeIndex = evaluationOrderList[index];
-        if (currentNodeIndex < mbDirty.size() && mbDirty[currentNodeIndex]) // TODOUNDO
+        if (currentNodeIndex < mDirtyFlags.size() && mDirtyFlags[currentNodeIndex]) // TODOUNDO
             nodesToEvaluate.push_back(currentNodeIndex);
     }
     AllocRenderTargetsForEditingPreview();
@@ -727,11 +728,11 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
     return encoder;
 }
 
-void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
+void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool onlyChild)
 {
-    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
-    mbDirty[target] = true;
+    mDirtyFlags[target] = dirtyFlag;
     for (size_t i = 0; i < evaluationOrderList.size(); i++)
     {
         size_t currentNodeIndex = evaluationOrderList[i];
@@ -741,33 +742,35 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
         for (i++; i < evaluationOrderList.size(); i++)
         {
             currentNodeIndex = evaluationOrderList[i];
-            if (currentNodeIndex >= mbDirty.size() || mbDirty[currentNodeIndex]) // TODOUNDO
+            if (currentNodeIndex >= mDirtyFlags.size() || mDirtyFlags[currentNodeIndex]) // TODOUNDO
                 continue;
 
             auto& currentEvaluation = mEvaluationStages.GetEvaluationStage(currentNodeIndex);
             for (auto inp : currentEvaluation.mInput.mInputs)
             {
-                if (inp >= 0 && mbDirty[inp])
+                if (inp >= 0 && mDirtyFlags[inp])
                 {
-                    mbDirty[currentNodeIndex] = true;
+                    mDirtyFlags[currentNodeIndex] = Dirty::Input;
                     break;
                 }
             }
         }
     }
     if (onlyChild)
-        mbDirty[target] = false;
+    {
+        mDirtyFlags[target] = false;
+    }
 }
 
 void EvaluationContext::UserAddStage()
 {
     URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), [&]() {return &mStageTarget; });
-    URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), [&]() {return &mbDirty; });
+    URAdd<DirtyFlag> undoRedoAddDirty(int(mDirtyFlags.size()), [&]() {return &mDirtyFlags; });
     URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), [&]() {return &mbProcessing; });
     URAdd<float> undoRedoAddProgress(int(mProgress.size()), [&]() {return &mProgress; });
 
     mStageTarget.push_back(std::make_shared<RenderTarget>());
-    mbDirty.push_back(true);
+    mDirtyFlags.push_back(Dirty::All);
     mbProcessing.push_back(0);
     mProgress.push_back(0.f);
 }
@@ -775,12 +778,12 @@ void EvaluationContext::UserAddStage()
 void EvaluationContext::UserDeleteStage(size_t index)
 {
     URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), [&]() {return &mStageTarget; });
-    URDel<bool> undoRedoDelDirty(int(index), [&]() {return &mbDirty; });
+    URDel<DirtyFlag> undoRedoDelDirty(int(index), [&]() {return &mDirtyFlags; });
     URDel<int> undoRedoDelProcessing(int(index), [&]() {return &mbProcessing; });
     URDel<float> undoRedoDelProgress(int(index), [&]() {return &mProgress; });
 
     mStageTarget.erase(mStageTarget.begin() + index);
-    mbDirty.erase(mbDirty.begin() + index);
+    mDirtyFlags.erase(mDirtyFlags.begin() + index);
     mbProcessing.erase(mbProcessing.begin() + index);
     mProgress.erase(mProgress.begin() + index);
 }

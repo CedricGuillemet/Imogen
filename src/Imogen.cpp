@@ -208,7 +208,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
                 if (displayedTexture)
                 {
                     auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
-                    displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
+                    displayedTextureSize = ImVec2(float(tgt->mImage->mWidth), float(tgt->mImage->mHeight));
                 }
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
                 mouseUVPos.y = 1.f - mouseUVPos.y;
@@ -390,6 +390,7 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
             PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
+            stbi_image_free(data);
             Image::Free(&image);
         }
         delete this;
@@ -452,6 +453,7 @@ struct DecodeImageTaskSet : enki::ITaskSet
             PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
+            stbi_image_free(data);
         }
         delete this;
     }

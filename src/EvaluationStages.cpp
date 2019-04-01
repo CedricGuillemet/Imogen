@@ -39,9 +39,9 @@ EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 void EvaluationStages::AddSingleEvaluation(size_t nodeType)
 {
     EvaluationStage evaluation;
-#ifdef _DEBUG
+//#ifdef _DEBUG needed for fur
     evaluation.mTypename              = gMetaNodes[nodeType].mName;;
-#endif
+//#endif
     evaluation.mDecoder               = NULL;
     evaluation.mUseCountByOthers      = 0;
     evaluation.mType                  = nodeType;

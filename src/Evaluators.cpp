@@ -707,8 +707,8 @@ namespace EvaluationAPI
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
             return EVAL_ERR;
-        *imageWidth = renderTarget->mImage.mWidth;
-        *imageHeight = renderTarget->mImage.mHeight;
+        *imageWidth = renderTarget->mImage->mWidth;
+        *imageHeight = renderTarget->mImage->mHeight;
         return EVAL_OK;
     }
 
@@ -802,7 +802,7 @@ namespace EvaluationAPI
         RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
 
         // compute total size
-        Image& img = tgt.mImage;
+        Image& img = *tgt.mImage.get();
         unsigned int texelSize = textureFormatSize[img.mFormat];
         unsigned int texelFormat = glInternalFormats[img.mFormat];
         uint32_t size = 0;// img.mNumFaces * img.mWidth * img.mHeight * texelSize;
@@ -1078,11 +1078,14 @@ namespace EvaluationAPI
 
     int Read(EvaluationContext *evaluationContext, const char *filename, Image *image)
     {
+
         if (Image::Read(filename, image) == EVAL_OK)
             return EVAL_OK;
         // try to load movie
         auto decoder = evaluationContext->mEvaluationStages.FindDecoder(filename);
         *image = Image::DecodeImage(decoder, evaluationContext->GetCurrentTime());
+        if (!image->mWidth || !image->mHeight)
+            return EVAL_ERR;
         return EVAL_OK;
     }
 

@@ -155,6 +155,13 @@ int Image::LoadSVG(const char *filename, Image *image, float dpi)
 
 int Image::Read(const char *filename, Image *image)
 {
+    std::string filenameStr(filename);
+    Image* cacheImage = gImageCache.GetImage(filenameStr);
+    if (cacheImage)
+    {
+        *image = *cacheImage;
+        return EVAL_OK;
+    }
     FILE * fp = fopen(filename, "rb");
     if (!fp)
         return EVAL_ERR;
@@ -177,6 +184,7 @@ int Image::Read(const char *filename, Image *image)
         image->mNumFaces = img.m_numFaces;
         image->mFormat = img.m_format;
         image->mDecoder = NULL;
+        gImageCache.AddImage(filenameStr, image);
         return EVAL_OK;
     }
 
@@ -185,6 +193,8 @@ int Image::Read(const char *filename, Image *image)
     image->mNumFaces = 1;
     image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
     image->mDecoder = NULL;
+    stbi_image_free(bits);
+    gImageCache.AddImage(filenameStr, image);
     return EVAL_OK;
 }
 
@@ -218,6 +228,7 @@ int Image::ReadMem(unsigned char *data, size_t dataSize, Image *image)
     if (!bits)
         return EVAL_ERR;
     image->SetBits(bits, image->mWidth * image->mHeight * components);
+    stbi_image_free(bits);
     return EVAL_OK;
 }
 
@@ -319,6 +330,9 @@ int Image::EncodePng(Image *image, std::vector<unsigned char> &pngImage)
 
 int Image::CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias)
 {
+    if (!image->mWidth || !image->mHeight)
+        return EVAL_ERR;
+
     cmft::Image img;
     img.m_data = image->GetBits();
     img.m_dataSize = image->mDataSize;
@@ -384,19 +398,42 @@ unsigned int ImageCache::GetTexture(const std::string& filename)
     return textureId;
 }
 
+Image* ImageCache::GetImage(const std::string& filepath)
+{
+    Image *ret = NULL;
+    mCacheAccess.lock();
+    auto iter = mImageCache.find(filepath);
+    if (iter != mImageCache.end())
+    {
+        ret = &iter->second;
+    }
+    mCacheAccess.unlock();
+    return ret;
+}
 
+void ImageCache::AddImage(const std::string& filepath, Image *image)
+{
+    mCacheAccess.lock();
+    auto iter = mImageCache.find(filepath);
+    if (iter == mImageCache.end())
+    {
+        mImageCache.insert(std::make_pair(filepath, *image));
+    }
+    mCacheAccess.unlock();
+
+}
 
 void RenderTarget::BindAsTarget() const
 {
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-    glViewport(0, 0, mImage.mWidth, mImage.mHeight);
+    glViewport(0, 0, mImage->mWidth, mImage->mHeight);
 }
 
 void RenderTarget::BindAsCubeTarget() const
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-    glViewport(0, 0, mImage.mWidth, mImage.mHeight);
+    glViewport(0, 0, mImage->mWidth, mImage->mHeight);
 }
 
 void RenderTarget::BindCubeFace(size_t face)
@@ -415,14 +452,14 @@ void RenderTarget::Destroy()
     if (mDepthBuffer)
         glDeleteRenderbuffers(1, &mDepthBuffer);
     mFbo = 0;
-    mImage.mWidth = mImage.mHeight = 0;
+    mImage->mWidth = mImage->mHeight = 0;
     mGLTexID = 0;
 }
 
 void RenderTarget::Clone(const RenderTarget &other)
 {
     // TODO: clone other type of render target
-    InitBuffer(other.mImage.mWidth, other.mImage.mHeight, other.mDepthBuffer);
+    InitBuffer(other.mImage->mWidth, other.mImage->mHeight, other.mDepthBuffer);
 }
 
 void RenderTarget::Swap(RenderTarget &other)
@@ -436,15 +473,15 @@ void RenderTarget::Swap(RenderTarget &other)
 
 void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 {
-    if ((width == mImage.mWidth) && (mImage.mHeight == height) && mImage.mNumFaces == 1 && (!(depthBuffer ^ (mDepthBuffer != 0))))
+    if ((width == mImage->mWidth) && (mImage->mHeight == height) && mImage->mNumFaces == 1 && (!(depthBuffer ^ (mDepthBuffer != 0))))
         return;
     Destroy();
 
-    mImage.mWidth = width;
-    mImage.mHeight = height;
-    mImage.mNumMips = 1;
-    mImage.mNumFaces = 1;
-    mImage.mFormat = TextureFormat::RGBA8;
+    mImage->mWidth = width;
+    mImage->mHeight = height;
+    mImage->mNumMips = 1;
+    mImage->mNumFaces = 1;
+    mImage->mFormat = TextureFormat::RGBA8;
 
     glGenFramebuffers(1, &mFbo);
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
@@ -482,15 +519,15 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 
 void RenderTarget::InitCube(int width)
 {
-    if ((width == mImage.mWidth) && (mImage.mHeight == width) && mImage.mNumFaces == 6)
+    if ((width == mImage->mWidth) && (mImage->mHeight == width) && mImage->mNumFaces == 6)
         return;
     Destroy();
 
-    mImage.mWidth = width;
-    mImage.mHeight = width;
-    mImage.mNumMips = 1;
-    mImage.mNumFaces = 6;
-    mImage.mFormat = TextureFormat::RGBA8;
+    mImage->mWidth = width;
+    mImage->mHeight = width;
+    mImage->mNumMips = 1;
+    mImage->mNumFaces = 6;
+    mImage->mFormat = TextureFormat::RGBA8;
 
     glGenFramebuffers(1, &mFbo);
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);

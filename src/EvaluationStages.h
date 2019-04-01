@@ -124,9 +124,9 @@ struct Scene
 
 struct EvaluationStage
 {
-#ifdef _DEBUG
+//#ifdef _DEBUG needed for fur rendering
     std::string mTypename;
-#endif
+//#endif
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
     size_t mType;
     unsigned int mRuntimeUniqueId;

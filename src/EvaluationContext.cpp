@@ -206,7 +206,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
             if (tgt)
             {
                 const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
-                if (tgt->mImage.mNumFaces == 1)
+                if (tgt->mImage->mNumFaces == 1)
                 {
                     glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
                     TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
@@ -387,22 +387,22 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
     {
         if (!evaluationInfo.uiPass)
         {
-            if (tgt->mImage.mNumFaces == 6)
+            if (tgt->mImage->mNumFaces == 6)
                 tgt->BindAsCubeTarget();
             else
                 tgt->BindAsTarget();
         }
 
-        size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
+        size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage->mNumFaces;
         for (size_t face = 0; face < faceCount; face++)
         {
-            if (tgt->mImage.mNumFaces == 6)
+            if (tgt->mImage->mNumFaces == 6)
                 tgt->BindCubeFace(face);
 
             memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
             memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-            evaluationInfo.viewport[0] = float(tgt->mImage.mWidth);
-            evaluationInfo.viewport[1] = float(tgt->mImage.mHeight);
+            evaluationInfo.viewport[0] = float(tgt->mImage->mWidth);
+            evaluationInfo.viewport[1] = float(tgt->mImage->mHeight);
             evaluationInfo.passNumber = passNumber;
 
             glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
@@ -450,14 +450,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
                     glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
                     for (unsigned int vp = 0; vp < transformElementCount; vp++)
                     {
-                        glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * vp));
+                        glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, GLsizei(sizeof(float) * 4 * transformElementCount), (void*)(4 * sizeof(float) * vp));
                         glEnableVertexAttribArray(1 + vp);
                     }
 
                     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
                     glBindVertexArray(vao);
-                    drawBlades(tess * 2, buffer->mElementCount, transformElementCount);
+                    drawBlades(tess * 2, buffer->mElementCount, int(transformElementCount));
                     glBindVertexArray(0);
                     glDeleteVertexArrays(1, &vao);
                 }

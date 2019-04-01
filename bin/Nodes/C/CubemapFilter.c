@@ -40,7 +40,7 @@ int FilterJob(JobData *data)
 int main(CubemapFilterData *param, Evaluation *evaluation, void *context)
 {
 	Image image;
-	
+	image.bits = 0;
 	if (GetEvaluationImage(context, evaluation->inputIndices[0], &image) == EVAL_OK)
 	{
 		JobData data;

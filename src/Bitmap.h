@@ -28,6 +28,7 @@
 #include <map>
 #include <vector>
 #include <string.h>
+#include <mutex>
 
 namespace FFMPEGCodec
 {
@@ -60,7 +61,7 @@ struct TextureFormat
 
 struct Image
 {
-    Image() : mDecoder(NULL), mBits(NULL), mDataSize(0)
+    Image() : mDecoder(NULL), mWidth(0), mHeight(0), mNumMips(0), mNumFaces(0), mBits(NULL), mDataSize(0)
     {
     }
     Image(const Image& other) : mBits(NULL), mDataSize(0)
@@ -97,9 +98,10 @@ struct Image
     }
     void Allocate(size_t size)
     {
-        if (mDataSize != size)
+        if (mBits && mDataSize != size)
             free(mBits);
-        mBits = (unsigned char*)malloc(size);
+        if (size)
+            mBits = (unsigned char*)malloc(size);
         mDataSize = uint32_t(size);
     }
     void DoFree() {
@@ -130,9 +132,12 @@ struct ImageCache
     // synchronous texture cache
 // use for simple textures(stock) or to replace with a more efficient one
     unsigned int GetTexture(const std::string& filename);
-
+    Image* GetImage(const std::string& filepath);
+    void AddImage(const std::string& filepath, Image *image);
 protected:
     std::map<std::string, unsigned int> mSynchronousTextureCache;
+    std::map<std::string, Image> mImageCache;
+    std::mutex mCacheAccess;
 };
 extern ImageCache gImageCache;
 
@@ -156,7 +161,7 @@ class RenderTarget
 public:
     RenderTarget() : mGLTexID(0), mGLTexDepth(0), mFbo(0), mDepthBuffer(0)
     {
-        memset(&mImage, 0, sizeof(Image));
+        mImage = std::make_shared<Image>();
     }
 
     void InitBuffer(int width, int height, bool depthBuffer);
@@ -170,7 +175,7 @@ public:
     void Swap(RenderTarget &other);
 
 
-    Image mImage;
+    std::shared_ptr<Image> mImage;
     unsigned int mGLTexID;
     unsigned int mGLTexDepth;
     unsigned int mDepthBuffer;

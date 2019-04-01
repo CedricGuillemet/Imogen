@@ -640,7 +640,7 @@ bool NodeGraphControler::NodeIs2D(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
-        return target->mImage.mNumFaces == 1;
+        return target->mImage->mNumFaces == 1;
     return false;
 }
 
@@ -658,7 +658,7 @@ bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
-        return target->mImage.mNumFaces == 6;
+        return target->mImage->mNumFaces == 6;
     return false;
 }
 

@@ -693,6 +693,11 @@ void EvaluationContext::RunDirty()
 void EvaluationContext::RunAll()
 {
     PreRun();
+    // tag all as dirty
+    for (auto& dirty : mDirtyFlags)
+    {
+        dirty = Dirty::All;
+    }
     // get list of nodes to run
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();

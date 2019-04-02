@@ -54,6 +54,9 @@ int main(ImageRead *param, Evaluation *evaluation, void *context)
 	int i;
 	char *files[6] = {param->posxfile, param->negxfile, param->negyfile, param->posyfile, param->poszfile, param->negzfile};
 	
+	if (!(evaluation->dirtyFlag & DirtyParameter))
+		return EVAL_OK;
+	
 	if (strlen(param->filename))
 	{
 		SetProcessing(context, evaluation->targetIndex, 1);

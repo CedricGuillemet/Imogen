@@ -16,6 +16,14 @@ typedef struct Image_t
 	void *bits;
 } Image;
 
+int DirtyInput = (1 << 0);
+int DirtyParameter = (1 << 1);
+int DirtyMouse = (1 << 2);
+int DirtyCamera = (1 << 3);
+int DirtyTime = (1 << 4);
+int DirtySampler = (1 << 5);
+
+
 typedef struct Evaluation_t
 {
 	float inv_view_rot[16];

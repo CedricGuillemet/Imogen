@@ -13,6 +13,6 @@ typedef struct PhysicalSky_t
 int main(PhysicalSky *param, Evaluation *evaluation, void *context)
 {
 	int size = 256 << param->size;
-	SetEvaluationCubeSize(context, evaluation->targetIndex, size);
+	SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
 	return EVAL_OK;
 }

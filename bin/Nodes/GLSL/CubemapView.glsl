@@ -2,6 +2,7 @@ layout (std140) uniform CubemapViewBlock
 {
 	vec2 view;
 	int mode;
+	float LOD;
 } CubemapViewParam;
 
 vec4 CrossView(vec2 uv)
@@ -29,7 +30,7 @@ vec4 CrossView(vec2 uv)
 			nd = vec3(d.x, d.y*cs.y - d.z*sn.y, d.y*sn.y + d.z*cs.y);
 		}
 
-	return texture(CubeSampler0, nd);
+	return textureLod(CubeSampler0, nd, CubemapViewParam.LOD);
 }
 
 vec4 getUV(vec2 I)
@@ -61,7 +62,7 @@ vec4 IsometricView(vec2 uv)
    		nuv = getUV(I-vec2(0.5,0.0));  
     else
         nuv = vec4(1.0, 1.0, 1.0, 0.0)-getUV(vec2(I.x, -I.y)+vec2(0.5,0.0));  
-	return texture(CubeSampler0, nuv.xyz*2.0-1.0) *abs(nuv.w);
+	return textureLod(CubeSampler0, nuv.xyz*2.0-1.0, CubemapViewParam.LOD) *abs(nuv.w);
 }
 
 vec4 Projection(vec2 uv)
@@ -69,7 +70,7 @@ vec4 Projection(vec2 uv)
 	vec2 ng = uv * vec2(PI, PI * 0.5);
 	vec2 a = cos(ng);
 	vec2 b = sin(ng);
-	return texture(CubeSampler0, normalize(vec3(a.x*a.y, -b.y, b.x*a.y))); 
+	return textureLod(CubeSampler0, normalize(vec3(a.x*a.y, -b.y, b.x*a.y)), CubemapViewParam.LOD); 
 }
 
 vec4 CameraView(vec2 uv)
@@ -86,7 +87,7 @@ vec4 CameraView(vec2 uv)
 
 	vec3 rd = normalize( uv.x*uu - uv.y*vv + 1.5*ww );
 
-	return texture(CubeSampler0, rd);
+	return textureLod(CubeSampler0, rd, CubemapViewParam.LOD);
 }
 
 vec4 CubemapView()

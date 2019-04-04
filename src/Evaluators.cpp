@@ -482,6 +482,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
                 Log("%s - Unable to load file.\n", filename.c_str());
                 continue;
             }
+            Log("%s\n", filename.c_str());
             std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
             if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
                 mEvaluatorScripts[filename] = EvaluatorScript(str);
@@ -647,7 +648,7 @@ namespace EvaluationAPI
             return EVAL_ERR;
         RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
 
-        tgt.InitCube(image->mWidth);
+        tgt.InitCube(image->mWidth, image->mNumMips);
 
         Image::Upload(image, tgt.mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, true);
@@ -725,7 +726,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth)
+    int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth, int mipmapCount)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
@@ -733,7 +734,7 @@ namespace EvaluationAPI
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
             return EVAL_ERR;
-        renderTarget->InitCube(faceWidth);
+        renderTarget->InitCube(faceWidth, mipmapCount);
         return EVAL_OK;
     }
 
@@ -816,10 +817,10 @@ namespace EvaluationAPI
         image->mFormat = img.mFormat;
         image->mNumFaces = img.mNumFaces;
 
-        glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
         unsigned char *ptr = image->GetBits();
         if (img.mNumFaces == 1)
         {
+            glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
             for (int i = 0; i < img.mNumMips; i++)
             {
                 glGetTexImage(GL_TEXTURE_2D, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
@@ -828,6 +829,7 @@ namespace EvaluationAPI
         }
         else
         {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt.mGLTexID);
             for (int cube = 0; cube < img.mNumFaces; cube++)
             {
                 for (int i = 0; i < img.mNumMips; i++)
@@ -869,7 +871,7 @@ namespace EvaluationAPI
         }
         else
         {
-            tgt->InitCube(image->mWidth);
+            tgt->InitCube(image->mWidth, image->mNumMips);
             glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
 
             for (int face = 0; face < image->mNumFaces; face++)
@@ -889,7 +891,7 @@ namespace EvaluationAPI
         }
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
             stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
-        evaluationContext->SetTargetDirty(target, true);
+        evaluationContext->SetTargetDirty(target, Dirty::Input, true);
         return EVAL_OK;
     }
 

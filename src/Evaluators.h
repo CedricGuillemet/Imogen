@@ -114,7 +114,7 @@ namespace EvaluationAPI
     //int SetNodeImage(int target, Image *image);
     int GetEvaluationSize(const EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight);
     int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight);
-    int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth);
+    int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth, int mipmapCount);
     int Job(EvaluationContext *evaluationContext, int(*jobFunction)(void*), void *ptr, unsigned int size);
     int JobMain(EvaluationContext *evaluationContext, int(*jobMainFunction)(void*), void *ptr, unsigned int size);
     void SetProcessing(EvaluationContext *context, int target, int processing);

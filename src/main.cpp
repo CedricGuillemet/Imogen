@@ -188,6 +188,7 @@ int main(int, char**)
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
         return 1;
     }
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     // Setup Dear ImGui binding
     IMGUI_CHECKVERSION();

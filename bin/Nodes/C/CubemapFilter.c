@@ -39,7 +39,7 @@ int FilterJob(JobData *data)
 		
 int main(CubemapFilterData *param, Evaluation *evaluation, void *context)
 {
-	Image image;
+	/*Image image;
 	image.bits = 0;
 	if (GetEvaluationImage(context, evaluation->inputIndices[0], &image) == EVAL_OK)
 	{
@@ -51,6 +51,6 @@ int main(CubemapFilterData *param, Evaluation *evaluation, void *context)
 		SetProcessing(context, evaluation->targetIndex, 1);
 		Job(context, FilterJob, &data, sizeof(JobData));
 	}
-
-	return EVAL_ERR;
+*/
+	return EVAL_OK;
 }

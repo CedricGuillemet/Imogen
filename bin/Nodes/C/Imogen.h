@@ -130,7 +130,7 @@ void SetVertexSpace(void *context, int target, int vertexMode);
 
 int GetEvaluationSize(void *context, int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(void *context, int target, int imageWidth, int imageHeight);
-int SetEvaluationCubeSize(void *context, int target, int faceWidth);
+int SetEvaluationCubeSize(void *context, int target, int faceWidth, int mipmapCount);
 
 int OverrideInput(void *context, int target, int inputIndex, int newInputTarget);
 int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);

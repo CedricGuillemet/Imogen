@@ -165,10 +165,10 @@ public:
     }
 
     void InitBuffer(int width, int height, bool depthBuffer);
-    void InitCube(int width);
+    void InitCube(int width, int mipmapCount);
     void BindAsTarget() const;
     void BindAsCubeTarget() const;
-    void BindCubeFace(size_t face);
+    void BindCubeFace(size_t face, int mipmap);
     void Destroy();
     void CheckFBO();
     void Clone(const RenderTarget &other);

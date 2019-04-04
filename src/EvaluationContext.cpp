@@ -215,6 +215,10 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
                 {
                     glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
                     TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_CUBE_MAP);
+                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage->mNumMips - 1);
+                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 }
             }
         }
@@ -385,95 +389,98 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
     for (int passNumber = 0;passNumber < passCount; passNumber++)
     {
-        if (!evaluationInfo.uiPass)
+        for (int mip = 0; mip < 1/*tgt->mImage->mNumMips*/; mip++)
         {
-            if (tgt->mImage->mNumFaces == 6)
-                tgt->BindAsCubeTarget();
-            else
-                tgt->BindAsTarget();
-        }
-
-        size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage->mNumFaces;
-        for (size_t face = 0; face < faceCount; face++)
-        {
-            if (tgt->mImage->mNumFaces == 6)
-                tgt->BindCubeFace(face);
-
-            memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
-            memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-            evaluationInfo.viewport[0] = float(tgt->mImage->mWidth);
-            evaluationInfo.viewport[1] = float(tgt->mImage->mHeight);
-            evaluationInfo.passNumber = passNumber;
-
-            glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
-            evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
-            glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
-
-            BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
-
-            glDisable(GL_CULL_FACE);
-            //glCullFace(GL_BACK);
-            glClearDepth(1.f);
-            if (evaluationStage.mbClearBuffer)
+            if (!evaluationInfo.uiPass)
             {
-                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
+                if (tgt->mImage->mNumFaces == 6)
+                    tgt->BindAsCubeTarget();
+                else
+                    tgt->BindAsTarget();
             }
-            if (evaluationStage.mbDepthBuffer)
+
+            size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage->mNumFaces;
+            for (size_t face = 0; face < faceCount; face++)
             {
-                glDepthFunc(GL_LEQUAL);
-                glEnable(GL_DEPTH_TEST);
-            }
-            //
-            if (evaluationStage.mTypename == "FurDisplay")
-            {
-                /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
-                if (sourceBuffer != -1)
+                if (tgt->mImage->mNumFaces == 6)
+                    tgt->BindCubeFace(face, mip);
+
+                memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
+                memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
+                evaluationInfo.viewport[0] = float(tgt->mImage->mWidth);
+                evaluationInfo.viewport[1] = float(tgt->mImage->mHeight);
+                evaluationInfo.passNumber = passNumber;
+
+                glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+                evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
+                glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
+                glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
+
+                BindTextures(evaluationStage, program, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
+
+                glDisable(GL_CULL_FACE);
+                //glCullFace(GL_BACK);
+                glClearDepth(1.f);
+                if (evaluationStage.mbClearBuffer)
                 {
-                    const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
-                    unsigned int vao;
-                    glGenVertexArrays(1, &vao);
-                    glBindVertexArray(vao);
-
-                    // blade vertices
-                    glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
-                    glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
-                    glEnableVertexAttribArray(0/*SemUV*/);
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                    // blade instances
-                    const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
-                    glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
-                    for (unsigned int vp = 0; vp < transformElementCount; vp++)
-                    {
-                        glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, GLsizei(sizeof(float) * 4 * transformElementCount), (void*)(4 * sizeof(float) * vp));
-                        glEnableVertexAttribArray(1 + vp);
-                    }
-
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                    glBindVertexArray(vao);
-                    drawBlades(tess * 2, buffer->mElementCount, int(transformElementCount));
-                    glBindVertexArray(0);
-                    glDeleteVertexArrays(1, &vao);
+                    glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
                 }
-            }
-            else
-            {
-                evaluationStage.mGScene->Draw(evaluationInfo);
-            }
-            // swap target for multipass
-            // set previous target as source
-            if (passCount > 1 && passNumber != (passCount-1) )
-            {
-                transientTarget->Swap(*tgt);
-            }
-        } // passNumber
-    }
+                if (evaluationStage.mbDepthBuffer)
+                {
+                    glDepthFunc(GL_LEQUAL);
+                    glEnable(GL_DEPTH_TEST);
+                }
+                //
+                if (evaluationStage.mTypename == "FurDisplay")
+                {
+                    /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
+                    if (sourceBuffer != -1)
+                    {
+                        const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
+                        unsigned int vao;
+                        glGenVertexArrays(1, &vao);
+                        glBindVertexArray(vao);
+
+                        // blade vertices
+                        glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
+                        glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
+                        glEnableVertexAttribArray(0/*SemUV*/);
+                        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                        // blade instances
+                        const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
+                        glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
+                        for (unsigned int vp = 0; vp < transformElementCount; vp++)
+                        {
+                            glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, GLsizei(sizeof(float) * 4 * transformElementCount), (void*)(4 * sizeof(float) * vp));
+                            glEnableVertexAttribArray(1 + vp);
+                        }
+
+                        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                        glBindVertexArray(vao);
+                        drawBlades(tess * 2, buffer->mElementCount, int(transformElementCount));
+                        glBindVertexArray(0);
+                        glDeleteVertexArrays(1, &vao);
+                    }
+                }
+                else
+                {
+                    evaluationStage.mGScene->Draw(evaluationInfo);
+                }
+                // swap target for multipass
+                // set previous target as source
+                if (passCount > 1 && passNumber != (passCount - 1))
+                {
+                    transientTarget->Swap(*tgt);
+                }
+            } //face
+        } //mip
+    }// passNumber
     glDisable(GL_BLEND);
 }
 

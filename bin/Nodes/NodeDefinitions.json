@@ -704,6 +704,10 @@
 			"name": "Mode",
 			"type": "Enum",
 			"enum": "Projection|Isometric|Cross|Camera|"
+		}, {
+			"name": "LOD",
+			"type": "Float",
+			"default": "0.0"
 		}]
 	}, {
 		"name": "EquirectConverter",

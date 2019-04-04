@@ -334,13 +334,9 @@ int Image::CubemapFilter(Image *image, int faceSize, int lightingModel, int excl
         return EVAL_ERR;
 
     cmft::Image img;
-    img.m_data = image->GetBits();
-    img.m_dataSize = image->mDataSize;
-    img.m_numMips = image->mNumMips;
-    img.m_numFaces = image->mNumFaces;
-    img.m_width = image->mWidth;
-    img.m_height = image->mHeight;
-    img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
+    cmft::imageCreate(img, image->mWidth, image->mHeight, 0x303030ff, image->mNumMips, image->mNumFaces, (cmft::TextureFormat::Enum)image->mFormat);
+
+    memcpy(img.m_data, image->GetBits(), image->mDataSize);
 
     extern unsigned int gCPUCount;
 
@@ -366,6 +362,7 @@ int Image::CubemapFilter(Image *image, int faceSize, int lightingModel, int excl
     image->mWidth = img.m_width;
     image->mHeight = img.m_height;
     image->mFormat = img.m_format;
+    cmft::imageUnload(img);
     return EVAL_OK;
 }
 
@@ -436,9 +433,9 @@ void RenderTarget::BindAsCubeTarget() const
     glViewport(0, 0, mImage->mWidth, mImage->mHeight);
 }
 
-void RenderTarget::BindCubeFace(size_t face)
+void RenderTarget::BindCubeFace(size_t face, int mipmap)
 {
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face), mGLTexID, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face), mGLTexID, mipmap);
 }
 
 void RenderTarget::Destroy()
@@ -517,15 +514,15 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
-void RenderTarget::InitCube(int width)
+void RenderTarget::InitCube(int width, int mipmapCount)
 {
-    if ((width == mImage->mWidth) && (mImage->mHeight == width) && mImage->mNumFaces == 6)
+    if ((width == mImage->mWidth) && (mImage->mHeight == width) && mImage->mNumFaces == 6 && (mImage->mNumMips == mipmapCount))
         return;
     Destroy();
 
     mImage->mWidth = width;
     mImage->mHeight = width;
-    mImage->mNumMips = 1;
+    mImage->mNumMips = mipmapCount;
     mImage->mNumFaces = 6;
     mImage->mFormat = TextureFormat::RGBA8;
 
@@ -535,11 +532,15 @@ void RenderTarget::InitCube(int width)
     glGenTextures(1, &mGLTexID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
 
-    for (int i = 0; i < 6; i++)
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA8, width, width, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    for (int mip = 0; mip < mipmapCount; mip++)
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mip, GL_RGBA8, width>>mip, width>>mip, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        }
+    }
 
-
-    TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
+    TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, mGLTexID, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

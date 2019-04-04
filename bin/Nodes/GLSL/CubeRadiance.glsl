@@ -168,7 +168,7 @@ vec4 CubeRadiance()
 	for(int i = 0;i<400;i++)
 	{
 		float iv = float(i);
-		vec3 rand = vec3(random(vec3(gl_FragCoord.xy, iv)), random(vec3(gl_FragCoord.yx, iv)), random(vec2(gl_FragCoord.x * gl_FragCoord.y, iv)));
+		vec3 rand = vec3(random(vec3(gl_FragCoord.xy, iv)), random(vec3(gl_FragCoord.yx, iv)), random(vec2(gl_FragCoord.x * gl_FragCoord.y, iv))) * 2.0 - vec3(1.0);
 		res += textureLod(CubeSampler0, randomCosineWeightedHemispherePoint(rand, n), 0.0);
 	}
 	res /= 400.;

@@ -70,7 +70,6 @@ static const EValuationFunction evaluationFunctions[] = {
     { "SetEvaluationSize", (void*)EvaluationAPI::SetEvaluationSize },
     { "SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize },
     { "AllocateComputeBuffer", (void*)EvaluationAPI::AllocateComputeBuffer },
-    { "CubemapFilter", (void*)Image::CubemapFilter},
     { "SetProcessing", (void*)EvaluationAPI::SetProcessing},
     { "Job", (void*)EvaluationAPI::Job },
     { "JobMain", (void*)EvaluationAPI::JobMain },
@@ -301,7 +300,6 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("GetEvaluationSize", EvaluationAPI::GetEvaluationSize );
     m.def("SetEvaluationSize", EvaluationAPI::SetEvaluationSize );
     m.def("SetEvaluationCubeSize", EvaluationAPI::SetEvaluationCubeSize );
-    m.def("CubemapFilter", Image::CubemapFilter );
     m.def("SetProcessing", EvaluationAPI::SetProcessing );
     /*
     m.def("Job", EvaluationStages::Job );

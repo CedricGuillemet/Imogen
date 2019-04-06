@@ -39,11 +39,8 @@
 #include "nanosvgrast.h"
 
 #include "cmft/image.h"
-#include "cmft/cubemapfilter.h"
-#include "cmft/print.h"
 #include "ffmpegCodec.h"
 
-extern cmft::ClContext* clContext;
 ImageCache gImageCache;
 DefaultShaders gDefaultShader;
 
@@ -325,44 +322,6 @@ int Image::EncodePng(Image *image, std::vector<unsigned char> &pngImage)
     memcpy(pngImage.data(), bits, outlen);
 
     free(bits);
-    return EVAL_OK;
-}
-
-int Image::CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias)
-{
-    if (!image->mWidth || !image->mHeight)
-        return EVAL_ERR;
-
-    cmft::Image img;
-    cmft::imageCreate(img, image->mWidth, image->mHeight, 0x303030ff, image->mNumMips, image->mNumFaces, (cmft::TextureFormat::Enum)image->mFormat);
-
-    memcpy(img.m_data, image->GetBits(), image->mDataSize);
-
-    extern unsigned int gCPUCount;
-
-    cmft::setWarningPrintf(Log);
-    cmft::setInfoPrintf(Log);
-
-    faceSize = 16;
-    if (!cmft::imageRadianceFilter(img
-        , faceSize // face size
-        , (cmft::LightingModel::Enum)lightingModel
-        , (excludeBase != 0)
-        , uint8_t(log2(faceSize)) // map mip count
-        , glossScale
-        , glossBias
-        , cmft::EdgeFixup::None
-        , gCPUCount
-        , clContext))
-        return EVAL_ERR;
-
-    image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-    image->mNumMips = img.m_numMips;
-    image->mNumFaces = img.m_numFaces;
-    image->mWidth = img.m_width;
-    image->mHeight = img.m_height;
-    image->mFormat = img.m_format;
-    cmft::imageUnload(img);
     return EVAL_OK;
 }
 

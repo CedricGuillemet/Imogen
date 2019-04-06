@@ -1763,7 +1763,7 @@ void Imogen::ShowNodeGraph()
     if (mSelectedMaterial != -1)
     {
         Material& material = library.mMaterials[mSelectedMaterial];
-        ImGui::PushItemWidth(150);
+        ImGui::PushItemWidth(400);
         ImGui::InputText("Name", &material.mName);
         ImGui::SameLine();
         ImGui::PopItemWidth();

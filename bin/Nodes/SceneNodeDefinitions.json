@@ -61,7 +61,12 @@
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
 			"default":"0"
-		}]
+		},{
+			"name": "Sample Count",
+			"type": "Int",
+			"default":"100"
+		}
+		]
 		}
 ]
 }

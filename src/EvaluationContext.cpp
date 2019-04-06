@@ -387,9 +387,10 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
         transientTarget->Clone(*tgt);
     }
 
+    uint8_t mipmapCount = tgt->mImage->mNumMips;
     for (int passNumber = 0;passNumber < passCount; passNumber++)
     {
-        for (int mip = 0; mip < 1/*tgt->mImage->mNumMips*/; mip++)
+        for (int mip = 0; mip < mipmapCount; mip++)
         {
             if (!evaluationInfo.uiPass)
             {
@@ -410,6 +411,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
                 evaluationInfo.viewport[0] = float(tgt->mImage->mWidth);
                 evaluationInfo.viewport[1] = float(tgt->mImage->mHeight);
                 evaluationInfo.passNumber = passNumber;
+                evaluationInfo.mipmapNumber = mip;
+                evaluationInfo.mipmapCount = mipmapCount;
 
                 glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
                 evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;

@@ -2,7 +2,8 @@
 layout (std140) uniform CubeRadianceBlock
 {
 	int size;
-};
+	int sampleCount;
+} CubeRadianceParam;
 
 vec3 get_world_normal()
 {
@@ -64,7 +65,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 {
 	vec3 N = R;
 	vec3 V = R;
-	uint numSamples = 500;
+	uint numSamples = CubeRadianceParam.sampleCount;
 	vec3 color = vec3(0.0);
 	float totalWeight = 0.0;
 	float envMapDim = float(textureSize(CubeSampler0, 0).s);
@@ -97,7 +98,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 
 vec4 CubeRadiance()
 {
-	float roughness = 0.1;
+	float roughness = float(EvaluationParam.mipmapNumber)/max(float(EvaluationParam.mipmapCount-1), 1.);
 	vec3 N = get_world_normal();
 	return vec4(prefilterEnvMap(N, roughness), 1.0);
 }

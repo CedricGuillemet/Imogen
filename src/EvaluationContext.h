@@ -25,6 +25,7 @@
 #pragma once
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <atomic>
 #include "EvaluationStages.h"
 

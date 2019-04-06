@@ -29,6 +29,7 @@
 #include <vector>
 #include <string.h>
 #include <mutex>
+#include <memory>
 
 namespace FFMPEGCodec
 {

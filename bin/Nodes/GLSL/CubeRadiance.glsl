@@ -102,7 +102,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 
 vec4 CubeRadiance()
 {
-	float roughness = 0.;//float(EvaluationParam.mipmapNumber)/max(float(EvaluationParam.mipmapCount-1), 1.);
+	float roughness = float(EvaluationParam.mipmapNumber)/max(float(EvaluationParam.mipmapCount-1), 1.);
 	vec3 N = get_world_normal();
 	N.y = -N.y;
 	return vec4(prefilterEnvMap(N, roughness), 1.0);

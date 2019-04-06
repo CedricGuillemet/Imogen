@@ -404,7 +404,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             for (size_t face = 0; face < faceCount; face++)
             {
                 if (tgt->mImage->mNumFaces == 6)
-                    tgt->BindCubeFace(face, mip);
+                    tgt->BindCubeFace(face, mip, tgt->mImage->mWidth);
 
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
                 memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));

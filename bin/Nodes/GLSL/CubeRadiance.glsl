@@ -99,5 +99,6 @@ vec4 CubeRadiance()
 {
 	float roughness = 0.1;
 	vec3 N = get_world_normal();
+	N.y = -N.y;
 	return vec4(prefilterEnvMap(N, roughness), 1.0);
 }

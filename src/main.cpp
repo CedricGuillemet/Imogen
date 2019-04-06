@@ -42,13 +42,8 @@
 #include "stb_image_write.h"
 #include "ffmpegCodec.h"
 #include "Evaluators.h"
-#include "cmft/clcontext.h"
-#include "cmft/clcontext_internal.h"
 #include "Loader.h"
 #include "UI.h"
-
-unsigned int gCPUCount = 1;
-cmft::ClContext* clContext = NULL;
 
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
     GLenum type,
@@ -197,26 +192,6 @@ int main(int, char**)
     NodeGraphControler nodeGraphControler;
     Imogen imogen(&nodeGraphControler);
 
-    // open cl context
-    int32_t clLoaded = 0;
-    clLoaded = cmft::clLoad();
-    if (clLoaded)
-    {
-        uint32_t clVendor = (uint32_t)CMFT_CL_VENDOR_ANY_GPU;
-        uint32_t deviceType = CMFT_CL_DEVICE_TYPE_GPU;
-        uint32_t deviceIndex = 0;
-        clContext = cmft::clInit(clVendor, deviceType, deviceIndex);
-    }
-    if (clLoaded && clContext)
-    {
-        Log("OpenCL context created with %s / %s\n", clContext->m_deviceVendor, clContext->m_deviceName);
-    }
-    else
-    {
-        Log("OpenCL context not created.\n");
-    }
-    TagTime("OpenCL Init");
-
     ImGuiIO& io = ImGui::GetIO();
 
     InitFonts();
@@ -252,8 +227,6 @@ int main(int, char**)
 
     TagTime("Evaluation Init");
     gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
-
-    gCPUCount = SDL_GetCPUCount();
 
     builder = new Builder;
 
@@ -300,13 +273,6 @@ int main(int, char**)
         SDL_GL_SwapWindow(window);
     }
     delete builder;
-
-    clDestroy(clContext);
-    // Unload opencl lib.
-    if (clLoaded)
-    {
-        cmft::clUnload();
-    }
 
     imogen.ValidateCurrentMaterial(library);
 

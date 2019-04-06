@@ -48,6 +48,9 @@ struct EvaluationInfo
     int mLocalFrame;
     int mVertexSpace;
     int mDirtyFlag;
+
+    int mipmapNumber;
+    int mipmapCount;
 };
 
 struct Dirty

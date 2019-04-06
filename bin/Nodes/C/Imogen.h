@@ -44,6 +44,9 @@ typedef struct Evaluation_t
 	int localFrame;
 	int vertexSpace;
 	int dirtyFlag;
+	
+    int mipmapNumber;
+    int mipmapCount;
 } Evaluation;
 
 enum BlendOp

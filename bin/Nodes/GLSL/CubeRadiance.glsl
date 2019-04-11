@@ -108,7 +108,7 @@ vec4 CubeRadiance()
 	if (CubeRadianceParam.mode == 0)
 	{
 		//radiance
-		return vec4(prefilterEnvMap(N, 1.0), 1.0);
+		return vec4(prefilterEnvMap(N, 0.5), 1.0);
 	}
 	else
 	{

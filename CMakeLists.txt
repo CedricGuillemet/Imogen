@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.6)
 project (Imogen)
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON) 
@@ -6,6 +6,8 @@ SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Configuration types" FORCE)
 
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE SRC_FILES
     ${CMAKE_SOURCE_DIR}/src/*.h
@@ -139,7 +141,6 @@ add_definitions(-D_WIN32)
 add_definitions(-DNOMINMAX)
 endif()
 add_definitions(-DUSE_DL_PREFIX)
-set (CMAKE_CXX_STANDARD 11)
 
 #--------------------------------------------------------------------
 # output dirs

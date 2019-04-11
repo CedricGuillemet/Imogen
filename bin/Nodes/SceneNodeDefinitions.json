@@ -57,9 +57,14 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
+			"name": "Mode",
+			"type": "Enum",
+			"enum": "Radiance|Irradiance|",
+			"default": "0"
+		},{
 			"name": "Size",
 			"type": "Enum",
-			"enum": "  256|  512| 1024| 2048| 4096|",
+			"enum": "Source|   256|   512|  1024|  2048|  4096|",
 			"default":"0"
 		},{
 			"name": "Sample Count",

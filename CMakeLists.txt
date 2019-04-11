@@ -1,5 +1,8 @@
 cmake_minimum_required (VERSION 2.8)
 project (Imogen)
+# Add project's cmake modules to path
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/.)
+FIND_PACKAGE(ClangFormat REQUIRED)
 
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON) 
 
@@ -169,5 +172,17 @@ if(ENABLE_HIDECONSOLE_BUILD)
 MESSAGE(STATUS "Console is hidden")
 else()
 MESSAGE(STATUS "Console is visible")
+endif()
+
+option(CLANGFORMAT "Setup clangformat target" ON)
+
+if(CLANGFORMAT)
+	add_custom_target(
+        clangformat
+        COMMAND ${CLANG_FORMAT_EXECUTABLE}
+        -style=LLVM
+        -i
+        ${ALL_SOURCE_FILES}
+)
 endif()
 

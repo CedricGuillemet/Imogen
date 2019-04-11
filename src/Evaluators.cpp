@@ -52,6 +52,7 @@ struct EValuationFunction
 
 static const EValuationFunction evaluationFunctions[] = {
     { "Log", (void*)Log },
+    { "log2", (void*)static_cast<float(*)(float)>(log2) },
     { "ReadImage", (void*)EvaluationAPI::Read },
     { "WriteImage", (void*)EvaluationAPI::Write },
     { "GetEvaluationImage", (void*)EvaluationAPI::GetEvaluationImage },
@@ -287,6 +288,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return std::string();
     });
     m.def("Log", LogPython );
+    m.def("log2", static_cast<float(*)(float)>(log2));
     m.def("ReadImage", Image::Read );
     m.def("WriteImage", Image::Write );
     m.def("GetEvaluationImage", EvaluationAPI::GetEvaluationImage );

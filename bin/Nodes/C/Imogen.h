@@ -3,6 +3,7 @@ char * strcpy (char * destination, const char * source);
 int strcmp(char *str1, char *str2);
 int strlen (const char * str);
 float fabsf(float value);
+float log2(float);
 
 typedef struct Image_t
 {

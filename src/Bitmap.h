@@ -29,6 +29,7 @@
 #include <vector>
 #include <string.h>
 #include <mutex>
+#include <memory>
 
 namespace FFMPEGCodec
 {
@@ -167,7 +168,7 @@ public:
     void InitCube(int width, int mipmapCount);
     void BindAsTarget() const;
     void BindAsCubeTarget() const;
-    void BindCubeFace(size_t face, int mipmap);
+    void BindCubeFace(size_t face, int mipmap, int faceWidth);
     void Destroy();
     void CheckFBO();
     void Clone(const RenderTarget &other);

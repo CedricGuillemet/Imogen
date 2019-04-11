@@ -389,12 +389,12 @@ void RenderTarget::BindAsCubeTarget() const
 {
     glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-    glViewport(0, 0, mImage->mWidth, mImage->mHeight);
 }
 
-void RenderTarget::BindCubeFace(size_t face, int mipmap)
+void RenderTarget::BindCubeFace(size_t face, int mipmap, int faceWidth)
 {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face), mGLTexID, mipmap);
+    glViewport(0, 0, faceWidth>>mipmap, faceWidth >> mipmap);
 }
 
 void RenderTarget::Destroy()

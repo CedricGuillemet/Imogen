@@ -217,7 +217,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
                     TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_CUBE_MAP);
                     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
                     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage->mNumMips - 1);
-                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                    //glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
                     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 }
             }
@@ -404,12 +404,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             for (size_t face = 0; face < faceCount; face++)
             {
                 if (tgt->mImage->mNumFaces == 6)
-                    tgt->BindCubeFace(face, mip);
+                    tgt->BindCubeFace(face, mip, tgt->mImage->mWidth);
 
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
                 memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-                evaluationInfo.viewport[0] = float(tgt->mImage->mWidth);
-                evaluationInfo.viewport[1] = float(tgt->mImage->mHeight);
+                float sizeDiv(mip+1);
+                evaluationInfo.viewport[0] = float(tgt->mImage->mWidth) / sizeDiv;
+                evaluationInfo.viewport[1] = float(tgt->mImage->mHeight) / sizeDiv;
                 evaluationInfo.passNumber = passNumber;
                 evaluationInfo.mipmapNumber = mip;
                 evaluationInfo.mipmapCount = mipmapCount;
@@ -475,14 +476,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
                 {
                     evaluationStage.mGScene->Draw(evaluationInfo);
                 }
-                // swap target for multipass
-                // set previous target as source
-                if (passCount > 1 && passNumber != (passCount - 1))
-                {
-                    transientTarget->Swap(*tgt);
-                }
             } //face
         } //mip
+        // swap target for multipass
+        // set previous target as source
+        if (passCount > 1 && passNumber != (passCount - 1))
+        {
+            transientTarget->Swap(*tgt);
+        }
     }// passNumber
     glDisable(GL_BLEND);
 }

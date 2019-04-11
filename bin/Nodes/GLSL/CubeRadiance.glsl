@@ -68,12 +68,15 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 	vec3 V = R;
 	uint numSamples = CubeRadianceParam.sampleCount;
 	vec3 color = vec3(0.0);
-	float totalWeight = 0.0;
-	float envMapDim = float(textureSize(CubeSampler0, 0).s);
+	float totalWeight = float(numSamples);
+	float envMapDim = float(textureSize(CubeSampler0, EvaluationParam.mipmapNumber).s);
 	for(uint i = 0u; i < numSamples; i++) {
 		vec2 Xi = hammersley2d(i, numSamples);
 		vec3 H = importanceSample_GGX(Xi, roughness, N);
 		vec3 L = 2.0 * dot(V, H) * H - V;
+		
+		color += textureLod(CubeSampler0, L, 0).rgb;// * dotNL;
+		/*
 		float dotNL = clamp(dot(N, L), 0.0, 1.0);
 		if(dotNL > 0.0) 
 		{
@@ -93,24 +96,24 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 			color += textureLod(CubeSampler0, L, mipLevel).rgb * dotNL;
 			totalWeight += dotNL;
 		}
+		*/
 	}
 	return (color / totalWeight);
 }
 
 vec4 CubeRadiance()
 {
+	vec3 N = get_world_normal();
+	N.y = -N.y;
 	if (CubeRadianceParam.mode == 0)
 	{
 		//radiance
-		vec3 N = get_world_normal();
 		return vec4(prefilterEnvMap(N, 1.0), 1.0);
 	}
 	else
 	{
 		// irradiance
 		float roughness = float(EvaluationParam.mipmapNumber)/max(float(EvaluationParam.mipmapCount-1), 1.);
-		vec3 N = get_world_normal();
 		return vec4(prefilterEnvMap(N, roughness), 1.0);
 	}
-	
 }

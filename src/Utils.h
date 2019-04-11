@@ -27,6 +27,7 @@
 #include <string>
 #include <float.h>
 #include <vector>
+#include <math.h>
 
 void TagTime(const char *tagInfo);
 

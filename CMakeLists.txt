@@ -139,6 +139,8 @@ add_definitions(-D_WIN32)
 add_definitions(-DNOMINMAX)
 endif()
 add_definitions(-DUSE_DL_PREFIX)
+set (CMAKE_CXX_STANDARD 11)
+
 #--------------------------------------------------------------------
 # output dirs
 #--------------------------------------------------------------------

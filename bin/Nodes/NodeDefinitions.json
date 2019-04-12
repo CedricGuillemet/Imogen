@@ -611,40 +611,52 @@
 		}],
 		"parameters": [{
 			"name": "ambient",
-			"type": "Float4"
+			"type": "Float4",
+			"default": "0.1,0.1,0.1,2.0"
 		}, {
 			"name": "lightdir",
-			"type": "Float4"
+			"type": "Float4",
+			"default": "0.57,0.594,0.57,0.0"
 		}, {
 			"name": "Kr",
-			"type": "Float4"
+			"type": "Float4",
+			"default": "0.5880,0.6880,0.7830,0.0000"
 		}, {
 			"name": "rayleigh brightness",
-			"type": "Float"
+			"type": "Float",
+			"default": "4.3"
 		}, {
 			"name": "mie brightness",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.2"
 		}, {
 			"name": "spot brightness",
-			"type": "Float"
+			"type": "Float",
+			"default": "1800.0"
 		}, {
 			"name": "scatter strength",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.018"
 		}, {
 			"name": "rayleigh strength",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.25"
 		}, {
 			"name": "mie strength",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.026"
 		}, {
 			"name": "rayleigh collection power",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.81"
 		}, {
 			"name": "mie collection power",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.89"
 		}, {
 			"name": "mie distribution",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.53"
 		}, {
 			"name": "Size",
 			"type": "Enum",

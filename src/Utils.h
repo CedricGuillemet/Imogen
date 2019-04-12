@@ -27,6 +27,7 @@
 #include <string>
 #include <float.h>
 #include <vector>
+#include <math.h>
 
 void TagTime(const char *tagInfo);
 
@@ -309,7 +310,7 @@ public:
         struct
         {
             Vec4 right, up, dir, position;
-        };
+        } V;
     };
 
     Mat4x4(float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8, float v9, float v10, float v11, float v12, float v13, float v14, float v15, float v16)
@@ -334,7 +335,7 @@ public:
     Mat4x4(const Mat4x4& other) { memcpy(&m16[0], &other.m16[0], sizeof(float) * 16); }
     Mat4x4(const Vec4 & r, const Vec4 &u, const Vec4& d, const Vec4& p) { set(r, u, d, p); }
     Mat4x4() {}
-    void set(const Vec4 & r, const Vec4 &u, const Vec4& d, const Vec4& p) { right = r; up = u; dir = d; position = p; }
+    void set(const Vec4 & r, const Vec4 &u, const Vec4& d, const Vec4& p) { V.right = r; V.up = u; V.dir = d; V.position = p; }
     void set(float v1, float v2, float v3, float v4, float v5, float v6, float v7, float v8, float v9, float v10, float v11, float v12, float v13, float v14, float v15, float v16)
     {
         m16[0] = v1;
@@ -366,17 +367,17 @@ public:
 
     void Translation(const Vec4& vt)
     {
-        right.Set(1.f, 0.f, 0.f, 0.f);
-        up.Set(0.f, 1.f, 0.f, 0.f);
-        dir.Set(0.f, 0.f, 1.f, 0.f);
-        position.Set(vt.x, vt.y, vt.z, 1.f);
+        V.right.Set(1.f, 0.f, 0.f, 0.f);
+        V.up.Set(0.f, 1.f, 0.f, 0.f);
+        V.dir.Set(0.f, 0.f, 1.f, 0.f);
+        V.position.Set(vt.x, vt.y, vt.z, 1.f);
     }
     void TranslationScale(const Vec4& vt, const Vec4& scale)
     {
-        right.Set(scale.x, 0.f, 0.f, 0.f);
-        up.Set(0.f, scale.y, 0.f, 0.f);
-        dir.Set(0.f, 0.f, scale.z, 0.f);
-        position.Set(vt.x, vt.y, vt.z, 1.f);
+        V.right.Set(scale.x, 0.f, 0.f, 0.f);
+        V.up.Set(0.f, scale.y, 0.f, 0.f);
+        V.dir.Set(0.f, 0.f, scale.z, 0.f);
+        V.position.Set(vt.x, vt.y, vt.z, 1.f);
     }
 
     inline void RotationY(const float angle)
@@ -384,10 +385,10 @@ public:
         float c = cosf(angle);
         float s = sinf(angle);
 
-        right.Set(c, 0.f, -s, 0.f);
-        up.Set(0.f, 1.f, 0.f, 0.f);
-        dir.Set(s, 0.f, c, 0.f);
-        position.Set(0.f, 0.f, 0.f, 1.f);
+        V.right.Set(c, 0.f, -s, 0.f);
+        V.up.Set(0.f, 1.f, 0.f, 0.f);
+        V.dir.Set(s, 0.f, c, 0.f);
+        V.position.Set(0.f, 0.f, 0.f, 1.f);
     }
 
     inline void RotationX(const float angle)
@@ -395,10 +396,10 @@ public:
         float c = cosf(angle);
         float s = sinf(angle);
 
-        right.Set(1.f, 0.f, 0.f, 0.f);
-        up.Set(0.f, c, s, 0.f);
-        dir.Set(0.f, -s, c, 0.f);
-        position.Set(0.f, 0.f, 0.f, 1.f);
+        V.right.Set(1.f, 0.f, 0.f, 0.f);
+        V.up.Set(0.f, c, s, 0.f);
+        V.dir.Set(0.f, -s, c, 0.f);
+        V.position.Set(0.f, 0.f, 0.f, 1.f);
     }
 
     inline void RotationZ(const float angle)
@@ -406,24 +407,24 @@ public:
         float c = cosf(angle);
         float s = sinf(angle);
 
-        right.Set(c, s, 0.f, 0.f);
-        up.Set(-s, c, 0.f, 0.f);
-        dir.Set(0.f, 0.f, 1.f, 0.f);
-        position.Set(0.f, 0.f, 0, 1.f);
+        V.right.Set(c, s, 0.f, 0.f);
+        V.up.Set(-s, c, 0.f, 0.f);
+        V.dir.Set(0.f, 0.f, 1.f, 0.f);
+        V.position.Set(0.f, 0.f, 0, 1.f);
     }
     inline void Scale(float _s)
     {
-        right.Set(_s, 0.f, 0.f, 0.f);
-        up.Set(0.f, _s, 0.f, 0.f);
-        dir.Set(0.f, 0.f, _s, 0.f);
-        position.Set(0.f, 0.f, 0.f, 1.f);
+        V.right.Set(_s, 0.f, 0.f, 0.f);
+        V.up.Set(0.f, _s, 0.f, 0.f);
+        V.dir.Set(0.f, 0.f, _s, 0.f);
+        V.position.Set(0.f, 0.f, 0.f, 1.f);
     }
     inline void Scale(float _x, float _y, float _z)
     {
-        right.Set(_x, 0.f, 0.f, 0.f);
-        up.Set(0.f, _y, 0.f, 0.f);
-        dir.Set(0.f, 0.f, _z, 0.f);
-        position.Set(0.f, 0.f, 0.f, 1.f);
+        V.right.Set(_x, 0.f, 0.f, 0.f);
+        V.up.Set(0.f, _y, 0.f, 0.f);
+        V.dir.Set(0.f, 0.f, _z, 0.f);
+        V.position.Set(0.f, 0.f, 0.f, 1.f);
     }
     inline void Scale(const Vec4& s) { Scale(s.x, s.y, s.z); }
 
@@ -473,10 +474,10 @@ public:
     float Inverse(const Mat4x4 &srcMatrix, bool affine = false);
     float Inverse(bool affine = false);
     void Identity() {
-        right.Set(1.f, 0.f, 0.f, 0.f);
-        up.Set(0.f, 1.f, 0.f, 0.f);
-        dir.Set(0.f, 0.f, 1.f, 0.f);
-        position.Set(0.f, 0.f, 0.f, 1.f);
+        V.right.Set(1.f, 0.f, 0.f, 0.f);
+        V.up.Set(0.f, 1.f, 0.f, 0.f);
+        V.dir.Set(0.f, 0.f, 1.f, 0.f);
+        V.position.Set(0.f, 0.f, 0.f, 1.f);
     }
     inline void transpose()
     {
@@ -504,9 +505,9 @@ public:
 
     inline void OrthoNormalize()
     {
-        right.Normalize();
-        up.Normalize();
-        dir.Normalize();
+        V.right.Normalize();
+        V.up.Normalize();
+        V.dir.Normalize();
     }
 };
 

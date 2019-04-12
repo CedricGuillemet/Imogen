@@ -1,0 +1,21 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- azure_build
+
+pool:
+  vmImage: 'Ubuntu-16.04'
+
+steps:
+- script: sudo apt-get install -y build-essential cmake libffi-dev libgtk-3-dev git clang
+  displayName: 'Install Build Deps'
+
+- script: |
+    CXX=clang++
+    CC=clang
+    cmake .
+    make
+  displayName: 'Build'

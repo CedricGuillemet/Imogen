@@ -30,6 +30,7 @@
 #include <string.h>
 #include <mutex>
 #include <memory>
+#include <stdlib.h>
 
 namespace FFMPEGCodec
 {

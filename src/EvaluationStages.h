@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -77,7 +77,9 @@ struct Input
 
 struct Scene
 {
-    Scene() {}
+    Scene()
+    {
+    }
     virtual ~Scene();
     struct Mesh
     {
@@ -107,9 +109,9 @@ struct Scene
         struct Primitive
         {
             std::vector<Buffer> mBuffers;
-            IndexBuffer mIndexBuffer = { 0, 0, 0 };
-            void AddBuffer(const void *data, unsigned int format, unsigned int stride, unsigned int count);
-            void AddIndexBuffer(const void *data, unsigned int stride, unsigned int count);
+            IndexBuffer mIndexBuffer = {0, 0, 0};
+            void AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count);
+            void AddIndexBuffer(const void* data, unsigned int stride, unsigned int count);
             void Draw() const;
         };
         std::vector<Primitive> mPrimitives;
@@ -124,9 +126,9 @@ struct Scene
 
 struct EvaluationStage
 {
-//#ifdef _DEBUG needed for fur rendering
+    //#ifdef _DEBUG needed for fur rendering
     std::string mTypename;
-//#endif
+    //#endif
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
     size_t mType;
     unsigned int mRuntimeUniqueId;
@@ -152,12 +154,12 @@ struct EvaluationStage
     bool mRButDown;
     void Clear();
     // scene render
-    void *mScene; // for path tracer
+    void* mScene; // for path tracer
     std::shared_ptr<Scene> mGScene;
-    void *renderer;
+    void* renderer;
     Image DecodeImage();
 
-    bool operator != (const EvaluationStage& other) const
+    bool operator!=(const EvaluationStage& other) const
     {
         if (mType != other.mType)
             return true;
@@ -194,10 +196,16 @@ struct EvaluationStages
     void UserDeleteEvaluation(size_t target);
 
     //
-    size_t GetStagesCount() const { return mStages.size(); }
-    size_t GetStageType(size_t target) const { return mStages[target].mType; }
+    size_t GetStagesCount() const
+    {
+        return mStages.size();
+    }
+    size_t GetStageType(size_t target) const
+    {
+        return mStages[target].mType;
+    }
     size_t GetEvaluationImageDuration(size_t target);
-    
+
     void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);
     void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
     void AddEvaluationInput(size_t target, int slot, int source);
@@ -205,36 +213,47 @@ struct EvaluationStages
     void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
     void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
     void Clear();
-    
-    void SetStageLocalTime(EvaluationContext *evaluationContext, size_t target, int localTime, bool updateDecoder);
 
-    
+    void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
 
 
+    const std::vector<size_t>& GetForwardEvaluationOrder() const
+    {
+        return mEvaluationOrderList;
+    }
 
-    const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
 
-    
-    const EvaluationStage& GetEvaluationStage(size_t index) const {    return mStages[index]; }
+    const EvaluationStage& GetEvaluationStage(size_t index) const
+    {
+        return mStages[index];
+    }
 
-    
-    Camera *GetCameraParameter(size_t index);
-    int GetIntParameter(size_t index, const char *parameterName, int defaultValue);
-    Mat4x4* GetParameterViewMatrix(size_t index) { if (index >= mStages.size()) return NULL; return &mStages[index].mParameterViewMatrix; }
+
+    Camera* GetCameraParameter(size_t index);
+    int GetIntParameter(size_t index, const char* parameterName, int defaultValue);
+    Mat4x4* GetParameterViewMatrix(size_t index)
+    {
+        if (index >= mStages.size())
+            return NULL;
+        return &mStages[index].mParameterViewMatrix;
+    }
     float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
 
     // animation
-    const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
-    void ApplyAnimationForNode(EvaluationContext *context, size_t nodeIndex, int frame);
-    void ApplyAnimation(EvaluationContext *context, int frame);
+    const std::vector<AnimTrack>& GetAnimTrack() const
+    {
+        return mAnimTrack;
+    }
+    void ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame);
+    void ApplyAnimation(EvaluationContext* context, int frame);
     void RemoveAnimation(size_t nodeIndex);
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
-    void SetTime(EvaluationContext *evaluationContext, int time, bool updateDecoder);
+    void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
 
     // pins
     void RemovePins(size_t nodeIndex);
 
-        
+
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 

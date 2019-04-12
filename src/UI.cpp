@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -29,7 +29,10 @@
 #include "imgui_internal.h"
 #include <GL/gl3w.h>
 
-static inline ImVec4 operator*(const ImVec4& lhs, const float t) { return ImVec4(lhs.x*t, lhs.y*t, lhs.z*t, lhs.w*t); }
+static inline ImVec4 operator*(const ImVec4& lhs, const float t)
+{
+    return ImVec4(lhs.x * t, lhs.y * t, lhs.z * t, lhs.w * t);
+}
 
 ImVec4 GradientEdit::GetPoint(float t)
 {
@@ -64,7 +67,8 @@ void ImguiAppLog::AddLog(const char* fmt, ...)
 
 void ImguiAppLog::DrawEmbedded()
 {
-    if (ImGui::Button("Clear")) Clear();
+    if (ImGui::Button("Clear"))
+        Clear();
     ImGui::SameLine();
     bool copy = ImGui::Button("Copy");
     ImGui::SameLine();
@@ -72,7 +76,8 @@ void ImguiAppLog::DrawEmbedded()
     ImGui::Separator();
     ImGui::BeginChild("scrolling");
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 1));
-    if (copy) ImGui::LogToClipboard();
+    if (copy)
+        ImGui::LogToClipboard();
 
     if (Filter.IsActive())
     {
@@ -99,10 +104,10 @@ void ImguiAppLog::DrawEmbedded()
     ImGui::EndChild();
 }
 
-ImguiAppLog *ImguiAppLog::Log = NULL;
+ImguiAppLog* ImguiAppLog::Log = NULL;
 ImguiAppLog logger;
 
-void ImConsoleOutput(const char *szText)
+void ImConsoleOutput(const char* szText)
 {
     static ImguiAppLog imguiLog;
     imguiLog.AddLog(szText);
@@ -110,7 +115,7 @@ void ImConsoleOutput(const char *szText)
 
 void SetStyle()
 {
-    ImGuiStyle &st = ImGui::GetStyle();
+    ImGuiStyle& st = ImGui::GetStyle();
     st.FrameBorderSize = 1.0f;
     st.FramePadding = ImVec2(4.0f, 2.0f);
     st.ItemSpacing = ImVec2(8.0f, 2.0f);
@@ -200,7 +205,7 @@ struct ImogenDrawCallback
     ImRect mClippedRect;
     ImRect mOrginalRect;
     size_t mNodeIndex;
-    EvaluationContext *mEvaluationContext;
+    EvaluationContext* mEvaluationContext;
 };
 
 std::vector<ImogenDrawCallback> mCallbackRects;
@@ -208,26 +213,41 @@ std::vector<ImogenDrawCallback> mCallbackRects;
 static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 {
     // Backup GL state
-    GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
+    GLenum last_active_texture;
+    glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
     glActiveTexture(GL_TEXTURE0);
-    GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+    GLint last_program;
+    glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+    GLint last_texture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
 #ifdef GL_SAMPLER_BINDING
-    GLint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
+    GLint last_sampler;
+    glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
 #endif
-    GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+    GLint last_array_buffer;
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
+    GLint last_vertex_array;
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
 #ifdef GL_POLYGON_MODE
-    GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+    GLint last_polygon_mode[2];
+    glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
 #endif
-    GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
-    GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
-    GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
-    GLenum last_blend_dst_rgb; glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
-    GLenum last_blend_src_alpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
-    GLenum last_blend_dst_alpha; glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
-    GLenum last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
-    GLenum last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
+    GLint last_viewport[4];
+    glGetIntegerv(GL_VIEWPORT, last_viewport);
+    GLint last_scissor_box[4];
+    glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
+    GLenum last_blend_src_rgb;
+    glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
+    GLenum last_blend_dst_rgb;
+    glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
+    GLenum last_blend_src_alpha;
+    glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
+    GLenum last_blend_dst_alpha;
+    glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
+    GLenum last_blend_equation_rgb;
+    glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
+    GLenum last_blend_equation_alpha;
+    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
     GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
     GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
@@ -245,7 +265,10 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 
         cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
         ImRect clippedRect = cb.mClippedRect;
-        glScissor(int(clippedRect.Min.x), int(io.DisplaySize.y - clippedRect.Max.y), int(clippedRect.Max.x - clippedRect.Min.x), int(clippedRect.Max.y - clippedRect.Min.y));
+        glScissor(int(clippedRect.Min.x),
+                  int(io.DisplaySize.y - clippedRect.Max.y),
+                  int(clippedRect.Max.x - clippedRect.Min.x),
+                  int(clippedRect.Max.y - clippedRect.Min.y));
         glEnable(GL_SCISSOR_TEST);
 
         cb.mFunc(cb.mEvaluationContext, cb.mNodeIndex);
@@ -261,10 +284,22 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
     glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
-    if (last_enable_blend) glEnable(GL_BLEND); else glDisable(GL_BLEND);
-    if (last_enable_cull_face) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
-    if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
-    if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+    if (last_enable_blend)
+        glEnable(GL_BLEND);
+    else
+        glDisable(GL_BLEND);
+    if (last_enable_cull_face)
+        glEnable(GL_CULL_FACE);
+    else
+        glDisable(GL_CULL_FACE);
+    if (last_enable_depth_test)
+        glEnable(GL_DEPTH_TEST);
+    else
+        glDisable(GL_DEPTH_TEST);
+    if (last_enable_scissor_test)
+        glEnable(GL_SCISSOR_TEST);
+    else
+        glDisable(GL_SCISSOR_TEST);
 #ifdef GL_POLYGON_MODE
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
 #endif
@@ -277,7 +312,7 @@ void InitCallbackRects()
 {
     mCallbackRects.clear();
 }
-size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t nodeIndex, EvaluationContext *context)
+size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t nodeIndex, EvaluationContext* context)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 mi = draw_list->GetClipRectMin();
@@ -285,16 +320,18 @@ size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t
 
     ImRect rc = rect;
     rc.ClipWith(ImRect(mi, ma));
-    mCallbackRects.push_back({ func, rc, rect, nodeIndex, context });
+    mCallbackRects.push_back({func, rc, rect, nodeIndex, context});
     return mCallbackRects.size() - 1;
 }
 
-void AddUICustomDraw(ImDrawList *drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext *context)
+void AddUICustomDraw(
+    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext* context)
 {
-    drawList->AddCallback((ImDrawCallback)(NodeUICallBack), (void*)(AddNodeUICallbackRect(func, rc, nodeIndex, context)));
+    drawList->AddCallback((ImDrawCallback)(NodeUICallBack),
+                          (void*)(AddNodeUICallbackRect(func, rc, nodeIndex, context)));
 }
 
-void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUVCoord, ImVec2 displayedTextureSize)
+void ImageZoomTooltip(int width, int height, unsigned char* bits, ImVec2 mouseUVCoord, ImVec2 displayedTextureSize)
 {
     ImGui::BeginTooltip();
     ImGui::BeginGroup();
@@ -342,4 +379,3 @@ void ImageZoomTooltip(int width, int height, unsigned char *bits, ImVec2 mouseUV
     ImGui::EndGroup();
     ImGui::EndTooltip();
 }
-

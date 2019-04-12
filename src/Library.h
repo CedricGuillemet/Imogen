@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -52,33 +52,37 @@ struct Camera
         ret.mLens = ::Lerp(mLens, target.mLens, t);
         return ret;
     }
-    float& operator[] (int index)
+    float& operator[](int index)
     {
         switch (index)
         {
-        case 0:
-        case 1:
-        case 2:
-            return mPosition[index];
-        case 3:
-        case 4:
-        case 5:
-            return mDirection[index - 3];
-        case 6:
-            return mDirection[index - 6];
+            case 0:
+            case 1:
+            case 2:
+                return mPosition[index];
+            case 3:
+            case 4:
+            case 5:
+                return mDirection[index - 3];
+            case 6:
+                return mDirection[index - 6];
         }
         return mPosition[0];
     }
 
-    void ComputeViewProjectionMatrix(float *viewProj, float *viewInverse);
+    void ComputeViewProjectionMatrix(float* viewProj, float* viewInverse);
 };
-inline Camera Lerp(Camera a, Camera b, float t) { return a.Lerp(b, t); }
+inline Camera Lerp(Camera a, Camera b, float t)
+{
+    return a.Lerp(b, t);
+}
 
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
 // based on the unique id
 typedef std::pair<size_t, unsigned int> ASyncId;
-template<typename T> T* GetByAsyncId(ASyncId id, std::vector<T>& items)
+template<typename T>
+T* GetByAsyncId(ASyncId id, std::vector<T>& items)
 {
     if (items.size() > id.first && items[id.first].mRuntimeUniqueId == id.second)
     {
@@ -100,21 +104,23 @@ template<typename T> T* GetByAsyncId(ASyncId id, std::vector<T>& items)
 
 struct InputSampler
 {
-    InputSampler() : mWrapU(0), mWrapV(0), mFilterMin(0), mFilterMag(0) 
+    InputSampler() : mWrapU(0), mWrapV(0), mFilterMin(0), mFilterMag(0)
     {
     }
     uint32_t mWrapU;
     uint32_t mWrapV;
     uint32_t mFilterMin;
     uint32_t mFilterMag;
-    
-    bool operator != (const InputSampler& other) const
+
+    bool operator!=(const InputSampler& other) const
     {
-        return (mWrapU != other.mWrapU || mWrapV != other.mWrapV || mFilterMin != other.mFilterMin || mFilterMag != other.mFilterMag);
+        return (mWrapU != other.mWrapU || mWrapV != other.mWrapV || mFilterMin != other.mFilterMin ||
+                mFilterMag != other.mFilterMag);
     }
-    bool operator == (const InputSampler& other) const
+    bool operator==(const InputSampler& other) const
     {
-        return (mWrapU == other.mWrapU && mWrapV == other.mWrapV && mFilterMin == other.mFilterMin && mFilterMag == other.mFilterMag);
+        return (mWrapU == other.mWrapU && mWrapV == other.mWrapV && mFilterMin == other.mFilterMin &&
+                mFilterMag == other.mFilterMag);
     }
 };
 
@@ -152,9 +158,11 @@ struct MaterialConnection
     uint8_t mOutputSlot;
 };
 
-struct AnimationBase 
+struct AnimationBase
 {
-    AnimationBase() {}
+    AnimationBase()
+    {
+    }
     AnimationBase(const AnimationBase&& animation)
     {
         mFrames = animation.mFrames;
@@ -165,15 +173,43 @@ struct AnimationBase
     }
     std::vector<int32_t> mFrames;
 
-    virtual void Allocate(size_t elementCount) { assert(0); }
-    virtual void* GetData() { assert(0); return nullptr; }
-    virtual const void* GetDataConst() const { assert(0); return nullptr; }
-    virtual size_t GetValuesByteLength() const { assert(0); return 0; }
-    virtual void GetValue(uint32_t frame, void *destination) { assert(0); }
-    virtual void SetValue(uint32_t frame, void *source) { assert(0); }
-    virtual float GetFloatValue(uint32_t index, int componentIndex) { assert(0); return 0.f; }
-    virtual void SetFloatValue(uint32_t index, int componentIndex, float value) { assert(0); }
-    virtual void Copy(AnimationBase *source)
+    virtual void Allocate(size_t elementCount)
+    {
+        assert(0);
+    }
+    virtual void* GetData()
+    {
+        assert(0);
+        return nullptr;
+    }
+    virtual const void* GetDataConst() const
+    {
+        assert(0);
+        return nullptr;
+    }
+    virtual size_t GetValuesByteLength() const
+    {
+        assert(0);
+        return 0;
+    }
+    virtual void GetValue(uint32_t frame, void* destination)
+    {
+        assert(0);
+    }
+    virtual void SetValue(uint32_t frame, void* source)
+    {
+        assert(0);
+    }
+    virtual float GetFloatValue(uint32_t index, int componentIndex)
+    {
+        assert(0);
+        return 0.f;
+    }
+    virtual void SetFloatValue(uint32_t index, int componentIndex, float value)
+    {
+        assert(0);
+    }
+    virtual void Copy(AnimationBase* source)
     {
         mFrames = source->mFrames;
     }
@@ -186,7 +222,7 @@ struct AnimationBase
         float mRatio;
     };
     AnimationPointer GetPointer(int32_t frame, bool bSetting) const;
-    bool operator != (const AnimationBase& other) const
+    bool operator!=(const AnimationBase& other) const
     {
         if (mFrames != other.mFrames)
             return true;
@@ -201,9 +237,12 @@ struct AnimationBase
     }
 };
 
-template<typename T> struct Animation : public AnimationBase
+template<typename T>
+struct Animation : public AnimationBase
 {
-    Animation() {}
+    Animation()
+    {
+    }
     Animation(const Animation&& animation) : AnimationBase(animation)
     {
         mValues = animation.mValues;
@@ -214,39 +253,48 @@ template<typename T> struct Animation : public AnimationBase
     }
     std::vector<T> mValues;
 
-    virtual void Allocate(size_t elementCount) 
-    { 
-        mFrames.resize(elementCount); 
+    virtual void Allocate(size_t elementCount)
+    {
+        mFrames.resize(elementCount);
         mValues.resize(elementCount);
     }
-    virtual void* GetData() { return mValues.data(); }
-    virtual const void* GetDataConst() const { return mValues.data(); }
+    virtual void* GetData()
+    {
+        return mValues.data();
+    }
+    virtual const void* GetDataConst() const
+    {
+        return mValues.data();
+    }
 
-    virtual size_t GetValuesByteLength() const { return mValues.size() * sizeof(T); }
+    virtual size_t GetValuesByteLength() const
+    {
+        return mValues.size() * sizeof(T);
+    }
     virtual float GetFloatValue(uint32_t index, int componentIndex)
     {
-        unsigned char*ptr = (unsigned char*)GetData();
+        unsigned char* ptr = (unsigned char*)GetData();
         T& v = ((T*)ptr)[index];
         return GetComponent(componentIndex, v);
     }
 
     virtual void SetFloatValue(uint32_t index, int componentIndex, float value)
     {
-        unsigned char*ptr = (unsigned char*)GetData();
+        unsigned char* ptr = (unsigned char*)GetData();
         T& v = ((T*)ptr)[index];
         SetComponent(componentIndex, v, value);
     }
 
-    virtual void GetValue(uint32_t frame, void *destination) 
+    virtual void GetValue(uint32_t frame, void* destination)
     {
         if (mValues.empty())
             return;
         AnimationPointer pointer = GetPointer(frame, false);
-        T *dest = (T*)destination;
+        T* dest = (T*)destination;
         *dest = Lerp(mValues[pointer.mPreviousIndex], mValues[pointer.mNextIndex], pointer.mRatio);
     }
 
-    virtual void SetValue(uint32_t frame, void *source) 
+    virtual void SetValue(uint32_t frame, void* source)
     {
         auto pointer = GetPointer(frame, true);
         T value = *(T*)source;
@@ -269,7 +317,7 @@ template<typename T> struct Animation : public AnimationBase
         }
     }
 
-    virtual void Copy(AnimationBase *source)
+    virtual void Copy(AnimationBase* source)
     {
         AnimationBase::Copy(source);
         Allocate(source->mFrames.size());
@@ -279,11 +327,13 @@ template<typename T> struct Animation : public AnimationBase
     }
 
 protected:
-    template<typename T> float GetComponent(int componentIndex, T& v)
+    template<typename T>
+    float GetComponent(int componentIndex, T& v)
     {
         return float(v[componentIndex]);
     }
-    template<typename T> void SetComponent(int componentIndex, T& v, float value)
+    template<typename T>
+    void SetComponent(int componentIndex, T& v, float value)
     {
         v[componentIndex] = decltype(v[componentIndex])(value);
     }
@@ -315,7 +365,9 @@ protected:
 
 struct AnimTrack
 {
-    AnimTrack() {}
+    AnimTrack()
+    {
+    }
     AnimTrack(const AnimTrack& other)
     {
         *this = other;
@@ -324,8 +376,8 @@ struct AnimTrack
     uint32_t mParamIndex;
     uint32_t mValueType; // Con_
     AnimationBase* mAnimation = nullptr;
-    AnimTrack& operator = (const AnimTrack& other);
-    bool operator != (const AnimTrack& other) const
+    AnimTrack& operator=(const AnimTrack& other);
+    bool operator!=(const AnimTrack& other) const
     {
         if (mNodeIndex != other.mNodeIndex)
             return true;
@@ -333,7 +385,7 @@ struct AnimTrack
             return true;
         if (mValueType != other.mValueType)
             return true;
-        if (mAnimation->operator != (*other.mAnimation))
+        if (mAnimation->operator!=(*other.mAnimation))
             return true;
         return false;
     }
@@ -353,11 +405,14 @@ struct Material
     int mFrameMin, mFrameMax;
 
     std::vector<uint32_t> mPinnedParameters;
-    MaterialNode* Get(ASyncId id) { return GetByAsyncId(id, mMaterialNodes); }
+    MaterialNode* Get(ASyncId id)
+    {
+        return GetByAsyncId(id, mMaterialNodes);
+    }
 
     uint32_t mBackgroundNode;
 
-    //run time
+    // run time
     unsigned int mThumbnailTextureId;
     unsigned int mRuntimeUniqueId;
 };
@@ -365,10 +420,13 @@ struct Material
 struct Library
 {
     std::vector<Material> mMaterials;
-    Material* Get(ASyncId id) { return GetByAsyncId(id, mMaterials); }
+    Material* Get(ASyncId id)
+    {
+        return GetByAsyncId(id, mMaterials);
+    }
     Material* GetByName(const char* materialName)
     {
-        for (auto &material : mMaterials)
+        for (auto& material : mMaterials)
         {
             if (material.mName == materialName)
             {
@@ -379,8 +437,8 @@ struct Library
     }
 };
 
-void LoadLib(Library *library, const char *szFilename);
-void SaveLib(Library *library, const char *szFilename);
+void LoadLib(Library* library, const char* szFilename);
+void SaveLib(Library* library, const char* szFilename);
 
 enum ConTypes
 {
@@ -421,17 +479,17 @@ size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);
 size_t GetCurveCountPerParameterType(uint32_t paramType);
 const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex);
-AnimationBase *AllocateAnimation(uint32_t valueType);
+AnimationBase* AllocateAnimation(uint32_t valueType);
 CurveType GetCurveTypeForParameterType(ConTypes paramType);
 struct NodeGraphControler;
-void DecodeThumbnailAsync(Material * material, NodeGraphControler *nodeGraphControler);
+void DecodeThumbnailAsync(Material* material, NodeGraphControler* nodeGraphControler);
 size_t ComputeNodeParametersSize(size_t nodeType);
 
 struct MetaCon
 {
     std::string mName;
     int mType;
-    bool operator == (const MetaCon& other) const
+    bool operator==(const MetaCon& other) const
     {
         if (mName != other.mName)
             return false;
@@ -452,7 +510,7 @@ struct MetaParameter
     bool mbLoop;
     std::string mEnumList;
     std::vector<unsigned char> mDefaultValue;
-    bool operator == (const MetaParameter& other) const
+    bool operator==(const MetaParameter& other) const
     {
         if (mName != other.mName)
             return false;
@@ -488,7 +546,7 @@ struct MetaNode
     bool mbHasUI;
     bool mbSaveTexture;
 
-    bool operator == (const MetaNode& other) const
+    bool operator==(const MetaNode& other) const
     {
         if (mName != other.mName)
             return false;
@@ -514,7 +572,6 @@ extern std::vector<MetaNode> gMetaNodes;
 size_t GetMetaNodeIndex(const std::string& metaNodeName);
 void LoadMetaNodes();
 
-std::vector<MetaNode> ReadMetaNodes(const char *filename);
+std::vector<MetaNode> ReadMetaNodes(const char* filename);
 unsigned int GetRuntimeId();
 extern Library library;
-

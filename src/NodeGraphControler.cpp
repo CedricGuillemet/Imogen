@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -32,20 +32,12 @@
 #include "UI.h"
 #include "Utils.h"
 
-NodeGraphControler::NodeGraphControler() : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
+NodeGraphControler::NodeGraphControler()
+    : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
 {
     mCategoriesCount = 10;
-    static const char *categories[] = {
-        "Transform",
-        "Generator",
-        "Material",
-        "Blend",
-        "Filter",
-        "Noise",
-        "File",
-        "Paint",
-        "Cubemap",
-        "Fur"};
+    static const char* categories[] = {
+        "Transform", "Generator", "Material", "Blend", "Filter", "Noise", "File", "Paint", "Cubemap", "Fur"};
     mCategories = categories;
 }
 
@@ -83,8 +75,10 @@ void NodeGraphControler::AddSingleNode(size_t type)
 
 void NodeGraphControler::UserAddNode(size_t type)
 {
-    URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()), [&]() {return &mEvaluationStages.mStages; },
-        [](int) {}, [&](int index) { NodeIsAdded(index); });
+    URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
+                                           [&]() { return &mEvaluationStages.mStages; },
+                                           [](int) {},
+                                           [&](int index) { NodeIsAdded(index); });
 
     mEditingContext.UserAddStage();
     AddSingleNode(type);
@@ -106,28 +100,34 @@ void NodeGraphControler::UserDeleteNode(size_t index)
         mBackgroundNode--;
     }
 }
-    
+
 void NodeGraphControler::HandlePin(uint32_t parameterPair)
 {
-    auto pinIter = std::find(mEvaluationStages.mPinnedParameters.begin(), mEvaluationStages.mPinnedParameters.end(), parameterPair);
+    auto pinIter = std::find(
+        mEvaluationStages.mPinnedParameters.begin(), mEvaluationStages.mPinnedParameters.end(), parameterPair);
     bool hasPin = pinIter != mEvaluationStages.mPinnedParameters.end();
     bool checked = hasPin;
     if (ImGui::Checkbox("", &checked))
     {
         if (hasPin)
         {
-            URDel<uint32_t> undoRedoDelPin(int(&(*pinIter) - mEvaluationStages.mPinnedParameters.data()), [&]() {return &mEvaluationStages.mPinnedParameters; });
+            URDel<uint32_t> undoRedoDelPin(int(&(*pinIter) - mEvaluationStages.mPinnedParameters.data()),
+                                           [&]() { return &mEvaluationStages.mPinnedParameters; });
             mEvaluationStages.mPinnedParameters.erase(pinIter);
         }
         else
         {
-            URAdd<uint32_t> undoRedoAddNode(int(mEvaluationStages.mPinnedParameters.size()), [&]() {return &mEvaluationStages.mPinnedParameters; });
+            URAdd<uint32_t> undoRedoAddNode(int(mEvaluationStages.mPinnedParameters.size()),
+                                            [&]() { return &mEvaluationStages.mPinnedParameters; });
             mEvaluationStages.mPinnedParameters.push_back(parameterPair);
         }
     }
 }
 
-bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned int parameterIndex, void *paramBuffer, const MetaParameter& param)
+bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
+                                             unsigned int parameterIndex,
+                                             void* paramBuffer,
+                                             const MetaParameter& param)
 {
     bool dirty = false;
     uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
@@ -136,184 +136,185 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned in
     ImGui::SameLine();
     switch (param.mType)
     {
-    case Con_Float:
-        dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
-        break;
-    case Con_Float2:
-        dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
-        break;
-    case Con_Float3:
-        dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
-        break;
-    case Con_Float4:
-        dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
-        break;
-    case Con_Color4:
-        dirty |= ImGui::ColorPicker4(param.mName.c_str(), (float*)paramBuffer);
-        break;
-    case Con_Int:
-        dirty |= ImGui::InputInt(param.mName.c_str(), (int*)paramBuffer);
-        break;
-    case Con_Int2:
-        dirty |= ImGui::InputInt2(param.mName.c_str(), (int*)paramBuffer);
-        break;
-    case Con_Ramp:
-    {
-        RampEdit curveEditDelegate;
-        curveEditDelegate.mPointCount = 0;
-        for (int k = 0; k < 8; k++)
+        case Con_Float:
+            dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
+            break;
+        case Con_Float2:
+            dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
+            break;
+        case Con_Float3:
+            dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
+            break;
+        case Con_Float4:
+            dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
+            break;
+        case Con_Color4:
+            dirty |= ImGui::ColorPicker4(param.mName.c_str(), (float*)paramBuffer);
+            break;
+        case Con_Int:
+            dirty |= ImGui::InputInt(param.mName.c_str(), (int*)paramBuffer);
+            break;
+        case Con_Int2:
+            dirty |= ImGui::InputInt2(param.mName.c_str(), (int*)paramBuffer);
+            break;
+        case Con_Ramp:
         {
-            curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
-            if (k && curveEditDelegate.mPts[k - 1].x > curveEditDelegate.mPts[k].x)
-                break;
-            curveEditDelegate.mPointCount++;
-        }
-        float regionWidth = ImGui::GetWindowContentRegionWidth();
-        if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth), 974))
-        {
-            for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
+            RampEdit curveEditDelegate;
+            curveEditDelegate.mPointCount = 0;
+            for (int k = 0; k < 8; k++)
             {
-                ((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
-                ((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+                curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
+                if (k && curveEditDelegate.mPts[k - 1].x > curveEditDelegate.mPts[k].x)
+                    break;
+                curveEditDelegate.mPointCount++;
             }
-            ((float*)paramBuffer)[0] = 0.f;
-            ((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
-            for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+            float regionWidth = ImGui::GetWindowContentRegionWidth();
+            if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth), 974))
             {
-                ((float*)paramBuffer)[k * 2] = -1.f;
-            }
-            dirty = true;
-        }
-    }
-    break;
-    case Con_Ramp4:
-    {
-        float regionWidth = ImGui::GetWindowContentRegionWidth();
-        GradientEdit gradientDelegate;
-
-        gradientDelegate.mPointCount = 0;
-
-        for (int k = 0; k < 8; k++)
-        {
-            gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
-            if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
-                break;
-            gradientDelegate.mPointCount++;
-        }
-
-        int colorIndex;
-        dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
-        if (colorIndex != -1)
-        {
-            dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
-        }
-        if (dirty)
-        {
-            for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
-            {
-                ((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
-            }
-            ((ImVec4*)paramBuffer)[0].w = 0.f;
-            ((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
-            for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
-            {
-                ((ImVec4*)paramBuffer)[k].w = -1.f;
-            }
-        }
-    }
-    break;
-    case Con_Angle:
-        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-        dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
-        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-        break;
-    case Con_Angle2:
-        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-        ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
-        dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
-        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-        ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
-        break;
-    case Con_Angle3:
-        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-        ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
-        ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
-        dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
-        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-        ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
-        ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
-        break;
-    case Con_Angle4:
-        ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
-        ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
-        ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
-        ((float*)paramBuffer)[3] = RadToDeg(((float*)paramBuffer)[3]);
-        dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
-        ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
-        ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
-        ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
-        ((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
-        break;
-    case Con_FilenameWrite:
-    case Con_FilenameRead:
-        ImGui::PushID(parameterPair * 4 + 1);
-        dirty |= ImGui::InputText("", (char*)paramBuffer, 1024);
-        ImGui::SameLine();
-        if (ImGui::Button("..."))
-        {
-            nfdchar_t *outPath = NULL;
-            nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath) : NFD_SaveDialog(NULL, NULL, &outPath);
-
-            if (result == NFD_OKAY)
-            {
-                strcpy((char*)paramBuffer, outPath);
-                free(outPath);
+                for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
+                {
+                    ((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
+                    ((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+                }
+                ((float*)paramBuffer)[0] = 0.f;
+                ((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
+                for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+                {
+                    ((float*)paramBuffer)[k * 2] = -1.f;
+                }
                 dirty = true;
             }
         }
-        ImGui::PopID();
-        ImGui::SameLine();
-        ImGui::Text(param.mName.c_str());
         break;
-    case Con_Enum:
-    {
-        std::string cbString = param.mEnumList;
-        for (auto& c : cbString)
+        case Con_Ramp4:
         {
-            if (c == '|')
-                c = '\0';
-        }
-        dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
-    }
-    break;
-    case Con_ForceEvaluate:
-        if (ImGui::Button(param.mName.c_str()))
-        {
-            EvaluationInfo evaluationInfo;
-            evaluationInfo.forcedDirty = 1;
-            evaluationInfo.uiPass = 0;
-            mEditingContext.RunSingle(nodeIndex, evaluationInfo);
-        }
-        break;
-    case Con_Bool:
-    {
-        bool checked = (*(int*)paramBuffer) != 0;
-        if (ImGui::Checkbox(param.mName.c_str(), &checked))
-        {
-            *(int*)paramBuffer = checked ? 1 : 0;
-            dirty = true;
-        }
-    }
-    break;
-    case Con_Camera:
-        if (ImGui::Button("Reset"))
-        {
-            Camera *cam = (Camera*)paramBuffer;
-            cam->mPosition = Vec4(0.f, 0.f, 0.f);
-            cam->mDirection = Vec4(0.f, 0.f, 1.f);
-            cam->mUp = Vec4(0.f, 1.f, 0.f);
+            float regionWidth = ImGui::GetWindowContentRegionWidth();
+            GradientEdit gradientDelegate;
+
+            gradientDelegate.mPointCount = 0;
+
+            for (int k = 0; k < 8; k++)
+            {
+                gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
+                if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
+                    break;
+                gradientDelegate.mPointCount++;
+            }
+
+            int colorIndex;
+            dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
+            if (colorIndex != -1)
+            {
+                dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
+            }
+            if (dirty)
+            {
+                for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
+                {
+                    ((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
+                }
+                ((ImVec4*)paramBuffer)[0].w = 0.f;
+                ((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
+                for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
+                {
+                    ((ImVec4*)paramBuffer)[k].w = -1.f;
+                }
+            }
         }
         break;
+        case Con_Angle:
+            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+            dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
+            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+            break;
+        case Con_Angle2:
+            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+            ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+            dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
+            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+            ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+            break;
+        case Con_Angle3:
+            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+            ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+            ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
+            dirty |= ImGui::InputFloat3(param.mName.c_str(), (float*)paramBuffer);
+            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+            ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+            ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
+            break;
+        case Con_Angle4:
+            ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
+            ((float*)paramBuffer)[1] = RadToDeg(((float*)paramBuffer)[1]);
+            ((float*)paramBuffer)[2] = RadToDeg(((float*)paramBuffer)[2]);
+            ((float*)paramBuffer)[3] = RadToDeg(((float*)paramBuffer)[3]);
+            dirty |= ImGui::InputFloat4(param.mName.c_str(), (float*)paramBuffer);
+            ((float*)paramBuffer)[0] = DegToRad(((float*)paramBuffer)[0]);
+            ((float*)paramBuffer)[1] = DegToRad(((float*)paramBuffer)[1]);
+            ((float*)paramBuffer)[2] = DegToRad(((float*)paramBuffer)[2]);
+            ((float*)paramBuffer)[3] = DegToRad(((float*)paramBuffer)[3]);
+            break;
+        case Con_FilenameWrite:
+        case Con_FilenameRead:
+            ImGui::PushID(parameterPair * 4 + 1);
+            dirty |= ImGui::InputText("", (char*)paramBuffer, 1024);
+            ImGui::SameLine();
+            if (ImGui::Button("..."))
+            {
+                nfdchar_t* outPath = NULL;
+                nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath)
+                                                                       : NFD_SaveDialog(NULL, NULL, &outPath);
+
+                if (result == NFD_OKAY)
+                {
+                    strcpy((char*)paramBuffer, outPath);
+                    free(outPath);
+                    dirty = true;
+                }
+            }
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::Text(param.mName.c_str());
+            break;
+        case Con_Enum:
+        {
+            std::string cbString = param.mEnumList;
+            for (auto& c : cbString)
+            {
+                if (c == '|')
+                    c = '\0';
+            }
+            dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
+        }
+        break;
+        case Con_ForceEvaluate:
+            if (ImGui::Button(param.mName.c_str()))
+            {
+                EvaluationInfo evaluationInfo;
+                evaluationInfo.forcedDirty = 1;
+                evaluationInfo.uiPass = 0;
+                mEditingContext.RunSingle(nodeIndex, evaluationInfo);
+            }
+            break;
+        case Con_Bool:
+        {
+            bool checked = (*(int*)paramBuffer) != 0;
+            if (ImGui::Checkbox(param.mName.c_str(), &checked))
+            {
+                *(int*)paramBuffer = checked ? 1 : 0;
+                dirty = true;
+            }
+        }
+        break;
+        case Con_Camera:
+            if (ImGui::Button("Reset"))
+            {
+                Camera* cam = (Camera*)paramBuffer;
+                cam->mPosition = Vec4(0.f, 0.f, 0.f);
+                cam->mDirection = Vec4(0.f, 0.f, 1.f);
+                cam->mUp = Vec4(0.f, 1.f, 0.f);
+            }
+            break;
     }
     ImGui::PopID();
     return dirty;
@@ -321,7 +322,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex, unsigned in
 
 void NodeGraphControler::UpdateDirtyParameter(int index)
 {
-    auto &stage = mEvaluationStages.mStages[index];
+    auto& stage = mEvaluationStages.mStages[index];
     mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
     mEditingContext.SetTargetDirty(index, Dirty::Parameter);
 }
@@ -338,10 +339,10 @@ void NodeGraphControler::PinnedEdit()
         const MetaNode& metaNode = gMetaNodes[nodeType];
         if (parameterIndex >= metaNode.mParams.size())
             continue;
-        
+
         ImGui::PushID(171717 + pin);
         const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
-        unsigned char *paramBuffer = mEvaluationStages.mStages[nodeIndex].mParameters.data();
+        unsigned char* paramBuffer = mEvaluationStages.mStages[nodeIndex].mParameters.data();
         paramBuffer += GetParameterOffset(uint32_t(nodeType), parameterIndex);
         if (EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam))
             dirtyNode = nodeIndex;
@@ -362,24 +363,25 @@ void NodeGraphControler::EditNodeParameters()
     bool dirty = false;
     bool forceEval = false;
     bool samplerDirty = false;
-    auto &stage = mEvaluationStages.mStages[index];
+    auto& stage = mEvaluationStages.mStages[index];
     const MetaNode& currentMeta = metaNodes[stage.mType];
-        
+
     if (ImGui::CollapsingHeader("Samplers", 0))
     {
-        URChange<std::vector<InputSampler> > undoRedoSampler(int(index)
-            , [&](int index) { return &stage.mInputSamplers; }
-            , [&](int index) { 
-                auto& node = mEvaluationStages.mStages[index]; 
-                mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
-                mEditingContext.SetTargetDirty(index, Dirty::Sampler);
-        });
-            
-        for (size_t i = 0; i < stage.mInputSamplers.size();i++)
+        URChange<std::vector<InputSampler>> undoRedoSampler(int(index),
+                                                            [&](int index) { return &stage.mInputSamplers; },
+                                                            [&](int index) {
+                                                                auto& node = mEvaluationStages.mStages[index];
+                                                                mEvaluationStages.SetEvaluationSampler(
+                                                                    index, stage.mInputSamplers);
+                                                                mEditingContext.SetTargetDirty(index, Dirty::Sampler);
+                                                            });
+
+        for (size_t i = 0; i < stage.mInputSamplers.size(); i++)
         {
             InputSampler& inputSampler = stage.mInputSamplers[i];
-            static const char *wrapModes = { "REPEAT\0CLAMP_TO_EDGE\0CLAMP_TO_BORDER\0MIRRORED_REPEAT" };
-            static const char *filterModes = { "LINEAR\0NEAREST" };
+            static const char* wrapModes = {"REPEAT\0CLAMP_TO_EDGE\0CLAMP_TO_BORDER\0MIRRORED_REPEAT"};
+            static const char* filterModes = {"LINEAR\0NEAREST"};
             ImGui::PushItemWidth(150);
             ImGui::PushID(int(99 + i));
             ImGui::Text("Sampler %d", i);
@@ -399,28 +401,28 @@ void NodeGraphControler::EditNodeParameters()
         {
             undoRedoSampler.Discard();
         }
-
     }
     if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
-    URChange<std::vector<unsigned char> > undoRedoParameter(int(index)
-        , [&](int index) { return &mEvaluationStages.mStages[index].mParameters; }
-    , [&](int index) {UpdateDirtyParameter(index); });
+    URChange<std::vector<unsigned char>> undoRedoParameter(
+        int(index),
+        [&](int index) { return &mEvaluationStages.mStages[index].mParameters; },
+        [&](int index) { UpdateDirtyParameter(index); });
 
-    unsigned char *paramBuffer = stage.mParameters.data();
+    unsigned char* paramBuffer = stage.mParameters.data();
     int i = 0;
-    for(const MetaParameter& param : currentMeta.mParams)
+    for (const MetaParameter& param : currentMeta.mParams)
     {
         ImGui::PushID(667889 + i);
-        
+
         dirty |= EditSingleParameter(unsigned int(index), i, paramBuffer, param);
 
         ImGui::PopID();
         paramBuffer += GetParameterTypeSize(param.mType);
         i++;
     }
-        
+
     if (dirty)
     {
         UpdateDirtyParameter(int(index));
@@ -464,8 +466,9 @@ void NodeGraphControler::NodeEdit()
             HandlePin(parameterPair);
             unsigned int maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
             bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
-            float ofs = selectedNodeAsBackground?0.5f:0.f;
-            if (ImGui::ImageButton((ImTextureID)(uint64_t)maxiMini, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
+            float ofs = selectedNodeAsBackground ? 0.5f : 0.f;
+            if (ImGui::ImageButton(
+                    (ImTextureID)(uint64_t)maxiMini, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
             {
                 mBackgroundNode = selectedNodeAsBackground ? -1 : mSelectedNodeIndex;
             }
@@ -481,20 +484,20 @@ void NodeGraphControler::NodeEdit()
 
 void NodeGraphControler::SetTimeSlot(size_t index, int frameStart, int frameEnd)
 {
-    auto &stage = mEvaluationStages.mStages[index];
+    auto& stage = mEvaluationStages.mStages[index];
     stage.mStartFrame = frameStart;
     stage.mEndFrame = frameEnd;
 }
 
 void NodeGraphControler::SetTimeDuration(size_t index, int duration)
 {
-    auto &stage = mEvaluationStages.mStages[index];
+    auto& stage = mEvaluationStages.mStages[index];
     stage.mEndFrame = stage.mStartFrame + duration;
 }
 
 void NodeGraphControler::InvalidateParameters()
 {
-    for (size_t i= 0;i<mEvaluationStages.mStages.size();i++)
+    for (size_t i = 0; i < mEvaluationStages.mStages.size(); i++)
     {
         auto& stage = mEvaluationStages.mStages[i];
         mEvaluationStages.SetEvaluationParameters(i, stage.mParameters);
@@ -516,24 +519,25 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     }
     if ((lButDown || rButDown) && !mUndoRedoParamSetMouse)
     {
-        mUndoRedoParamSetMouse = new URChange<std::vector<unsigned char> > (mSelectedNodeIndex
-            , [&](int index) { return &mEvaluationStages.mStages[index].mParameters; }
-        , [&](int index) {UpdateDirtyParameter(index); });
+        mUndoRedoParamSetMouse = new URChange<std::vector<unsigned char>>(
+            mSelectedNodeIndex,
+            [&](int index) { return &mEvaluationStages.mStages[index].mParameters; },
+            [&](int index) { UpdateDirtyParameter(index); });
     }
     const MetaNode* metaNodes = gMetaNodes.data();
     size_t res = 0;
     const MetaNode& metaNode = metaNodes[mEvaluationStages.mStages[mSelectedNodeIndex].mType];
 
-    unsigned char *paramBuffer = mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
+    unsigned char* paramBuffer = mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
     bool parametersUseMouse = false;
 
     // camera handling
     for (auto& param : metaNode.mParams)
     {
-        float *paramFlt = (float*)paramBuffer;
+        float* paramFlt = (float*)paramBuffer;
         if (param.mType == Con_Camera)
         {
-            Camera *cam = (Camera*)paramBuffer;
+            Camera* cam = (Camera*)paramBuffer;
             cam->mPosition += cam->mDirection * wheel;
             Vec4 right = Cross(cam->mUp, cam->mDirection);
             right.y = 0.f; // keep head up
@@ -547,15 +551,15 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
                 }
                 if (io.MouseDown[1])
                 {
-                    cam->mPosition += (cam->mDirection * io.MouseDelta.y)*0.01f;
+                    cam->mPosition += (cam->mDirection * io.MouseDelta.y) * 0.01f;
                 }
                 if (io.MouseDown[0])
                 {
                     Mat4x4 tr, rtUp, rtRight, trp;
-                    tr.Translation(-(cam->mPosition ));
+                    tr.Translation(-(cam->mPosition));
                     rtRight.RotationAxis(right, io.MouseDelta.y * 0.01f);
                     rtUp.RotationAxis(cam->mUp, -io.MouseDelta.x * 0.01f);
-                    trp.Translation((cam->mPosition ));
+                    trp.Translation((cam->mPosition));
                     Mat4x4 res = tr * rtRight * rtUp * trp;
                     cam->mPosition.TransformPoint(res);
                     cam->mDirection.TransformVector(res);
@@ -572,12 +576,12 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     paramBuffer = mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
     if (lButDown)
     {
-        for(auto& param : metaNode.mParams)
+        for (auto& param : metaNode.mParams)
         {
-            float *paramFlt = (float*)paramBuffer;
+            float* paramFlt = (float*)paramBuffer;
             if (param.mType == Con_Camera)
             {
-                Camera *cam = (Camera*)paramBuffer;
+                Camera* cam = (Camera*)paramBuffer;
                 if (cam->mDirection.LengthSq() < FLT_EPSILON)
                     cam->mDirection.Set(0.f, 0.f, 1.f);
                 cam->mPosition += cam->mDirection * wheel;
@@ -602,9 +606,10 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
             {
                 if (param.mbRelative)
                 {
-                    paramFlt[0] += (param.mRangeMaxX-param.mRangeMinX) * dx;
+                    paramFlt[0] += (param.mRangeMaxX - param.mRangeMinX) * dx;
                     if (param.mbLoop)
-                        paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) + min(param.mRangeMinX, param.mRangeMaxX);
+                        paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) +
+                                      min(param.mRangeMinX, param.mRangeMaxX);
                 }
                 else
                 {
@@ -617,7 +622,8 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
                 {
                     paramFlt[1] += (param.mRangeMaxY - param.mRangeMinY) * dy;
                     if (param.mbLoop)
-                        paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) + min(param.mRangeMinY, param.mRangeMaxY);
+                        paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) +
+                                      min(param.mRangeMinY, param.mRangeMaxY);
                 }
                 else
                 {
@@ -631,7 +637,8 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     if (metaNode.mbHasUI || parametersUseMouse)
     {
         mEvaluationStages.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
-        mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex, mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
+        mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex,
+                                                  mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
         mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
     }
 }
@@ -685,8 +692,10 @@ void NodeGraphControler::PasteNodes()
 {
     for (auto& sourceNode : mStagesClipboard)
     {
-        URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()), [&]() {return &mEvaluationStages.mStages; },
-            [](int) {}, [&](int index) {NodeIsAdded(index); });
+        URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
+                                               [&]() { return &mEvaluationStages.mStages; },
+                                               [](int) {},
+                                               [&](int index) { NodeIsAdded(index); });
 
         mEditingContext.UserAddStage();
         mEvaluationStages.UserAddEvaluation(sourceNode.mType);
@@ -697,7 +706,7 @@ void NodeGraphControler::PasteNodes()
         stage.mInputSamplers = sourceNode.mInputSamplers;
         stage.mStartFrame = sourceNode.mStartFrame;
         stage.mEndFrame = sourceNode.mEndFrame;
-        
+
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
         mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
         mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
@@ -733,7 +742,8 @@ void NodeGraphControler::MakeKey(int frame, uint32_t nodeIndex, uint32_t paramet
         mEvaluationStages.mAnimTrack.push_back(newTrack);
         animTrack = &mEvaluationStages.mAnimTrack.back();
     }
-    URChange<AnimTrack> urChange(int(animTrack - mEvaluationStages.mAnimTrack.data()), [&](int index) {return &mEvaluationStages.mAnimTrack[index]; });
+    URChange<AnimTrack> urChange(int(animTrack - mEvaluationStages.mAnimTrack.data()),
+                                 [&](int index) { return &mEvaluationStages.mAnimTrack[index]; });
     EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
     size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
     animTrack->mAnimation->SetValue(frame, &stage.mParameters[parameterOffset]);
@@ -741,10 +751,12 @@ void NodeGraphControler::MakeKey(int frame, uint32_t nodeIndex, uint32_t paramet
 
 void NodeGraphControler::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed)
 {
-
 }
 
-void NodeGraphControler::DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex)
+void NodeGraphControler::DrawNodeImage(ImDrawList* drawList,
+                                       const ImRect& rc,
+                                       const ImVec2 marge,
+                                       const size_t nodeIndex)
 {
     if (NodeIsProcesing(nodeIndex) == 1)
     {
@@ -759,7 +771,11 @@ void NodeGraphControler::DrawNodeImage(ImDrawList *drawList, const ImRect &rc, c
     }
     else
     {
-        drawList->AddImage((ImTextureID)(int64_t)(GetNodeTexture(size_t(nodeIndex))), rc.Min + marge, rc.Max - marge, ImVec2(0, 1), ImVec2(1, 0));
+        drawList->AddImage((ImTextureID)(int64_t)(GetNodeTexture(size_t(nodeIndex))),
+                           rc.Min + marge,
+                           rc.Max - marge,
+                           ImVec2(0, 1),
+                           ImVec2(1, 0));
     }
 }
 

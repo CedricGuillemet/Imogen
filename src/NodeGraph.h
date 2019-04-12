@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -32,11 +32,12 @@
 struct NodeGraphControlerBase
 {
     NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
-    {}
+    {
+    }
 
     int mSelectedNodeIndex;
     int mCategoriesCount;
-    const char ** mCategories;
+    const char** mCategories;
 
     virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
     virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
@@ -59,7 +60,7 @@ struct NodeGraphControlerBase
     virtual bool NodeIsCubemap(size_t nodeIndex) const = 0;
     virtual bool NodeIs2D(size_t nodeIndex) const = 0;
     virtual bool NodeIsCompute(size_t nodeIndex) const = 0;
-    virtual void DrawNodeImage(ImDrawList *drawList, const ImRect &rc, const ImVec2 marge, const size_t nodeIndex) = 0;
+    virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) = 0;
     // return false if background must be rendered by node graph
     virtual bool RenderBackground() = 0;
 
@@ -71,18 +72,30 @@ struct NodeGraphControlerBase
 
 struct Node
 {
-    int     mType;
-    ImVec2  Pos, Size;
+    int mType;
+    ImVec2 Pos, Size;
     size_t InputsCount, OutputsCount;
     bool mbSelected;
-    Node() : mbSelected(false) {}
+    Node() : mbSelected(false)
+    {
+    }
     Node(int type, const ImVec2& pos);
 
-    ImVec2 GetInputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1)); }
-    ImVec2 GetOutputSlotPos(int slot_no, float factor) const { return ImVec2(Pos.x*factor + Size.x, Pos.y*factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1)); }
-    ImRect GetNodeRect(float factor) { return ImRect(Pos * factor, Pos * factor + Size); }
+    ImVec2 GetInputSlotPos(int slot_no, float factor) const
+    {
+        return ImVec2(Pos.x * factor, Pos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
+    }
+    ImVec2 GetOutputSlotPos(int slot_no, float factor) const
+    {
+        return ImVec2(Pos.x * factor + Size.x,
+                      Pos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
+    }
+    ImRect GetNodeRect(float factor)
+    {
+        return ImRect(Pos * factor, Pos * factor + Size);
+    }
 
-    bool operator != (const Node& other) const
+    bool operator!=(const Node& other) const
     {
         if (mType != other.mType)
             return true;
@@ -106,16 +119,25 @@ struct Node
 
 struct NodeLink
 {
-    int     InputIdx, InputSlot, OutputIdx, OutputSlot;
-    NodeLink() {}
-    NodeLink(int input_idx, int input_slot, int output_idx, int output_slot) { InputIdx = input_idx; InputSlot = input_slot; OutputIdx = output_idx; OutputSlot = output_slot; }
-    bool operator == (const NodeLink& other) const
+    int InputIdx, InputSlot, OutputIdx, OutputSlot;
+    NodeLink()
     {
-        return InputIdx == other.InputIdx && InputSlot == other.InputSlot && OutputIdx == other.OutputIdx && OutputSlot == other.OutputSlot;
+    }
+    NodeLink(int input_idx, int input_slot, int output_idx, int output_slot)
+    {
+        InputIdx = input_idx;
+        InputSlot = input_slot;
+        OutputIdx = output_idx;
+        OutputSlot = output_slot;
+    }
+    bool operator==(const NodeLink& other) const
+    {
+        return InputIdx == other.InputIdx && InputSlot == other.InputSlot && OutputIdx == other.OutputIdx &&
+               OutputSlot == other.OutputSlot;
     }
 };
 
-inline bool operator != (const ImVec2 r1, const ImVec2 r2)
+inline bool operator!=(const ImVec2 r1, const ImVec2 r2)
 {
     if (r1.x != r2.x)
         return true;
@@ -130,7 +152,7 @@ struct NodeRug
     uint32_t mColor;
     std::string mText;
 
-    bool operator != (const NodeRug& other) const
+    bool operator!=(const NodeRug& other) const
     {
         if (mPos != other.mPos)
             return true;
@@ -144,16 +166,23 @@ struct NodeRug
     }
 };
 
-void NodeGraph(NodeGraphControlerBase *delegate, bool enabled);
+void NodeGraph(NodeGraphControlerBase* delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
 const std::vector<NodeLink>& NodeGraphGetLinks();
 const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphControlerBase *delegate, int type, const std::vector<unsigned char>& parameters, int posx, int posy, int frameStart, int frameEnd);
-void NodeGraphAddRug(int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
-void NodeGraphAddLink(NodeGraphControlerBase *delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
-void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase *delegate);
+void NodeGraphAddNode(NodeGraphControlerBase* delegate,
+                      int type,
+                      const std::vector<unsigned char>& parameters,
+                      int posx,
+                      int posy,
+                      int frameStart,
+                      int frameEnd);
+void NodeGraphAddRug(
+    int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
+void NodeGraphAddLink(NodeGraphControlerBase* delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
+void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* delegate);
 void NodeGraphUpdateScrolling();
 void NodeGraphSelectNode(int selectedNodeIndex);
 void NodeGraphLayout();

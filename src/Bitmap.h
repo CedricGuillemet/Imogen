@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -75,13 +75,13 @@ struct Image
         free(mBits);
     }
 
-    void *mDecoder;
+    void* mDecoder;
     int mWidth, mHeight;
     uint32_t mDataSize;
     uint8_t mNumMips;
     uint8_t mNumFaces;
     uint8_t mFormat;
-    Image& operator = (const Image &other)
+    Image& operator=(const Image& other)
     {
         mDecoder = other.mDecoder;
         mWidth = other.mWidth;
@@ -92,7 +92,10 @@ struct Image
         SetBits(other.mBits, other.mDataSize);
         return *this;
     }
-    unsigned char *GetBits() const { return mBits; }
+    unsigned char* GetBits() const
+    {
+        return mBits;
+    }
     void SetBits(unsigned char* bits, size_t size)
     {
         Allocate(size);
@@ -106,22 +109,25 @@ struct Image
             mBits = (unsigned char*)malloc(size);
         mDataSize = uint32_t(size);
     }
-    void DoFree() {
-        free(mBits); mBits = NULL; mDataSize = 0;
+    void DoFree()
+    {
+        free(mBits);
+        mBits = NULL;
+        mDataSize = 0;
     }
 
-    static int Read(const char *filename, Image *image);
-    static int Free(Image *image);
-    static unsigned int Upload(Image *image, unsigned int textureId, int cubeFace = -1);
-    static int LoadSVG(const char *filename, Image *image, float dpi);
-    static int ReadMem(unsigned char *data, size_t dataSize, Image *image);
-    static void VFlip(Image *image);
-    static int Write(const char *filename, Image *image, int format, int quality);
-    static int EncodePng(Image *image, std::vector<unsigned char> &pngImage);
-    static Image DecodeImage(FFMPEGCodec::Decoder *decoder, int frame);
+    static int Read(const char* filename, Image* image);
+    static int Free(Image* image);
+    static unsigned int Upload(Image* image, unsigned int textureId, int cubeFace = -1);
+    static int LoadSVG(const char* filename, Image* image, float dpi);
+    static int ReadMem(unsigned char* data, size_t dataSize, Image* image);
+    static void VFlip(Image* image);
+    static int Write(const char* filename, Image* image, int format, int quality);
+    static int EncodePng(Image* image, std::vector<unsigned char>& pngImage);
+    static Image DecodeImage(FFMPEGCodec::Decoder* decoder, int frame);
 
 protected:
-    unsigned char *mBits;
+    unsigned char* mBits;
 };
 
 extern const unsigned int glInternalFormats[];
@@ -131,10 +137,11 @@ extern const unsigned int textureFormatSize[];
 struct ImageCache
 {
     // synchronous texture cache
-// use for simple textures(stock) or to replace with a more efficient one
+    // use for simple textures(stock) or to replace with a more efficient one
     unsigned int GetTexture(const std::string& filename);
     Image* GetImage(const std::string& filepath);
-    void AddImage(const std::string& filepath, Image *image);
+    void AddImage(const std::string& filepath, Image* image);
+
 protected:
     std::map<std::string, unsigned int> mSynchronousTextureCache;
     std::map<std::string, Image> mImageCache;
@@ -158,7 +165,6 @@ extern DefaultShaders gDefaultShader;
 
 class RenderTarget
 {
-
 public:
     RenderTarget() : mGLTexID(0), mGLTexDepth(0), mFbo(0), mDepthBuffer(0)
     {
@@ -172,8 +178,8 @@ public:
     void BindCubeFace(size_t face, int mipmap, int faceWidth);
     void Destroy();
     void CheckFBO();
-    void Clone(const RenderTarget &other);
-    void Swap(RenderTarget &other);
+    void Clone(const RenderTarget& other);
+    void Swap(RenderTarget& other);
 
 
     std::shared_ptr<Image> mImage;

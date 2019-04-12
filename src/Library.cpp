@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -32,7 +32,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 
-int Log(const char *szFormat, ...);
+int Log(const char* szFormat, ...);
 
 enum : uint32_t
 {
@@ -48,19 +48,28 @@ enum : uint32_t
     v_backgroundNode,
     v_lastVersion
 };
-#define ADD(_fieldAdded, _fieldName) if (dataVersion >= _fieldAdded){ Ser(_fieldName); }
-#define ADD_LOCAL(_localAdded, _type, _localName, _defaultValue) \
-    _type _localName = (_defaultValue); \
-    if (dataVersion >= (_localAdded)) { Ser(_localName)); }
-#define REM(_fieldAdded, _fieldRemoved, _type, _fieldName, _defaultValue) \
-    _type _fieldName = (_defaultValue); \
-    if (dataVersion >= (_fieldAdded) && dataVersion < (_fieldRemoved)) { Ser(_fieldName); }
-#define VERSION_IN_RANGE(_from, _to) \
-    (dataVersion >= (_from) && dataVersion < (_to))
+#define ADD(_fieldAdded, _fieldName)                                                                                   \
+    if (dataVersion >= _fieldAdded)                                                                                    \
+    {                                                                                                                  \
+        Ser(_fieldName);                                                                                               \
+    }
+#define ADD_LOCAL(_localAdded, _type, _localName, _defaultValue)                                                       \
+    _type _localName = (_defaultValue);                                                                                \
+    if (dataVersion >= (_localAdded))                                                                                  \
+    { Ser(_localName));                                                              \
+    }
+#define REM(_fieldAdded, _fieldRemoved, _type, _fieldName, _defaultValue)                                              \
+    _type _fieldName = (_defaultValue);                                                                                \
+    if (dataVersion >= (_fieldAdded) && dataVersion < (_fieldRemoved))                                                 \
+    {                                                                                                                  \
+        Ser(_fieldName);                                                                                               \
+    }
+#define VERSION_IN_RANGE(_from, _to) (dataVersion >= (_from) && dataVersion < (_to))
 
-template<bool doWrite> struct Serialize
+template<bool doWrite>
+struct Serialize
 {
-    Serialize(const char *szFilename)
+    Serialize(const char* szFilename)
     {
         fp = fopen(szFilename, doWrite ? "wb" : "rb");
     }
@@ -71,7 +80,8 @@ template<bool doWrite> struct Serialize
             fclose(fp);
     }
 
-    template<typename T> void Ser(T& data)
+    template<typename T>
+    void Ser(T& data)
     {
         if (doWrite)
             fwrite(&data, sizeof(T), 1, fp);
@@ -83,7 +93,7 @@ template<bool doWrite> struct Serialize
     {
         if (doWrite)
         {
-            uint32_t len = uint32_t(strlen(data.c_str()));// uint32_t(data.length());
+            uint32_t len = uint32_t(strlen(data.c_str())); // uint32_t(data.length());
             fwrite(&len, sizeof(uint32_t), 1, fp);
             fwrite(data.c_str(), len, 1, fp);
         }
@@ -97,7 +107,8 @@ template<bool doWrite> struct Serialize
         }
     }
 
-    template<typename T> void Ser(std::vector<T>& data)
+    template<typename T>
+    void Ser(std::vector<T>& data)
     {
         uint32_t count = uint32_t(data.size());
         Ser(count);
@@ -106,7 +117,8 @@ template<bool doWrite> struct Serialize
             Ser(&item);
     }
 
-    template<typename T> void SerArray(std::vector<T>& data)
+    template<typename T>
+    void SerArray(std::vector<T>& data)
     {
         uint32_t count = uint32_t(data.size());
         Ser(count);
@@ -114,7 +126,7 @@ template<bool doWrite> struct Serialize
             return;
         if (doWrite)
         {
-            fwrite(data.data(), count*sizeof(T), 1, fp);
+            fwrite(data.data(), count * sizeof(T), 1, fp);
         }
         else
         {
@@ -138,7 +150,7 @@ template<bool doWrite> struct Serialize
         SerArray(data);
     }
 
-    void Ser(AnimationBase *animBase)
+    void Ser(AnimationBase* animBase)
     {
         ADD(v_animation, animBase->mFrames);
         if (doWrite)
@@ -152,7 +164,7 @@ template<bool doWrite> struct Serialize
         }
     }
 
-    void Ser(AnimTrack *animTrack)
+    void Ser(AnimTrack* animTrack)
     {
         ADD(v_animation, animTrack->mNodeIndex);
         ADD(v_animation, animTrack->mParamIndex);
@@ -164,7 +176,7 @@ template<bool doWrite> struct Serialize
         ADD(v_animation, animTrack->mAnimation);
     }
 
-    void Ser(InputSampler *inputSampler)
+    void Ser(InputSampler* inputSampler)
     {
         ADD(v_initial, inputSampler->mWrapU);
         ADD(v_initial, inputSampler->mWrapV);
@@ -172,7 +184,7 @@ template<bool doWrite> struct Serialize
         ADD(v_initial, inputSampler->mFilterMag);
     }
 
-    void Ser(MaterialNode *materialNode)
+    void Ser(MaterialNode* materialNode)
     {
         ADD(v_initial, materialNode->mType);
         ADD(v_nodeTypeName, materialNode->mTypeName);
@@ -185,7 +197,7 @@ template<bool doWrite> struct Serialize
         ADD(v_frameStartEnd, materialNode->mFrameEnd);
     }
 
-    void Ser(MaterialNodeRug *materialNodeRug)
+    void Ser(MaterialNodeRug* materialNodeRug)
     {
         ADD(v_rugs, materialNodeRug->mPosX);
         ADD(v_rugs, materialNodeRug->mPosY);
@@ -195,7 +207,7 @@ template<bool doWrite> struct Serialize
         ADD(v_rugs, materialNodeRug->mComment);
     }
 
-    void Ser(MaterialConnection *materialConnection)
+    void Ser(MaterialConnection* materialConnection)
     {
         ADD(v_initial, materialConnection->mInputNode);
         ADD(v_initial, materialConnection->mOutputNode);
@@ -203,7 +215,7 @@ template<bool doWrite> struct Serialize
         ADD(v_initial, materialConnection->mOutputSlot);
     }
 
-    void Ser(Material *material)
+    void Ser(Material* material)
     {
         ADD(v_initial, material->mName);
         REM(v_materialComment, v_rugs, std::string, (material->mComment), "");
@@ -218,12 +230,12 @@ template<bool doWrite> struct Serialize
         ADD(v_backgroundNode, material->mBackgroundNode);
     }
 
-    bool Ser(Library *library)
+    bool Ser(Library* library)
     {
         if (!fp)
             return false;
         if (doWrite)
-            dataVersion = v_lastVersion-1;
+            dataVersion = v_lastVersion - 1;
         Ser(dataVersion);
         if (dataVersion > v_lastVersion)
             return false; // no forward compatibility
@@ -231,14 +243,14 @@ template<bool doWrite> struct Serialize
         return true;
     }
 
-    FILE *fp;
+    FILE* fp;
     uint32_t dataVersion;
 };
 
 typedef Serialize<true> SerializeWrite;
 typedef Serialize<false> SerializeRead;
 
-void LoadLib(Library *library, const char *szFilename)
+void LoadLib(Library* library, const char* szFilename)
 {
     SerializeRead loadSer(szFilename);
     loadSer.Ser(library);
@@ -258,7 +270,7 @@ void LoadLib(Library *library, const char *szFilename)
     }
 }
 
-void SaveLib(Library *library, const char *szFilename)
+void SaveLib(Library* library, const char* szFilename)
 {
     SerializeWrite(szFilename).Ser(library);
 }
@@ -273,65 +285,47 @@ size_t GetParameterTypeSize(ConTypes paramType)
 {
     switch (paramType)
     {
-    case Con_Angle:
-    case Con_Float:
-        return sizeof(float);
-    case Con_Angle2:
-    case Con_Float2:
-        return sizeof(float) * 2;
-    case Con_Angle3:
-    case Con_Float3:
-        return sizeof(float) * 3;
-    case Con_Angle4:
-    case Con_Color4:
-    case Con_Float4:
-        return sizeof(float) * 4;
-    case Con_Ramp:
-        return sizeof(float) * 2 * 8;
-    case Con_Ramp4:
-        return sizeof(float) * 4 * 8;
-    case Con_Enum:
-    case Con_Int:
-        return sizeof(int);
-    case Con_Int2:
-        return sizeof(int) * 2;
-    case Con_FilenameRead:
-    case Con_FilenameWrite:
-        return 1024;
-    case Con_ForceEvaluate:
-        return 0;
-    case Con_Bool:
-        return sizeof(int);
-    case Con_Camera:
-        return sizeof(Camera);
-    default:
-        assert(0);
+        case Con_Angle:
+        case Con_Float:
+            return sizeof(float);
+        case Con_Angle2:
+        case Con_Float2:
+            return sizeof(float) * 2;
+        case Con_Angle3:
+        case Con_Float3:
+            return sizeof(float) * 3;
+        case Con_Angle4:
+        case Con_Color4:
+        case Con_Float4:
+            return sizeof(float) * 4;
+        case Con_Ramp:
+            return sizeof(float) * 2 * 8;
+        case Con_Ramp4:
+            return sizeof(float) * 4 * 8;
+        case Con_Enum:
+        case Con_Int:
+            return sizeof(int);
+        case Con_Int2:
+            return sizeof(int) * 2;
+        case Con_FilenameRead:
+        case Con_FilenameWrite:
+            return 1024;
+        case Con_ForceEvaluate:
+            return 0;
+        case Con_Bool:
+            return sizeof(int);
+        case Con_Camera:
+            return sizeof(Camera);
+        default:
+            assert(0);
     }
     return -1;
 }
 
 static const char* parameterNames[] = {
-    "Float",
-    "Float2",
-    "Float3",
-    "Float4",
-    "Color4",
-    "Int",
-    "Int2",
-    "Ramp",
-    "Angle",
-    "Angle2",
-    "Angle3",
-    "Angle4",
-    "Enum",
-    "Structure",
-    "FilenameRead",
-    "FilenameWrite",
-    "ForceEvaluate",
-    "Bool",
-    "Ramp4",
-    "Camera",
-    "Any",
+    "Float",        "Float2",        "Float3",        "Float4", "Color4", "Int",    "Int2",
+    "Ramp",         "Angle",         "Angle2",        "Angle3", "Angle4", "Enum",   "Structure",
+    "FilenameRead", "FilenameWrite", "ForceEvaluate", "Bool",   "Ramp4",  "Camera", "Any",
 };
 
 const char* GetParameterTypeName(ConTypes paramType)
@@ -353,130 +347,131 @@ size_t GetCurveCountPerParameterType(uint32_t paramType)
 {
     switch (paramType)
     {
-    case Con_Angle:
-    case Con_Float:
-        return 1;
-    case Con_Angle2:
-    case Con_Float2:
-        return 2;
-    case Con_Angle3:
-    case Con_Float3:
-        return 3;
-    case Con_Angle4:
-    case Con_Color4:
-    case Con_Float4:
-        return 4;
-    case Con_Ramp:
-        return 0;// sizeof(float) * 2 * 8;
-    case Con_Ramp4:
-        return 0;// sizeof(float) * 4 * 8;
-    case Con_Enum:
-        return 1;
-    case Con_Int:
-        return 1;
-    case Con_Int2:
-        return 2;
-    case Con_FilenameRead:
-    case Con_FilenameWrite:
-        return 0;
-    case Con_ForceEvaluate:
-        return 0;
-    case Con_Bool:
-        return 1;
-    case Con_Camera:
-        return 7;
-    default:
-        assert(0);
+        case Con_Angle:
+        case Con_Float:
+            return 1;
+        case Con_Angle2:
+        case Con_Float2:
+            return 2;
+        case Con_Angle3:
+        case Con_Float3:
+            return 3;
+        case Con_Angle4:
+        case Con_Color4:
+        case Con_Float4:
+            return 4;
+        case Con_Ramp:
+            return 0; // sizeof(float) * 2 * 8;
+        case Con_Ramp4:
+            return 0; // sizeof(float) * 4 * 8;
+        case Con_Enum:
+            return 1;
+        case Con_Int:
+            return 1;
+        case Con_Int2:
+            return 2;
+        case Con_FilenameRead:
+        case Con_FilenameWrite:
+            return 0;
+        case Con_ForceEvaluate:
+            return 0;
+        case Con_Bool:
+            return 1;
+        case Con_Camera:
+            return 7;
+        default:
+            assert(0);
     }
     return 0;
 }
 
 const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex)
 {
-    static const char* suffixes[] = { ".x",".y",".z",".w" };
-    static const char* cameraSuffixes[] = { "posX","posY","posZ", "dirX", "dirY", "dirZ", "FOV" };
+    static const char* suffixes[] = {".x", ".y", ".z", ".w"};
+    static const char* cameraSuffixes[] = {"posX", "posY", "posZ", "dirX", "dirY", "dirZ", "FOV"};
     switch (paramType)
     {
-    case Con_Angle:
-    case Con_Float:
-        return "";
-    case Con_Angle2:
-    case Con_Float2:
-        return suffixes[suffixIndex];
-    case Con_Angle3:
-    case Con_Float3:
-        return suffixes[suffixIndex];
-    case Con_Angle4:
-    case Con_Color4:
-    case Con_Float4:
-        return suffixes[suffixIndex];
-    case Con_Ramp:
-        return 0;// sizeof(float) * 2 * 8;
-    case Con_Ramp4:
-        return 0;// sizeof(float) * 4 * 8;
-    case Con_Enum:
-        return "";
-    case Con_Int:
-        return "";
-    case Con_Int2:
-        return suffixes[suffixIndex];
-    case Con_FilenameRead:
-    case Con_FilenameWrite:
-        return 0;
-    case Con_ForceEvaluate:
-        return 0;
-    case Con_Bool:
-        return "";
-    case Con_Camera:
-        return cameraSuffixes[suffixIndex];
-    default:
-        assert(0);
+        case Con_Angle:
+        case Con_Float:
+            return "";
+        case Con_Angle2:
+        case Con_Float2:
+            return suffixes[suffixIndex];
+        case Con_Angle3:
+        case Con_Float3:
+            return suffixes[suffixIndex];
+        case Con_Angle4:
+        case Con_Color4:
+        case Con_Float4:
+            return suffixes[suffixIndex];
+        case Con_Ramp:
+            return 0; // sizeof(float) * 2 * 8;
+        case Con_Ramp4:
+            return 0; // sizeof(float) * 4 * 8;
+        case Con_Enum:
+            return "";
+        case Con_Int:
+            return "";
+        case Con_Int2:
+            return suffixes[suffixIndex];
+        case Con_FilenameRead:
+        case Con_FilenameWrite:
+            return 0;
+        case Con_ForceEvaluate:
+            return 0;
+        case Con_Bool:
+            return "";
+        case Con_Camera:
+            return cameraSuffixes[suffixIndex];
+        default:
+            assert(0);
     }
     return "";
 }
 
 uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex)
 {
-	static const uint32_t colors[] = { 0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFFF0F0F0 };
-	static const uint32_t cameraColors[] = { 0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFFF0F0F0 };
-	switch (paramType)
-	{
-	case Con_Angle:
-	case Con_Float:
-		return 0xFF1040F0;
-	case Con_Angle2:
-	case Con_Float2:
-		return colors[suffixIndex];
-	case Con_Angle3:
-	case Con_Float3:
-		return colors[suffixIndex];
-	case Con_Angle4:
-	case Con_Color4:
-	case Con_Float4:
-		return colors[suffixIndex];
-	case Con_Ramp:
-		return 0xFFAAAAAA;// sizeof(float) * 2 * 8;
-	case Con_Ramp4:
-		return 0xFFAAAAAA;// sizeof(float) * 4 * 8;
-	case Con_Enum:
-		return 0xFFAAAAAA;
-	case Con_Int:
-		return 0xFFAAAAAA;
-	case Con_Int2:
-		return colors[suffixIndex];
-	case Con_FilenameRead:
-	case Con_FilenameWrite:
-		return 0;
-	case Con_ForceEvaluate:
-		return 0;
-	case Con_Bool:
-		return 0xFFF0F0F0;
-	case Con_Camera:
-		return cameraColors[suffixIndex];
-	default:
-		assert(0);
-	}
-	return 0xFFAAAAAA;
+    static const uint32_t colors[] = {0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFFF0F0F0};
+    static const uint32_t cameraColors[] = {
+        0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFF1010F0, 0xFF10F010, 0xFFF01010, 0xFFF0F0F0};
+    switch (paramType)
+    {
+        case Con_Angle:
+        case Con_Float:
+            return 0xFF1040F0;
+        case Con_Angle2:
+        case Con_Float2:
+            return colors[suffixIndex];
+        case Con_Angle3:
+        case Con_Float3:
+            return colors[suffixIndex];
+        case Con_Angle4:
+        case Con_Color4:
+        case Con_Float4:
+            return colors[suffixIndex];
+        case Con_Ramp:
+            return 0xFFAAAAAA; // sizeof(float) * 2 * 8;
+        case Con_Ramp4:
+            return 0xFFAAAAAA; // sizeof(float) * 4 * 8;
+        case Con_Enum:
+            return 0xFFAAAAAA;
+        case Con_Int:
+            return 0xFFAAAAAA;
+        case Con_Int2:
+            return colors[suffixIndex];
+        case Con_FilenameRead:
+        case Con_FilenameWrite:
+            return 0;
+        case Con_ForceEvaluate:
+            return 0;
+        case Con_Bool:
+            return 0xFFF0F0F0;
+        case Con_Camera:
+            return cameraColors[suffixIndex];
+        default:
+            assert(0);
+    }
+    return 0xFFAAAAAA;
 }
 
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex)
@@ -494,31 +489,47 @@ size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex)
     return ret;
 }
 
-AnimationBase *AllocateAnimation(uint32_t valueType)
+AnimationBase* AllocateAnimation(uint32_t valueType)
 {
     switch (valueType)
     {
-    case Con_Float: return new Animation<float>;
-    case Con_Float2: return new Animation<Vec2>;
-    case Con_Float3: return new Animation<Vec3>;
-    case Con_Float4: return new Animation<Vec4>;
-    case Con_Color4: return new Animation<Vec4>;
-    case Con_Int: return new Animation<int>;
-    case Con_Int2: return new Animation<iVec2>;
-    case Con_Ramp: return new Animation<Vec2>;
-    case Con_Angle: return new Animation<float>;
-    case Con_Angle2: return new Animation<Vec2>;
-    case Con_Angle3: return new Animation<Vec3>;
-    case Con_Angle4: return new Animation<Vec4>;
-    case Con_Enum: return new Animation<int>;
-    case Con_Structure:
-    case Con_FilenameRead:
-    case Con_FilenameWrite:
-    case Con_ForceEvaluate:
-        return NULL;
-    case Con_Bool: return new Animation<unsigned char>;
-    case Con_Ramp4: return new Animation<Vec4>;
-    case Con_Camera: return new Animation<Camera>;
+        case Con_Float:
+            return new Animation<float>;
+        case Con_Float2:
+            return new Animation<Vec2>;
+        case Con_Float3:
+            return new Animation<Vec3>;
+        case Con_Float4:
+            return new Animation<Vec4>;
+        case Con_Color4:
+            return new Animation<Vec4>;
+        case Con_Int:
+            return new Animation<int>;
+        case Con_Int2:
+            return new Animation<iVec2>;
+        case Con_Ramp:
+            return new Animation<Vec2>;
+        case Con_Angle:
+            return new Animation<float>;
+        case Con_Angle2:
+            return new Animation<Vec2>;
+        case Con_Angle3:
+            return new Animation<Vec3>;
+        case Con_Angle4:
+            return new Animation<Vec4>;
+        case Con_Enum:
+            return new Animation<int>;
+        case Con_Structure:
+        case Con_FilenameRead:
+        case Con_FilenameWrite:
+        case Con_ForceEvaluate:
+            return NULL;
+        case Con_Bool:
+            return new Animation<unsigned char>;
+        case Con_Ramp4:
+            return new Animation<Vec4>;
+        case Con_Camera:
+            return new Animation<Camera>;
     }
     return NULL;
 }
@@ -527,32 +538,48 @@ CurveType GetCurveTypeForParameterType(ConTypes paramType)
 {
     switch (paramType)
     {
-    case Con_Float: return CurveSmooth;
-    case Con_Float2: return CurveSmooth;
-    case Con_Float3: return CurveSmooth;
-    case Con_Float4: return CurveSmooth;
-    case Con_Color4: return CurveSmooth;
-    case Con_Int: return CurveLinear;
-    case Con_Int2: return CurveLinear;
-    case Con_Ramp: return CurveNone;
-    case Con_Angle: return CurveSmooth;
-    case Con_Angle2: return CurveSmooth;
-    case Con_Angle3: return CurveSmooth;
-    case Con_Angle4: return CurveSmooth;
-    case Con_Enum: return CurveDiscrete;
-    case Con_Structure:
-    case Con_FilenameRead:
-    case Con_FilenameWrite:
-    case Con_ForceEvaluate:
-        return CurveNone;
-    case Con_Bool: return CurveDiscrete;
-    case Con_Ramp4: return CurveNone;
-    case Con_Camera: return CurveSmooth;
+        case Con_Float:
+            return CurveSmooth;
+        case Con_Float2:
+            return CurveSmooth;
+        case Con_Float3:
+            return CurveSmooth;
+        case Con_Float4:
+            return CurveSmooth;
+        case Con_Color4:
+            return CurveSmooth;
+        case Con_Int:
+            return CurveLinear;
+        case Con_Int2:
+            return CurveLinear;
+        case Con_Ramp:
+            return CurveNone;
+        case Con_Angle:
+            return CurveSmooth;
+        case Con_Angle2:
+            return CurveSmooth;
+        case Con_Angle3:
+            return CurveSmooth;
+        case Con_Angle4:
+            return CurveSmooth;
+        case Con_Enum:
+            return CurveDiscrete;
+        case Con_Structure:
+        case Con_FilenameRead:
+        case Con_FilenameWrite:
+        case Con_ForceEvaluate:
+            return CurveNone;
+        case Con_Bool:
+            return CurveDiscrete;
+        case Con_Ramp4:
+            return CurveNone;
+        case Con_Camera:
+            return CurveSmooth;
     }
     return CurveNone;
 }
 
-void Camera::ComputeViewProjectionMatrix(float *viewProj, float *viewInverse)
+void Camera::ComputeViewProjectionMatrix(float* viewProj, float* viewInverse)
 {
     Mat4x4& vp = *(Mat4x4*)viewProj;
     Mat4x4 view, proj;
@@ -633,7 +660,7 @@ void SaveMetaNodes(const char* filename)
 
     rapidjson::Value nodelist(rapidjson::kArrayType);
 
-    for (auto &node : gMetaNodes)
+    for (auto& node : gMetaNodes)
     {
         rapidjson::Value nodeValue;
         nodeValue.SetObject();
@@ -649,7 +676,7 @@ void SaveMetaNodes(const char* filename)
             nodeValue.AddMember("color", colorValue, allocator);
         }
 
-        std::vector<MetaCon>* cons[] = { &node.mInputs, &node.mOutputs };
+        std::vector<MetaCon>* cons[] = {&node.mInputs, &node.mOutputs};
         for (int i = 0; i < 2; i++)
         {
             auto inouts = cons[i];
@@ -658,12 +685,13 @@ void SaveMetaNodes(const char* filename)
 
             rapidjson::Value ioValue(rapidjson::kArrayType);
 
-            for (auto &con : *inouts)
+            for (auto& con : *inouts)
             {
                 rapidjson::Value conValue;
                 conValue.SetObject();
                 conValue.AddMember("name", rapidjson::Value(con.mName.c_str(), allocator), allocator);
-                conValue.AddMember("type", rapidjson::Value(GetParameterTypeName(ConTypes(con.mType)), allocator), allocator);
+                conValue.AddMember(
+                    "type", rapidjson::Value(GetParameterTypeName(ConTypes(con.mType)), allocator), allocator);
                 ioValue.PushBack(conValue, allocator);
             }
             if (i)
@@ -681,7 +709,8 @@ void SaveMetaNodes(const char* filename)
                 conValue.SetObject();
                 conValue.AddMember("name", rapidjson::Value(con.mName.c_str(), allocator), allocator);
                 conValue.AddMember("type", rapidjson::Value(GetParameterTypeName(con.mType), allocator), allocator);
-                if (con.mRangeMinX > FLT_EPSILON || con.mRangeMaxX > FLT_EPSILON || con.mRangeMinY > FLT_EPSILON || con.mRangeMaxY > FLT_EPSILON)
+                if (con.mRangeMinX > FLT_EPSILON || con.mRangeMaxX > FLT_EPSILON || con.mRangeMinY > FLT_EPSILON ||
+                    con.mRangeMaxY > FLT_EPSILON)
                 {
                     conValue.AddMember("rangeMinX", rapidjson::Value().SetFloat(con.mRangeMinX), allocator);
                     conValue.AddMember("rangeMaxX", rapidjson::Value().SetFloat(con.mRangeMaxX), allocator);
@@ -720,7 +749,7 @@ void SaveMetaNodes(const char* filename)
     myfile.close();
 }
 
-std::vector<MetaNode> ReadMetaNodes(const char *filename)
+std::vector<MetaNode> ReadMetaNodes(const char* filename)
 {
     // read it back
     std::vector<MetaNode> serNodes;
@@ -739,21 +768,21 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
         Log("Parsing error in %s\n", filename);
         return serNodes;
     }
-    rapidjson::Value &nodesValue = doc["nodes"];
+    rapidjson::Value& nodesValue = doc["nodes"];
     for (rapidjson::SizeType i = 0; i < nodesValue.Size(); i++)
     {
         MetaNode curNode;
         rapidjson::Value& node = nodesValue[i];
         if (!node.HasMember("name"))
         {
-            //error
+            // error
             Log("Missing name in node %d definition (%s)\n", i, filename);
             return serNodes;
         }
         curNode.mName = node["name"].GetString();
         if (!node.HasMember("category"))
         {
-            //error
+            // error
             Log("Missing category in node %s definition (%s)\n", curNode.mName.c_str(), filename);
             return serNodes;
         }
@@ -767,19 +796,18 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
             curNode.mbSaveTexture = node["saveTexture"].GetBool();
         else
             curNode.mbSaveTexture = false;
-            
+
         if (!node.HasMember("color"))
         {
-            //error
+            // error
             Log("Missing color in node %s definition (%s)\n", curNode.mName.c_str(), filename);
             return serNodes;
-
         }
-        rapidjson::Value &color = node["color"];
+        rapidjson::Value& color = node["color"];
         float c[4];
         if (color.Size() != 4)
         {
-            //error
+            // error
             Log("wrong color component count in node %s definition (%s)\n", curNode.mName.c_str(), filename);
             return serNodes;
         }
@@ -791,14 +819,16 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
         // inputs/outputs
         if (node.HasMember("inputs"))
         {
-            rapidjson::Value &inputs = node["inputs"];
+            rapidjson::Value& inputs = node["inputs"];
             for (rapidjson::SizeType i = 0; i < inputs.Size(); i++)
             {
                 MetaCon metaNode;
                 if (!inputs[i].HasMember("name") || !inputs[i].HasMember("type"))
                 {
-                    //error
-                    Log("Missing name or type in inputs for node %s definition (%s)\n", curNode.mName.c_str(), filename);
+                    // error
+                    Log("Missing name or type in inputs for node %s definition (%s)\n",
+                        curNode.mName.c_str(),
+                        filename);
                     return serNodes;
                 }
 
@@ -806,8 +836,11 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
                 metaNode.mType = GetParameterType(inputs[i]["type"].GetString());
                 if (metaNode.mType == Con_Any)
                 {
-                    //error
-                    Log("Wrong type for %s in inputs for node %s definition (%s)\n", metaNode.mName.c_str(), curNode.mName.c_str(), filename);
+                    // error
+                    Log("Wrong type for %s in inputs for node %s definition (%s)\n",
+                        metaNode.mName.c_str(),
+                        curNode.mName.c_str(),
+                        filename);
                     return serNodes;
                 }
                 curNode.mInputs.emplace_back(metaNode);
@@ -815,51 +848,62 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
         }
         if (node.HasMember("outputs"))
         {
-            rapidjson::Value &outputs = node["outputs"];
+            rapidjson::Value& outputs = node["outputs"];
             for (rapidjson::SizeType i = 0; i < outputs.Size(); i++)
             {
                 MetaCon metaNode;
                 if (!outputs[i].HasMember("name") || !outputs[i].HasMember("type"))
                 {
-                    //error
-                    Log("Missing name or type in outputs for node %s definition (%s)\n", curNode.mName.c_str(), filename);
+                    // error
+                    Log("Missing name or type in outputs for node %s definition (%s)\n",
+                        curNode.mName.c_str(),
+                        filename);
                     return serNodes;
                 }
                 metaNode.mName = outputs[i]["name"].GetString();
                 metaNode.mType = GetParameterType(outputs[i]["type"].GetString());
                 if (metaNode.mType == Con_Any)
                 {
-                    //error
-                    Log("Wrong type for %s in outputs for node %s definition (%s)\n", metaNode.mName.c_str(), curNode.mName.c_str(), filename);
+                    // error
+                    Log("Wrong type for %s in outputs for node %s definition (%s)\n",
+                        metaNode.mName.c_str(),
+                        curNode.mName.c_str(),
+                        filename);
                     return serNodes;
                 }
                 curNode.mOutputs.emplace_back(metaNode);
             }
         }
-        //parameters
+        // parameters
         if (node.HasMember("parameters"))
         {
-            rapidjson::Value &params = node["parameters"];
+            rapidjson::Value& params = node["parameters"];
             for (rapidjson::SizeType i = 0; i < params.Size(); i++)
             {
                 MetaParameter metaParam;
-                rapidjson::Value &param = params[i];
+                rapidjson::Value& param = params[i];
                 if (!param.HasMember("name") || !param.HasMember("type"))
                 {
-                    //error
-                    Log("Missing name or type in parameters for node %s definition (%s)\n", curNode.mName.c_str(), filename);
+                    // error
+                    Log("Missing name or type in parameters for node %s definition (%s)\n",
+                        curNode.mName.c_str(),
+                        filename);
                     return serNodes;
                 }
                 metaParam.mName = param["name"].GetString();
                 metaParam.mType = GetParameterType(param["type"].GetString());
                 if (metaParam.mType == Con_Any)
                 {
-                    //error
-                    Log("Wrong type for %s in parameters for node %s definition (%s)\n", metaParam.mName.c_str(), curNode.mName.c_str(), filename);
+                    // error
+                    Log("Wrong type for %s in parameters for node %s definition (%s)\n",
+                        metaParam.mName.c_str(),
+                        curNode.mName.c_str(),
+                        filename);
                     return serNodes;
                 }
 
-                if (param.HasMember("rangeMinX") && param.HasMember("rangeMaxX") && param.HasMember("rangeMinY") && param.HasMember("rangeMaxY"))
+                if (param.HasMember("rangeMinX") && param.HasMember("rangeMaxX") && param.HasMember("rangeMinY") &&
+                    param.HasMember("rangeMaxY"))
                 {
                     metaParam.mRangeMinX = param["rangeMinX"].GetFloat();
                     metaParam.mRangeMaxX = param["rangeMaxX"].GetFloat();
@@ -886,21 +930,27 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
                 {
                     if (metaParam.mType != Con_Enum)
                     {
-                        //error
-                        Log("Mismatch type for enumerator in parameter %s for node %s definition (%s)\n", metaParam.mName.c_str(), curNode.mName.c_str(), filename);
+                        // error
+                        Log("Mismatch type for enumerator in parameter %s for node %s definition (%s)\n",
+                            metaParam.mName.c_str(),
+                            curNode.mName.c_str(),
+                            filename);
                         return serNodes;
                     }
                     std::string enumStr = param["enum"].GetString();
                     if (enumStr.size())
                     {
-                            metaParam.mEnumList = enumStr;
-                            if (metaParam.mEnumList.back() != '|')
-                                metaParam.mEnumList += '|';
+                        metaParam.mEnumList = enumStr;
+                        if (metaParam.mEnumList.back() != '|')
+                            metaParam.mEnumList += '|';
                     }
                     else
                     {
-                        //error
-                        Log("Empty string for enumerator in parameter %s for node %s definition (%s)\n", metaParam.mName.c_str(), curNode.mName.c_str(), filename);
+                        // error
+                        Log("Empty string for enumerator in parameter %s for node %s definition (%s)\n",
+                            metaParam.mName.c_str(),
+                            curNode.mName.c_str(),
+                            filename);
                         return serNodes;
                     }
                 }
@@ -909,56 +959,56 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
                     size_t paramSize = GetParameterTypeSize(metaParam.mType);
                     metaParam.mDefaultValue.resize(paramSize);
                     std::string defaultStr = param["default"].GetString();
-                    float *pf = (float*)metaParam.mDefaultValue.data();
-                    int *pi = (int*)metaParam.mDefaultValue.data();
-                    Camera *cam = (Camera*)metaParam.mDefaultValue.data();
-                    ImVec2 *iv2 = (ImVec2*)metaParam.mDefaultValue.data();
-                    ImVec4 *iv4 = (ImVec4*)metaParam.mDefaultValue.data();
+                    float* pf = (float*)metaParam.mDefaultValue.data();
+                    int* pi = (int*)metaParam.mDefaultValue.data();
+                    Camera* cam = (Camera*)metaParam.mDefaultValue.data();
+                    ImVec2* iv2 = (ImVec2*)metaParam.mDefaultValue.data();
+                    ImVec4* iv4 = (ImVec4*)metaParam.mDefaultValue.data();
                     switch (metaParam.mType)
                     {
-                    case Con_Angle:
-                    case Con_Float:
-                        sscanf(defaultStr.c_str(), "%f", pf);
-                        break;
-                    case Con_Angle2:
-                    case Con_Float2:
-                        sscanf(defaultStr.c_str(), "%f,%f", &pf[0], &pf[1]);
-                        break;
-                    case Con_Angle3:
-                    case Con_Float3:
-                        sscanf(defaultStr.c_str(), "%f,%f,%f", &pf[0], &pf[1], &pf[2]);
-                        break;
-                    case Con_Color4:
-                    case Con_Float4:
-                    case Con_Angle4:
-                        sscanf(defaultStr.c_str(), "%f,%f,%f,%f", &pf[0], &pf[1], &pf[2], &pf[3]);
-                        break;
-                    case Con_Enum:
-                    case Con_Int:
-                        sscanf(defaultStr.c_str(), "%d", &pi[0]);
-                        break;
-                    case Con_Int2:
-                        sscanf(defaultStr.c_str(), "%d,%d", &pi[0], &pi[1]);
-                        break;
-                    case Con_Ramp:
-                        iv2[0] = ImVec2(0, 0);
-                        iv2[1] = ImVec2(1, 1);
-                        break;
-                    case Con_Ramp4:
-                        iv4[0] = ImVec4(0, 0, 0, 0);
-                        iv4[1] = ImVec4(1, 1, 1, 1);
-                        break;
-                    case Con_Structure:
-                    case Con_FilenameRead:
-                    case Con_FilenameWrite:
-                    case Con_ForceEvaluate:
-                    case Con_Camera:
-                        cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
-                        cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
-                        break;
-                    case Con_Bool:
-                        pi[0] = (defaultStr == "true")?1:0;
-                        break;
+                        case Con_Angle:
+                        case Con_Float:
+                            sscanf(defaultStr.c_str(), "%f", pf);
+                            break;
+                        case Con_Angle2:
+                        case Con_Float2:
+                            sscanf(defaultStr.c_str(), "%f,%f", &pf[0], &pf[1]);
+                            break;
+                        case Con_Angle3:
+                        case Con_Float3:
+                            sscanf(defaultStr.c_str(), "%f,%f,%f", &pf[0], &pf[1], &pf[2]);
+                            break;
+                        case Con_Color4:
+                        case Con_Float4:
+                        case Con_Angle4:
+                            sscanf(defaultStr.c_str(), "%f,%f,%f,%f", &pf[0], &pf[1], &pf[2], &pf[3]);
+                            break;
+                        case Con_Enum:
+                        case Con_Int:
+                            sscanf(defaultStr.c_str(), "%d", &pi[0]);
+                            break;
+                        case Con_Int2:
+                            sscanf(defaultStr.c_str(), "%d,%d", &pi[0], &pi[1]);
+                            break;
+                        case Con_Ramp:
+                            iv2[0] = ImVec2(0, 0);
+                            iv2[1] = ImVec2(1, 1);
+                            break;
+                        case Con_Ramp4:
+                            iv4[0] = ImVec4(0, 0, 0, 0);
+                            iv4[1] = ImVec4(1, 1, 1, 1);
+                            break;
+                        case Con_Structure:
+                        case Con_FilenameRead:
+                        case Con_FilenameWrite:
+                        case Con_ForceEvaluate:
+                        case Con_Camera:
+                            cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
+                            cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
+                            break;
+                        case Con_Bool:
+                            pi[0] = (defaultStr == "true") ? 1 : 0;
+                            break;
                     }
                 }
 
@@ -974,27 +1024,27 @@ std::vector<MetaNode> ReadMetaNodes(const char *filename)
 AnimationBase::AnimationPointer AnimationBase::GetPointer(int32_t frame, bool bSetting) const
 {
     if (mFrames.empty())
-        return { bSetting ? -1 : 0, 0, 0, 0, 0.f };
+        return {bSetting ? -1 : 0, 0, 0, 0, 0.f};
     if (frame <= mFrames[0])
-        return { bSetting ? -1 : 0, 0, 0, 0, 0.f };
+        return {bSetting ? -1 : 0, 0, 0, 0, 0.f};
     if (frame > mFrames.back())
     {
         int32_t last = int32_t(mFrames.size() - (bSetting ? 0 : 1));
-        return {last, mFrames.back(), last, mFrames.back(), 0.f };
+        return {last, mFrames.back(), last, mFrames.back(), 0.f};
     }
     for (int i = 0; i < int(mFrames.size()) - 1; i++)
     {
         if (mFrames[i] <= frame && mFrames[i + 1] >= frame)
         {
-            float ratio = float(frame - mFrames[i]) / float(mFrames[i+1] - mFrames[i]);
-            return { i, mFrames[i], i + 1, mFrames[i+1], ratio };
+            float ratio = float(frame - mFrames[i]) / float(mFrames[i + 1] - mFrames[i]);
+            return {i, mFrames[i], i + 1, mFrames[i + 1], ratio};
         }
     }
     assert(0);
-    return { bSetting? -1:0, 0, 0, 0, 0.f };
+    return {bSetting ? -1 : 0, 0, 0, 0, 0.f};
 }
 
-AnimTrack& AnimTrack::operator = (const AnimTrack& other)
+AnimTrack& AnimTrack::operator=(const AnimTrack& other)
 {
     mNodeIndex = other.mNodeIndex;
     mParamIndex = other.mParamIndex;

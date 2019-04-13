@@ -695,7 +695,7 @@ static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase* 
         {
             URAdd<Node> undoRedoAddRug(int(nodes.size()), []() { return &nodes; }, [](int index) {}, [](int index) {});
             nodes.push_back(clipboardNode);
-            nodes.back().Pos += (io.MousePos / factor - offset) - min;
+            nodes.back().Pos += (io.MousePos - offset) / factor - min;
             nodes.back().mbSelected = true;
         }
         controler->PasteNodes();

@@ -728,7 +728,7 @@ AnimTrack* NodeGraphControler::GetAnimTrack(uint32_t nodeIndex, uint32_t paramet
 
 void NodeGraphControler::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
 {
-    if (nodeIndex == -1 || ImGui::IsAnyItemActive())
+    if (nodeIndex == -1)
     {
         return;
     }

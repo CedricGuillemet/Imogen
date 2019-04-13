@@ -1468,6 +1468,8 @@ void Imogen::HandleHotKeys()
     int hotkeyIndex = ImHotKey::GetHotKey(mHotkeys.data(), mHotkeys.size());
     if (hotkeyIndex == -1)
         return;
+    if (ImGui::IsAnyItemActive())
+        return;
     mHotkeyFunctions[hotkeyIndex]();
 }
 

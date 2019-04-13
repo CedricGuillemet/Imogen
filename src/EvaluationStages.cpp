@@ -177,7 +177,8 @@ void EvaluationStages::Clear()
     mAnimTrack.clear();
 }
 
-void EvaluationStages::SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown)
+void EvaluationStages::SetKeyboardMouse(
+    int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift)
 {
     for (auto& ev : mStages)
     {
@@ -185,12 +186,18 @@ void EvaluationStages::SetMouse(int target, float rx, float ry, bool lButDown, b
         ev.mRy = -9999.f;
         ev.mLButDown = false;
         ev.mRButDown = false;
+        ev.mbCtrl = false;
+        ev.mbAlt = false;
+        ev.mbShift = false;
     }
     auto& ev = mStages[target];
     ev.mRx = rx;
     ev.mRy = 1.f - ry; // inverted for UI
     ev.mLButDown = lButDown;
     ev.mRButDown = rButDown;
+    ev.mbCtrl = bCtrl;
+    ev.mbAlt = bAlt;
+    ev.mbShift = bShift;
 }
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)

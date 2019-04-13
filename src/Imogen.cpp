@@ -310,8 +310,8 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             Image::Free(&pickerImage);
             ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
             ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-            nodeGraphControler.SetMouse(
-                ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
+            nodeGraphControler.SetKeyboardMouse(
+                ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel, io.KeyCtrl, io.KeyAlt, io.KeyShift);
         }
         lastSentExit = -1;
     }
@@ -320,7 +320,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
         if (lastSentExit != selNode)
         {
             lastSentExit = selNode;
-            nodeGraphControler.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
+            nodeGraphControler.SetKeyboardMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f, false, false, false);
         }
     }
 }

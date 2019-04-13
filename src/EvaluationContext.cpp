@@ -103,12 +103,17 @@ EvaluationContext::~EvaluationContext()
     mFSQuad.Finish();
 }
 
-static void SetMouseInfos(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage)
+static void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage)
 {
     evaluationInfo.mouse[0] = evaluationStage.mRx;
     evaluationInfo.mouse[1] = evaluationStage.mRy;
     evaluationInfo.mouse[2] = evaluationStage.mLButDown ? 1.f : 0.f;
     evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
+
+    evaluationInfo.keyModifier[0] = evaluationStage.mbCtrl ? 1:0;
+    evaluationInfo.keyModifier[1] = evaluationStage.mbAlt ? 1 : 0;
+    evaluationInfo.keyModifier[2] = evaluationStage.mbShift ? 1 : 0;
+    evaluationInfo.keyModifier[3] = 0;
 }
 
 void EvaluationContext::Clear()
@@ -437,7 +442,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
                 memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-                float sizeDiv(mip + 1);
+                float sizeDiv = float(mip + 1);
                 evaluationInfo.viewport[0] = float(tgt->mImage->mWidth) / sizeDiv;
                 evaluationInfo.viewport[1] = float(tgt->mImage->mHeight) / sizeDiv;
                 evaluationInfo.passNumber = passNumber;
@@ -645,7 +650,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     mEvaluationInfo.mFrame = mCurrentTime;
     mEvaluationInfo.mDirtyFlag = mDirtyFlags[nodeIndex];
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
-    SetMouseInfos(mEvaluationInfo, currentStage);
+    SetKeyboardMouseInfos(mEvaluationInfo, currentStage);
 
     if (currentStage.gEvaluationMask & EvaluationC)
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);

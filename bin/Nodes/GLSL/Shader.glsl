@@ -19,6 +19,7 @@ layout (std140) uniform EvaluationBlock
 	int passNumber;
 	
 	vec4 mouse; // x,y, lbut down, rbut down
+	ivec4 keyModifier; // ctrl, alt, shift
 	ivec4 inputIndices[2];
 	
 	int frame;

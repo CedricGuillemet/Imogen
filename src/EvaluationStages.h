@@ -150,8 +150,12 @@ struct EvaluationStage
     // mouse
     float mRx;
     float mRy;
-    bool mLButDown;
-    bool mRButDown;
+    uint8_t mLButDown : 1;
+    uint8_t mRButDown : 1;
+    uint8_t mbCtrl : 1;
+    uint8_t mbAlt : 1;
+    uint8_t mbShift : 1;
+
     void Clear();
     // scene render
     void* mScene; // for path tracer
@@ -211,7 +215,7 @@ struct EvaluationStages
     void AddEvaluationInput(size_t target, int slot, int source);
     void DelEvaluationInput(size_t target, int slot);
     void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
-    void SetMouse(int target, float rx, float ry, bool lButDown, bool rButDown);
+    void SetKeyboardMouse(int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
     void Clear();
 
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);

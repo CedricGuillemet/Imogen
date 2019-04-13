@@ -504,7 +504,8 @@ void NodeGraphControler::InvalidateParameters()
     }
 }
 
-void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel)
+void NodeGraphControler::SetKeyboardMouse(
+    float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel, bool bCtrl, bool bAlt, bool bShift)
 {
     if (mSelectedNodeIndex == -1)
         return;
@@ -636,7 +637,7 @@ void NodeGraphControler::SetMouse(float rx, float ry, float dx, float dy, bool l
     }
     if (metaNode.mbHasUI || parametersUseMouse)
     {
-        mEvaluationStages.SetMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown);
+        mEvaluationStages.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
         mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex,
                                                   mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
         mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
@@ -727,6 +728,10 @@ AnimTrack* NodeGraphControler::GetAnimTrack(uint32_t nodeIndex, uint32_t paramet
 
 void NodeGraphControler::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
 {
+    if (nodeIndex == -1 || ImGui::IsAnyItemActive())
+    {
+        return;
+    }
     URDummy urDummy;
 
     AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);

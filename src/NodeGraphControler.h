@@ -67,7 +67,16 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     void InvalidateParameters();
 
-    void SetMouse(float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel);
+    void SetKeyboardMouse(float rx,
+                  float ry,
+                  float dx,
+                  float dy,
+                  bool lButDown,
+                  bool rButDown,
+                  float wheel,
+                  bool bCtrl,
+                  bool bAlt,
+                  bool bShift);
 
     bool NodeHasUI(size_t nodeIndex) const
     {

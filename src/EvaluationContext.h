@@ -43,6 +43,7 @@ struct EvaluationInfo
     int uiPass;
     int passNumber;
     float mouse[4];
+    int keyModifier[4];
     int inputIndices[8];
 
     int mFrame;

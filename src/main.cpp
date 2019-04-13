@@ -154,7 +154,7 @@ int main(int, char**)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 #endif
 
     // Create window with graphics context
@@ -263,9 +263,13 @@ int main(int, char**)
         imogen.Show(builder, library);
 
         // render everything
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glUseProgram(0);
+
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(0., 0., 0., 0.);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
 
         ImGui::Render();
         SDL_GL_MakeCurrent(window, gl_context);

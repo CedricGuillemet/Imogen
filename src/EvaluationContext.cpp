@@ -420,9 +420,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
             if (!evaluationInfo.uiPass)
             {
                 if (tgt->mImage->mNumFaces == 6)
+                {
                     tgt->BindAsCubeTarget();
-                else
+                }
+                else 
+                {
                     tgt->BindAsTarget();
+                }
             }
 
             size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage->mNumFaces;
@@ -666,6 +670,9 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
 bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 {
+    GLint last_viewport[4];
+    glGetIntegerv(GL_VIEWPORT, last_viewport);
+
     // run C nodes
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
@@ -684,11 +691,15 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     return anyNodeIsProcessing;
 }
 
 void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
+    GLint last_viewport[4];
+    glGetIntegerv(GL_VIEWPORT, last_viewport);
+
     PreRun();
 
     mEvaluationInfo = evaluationInfo;
@@ -697,6 +708,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
 void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)

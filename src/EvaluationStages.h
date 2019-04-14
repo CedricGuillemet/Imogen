@@ -121,7 +121,7 @@ struct Scene
     std::vector<Mat4x4> mWorldTransforms;
     std::vector<int> mMeshIndex;
     std::string mName;
-    void Draw(EvaluationInfo& evaluationInfo) const;
+    void Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const;
 };
 
 struct EvaluationStage
@@ -132,7 +132,7 @@ struct EvaluationStage
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
     size_t mType;
     unsigned int mRuntimeUniqueId;
-    unsigned int mParametersBuffer;
+    //unsigned int mParametersBuffer;
     std::vector<unsigned char> mParameters;
     Input mInput;
     std::vector<InputSampler> mInputSamplers;
@@ -156,7 +156,6 @@ struct EvaluationStage
     uint8_t mbAlt : 1;
     uint8_t mbShift : 1;
 
-    void Clear();
     // scene render
     void* mScene; // for path tracer
     std::shared_ptr<Scene> mGScene;
@@ -216,10 +215,8 @@ struct EvaluationStages
     void DelEvaluationInput(size_t target, int slot);
     void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
     void SetKeyboardMouse(int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
-    void Clear();
-
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
-
+    void Clear();
 
     const std::vector<size_t>& GetForwardEvaluationOrder() const
     {
@@ -269,7 +266,6 @@ struct EvaluationStages
     int mFrameMin, mFrameMax;
 
 protected:
-    void BindGLSLParameters(EvaluationStage& evaluationStage);
 
     void StageIsAdded(int index);
     void StageIsDeleted(int index);

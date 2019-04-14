@@ -45,7 +45,6 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     evaluation.mDecoder = NULL;
     evaluation.mUseCountByOthers = 0;
     evaluation.mType = nodeType;
-    evaluation.mParametersBuffer = 0;
     evaluation.mBlendingSrc = ONE;
     evaluation.mBlendingDst = ZERO;
     evaluation.mLocalTime = 0;
@@ -98,7 +97,6 @@ void EvaluationStages::StageIsAdded(int index)
 void EvaluationStages::StageIsDeleted(int index)
 {
     EvaluationStage& ev = mStages[index];
-    ev.Clear();
 
     // shift all connections
     for (auto& evaluation : mStages)
@@ -137,8 +135,6 @@ void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<
     EvaluationStage& stage = mStages[target];
     stage.mParameters = parameters;
 
-    if (stage.gEvaluationMask & EvaluationGLSL)
-        BindGLSLParameters(stage);
     if (stage.mDecoder)
         stage.mDecoder = NULL;
 }
@@ -169,9 +165,6 @@ void EvaluationStages::SetEvaluationOrder(const std::vector<size_t> nodeOrderLis
 
 void EvaluationStages::Clear()
 {
-    for (auto& ev : mStages)
-        ev.Clear();
-
     mStages.clear();
     mEvaluationOrderList.clear();
     mAnimTrack.clear();
@@ -315,25 +308,6 @@ void EvaluationStages::InitDefaultParameters(EvaluationStage& stage)
 Image EvaluationStage::DecodeImage()
 {
     return Image::DecodeImage(mDecoder.get(), mLocalTime);
-}
-
-void EvaluationStages::BindGLSLParameters(EvaluationStage& stage)
-{
-    if (!stage.mParametersBuffer)
-    {
-        glGenBuffers(1, &stage.mParametersBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-
-        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
-    else
-    {
-        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
 }
 
 void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame)
@@ -480,13 +454,6 @@ void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, b
     }
 }
 
-void EvaluationStage::Clear()
-{
-    if (gEvaluationMask & EvaluationGLSL)
-        glDeleteBuffers(1, &mParametersBuffer);
-    mParametersBuffer = 0;
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void Scene::Mesh::Primitive::Draw() const
@@ -569,7 +536,7 @@ void Scene::Mesh::Draw() const
         prim.Draw();
     }
 }
-void Scene::Draw(EvaluationInfo& evaluationInfo) const
+void Scene::Draw(EvaluationContext *context, EvaluationInfo& evaluationInfo) const
 {
     for (unsigned int i = 0; i < mMeshIndex.size(); i++)
     {
@@ -577,7 +544,7 @@ void Scene::Draw(EvaluationInfo& evaluationInfo) const
         if (index == -1)
             continue;
 
-        glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
         memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
         FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);

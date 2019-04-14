@@ -152,9 +152,9 @@ struct EvaluationContext
         mRuntimeUniqueId = uniqueId;
     }
 
-
     EvaluationStages& mEvaluationStages;
     FullScreenTriangle mFSQuad;
+    unsigned int mEvaluationStateGLSLBuffer;
 
 protected:
     void PreRun();
@@ -191,6 +191,8 @@ protected:
     bool mbSynchronousEvaluation;
     unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
     int mCurrentTime;
+
+    unsigned int mParametersGLSLBuffer;
 };
 
 struct Builder

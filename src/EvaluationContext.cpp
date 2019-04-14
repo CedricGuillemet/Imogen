@@ -90,6 +90,17 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
     , mRuntimeUniqueId(-1)
 {
     mFSQuad.Init();
+
+    // evaluation state
+    glGenBuffers(1, &mEvaluationStateGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    // parameters
+    glGenBuffers(1, &mParametersGLSLBuffer);
 }
 
 EvaluationContext::~EvaluationContext()
@@ -101,6 +112,9 @@ EvaluationContext::~EvaluationContext()
     }
     mWriteStreams.clear();
     mFSQuad.Finish();
+
+    glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
+    glDeleteBuffers(1, &mParametersGLSLBuffer);
 }
 
 static void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage)
@@ -336,14 +350,18 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     // compute buffer
     glUseProgram(program);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
     evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
     glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+    glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
+    glBufferData(GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 
     BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
@@ -389,7 +407,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     {
         glUseProgram(gDefaultShader.mNodeErrorShader);
         // mFSQuad.Render();
-        evaluationStage.mGScene->Draw(evaluationInfo);
+        evaluationStage.mGScene->Draw(this, evaluationInfo);
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -398,6 +416,30 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
             blend[i] = GLBlends[blendOps[i]];
     }
 
+    // parameters
+    glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
+
+    glBufferData(
+        GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    /*
+    if (!stage.mParametersBuffer)
+    {
+        glGenBuffers(1, &stage.mParametersBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+
+        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    else
+    {
+        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    */
     glEnable(GL_BLEND);
     glBlendFunc(blend[0], blend[1]);
 
@@ -449,14 +491,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 evaluationInfo.mipmapNumber = mip;
                 evaluationInfo.mipmapCount = mipmapCount;
 
-                glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+                glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
                 evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
                 glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-                glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-                glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
                 BindTextures(evaluationStage, program, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
@@ -513,7 +555,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 }
                 else
                 {
-                    evaluationStage.mGScene->Draw(evaluationInfo);
+                    evaluationStage.mGScene->Draw(this, evaluationInfo);
                 }
             } // face
         }     // mip

@@ -124,7 +124,7 @@ static void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, const Evaluati
     evaluationInfo.mouse[2] = evaluationStage.mLButDown ? 1.f : 0.f;
     evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
 
-    evaluationInfo.keyModifier[0] = evaluationStage.mbCtrl ? 1:0;
+    evaluationInfo.keyModifier[0] = evaluationStage.mbCtrl ? 1 : 0;
     evaluationInfo.keyModifier[1] = evaluationStage.mbAlt ? 1 : 0;
     evaluationInfo.keyModifier[2] = evaluationStage.mbShift ? 1 : 0;
     evaluationInfo.keyModifier[3] = 0;
@@ -356,7 +356,8 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
-    glBufferData(GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+    glBufferData(
+        GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
@@ -470,7 +471,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 {
                     tgt->BindAsCubeTarget();
                 }
-                else 
+                else
                 {
                     tgt->BindAsTarget();
                 }
@@ -791,14 +792,20 @@ void EvaluationContext::RunDirty()
     RunNodeList(nodesToEvaluate);
 }
 
-void EvaluationContext::RunAll()
+void EvaluationContext::DirtyAll()
 {
-    PreRun();
     // tag all as dirty
+    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
     for (auto& dirty : mDirtyFlags)
     {
         dirty = Dirty::All;
     }
+}
+
+void EvaluationContext::RunAll()
+{
+    PreRun();
+    DirtyAll();
     // get list of nodes to run
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();

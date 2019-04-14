@@ -1114,6 +1114,8 @@ namespace EvaluationAPI
     {
         EvaluationContext context(evaluationContext->mEvaluationStages, true, width, height);
         context.SetCurrentTime(evaluationContext->GetCurrentTime());
+        // set all nodes as dirty so that evaluation (in build) will not bypass most nodes
+        context.DirtyAll();
         while (context.RunBackward(target))
         {
             // processing... maybe good on next run

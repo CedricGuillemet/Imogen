@@ -155,6 +155,7 @@ struct EvaluationContext
     EvaluationStages& mEvaluationStages;
     FullScreenTriangle mFSQuad;
     unsigned int mEvaluationStateGLSLBuffer;
+    void DirtyAll();
 
 protected:
     void PreRun();
@@ -175,6 +176,7 @@ protected:
 
 
     int GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const;
+
 
     std::vector<std::shared_ptr<RenderTarget>> mStageTarget; // 1 per stage
     std::vector<ComputeBuffer> mComputeBuffers;

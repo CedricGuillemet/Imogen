@@ -91,7 +91,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
 {
     mFSQuad.Init();
 
-    // evaluation state
+    // evaluation statedes
     glGenBuffers(1, &mEvaluationStateGLSLBuffer);
     glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
 
@@ -115,6 +115,8 @@ EvaluationContext::~EvaluationContext()
 
     glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
     glDeleteBuffers(1, &mParametersGLSLBuffer);
+
+    Clear();
 }
 
 static void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage)
@@ -132,9 +134,19 @@ static void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, const Evaluati
 
 void EvaluationContext::Clear()
 {
+    for (auto tgt : mStageTarget)
+    {
+        if (!tgt)
+        {
+            continue;
+        }
+        tgt->Destroy();
+    }
     mStageTarget.clear();
     for (auto& buffer : mComputeBuffers)
+    {
         glDeleteBuffers(1, &buffer.mBuffer);
+    }
     mComputeBuffers.clear();
     mDirtyFlags.clear();
     mbProcessing.clear();

@@ -693,14 +693,14 @@ void NodeGraphControler::PasteNodes()
 {
     for (auto& sourceNode : mStagesClipboard)
     {
-        /*URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
+        URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
                                                [&]() { return &mEvaluationStages.mStages; },
                                                [](int) {},
                                                [&](int index) { NodeIsAdded(index); });
-                                               */
+                                               
         mEditingContext.UserAddStage();
         size_t target = mEvaluationStages.mStages.size();
-        mEvaluationStages.UserAddEvaluation(sourceNode.mType);
+        AddSingleNode(sourceNode.mType);
         
         auto& stage = mEvaluationStages.mStages.back();
         stage.mParameters = sourceNode.mParameters;

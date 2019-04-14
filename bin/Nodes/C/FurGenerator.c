@@ -8,5 +8,5 @@ typedef struct FurGenerator_t
 
 int main(FurGenerator *param, Evaluation *evaluation, void *context)
 {
-	return AllocateComputeBuffer(context, evaluation->targetIndex, param->hairCount, 4 * 4 *sizeof(float) );
+	return AllocateComputeBuffer(context, evaluation->targetIndex, param->hairCount, 15 * 4 *sizeof(float) );
 }

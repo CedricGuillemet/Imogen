@@ -25,6 +25,17 @@ layout(location = 1)in vec4 inCompute0;
 layout(location = 2)in vec4 inCompute1;
 layout(location = 3)in vec4 inCompute2;
 layout(location = 4)in vec4 inCompute3;
+layout(location = 5)in vec4 inCompute4;
+layout(location = 6)in vec4 inCompute5;
+layout(location = 7)in vec4 inCompute6;
+layout(location = 8)in vec4 inCompute7;
+layout(location = 9)in vec4 inCompute8;
+layout(location = 10)in vec4 inCompute9;
+layout(location = 11)in vec4 inCompute10;
+layout(location = 12)in vec4 inCompute11;
+layout(location = 13)in vec4 inCompute12;
+layout(location = 14)in vec4 inCompute13;
+layout(location = 15)in vec4 inCompute14;
 
 out vec2 uv;
 out vec4 color;

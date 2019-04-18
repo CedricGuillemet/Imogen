@@ -154,6 +154,10 @@ int AllocateComputeBuffer(void *context, int target, int elementCount, int eleme
 int LoadScene(const char *filename, void **scene);
 int SetEvaluationScene(void *context, int target, void *scene);
 int GetEvaluationScene(void *context, int target, void **scene);
+
+int SetEvaluationRTScene(void *context, int target, void *scene);
+int GetEvaluationRTScene(void *context, int target, void **scene);
+
 char* GetEvaluationSceneName(void *context, int target);
 int GetEvaluationRenderer(void *context, int target, void **renderer);
 int InitRenderer(void *context, int target, int mode, void *scene);

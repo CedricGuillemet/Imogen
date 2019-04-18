@@ -132,7 +132,6 @@ struct EvaluationStage
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
     size_t mType;
     unsigned int mRuntimeUniqueId;
-    //unsigned int mParametersBuffer;
     std::vector<unsigned char> mParameters;
     Input mInput;
     std::vector<InputSampler> mInputSamplers;

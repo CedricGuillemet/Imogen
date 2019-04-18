@@ -83,6 +83,8 @@ static const EValuationFunction evaluationFunctions[] = {
     {"LoadScene", (void*)EvaluationAPI::LoadScene},
     {"SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
     {"GetEvaluationScene", (void*)EvaluationAPI::GetEvaluationScene},
+    {"SetEvaluationRTScene", (void*)EvaluationAPI::SetEvaluationRTScene},
+    {"GetEvaluationRTScene", (void*)EvaluationAPI::GetEvaluationRTScene},
     {"GetEvaluationSceneName", (void*)EvaluationAPI::GetEvaluationSceneName},
     {"GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
     {"OverrideInput", (void*)EvaluationAPI::OverrideInput},
@@ -728,6 +730,19 @@ namespace EvaluationAPI
     }
 
     std::map<std::string, std::weak_ptr<Scene>> gSceneCache;
+
+    int SetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void* scene)
+    {
+        evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
+        return EVAL_OK;
+    }
+
+    int GetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void** scene)
+    {
+        *scene = evaluationContext->mEvaluationStages.mStages[target].mScene;
+        return EVAL_OK;
+    }
+
 
     int SetEvaluationScene(EvaluationContext* evaluationContext, int target, void* scene)
     {

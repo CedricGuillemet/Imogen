@@ -67,6 +67,7 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
         defaultScene->mWorldTransforms[0].Identity();
         defaultScene->mMeshIndex.resize(1, 0);
     }
+    evaluation.mScene = nullptr;
     evaluation.mGScene = defaultScene;
     evaluation.renderer = nullptr;
     evaluation.mRuntimeUniqueId = GetRuntimeId();

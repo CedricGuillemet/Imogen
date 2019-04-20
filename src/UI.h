@@ -186,5 +186,3 @@ void AddUICustomDraw(
     ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext* context);
 void InitCallbackRects();
 
-//
-void ImageZoomTooltip(int width, int height, unsigned char* bits, ImVec2 mouseUVCoord, ImVec2 displayedTextureSize);

@@ -43,6 +43,7 @@
 #include "UI.h"
 #include "imgui_markdown/imgui_markdown.h"
 #include "imHotKey.h"
+#include "imgInspect.h"
 
 Imogen* Imogen::instance = nullptr;
 unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
@@ -303,7 +304,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             int width = pickerImage.mWidth;
             int height = pickerImage.mHeight;
 
-            ImageZoomTooltip(width, height, pickerImage.GetBits(), mouseUVCoord, displayedTextureSize);
+            imageInspect(width, height, pickerImage.GetBits(), mouseUVCoord, displayedTextureSize);
         }
         else if (ImGui::IsWindowFocused())
         {

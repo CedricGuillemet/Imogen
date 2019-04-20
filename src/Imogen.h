@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -65,35 +65,38 @@ extern std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 struct Imogen
 {
-    Imogen(NodeGraphControler *nodeGraphControler);
+    Imogen(NodeGraphControler* nodeGraphControler);
     ~Imogen();
 
     void Init();
     void Finish();
-    
-    void Show(Builder *builder, Library& library);
+
+    void Show(Builder* builder, Library& library);
     void ValidateCurrentMaterial(Library& library);
-    void DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files);
+    void DiscoverNodes(const char* extension,
+                       const char* directory,
+                       EVALUATOR_TYPE evaluatorType,
+                       std::vector<EvaluatorFile>& files);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
-    
+
     void SetExistingMaterialActive(int materialIndex);
-    void SetExistingMaterialActive(const char * materialName);
-    void DecodeThumbnailAsync(Material * material);
+    void SetExistingMaterialActive(const char* materialName);
+    void DecodeThumbnailAsync(Material* material);
 
     static void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI = false);
     void HandleHotKeys();
 
 protected:
-    void HandleEditor(TextEditor &editor);
+    void HandleEditor(TextEditor& editor);
     void ShowAppMainMenuBar();
-    void ShowTitleBar(Builder *builder);
+    void ShowTitleBar(Builder* builder);
     void LibraryEdit(Library& library);
     void ClearAll();
     void UpdateNewlySelectedGraph();
     void ShowTimeLine();
     void ShowNodeGraph();
-    void BuildCurrentMaterial(Builder *builder);
+    void BuildCurrentMaterial(Builder* builder);
     void PlayPause();
 
     void NewMaterial();
@@ -102,18 +105,18 @@ protected:
 
     void Playback(bool timeHasChanged);
 
-    int GetFunctionByName(const char *functionName) const;
-    bool ImageButton(const char *functionName, unsigned int icon, ImVec2 size);
-    bool Button(const char *functionName, const char *label, ImVec2 size);
+    int GetFunctionByName(const char* functionName) const;
+    bool ImageButton(const char* functionName, unsigned int icon, ImVec2 size);
+    bool Button(const char* functionName, const char* label, ImVec2 size);
 
     static void ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line_start);
     static void WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
     static void* ReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name);
 
-    TextEditor *mEditor;
-    MySequence *mSequence;
-    NodeGraphControler *mNodeGraphControler;
-    Builder *mBuilder;
+    TextEditor* mEditor;
+    MySequence* mSequence;
+    NodeGraphControler* mNodeGraphControler;
+    Builder* mBuilder;
     bool mbShowTimeline = false;
     bool mbShowLibrary = false;
     bool mbShowNodes = false;
@@ -125,7 +128,7 @@ protected:
     float mMainMenuDest = -440.f;
     float mMainMenuPos = -440.f;
 
-    char *mNewPopup = nullptr;
+    char* mNewPopup = nullptr;
     int mSelectedMaterial = -1;
     int mCurrentShaderIndex = -1;
 
@@ -133,9 +136,9 @@ protected:
     bool mbPlayLoop = false;
     int mCurrentTime = 0;
 
-    std::vector<std::function<void()> > mHotkeyFunctions;
+    std::vector<std::function<void()>> mHotkeyFunctions;
 
-    static Imogen *instance;
+    static Imogen* instance;
 };
 
 struct UndoRedo
@@ -159,20 +162,30 @@ struct UndoRedo
             undoRedo->Redo();
         }
     }
-    template <typename T> void AddSubUndoRedo(const T& subUndoRedo)
+    template<typename T>
+    void AddSubUndoRedo(const T& subUndoRedo)
     {
         mSubUndoRedo.push_back(std::make_shared<T>(subUndoRedo));
     }
-    void Discard() { mbDiscarded = true; }
-    bool IsDiscarded() const { return mbDiscarded; }
+    void Discard()
+    {
+        mbDiscarded = true;
+    }
+    bool IsDiscarded() const
+    {
+        return mbDiscarded;
+    }
+
 protected:
-    std::vector<std::shared_ptr<UndoRedo> > mSubUndoRedo;
+    std::vector<std::shared_ptr<UndoRedo>> mSubUndoRedo;
     bool mbDiscarded;
 };
 
 struct UndoRedoHandler
 {
-    UndoRedoHandler() : mbProcessing(false), mCurrent(NULL) {}
+    UndoRedoHandler() : mbProcessing(false), mCurrent(NULL)
+    {
+    }
     ~UndoRedoHandler()
     {
         Clear();
@@ -200,7 +213,8 @@ struct UndoRedoHandler
         mbProcessing = false;
     }
 
-    template <typename T> void AddUndo(const T &undoRedo)
+    template<typename T>
+    void AddUndo(const T& undoRedo)
     {
         if (undoRedo.IsDiscarded())
             return;
@@ -223,10 +237,10 @@ struct UndoRedoHandler
 
     bool mbProcessing;
     UndoRedo* mCurrent;
-    //private:
+    // private:
 
-    std::vector<std::shared_ptr<UndoRedo> > mUndos;
-    std::vector<std::shared_ptr<UndoRedo> > mRedos;
+    std::vector<std::shared_ptr<UndoRedo>> mUndos;
+    std::vector<std::shared_ptr<UndoRedo>> mRedos;
 };
 
 extern UndoRedoHandler gUndoRedoHandler;
@@ -247,9 +261,13 @@ inline UndoRedo::~UndoRedo()
     }
 }
 
-template<typename T> struct URChange : public UndoRedo
+template<typename T>
+struct URChange : public UndoRedo
 {
-    URChange(int index, std::function<T*(int index)> GetElements, std::function<void(int index)> Changed = [](int index) {}) : GetElements(GetElements), mIndex(index), Changed(Changed)
+    URChange(int index,
+             std::function<T*(int index)> GetElements,
+             std::function<void(int index)> Changed = [](int index) {})
+        : GetElements(GetElements), mIndex(index), Changed(Changed)
     {
         if (gUndoRedoHandler.mbProcessing)
             return;
@@ -318,10 +336,14 @@ struct URDummy : public UndoRedo
 };
 
 
-template<typename T> struct URDel : public UndoRedo
+template<typename T>
+struct URDel : public UndoRedo
 {
-    URDel(int index, std::function<std::vector<T>* ()> GetElements, std::function<void(int index)> OnDelete = [](int index) {}, std::function<void(int index)> OnNew = [](int index) {}) :
-        GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+    URDel(int index,
+          std::function<std::vector<T>*()> GetElements,
+          std::function<void(int index)> OnDelete = [](int index) {},
+          std::function<void(int index)> OnNew = [](int index) {})
+        : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
     {
         if (gUndoRedoHandler.mbProcessing)
             return;
@@ -351,15 +373,19 @@ template<typename T> struct URDel : public UndoRedo
     T mDeletedElement;
     int mIndex;
 
-    std::function<std::vector<T>* ()> GetElements;
+    std::function<std::vector<T>*()> GetElements;
     std::function<void(int index)> OnDelete;
     std::function<void(int index)> OnNew;
 };
 
-template<typename T> struct URAdd : public UndoRedo
+template<typename T>
+struct URAdd : public UndoRedo
 {
-    URAdd(int index, std::function<std::vector<T>* ()> GetElements, std::function<void(int index)> OnDelete = [](int index) {}, std::function<void(int index)> OnNew = [](int index) {}) :
-        GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
+    URAdd(int index,
+          std::function<std::vector<T>*()> GetElements,
+          std::function<void(int index)> OnDelete = [](int index) {},
+          std::function<void(int index)> OnNew = [](int index) {})
+        : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
     {
     }
     virtual ~URAdd()
@@ -387,7 +413,7 @@ template<typename T> struct URAdd : public UndoRedo
     T mAddedElement;
     int mIndex;
 
-    std::function<std::vector<T>* ()> GetElements;
+    std::function<std::vector<T>*()> GetElements;
     std::function<void(int index)> OnDelete;
     std::function<void(int index)> OnNew;
 };

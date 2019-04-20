@@ -17,7 +17,7 @@ int ReadSceneJob(JobData *data)
 	void *scene;
 	if (LoadScene(data->filename, &scene) == EVAL_OK)
 	{
-		SetEvaluationScene(data->context, data->targetIndex, scene);
+		SetEvaluationRTScene(data->context, data->targetIndex, scene);
 	}
 	SetProcessing(data->context, data->targetIndex, 0);
 	return EVAL_OK;

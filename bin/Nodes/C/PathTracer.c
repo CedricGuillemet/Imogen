@@ -11,7 +11,7 @@ int main(PathTracer *param, Evaluation *evaluation, void *context)
 	void *renderer;
 	if (evaluation->inputIndices[0] == -1)
 		return EVAL_OK;
-	if (GetEvaluationScene(context, evaluation->inputIndices[0], &scene) != EVAL_OK)
+	if (GetEvaluationRTScene(context, evaluation->inputIndices[0], &scene) != EVAL_OK)
 		return EVAL_ERR;
 	if (!scene)
 		return EVAL_OK;

@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -24,61 +24,65 @@
 //
 
 #include <SDL.h>
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
+#include <GL/gl3w.h> // Initialize with gl3wInit()
 #include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "NodeGraphControler.h"
 
-static const unsigned int wrap[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT };
-static const unsigned int filter[] = { GL_LINEAR, GL_NEAREST };
-static const char* sampler2DName[] = { "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7" };
-static const char* samplerCubeName[] = { "CubeSampler0", "CubeSampler1", "CubeSampler2", "CubeSampler3", "CubeSampler4", "CubeSampler5", "CubeSampler6", "CubeSampler7" };
+static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};
+static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
+static const char* sampler2DName[] = {
+    "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7"};
+static const char* samplerCubeName[] = {"CubeSampler0",
+                                        "CubeSampler1",
+                                        "CubeSampler2",
+                                        "CubeSampler3",
+                                        "CubeSampler4",
+                                        "CubeSampler5",
+                                        "CubeSampler6",
+                                        "CubeSampler7"};
 
-static const unsigned int GLBlends[] = { GL_ZERO, GL_ONE, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,GL_SRC_ALPHA,
-    GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_CONSTANT_COLOR, GL_ONE_MINUS_CONSTANT_COLOR, GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA, GL_SRC_ALPHA_SATURATE };
+static const unsigned int GLBlends[] = {GL_ZERO,
+                                        GL_ONE,
+                                        GL_SRC_COLOR,
+                                        GL_ONE_MINUS_SRC_COLOR,
+                                        GL_DST_COLOR,
+                                        GL_ONE_MINUS_DST_COLOR,
+                                        GL_SRC_ALPHA,
+                                        GL_ONE_MINUS_SRC_ALPHA,
+                                        GL_DST_ALPHA,
+                                        GL_ONE_MINUS_DST_ALPHA,
+                                        GL_CONSTANT_COLOR,
+                                        GL_ONE_MINUS_CONSTANT_COLOR,
+                                        GL_CONSTANT_ALPHA,
+                                        GL_ONE_MINUS_CONSTANT_ALPHA,
+                                        GL_SRC_ALPHA_SATURATE};
 
 static const float rotMatrices[6][16] = {
     // toward +x
-    { 0,0,-1,0,
-    0,1,0,0,
-    1,0,0,0,
-    0,0,0,1
-    },
+    {0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
 
     // -x
-    { 0,0,1,0,
-    0,1,0,0,
-    -1,0,0,0,
-    0,0,0,1 },
+    {0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1},
 
     //+y
-    { 1,0,0,0,
-    0,0,1,0,
-    0,-1,0,0,
-    0,0,0,1 },
+    {1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1},
 
     // -y
-    { 1,0,0,0,
-    0,0,-1,0,
-    0,1,0,0,
-    0,0,0,1 },
+    {1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
 
     // +z
-    { 1,0,0,0,
-    0,1,0,0,
-    0,0,1,0,
-    0,0,0,1 },
+    {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
 
     //-z
-    { -1,0,0,0,
-    0,1,0,0,
-    0,0,-1,0,
-    0,0,0,1 }
-};
+    {-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
 
 
-EvaluationContext::EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight) 
+EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
+                                     bool synchronousEvaluation,
+                                     int defaultWidth,
+                                     int defaultHeight)
     : mEvaluationStages(evaluation)
     , mbSynchronousEvaluation(synchronousEvaluation)
     , mDefaultWidth(defaultWidth)
@@ -86,6 +90,17 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation, bool synchron
     , mRuntimeUniqueId(-1)
 {
     mFSQuad.Init();
+
+    // evaluation statedes
+    glGenBuffers(1, &mEvaluationStateGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    // parameters
+    glGenBuffers(1, &mParametersGLSLBuffer);
 }
 
 EvaluationContext::~EvaluationContext()
@@ -97,23 +112,43 @@ EvaluationContext::~EvaluationContext()
     }
     mWriteStreams.clear();
     mFSQuad.Finish();
+
+    glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
+    glDeleteBuffers(1, &mParametersGLSLBuffer);
+
+    Clear();
 }
 
-static void SetMouseInfos(EvaluationInfo &evaluationInfo, const EvaluationStage &evaluationStage)
+static void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage)
 {
     evaluationInfo.mouse[0] = evaluationStage.mRx;
     evaluationInfo.mouse[1] = evaluationStage.mRy;
     evaluationInfo.mouse[2] = evaluationStage.mLButDown ? 1.f : 0.f;
     evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
+
+    evaluationInfo.keyModifier[0] = evaluationStage.mbCtrl ? 1 : 0;
+    evaluationInfo.keyModifier[1] = evaluationStage.mbAlt ? 1 : 0;
+    evaluationInfo.keyModifier[2] = evaluationStage.mbShift ? 1 : 0;
+    evaluationInfo.keyModifier[3] = 0;
 }
 
 void EvaluationContext::Clear()
 {
+    for (auto tgt : mStageTarget)
+    {
+        if (!tgt)
+        {
+            continue;
+        }
+        tgt->Destroy();
+    }
     mStageTarget.clear();
     for (auto& buffer : mComputeBuffers)
+    {
         glDeleteBuffers(1, &buffer.mBuffer);
+    }
     mComputeBuffers.clear();
-    mbDirty.clear();
+    mDirtyFlags.clear();
     mbProcessing.clear();
     mProgress.clear();
 }
@@ -130,7 +165,7 @@ unsigned int EvaluationContext::GetEvaluationTexture(size_t target)
 unsigned int bladesVertexArray;
 unsigned int bladesVertexSize = 2 * sizeof(float);
 
-unsigned int UploadIndices(const unsigned short *indices, unsigned int indexCount)
+unsigned int UploadIndices(const unsigned short* indices, unsigned int indexCount)
 {
     unsigned int indexArray;
     glGenBuffers(1, &indexArray);
@@ -140,7 +175,7 @@ unsigned int UploadIndices(const unsigned short *indices, unsigned int indexCoun
     return indexArray;
 }
 
-void UploadVertices(const void *vertices, unsigned int vertexArraySize)
+void UploadVertices(const void* vertices, unsigned int vertexArraySize)
 {
     glGenBuffers(1, &bladesVertexArray);
     glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
@@ -153,7 +188,7 @@ static unsigned int bladeIA = -1;
 void drawBlades(int indexCount, int instanceCount, int elementCount)
 {
     // instances
-    for (int i = 0;i<elementCount;i++)
+    for (int i = 0; i < elementCount; i++)
         glVertexAttribDivisor(1 + i, 1);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bladeIA);
@@ -168,7 +203,9 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
     glBindVertexArray(0);
 }
 
-void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, unsigned int program, std::shared_ptr<RenderTarget> reusableTarget)
+void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
+                                     unsigned int program,
+                                     std::shared_ptr<RenderTarget> reusableTarget)
 {
     const Input& input = evaluationStage.mInput;
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
@@ -206,28 +243,41 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage, uns
             if (tgt)
             {
                 const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
-                if (tgt->mImage.mNumFaces == 1)
+                if (tgt->mImage->mNumFaces == 1)
                 {
                     glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
-                    TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_2D);
+                    TexParam(filter[inputSampler.mFilterMin],
+                             filter[inputSampler.mFilterMag],
+                             wrap[inputSampler.mWrapU],
+                             wrap[inputSampler.mWrapV],
+                             GL_TEXTURE_2D);
                 }
                 else
                 {
                     glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
-                    TexParam(filter[inputSampler.mFilterMin], filter[inputSampler.mFilterMag], wrap[inputSampler.mWrapU], wrap[inputSampler.mWrapV], GL_TEXTURE_CUBE_MAP);
+                    TexParam(filter[inputSampler.mFilterMin],
+                             filter[inputSampler.mFilterMag],
+                             wrap[inputSampler.mWrapU],
+                             wrap[inputSampler.mWrapV],
+                             GL_TEXTURE_CUBE_MAP);
+                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
+                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage->mNumMips - 1);
+                    // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 }
             }
         }
     }
 }
 
-int  EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const
+int EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const
 {
     const Input& input = evaluationStage.mInput;
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         int targetIndex = input.mInputs[inputIndex];
-        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer && mActive[targetIndex])
+        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer &&
+            mActive[targetIndex])
         {
             return targetIndex;
         }
@@ -235,7 +285,9 @@ int  EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluation
     return -1;
 }
 
-void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
+void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationStage,
+                                            size_t index,
+                                            EvaluationInfo& evaluationInfo)
 {
     if (bladeIA == -1)
     {
@@ -271,14 +323,15 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         if (mComputeBuffers.size() <= index || (!mComputeBuffers[index].mBuffer))
         {
             // only allocate if needed
-            AllocateComputeBuffer(int(index), mComputeBuffers[computeBufferIndex].mElementCount, mComputeBuffers[computeBufferIndex].mElementSize);
+            AllocateComputeBuffer(int(index),
+                                  mComputeBuffers[computeBufferIndex].mElementCount,
+                                  mComputeBuffers[computeBufferIndex].mElementSize);
         }
         sourceBuffer = &mComputeBuffers[computeBufferIndex];
-        
     }
     else
     {
-        // 
+        //
         Swap(mComputeBuffers[index], tempBuffer);
 
         AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
@@ -295,7 +348,8 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     const int transformElementCount = sourceBuffer->mElementSize / (4 * sizeof(float));
     for (int i = 0; i < transformElementCount; i++)
     {
-        glVertexAttribPointer(i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
+        glVertexAttribPointer(
+            i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
         glEnableVertexAttribArray(i);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -308,20 +362,29 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     // compute buffer
     glUseProgram(program);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
     evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
     glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+    glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
+    glBufferData(
+        GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
+
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 
     BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
     glEnable(GL_RASTERIZER_DISCARD);
     glBindVertexArray(feedbackVertexArray);
-    glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, destinationBuffer->mBuffer, 0, destinationBuffer->mElementCount * destinationBuffer->mElementSize);
+    glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
+                      0,
+                      destinationBuffer->mBuffer,
+                      0,
+                      destinationBuffer->mElementCount * destinationBuffer->mElementSize);
 
     glBeginTransformFeedback(GL_POINTS);
     glDrawArrays(GL_POINTS, 0, destinationBuffer->mElementCount);
@@ -340,7 +403,9 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     }
 }
 
-void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
+void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
+                                     size_t index,
+                                     EvaluationInfo& evaluationInfo)
 {
     const Input& input = evaluationStage.mInput;
 
@@ -348,14 +413,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
 
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
-    const int blendOps[] = { evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst };
-    unsigned int blend[] = { GL_ONE, GL_ZERO };
+    const int blendOps[] = {evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst};
+    unsigned int blend[] = {GL_ONE, GL_ZERO};
 
     if (!program)
     {
         glUseProgram(gDefaultShader.mNodeErrorShader);
-        //mFSQuad.Render();
-        evaluationStage.mGScene->Draw(evaluationInfo);
+        // mFSQuad.Render();
+        evaluationStage.mGScene->Draw(this, evaluationInfo);
         return;
     }
     for (int i = 0; i < 2; i++)
@@ -364,12 +429,36 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
             blend[i] = GLBlends[blendOps[i]];
     }
 
+    // parameters
+    glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
+
+    glBufferData(
+        GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    /*
+    if (!stage.mParametersBuffer)
+    {
+        glGenBuffers(1, &stage.mParametersBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+
+        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    else
+    {
+        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
+        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    }
+    */
     glEnable(GL_BLEND);
     glBlendFunc(blend[0], blend[1]);
 
     glUseProgram(program);
 
-    Camera *camera = mEvaluationStages.GetCameraParameter(index);
+    Camera* camera = mEvaluationStages.GetCameraParameter(index);
     if (camera)
     {
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
@@ -383,97 +472,113 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage, siz
         transientTarget->Clone(*tgt);
     }
 
-    for (int passNumber = 0;passNumber < passCount; passNumber++)
+    uint8_t mipmapCount = tgt->mImage->mNumMips;
+    for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
-        if (!evaluationInfo.uiPass)
+        for (int mip = 0; mip < mipmapCount; mip++)
         {
-            if (tgt->mImage.mNumFaces == 6)
-                tgt->BindAsCubeTarget();
-            else
-                tgt->BindAsTarget();
-        }
-
-        size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage.mNumFaces;
-        for (size_t face = 0; face < faceCount; face++)
-        {
-            if (tgt->mImage.mNumFaces == 6)
-                tgt->BindCubeFace(face);
-
-            memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
-            memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-            evaluationInfo.viewport[0] = float(tgt->mImage.mWidth);
-            evaluationInfo.viewport[1] = float(tgt->mImage.mHeight);
-            evaluationInfo.passNumber = passNumber;
-
-            glBindBuffer(GL_UNIFORM_BUFFER, gEvaluators.gEvaluationStateGLSLBuffer);
-            evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
-            glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-            glBindBufferBase(GL_UNIFORM_BUFFER, 1, evaluationStage.mParametersBuffer);
-            glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluators.gEvaluationStateGLSLBuffer);
-
-            BindTextures(evaluationStage, program, passNumber?transientTarget:std::shared_ptr<RenderTarget>());
-
-            glDisable(GL_CULL_FACE);
-            //glCullFace(GL_BACK);
-            glClearDepth(1.f);
-            if (evaluationStage.mbClearBuffer)
+            if (!evaluationInfo.uiPass)
             {
-                glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
-            }
-            if (evaluationStage.mbDepthBuffer)
-            {
-                glDepthFunc(GL_LEQUAL);
-                glEnable(GL_DEPTH_TEST);
-            }
-            //
-            if (evaluationStage.mTypename == "FurDisplay")
-            {
-                /*const ComputeBuffer* buffer*/int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
-                if (sourceBuffer != -1)
+                if (tgt->mImage->mNumFaces == 6)
                 {
-                    const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
-                    unsigned int vao;
-                    glGenVertexArrays(1, &vao);
-                    glBindVertexArray(vao);
-
-                    // blade vertices
-                    glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
-                    glVertexAttribPointer(0/*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
-                    glEnableVertexAttribArray(0/*SemUV*/);
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                    // blade instances
-                    const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
-                    glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
-                    for (unsigned int vp = 0; vp < transformElementCount; vp++)
-                    {
-                        glVertexAttribPointer(1 + vp, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * vp));
-                        glEnableVertexAttribArray(1 + vp);
-                    }
-
-                    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                    glBindVertexArray(vao);
-                    drawBlades(tess * 2, buffer->mElementCount, transformElementCount);
-                    glBindVertexArray(0);
-                    glDeleteVertexArrays(1, &vao);
+                    tgt->BindAsCubeTarget();
+                }
+                else
+                {
+                    tgt->BindAsTarget();
                 }
             }
-            else
+
+            size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage->mNumFaces;
+            for (size_t face = 0; face < faceCount; face++)
             {
-                evaluationStage.mGScene->Draw(evaluationInfo);
-            }
-            // swap target for multipass
-            // set previous target as source
-            if (passCount > 1 && passNumber != (passCount-1) )
-            {
-                transientTarget->Swap(*tgt);
-            }
-        } // passNumber
-    }
+                if (tgt->mImage->mNumFaces == 6)
+                    tgt->BindCubeFace(face, mip, tgt->mImage->mWidth);
+
+                memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
+                memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
+                float sizeDiv = float(mip + 1);
+                evaluationInfo.viewport[0] = float(tgt->mImage->mWidth) / sizeDiv;
+                evaluationInfo.viewport[1] = float(tgt->mImage->mHeight) / sizeDiv;
+                evaluationInfo.passNumber = passNumber;
+                evaluationInfo.mipmapNumber = mip;
+                evaluationInfo.mipmapCount = mipmapCount;
+
+                glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+                evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
+                glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
+                glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+                glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+
+                BindTextures(evaluationStage, program, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
+
+                glDisable(GL_CULL_FACE);
+                // glCullFace(GL_BACK);
+                glClearDepth(1.f);
+                if (evaluationStage.mbClearBuffer)
+                {
+                    glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
+                }
+                if (evaluationStage.mbDepthBuffer)
+                {
+                    glDepthFunc(GL_LEQUAL);
+                    glEnable(GL_DEPTH_TEST);
+                }
+                //
+                if (evaluationStage.mTypename == "FurDisplay")
+                {
+                    /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
+                    if (sourceBuffer != -1)
+                    {
+                        const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
+                        unsigned int vao;
+                        glGenVertexArrays(1, &vao);
+                        glBindVertexArray(vao);
+
+                        // blade vertices
+                        glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
+                        glVertexAttribPointer(0 /*SemUV*/, 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
+                        glEnableVertexAttribArray(0 /*SemUV*/);
+                        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                        // blade instances
+                        const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
+                        glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
+                        for (unsigned int vp = 0; vp < transformElementCount; vp++)
+                        {
+                            glVertexAttribPointer(1 + vp,
+                                                  4,
+                                                  GL_FLOAT,
+                                                  GL_FALSE,
+                                                  GLsizei(sizeof(float) * 4 * transformElementCount),
+                                                  (void*)(4 * sizeof(float) * vp));
+                            glEnableVertexAttribArray(1 + vp);
+                        }
+
+                        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+                        glBindVertexArray(vao);
+                        drawBlades(tess * 2, buffer->mElementCount, int(transformElementCount));
+                        glBindVertexArray(0);
+                        glDeleteVertexArrays(1, &vao);
+                    }
+                }
+                else
+                {
+                    evaluationStage.mGScene->Draw(this, evaluationInfo);
+                }
+            } // face
+        }     // mip
+        // swap target for multipass
+        // set previous target as source
+        if (passCount > 1 && passNumber != (passCount - 1))
+        {
+            transientTarget->Swap(*tgt);
+        }
+    } // passNumber
     glDisable(GL_BLEND);
 }
 
@@ -493,11 +598,12 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
     }
     catch (...)
     {
-
     }
 }
 
-void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
+void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
+                                       size_t index,
+                                       EvaluationInfo& evaluationInfo)
 {
     try // todo: find a better solution than a try catch
     {
@@ -506,7 +612,6 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage, s
     }
     catch (...)
     {
-
     }
 }
 
@@ -529,10 +634,10 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
     if (!mStageTarget.empty())
         return;
 
-    //auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
+    // auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     size_t stageCount = mEvaluationStages.GetStagesCount();
     mStageTarget.resize(stageCount, NULL);
-    std::vector<std::shared_ptr<RenderTarget> > freeRenderTargets;
+    std::vector<std::shared_ptr<RenderTarget>> freeRenderTargets;
     std::vector<int> useCount(stageCount, 0);
     for (size_t i = 0; i < stageCount; i++)
     {
@@ -571,7 +676,7 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 }
 void EvaluationContext::PreRun()
 {
-    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
     mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
     mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
     mActive.resize(mEvaluationStages.GetStagesCount(), false);
@@ -582,7 +687,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     auto& currentStage = mEvaluationStages.GetEvaluationStage(nodeIndex);
     const Input& input = currentStage.mInput;
 
-    // check processing 
+    // check processing
     for (auto& inp : input.mInputs)
     {
         if (inp < 0)
@@ -598,37 +703,42 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
     mEvaluationInfo.mFrame = mCurrentTime;
+    mEvaluationInfo.mDirtyFlag = mDirtyFlags[nodeIndex];
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
-    SetMouseInfos(mEvaluationInfo, currentStage);
+    SetKeyboardMouseInfos(mEvaluationInfo, currentStage);
 
-    if (currentStage.gEvaluationMask&EvaluationC)
+    if (currentStage.gEvaluationMask & EvaluationC)
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
 
-    if (currentStage.gEvaluationMask&EvaluationPython)
+    if (currentStage.gEvaluationMask & EvaluationPython)
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
 
-    if (currentStage.gEvaluationMask&EvaluationGLSLCompute)
+    if (currentStage.gEvaluationMask & EvaluationGLSLCompute)
     {
         EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);
     }
 
-    if (currentStage.gEvaluationMask&EvaluationGLSL)
+    if (currentStage.gEvaluationMask & EvaluationGLSL)
     {
         if (!mStageTarget[nodeIndex]->mGLTexID)
             mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight, currentStage.mbDepthBuffer);
 
         EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
     }
-    mbDirty[nodeIndex] = false;
+    mDirtyFlags[nodeIndex] = 0;
 }
 
 bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 {
+    GLint last_viewport[4];
+    glGetIntegerv(GL_VIEWPORT, last_viewport);
+
     // run C nodes
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        mActive[nodeIndex] = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame && mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
+        mActive[nodeIndex] = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame &&
+                             mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
         if (!mActive[nodeIndex])
             continue;
         RunNode(nodeIndex);
@@ -636,16 +746,20 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     }
     // set dirty nodes that tell so
     for (auto index : mStillDirty)
-        SetTargetDirty(index);
+        SetTargetDirty(index, Dirty::Input);
     mStillDirty.clear();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     return anyNodeIsProcessing;
 }
 
 void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
+    GLint last_viewport[4];
+    glGetIntegerv(GL_VIEWPORT, last_viewport);
+
     PreRun();
 
     mEvaluationInfo = evaluationInfo;
@@ -654,6 +768,7 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glUseProgram(0);
+    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
 void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)
@@ -682,16 +797,27 @@ void EvaluationContext::RunDirty()
     for (size_t index = 0; index < evaluationOrderList.size(); index++)
     {
         size_t currentNodeIndex = evaluationOrderList[index];
-        if (currentNodeIndex < mbDirty.size() && mbDirty[currentNodeIndex]) // TODOUNDO
+        if (currentNodeIndex < mDirtyFlags.size() && mDirtyFlags[currentNodeIndex]) // TODOUNDO
             nodesToEvaluate.push_back(currentNodeIndex);
     }
     AllocRenderTargetsForEditingPreview();
     RunNodeList(nodesToEvaluate);
 }
 
+void EvaluationContext::DirtyAll()
+{
+    // tag all as dirty
+    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
+    for (auto& dirty : mDirtyFlags)
+    {
+        dirty = Dirty::All;
+    }
+}
+
 void EvaluationContext::RunAll()
 {
     PreRun();
+    DirtyAll();
     // get list of nodes to run
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
@@ -710,9 +836,9 @@ bool EvaluationContext::RunBackward(size_t nodeIndex)
     return RunNodeList(nodesToEvaluate);
 }
 
-FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename, int width, int height)
+FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename, int width, int height)
 {
-    FFMPEGCodec::Encoder *encoder;
+    FFMPEGCodec::Encoder* encoder;
     auto iter = mWriteStreams.find(filename);
     if (iter != mWriteStreams.end())
     {
@@ -727,11 +853,11 @@ FFMPEGCodec::Encoder *EvaluationContext::GetEncoder(const std::string &filename,
     return encoder;
 }
 
-void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
+void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool onlyChild)
 {
-    mbDirty.resize(mEvaluationStages.GetStagesCount(), false);
+    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
-    mbDirty[target] = true;
+    mDirtyFlags[target] = dirtyFlag;
     for (size_t i = 0; i < evaluationOrderList.size(); i++)
     {
         size_t currentNodeIndex = evaluationOrderList[i];
@@ -741,46 +867,49 @@ void EvaluationContext::SetTargetDirty(size_t target, bool onlyChild)
         for (i++; i < evaluationOrderList.size(); i++)
         {
             currentNodeIndex = evaluationOrderList[i];
-            if (currentNodeIndex >= mbDirty.size() || mbDirty[currentNodeIndex]) // TODOUNDO
+            if (currentNodeIndex >= mDirtyFlags.size() || mDirtyFlags[currentNodeIndex]) // TODOUNDO
                 continue;
 
             auto& currentEvaluation = mEvaluationStages.GetEvaluationStage(currentNodeIndex);
             for (auto inp : currentEvaluation.mInput.mInputs)
             {
-                if (inp >= 0 && mbDirty[inp])
+                if (inp >= 0 && mDirtyFlags[inp])
                 {
-                    mbDirty[currentNodeIndex] = true;
+                    mDirtyFlags[currentNodeIndex] = Dirty::Input;
                     break;
                 }
             }
         }
     }
     if (onlyChild)
-        mbDirty[target] = false;
+    {
+        mDirtyFlags[target] = false;
+    }
 }
 
 void EvaluationContext::UserAddStage()
 {
-    URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()), [&]() {return &mStageTarget; });
-    URAdd<bool> undoRedoAddDirty(int(mbDirty.size()), [&]() {return &mbDirty; });
-    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), [&]() {return &mbProcessing; });
-    URAdd<float> undoRedoAddProgress(int(mProgress.size()), [&]() {return &mProgress; });
+    URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()),
+                                                                 [&]() { return &mStageTarget; });
+    URAdd<DirtyFlag> undoRedoAddDirty(int(mDirtyFlags.size()), [&]() { return &mDirtyFlags; });
+    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), [&]() { return &mbProcessing; });
+    URAdd<float> undoRedoAddProgress(int(mProgress.size()), [&]() { return &mProgress; });
 
     mStageTarget.push_back(std::make_shared<RenderTarget>());
-    mbDirty.push_back(true);
+    mDirtyFlags.push_back(Dirty::All);
     mbProcessing.push_back(0);
     mProgress.push_back(0.f);
 }
 
 void EvaluationContext::UserDeleteStage(size_t index)
 {
-    URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), [&]() {return &mStageTarget; });
-    URDel<bool> undoRedoDelDirty(int(index), [&]() {return &mbDirty; });
-    URDel<int> undoRedoDelProcessing(int(index), [&]() {return &mbProcessing; });
-    URDel<float> undoRedoDelProgress(int(index), [&]() {return &mProgress; });
+    URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), [&]() { return &mStageTarget; });
+    URDel<DirtyFlag> undoRedoDelDirty(int(index), [&]() { return &mDirtyFlags; });
+    URDel<int> undoRedoDelProcessing(int(index), [&]() { return &mbProcessing; });
+    URDel<float> undoRedoDelProgress(int(index), [&]() { return &mProgress; });
 
     mStageTarget.erase(mStageTarget.begin() + index);
-    mbDirty.erase(mbDirty.begin() + index);
+    mDirtyFlags.erase(mDirtyFlags.begin() + index);
     mbProcessing.erase(mbProcessing.begin() + index);
     mProgress.erase(mProgress.begin() + index);
 }
@@ -808,15 +937,15 @@ const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size
     return &mComputeBuffers[index];
 }
 
-void EvaluationContext::StageSetProcessing(size_t target, int processing) 
-{ 
-    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0); 
+void EvaluationContext::StageSetProcessing(size_t target, int processing)
+{
+    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
     if (mbProcessing[target] != processing)
     {
         mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
         mProgress[target] = 0.f;
     }
-    mbProcessing[target] = processing; 
+    mbProcessing[target] = processing;
 }
 
 void EvaluationContext::StageSetProgress(size_t target, float progress)
@@ -827,12 +956,9 @@ void EvaluationContext::StageSetProgress(size_t target, float progress)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Builder::Builder()
-    : mbRunning(true)
+Builder::Builder() : mbRunning(true)
 {
-    mThread = std::thread([&]() {
-        BuildEntries();
-    });
+    mThread = std::thread([&]() { BuildEntries(); });
 }
 
 Builder::~Builder()
@@ -844,11 +970,11 @@ Builder::~Builder()
 void Builder::Add(const char* graphName, EvaluationStages& stages)
 {
     mMutex.lock();
-    mEntries.push_back({ graphName, 0.f, stages });
+    mEntries.push_back({graphName, 0.f, stages});
     mMutex.unlock();
 }
 
-EvaluationStages BuildEvaluationFromMaterial(Material &material)
+EvaluationStages BuildEvaluationFromMaterial(Material& material)
 {
     EvaluationStages evaluationStages;
     for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
@@ -863,7 +989,8 @@ EvaluationStages BuildEvaluationFromMaterial(Material &material)
     for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
     {
         MaterialConnection& materialConnection = material.mMaterialConnections[i];
-        evaluationStages.AddEvaluationInput(materialConnection.mOutputNode, materialConnection.mInputSlot, materialConnection.mInputNode);
+        evaluationStages.AddEvaluationInput(
+            materialConnection.mOutputNode, materialConnection.mInputSlot, materialConnection.mInputNode);
     }
 
     evaluationStages.SetAnimTrack(material.mAnimTrack);
@@ -874,7 +1001,7 @@ EvaluationStages BuildEvaluationFromMaterial(Material &material)
     return evaluationStages;
 }
 
-void Builder::Add(Material *material)
+void Builder::Add(Material* material)
 {
     try
     {
@@ -893,7 +1020,7 @@ bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
         buildInfo.clear();
         for (auto& entry : mEntries)
         {
-            buildInfo.push_back({ entry.mName, entry.mProgress });
+            buildInfo.push_back({entry.mName, entry.mProgress});
         }
         mMutex.unlock();
         return true;
@@ -970,14 +1097,15 @@ void Builder::BuildEntries()
 
 namespace DrawUICallbacks
 {
-    void DrawUIProgress(EvaluationContext *context, size_t nodeIndex)
+    void DrawUIProgress(EvaluationContext* context, size_t nodeIndex)
     {
         glUseProgram(gDefaultShader.mProgressShader);
-        glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"), float(double(SDL_GetTicks()) / 1000.0));
+        glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"),
+                    float(double(SDL_GetTicks()) / 1000.0));
         context->mFSQuad.Render();
     }
 
-    void DrawUISingle(EvaluationContext *context, size_t nodeIndex)
+    void DrawUISingle(EvaluationContext* context, size_t nodeIndex)
     {
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
@@ -985,7 +1113,7 @@ namespace DrawUICallbacks
         context->RunSingle(nodeIndex, evaluationInfo);
     }
 
-    void DrawUICubemap(EvaluationContext *context, size_t nodeIndex)
+    void DrawUICubemap(EvaluationContext* context, size_t nodeIndex)
     {
         glUseProgram(gDefaultShader.mDisplayCubemapShader);
         int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
@@ -995,4 +1123,4 @@ namespace DrawUICallbacks
         glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
         context->mFSQuad.Render();
     }
-}
+} // namespace DrawUICallbacks

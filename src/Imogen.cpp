@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -44,8 +44,8 @@
 #include "imgui_markdown/imgui_markdown.h"
 #include "imHotKey.h"
 
-Imogen *Imogen::instance = nullptr;
-unsigned char *stbi_write_png_to_mem(unsigned char *pixels, int stride_bytes, int x, int y, int n, int *out_len);
+Imogen* Imogen::instance = nullptr;
+unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
 
 extern enki::TaskScheduler g_TS;
 
@@ -75,7 +75,12 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
         if (libraryMaterial)
         {
             ((Imogen*)data_.userData)->DecodeThumbnailAsync(libraryMaterial);
-            return { true, true, (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId, ImVec2(100, 100), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+            return {true,
+                    true,
+                    (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId,
+                    ImVec2(100, 100),
+                    ImVec2(0.f, 1.f),
+                    ImVec2(1.f, 0.f)};
         }
     }
     else
@@ -92,14 +97,19 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
         {
             int w, h;
             GetTextureDimension(textureId, &w, &h);
-            return { true, false, (ImTextureID)(uint64_t)textureId, ImVec2(float(w*percent / 100), float(h*percent / 100)), ImVec2(0.f, 1.f), ImVec2(1.f, 0.f) };
+            return {true,
+                    false,
+                    (ImTextureID)(uint64_t)textureId,
+                    ImVec2(float(w * percent / 100), float(h * percent / 100)),
+                    ImVec2(0.f, 1.f),
+                    ImVec2(1.f, 0.f)};
         }
     }
 
-    return { false };
+    return {false};
 }
 
-ImGui::MarkdownConfig mdConfig = { LinkCallback, ImageCallback, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
+ImGui::MarkdownConfig mdConfig = {LinkCallback, ImageCallback, "", {{NULL, true}, {NULL, true}, {NULL, false}}};
 
 struct ExtractedView
 {
@@ -109,14 +119,14 @@ struct ExtractedView
 std::vector<ExtractedView> mExtratedViews;
 void AddExtractedView(size_t nodeIndex)
 {
-    mExtratedViews.push_back({ nodeIndex, true });
+    mExtratedViews.push_back({nodeIndex, true});
 }
 void ClearExtractedViews()
 {
     mExtratedViews.clear();
 }
 
-void Imogen::HandleEditor(TextEditor &editor)
+void Imogen::HandleEditor(TextEditor& editor)
 {
     if (mCurrentShaderIndex == -1)
     {
@@ -140,10 +150,13 @@ void Imogen::HandleEditor(TextEditor &editor)
     ImGui::BeginChild(14);
 
     ImGui::SameLine();
-    ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | F5 to save and update nodes", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
-        editor.IsOverwrite() ? "Ovr" : "Ins",
-        editor.CanUndo() ? "*" : " ",
-        editor.GetLanguageDefinition().mName.c_str());
+    ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | F5 to save and update nodes",
+                cpos.mLine + 1,
+                cpos.mColumn + 1,
+                editor.GetTotalLines(),
+                editor.IsOverwrite() ? "Ovr" : "Ins",
+                editor.CanUndo() ? "*" : " ",
+                editor.GetLanguageDefinition().mName.c_str());
     editor.Render("TextEditor");
     ImGui::EndChild();
 }
@@ -204,11 +217,12 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             }
             else
             {
-                displayedTexture = (ImTextureID)(int64_t)((selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode) : 0);
+                displayedTexture = (ImTextureID)(int64_t)(
+                    (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode) : 0);
                 if (displayedTexture)
                 {
                     auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
-                    displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
+                    displayedTextureSize = ImVec2(float(tgt->mImage->mWidth), float(tgt->mImage->mHeight));
                 }
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
                 mouseUVPos.y = 1.f - mouseUVPos.y;
@@ -217,7 +231,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
 
                 Vec4 uva(0, 0), uvb(1, 1);
                 Mat4x4* viewMatrix = nodeGraphControler.mEvaluationStages.GetParameterViewMatrix(selNode);
-                Camera *nodeCamera = nodeGraphControler.mEvaluationStages.GetCameraParameter(selNode);
+                Camera* nodeCamera = nodeGraphControler.mEvaluationStages.GetCameraParameter(selNode);
                 if (viewMatrix && !nodeCamera)
                 {
                     Mat4x4& res = *viewMatrix;
@@ -226,12 +240,13 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
                     scale = ImLerp(scale, 1.f, 0.15f);
                     if (ImRect(p, p + ImVec2(w, h)).Contains(io.MousePos) && ImGui::IsWindowFocused())
                     {
-                        scale -= io.MouseWheel*0.04f;
-                        scale -= io.MouseDelta.y * 0.01f * ((io.KeyAlt&&io.MouseDown[1]) ? 1.f : 0.f);
+                        scale -= io.MouseWheel * 0.04f;
+                        scale -= io.MouseDelta.y * 0.01f * ((io.KeyAlt && io.MouseDown[1]) ? 1.f : 0.f);
 
                         ImVec2 pix2uv = ImVec2(1.f, 1.f) / ImVec2(w, h);
                         Vec4 localTranslate;
-                        localTranslate = Vec4(-io.MouseDelta.x * pix2uv.x, io.MouseDelta.y * pix2uv.y) * ((io.KeyAlt&&io.MouseDown[2]) ? 1.f : 0.f) * res[0];
+                        localTranslate = Vec4(-io.MouseDelta.x * pix2uv.x, io.MouseDelta.y * pix2uv.y) *
+                                         ((io.KeyAlt && io.MouseDown[2]) ? 1.f : 0.f) * res[0];
                         Mat4x4 localTranslateMat;
                         localTranslateMat.Translation(localTranslate);
                         res *= localTranslateMat;
@@ -260,11 +275,13 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
             if (selNode != -1 && nodeGraphControler.NodeIsCubemap(selNode))
             {
-                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUICubemap, selNode, &nodeGraphControler.mEditingContext);
+                AddUICustomDraw(
+                    draw_list, rc, DrawUICallbacks::DrawUICubemap, selNode, &nodeGraphControler.mEditingContext);
             }
             else if (selNode != -1 && nodeGraphControler.NodeHasUI(selNode))
             {
-                AddUICustomDraw(draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
+                AddUICustomDraw(
+                    draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
             }
         }
     }
@@ -275,7 +292,8 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
     if (rc.Contains(io.MousePos))
     {
         static Image pickerImage;
-        if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1 && mouseUVCoord.x >= 0.f && mouseUVCoord.y >= 0.f)
+        if (io.KeyShift && io.MouseDown[0] && displayedTexture && selNode > -1 && mouseUVCoord.x >= 0.f &&
+            mouseUVCoord.y >= 0.f)
         {
             if (!pickerImage.GetBits())
             {
@@ -292,7 +310,8 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             Image::Free(&pickerImage);
             ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
             ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-            nodeGraphControler.SetMouse(ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel);
+            nodeGraphControler.SetKeyboardMouse(
+                ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel, io.KeyCtrl, io.KeyAlt, io.KeyShift);
         }
         lastSentExit = -1;
     }
@@ -301,20 +320,31 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
         if (lastSentExit != selNode)
         {
             lastSentExit = selNode;
-            nodeGraphControler.SetMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f);
+            nodeGraphControler.SetKeyboardMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f, false, false, false);
         }
     }
 }
 
-template <typename T, typename Ty> struct SortedResource
+template<typename T, typename Ty>
+struct SortedResource
 {
-    SortedResource() {}
-    SortedResource(unsigned int index, const std::vector<T, Ty>* res) : mIndex(index), mRes(res) {}
-    SortedResource(const SortedResource& other) : mIndex(other.mIndex), mRes(other.mRes) {}
-    void operator = (const SortedResource& other) { mIndex = other.mIndex; mRes = other.mRes; }
+    SortedResource()
+    {
+    }
+    SortedResource(unsigned int index, const std::vector<T, Ty>* res) : mIndex(index), mRes(res)
+    {
+    }
+    SortedResource(const SortedResource& other) : mIndex(other.mIndex), mRes(other.mRes)
+    {
+    }
+    void operator=(const SortedResource& other)
+    {
+        mIndex = other.mIndex;
+        mRes = other.mRes;
+    }
     unsigned int mIndex;
     const std::vector<T, Ty>* mRes;
-    bool operator < (const SortedResource& other) const
+    bool operator<(const SortedResource& other) const
     {
         return (*mRes)[mIndex].mName < (*mRes)[other.mIndex].mName;
     }
@@ -330,7 +360,7 @@ template <typename T, typename Ty> struct SortedResource
 
 struct PinnedTaskUploadImage : enki::IPinnedTask
 {
-    PinnedTaskUploadImage(Image *image, ASyncId identifier, bool isThumbnail, NodeGraphControler *controler)
+    PinnedTaskUploadImage(Image* image, ASyncId identifier, bool isThumbnail, NodeGraphControler* controler)
         : enki::IPinnedTask(0) // set pinned thread to 0
         , mImage(image)
         , mIdentifier(identifier)
@@ -350,7 +380,7 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
         }
         else
         {
-            auto *node = mControler->Get(mIdentifier);
+            auto* node = mControler->Get(mIdentifier);
             size_t nodeIndex = node - mControler->mEvaluationStages.mStages.data();
             if (node)
             {
@@ -361,26 +391,24 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
             Image::Free(mImage);
         }
     }
-    Image *mImage;
-    NodeGraphControler *mControler;
+    Image* mImage;
+    NodeGraphControler* mControler;
     ASyncId mIdentifier;
     bool mbIsThumbnail;
 };
 
 struct DecodeThumbnailTaskSet : enki::ITaskSet
 {
-    DecodeThumbnailTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) :
-        enki::ITaskSet()
-        , mIdentifier(identifier)
-        , mSrc(src)
-        , mNodeGraphControler(nodeGraphControler)
+    DecodeThumbnailTaskSet(std::vector<uint8_t>* src, ASyncId identifier, NodeGraphControler* nodeGraphControler)
+        : enki::ITaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
     {
     }
-    virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+    virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
     {
         Image image;
         int components;
-        unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
+        unsigned char* data =
+            stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
         if (data)
         {
             image.SetBits(data, image.mWidth * image.mHeight * components);
@@ -390,31 +418,38 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
             PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
+            stbi_image_free(data);
             Image::Free(&image);
         }
         delete this;
     }
     ASyncId mIdentifier;
-    std::vector<uint8_t> *mSrc;
-    NodeGraphControler *mNodeGraphControler;
+    std::vector<uint8_t>* mSrc;
+    NodeGraphControler* mNodeGraphControler;
 };
 
 struct EncodeImageTaskSet : enki::ITaskSet
 {
-    EncodeImageTaskSet(Image image, ASyncId materialIdentifier, ASyncId nodeIdentifier) : enki::ITaskSet(), mMaterialIdentifier(materialIdentifier), mNodeIdentifier(nodeIdentifier), mImage(image)
+    EncodeImageTaskSet(Image image, ASyncId materialIdentifier, ASyncId nodeIdentifier)
+        : enki::ITaskSet(), mMaterialIdentifier(materialIdentifier), mNodeIdentifier(nodeIdentifier), mImage(image)
     {
     }
-    virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+    virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
     {
         int outlen;
         int components = 4;
-        unsigned char *bits = stbi_write_png_to_mem((unsigned char*)mImage.GetBits(), mImage.mWidth * components, mImage.mWidth, mImage.mHeight, components, &outlen);
+        unsigned char* bits = stbi_write_png_to_mem((unsigned char*)mImage.GetBits(),
+                                                    mImage.mWidth * components,
+                                                    mImage.mWidth,
+                                                    mImage.mHeight,
+                                                    components,
+                                                    &outlen);
         if (bits)
         {
-            Material *material = library.Get(mMaterialIdentifier);
+            Material* material = library.Get(mMaterialIdentifier);
             if (material)
             {
-                MaterialNode *node = material->Get(mNodeIdentifier);
+                MaterialNode* node = material->Get(mNodeIdentifier);
                 if (node)
                 {
                     node->mImage.resize(outlen);
@@ -431,18 +466,16 @@ struct EncodeImageTaskSet : enki::ITaskSet
 
 struct DecodeImageTaskSet : enki::ITaskSet
 {
-    DecodeImageTaskSet(std::vector<uint8_t> *src, ASyncId identifier, NodeGraphControler *nodeGraphControler) :
-        enki::ITaskSet()
-        , mIdentifier(identifier)
-        , mSrc(src)
-        , mNodeGraphControler(nodeGraphControler)
+    DecodeImageTaskSet(std::vector<uint8_t>* src, ASyncId identifier, NodeGraphControler* nodeGraphControler)
+        : enki::ITaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
     {
     }
-    virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+    virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
     {
         Image image;
         int components;
-        unsigned char *data = stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
+        unsigned char* data =
+            stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
         if (data)
         {
             image.SetBits(data, image.mWidth * image.mHeight * components);
@@ -452,25 +485,30 @@ struct DecodeImageTaskSet : enki::ITaskSet
             PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
+            stbi_image_free(data);
         }
         delete this;
     }
     ASyncId mIdentifier;
-    std::vector<uint8_t> *mSrc;
-    NodeGraphControler *mNodeGraphControler;
+    std::vector<uint8_t>* mSrc;
+    NodeGraphControler* mNodeGraphControler;
 };
 
-void Imogen::DecodeThumbnailAsync(Material * material)
+void Imogen::DecodeThumbnailAsync(Material* material)
 {
     static unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
     if (!material->mThumbnailTextureId)
     {
         material->mThumbnailTextureId = defaultTextureId;
-        g_TS.AddTaskSetToPipe(new DecodeThumbnailTaskSet(&material->mThumbnail, std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId), mNodeGraphControler));
+        g_TS.AddTaskSetToPipe(
+            new DecodeThumbnailTaskSet(&material->mThumbnail,
+                                       std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId),
+                                       mNodeGraphControler));
     }
 }
 
-template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const char *szName, int &selection, int index, int viewMode, Imogen *imogen)
+template<typename T, typename Ty>
+bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int index, int viewMode, Imogen* imogen)
 {
     bool ret = false;
     if (!ImGui::TreeNodeEx(szName, ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_DefaultOpen))
@@ -489,7 +527,9 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
     {
         unsigned int indexInRes = sortedRes.mIndex;
         bool selected = ((selection >> 16) == index) && (selection & 0xFFFF) == (int)indexInRes;
-        ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | (selected ? ImGuiTreeNodeFlags_Selected : 0);
+        ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_Leaf |
+                                        ImGuiTreeNodeFlags_NoTreePushOnOpen |
+                                        (selected ? ImGuiTreeNodeFlags_Selected : 0);
 
         std::string grp = GetGroup(res[indexInRes].mName);
 
@@ -532,25 +572,28 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
         bool clicked = false;
         switch (viewMode)
         {
-        case 0:
-            ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
-            clicked |= ImGui::IsItemClicked();
-            break;
-        case 1:
-            ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
-            clicked = ImGui::IsItemClicked();
-            ImGui::SameLine();
-            ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
-            clicked |= ImGui::IsItemClicked();
-            break;
-        case 2:
-            ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
-            clicked = ImGui::IsItemClicked();
-            break;
-        case 3:
-            ImGui::Image((ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(128, 128), ImVec2(0, 1), ImVec2(1, 0));
-            clicked = ImGui::IsItemClicked();
-            break;
+            case 0:
+                ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
+                clicked |= ImGui::IsItemClicked();
+                break;
+            case 1:
+                ImGui::Image(
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
+                clicked = ImGui::IsItemClicked();
+                ImGui::SameLine();
+                ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
+                clicked |= ImGui::IsItemClicked();
+                break;
+            case 2:
+                ImGui::Image(
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
+                clicked = ImGui::IsItemClicked();
+                break;
+            case 3:
+                ImGui::Image(
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(128, 128), ImVec2(0, 1), ImVec2(1, 0));
+                clicked = ImGui::IsItemClicked();
+                break;
         }
         if (clicked)
         {
@@ -568,7 +611,7 @@ template <typename T, typename Ty> bool TVRes(std::vector<T, Ty>& res, const cha
     return ret;
 }
 
-void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, int materialIndex)
+void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, int materialIndex)
 {
     if (materialIndex == -1)
         return;
@@ -578,7 +621,7 @@ void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, 
     for (size_t i = 0; i < nodeGraphControler.mEvaluationStages.mStages.size(); i++)
     {
         auto srcNode = nodeGraphControler.mEvaluationStages.mStages[i];
-        MaterialNode &dstNode = material.mMaterialNodes[i];
+        MaterialNode& dstNode = material.mMaterialNodes[i];
         MetaNode& metaNode = gMetaNodes[srcNode.mType];
         dstNode.mRuntimeUniqueId = GetRuntimeId();
         if (metaNode.mbSaveTexture)
@@ -586,7 +629,9 @@ void ValidateMaterial(Library& library, NodeGraphControler &nodeGraphControler, 
             Image image;
             if (EvaluationAPI::GetEvaluationImage(&nodeGraphControler.mEditingContext, int(i), &image) == EVAL_OK)
             {
-                g_TS.AddTaskSetToPipe(new EncodeImageTaskSet(image, std::make_pair(materialIndex, material.mRuntimeUniqueId), std::make_pair(i, dstNode.mRuntimeUniqueId)));
+                g_TS.AddTaskSetToPipe(new EncodeImageTaskSet(image,
+                                                             std::make_pair(materialIndex, material.mRuntimeUniqueId),
+                                                             std::make_pair(i, dstNode.mRuntimeUniqueId)));
             }
         }
 
@@ -642,12 +687,19 @@ void Imogen::UpdateNewlySelectedGraph()
             MaterialNode& node = material.mMaterialNodes[i];
             if (node.mType == 0xFFFFFFFF)
                 continue;
-            NodeGraphAddNode(mNodeGraphControler, node.mType, node.mParameters, node.mPosX, node.mPosY, node.mFrameStart, node.mFrameEnd);
+            NodeGraphAddNode(mNodeGraphControler,
+                             node.mType,
+                             node.mParameters,
+                             node.mPosX,
+                             node.mPosY,
+                             node.mFrameStart,
+                             node.mFrameEnd);
             auto& lastNode = mNodeGraphControler->mEvaluationStages.mStages.back();
             if (!node.mImage.empty())
             {
                 mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
-                g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(&node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
+                g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
+                    &node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
             }
             lastNode.mInputSamplers = node.mInputSamplers;
             mNodeGraphControler->mEvaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
@@ -655,7 +707,11 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
             MaterialConnection& materialConnection = material.mMaterialConnections[i];
-            NodeGraphAddLink(mNodeGraphControler, materialConnection.mInputNode, materialConnection.mInputSlot, materialConnection.mOutputNode, materialConnection.mOutputSlot);
+            NodeGraphAddLink(mNodeGraphControler,
+                             materialConnection.mInputNode,
+                             materialConnection.mInputSlot,
+                             materialConnection.mOutputNode,
+                             materialConnection.mOutputSlot);
         }
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {
@@ -698,7 +754,7 @@ void Imogen::NewMaterial()
 
 void Imogen::ImportMaterial()
 {
-    nfdchar_t *outPath = NULL;
+    nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
 
     if (result == NFD_OKAY)
@@ -722,7 +778,7 @@ void Imogen::LibraryEdit(Library& library)
         NewMaterial();
     }
     ImGui::SameLine();
-    if (Button("MaterialImport", "Import Material", ImVec2(0,0)))//ImGui::Button("Import"))
+    if (Button("MaterialImport", "Import Material", ImVec2(0, 0))) // ImGui::Button("Import"))
     {
         ImportMaterial();
     }
@@ -735,8 +791,13 @@ void Imogen::LibraryEdit(Library& library)
         if (i)
             ImGui::SameLine();
         ImGui::PushID(99 + i);
-        if (ImGui::ImageButton((ImTextureID)(int64_t)libraryViewTextureId, iconSize, ImVec2(float(i)*0.25f, 0.f), ImVec2(float(i + 1)*0.25f, 1.f), -1, ImVec4(0.f, 0.f, 0.f, 0.f)
-            , (i == mLibraryViewMode) ? ImVec4(1.f, 0.3f, 0.1f, 1.f) : ImVec4(1.f, 1.f, 1.f, 1.f)))
+        if (ImGui::ImageButton((ImTextureID)(int64_t)libraryViewTextureId,
+                               iconSize,
+                               ImVec2(float(i) * 0.25f, 0.f),
+                               ImVec2(float(i + 1) * 0.25f, 1.f),
+                               -1,
+                               ImVec4(0.f, 0.f, 0.f, 0.f),
+                               (i == mLibraryViewMode) ? ImVec4(1.f, 0.3f, 0.1f, 1.f) : ImVec4(1.f, 1.f, 1.f, 1.f)))
             mLibraryViewMode = i;
         ImGui::PopID();
     }
@@ -755,7 +816,7 @@ void Imogen::LibraryEdit(Library& library)
     ImGui::EndChild();
 }
 
-void Imogen::SetExistingMaterialActive(const char * materialName)
+void Imogen::SetExistingMaterialActive(const char* materialName)
 {
     Material* libraryMaterial = library.GetByName(materialName);
     if (libraryMaterial)
@@ -777,16 +838,27 @@ void Imogen::SetExistingMaterialActive(int materialIndex)
 
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
-    AnimCurveEdit(NodeGraphControler &NodeGraphControler, ImVec2& min, ImVec2& max, std::vector<AnimTrack>& animTrack, std::vector<bool>& visible, int nodeIndex, int currentTime) :
-        mNodeGraphControler(NodeGraphControler),
-        mMin(min), mMax(max), mAnimTrack(animTrack), mbVisible(visible), mNodeIndex(nodeIndex), mCurrentTime(currentTime)
+    AnimCurveEdit(NodeGraphControler& NodeGraphControler,
+                  ImVec2& min,
+                  ImVec2& max,
+                  std::vector<AnimTrack>& animTrack,
+                  std::vector<bool>& visible,
+                  int nodeIndex,
+                  int currentTime)
+        : mNodeGraphControler(NodeGraphControler)
+        , mMin(min)
+        , mMax(max)
+        , mAnimTrack(animTrack)
+        , mbVisible(visible)
+        , mNodeIndex(nodeIndex)
+        , mCurrentTime(currentTime)
     {
         size_t type = mNodeGraphControler.mEvaluationStages.mStages[nodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
         std::vector<bool> parameterAddressed(metaNode.mParams.size(), false);
 
-        auto curveForParameter = [&](int parameterIndex, ConTypes type, AnimationBase * animation) {
-            const std::string & parameterName = metaNode.mParams[parameterIndex].mName;
+        auto curveForParameter = [&](int parameterIndex, ConTypes type, AnimationBase* animation) {
+            const std::string& parameterName = metaNode.mParams[parameterIndex].mName;
             CurveType curveType = GetCurveTypeForParameterType(type);
             if (curveType == CurveNone)
                 return;
@@ -799,7 +871,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 {
                     curvePts.resize(2);
                     auto& node = mNodeGraphControler.mEvaluationStages.mStages[mNodeIndex];
-                    float value = mNodeGraphControler.mEvaluationStages.GetParameterComponentValue(nodeIndex, parameterIndex, int(curveIndex));
+                    float value = mNodeGraphControler.mEvaluationStages.GetParameterComponentValue(
+                        nodeIndex, parameterIndex, int(curveIndex));
                     curvePts[0] = ImVec2(float(node.mStartFrame) + 0.5f, value);
                     curvePts[1] = ImVec2(float(node.mEndFrame) + 0.5f, value);
                 }
@@ -809,7 +882,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                     curvePts.resize(ptCount);
                     for (size_t i = 0; i < ptCount; i++)
                     {
-                        curvePts[i] = ImVec2(float(animation->mFrames[i] + 0.5f), animation->GetFloatValue(uint32_t(i), int(curveIndex)));
+                        curvePts[i] = ImVec2(float(animation->mFrames[i] + 0.5f),
+                                             animation->GetFloatValue(uint32_t(i), int(curveIndex)));
                     }
                 }
                 mPts.push_back(curvePts);
@@ -842,9 +916,9 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         size_t type = mNodeGraphControler.mEvaluationStages.mStages[mNodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[type];
 
-        for (size_t curve = 0; curve < mPts.size(); )
+        for (size_t curve = 0; curve < mPts.size();)
         {
-            AnimTrack &animTrack = *mNodeGraphControler.GetAnimTrack(mNodeIndex, mParameterIndex[curve]);
+            AnimTrack& animTrack = *mNodeGraphControler.GetAnimTrack(mNodeIndex, mParameterIndex[curve]);
             animTrack.mNodeIndex = mNodeIndex;
             animTrack.mParamIndex = mParameterIndex[curve];
             animTrack.mValueType = mValueType[curve];
@@ -881,18 +955,46 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 curve++;
             } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
         }
-        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(&mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);
+        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(
+            &mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);
     }
 
-    virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return mCurveType[curveIndex]; }
-    virtual ImVec2& GetMax() { return mMax; }
-    virtual ImVec2& GetMin() { return mMin; }
-    virtual unsigned int GetBackgroundColor() { return 0x80202060; }
-    virtual bool IsVisible(size_t curveIndex) { return mbVisible[curveIndex]; }
-    size_t GetCurveCount() { return mPts.size(); }
-    size_t GetPointCount(size_t curveIndex) { return mPts[curveIndex].size(); }
-    uint32_t GetCurveColor(size_t curveIndex) { return mColors[curveIndex]; }
-    ImVec2* GetPoints(size_t curveIndex) { return mPts[curveIndex].data(); }
+    virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const
+    {
+        return mCurveType[curveIndex];
+    }
+    virtual ImVec2& GetMax()
+    {
+        return mMax;
+    }
+    virtual ImVec2& GetMin()
+    {
+        return mMin;
+    }
+    virtual unsigned int GetBackgroundColor()
+    {
+        return 0x80202060;
+    }
+    virtual bool IsVisible(size_t curveIndex)
+    {
+        return mbVisible[curveIndex];
+    }
+    size_t GetCurveCount()
+    {
+        return mPts.size();
+    }
+    size_t GetPointCount(size_t curveIndex)
+    {
+        return mPts[curveIndex].size();
+    }
+    uint32_t GetCurveColor(size_t curveIndex)
+    {
+        return mColors[curveIndex];
+    }
+    ImVec2* GetPoints(size_t curveIndex)
+    {
+        return mPts[curveIndex].data();
+    }
 
     virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
     {
@@ -940,12 +1042,12 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 SortValues(curve);
             }
         }
-        //delete[] tmp;
+        // delete[] tmp;
     }
 
     void DeletePoints(const ImVector<ImCurveEdit::EditPoint>& points)
     {
-        // tag point 
+        // tag point
         for (int i = 0; i < points.size(); i++)
         {
             auto& selPoint = points[i];
@@ -961,7 +1063,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         BakeValuesToAnimationTrack();
     }
 
-    static std::vector<UndoRedo *> undoRedoEditCurves;
+    static std::vector<UndoRedo*> undoRedoEditCurves;
     virtual void BeginEdit(int /*index*/)
     {
         assert(gUndoRedoHandler.mCurrent == nullptr);
@@ -976,7 +1078,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             {
                 if (track.mNodeIndex == mNodeGraphControler.mSelectedNodeIndex && track.mParamIndex == parameterIndex)
                 {
-                    undoRedoEditCurves.push_back(new URChange<AnimTrack>(index, [&](int index) { return &mNodeGraphControler.mEvaluationStages.mAnimTrack[index]; }));
+                    undoRedoEditCurves.push_back(new URChange<AnimTrack>(
+                        index, [&](int index) { return &mNodeGraphControler.mEvaluationStages.mAnimTrack[index]; }));
                     parameterFound = true;
                     break;
                 }
@@ -984,7 +1087,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             }
             if (!parameterFound)
             {
-                undoRedoEditCurves.push_back(new URAdd<AnimTrack>(index, [&]() { return &mNodeGraphControler.mEvaluationStages.mAnimTrack; }));
+                undoRedoEditCurves.push_back(
+                    new URAdd<AnimTrack>(index, [&]() { return &mNodeGraphControler.mEvaluationStages.mAnimTrack; }));
                 AnimTrack animTrack;
                 animTrack.mNodeIndex = mNodeIndex;
                 animTrack.mParamIndex = mParameterIndex[curve];
@@ -1048,7 +1152,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     ImVec2 &mMin, &mMax;
     int mNodeIndex;
     int mCurrentTime;
-    NodeGraphControler &mNodeGraphControler;
+    NodeGraphControler& mNodeGraphControler;
 
 private:
     void SortValues(size_t curveIndex)
@@ -1060,12 +1164,15 @@ private:
     }
 };
 
-std::vector<UndoRedo *> AnimCurveEdit::undoRedoEditCurves;
+std::vector<UndoRedo*> AnimCurveEdit::undoRedoEditCurves;
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
-    MySequence(NodeGraphControler &NodeGraphControler) : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX), undoRedoChange(nullptr) {}
-    
+    MySequence(NodeGraphControler& NodeGraphControler)
+        : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX), undoRedoChange(nullptr)
+    {
+    }
+
     void Clear()
     {
         mbExpansions.clear();
@@ -1076,14 +1183,24 @@ struct MySequence : public ImSequencer::SequenceInterface
         mCurveMax = 1.f;
     }
 
-    void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
-    virtual int GetFrameMin() const { return mNodeGraphControler.mEvaluationStages.mFrameMin; }
-    virtual int GetFrameMax() const { return mNodeGraphControler.mEvaluationStages.mFrameMax; }
+    void SetCurrentTime(int currentTime)
+    {
+        mCurrentTime = currentTime;
+    }
+    virtual int GetFrameMin() const
+    {
+        return mNodeGraphControler.mEvaluationStages.mFrameMin;
+    }
+    virtual int GetFrameMax() const
+    {
+        return mNodeGraphControler.mEvaluationStages.mFrameMax;
+    }
 
     virtual void BeginEdit(int index)
     {
         assert(undoRedoChange == nullptr);
-        undoRedoChange = new URChange<EvaluationStage>(index, [&](int index) { return &mNodeGraphControler.mEvaluationStages.mStages[index]; });
+        undoRedoChange = new URChange<EvaluationStage>(
+            index, [&](int index) { return &mNodeGraphControler.mEvaluationStages.mStages[index]; });
     }
     virtual void EndEdit()
     {
@@ -1092,17 +1209,26 @@ struct MySequence : public ImSequencer::SequenceInterface
         mNodeGraphControler.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, mCurrentTime, false);
     }
 
-    virtual int GetItemCount() const { return (int)mNodeGraphControler.mEvaluationStages.GetStagesCount(); }
+    virtual int GetItemCount() const
+    {
+        return (int)mNodeGraphControler.mEvaluationStages.GetStagesCount();
+    }
 
-    virtual int GetItemTypeCount() const { return 0; }
-    virtual const char *GetItemTypeName(int typeIndex) const { return NULL; }
-    virtual const char *GetItemLabel(int index) const
+    virtual int GetItemTypeCount() const
+    {
+        return 0;
+    }
+    virtual const char* GetItemTypeName(int typeIndex) const
+    {
+        return NULL;
+    }
+    virtual const char* GetItemLabel(int index) const
     {
         size_t nodeType = mNodeGraphControler.mEvaluationStages.GetStageType(index);
         return gMetaNodes[nodeType].mName.c_str();
     }
 
-    virtual void Get(int index, int** start, int** end, int *type, unsigned int *color)
+    virtual void Get(int index, int** start, int** end, int* type, unsigned int* color)
     {
         size_t nodeType = mNodeGraphControler.mEvaluationStages.GetStageType(index);
 
@@ -1115,9 +1241,13 @@ struct MySequence : public ImSequencer::SequenceInterface
         if (type)
             *type = int(nodeType);
     }
-    virtual void Add(int type) { };
-    virtual void Del(int index) { }
-    virtual void Duplicate(int index) { }
+    virtual void Add(int type){};
+    virtual void Del(int index)
+    {
+    }
+    virtual void Duplicate(int index)
+    {
+    }
 
     virtual size_t GetCustomHeight(int index)
     {
@@ -1139,7 +1269,12 @@ struct MySequence : public ImSequencer::SequenceInterface
         mbExpansions[index] = !mbExpansions[index];
     }
 
-    virtual void CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect)
+    virtual void CustomDraw(int index,
+                            ImDrawList* draw_list,
+                            const ImRect& rc,
+                            const ImRect& legendRect,
+                            const ImRect& clippingRect,
+                            const ImRect& legendClippingRect)
     {
         if (mLastCustomDrawIndex != index)
         {
@@ -1149,7 +1284,13 @@ struct MySequence : public ImSequencer::SequenceInterface
 
         ImVec2 curveMin(float(mNodeGraphControler.mEvaluationStages.mFrameMin), mCurveMin);
         ImVec2 curveMax(float(mNodeGraphControler.mEvaluationStages.mFrameMax), mCurveMax);
-        AnimCurveEdit curveEdit(mNodeGraphControler, curveMin, curveMax, mNodeGraphControler.mEvaluationStages.mAnimTrack, mbVisible, index, mCurrentTime);
+        AnimCurveEdit curveEdit(mNodeGraphControler,
+                                curveMin,
+                                curveMax,
+                                mNodeGraphControler.mEvaluationStages.mAnimTrack,
+                                mbVisible,
+                                index,
+                                mCurrentTime);
         mbVisible.resize(curveEdit.GetCurveCount(), true);
         draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
         for (int i = 0; i < curveEdit.GetCurveCount(); i++)
@@ -1157,7 +1298,8 @@ struct MySequence : public ImSequencer::SequenceInterface
             ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
             ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
             uint32_t curveColor = curveEdit.mColors[i];
-            draw_list->AddText(pta, mbVisible[i] ? curveColor : ((curveColor & 0xFFFFFF) + 0x80000000), curveEdit.mLabels[i].c_str());
+            draw_list->AddText(
+                pta, mbVisible[i] ? curveColor : ((curveColor & 0xFFFFFF) + 0x80000000), curveEdit.mLabels[i].c_str());
             if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
                 mbVisible[i] = !mbVisible[i];
         }
@@ -1188,9 +1330,11 @@ struct MySequence : public ImSequencer::SequenceInterface
                 int keyIndex = selPoint.pointIndex;
                 ImVec2 keyValue = curveEdit.mPts[selPoint.curveIndex][keyIndex];
                 uint32_t parameterIndex = curveEdit.mParameterIndex[selPoint.curveIndex];
-                AnimTrack* animTrack = mNodeGraphControler.GetAnimTrack(mNodeGraphControler.mSelectedNodeIndex, parameterIndex);
-                //UndoRedo *undoRedo = nullptr;
-                //undoRedo = new URChange<AnimTrack>(int(animTrack - gNodeDelegate.GetAnimTrack().data()), [](int index) { return &gNodeDelegate.mAnimTrack[index]; });
+                AnimTrack* animTrack =
+                    mNodeGraphControler.GetAnimTrack(mNodeGraphControler.mSelectedNodeIndex, parameterIndex);
+                // UndoRedo *undoRedo = nullptr;
+                // undoRedo = new URChange<AnimTrack>(int(animTrack - gNodeDelegate.GetAnimTrack().data()), [](int
+                // index) { return &gNodeDelegate.mAnimTrack[index]; });
 
                 if (setKeyFrameOrValue.x < FLT_MAX)
                 {
@@ -1201,7 +1345,7 @@ struct MySequence : public ImSequencer::SequenceInterface
                     keyValue.y = setKeyFrameOrValue.y;
                 }
                 curveEdit.EditPoint(selPoint.curveIndex, selPoint.pointIndex, keyValue);
-                //delete undoRedo;
+                // delete undoRedo;
             }
             curveEdit.EndEdit();
             setKeyFrameOrValue.x = setKeyFrameOrValue.y = FLT_MAX;
@@ -1216,7 +1360,7 @@ struct MySequence : public ImSequencer::SequenceInterface
         mCurveMax = curveMax.y;
     }
 
-    NodeGraphControler &mNodeGraphControler;
+    NodeGraphControler& mNodeGraphControler;
     std::vector<bool> mbExpansions;
     std::vector<bool> mbVisible;
     ImVector<ImCurveEdit::EditPoint> mSelectedCurvePoints;
@@ -1225,7 +1369,7 @@ struct MySequence : public ImSequencer::SequenceInterface
     ImVec2 getKeyFrameOrValue;
     float mCurveMin, mCurveMax;
     int mCurrentTime;
-    URChange<EvaluationStage> *undoRedoChange;
+    URChange<EvaluationStage>* undoRedoChange;
 };
 
 std::vector<ImHotKey::HotKey> mHotkeys;
@@ -1244,88 +1388,53 @@ void Imogen::Init()
 
     struct HotKeyFunction
     {
-        const char *name;
-        const char *lib;
+        const char* name;
+        const char* lib;
         std::function<void()> function;
     };
     static const std::vector<HotKeyFunction> hotKeyFunctions = {
-        {"Layout"
-            ,"Reorder nodes in a simpler layout"
-            , []() { NodeGraphLayout(); }}
-        ,{"PlayPause"
-            ,"Play or Stop current animation"
-            , [&]() { PlayPause();  }}
-        ,{"AnimationFirstFrame"
-            ,"Set current time to the first frame of animation"
-            , [&]() { mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMin; }}
-        ,{"AnimationNextFrame"
-            ,"Move to the next animation frame"
-            , [&]() { mCurrentTime++; }}
-        ,{"AnimationPreviousFrame"
-            ,"Move to previous animation frame"
-            , [&]() { mCurrentTime--; }}
-        ,{"MaterialExport"
-            ,"Export current material to a file"
-            , [&]() { ExportMaterial(); }}
-        ,{"MaterialImport"
-            ,"Import a material file in the library"
-            , [&]() { ImportMaterial(); }}
-        , { "ToggleLibrary"
-            ,"Show or hide Libaray window"
-            , [&]() { mbShowLibrary = !mbShowLibrary; } }
-        , { "ToggleNodeGraph"
-            ,"Show or hide Node graph window"
-            , [&]() { mbShowNodes = !mbShowNodes; } }
-        , { "ToggleLogger"
-            ,"Show or hide Logger window"
-            , [&]() { mbShowLog = !mbShowLog; } }
-        , { "ToggleSequencer"
-            ,"Show or hide Sequencer window"
-            , [&]() { mbShowTimeline = !mbShowTimeline; } }
-        , { "ToggleParameters"
-            ,"Show or hide Parameters window"
-            , [&]() { mbShowParameters = !mbShowParameters; } }
-        , { "ToggleEditor"
-            ,"Show or hide shader editor window"
-            , [&]() { mbShowShaders = !mbShowShaders; } }
-        ,{"MaterialNew"
-            ,"Create a new graph"
-            , [&]() { NewMaterial(); }}
-        ,{"ReloadShaders"
-            ,"Save shaders and hot reload them"
-            , [&]() { 
-                auto textToSave = mEditor->GetText();
+        {"Layout", "Reorder nodes in a simpler layout", []() { NodeGraphLayout(); }},
+        {"PlayPause", "Play or Stop current animation", [&]() { PlayPause(); }},
+        {"AnimationFirstFrame",
+         "Set current time to the first frame of animation",
+         [&]() { mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMin; }},
+        {"AnimationNextFrame", "Move to the next animation frame", [&]() { mCurrentTime++; }},
+        {"AnimationPreviousFrame", "Move to previous animation frame", [&]() { mCurrentTime--; }},
+        {"MaterialExport", "Export current material to a file", [&]() { ExportMaterial(); }},
+        {"MaterialImport", "Import a material file in the library", [&]() { ImportMaterial(); }},
+        {"ToggleLibrary", "Show or hide Libaray window", [&]() { mbShowLibrary = !mbShowLibrary; }},
+        {"ToggleNodeGraph", "Show or hide Node graph window", [&]() { mbShowNodes = !mbShowNodes; }},
+        {"ToggleLogger", "Show or hide Logger window", [&]() { mbShowLog = !mbShowLog; }},
+        {"ToggleSequencer", "Show or hide Sequencer window", [&]() { mbShowTimeline = !mbShowTimeline; }},
+        {"ToggleParameters", "Show or hide Parameters window", [&]() { mbShowParameters = !mbShowParameters; }},
+        {"ToggleEditor", "Show or hide shader editor window", [&]() { mbShowShaders = !mbShowShaders; }},
+        {"MaterialNew", "Create a new graph", [&]() { NewMaterial(); }},
+        {"ReloadShaders",
+         "Save shaders and hot reload them",
+         [&]() {
+             auto textToSave = mEditor->GetText();
 
-                std::ofstream t(mEvaluatorFiles[mCurrentShaderIndex].mDirectory + mEvaluatorFiles[mCurrentShaderIndex].mFilename, std::ofstream::out);
-                t << textToSave;
-                t.close();
+             std::ofstream t(mEvaluatorFiles[mCurrentShaderIndex].mDirectory +
+                                 mEvaluatorFiles[mCurrentShaderIndex].mFilename,
+                             std::ofstream::out);
+             t << textToSave;
+             t.close();
 
-                gEvaluators.SetEvaluators(mEvaluatorFiles);
-                mNodeGraphControler->mEditingContext.RunAll();
-            }}
-        ,{"DeleteSelectedNodes","Delete selected nodes in the current graph", []() {}}
-        ,{"AnimationSetKey"
-            ,"Make a new animation key with the current parameters values at the current time"
-            , [&]() { mNodeGraphControler->MakeKey(mCurrentTime, uint32_t(mNodeGraphControler->mSelectedNodeIndex), 0); }}
-        ,{"HotKeyEditor"
-            , "Open the Hotkey editor window"
-            , [&]() { 
-                ImGui::OpenPopup("HotKeys Editor"); 
-            }}
-        ,{"NewNodePopup","Open the new node menu", []() {}}
-        ,{"Undo"
-            ,"Undo the last operation"
-            , []() { gUndoRedoHandler.Undo(); }}
-        ,{"Redo"
-            ,"Redo the last undo"
-            , []() { gUndoRedoHandler.Redo(); }}
-        ,{"Copy","Copy the selected nodes", []() {}}
-        ,{"Cut","Cut the selected nodes", []() {}}
-        ,{"Paste","Paste previously copy/cut nodes", []() {}}
-        ,{"BuildMaterial"
-            ,"Build current material"
-            , [&]() { BuildCurrentMaterial(mBuilder); }}
-        };
+             gEvaluators.SetEvaluators(mEvaluatorFiles);
+             mNodeGraphControler->mEditingContext.RunAll();
+         }},
+        {"DeleteSelectedNodes", "Delete selected nodes in the current graph", []() {}},
+        {"AnimationSetKey",
+         "Make a new animation key with the current parameters values at the current time",
+         [&]() { mNodeGraphControler->MakeKey(mCurrentTime, uint32_t(mNodeGraphControler->mSelectedNodeIndex), 0); }},
+        {"HotKeyEditor", "Open the Hotkey editor window", [&]() { ImGui::OpenPopup("HotKeys Editor"); }},
+        {"NewNodePopup", "Open the new node menu", []() {}},
+        {"Undo", "Undo the last operation", []() { gUndoRedoHandler.Undo(); }},
+        {"Redo", "Redo the last undo", []() { gUndoRedoHandler.Redo(); }},
+        {"Copy", "Copy the selected nodes", []() {}},
+        {"Cut", "Cut the selected nodes", []() {}},
+        {"Paste", "Paste previously copy/cut nodes", []() {}},
+        {"BuildMaterial", "Build current material", [&]() { BuildCurrentMaterial(mBuilder); }}};
     mHotkeys.reserve(hotKeyFunctions.size());
     mHotkeyFunctions.reserve(hotKeyFunctions.size());
     for (const auto& hotKeyFunction : hotKeyFunctions)
@@ -1337,11 +1446,10 @@ void Imogen::Init()
 
 void Imogen::Finish()
 {
-
 }
 
 
-const char *GetShortCutLib(const char *functionName)
+const char* GetShortCutLib(const char* functionName)
 {
     static char tmps[512];
     for (int i = 0; i < mHotkeys.size(); i++)
@@ -1360,6 +1468,8 @@ void Imogen::HandleHotKeys()
     int hotkeyIndex = ImHotKey::GetHotKey(mHotkeys.data(), mHotkeys.size());
     if (hotkeyIndex == -1)
         return;
+    if (ImGui::IsAnyItemActive())
+        return;
     mHotkeyFunctions[hotkeyIndex]();
 }
 
@@ -1369,7 +1479,7 @@ void Imogen::ShowAppMainMenuBar()
     ImGuiIO& io = ImGui::GetIO();
 
     static const ImVec2 buttonSize(440, 30);
-    
+
     mMainMenuPos = ImLerp(mMainMenuPos, mMainMenuDest, 0.2f);
 
     ImGui::SetNextWindowSize(ImVec2(440, io.DisplaySize.y - deltaHeight.y));
@@ -1384,7 +1494,6 @@ void Imogen::ShowAppMainMenuBar()
     {
         if (ImGui::Button("Reload Plugins", buttonSize))
         {
-
         }
         ImGui::Separator();
         for (auto& plugin : mRegisteredPlugins)
@@ -1411,11 +1520,9 @@ void Imogen::ShowAppMainMenuBar()
         }
         if (Button("MaterialExport", "Export Material", buttonSize))
         {
-
         }
         if (Button("MaterialImport", "Import Material", buttonSize))
         {
-
         }
     }
 
@@ -1437,7 +1544,7 @@ void Imogen::ShowAppMainMenuBar()
         ImGui::Checkbox(GetShortCutLib("ToggleEditor"), &mbShowShaders);
     }
 
-    ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y-32));
+    ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y - 32));
     if ((io.MouseClicked[0] && !windowRect.Contains(io.MousePos) && !ImGui::IsPopupOpen("HotKeys Editor")))
     {
         mMainMenuDest = -440;
@@ -1450,7 +1557,7 @@ void Imogen::ShowAppMainMenuBar()
     ImGui::EndPopup();
 }
 
-void Imogen::BuildCurrentMaterial(Builder *builder)
+void Imogen::BuildCurrentMaterial(Builder* builder)
 {
     if (mSelectedMaterial != -1)
     {
@@ -1459,9 +1566,9 @@ void Imogen::BuildCurrentMaterial(Builder *builder)
     }
 }
 
-int Imogen::GetFunctionByName(const char *functionName) const
+int Imogen::GetFunctionByName(const char* functionName) const
 {
-    for (unsigned int i = 0;i<mHotkeys.size();i++)
+    for (unsigned int i = 0; i < mHotkeys.size(); i++)
     {
         const auto& hotkey = mHotkeys[i];
         if (!strcmp(hotkey.functionName, functionName))
@@ -1470,7 +1577,7 @@ int Imogen::GetFunctionByName(const char *functionName) const
     return -1;
 }
 
-bool Imogen::ImageButton(const char *functionName, unsigned int icon, ImVec2 size)
+bool Imogen::ImageButton(const char* functionName, unsigned int icon, ImVec2 size)
 {
     bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon, size, ImVec2(0, 1), ImVec2(1, 0));
     if (ImGui::IsItemHovered())
@@ -1489,7 +1596,7 @@ bool Imogen::ImageButton(const char *functionName, unsigned int icon, ImVec2 siz
     return res;
 }
 
-bool Imogen::Button(const char *functionName, const char *label, ImVec2 size)
+bool Imogen::Button(const char* functionName, const char* label, ImVec2 size)
 {
     bool res = ImGui::Button(label, size);
     if (ImGui::IsItemHovered())
@@ -1508,7 +1615,7 @@ bool Imogen::Button(const char *functionName, const char *label, ImVec2 size)
     return res;
 }
 
-void Imogen::ShowTitleBar(Builder *builder)
+void Imogen::ShowTitleBar(Builder* builder)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -1531,7 +1638,11 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::PushStyleColor(ImGuiCol_Button, 0);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0x80808080);
     ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
-    ImGui::Begin("TitleBar", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::Begin("TitleBar",
+                 0,
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse |
+                     ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PushID(149);
     if (ImGui::Button("", butSize))
     {
@@ -1550,8 +1661,8 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::PopID();
     ImGui::SameLine();
     // imogen info strings
-    ImGui::BeginChildFrame(152, ImVec2(io.DisplaySize.x - butSize.x*4.f - 300, 32.f));
-    ImGui::Text("Imogen 0.11");
+    ImGui::BeginChildFrame(152, ImVec2(io.DisplaySize.x - butSize.x * 4.f - 300, 32.f));
+    ImGui::Text("Imogen 0.12");
     if (mSelectedMaterial != -1)
     {
         Material& material = library.mMaterials[mSelectedMaterial];
@@ -1634,7 +1745,7 @@ void Imogen::ShowTitleBar(Builder *builder)
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar(5);
 
-    
+
     // done
 }
 
@@ -1677,7 +1788,7 @@ void Imogen::ShowTimeLine()
     ImGui::PopID();
 
     ImGui::SameLine();
-    if (Button("AnimationNextFrame", ">", ImVec2(0,0)))
+    if (Button("AnimationNextFrame", ">", ImVec2(0, 0)))
     {
         mCurrentTime++;
     }
@@ -1687,7 +1798,7 @@ void Imogen::ShowTimeLine()
         mCurrentTime = mNodeGraphControler->mEvaluationStages.mFrameMax;
     }
     ImGui::SameLine();
-    
+
     if (Button("PlayPause", mbIsPlaying ? "Stop" : "Play", ImVec2(0, 0)))
     {
         PlayPause();
@@ -1697,7 +1808,8 @@ void Imogen::ShowTimeLine()
     unsigned int playLoopTextureId = gImageCache.GetTexture("Stock/PlayLoop.png");
 
     ImGui::SameLine();
-    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureId : playNoLoopTextureId), ImVec2(16.f, 16.f)))
+    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureId : playNoLoopTextureId),
+                           ImVec2(16.f, 16.f)))
     {
         mbPlayLoop = !mbPlayLoop;
     }
@@ -1708,7 +1820,7 @@ void Imogen::ShowTimeLine()
     ImGui::PopID();
     ImGui::SameLine();
     ImGui::SameLine(0, 40.f);
-    if (Button("AnimationSetKey", "Make Key", ImVec2(0,0)) && selectedEntry != -1)
+    if (Button("AnimationSetKey", "Make Key", ImVec2(0, 0)) && selectedEntry != -1)
     {
         mNodeGraphControler->MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
     }
@@ -1729,7 +1841,7 @@ void Imogen::ShowTimeLine()
     }
     ImGui::PopID();
     ImGui::SameLine();
-    int timeMask[2] = { 0,0 };
+    int timeMask[2] = {0, 0};
     if (selectedEntry != -1)
     {
         timeMask[0] = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry].mStartFrame;
@@ -1738,7 +1850,8 @@ void Imogen::ShowTimeLine()
     ImGui::PushItemWidth(120);
     if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
     {
-        URChange<EvaluationStage> undoRedoChange(selectedEntry, [&](int index) { return &mNodeGraphControler->mEvaluationStages.mStages[index]; });
+        URChange<EvaluationStage> undoRedoChange(
+            selectedEntry, [&](int index) { return &mNodeGraphControler->mEvaluationStages.mStages[index]; });
         timeMask[1] = ImMax(timeMask[1], timeMask[0]);
         timeMask[0] = ImMin(timeMask[1], timeMask[0]);
         mNodeGraphControler->SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
@@ -1746,13 +1859,22 @@ void Imogen::ShowTimeLine()
     ImGui::PopItemWidth();
     ImGui::PopItemWidth();
 
-    Sequencer(mSequence, &mCurrentTime, NULL, &selectedEntry, &firstFrame, ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
+    Sequencer(mSequence,
+              &mCurrentTime,
+              NULL,
+              &selectedEntry,
+              &firstFrame,
+              ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
     if (selectedEntry != -1)
     {
         mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
         NodeGraphSelectNode(selectedEntry);
         auto& imoNode = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry];
-        mNodeGraphControler->mEvaluationStages.SetStageLocalTime(&mNodeGraphControler->mEditingContext, selectedEntry, ImClamp(mCurrentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame), true);
+        mNodeGraphControler->mEvaluationStages.SetStageLocalTime(
+            &mNodeGraphControler->mEditingContext,
+            selectedEntry,
+            ImClamp(mCurrentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame),
+            true);
     }
 }
 
@@ -1761,13 +1883,13 @@ void Imogen::ShowNodeGraph()
     if (mSelectedMaterial != -1)
     {
         Material& material = library.mMaterials[mSelectedMaterial];
-        ImGui::PushItemWidth(150);
+        ImGui::PushItemWidth(400);
         ImGui::InputText("Name", &material.mName);
         ImGui::SameLine();
         ImGui::PopItemWidth();
 
         ImGui::PushItemWidth(60);
-        if (Button("MaterialExport", "Export Material", ImVec2(0,0)))
+        if (Button("MaterialExport", "Export Material", ImVec2(0, 0)))
         {
             ExportMaterial();
         }
@@ -1785,7 +1907,7 @@ void Imogen::ShowNodeGraph()
 
 void Imogen::ExportMaterial()
 {
-    nfdchar_t *outPath = NULL;
+    nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
 
     if (result == NFD_OKAY)
@@ -1799,7 +1921,7 @@ void Imogen::ExportMaterial()
     }
 }
 
-void Imogen::Show(Builder *builder, Library& library)
+void Imogen::Show(Builder* builder, Library& library)
 {
     int currentTime = mCurrentTime;
     ImGuiIO& io = ImGui::GetIO();
@@ -1809,7 +1931,12 @@ void Imogen::Show(Builder *builder, Library& library)
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
 
-    if (ImGui::Begin("Imogen", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBringToFrontOnFocus))
+    if (ImGui::Begin("Imogen",
+                     0,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+                         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+                         ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize |
+                         ImGuiWindowFlags_NoBringToFrontOnFocus))
     {
         static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
         ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
@@ -1874,7 +2001,11 @@ void Imogen::Show(Builder *builder, Library& library)
         for (auto& extraction : mExtratedViews)
         {
             char tmps[512];
-            sprintf(tmps, "%s_View_%03d", gMetaNodes[mNodeGraphControler->mEvaluationStages.mStages[extraction.mNodeIndex].mType].mName.c_str(), index);
+            sprintf(
+                tmps,
+                "%s_View_%03d",
+                gMetaNodes[mNodeGraphControler->mEvaluationStages.mStages[extraction.mNodeIndex].mType].mName.c_str(),
+                index);
             bool open = true;
             if (extraction.mFirstFrame)
             {
@@ -1883,7 +2014,7 @@ void Imogen::Show(Builder *builder, Library& library)
             }
             if (ImGui::Begin(tmps, &open))
             {
-                RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, false);
+                RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, true);
             }
             ImGui::End();
             if (!open)
@@ -1934,7 +2065,10 @@ void Imogen::ValidateCurrentMaterial(Library& library)
     ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
 }
 
-void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUATOR_TYPE evaluatorType, std::vector<EvaluatorFile>& files)
+void Imogen::DiscoverNodes(const char* extension,
+                           const char* directory,
+                           EVALUATOR_TYPE evaluatorType,
+                           std::vector<EvaluatorFile>& files)
 {
     tinydir_dir dir;
     tinydir_open(&dir, directory);
@@ -1946,7 +2080,7 @@ void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUAT
 
         if (!file.is_dir && !strcmp(file.extension, extension))
         {
-            files.push_back({ directory, file.name, evaluatorType });
+            files.push_back({directory, file.name, evaluatorType});
         }
 
         tinydir_next(&dir);
@@ -1957,7 +2091,7 @@ void Imogen::DiscoverNodes(const char *extension, const char *directory, EVALUAT
 
 struct readHelper
 {
-    Imogen *imogen;
+    Imogen* imogen;
 };
 static readHelper rhelper;
 
@@ -2042,8 +2176,7 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     }
 }
 
-Imogen::Imogen(NodeGraphControler *nodeGraphControler) :
-    mNodeGraphControler(nodeGraphControler)
+Imogen::Imogen(NodeGraphControler* nodeGraphControler) : mNodeGraphControler(nodeGraphControler)
 {
     mSequence = new MySequence(*nodeGraphControler);
     mEditor = new TextEditor;
@@ -2075,4 +2208,3 @@ void Imogen::ClearAll()
     gUndoRedoHandler.Clear();
     mSequence->Clear();
 }
-

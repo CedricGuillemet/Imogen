@@ -66,7 +66,8 @@ vec3 absorb(float dist, vec3 color, float factor)
 vec4 PhysicalSky()
 {
 	vec3 eyedir = get_world_normal();
-	float alpha = dot(eyedir, lightdir.xyz);
+	vec3 ld = normalize(lightdir.xyz);
+	float alpha = dot(eyedir, ld);
 	float rayleigh_factor = phase(alpha, -0.01)*rayleigh_brightness;
 	float mie_factor = phase(alpha, mie_distribution)*mie_brightness;
 	float spot = smoothstep(0.0, 15.0, phase(alpha, 0.9995))*spot_brightness;
@@ -80,8 +81,8 @@ vec4 PhysicalSky()
 	{
 		float sample_distance = step_length*float(i);
 		vec3 position = eye_position + eyedir*sample_distance;
-		float extinction = horizon_extinction(position, lightdir.xyz, surface_height-0.35);
-		float sample_depth = atmospheric_depth(position, lightdir.xyz);
+		float extinction = horizon_extinction(position, ld.xyz, surface_height-0.35);
+		float sample_depth = atmospheric_depth(position, ld.xyz);
 		vec3 influx = absorb(sample_depth, vec3(intensity), scatter_strength)*extinction;
 		rayleigh_collected += absorb(sample_distance, Kr.xyz*influx, rayleigh_strength);
 		mie_collected += absorb(sample_distance, influx, mie_strength);

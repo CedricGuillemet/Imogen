@@ -2,6 +2,8 @@
 
 int main(void *param, Evaluation *evaluation, void *context)
 {
-	EnableDepthBuffer(context, evaluation->targetIndex, 1);
+	int target = evaluation->targetIndex;
+	EnableFrameClear(context, target, 1);
+	EnableDepthBuffer(context, target, 1);
 	return EVAL_OK;
 }

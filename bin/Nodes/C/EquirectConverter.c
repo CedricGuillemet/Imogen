@@ -12,7 +12,7 @@ int main(EquirectConverter *param, Evaluation *evaluation, void *context)
 	int size = 256 << param->size;
 	if (param->mode == 0)
 	{
-		SetEvaluationCubeSize(context, evaluation->targetIndex, size);
+		SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
 	}
 	else
 	{

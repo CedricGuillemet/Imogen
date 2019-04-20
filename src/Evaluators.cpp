@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,7 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
+#include <GL/gl3w.h> // Initialize with gl3wInit()
 #include "Evaluators.h"
 #include "EvaluationStages.h"
 #include "nfd.h"
@@ -46,89 +46,94 @@ extern enki::TaskScheduler g_TS;
 
 struct EValuationFunction
 {
-    const char *szFunctionName;
-    void *function;
+    const char* szFunctionName;
+    void* function;
 };
 
 static const EValuationFunction evaluationFunctions[] = {
-    { "Log", (void*)Log },
-    { "ReadImage", (void*)EvaluationAPI::Read },
-    { "WriteImage", (void*)EvaluationAPI::Write },
-    { "GetEvaluationImage", (void*)EvaluationAPI::GetEvaluationImage },
-    { "SetEvaluationImage", (void*)EvaluationAPI::SetEvaluationImage },
-    { "SetEvaluationImageCube", (void*)EvaluationAPI::SetEvaluationImageCube },
-    { "AllocateImage", (void*)EvaluationAPI::AllocateImage },
-    { "FreeImage", (void*)Image::Free },
-    { "SetThumbnailImage", (void*)EvaluationAPI::SetThumbnailImage },
-    { "Evaluate", (void*)EvaluationAPI::Evaluate},
-    { "SetBlendingMode", (void*)EvaluationAPI::SetBlendingMode},
-    { "EnableDepthBuffer", (void*)EvaluationAPI::EnableDepthBuffer},
-    { "EnableFrameClear", (void*)EvaluationAPI::EnableFrameClear},
-    { "SetVertexSpace", (void*)EvaluationAPI::SetVertexSpace},
+    {"Log", (void*)Log},
+    {"log2", (void*)static_cast<float (*)(float)>(log2)},
+    {"ReadImage", (void*)EvaluationAPI::Read},
+    {"WriteImage", (void*)EvaluationAPI::Write},
+    {"GetEvaluationImage", (void*)EvaluationAPI::GetEvaluationImage},
+    {"SetEvaluationImage", (void*)EvaluationAPI::SetEvaluationImage},
+    {"SetEvaluationImageCube", (void*)EvaluationAPI::SetEvaluationImageCube},
+    {"AllocateImage", (void*)EvaluationAPI::AllocateImage},
+    {"FreeImage", (void*)Image::Free},
+    {"SetThumbnailImage", (void*)EvaluationAPI::SetThumbnailImage},
+    {"Evaluate", (void*)EvaluationAPI::Evaluate},
+    {"SetBlendingMode", (void*)EvaluationAPI::SetBlendingMode},
+    {"EnableDepthBuffer", (void*)EvaluationAPI::EnableDepthBuffer},
+    {"EnableFrameClear", (void*)EvaluationAPI::EnableFrameClear},
+    {"SetVertexSpace", (void*)EvaluationAPI::SetVertexSpace},
 
-    { "GetEvaluationSize", (void*)EvaluationAPI::GetEvaluationSize},
-    { "SetEvaluationSize", (void*)EvaluationAPI::SetEvaluationSize },
-    { "SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize },
-    { "AllocateComputeBuffer", (void*)EvaluationAPI::AllocateComputeBuffer },
-    { "CubemapFilter", (void*)Image::CubemapFilter},
-    { "SetProcessing", (void*)EvaluationAPI::SetProcessing},
-    { "Job", (void*)EvaluationAPI::Job },
-    { "JobMain", (void*)EvaluationAPI::JobMain },
-    { "memmove", memmove },
-    { "strcpy", strcpy },
-    { "strlen", strlen },
-    { "fabsf", fabsf },
-    { "LoadSVG", (void*)Image::LoadSVG},
-    { "LoadScene", (void*)EvaluationAPI::LoadScene},
-    { "SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
-    { "GetEvaluationScene", (void*)EvaluationAPI::GetEvaluationScene},
-    { "GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
-    { "OverrideInput", (void*)EvaluationAPI::OverrideInput},
-    { "InitRenderer", (void*)EvaluationAPI::InitRenderer},
-    { "UpdateRenderer", (void*)EvaluationAPI::UpdateRenderer},
-    { "ReadGLTF", (void*)EvaluationAPI::ReadGLTF},
+    {"GetEvaluationSize", (void*)EvaluationAPI::GetEvaluationSize},
+    {"SetEvaluationSize", (void*)EvaluationAPI::SetEvaluationSize},
+    {"SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize},
+    {"AllocateComputeBuffer", (void*)EvaluationAPI::AllocateComputeBuffer},
+    {"SetProcessing", (void*)EvaluationAPI::SetProcessing},
+    {"Job", (void*)EvaluationAPI::Job},
+    {"JobMain", (void*)EvaluationAPI::JobMain},
+    {"memmove", memmove},
+    {"strcpy", strcpy},
+    {"strlen", strlen},
+    {"fabsf", fabsf},
+    {"strcmp", strcmp},
+    {"LoadSVG", (void*)Image::LoadSVG},
+    {"LoadScene", (void*)EvaluationAPI::LoadScene},
+    {"SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
+    {"GetEvaluationScene", (void*)EvaluationAPI::GetEvaluationScene},
+    {"SetEvaluationRTScene", (void*)EvaluationAPI::SetEvaluationRTScene},
+    {"GetEvaluationRTScene", (void*)EvaluationAPI::GetEvaluationRTScene},
+    {"GetEvaluationSceneName", (void*)EvaluationAPI::GetEvaluationSceneName},
+    {"GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
+    {"OverrideInput", (void*)EvaluationAPI::OverrideInput},
+    {"InitRenderer", (void*)EvaluationAPI::InitRenderer},
+    {"UpdateRenderer", (void*)EvaluationAPI::UpdateRenderer},
+    {"ReadGLTF", (void*)EvaluationAPI::ReadGLTF},
 };
 
-static void libtccErrorFunc(void *opaque, const char *msg)
+static void libtccErrorFunc(void* opaque, const char* msg)
 {
     Log(msg);
     Log("\n");
 }
 
-void LogPython(const std::string &str)
+void LogPython(const std::string& str)
 {
     Log(str.c_str());
 }
 
 PYBIND11_MAKE_OPAQUE(Image);
 
-struct PyGraph {
+struct PyGraph
+{
     Material* mGraph;
 };
 
-struct PyNode {
+struct PyNode
+{
     Material* mGraph;
     MaterialNode* mNode;
     int mNodeIndex;
 };
 
-PYBIND11_EMBEDDED_MODULE(Imogen, m) 
+PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
     pybind11::class_<Image>(m, "Image");
     auto graph = pybind11::class_<PyGraph>(m, "Graph");
     graph.def("GetEvaluationList", [](PyGraph& pyGraph) {
         auto d = pybind11::list();
 
-        for (int index = 0; index < int(pyGraph.mGraph->mMaterialNodes.size()) ; index++)
+        for (int index = 0; index < int(pyGraph.mGraph->mMaterialNodes.size()); index++)
         {
-            auto & node = pyGraph.mGraph->mMaterialNodes[index];
-            d.append(new PyNode{ pyGraph.mGraph, &node, index});
+            auto& node = pyGraph.mGraph->mMaterialNodes[index];
+            d.append(new PyNode{pyGraph.mGraph, &node, index});
         }
         return d;
-
     });
     graph.def("Build", [](PyGraph& pyGraph) {
-        extern Builder *builder;
+        extern Builder* builder;
         Material* material = pyGraph.mGraph;
         builder->Add(material);
     });
@@ -166,8 +171,8 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         if (node.mNode->mType == 0xFFFFFFFF)
             return d;
         MetaNode& metaNode = gMetaNodes[node.mNode->mType];
-        
-        for (uint32_t index = 0;index<metaNode.mParams.size();index++)
+
+        for (uint32_t index = 0; index < metaNode.mParams.size(); index++)
         {
             auto& param = metaNode.mParams[index];
             auto e = pybind11::dict();
@@ -181,87 +186,87 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
                 e["value"] = std::string("");
                 continue;
             }
-            
-            unsigned char * ptr = &node.mNode->mParameters[parameterOffset];
-            float *ptrf = (float*)ptr;
-            int * ptri = (int*)ptr;
+
+            unsigned char* ptr = &node.mNode->mParameters[parameterOffset];
+            float* ptrf = (float*)ptr;
+            int* ptri = (int*)ptr;
             char tmps[512];
             switch (param.mType)
             {
-            case Con_Float:
-                e["value"] = pybind11::float_(ptrf[0]);
-                break;
-            case Con_Float2:
-                sprintf(tmps, "%f,%f", ptrf[0], ptrf[1]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Float3:
-                sprintf(tmps, "%f,%f,%f", ptrf[0], ptrf[1], ptrf[2]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Float4:
-                sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Color4:
-                sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Int:
-                e["value"] = pybind11::int_(ptri[0]);
-                break;
-            case Con_Int2:
-                sprintf(tmps, "%d,%d", ptri[0], ptri[1]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Ramp:
-                e["value"] = std::string("N/A");
-                break;
-            case Con_Angle:
-                e["value"] = pybind11::float_(ptrf[0]);
-                break;
-            case Con_Angle2:
-                sprintf(tmps, "%f,%f", ptrf[0], ptrf[1]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Angle3:
-                sprintf(tmps, "%f,%f,%f", ptrf[0], ptrf[1], ptrf[2]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Angle4:
-                sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
-                e["value"] = std::string(tmps);
-                break;
-            case Con_Enum:
-                e["value"] = pybind11::int_(ptri[0]);
-                break;
-            case Con_Structure:
-                e["value"] = std::string("N/A");
-                break;
-            case Con_FilenameRead:
-            case Con_FilenameWrite:
-                e["value"] = std::string((char*)ptr, strlen((char*)ptr));
-                break;
-            case Con_ForceEvaluate:
-                e["value"] = std::string("N/A");
-                break;
-            case Con_Bool:
-                e["value"] = pybind11::bool_(ptr[0] != 0);
-                break;
-            case Con_Ramp4:
-            case Con_Camera:
-                e["value"] = std::string("N/A");
-                break;
+                case Con_Float:
+                    e["value"] = pybind11::float_(ptrf[0]);
+                    break;
+                case Con_Float2:
+                    sprintf(tmps, "%f,%f", ptrf[0], ptrf[1]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Float3:
+                    sprintf(tmps, "%f,%f,%f", ptrf[0], ptrf[1], ptrf[2]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Float4:
+                    sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Color4:
+                    sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Int:
+                    e["value"] = pybind11::int_(ptri[0]);
+                    break;
+                case Con_Int2:
+                    sprintf(tmps, "%d,%d", ptri[0], ptri[1]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Ramp:
+                    e["value"] = std::string("N/A");
+                    break;
+                case Con_Angle:
+                    e["value"] = pybind11::float_(ptrf[0]);
+                    break;
+                case Con_Angle2:
+                    sprintf(tmps, "%f,%f", ptrf[0], ptrf[1]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Angle3:
+                    sprintf(tmps, "%f,%f,%f", ptrf[0], ptrf[1], ptrf[2]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Angle4:
+                    sprintf(tmps, "%f,%f,%f,%f", ptrf[0], ptrf[1], ptrf[2], ptrf[3]);
+                    e["value"] = std::string(tmps);
+                    break;
+                case Con_Enum:
+                    e["value"] = pybind11::int_(ptri[0]);
+                    break;
+                case Con_Structure:
+                    e["value"] = std::string("N/A");
+                    break;
+                case Con_FilenameRead:
+                case Con_FilenameWrite:
+                    e["value"] = std::string((char*)ptr, strlen((char*)ptr));
+                    break;
+                case Con_ForceEvaluate:
+                    e["value"] = std::string("N/A");
+                    break;
+                case Con_Bool:
+                    e["value"] = pybind11::bool_(ptr[0] != 0);
+                    break;
+                case Con_Ramp4:
+                case Con_Camera:
+                    e["value"] = std::string("N/A");
+                    break;
             }
         }
         return d;
     });
     m.def("RegisterPlugin", [](std::string& name, std::string command) {
-        mRegisteredPlugins.push_back({ name, command });
+        mRegisteredPlugins.push_back({name, command});
         Log("Plugin registered : %s \n", name.c_str());
     });
     m.def("FileDialogRead", []() {
-        nfdchar_t *outPath = NULL;
+        nfdchar_t* outPath = NULL;
         nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
 
         if (result == NFD_OKAY)
@@ -271,10 +276,9 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
             return res;
         }
         return std::string();
-
     });
     m.def("FileDialogWrite", []() {
-        nfdchar_t *outPath = NULL;
+        nfdchar_t* outPath = NULL;
         nfdresult_t result = NFD_SaveDialog(NULL, NULL, &outPath);
 
         if (result == NFD_OKAY)
@@ -285,22 +289,22 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         }
         return std::string();
     });
-    m.def("Log", LogPython );
-    m.def("ReadImage", Image::Read );
-    m.def("WriteImage", Image::Write );
-    m.def("GetEvaluationImage", EvaluationAPI::GetEvaluationImage );
-    m.def("SetEvaluationImage", EvaluationAPI::SetEvaluationImage );
-    m.def("SetEvaluationImageCube", EvaluationAPI::SetEvaluationImageCube );
-    m.def("AllocateImage", EvaluationAPI::AllocateImage );
-    m.def("FreeImage", Image::Free );
-    m.def("SetThumbnailImage", EvaluationAPI::SetThumbnailImage );
-    m.def("Evaluate", EvaluationAPI::Evaluate );
-    m.def("SetBlendingMode", EvaluationAPI::SetBlendingMode );
-    m.def("GetEvaluationSize", EvaluationAPI::GetEvaluationSize );
-    m.def("SetEvaluationSize", EvaluationAPI::SetEvaluationSize );
-    m.def("SetEvaluationCubeSize", EvaluationAPI::SetEvaluationCubeSize );
-    m.def("CubemapFilter", Image::CubemapFilter );
-    m.def("SetProcessing", EvaluationAPI::SetProcessing );
+    m.def("Log", LogPython);
+    m.def("log2", static_cast<float (*)(float)>(log2));
+    m.def("ReadImage", Image::Read);
+    m.def("WriteImage", Image::Write);
+    m.def("GetEvaluationImage", EvaluationAPI::GetEvaluationImage);
+    m.def("SetEvaluationImage", EvaluationAPI::SetEvaluationImage);
+    m.def("SetEvaluationImageCube", EvaluationAPI::SetEvaluationImageCube);
+    m.def("AllocateImage", EvaluationAPI::AllocateImage);
+    m.def("FreeImage", Image::Free);
+    m.def("SetThumbnailImage", EvaluationAPI::SetThumbnailImage);
+    m.def("Evaluate", EvaluationAPI::Evaluate);
+    m.def("SetBlendingMode", EvaluationAPI::SetBlendingMode);
+    m.def("GetEvaluationSize", EvaluationAPI::GetEvaluationSize);
+    m.def("SetEvaluationSize", EvaluationAPI::SetEvaluationSize);
+    m.def("SetEvaluationCubeSize", EvaluationAPI::SetEvaluationCubeSize);
+    m.def("SetProcessing", EvaluationAPI::SetProcessing);
     /*
     m.def("Job", EvaluationStages::Job );
     m.def("JobMain", EvaluationStages::JobMain );
@@ -313,20 +317,17 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
             d.append(graph.mName);
         }
         return d;
-        }
-        );
+    });
     m.def("GetGraph", [](const std::string& graphName) -> PyGraph* {
-        
         for (auto& graph : library.mMaterials)
         {
             if (graph.mName == graphName)
             {
-                return new PyGraph{ &graph };
+                return new PyGraph{&graph};
             }
         }
         return nullptr;
-    }
-    );
+    });
     /*
     m.def("accessor_api", []() {
         auto d = pybind11::dict();
@@ -342,7 +343,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return d;
     });
     */
-    
+
     /*
     m.def("GetImage", []() {
         auto i = new Image;
@@ -373,7 +374,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
     // GLSL
     for (auto& file : evaluatorfilenames)
     {
-        if (file.mEvaluatorType != EVALUATOR_GLSL&& file.mEvaluatorType != EVALUATOR_GLSLCOMPUTE)
+        if (file.mEvaluatorType != EVALUATOR_GLSL && file.mEvaluatorType != EVALUATOR_GLSLCOMPUTE)
             continue;
         const std::string filename = file.mFilename;
 
@@ -418,15 +419,6 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
     }
 
-    if (!gEvaluationStateGLSLBuffer)
-    {
-        glGenBuffers(1, &gEvaluationStateGLSLBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, gEvaluationStateGLSLBuffer);
-
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 2, gEvaluationStateGLSLBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
 
     TagTime("GLSL init");
 
@@ -438,9 +430,9 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         const std::string filename = file.mFilename;
 
         EvaluatorScript& shader = mEvaluatorScripts[filename];
-        //std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mText);
+        // std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mText);
         std::string nodeName = ReplaceAll(filename, ".glslc", "");
-        //shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
+        // shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
 
         unsigned int program = 0;
         if (nodeName == filename)
@@ -480,6 +472,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
                 Log("%s - Unable to load file.\n", filename.c_str());
                 continue;
             }
+            Log("%s\n", filename.c_str());
             std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
             if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
                 mEvaluatorScripts[filename] = EvaluatorScript(str);
@@ -487,9 +480,9 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
                 mEvaluatorScripts[filename].mText = str;
 
             EvaluatorScript& program = mEvaluatorScripts[filename];
-            TCCState *s = tcc_new();
+            TCCState* s = tcc_new();
 
-            int *noLib = (int*)s;
+            int* noLib = (int*)s;
             noLib[2] = 1; // no stdlib
 
             tcc_set_error_func(s, 0, libtccErrorFunc);
@@ -533,7 +526,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
     }
     TagTime("C init");
-    
+
     for (auto& file : evaluatorfilenames)
     {
         if (file.mEvaluatorType != EVALUATOR_PYTHON)
@@ -552,7 +545,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             Log("Python exception\n");
         }
     }
-    
+
     TagTime("Python init");
 }
 
@@ -639,31 +632,31 @@ void Evaluator::RunPython() const
 
 namespace EvaluationAPI
 {
-    int SetEvaluationImageCube(EvaluationContext *evaluationContext, int target, Image *image, int cubeFace)
+    int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, Image* image, int cubeFace)
     {
         if (image->mNumFaces != 1)
             return EVAL_ERR;
         RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
 
-        tgt.InitCube(image->mWidth);
+        tgt.InitCube(image->mWidth, image->mNumMips);
 
         Image::Upload(image, tgt.mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, true);
         return EVAL_OK;
     }
 
-    int AllocateImage(Image *image)
+    int AllocateImage(Image* image)
     {
         return EVAL_OK;
     }
 
-    int SetThumbnailImage(EvaluationContext *context, Image *image)
+    int SetThumbnailImage(EvaluationContext* context, Image* image)
     {
         std::vector<unsigned char> pngImage;
         if (Image::EncodePng(image, pngImage) == EVAL_ERR)
             return EVAL_ERR;
 
-        Material * material = library.Get(std::make_pair(0, context->GetMaterialUniqueId()));
+        Material* material = library.Get(std::make_pair(0, context->GetMaterialUniqueId()));
         if (material)
         {
             material->mThumbnail = pngImage;
@@ -672,7 +665,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    void SetBlendingMode(EvaluationContext *evaluationContext, int target, int blendSrc, int blendDst)
+    void SetBlendingMode(EvaluationContext* evaluationContext, int target, int blendSrc, int blendDst)
     {
         EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
 
@@ -680,50 +673,51 @@ namespace EvaluationAPI
         evaluation.mBlendingDst = blendDst;
     }
 
-    void EnableDepthBuffer(EvaluationContext *evaluationContext, int target, int enable)
+    void EnableDepthBuffer(EvaluationContext* evaluationContext, int target, int enable)
     {
         EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
         evaluation.mbDepthBuffer = enable != 0;
     }
 
-    void EnableFrameClear(EvaluationContext *evaluationContext, int target, int enable)
+    void EnableFrameClear(EvaluationContext* evaluationContext, int target, int enable)
     {
         EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
         evaluation.mbClearBuffer = enable != 0;
     }
 
-    void SetVertexSpace(EvaluationContext *evaluationContext, int target, int vertexSpace)
+    void SetVertexSpace(EvaluationContext* evaluationContext, int target, int vertexSpace)
     {
         EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
         evaluation.mVertexSpace = vertexSpace;
     }
 
-    int GetEvaluationSize(const EvaluationContext *evaluationContext, int target, int *imageWidth, int *imageHeight)
+    int GetEvaluationSize(const EvaluationContext* evaluationContext, int target, int* imageWidth, int* imageHeight)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
             return EVAL_ERR;
-        *imageWidth = renderTarget->mImage.mWidth;
-        *imageHeight = renderTarget->mImage.mHeight;
+        *imageWidth = renderTarget->mImage->mWidth;
+        *imageHeight = renderTarget->mImage->mHeight;
         return EVAL_OK;
     }
 
-    int SetEvaluationSize(EvaluationContext *evaluationContext, int target, int imageWidth, int imageHeight)
+    int SetEvaluationSize(EvaluationContext* evaluationContext, int target, int imageWidth, int imageHeight)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
             return EVAL_ERR;
-        //if (gCurrentContext->GetEvaluationInfo().uiPass)
+        // if (gCurrentContext->GetEvaluationInfo().uiPass)
         //    return EVAL_OK;
-        renderTarget->InitBuffer(imageWidth, imageHeight, evaluationContext->mEvaluationStages.mStages[target].mbDepthBuffer);
+        renderTarget->InitBuffer(
+            imageWidth, imageHeight, evaluationContext->mEvaluationStages.mStages[target].mbDepthBuffer);
         return EVAL_OK;
     }
 
-    int SetEvaluationCubeSize(EvaluationContext *evaluationContext, int target, int faceWidth)
+    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int mipmapCount)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
@@ -731,13 +725,26 @@ namespace EvaluationAPI
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
             return EVAL_ERR;
-        renderTarget->InitCube(faceWidth);
+        renderTarget->InitCube(faceWidth, mipmapCount);
         return EVAL_OK;
     }
 
     std::map<std::string, std::weak_ptr<Scene>> gSceneCache;
 
-    int SetEvaluationScene(EvaluationContext *evaluationContext, int target, void *scene)
+    int SetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void* scene)
+    {
+        evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
+        return EVAL_OK;
+    }
+
+    int GetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void** scene)
+    {
+        *scene = evaluationContext->mEvaluationStages.mStages[target].mScene;
+        return EVAL_OK;
+    }
+
+
+    int SetEvaluationScene(EvaluationContext* evaluationContext, int target, void* scene)
     {
         const std::string& name = ((Scene*)scene)->mName;
         auto& stage = evaluationContext->mEvaluationStages.mStages[target];
@@ -746,14 +753,19 @@ namespace EvaluationAPI
         {
             stage.mGScene = std::shared_ptr<Scene>((Scene*)scene);
             gSceneCache.insert(std::make_pair(name, stage.mGScene));
+            evaluationContext->SetTargetDirty(target, Dirty::Input);
             return EVAL_OK;
         }
-        
-        stage.mGScene = iter->second.lock();
+
+        if (stage.mGScene != iter->second.lock())
+        {
+            stage.mGScene = iter->second.lock();
+            evaluationContext->SetTargetDirty(target, Dirty::Input);
+        }
         return EVAL_OK;
     }
 
-    int GetEvaluationScene(EvaluationContext *evaluationContext, int target, void **scene)
+    int GetEvaluationScene(EvaluationContext* evaluationContext, int target, void** scene)
     {
         if (target >= 0 && target < evaluationContext->mEvaluationStages.mStages.size())
         {
@@ -763,20 +775,31 @@ namespace EvaluationAPI
         return EVAL_ERR;
     }
 
-    int GetEvaluationRenderer(EvaluationContext *evaluationContext, int target, void **renderer)
+    const char* GetEvaluationSceneName(EvaluationContext* evaluationContext, int target)
+    {
+        void* scene;
+        if (GetEvaluationScene(evaluationContext, target, &scene) == EVAL_OK && scene)
+        {
+            const std::string& name = ((Scene*)scene)->mName;
+            return name.c_str();
+        }
+        return "";
+    }
+
+    int GetEvaluationRenderer(EvaluationContext* evaluationContext, int target, void** renderer)
     {
         *renderer = evaluationContext->mEvaluationStages.mStages[target].renderer;
         return EVAL_OK;
     }
 
 
-    int OverrideInput(EvaluationContext *evaluationContext, int target, int inputIndex, int newInputTarget)
+    int OverrideInput(EvaluationContext* evaluationContext, int target, int inputIndex, int newInputTarget)
     {
         evaluationContext->mEvaluationStages.mStages[target].mInput.mOverrideInputs[inputIndex] = newInputTarget;
         return EVAL_OK;
     }
 
-    int GetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image)
+    int GetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image)
     {
         if (target == -1 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
@@ -784,10 +807,10 @@ namespace EvaluationAPI
         RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
 
         // compute total size
-        Image& img = tgt.mImage;
+        Image& img = *tgt.mImage.get();
         unsigned int texelSize = textureFormatSize[img.mFormat];
         unsigned int texelFormat = glInternalFormats[img.mFormat];
-        uint32_t size = 0;// img.mNumFaces * img.mWidth * img.mHeight * texelSize;
+        uint32_t size = 0; // img.mNumFaces * img.mWidth * img.mHeight * texelSize;
         for (int i = 0; i < img.mNumMips; i++)
             size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 
@@ -798,10 +821,10 @@ namespace EvaluationAPI
         image->mFormat = img.mFormat;
         image->mNumFaces = img.mNumFaces;
 
-        glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
-        unsigned char *ptr = image->GetBits();
+        unsigned char* ptr = image->GetBits();
         if (img.mNumFaces == 1)
         {
+            glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
             for (int i = 0; i < img.mNumMips; i++)
             {
                 glGetTexImage(GL_TEXTURE_2D, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
@@ -810,6 +833,7 @@ namespace EvaluationAPI
         }
         else
         {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt.mGLTexID);
             for (int cube = 0; cube < img.mNumFaces; cube++)
             {
                 for (int i = 0; i < img.mNumMips; i++)
@@ -822,16 +846,16 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int SetEvaluationImage(EvaluationContext *evaluationContext, int target, Image *image)
+    int SetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image)
     {
-        EvaluationStage &stage = evaluationContext->mEvaluationStages.mStages[target];
+        EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
             return EVAL_ERR;
         unsigned int texelSize = textureFormatSize[image->mFormat];
         unsigned int inputFormat = glInputFormats[image->mFormat];
         unsigned int internalFormat = glInternalFormats[image->mFormat];
-        unsigned char *ptr = image->GetBits();
+        unsigned char* ptr = image->GetBits();
         if (image->mNumFaces == 1)
         {
             tgt->InitBuffer(image->mWidth, image->mHeight, stage.mbDepthBuffer);
@@ -840,7 +864,15 @@ namespace EvaluationAPI
 
             for (int i = 0; i < image->mNumMips; i++)
             {
-                glTexImage2D(GL_TEXTURE_2D, i, internalFormat, image->mWidth >> i, image->mHeight >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
+                glTexImage2D(GL_TEXTURE_2D,
+                             i,
+                             internalFormat,
+                             image->mWidth >> i,
+                             image->mHeight >> i,
+                             0,
+                             inputFormat,
+                             GL_UNSIGNED_BYTE,
+                             ptr);
                 ptr += (image->mWidth >> i) * (image->mHeight >> i) * texelSize;
             }
 
@@ -851,14 +883,22 @@ namespace EvaluationAPI
         }
         else
         {
-            tgt->InitCube(image->mWidth);
+            tgt->InitCube(image->mWidth, image->mNumMips);
             glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
 
             for (int face = 0; face < image->mNumFaces; face++)
             {
                 for (int i = 0; i < image->mNumMips; i++)
                 {
-                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, i, internalFormat, image->mWidth >> i, image->mWidth >> i, 0, inputFormat, GL_UNSIGNED_BYTE, ptr);
+                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
+                                 i,
+                                 internalFormat,
+                                 image->mWidth >> i,
+                                 image->mWidth >> i,
+                                 0,
+                                 inputFormat,
+                                 GL_UNSIGNED_BYTE,
+                                 ptr);
                     ptr += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
                 }
             }
@@ -867,18 +907,17 @@ namespace EvaluationAPI
                 TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
             else
                 TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
-
         }
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
             stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
-        evaluationContext->SetTargetDirty(target, true);
+        evaluationContext->SetTargetDirty(target, Dirty::Input, true);
         return EVAL_OK;
     }
 
-    int LoadScene(const char *filename, void **pscene)
+    int LoadScene(const char* filename, void** pscene)
     {
         // todo: make a real good cache system
-        static std::map<std::string, GLSLPathTracer::Scene *> cachedScenes;
+        static std::map<std::string, GLSLPathTracer::Scene*> cachedScenes;
         std::string sFilename(filename);
         auto iter = cachedScenes.find(sFilename);
         if (iter != cachedScenes.end())
@@ -887,7 +926,7 @@ namespace EvaluationAPI
             return EVAL_OK;
         }
 
-        GLSLPathTracer::Scene *scene = GLSLPathTracer::LoadScene(sFilename);
+        GLSLPathTracer::Scene* scene = GLSLPathTracer::LoadScene(sFilename);
         if (!scene)
         {
             Log("Unable to load scene\n");
@@ -906,21 +945,23 @@ namespace EvaluationAPI
         Log("Triangle Indices: %d\n", scene->gpuBVH->bvhTriangleIndices.size());
         Log("Vertices: %d\n", scene->vertexData.size());
 
-        long long scene_data_bytes =
-            sizeof(GLSLPathTracer::GPUBVHNode) * scene->gpuBVH->bvh->getNumNodes() +
-            sizeof(GLSLPathTracer::TriangleData) * scene->gpuBVH->bvhTriangleIndices.size() +
-            sizeof(GLSLPathTracer::VertexData) * scene->vertexData.size() +
-            sizeof(GLSLPathTracer::NormalTexData) * scene->normalTexData.size() +
-            sizeof(GLSLPathTracer::MaterialData) * scene->materialData.size() +
-            sizeof(GLSLPathTracer::LightData) * scene->lightData.size();
+        long long scene_data_bytes = sizeof(GLSLPathTracer::GPUBVHNode) * scene->gpuBVH->bvh->getNumNodes() +
+                                     sizeof(GLSLPathTracer::TriangleData) * scene->gpuBVH->bvhTriangleIndices.size() +
+                                     sizeof(GLSLPathTracer::VertexData) * scene->vertexData.size() +
+                                     sizeof(GLSLPathTracer::NormalTexData) * scene->normalTexData.size() +
+                                     sizeof(GLSLPathTracer::MaterialData) * scene->materialData.size() +
+                                     sizeof(GLSLPathTracer::LightData) * scene->lightData.size();
 
         Log("GPU Memory used for BVH and scene data: %d MB\n", scene_data_bytes / 1048576);
 
-        long long tex_data_bytes =
-            scene->texData.albedoTextureSize.x * scene->texData.albedoTextureSize.y * scene->texData.albedoTexCount * 3 +
-            scene->texData.metallicRoughnessTextureSize.x * scene->texData.metallicRoughnessTextureSize.y * scene->texData.metallicRoughnessTexCount * 3 +
-            scene->texData.normalTextureSize.x * scene->texData.normalTextureSize.y * scene->texData.normalTexCount * 3 +
-            scene->hdrLoaderRes.width * scene->hdrLoaderRes.height * sizeof(GL_FLOAT) * 3;
+        long long tex_data_bytes = scene->texData.albedoTextureSize.x * scene->texData.albedoTextureSize.y *
+                                       scene->texData.albedoTexCount * 3 +
+                                   scene->texData.metallicRoughnessTextureSize.x *
+                                       scene->texData.metallicRoughnessTextureSize.y *
+                                       scene->texData.metallicRoughnessTexCount * 3 +
+                                   scene->texData.normalTextureSize.x * scene->texData.normalTextureSize.y *
+                                       scene->texData.normalTexCount * 3 +
+                                   scene->hdrLoaderRes.width * scene->hdrLoaderRes.height * sizeof(GL_FLOAT) * 3;
 
         Log("GPU Memory used for Textures: %d MB\n", tex_data_bytes / 1048576);
 
@@ -929,15 +970,16 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int InitRenderer(EvaluationContext *evaluationContext, int target, int mode, void *scene)
+    int InitRenderer(EvaluationContext* evaluationContext, int target, int mode, void* scene)
     {
-        GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)scene;
+        GLSLPathTracer::Scene* rdscene = (GLSLPathTracer::Scene*)scene;
         evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
 
-        GLSLPathTracer::Renderer *currentRenderer = (GLSLPathTracer::Renderer*)evaluationContext->mEvaluationStages.mStages[target].renderer;
+        GLSLPathTracer::Renderer* currentRenderer =
+            (GLSLPathTracer::Renderer*)evaluationContext->mEvaluationStages.mStages[target].renderer;
         if (!currentRenderer)
         {
-            //auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
+            // auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
             auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
             renderer->init();
             evaluationContext->mEvaluationStages.mStages[target].renderer = renderer;
@@ -945,11 +987,11 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int UpdateRenderer(EvaluationContext *evaluationContext, int target)
+    int UpdateRenderer(EvaluationContext* evaluationContext, int target)
     {
         auto& eval = evaluationContext->mEvaluationStages;
-        GLSLPathTracer::Renderer *renderer = (GLSLPathTracer::Renderer *)eval.mStages[target].renderer;
-        GLSLPathTracer::Scene *rdscene = (GLSLPathTracer::Scene *)eval.mStages[target].mScene;
+        GLSLPathTracer::Renderer* renderer = (GLSLPathTracer::Renderer*)eval.mStages[target].renderer;
+        GLSLPathTracer::Scene* rdscene = (GLSLPathTracer::Scene*)eval.mStages[target].mScene;
 
         Camera* camera = eval.GetCameraParameter(target);
         if (camera)
@@ -982,40 +1024,39 @@ namespace EvaluationAPI
         return EVAL_DIRTY;
     }
 
-    void SetProcessing(EvaluationContext *context, int target, int processing)
+    void SetProcessing(EvaluationContext* context, int target, int processing)
     {
         context->StageSetProcessing(target, processing);
     }
 
-    int AllocateComputeBuffer(EvaluationContext *context, int target, int elementCount, int elementSize)
+    int AllocateComputeBuffer(EvaluationContext* context, int target, int elementCount, int elementSize)
     {
         context->AllocateComputeBuffer(target, elementCount, elementSize);
         return EVAL_OK;
     }
 
-    typedef int(*jobFunction)(void*);
+    typedef int (*jobFunction)(void*);
 
     struct CFunctionTaskSet : enki::ITaskSet
     {
-        CFunctionTaskSet(jobFunction function, void *ptr, unsigned int size) : enki::ITaskSet()
-            , mFunction(function)
-            , mBuffer(malloc(size))
+        CFunctionTaskSet(jobFunction function, void* ptr, unsigned int size)
+            : enki::ITaskSet(), mFunction(function), mBuffer(malloc(size))
         {
             memcpy(mBuffer, ptr, size);
         }
-        virtual void    ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+        virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
         {
             mFunction(mBuffer);
             free(mBuffer);
             delete this;
         }
         jobFunction mFunction;
-        void *mBuffer;
+        void* mBuffer;
     };
 
     struct CFunctionMainTask : enki::IPinnedTask
     {
-        CFunctionMainTask(jobFunction function, void *ptr, unsigned int size)
+        CFunctionMainTask(jobFunction function, void* ptr, unsigned int size)
             : enki::IPinnedTask(0) // set pinned thread to 0
             , mFunction(function)
             , mBuffer(malloc(size))
@@ -1029,10 +1070,10 @@ namespace EvaluationAPI
             delete this;
         }
         jobFunction mFunction;
-        void *mBuffer;
+        void* mBuffer;
     };
 
-    int Job(EvaluationContext *evaluationContext, int(*jobFunction)(void*), void *ptr, unsigned int size)
+    int Job(EvaluationContext* evaluationContext, int (*jobFunction)(void*), void* ptr, unsigned int size)
     {
         if (evaluationContext->IsSynchronous())
         {
@@ -1045,7 +1086,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int JobMain(EvaluationContext *evaluationContext, int(*jobMainFunction)(void*), void *ptr, unsigned int size)
+    int JobMain(EvaluationContext* evaluationContext, int (*jobMainFunction)(void*), void* ptr, unsigned int size)
     {
         if (evaluationContext->IsSynchronous())
         {
@@ -1058,33 +1099,38 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int Read(EvaluationContext *evaluationContext, const char *filename, Image *image)
+    int Read(EvaluationContext* evaluationContext, const char* filename, Image* image)
     {
         if (Image::Read(filename, image) == EVAL_OK)
             return EVAL_OK;
         // try to load movie
         auto decoder = evaluationContext->mEvaluationStages.FindDecoder(filename);
         *image = Image::DecodeImage(decoder, evaluationContext->GetCurrentTime());
+        if (!image->mWidth || !image->mHeight)
+            return EVAL_ERR;
         return EVAL_OK;
     }
 
-    int Write(EvaluationContext *evaluationContext, const char *filename, Image *image, int format, int quality)
+    int Write(EvaluationContext* evaluationContext, const char* filename, Image* image, int format, int quality)
     {
         if (format == 7)
         {
-            FFMPEGCodec::Encoder *encoder = evaluationContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
+            FFMPEGCodec::Encoder* encoder =
+                evaluationContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
             std::string fn(filename);
             encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);
             return EVAL_OK;
         }
-        
+
         return Image::Write(filename, image, format, quality);
     }
 
-    int Evaluate(EvaluationContext *evaluationContext, int target, int width, int height, Image *image)
+    int Evaluate(EvaluationContext* evaluationContext, int target, int width, int height, Image* image)
     {
         EvaluationContext context(evaluationContext->mEvaluationStages, true, width, height);
         context.SetCurrentTime(evaluationContext->GetCurrentTime());
+        // set all nodes as dirty so that evaluation (in build) will not bypass most nodes
+        context.DirtyAll();
         while (context.RunBackward(target))
         {
             // processing... maybe good on next run
@@ -1093,15 +1139,15 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    inline char* ReadFile(const char *szFileName, int &bufSize)
+    inline char* ReadFile(const char* szFileName, int& bufSize)
     {
-        FILE *fp = fopen(szFileName, "rb");
+        FILE* fp = fopen(szFileName, "rb");
         if (fp)
         {
             fseek(fp, 0, SEEK_END);
             bufSize = ftell(fp);
             fseek(fp, 0, SEEK_SET);
-            char *buf = new char[bufSize];
+            char* buf = new char[bufSize];
             fread(buf, bufSize, 1, fp);
             fclose(fp);
             return buf;
@@ -1109,7 +1155,7 @@ namespace EvaluationAPI
         return NULL;
     }
 
-    int ReadGLTF(EvaluationContext *evaluationContext, const char *filename, Scene **scene)
+    int ReadGLTF(EvaluationContext* evaluationContext, const char* filename, Scene** scene)
     {
         std::string strFilename(filename);
         auto iter = gSceneCache.find(strFilename);
@@ -1118,7 +1164,7 @@ namespace EvaluationAPI
             *scene = iter->second.lock().get();
             return EVAL_OK;
         }
-        cgltf_options options = { 0 };
+        cgltf_options options = {0};
         cgltf_data* data = NULL;
         cgltf_result result = cgltf_parse_file(&options, filename, &data);
         if (result != cgltf_result_success)
@@ -1130,8 +1176,8 @@ namespace EvaluationAPI
 
         Scene* sc = new Scene;
         sc->mName = strFilename;
-        //gSceneCache.insert(std::make_pair(strFilename, sc));
-        //gScenePointerCache.insert(std::make_pair(sc.get(), sc));
+        // gSceneCache.insert(std::make_pair(strFilename, sc));
+        // gScenePointerCache.insert(std::make_pair(sc.get(), sc));
 
         sc->mMeshes.resize(data->meshes_count);
         for (unsigned int i = 0; i < data->meshes_count; i++)
@@ -1142,27 +1188,38 @@ namespace EvaluationAPI
             // attributes
             for (unsigned int j = 0; j < gltfMesh.primitives_count; j++)
             {
-                auto &gltfPrim = gltfMesh.primitives[j];
-                auto &prim = mesh.mPrimitives[j];
-                    
+                auto& gltfPrim = gltfMesh.primitives[j];
+                auto& prim = mesh.mPrimitives[j];
+
                 for (unsigned int k = 0; k < gltfPrim.attributes_count; k++)
                 {
                     unsigned int format = 0;
                     auto attr = gltfPrim.attributes[k];
                     switch (attr.type)
                     {
-                    case cgltf_attribute_type_position: format = Scene::Mesh::Format::POS; break;
-                    case cgltf_attribute_type_normal: format = Scene::Mesh::Format::NORM; break;
-                    case cgltf_attribute_type_texcoord: format = Scene::Mesh::Format::UV; break;
-                    case cgltf_attribute_type_color: format = Scene::Mesh::Format::COL; break;
+                        case cgltf_attribute_type_position:
+                            format = Scene::Mesh::Format::POS;
+                            break;
+                        case cgltf_attribute_type_normal:
+                            format = Scene::Mesh::Format::NORM;
+                            break;
+                        case cgltf_attribute_type_texcoord:
+                            format = Scene::Mesh::Format::UV;
+                            break;
+                        case cgltf_attribute_type_color:
+                            format = Scene::Mesh::Format::COL;
+                            break;
                     }
-                    const char* buffer = ((char*)attr.data->buffer_view->buffer->data) + attr.data->buffer_view->offset + attr.data->offset;
+                    const char* buffer = ((char*)attr.data->buffer_view->buffer->data) +
+                                         attr.data->buffer_view->offset + attr.data->offset;
                     prim.AddBuffer(buffer, format, (unsigned int)attr.data->stride, (unsigned int)attr.data->count);
                 }
 
                 // indices
-                const char* buffer = ((char*)gltfPrim.indices->buffer_view->buffer->data) + gltfPrim.indices->buffer_view->offset + gltfPrim.indices->offset;
-                prim.AddIndexBuffer(buffer, (unsigned int)gltfPrim.indices->stride, (unsigned int)gltfPrim.indices->count);
+                const char* buffer = ((char*)gltfPrim.indices->buffer_view->buffer->data) +
+                                     gltfPrim.indices->buffer_view->offset + gltfPrim.indices->offset;
+                prim.AddIndexBuffer(
+                    buffer, (unsigned int)gltfPrim.indices->stride, (unsigned int)gltfPrim.indices->count);
             }
         }
 
@@ -1174,7 +1231,7 @@ namespace EvaluationAPI
         {
             cgltf_node_transform_world(&data->nodes[i], sc->mWorldTransforms[i]);
         }
-        
+
         for (unsigned int i = 0; i < data->nodes_count; i++)
         {
             if (!data->nodes[i].mesh)
@@ -1188,5 +1245,4 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-}
-
+} // namespace EvaluationAPI

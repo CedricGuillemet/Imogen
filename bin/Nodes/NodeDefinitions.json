@@ -602,36 +602,6 @@
 		}],
 		"hasUI": true
 	}, {
-		"name": "CubemapFilter",
-		"category": 8,
-		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
-		"inputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "Lighting Model",
-			"type": "Enum",
-			"enum": "Phong|Phong BRDF|Blinn|Blinn BRDF|"
-		}, {
-			"name": "Exclude Base",
-			"type": "Bool"
-		}, {
-			"name": "Gloss scale",
-			"type": "Int"
-		}, {
-			"name": "Gloss bias",
-			"type": "Int"
-		}, {
-			"name": "Face size",
-			"type": "Enum",
-			"enum": "   32|   64|  128|  256|  512| 1024|"
-		}]
-	}, {
 		"name": "PhysicalSky",
 		"category": 8,
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
@@ -641,40 +611,52 @@
 		}],
 		"parameters": [{
 			"name": "ambient",
-			"type": "Float4"
+			"type": "Float4",
+			"default": "0.1,0.1,0.1,2.0"
 		}, {
 			"name": "lightdir",
-			"type": "Float4"
+			"type": "Float4",
+			"default": "0.57,0.594,0.57,0.0"
 		}, {
 			"name": "Kr",
-			"type": "Float4"
+			"type": "Float4",
+			"default": "0.5880,0.6880,0.7830,0.0000"
 		}, {
 			"name": "rayleigh brightness",
-			"type": "Float"
+			"type": "Float",
+			"default": "4.3"
 		}, {
 			"name": "mie brightness",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.2"
 		}, {
 			"name": "spot brightness",
-			"type": "Float"
+			"type": "Float",
+			"default": "1800.0"
 		}, {
 			"name": "scatter strength",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.018"
 		}, {
 			"name": "rayleigh strength",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.25"
 		}, {
 			"name": "mie strength",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.026"
 		}, {
 			"name": "rayleigh collection power",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.81"
 		}, {
 			"name": "mie collection power",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.89"
 		}, {
 			"name": "mie distribution",
-			"type": "Float"
+			"type": "Float",
+			"default": "0.53"
 		}, {
 			"name": "Size",
 			"type": "Enum",
@@ -704,6 +686,10 @@
 			"name": "Mode",
 			"type": "Enum",
 			"enum": "Projection|Isometric|Cross|Camera|"
+		}, {
+			"name": "LOD",
+			"type": "Float",
+			"default": "0.0"
 		}]
 	}, {
 		"name": "EquirectConverter",

@@ -28,24 +28,26 @@ int ReadJob(JobData *data)
 		JobMain(data->context, UploadMeshJob, &dataUp, sizeof(JobData));
 	}
 	else
+	{
 		SetProcessing(data->context, data->targetIndex, 0);
+	}
 	return EVAL_OK;
 }
 
 int main(GLTFRead *param, Evaluation *evaluation, void *context)
 {
 	int i;
+	int target = evaluation->targetIndex;
+	EnableDepthBuffer(context, target, 1);
+	EnableFrameClear(context, target, 1);
+	SetVertexSpace(context, target, vertexSpace_World);
 	
-	EnableDepthBuffer(context, evaluation->targetIndex, 1);
-	EnableFrameClear(context, evaluation->targetIndex, 1);
-	SetVertexSpace(context, evaluation->targetIndex, vertexSpace_World);
-	
-	if (strlen(param->filename))
+	if (strlen(param->filename) && strcmp(GetEvaluationSceneName(context, target), param->filename))
 	{
-		SetProcessing(context, evaluation->targetIndex, 1);
+		SetProcessing(context, target, 1);
 		JobData data;
 		strcpy(data.filename, param->filename);
-		data.targetIndex = evaluation->targetIndex;
+		data.targetIndex = target;
 		data.context = context;
 		ReadJob(&data);
 		//Job(context, ReadJob, &data, sizeof(JobData));

@@ -1,7 +1,9 @@
 int Log(const char *szFormat, ...);
-char * strcpy ( char * destination, const char * source );
-int strlen ( const char * str );
+char * strcpy (char * destination, const char * source);
+int strcmp(char *str1, char *str2);
+int strlen (const char * str);
 float fabsf(float value);
+float log2(float);
 
 typedef struct Image_t
 {
@@ -14,6 +16,14 @@ typedef struct Image_t
 	unsigned char mFormat;
 	void *bits;
 } Image;
+
+int DirtyInput = (1 << 0);
+int DirtyParameter = (1 << 1);
+int DirtyMouse = (1 << 2);
+int DirtyCamera = (1 << 3);
+int DirtyTime = (1 << 4);
+int DirtySampler = (1 << 5);
+
 
 typedef struct Evaluation_t
 {
@@ -29,12 +39,16 @@ typedef struct Evaluation_t
 	int uiPass;
 	int passNumber;
 	float mouse[4];
+	int keyModifier[4];
 	int inputIndices[8];	
 	
 	int frame;
 	int localFrame;
 	int vertexSpace;
-	int dummy;
+	int dirtyFlag;
+	
+    int mipmapNumber;
+    int mipmapCount;
 } Evaluation;
 
 enum BlendOp
@@ -121,7 +135,7 @@ void SetVertexSpace(void *context, int target, int vertexMode);
 
 int GetEvaluationSize(void *context, int target, int *imageWidth, int *imageHeight);
 int SetEvaluationSize(void *context, int target, int imageWidth, int imageHeight);
-int SetEvaluationCubeSize(void *context, int target, int faceWidth);
+int SetEvaluationCubeSize(void *context, int target, int faceWidth, int mipmapCount);
 
 int OverrideInput(void *context, int target, int inputIndex, int newInputTarget);
 int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
@@ -140,6 +154,11 @@ int AllocateComputeBuffer(void *context, int target, int elementCount, int eleme
 int LoadScene(const char *filename, void **scene);
 int SetEvaluationScene(void *context, int target, void *scene);
 int GetEvaluationScene(void *context, int target, void **scene);
+
+int SetEvaluationRTScene(void *context, int target, void *scene);
+int GetEvaluationRTScene(void *context, int target, void **scene);
+
+char* GetEvaluationSceneName(void *context, int target);
 int GetEvaluationRenderer(void *context, int target, void **renderer);
 int InitRenderer(void *context, int target, int mode, void *scene);
 int UpdateRenderer(void *context, int target);

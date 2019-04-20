@@ -44,5 +44,34 @@
 		"hasUI": true,
 		"saveTexture": true
 		}
+		,{
+		"name": "CubeRadiance",
+		"category": 8,
+		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Mode",
+			"type": "Enum",
+			"enum": "Radiance|Irradiance|",
+			"default": "0"
+		},{
+			"name": "Size",
+			"type": "Enum",
+			"enum": "Source|   256|   512|  1024|  2048|  4096|",
+			"default":"0"
+		},{
+			"name": "Sample Count",
+			"type": "Int",
+			"default":"100"
+		}
+		]
+		}
 ]
 }

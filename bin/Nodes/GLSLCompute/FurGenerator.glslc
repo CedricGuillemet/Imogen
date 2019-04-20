@@ -9,6 +9,17 @@ out vec4 outCompute0; // color in w, length in outCompute3.w
 out vec4 outCompute1;
 out vec4 outCompute2;
 out vec4 outCompute3;
+out vec4 outCompute4;
+out vec4 outCompute5;
+out vec4 outCompute6;
+out vec4 outCompute7;
+out vec4 outCompute8;
+out vec4 outCompute9;
+out vec4 outCompute10;
+out vec4 outCompute11;
+out vec4 outCompute12;
+out vec4 outCompute13;
+out vec4 outCompute14;
 
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
@@ -35,4 +46,16 @@ void main()
 	outCompute1.a = color.g;
 	outCompute2.a = color.b;
 	outCompute3.a = length;
+	
+	outCompute4 = vec4(0.);
+	outCompute5 = vec4(0.);
+	outCompute6 = vec4(0.);
+	outCompute7 = vec4(0.);
+	outCompute8 = vec4(0.);
+	outCompute9 = vec4(0.);
+	outCompute10 = vec4(0.);
+	outCompute11 = vec4(0.);
+	outCompute12 = vec4(0.);
+	outCompute13 = vec4(0.);
+	outCompute14 = vec4(0.);
 }

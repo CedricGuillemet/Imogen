@@ -1,19 +1,19 @@
 // https://github.com/CedricGuillemet/Imogen
 //
 // The MIT License(MIT)
-// 
+//
 // Copyright(c) 2019 Cedric Guillemet
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files(the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions :
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
@@ -22,7 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-#include <GL/gl3w.h>    // Initialize with gl3wInit()
+#include <GL/gl3w.h> // Initialize with gl3wInit()
 #include <SDL.h>
 #include <vector>
 #include "Utils.h"
@@ -46,7 +46,8 @@ void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, Texture
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
 {
     size_t start_pos = 0;
-    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos)
+    {
         str.replace(start_pos, from.length(), to);
         start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
     }
@@ -55,7 +56,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 void FullScreenTriangle::Init()
 {
-    float fsVts[] = { 0.f,0.f, 2.f,0.f, 0.f,2.f };
+    float fsVts[] = {0.f, 0.f, 2.f, 0.f, 0.f, 2.f};
     glGenBuffers(1, &mFsVA);
     glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(float) * 2, fsVts, GL_STATIC_DRAW);
@@ -83,15 +84,16 @@ void FullScreenTriangle::Finish()
     glDeleteVertexArrays(1, &mGLFullScreenVertexArrayName);
 }
 
-unsigned int LoadShader(const std::string &shaderString, const char *fileName)
+unsigned int LoadShader(const std::string& shaderString, const char* fileName)
 {
     TextureID programObject = glCreateProgram();
     if (programObject == 0)
         return 0;
 
     GLint compiled;
-    const char *shaderTypeStrings[] = { "\n#version 430 core\n#define VERTEX_SHADER\n", "\n#version 430 core\n#define FRAGMENT_SHADER\n" };
-    TextureID shaderTypes[] = { GL_VERTEX_SHADER, GL_FRAGMENT_SHADER };
+    const char* shaderTypeStrings[] = {"\n#version 430 core\n#define VERTEX_SHADER\n",
+                                       "\n#version 430 core\n#define FRAGMENT_SHADER\n"};
+    TextureID shaderTypes[] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER};
     TextureID compiledShader[2];
 
     for (int i = 0; i < 2; i++)
@@ -103,8 +105,8 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
             return false;
 
         int stringsCount = 2;
-        const char ** strings = (const char**)malloc(sizeof(char*) * stringsCount); //new const char*[stringsCount];
-        int * stringLength = (int*)malloc(sizeof(int) * stringsCount); //new int[stringsCount];
+        const char** strings = (const char**)malloc(sizeof(char*) * stringsCount); // new const char*[stringsCount];
+        int* stringLength = (int*)malloc(sizeof(int) * stringsCount);              // new int[stringsCount];
         strings[0] = shaderTypeStrings[i];
         stringLength[0] = int(strlen(shaderTypeStrings[i]));
         strings[stringsCount - 1] = shaderString.c_str();
@@ -138,7 +140,6 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
         }
         compiledShader[i] = shader;
     }
-
 
 
     GLint linked;
@@ -179,12 +180,12 @@ unsigned int LoadShader(const std::string &shaderString, const char *fileName)
 }
 
 
-unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const char *filename)
+unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const char* filename)
 {
     GLuint programHandle = glCreateProgram();
     GLuint vsHandle = glCreateShader(GL_VERTEX_SHADER);
 
-    const char *src[2] = { "#version 430\n", shaderString.c_str() };
+    const char* src[2] = {"#version 430\n", shaderString.c_str()};
     int size[2];
     for (int j = 0; j < 2; j++)
         size[j] = int(strlen(src[j]));
@@ -212,10 +213,11 @@ unsigned int LoadShaderTransformFeedback(const std::string &shaderString, const 
     glAttachShader(programHandle, vsHandle);
 
     static const char* varyings[] = { "outCompute0", "outCompute1", "outCompute2", "outCompute3", 
-        /*"outCompute4", "outCompute5", "outCompute6", "outCompute7", 
+        "outCompute4", "outCompute5", "outCompute6", "outCompute7", 
         "outCompute8", "outCompute9", "outCompute10", "outCompute11", 
-        "outCompute12", "outCompute13", "outCompute14", "outCompute15"*/ };
-    glTransformFeedbackVaryings(programHandle, sizeof(varyings) / sizeof(const char*), varyings, GL_INTERLEAVED_ATTRIBS);
+        "outCompute12", "outCompute13", "outCompute14" };
+    glTransformFeedbackVaryings(
+        programHandle, sizeof(varyings) / sizeof(const char*), varyings, GL_INTERLEAVED_ATTRIBS);
 
 
     glLinkProgram(programHandle);
@@ -230,7 +232,7 @@ void AddLogOutput(LogOutput output)
     outputs.push_back(output);
 }
 
-int Log(const char *szFormat, ...)
+int Log(const char* szFormat, ...)
 {
     va_list ptr_arg;
     va_start(ptr_arg, szFormat);
@@ -238,7 +240,7 @@ int Log(const char *szFormat, ...)
     static char buf[10240];
     vsprintf(buf, szFormat, ptr_arg);
 
-    static FILE *fp = fopen("log.txt", "wt");
+    static FILE* fp = fopen("log.txt", "wt");
     if (fp)
     {
         fprintf(fp, buf);
@@ -251,11 +253,10 @@ int Log(const char *szFormat, ...)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-//matrix will receive the calculated perspective matrix.
-//You would have to upload to your shader
+// matrix will receive the calculated perspective matrix.
+// You would have to upload to your shader
 // or use glLoadMatrixf if you aren't using shaders.
-void Mat4x4::glhPerspectivef2(float fovyInDegrees, float aspectRatio,
-    float znear, float zfar)
+void Mat4x4::glhPerspectivef2(float fovyInDegrees, float aspectRatio, float znear, float zfar)
 {
     float ymax, xmax;
     ymax = znear * tanf(fovyInDegrees * 3.14159f / 360.0f);
@@ -265,8 +266,7 @@ void Mat4x4::glhPerspectivef2(float fovyInDegrees, float aspectRatio,
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Mat4x4::glhFrustumf2(float left, float right, float bottom, float top,
-    float znear, float zfar)
+void Mat4x4::glhFrustumf2(float left, float right, float bottom, float top, float znear, float zfar)
 {
     float temp, temp2, temp3, temp4;
     temp = 2.0f * znear;
@@ -291,7 +291,7 @@ void Mat4x4::glhFrustumf2(float left, float right, float bottom, float top,
     m16[15] = 0.0;
 }
 
-void Mat4x4::lookAtRH(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
+void Mat4x4::lookAtRH(const Vec4& eye, const Vec4& at, const Vec4& up)
 {
     Vec4 X, Y, Z, tmp;
 
@@ -323,11 +323,10 @@ void Mat4x4::lookAtRH(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
     m[3][1] = -Y.Dot(eye);
     m[3][2] = -Z.Dot(eye);
     m[3][3] = 1.0f;
-
 }
 
 
-void Mat4x4::lookAtLH(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
+void Mat4x4::lookAtLH(const Vec4& eye, const Vec4& at, const Vec4& up)
 {
     Vec4 X, Y, Z, tmp;
 
@@ -361,9 +360,8 @@ void Mat4x4::lookAtLH(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
     m[3][3] = 1.0f;
 }
 
-void Mat4x4::LookAt(const Vec4 &eye, const Vec4 &at, const Vec4 &up)
+void Mat4x4::LookAt(const Vec4& eye, const Vec4& at, const Vec4& up)
 {
-
     Vec4 X, Y, Z, tmp;
 
     Z.Normalize(at - eye);
@@ -420,13 +418,13 @@ void Mat4x4::PerspectiveFovLH2(const float fovy, const float aspect, const float
     float xscale = yscale / aspect;
 
     */
-    m[0][0] = 1.0f / (aspect * tanf(fovy*0.5f));
+    m[0][0] = 1.0f / (aspect * tanf(fovy * 0.5f));
     m[0][1] = 0.0f;
     m[0][2] = 0.0f;
     m[0][3] = 0.0f;
 
     m[1][0] = 0.0f;
-    m[1][1] = 1.0f / tanf(fovy*0.5f);
+    m[1][1] = 1.0f / tanf(fovy * 0.5f);
     m[1][2] = 0.0f;
     m[1][3] = 0.0f;
 
@@ -464,7 +462,7 @@ void Mat4x4::OrthoOffCenterLH(const float l, float r, float b, const float t, fl
     m[3][3] = 1.0f;
 }
 
-void TagTime(const char *tagInfo)
+void TagTime(const char* tagInfo)
 {
     static uint64_t lastTime = -1;
     if (lastTime == -1)
@@ -480,7 +478,7 @@ void TagTime(const char *tagInfo)
     lastTime = t;
 }
 
-void DiscoverFiles(const char *extension, const char *directory, std::vector<std::string>& files)
+void DiscoverFiles(const char* extension, const char* directory, std::vector<std::string>& files)
 {
     tinydir_dir dir;
     tinydir_open(&dir, directory);
@@ -501,17 +499,17 @@ void DiscoverFiles(const char *extension, const char *directory, std::vector<std
     tinydir_close(&dir);
 }
 
-void IMessageBox(const char *text, const char *title)
+void IMessageBox(const char* text, const char* title)
 {
     MessageBoxA(NULL, text, title, MB_OK);
 }
 
-void OpenShellURL(const std::string &url)
+void OpenShellURL(const std::string& url)
 {
     ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 
-void GetTextureDimension(unsigned int textureId, int *w, int *h)
+void GetTextureDimension(unsigned int textureId, int* w, int* h)
 {
     int miplevel = 0;
     glBindTexture(GL_TEXTURE_2D, textureId);
@@ -519,7 +517,7 @@ void GetTextureDimension(unsigned int textureId, int *w, int *h)
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, h);
 }
 
-std::string GetGroup(const std::string &name)
+std::string GetGroup(const std::string& name)
 {
     for (int i = int(name.length()) - 1; i >= 0; i--)
     {
@@ -531,7 +529,7 @@ std::string GetGroup(const std::string &name)
     return "";
 }
 
-std::string GetName(const std::string &name)
+std::string GetName(const std::string& name)
 {
     for (int i = int(name.length()) - 1; i >= 0; i--)
     {
@@ -544,7 +542,7 @@ std::string GetName(const std::string &name)
 }
 
 
-std::string GetBasePath(const char *path)
+std::string GetBasePath(const char* path)
 {
     std::string res;
     char drive[16];

@@ -37,6 +37,10 @@ vec4 Paint3D()
 	else
 	{
 		vec4 res = vec4(0.0);
+		if (EvaluationParam.keyModifier.x != 0 || EvaluationParam.keyModifier.y != 0 || EvaluationParam.keyModifier.z != 0)
+		{
+			return res;
+		}
 		// paint pass
 		if (EvaluationParam.mouse.z > 0.0)
 		{

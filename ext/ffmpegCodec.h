@@ -91,6 +91,8 @@ namespace FFMPEGCodec
             m_subimage = 0;
             m_start_time = 0;
             mFrameCount = 0;
+            mWidth = 0;
+            mHeight = 0;
         }
     };
     

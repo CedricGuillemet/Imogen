@@ -1,6 +1,17 @@
 -------------------------------------------------------------------------------
 Imogen - 0.12 codename Bear Geki
 
+New:
+- replace cmft library with a custom cubemap radiance/irradiance node
+- LOD visualization in cubemap viewer
+- key modifiers constants accessible in nodes
+- default parameters for physical sky
+- better mipmap management
+- dirty flags accessible in nodes
+
+Fixed:
+- many bugs fixed here and there. More to come...
+
 -------------------------------------------------------------------------------
 Imogen - 0.11 codename Lionet Ban
 

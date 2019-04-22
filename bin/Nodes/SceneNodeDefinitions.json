@@ -72,6 +72,39 @@
 			"default":"100"
 		}
 		]
-		}
+		}, {
+		"name": "PBR2",
+		"category": 2,
+		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "Albedo",
+			"type": "Float4"
+		},
+		{
+			"name": "Normal",
+			"type": "Float4"
+		},
+		{
+			"name": "Depth",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "View",
+			"type": "Float2",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true
+		},{
+			"name": "Depth factor",
+			"type": "Float",
+			"default":"0.0"
+		}]
+	}
 ]
 }

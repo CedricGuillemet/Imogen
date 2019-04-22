@@ -169,6 +169,11 @@
 		"parameters": [{
 			"name": "spread",
 			"type": "Float"
+		},
+		{
+			"name": "Invert",
+			"type": "Bool",
+			"default":"false"
 		}]
 	}, {
 		"name": "LambertMaterial",

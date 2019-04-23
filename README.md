@@ -47,8 +47,6 @@ This software uses the following (awesome) projects:
 
 Dear ImGui - Omar Cornut https://github.com/ocornut/imgui
 
-ImGuiColorTextEdit - Balazs Jako https://github.com/BalazsJako/ImGuiColorTextEdit
-
 stb_image, stb_image_write - Sean T. Barett https://github.com/nothings/stb
 
 EnkiTS - Doug Binks https://github.com/dougbinks/enkiTS

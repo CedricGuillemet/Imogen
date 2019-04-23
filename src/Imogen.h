@@ -35,7 +35,6 @@
 
 struct NodeGraphControler;
 struct Evaluation;
-class TextEditor;
 struct Library;
 struct Builder;
 struct MySequence;
@@ -88,7 +87,6 @@ struct Imogen
     void HandleHotKeys();
 
 protected:
-    void HandleEditor(TextEditor& editor);
     void ShowAppMainMenuBar();
     void ShowTitleBar(Builder* builder);
     void LibraryEdit(Library& library);
@@ -113,14 +111,12 @@ protected:
     static void WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf);
     static void* ReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name);
 
-    TextEditor* mEditor;
     MySequence* mSequence;
     NodeGraphControler* mNodeGraphControler;
     Builder* mBuilder;
     bool mbShowTimeline = false;
     bool mbShowLibrary = false;
     bool mbShowNodes = false;
-    bool mbShowShaders = false;
     bool mbShowLog = false;
     bool mbShowParameters = false;
     int mLibraryViewMode = 1;

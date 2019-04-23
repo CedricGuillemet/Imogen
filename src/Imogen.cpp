@@ -26,7 +26,6 @@
 #include <SDL.h>
 #include "imgui.h"
 #include "Imogen.h"
-#include "TextEditor.h"
 #include <fstream>
 #include <streambuf>
 #include "EvaluationStages.h"
@@ -125,41 +124,6 @@ void AddExtractedView(size_t nodeIndex)
 void ClearExtractedViews()
 {
     mExtratedViews.clear();
-}
-
-void Imogen::HandleEditor(TextEditor& editor)
-{
-    if (mCurrentShaderIndex == -1)
-    {
-        mCurrentShaderIndex = 0;
-        editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[mCurrentShaderIndex].mFilename));
-    }
-    auto cpos = editor.GetCursorPosition();
-    ImGui::BeginChild(13, ImVec2(250, 800));
-    for (size_t i = 0; i < mEvaluatorFiles.size(); i++)
-    {
-        bool selected = i == mCurrentShaderIndex;
-        if (ImGui::Selectable(mEvaluatorFiles[i].mFilename.c_str(), &selected))
-        {
-            mCurrentShaderIndex = int(i);
-            editor.SetText(gEvaluators.GetEvaluator(mEvaluatorFiles[mCurrentShaderIndex].mFilename));
-            editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates());
-        }
-    }
-    ImGui::EndChild();
-    ImGui::SameLine();
-    ImGui::BeginChild(14);
-
-    ImGui::SameLine();
-    ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | F5 to save and update nodes",
-                cpos.mLine + 1,
-                cpos.mColumn + 1,
-                editor.GetTotalLines(),
-                editor.IsOverwrite() ? "Ovr" : "Ins",
-                editor.CanUndo() ? "*" : " ",
-                editor.GetLanguageDefinition().mName.c_str());
-    editor.Render("TextEditor");
-    ImGui::EndChild();
 }
 
 void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI)
@@ -1379,7 +1343,6 @@ void Imogen::Init()
 {
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    mEditor->SetLanguageDefinition(TextEditor::LanguageDefinition::GLSL());
 
     DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
     DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
@@ -1408,19 +1371,10 @@ void Imogen::Init()
         {"ToggleLogger", "Show or hide Logger window", [&]() { mbShowLog = !mbShowLog; }},
         {"ToggleSequencer", "Show or hide Sequencer window", [&]() { mbShowTimeline = !mbShowTimeline; }},
         {"ToggleParameters", "Show or hide Parameters window", [&]() { mbShowParameters = !mbShowParameters; }},
-        {"ToggleEditor", "Show or hide shader editor window", [&]() { mbShowShaders = !mbShowShaders; }},
         {"MaterialNew", "Create a new graph", [&]() { NewMaterial(); }},
         {"ReloadShaders",
-         "Save shaders and hot reload them",
+         "Reload them",
          [&]() {
-             auto textToSave = mEditor->GetText();
-
-             std::ofstream t(mEvaluatorFiles[mCurrentShaderIndex].mDirectory +
-                                 mEvaluatorFiles[mCurrentShaderIndex].mFilename,
-                             std::ofstream::out);
-             t << textToSave;
-             t.close();
-
              gEvaluators.SetEvaluators(mEvaluatorFiles);
              mNodeGraphControler->mEditingContext.RunAll();
          }},
@@ -1542,7 +1496,6 @@ void Imogen::ShowAppMainMenuBar()
         ImGui::Checkbox(GetShortCutLib("ToggleLogger"), &mbShowLog);
         ImGui::Checkbox(GetShortCutLib("ToggleSequencer"), &mbShowTimeline);
         ImGui::Checkbox(GetShortCutLib("ToggleParameters"), &mbShowParameters);
-        ImGui::Checkbox(GetShortCutLib("ToggleEditor"), &mbShowShaders);
     }
 
     ImRect windowRect(ImVec2(0, 32), ImVec2(440, io.DisplaySize.y - 32));
@@ -1951,14 +1904,6 @@ void Imogen::Show(Builder* builder, Library& library)
             }
             ImGui::End();
         }
-        if (mbShowShaders)
-        {
-            if (ImGui::Begin("Shaders", &mbShowShaders))
-            {
-                HandleEditor(*mEditor);
-            }
-            ImGui::End();
-        }
 
         if (mbShowLibrary)
         {
@@ -2128,10 +2073,6 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
         {
             userdata->imogen->mbShowNodes = active != 0;
         }
-        else if (sscanf(line_start, "ShowShaders=%d", &active) == 1)
-        {
-            userdata->imogen->mbShowShaders = active != 0;
-        }
         else if (sscanf(line_start, "ShowLog=%d", &active) == 1)
         {
             userdata->imogen->mbShowLog = active != 0;
@@ -2166,7 +2107,6 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     buf->appendf("ShowTimeline=%d\n", instance->mbShowTimeline ? 1 : 0);
     buf->appendf("ShowLibrary=%d\n", instance->mbShowLibrary ? 1 : 0);
     buf->appendf("ShowNodes=%d\n", instance->mbShowNodes ? 1 : 0);
-    buf->appendf("ShowShaders=%d\n", instance->mbShowShaders ? 1 : 0);
     buf->appendf("ShowLog=%d\n", instance->mbShowLog ? 1 : 0);
     buf->appendf("ShowParameters=%d\n", instance->mbShowParameters ? 1 : 0);
     buf->appendf("LibraryViewMode=%d\n", instance->mLibraryViewMode);
@@ -2180,7 +2120,6 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
 Imogen::Imogen(NodeGraphControler* nodeGraphControler) : mNodeGraphControler(nodeGraphControler)
 {
     mSequence = new MySequence(*nodeGraphControler);
-    mEditor = new TextEditor;
     mdConfig.userData = this;
 
     ImGuiContext& g = *GImGui;
@@ -2197,7 +2136,6 @@ Imogen::Imogen(NodeGraphControler* nodeGraphControler) : mNodeGraphControler(nod
 Imogen::~Imogen()
 {
     delete mSequence;
-    delete mEditor;
 }
 
 void Imogen::ClearAll()

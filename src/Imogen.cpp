@@ -268,7 +268,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             int width = pickerImage.mWidth;
             int height = pickerImage.mHeight;
 
-            imageInspect(width, height, pickerImage.GetBits(), mouseUVCoord, displayedTextureSize);
+            ImageInspect::inspect(width, height, pickerImage.GetBits(), mouseUVCoord, displayedTextureSize);
         }
         else if (ImGui::IsWindowFocused())
         {

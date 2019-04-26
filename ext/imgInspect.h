@@ -29,7 +29,8 @@ ImGui::ImageButton(pickerImage.textureID, ImVec2(pickerImage.mWidth, pickerImage
 ImRect rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 ImVec2 mouseUVCoord = (io.MousePos - rc.Min) / rc.GetSize();
 mouseUVCoord.y = 1.f - mouseUVCoord.y;
-                        
+                        
+
 if (io.KeyShift && io.MouseDown[0] && mouseUVCoord.x >= 0.f && mouseUVCoord.y >= 0.f)
 {
         int width = pickerImage.mWidth;
@@ -44,28 +45,24 @@ namespace ImageInspect
 {
     inline void histogram(const int width, const int height, const unsigned char* const bits)
     {
-        int count[256][4];
+        unsigned int count[4][256] = {0};
+
+        const unsigned char* ptrCols = bits;
+
         ImGui::InvisibleButton("histogram", ImVec2(512, 256));
-        memset(count, 0, sizeof(int) * 256 * 4);
-        int idx = 0;
-        for (int y = 0; y < height; y++)
+        for (int l = 0; l < height * width; l++)
         {
-            for (int x = 0; x < width; x++)
-            {
-                count[bits[idx++]][0]++;
-                count[bits[idx++]][1]++;
-                count[bits[idx++]][2]++;
-                count[bits[idx++]][3]++;
-            }
+            count[0][*ptrCols++]++;
+            count[1][*ptrCols++]++;
+            count[2][*ptrCols++]++;
+            count[3][*ptrCols++]++;
         }
 
-        int maxv = count[0][0];
-        for (int i = 0; i < 256; i++)
+        unsigned int maxv = count[0][0];
+        unsigned int* pCount = &count[0][0];
+        for (int i = 0; i < 3 * 256; i++, pCount++)
         {
-            for (int j = 0; j < 3; j++)
-            {
-                maxv = (maxv > count[i][j]) ? maxv : count[i][j];
-            }
+            maxv = (maxv > *pCount) ? maxv : *pCount;
         }
 
         ImDrawList* drawList = ImGui::GetWindowDrawList();
@@ -81,20 +78,47 @@ namespace ImageInspect
             drawList->AddLine(ImVec2(rmin.x, ay), ImVec2(rmax.x, ay), 0x80808080);
             drawList->AddLine(ImVec2(ax, rmin.y), ImVec2(ax, rmax.y), 0x80808080);
         }
-        ImVec2 poly[257];
-        poly[256] = rmax;
-        for (int i = 0; i < 3; i++)
+
+        const float barWidth = (size.x / 256.f);
+        for (int j = 0; j < 256; j++)
         {
-            for (int j = 0; j < 256; j++)
+            // pixel count << 2 + color index(on 2 bits)
+            uint32_t cols[3] = {(count[0][j] << 2), (count[1][j] << 2) + 1, (count[2][j] << 2) + 2};
+            if (cols[0] > cols[1])
+                ImSwap(cols[0], cols[1]);
+            if (cols[1] > cols[2])
+                ImSwap(cols[1], cols[2]);
+            if (cols[0] > cols[1])
+                ImSwap(cols[0], cols[1]);
+            float heights[3];
+            uint32_t colors[3];
+            uint32_t currentColor = 0xFFFFFFFF;
+            for (int i = 0; i < 3; i++)
             {
-                poly[j] = ImVec2(rmin.x + (size.x / 256.f) * float(j), rmax.y - float(count[j][i]) * hFactor);
+                heights[i] = rmax.y - (cols[i] >> 2) * hFactor;
+                colors[i] = currentColor;
+                currentColor -= 0xFF << ((cols[i] & 3) * 8);
             }
 
-            for (int j = 0; j < 256; j++)
+            float currentHeight = rmax.y;
+            const float left = rmin.x + barWidth * float(j);
+            const float right = left + barWidth;
+            for (int i = 0; i < 3; i++)
             {
-                drawList->AddRectFilled(poly[j], ImVec2(poly[j + 1].x, rmax.y), 0x80000000 + (0xFF << (8 * i)));
+                if (heights[i] >= currentHeight)
+                {
+                    continue;
+                }
+                drawList->AddRectFilled(ImVec2(left, currentHeight), ImVec2(right, heights[i]), colors[i]);
+                currentHeight = heights[i];
             }
         }
+    }
+    inline void drawNormal(ImDrawList* draw_list, const ImRect& rc, float x, float y)
+    {
+        draw_list->AddCircle(rc.GetCenter(), rc.GetWidth() / 2.f, 0x20AAAAAA, 24, 1.f);
+        draw_list->AddCircle(rc.GetCenter(), rc.GetWidth() / 4.f, 0x20AAAAAA, 24, 1.f);
+        draw_list->AddLine(rc.GetCenter(), rc.GetCenter() + ImVec2(x, y) * rc.GetWidth() / 2.f, 0xFF0000FF, 2.f);
     }
 
     inline void inspect(const int width,
@@ -106,30 +130,55 @@ namespace ImageInspect
         ImGui::BeginTooltip();
         ImGui::BeginGroup();
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-        ImGui::InvisibleButton("AnotherInvisibleMan", ImVec2(120, 120));
-        ImRect pickRc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+        static const float zoomRectangleWidth = 160.f;
+
+        // bitmap zoom
+        ImGui::InvisibleButton("AnotherInvisibleMan", ImVec2(zoomRectangleWidth, zoomRectangleWidth));
+        const ImRect pickRc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
         draw_list->AddRectFilled(pickRc.Min, pickRc.Max, 0xFF000000);
-        static int zoomSize = 2;
-        float quadWidth = 120.f / float(zoomSize * 2 + 1);
-        ImVec2 quadSize(quadWidth, quadWidth);
-        int basex = ImClamp(int(mouseUVCoord.x * width), zoomSize, width - zoomSize);
-        int basey = ImClamp(int(mouseUVCoord.y * height) - zoomSize * 2 - 1, zoomSize, height - zoomSize);
+        static int zoomSize = 4;
+        const float quadWidth = zoomRectangleWidth / float(zoomSize * 2 + 1);
+        const ImVec2 quadSize(quadWidth, quadWidth);
+        const int basex = ImClamp(int(mouseUVCoord.x * width), zoomSize, width - zoomSize);
+        const int basey = ImClamp(int(mouseUVCoord.y * height), zoomSize, height - zoomSize);
         for (int y = -zoomSize; y <= zoomSize; y++)
         {
             for (int x = -zoomSize; x <= zoomSize; x++)
             {
-                uint32_t texel = ((uint32_t*)bits)[(basey + zoomSize * 2 + 1 - y) * width + x + basex];
+                uint32_t texel = ((uint32_t*)bits)[(basey - y) * width + x + basex];
                 ImVec2 pos = pickRc.Min + ImVec2(float(x + zoomSize), float(y + zoomSize)) * quadSize;
                 draw_list->AddRectFilled(pos, pos + quadSize, texel);
             }
         }
-        ImVec2 pos = pickRc.Min + ImVec2(float(zoomSize), float(zoomSize)) * quadSize;
+        ImGui::SameLine();
+
+        // center quad
+        const ImVec2 pos = pickRc.Min + ImVec2(float(zoomSize), float(zoomSize)) * quadSize;
         draw_list->AddRect(pos, pos + quadSize, 0xFF0000FF, 0.f, 15, 2.f);
+
+        // normal direction
+        ImGui::InvisibleButton("AndOneMore", ImVec2(zoomRectangleWidth, zoomRectangleWidth));
+        ImRect normRc(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+        for (int y = -zoomSize; y <= zoomSize; y++)
+        {
+            for (int x = -zoomSize; x <= zoomSize; x++)
+            {
+                uint32_t texel = ((uint32_t*)bits)[(basey - y) * width + x + basex];
+                const ImVec2 posQuad = normRc.Min + ImVec2(float(x + zoomSize), float(y + zoomSize)) * quadSize;
+                //draw_list->AddRectFilled(pos, pos + quadSize, texel);
+                const float nx = float(texel & 0xFF) / 128.f - 1.f;
+                const float ny = float((texel & 0xFF00)>>8) / 128.f - 1.f;
+                const ImRect rc(posQuad, posQuad + quadSize);
+                drawNormal(draw_list, rc, nx, ny);
+            }
+        }
+
+
 
         ImGui::EndGroup();
         ImGui::SameLine();
         ImGui::BeginGroup();
-        uint32_t texel = ((uint32_t*)bits)[basey * width + basex];
+        uint32_t texel = ((uint32_t*)bits)[(basey - zoomSize * 2 - 1) * width + basex];
         ImVec4 color = ImColor(texel);
         ImVec4 colHSV;
         ImGui::ColorConvertRGBtoHSV(color.x, color.y, color.z, colHSV.x, colHSV.y, colHSV.z);

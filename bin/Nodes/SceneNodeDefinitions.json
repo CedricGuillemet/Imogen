@@ -79,13 +79,17 @@
 		"inputs": [{
 			"name": "Albedo",
 			"type": "Float4"
-		},
-		{
+		}, {
 			"name": "Normal",
 			"type": "Float4"
-		},
-		{
+		}, {
 			"name": "Depth",
+			"type": "Float4"
+		}, {
+			"name": "Roughness",
+			"type": "Float4"
+		}, {
+			"name": "Cubemap",
 			"type": "Float4"
 		}],
 		"outputs": [{

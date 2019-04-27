@@ -249,7 +249,7 @@ vec2 ParallaxMapping(sampler2D heightSampler, vec2 texCoords, vec3 viewDir, floa
     // number of depth layers
     const float minLayers = 8.0;
     const float maxLayers = 32.0;
-    float numLayers = mix(maxLayers, minLayers, min(abs(viewDir.z),1.0));  
+    float numLayers = mix(maxLayers, minLayers, min(abs(viewDir.z), 1.0));  
     // calculate the size of each layer
     float layerDepth = 1.0 / numLayers;
     // depth of current layer
@@ -285,6 +285,22 @@ vec2 ParallaxMapping(sampler2D heightSampler, vec2 texCoords, vec3 viewDir, floa
 
     return finalTexCoords;  
 } 
+
+vec4 cubemap2D( sampler2D sam, in vec3 d )
+{
+    vec3 n = abs(d);
+    vec3 s = dFdx(d);
+    vec3 t = dFdy(d);
+         if(n.x>n.y && n.x>n.z) {d=d.xyz;s=s.xyz;t=t.xyz;}
+    else if(n.y>n.x && n.y>n.z) {d=d.yzx;s=s.yzx;t=t.yzx;}
+    else                        {d=d.zxy;s=s.zxy;t=t.zxy;}
+    vec2 q = d.yz/d.x;
+    return textureGrad( sam, 
+                        0.5*q + 0.5,
+                        0.5*(s.yz-q*s.x)/d.x,
+                        0.5*(t.yz-q*t.x)/d.x );
+}
+
 
 __NODE__
 

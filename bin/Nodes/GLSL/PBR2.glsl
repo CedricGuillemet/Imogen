@@ -128,8 +128,9 @@ float Scene( vec3 p, mat3 localToWorld )
 		break;
 	}
 	*/
-	ret = sdRoundBox(p+centerMesh, vec3(0.5), 0.2);
+	//ret = sdRoundBox(p+centerMesh, vec3(0.5), 0.2);
 	//ret = max(p.y, 0.);
+	ret = Sphere(p+centerMesh, 1.0);
 	
 	//ret += displace(p);
 	return ret;
@@ -220,31 +221,32 @@ vec4 PBR2()
 		vec3 normal = SceneNormal( pos, localToWorld ); 
 		vec2 texcoord = boxUV(pos, normal);
 		
+		 
 		
 		mat3 tbn = cotangent_frame( normal, pos, texcoord );
 	
-		vec3 viewDir = normalize(transpose(tbn) * (ro - pos));
+		vec3 eyeToFragment = normalize(transpose(tbn) * (ro - pos));
 	
-		texcoord = ParallaxMapping(Sampler2, texcoord, viewDir, PBR2Param.depthFactor);
+		texcoord = ParallaxMapping(Sampler2, texcoord, eyeToFragment, PBR2Param.depthFactor);
 		
         vec3 texNorm = texture(Sampler1, texcoord).xyz * 2.0 - 1.0;
 	
 		vec3 worldNormal = normalize(tbn * texNorm);
 		
-		vec3 albedo = texture(Sampler0, texcoord).xyz;
-		col = albedo * max(dot(worldNormal, normalize(vec3(1.0))), 0.0) ;
+		vec3 albedo = cubemap2D(Sampler0, normal).xyz;
+		//col = albedo * max(dot(worldNormal, normalize(vec3(1.0))), 0.0) ;
 
 		
-/*		
+		
         vec3 viewDir = -rd;
         vec3 refl = reflect( rd, normal );
         
         vec3 diffuse  = vec3( 0. );
         vec3 specular = vec3( 0. );
         
-		vec3 baseColor     = pow(boxmap(Sampler0, pos, normalize(pos), 1.0 ).xyz, vec3( 2.2 ) );
+		vec3 baseColor     = pow(albedo, vec3( 2.2 ) );
 
-		float roughness = boxmap(Sampler2, pos, normalize(pos), 1.0 ).x;
+		float roughness = texture(Sampler3, texcoord).x;//boxmap(Sampler2, pos, normalize(pos), 1.0 ).x;
 	    vec3 diffuseColor  = baseColor;
  	    vec3 specularColor = baseColor;// : vec3( 0.02 );
    		float roughnessE   = roughness * roughness;
@@ -275,7 +277,6 @@ vec4 PBR2()
         specular *= saturate( pow( ndotv + ao, roughnessE ) - 1. + ao);
         
         col = diffuse + specular;
-*/
     }
     col = pow( col, vec3( 1. / 2.2 ) );
 	return vec4(col,1.0);

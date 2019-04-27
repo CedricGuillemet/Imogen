@@ -1,7 +1,8 @@
 // http://www.kamend.com/2012/06/perlin-noise-and-glsl/
 
-layout (std140) uniform PerlinNoiselock
+layout (std140) uniform PerlinNoiseBlock
 {
+	vec2 translation;
 	int octaves;
 	float lacunarity;
 	float gain;
@@ -130,5 +131,5 @@ float fbm(vec2 P, int octaves, float lacunarity, float gain)
 
 float PerlinNoise()
 {
-	return fbm(vUV * 1024., PerlinNoiseParam.octaves, PerlinNoiseParam.lacunarity, PerlinNoiseParam.gain);
+	return fbm(vUV + PerlinNoiseParam.translation, PerlinNoiseParam.octaves, PerlinNoiseParam.lacunarity, PerlinNoiseParam.gain);
 }

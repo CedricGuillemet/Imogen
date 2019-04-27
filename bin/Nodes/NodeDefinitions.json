@@ -407,17 +407,27 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
+			"name": "Translation",
+			"type": "Float2",
+			"default": "0.0,0.0",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false
+		},{
 			"name": "Octaves",
 			"type": "Int",
-			"default": "1"
+			"default": "6"
 		},{
 			"name": "lacunarity",
 			"type": "Float",
-			"default": "1.0"
+			"default": "1.85"
 		},{
 			"name": "gain",
 			"type": "Float",
-			"default": "1.0"
+			"default": "1.15"
 		}]
 	}, {
 		"name": "PBR",

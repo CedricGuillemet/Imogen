@@ -2,6 +2,8 @@ import Imogen
 
 def generateDocumentation():
 
+	Imogen.CaptureScreen()
+	
 	with open("documentation.md", "w") as f:
 		metanodes = Imogen.GetMetaNodes()
 		

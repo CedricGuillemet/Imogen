@@ -117,10 +117,55 @@ struct PyNode
     MaterialNode* mNode;
     int mNodeIndex;
 };
-
+#include "imHotKey.h"
+extern std::vector<ImHotKey::HotKey> mHotkeys;
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
     pybind11::class_<Image>(m, "Image");
+
+    m.def("GetMetaNodes", []() {
+        auto d = pybind11::list();
+
+        for (auto& node : gMetaNodes)
+        {
+            auto n = pybind11::dict();
+            d.append(n);
+            n["name"] = node.mName;
+            n["description"] = "This is a super node. believe me!";
+
+            if (!node.mParams.empty())
+            {
+                auto paramdict = pybind11::list();
+                n["parameters"] = paramdict;
+                for (auto& param : node.mParams)
+                {
+                    auto p = pybind11::dict();
+                    p["name"] = param.mName;
+                    p["type"] = pybind11::int_(int(param.mType));
+                    p["description"] = "This is a super parameter. believe me!";
+                    paramdict.append(p);
+                }
+            }
+        }
+
+        return d;
+    });
+
+    m.def("GetHotKeys", []() {
+        auto d = pybind11::list();
+
+        for (auto& hotkey : mHotkeys)
+        {
+            auto h = pybind11::dict();
+            d.append(h);
+            h["name"] = hotkey.functionName;
+            h["description"] = hotkey.functionLib;
+            static char combo[512];
+            ImHotKey::GetHotKeyLib(hotkey.functionKeys, combo, sizeof(combo));
+            h["keys"] = std::string(combo);
+        }
+        return d;
+    });
     auto graph = pybind11::class_<PyGraph>(m, "Graph");
     graph.def("GetEvaluationList", [](PyGraph& pyGraph) {
         auto d = pybind11::list();

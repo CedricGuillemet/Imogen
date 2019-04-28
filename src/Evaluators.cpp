@@ -22,6 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+#include <SDL.h>
 #include <GL/gl3w.h> // Initialize with gl3wInit()
 #include "Evaluators.h"
 #include "EvaluationStages.h"

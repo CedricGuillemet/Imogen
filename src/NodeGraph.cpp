@@ -402,7 +402,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* controler)
 
 void NodeGraphAddNode(NodeGraphControlerBase* controler,
                       int type,
-                      const std::vector<unsigned char>& parameters,
+                      const std::vector<unsigned char>* parameters,
                       int posx,
                       int posy,
                       int frameStart,
@@ -412,7 +412,10 @@ void NodeGraphAddNode(NodeGraphControlerBase* controler,
     nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
 
     controler->AddSingleNode(type);
-    controler->SetParamBlock(index, parameters);
+    if (parameters)
+    {
+        controler->SetParamBlock(index, *parameters);
+    }
     controler->SetTimeSlot(index, frameStart, frameEnd);
 }
 

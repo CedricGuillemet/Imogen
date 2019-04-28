@@ -87,7 +87,7 @@ const unsigned int glCubeFace[] = {
 const unsigned int textureFormatSize[] = {3, 3, 6, 6, 12, 4, 4, 4, 8, 8, 16, 4};
 const unsigned int textureComponentCount[] = {3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4};
 
-void SaveCapture(int x, int y, int w, int h)
+void SaveCapture(const std::string &filemane, int x, int y, int w, int h)
 {
     w &= 0xFFFFFFFC;
     h &= 0xFFFFFFFC;
@@ -99,7 +99,7 @@ void SaveCapture(int x, int y, int w, int h)
 
     glReadPixels(x, viewport[3] - y - h, w, h, GL_RGB, GL_UNSIGNED_BYTE, imgBits);
 
-    stbi_write_png("capture.png", w, h, 3, imgBits, w * 3);
+    stbi_write_png(filemane.c_str(), w, h, 3, imgBits, w * 3);
     delete[] imgBits;
 }
 

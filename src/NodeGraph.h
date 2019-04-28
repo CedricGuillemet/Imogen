@@ -173,7 +173,7 @@ ImVec2 NodeGraphGetNodePos(size_t index);
 
 void NodeGraphAddNode(NodeGraphControlerBase* delegate,
                       int type,
-                      const std::vector<unsigned char>& parameters,
+                      const std::vector<unsigned char>* parameters,
                       int posx,
                       int posy,
                       int frameStart,

@@ -940,6 +940,10 @@ const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size
 void EvaluationContext::StageSetProcessing(size_t target, int processing)
 {
     mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
+    if (target >= mbProcessing.size())
+    {
+        return;
+    }
     if (mbProcessing[target] != processing)
     {
         mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
@@ -951,6 +955,10 @@ void EvaluationContext::StageSetProcessing(size_t target, int processing)
 void EvaluationContext::StageSetProgress(size_t target, float progress)
 {
     mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
+    if (target >= mProgress.size())
+    {
+        return;
+    }
     mProgress[target] = progress;
 }
 

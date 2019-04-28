@@ -1,15 +1,39 @@
 import Imogen
+import os
 
 def generateDocumentation():
-
-	Imogen.CaptureScreen()
+	baseDir = "Documentation/"
 	
-	with open("documentation.md", "w") as f:
-		metanodes = Imogen.GetMetaNodes()
+	metanodes = Imogen.GetMetaNodes()
+	try:
+		os.mkdir(baseDir)
+	except OSError:
+		pass
+	
+	for node in metanodes:
+		nodeName = node["name"];
+		nodeCategory = node.get("category","None")
 		
-		for node in metanodes:
-			f.write("# "+node["name"]+"\n")
-			f.write("Category : "+node["category"]+"\n")
+		try:
+			os.mkdir(baseDir+nodeCategory)
+		except OSError:
+			pass
+		
+		Imogen.NewGraph("GraphFor"+nodeName)
+		Imogen.AddNode(nodeName)
+		Imogen.AutoLayout()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.CaptureScreen(baseDir+nodeCategory+"/"+nodeName+".png")
+		Imogen.DeleteGraph()
+
+		with open(baseDir+nodeCategory+"/"+nodeName+".md", "w") as f:
+			f.write("# "+nodeName+"\n")
+			f.write("![node picture](./"+nodeName+".png)\n")
+			f.write("Category : "+nodeCategory+"\n")
 			f.write("### Description\n")
 			f.write(node["description"]+"\n")
 			f.write("### Parameters\n")
@@ -22,7 +46,8 @@ def generateDocumentation():
 					f.write(param["description"]+"\n")
 			f.write("\n");
 
-		f.write("# Hot Keys\n");
+	with open(baseDir + "HotKeys.md", "w") as f:
+		f.write("# Default Hot Keys\n");
 		f.write("\n");
 		f.write("Action    | Description         | Hot key\n");
 		f.write("----------|---------------------|------------------\n");
@@ -30,6 +55,7 @@ def generateDocumentation():
 		for h in hotkeys:
 			f.write(h["name"]+"|"+h["description"]+"|"+h["keys"]+"\n")
 		f.write("\n");
+		
 	Imogen.Log("Documentation generated!\n")
 
 

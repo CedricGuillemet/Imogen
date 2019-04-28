@@ -120,13 +120,31 @@ struct PyNode
 };
 #include "imHotKey.h"
 extern std::vector<ImHotKey::HotKey> mHotkeys;
-void CaptureScreen();
+
+
+void RenderImogenFrame();
+void NodeGraphLayout();
+void NodeGraphUpdateScrolling();
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
     pybind11::class_<Image>(m, "Image");
 
-    m.def("CaptureScreen", []() { CaptureScreen();
+    m.def("Render", []() { RenderImogenFrame(); });
+    m.def("CaptureScreen", [](const std::string& filename) {
+        extern std::map<std::string, ImRect> interfacesRect;
+        ImRect rc = interfacesRect["Graph"];
+        SaveCapture(filename, int(rc.Min.x), int(rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
     });
+
+    m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
+    m.def("AddNode", [](const std::string& nodeType) { Imogen::instance->AddNode(nodeType); });
+    m.def("AutoLayout", []() {
+        NodeGraphLayout();
+        NodeGraphUpdateScrolling();
+    });
+    m.def("DeleteGraph", []() { Imogen::instance->DeleteCurrentMaterial(); });
+
+
     m.def("GetMetaNodes", []() {
         auto d = pybind11::list();
 
@@ -139,10 +157,6 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
             if (node.mCategory >= 0 && node.mCategory < MetaNode::mCategories.size())
             {
                 n["category"] = MetaNode::mCategories[node.mCategory];
-            }
-            else
-            {
-                n["category"] = "N/A";
             }
 
             if (!node.mParams.empty())
@@ -692,12 +706,18 @@ namespace EvaluationAPI
     int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, Image* image, int cubeFace)
     {
         if (image->mNumFaces != 1)
+        {
             return EVAL_ERR;
-        RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
+        }
+        auto tgt = evaluationContext->GetRenderTarget(target);
+        if (!tgt)
+        {
+            return EVAL_ERR;
+        }
 
-        tgt.InitCube(image->mWidth, image->mNumMips);
+        tgt->InitCube(image->mWidth, image->mNumMips);
 
-        Image::Upload(image, tgt.mGLTexID, cubeFace);
+        Image::Upload(image, tgt->mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, true);
         return EVAL_OK;
     }

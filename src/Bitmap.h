@@ -161,7 +161,7 @@ struct DefaultShaders
 };
 
 extern DefaultShaders gDefaultShader;
-void SaveCapture(int x, int y, int w, int h);
+void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 
 class RenderTarget
 {

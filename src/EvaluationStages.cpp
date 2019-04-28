@@ -40,7 +40,6 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     EvaluationStage evaluation;
     //#ifdef _DEBUG needed for fur
     evaluation.mTypename = gMetaNodes[nodeType].mName;
-    ;
     //#endif
     evaluation.mDecoder = NULL;
     evaluation.mUseCountByOthers = 0;

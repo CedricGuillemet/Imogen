@@ -648,6 +648,16 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
     material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 
+void Imogen::AddNode(const std::string& nodeType)
+{
+    uint32_t type = uint32_t(GetMetaNodeIndex(nodeType));
+    if (type == 0xFFFFFFFF)
+    {
+        return;
+    }
+    NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1);
+}
+
 void Imogen::UpdateNewlySelectedGraph()
 {
     // set new
@@ -663,7 +673,7 @@ void Imogen::UpdateNewlySelectedGraph()
                 continue;
             NodeGraphAddNode(mNodeGraphControler,
                              node.mType,
-                             node.mParameters,
+                             &node.mParameters,
                              node.mPosX,
                              node.mPosY,
                              node.mFrameStart,
@@ -709,12 +719,12 @@ void Imogen::UpdateNewlySelectedGraph()
     }
 }
 
-void Imogen::NewMaterial()
+void Imogen::NewMaterial(const std::string& materialName)
 {
     int previousSelection = mSelectedMaterial;
     library.mMaterials.push_back(Material());
     Material& back = library.mMaterials.back();
-    back.mName = "Name_Of_New_Material";
+    back.mName = materialName;
     back.mThumbnailTextureId = 0;
     back.mRuntimeUniqueId = GetRuntimeId();
 
@@ -1438,6 +1448,24 @@ void Imogen::HandleHotKeys()
 }
 
 static const ImVec2 deltaHeight = ImVec2(0, 32);
+
+void Imogen::RunDeferedCommands()
+{
+    if (!mRunCommand.size())
+        return;
+    std::string tmpCommand = mRunCommand;
+    mRunCommand = "";
+    try
+    {
+        pybind11::exec(tmpCommand);
+        
+    }
+    catch (pybind11::error_already_set& ex)
+    {
+        Log(ex.what());
+    }
+}
+
 void Imogen::ShowAppMainMenuBar()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -1464,14 +1492,7 @@ void Imogen::ShowAppMainMenuBar()
         {
             if (ImGui::Button(plugin.mName.c_str(), buttonSize))
             {
-                try
-                {
-                    pybind11::exec(plugin.mPythonCommand);
-                }
-                catch (pybind11::error_already_set& ex)
-                {
-                    Log(ex.what());
-                }
+                mRunCommand = plugin.mPythonCommand;
             }
         }
     }
@@ -1841,6 +1862,13 @@ void Imogen::ShowTimeLine()
     }
 }
 
+void Imogen::DeleteCurrentMaterial()
+{
+    library.mMaterials.erase(library.mMaterials.begin() + mSelectedMaterial);
+    mSelectedMaterial = int(library.mMaterials.size()) - 1;
+    UpdateNewlySelectedGraph();
+}
+
 void Imogen::ShowNodeGraph()
 {
     if (mSelectedMaterial != -1)
@@ -1859,9 +1887,6 @@ void Imogen::ShowNodeGraph()
         ImGui::SameLine();
         if (ImGui::Button("Delete Material"))
         {
-            library.mMaterials.erase(library.mMaterials.begin() + mSelectedMaterial);
-            mSelectedMaterial = int(library.mMaterials.size()) - 1;
-            UpdateNewlySelectedGraph();
         }
         ImGui::PopItemWidth();
     }
@@ -1884,26 +1909,20 @@ void Imogen::ExportMaterial()
     }
 }
 
-int doCapture = 0;
-void CaptureScreen()
-{
-    doCapture = 4;
-}
-
 ImRect GetNodesDisplayRect();
-
-void Imogen::Show(Builder* builder, Library& library)
+std::map<std::string, ImRect> interfacesRect;
+void Imogen::Show(Builder* builder, Library& library, bool capturing)
 {
     int currentTime = mCurrentTime;
     ImGuiIO& io = ImGui::GetIO();
     mBuilder = builder;
-    if (!doCapture)
+    if (!capturing)
     {
         ShowTitleBar(builder);
     }
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
-    ImVec2 wpos, wsize;
+    ImVec2 nodesWindowPos;
 
     if (ImGui::Begin("Imogen",
                      0,
@@ -1922,9 +1941,8 @@ void Imogen::Show(Builder* builder, Library& library)
             {
                 ShowNodeGraph();
             }
-            wpos = ImGui::GetWindowPos();
-            wsize = ImGui::GetWindowSize();
-
+            nodesWindowPos = ImGui::GetWindowPos();
+            interfacesRect["Nodes"] = ImRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize());
             ImGui::End();
         }
 
@@ -1934,6 +1952,7 @@ void Imogen::Show(Builder* builder, Library& library)
             {
                 LibraryEdit(library);
             }
+            interfacesRect["Library"] = ImRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize());
             ImGui::End();
         }
 
@@ -1943,6 +1962,8 @@ void Imogen::Show(Builder* builder, Library& library)
             {
                 mNodeGraphControler->NodeEdit();
             }
+            interfacesRect["Parameters"] =
+                ImRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize());
             ImGui::End();
         }
 
@@ -1952,6 +1973,7 @@ void Imogen::Show(Builder* builder, Library& library)
             {
                 ImguiAppLog::Log->DrawEmbedded();
             }
+            interfacesRect["Logs"] = ImRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize());
             ImGui::End();
         }
 
@@ -1961,6 +1983,7 @@ void Imogen::Show(Builder* builder, Library& library)
             {
                 ShowTimeLine();
             }
+            interfacesRect["Timeline"] = ImRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize());
             ImGui::End();
         }
 
@@ -2000,16 +2023,20 @@ void Imogen::Show(Builder* builder, Library& library)
     ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 
     Playback(currentTime != mCurrentTime);
-    
+
+    ImRect rc = GetNodesDisplayRect();
+    interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
+    /*
     if (doCapture)
     {
         doCapture--;
         if (!doCapture)
         {
-            ImRect rc = GetNodesDisplayRect();
+            
             SaveCapture(int(wpos.x + rc.Min.x), int(wpos.y + rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
         }
     }
+    */
 }
 
 void Imogen::Playback(bool timeHasChanged)
@@ -2169,6 +2196,7 @@ Imogen::Imogen(NodeGraphControler* nodeGraphControler) : mNodeGraphControler(nod
 Imogen::~Imogen()
 {
     delete mSequence;
+    instance = nullptr;
 }
 
 void Imogen::ClearAll()

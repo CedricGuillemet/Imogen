@@ -618,9 +618,9 @@ static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase* 
                         }
                     }
 
-                    for (int iCateg = 0; iCateg < controler->mCategoriesCount; iCateg++)
+                    for (unsigned int iCateg = 0; iCateg < controler->mCategories->size(); iCateg++)
                     {
-                        if (ImGui::BeginMenu(controler->mCategories[iCateg]))
+                        if (ImGui::BeginMenu((*controler->mCategories)[iCateg].c_str()))
                         {
                             for (int i = 0; i < metaNodeCount; i++)
                             {

@@ -566,6 +566,8 @@ struct MetaNode
             return false;
         return true;
     }
+
+    static const std::vector<std::string> mCategories;
 };
 
 extern std::vector<MetaNode> gMetaNodes;

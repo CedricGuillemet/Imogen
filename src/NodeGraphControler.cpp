@@ -35,10 +35,7 @@
 NodeGraphControler::NodeGraphControler()
     : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
 {
-    mCategoriesCount = 10;
-    static const char* categories[] = {
-        "Transform", "Generator", "Material", "Blend", "Filter", "Noise", "File", "Paint", "Cubemap", "Fur"};
-    mCategories = categories;
+    mCategories = &MetaNode::mCategories;
 }
 
 void NodeGraphControler::Clear()

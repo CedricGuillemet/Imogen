@@ -34,6 +34,9 @@
 
 int Log(const char* szFormat, ...);
 
+const std::vector<std::string> MetaNode::mCategories = {
+    "Transform", "Generator", "Material", "Blend", "Filter", "Noise", "File", "Paint", "Cubemap", "Fur"};
+
 enum : uint32_t
 {
     v_initial,

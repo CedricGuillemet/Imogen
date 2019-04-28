@@ -31,13 +31,12 @@
 
 struct NodeGraphControlerBase
 {
-    NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
+    NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategories(nullptr)
     {
     }
 
     int mSelectedNodeIndex;
-    int mCategoriesCount;
-    const char** mCategories;
+    const std::vector<std::string>* mCategories;
 
     virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
     virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;

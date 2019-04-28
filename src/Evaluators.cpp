@@ -132,6 +132,14 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
             d.append(n);
             n["name"] = node.mName;
             n["description"] = "This is a super node. believe me!";
+            if (node.mCategory >= 0 && node.mCategory < MetaNode::mCategories.size())
+            {
+                n["category"] = MetaNode::mCategories[node.mCategory];
+            }
+            else
+            {
+                n["category"] = "N/A";
+            }
 
             if (!node.mParams.empty())
             {

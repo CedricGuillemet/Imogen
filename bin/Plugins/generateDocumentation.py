@@ -7,6 +7,7 @@ def generateDocumentation():
 		
 		for node in metanodes:
 			f.write("# "+node["name"]+"\n")
+			f.write("Category : "+node["category"]+"\n")
 			f.write("### Description\n")
 			f.write(node["description"]+"\n")
 			f.write("### Parameters\n")
@@ -19,6 +20,14 @@ def generateDocumentation():
 					f.write(param["description"]+"\n")
 			f.write("\n");
 
+		f.write("# Hot Keys\n");
+		f.write("\n");
+		f.write("Action    | Description         | Hot key\n");
+		f.write("----------|---------------------|------------------\n");
+		hotkeys = Imogen.GetHotKeys()
+		for h in hotkeys:
+			f.write(h["name"]+"|"+h["description"]+"|"+h["keys"]+"\n")
+		f.write("\n");
 	Imogen.Log("Documentation generated!\n")
 
 

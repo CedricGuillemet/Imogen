@@ -161,7 +161,7 @@ struct DefaultShaders
 };
 
 extern DefaultShaders gDefaultShader;
-
+void SaveCapture(int x, int y, int w, int h);
 
 class RenderTarget
 {

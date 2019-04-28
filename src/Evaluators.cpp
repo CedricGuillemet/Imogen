@@ -119,10 +119,13 @@ struct PyNode
 };
 #include "imHotKey.h"
 extern std::vector<ImHotKey::HotKey> mHotkeys;
+void CaptureScreen();
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
     pybind11::class_<Image>(m, "Image");
 
+    m.def("CaptureScreen", []() { CaptureScreen();
+    });
     m.def("GetMetaNodes", []() {
         auto d = pybind11::list();
 

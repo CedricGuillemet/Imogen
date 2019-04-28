@@ -129,6 +129,7 @@ bool editingInput = false;
 static ImVec2 scrolling = ImVec2(0.0f, 0.0f);
 float factor = 1.0f;
 float factorTarget = 1.0f;
+ImVec2 captureOffset;
 
 enum NodeOperation
 {
@@ -1232,11 +1233,13 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
 
     const ImVec2 windowPos = ImGui::GetCursorScreenPos();
     const ImVec2 canvasSize = ImGui::GetWindowSize();
+    const ImVec2 scrollRegionLocalPos(0, 50);
 
     ImRect regionRect(windowPos, windowPos + canvasSize);
 
     HandleZoomScroll(regionRect);
     ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling * factor;
+    captureOffset = scrollRegionLocalPos + scrolling * factor + ImVec2(10.f, 0.f);
 
     {
         ImGui::BeginChild("rugs_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
@@ -1258,7 +1261,7 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
 
-    ImGui::SetCursorPos(ImVec2(0, 50));
+    ImGui::SetCursorPos(scrollRegionLocalPos);
     ImGui::BeginChild("scrolling_region",
                       ImVec2(0, 0),
                       true,
@@ -1505,4 +1508,22 @@ void NodeGraphLayout()
     {
         delete undo;
     }
+}
+
+ImRect GetNodesDisplayRect()
+{
+    ImRect rect;
+    for (auto& node : nodes)
+    {
+        rect.Add(ImRect(node.Pos, node.Pos + node.Size));
+    }
+
+    // margins
+    static const float margin = 10.f;
+    rect.Min += captureOffset;
+    rect.Max += captureOffset;
+    rect.Min -= ImVec2(margin, margin);
+    rect.Max += ImVec2(margin, margin);
+
+    return rect;
 }

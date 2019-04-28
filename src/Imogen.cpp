@@ -275,8 +275,16 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             Image::Free(&pickerImage);
             ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
             ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-            nodeGraphControler.SetKeyboardMouse(
-                ratio.x, ratio.y, deltaRatio.x, deltaRatio.y, io.MouseDown[0], io.MouseDown[1], io.MouseWheel, io.KeyCtrl, io.KeyAlt, io.KeyShift);
+            nodeGraphControler.SetKeyboardMouse(ratio.x,
+                                                ratio.y,
+                                                deltaRatio.x,
+                                                deltaRatio.y,
+                                                io.MouseDown[0],
+                                                io.MouseDown[1],
+                                                io.MouseWheel,
+                                                io.KeyCtrl,
+                                                io.KeyAlt,
+                                                io.KeyShift);
         }
         lastSentExit = -1;
     }
@@ -285,7 +293,8 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
         if (lastSentExit != selNode)
         {
             lastSentExit = selNode;
-            nodeGraphControler.SetKeyboardMouse(-9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f, false, false, false);
+            nodeGraphControler.SetKeyboardMouse(
+                -9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f, false, false, false);
         }
     }
 }
@@ -1875,15 +1884,26 @@ void Imogen::ExportMaterial()
     }
 }
 
+int doCapture = 0;
+void CaptureScreen()
+{
+    doCapture = 4;
+}
+
+ImRect GetNodesDisplayRect();
+
 void Imogen::Show(Builder* builder, Library& library)
 {
     int currentTime = mCurrentTime;
     ImGuiIO& io = ImGui::GetIO();
     mBuilder = builder;
-    ShowTitleBar(builder);
-
+    if (!doCapture)
+    {
+        ShowTitleBar(builder);
+    }
     ImGui::SetNextWindowPos(deltaHeight);
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
+    ImVec2 wpos, wsize;
 
     if (ImGui::Begin("Imogen",
                      0,
@@ -1902,6 +1922,9 @@ void Imogen::Show(Builder* builder, Library& library)
             {
                 ShowNodeGraph();
             }
+            wpos = ImGui::GetWindowPos();
+            wsize = ImGui::GetWindowSize();
+
             ImGui::End();
         }
 
@@ -1977,6 +2000,16 @@ void Imogen::Show(Builder* builder, Library& library)
     ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 
     Playback(currentTime != mCurrentTime);
+    
+    if (doCapture)
+    {
+        doCapture--;
+        if (!doCapture)
+        {
+            ImRect rc = GetNodesDisplayRect();
+            SaveCapture(int(wpos.x + rc.Min.x), int(wpos.y + rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
+        }
+    }
 }
 
 void Imogen::Playback(bool timeHasChanged)

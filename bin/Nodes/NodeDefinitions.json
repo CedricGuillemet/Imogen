@@ -360,7 +360,8 @@
 		}],
 		"parameters": [{
 			"name": "Color",
-			"type": "Color4"
+			"type": "Color4",
+			"default":"0.8,0.8,0.8,1.0"
 		}]
 	}, {
 		"name": "NormalMapBlending",
@@ -401,13 +402,16 @@
 			"loop": false
 		},{
 			"name": "Size",
-			"type": "Float"
+			"type": "Float",
+			"default":"10.0"
 		}, {
 			"name": "U",
-			"type": "Float"
+			"type": "Float",
+			"default":"1.0"
 		}, {
 			"name": "V",
-			"type": "Float"
+			"type": "Float",
+			"default":"0.5"
 		}]
 	}, {
 		"name": "PerlinNoise",
@@ -999,10 +1003,12 @@
 		}],
 		"parameters": [{
 			"name": "Point Count",
-			"type": "Int"
+			"type": "Int",
+			"default":"20"
 		},{
 			"name": "Seed",
-			"type": "Float"
+			"type": "Float",
+			"default":"13.37"
 		}, {
 			"name": "Distance Blend",
 			"type": "Float"

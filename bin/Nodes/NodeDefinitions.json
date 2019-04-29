@@ -290,16 +290,20 @@
 		}],
 		"parameters": [{
 			"name": "Distance",
-			"type": "Float2"
+			"type": "Float2",
+			"default":"0.0,0.45"
 		}, {
 			"name": "Radius",
-			"type": "Float2"
+			"type": "Float2",
+			"default":"0.0,0.14"
 		}, {
 			"name": "Angle",
-			"type": "Angle2"
+			"type": "Angle2",
+			"default":"0.0,720.0"
 		}, {
 			"name": "Count",
-			"type": "Float"
+			"type": "Float",
+			"default":"20.0"
 		}]
 	}, {
 		"name": "Ramp",

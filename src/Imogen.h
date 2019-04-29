@@ -94,6 +94,11 @@ struct Imogen
     void RunDeferedCommands();
     static Imogen* instance;
 
+    NodeGraphControler* GetNodeGraphControler()
+    {
+        return mNodeGraphControler;
+    }
+
 protected:
     void ShowAppMainMenuBar();
     void ShowTitleBar(Builder* builder);

@@ -332,10 +332,13 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     else
     {
         //
-        Swap(mComputeBuffers[index], tempBuffer);
+        if (index < mComputeBuffers.size())
+        {
+            Swap(mComputeBuffers[index], tempBuffer);
 
-        AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
-        sourceBuffer = &tempBuffer;
+            AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
+            sourceBuffer = &tempBuffer;
+        }
     }
 
     if (mComputeBuffers.size() <= index)

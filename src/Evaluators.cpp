@@ -41,6 +41,7 @@
 #include "Camera.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
+#include "NodeGraphControler.h"
 
 Evaluators gEvaluators;
 extern enki::TaskScheduler g_TS;
@@ -125,6 +126,9 @@ extern std::vector<ImHotKey::HotKey> mHotkeys;
 void RenderImogenFrame();
 void NodeGraphLayout();
 void NodeGraphUpdateScrolling();
+void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* delegate);
+
+
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
     pybind11::class_<Image>(m, "Image");
@@ -139,6 +143,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
     m.def("AddNode", [](const std::string& nodeType) { Imogen::instance->AddNode(nodeType); });
     m.def("AutoLayout", []() {
+        NodeGraphUpdateEvaluationOrder(Imogen::instance->GetNodeGraphControler());
         NodeGraphLayout();
         NodeGraphUpdateScrolling();
     });

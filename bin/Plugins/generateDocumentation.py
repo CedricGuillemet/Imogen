@@ -15,7 +15,7 @@ def generateDocumentation():
 		nodeCategory = node.get("category","None")
 		
 		try:
-			os.mkdir(baseDir+nodeCategory)
+			os.mkdir(baseDir+"Pictures")
 		except OSError:
 			pass
 		
@@ -27,12 +27,12 @@ def generateDocumentation():
 		Imogen.Render()
 		Imogen.Render()
 		Imogen.Render()
-		Imogen.CaptureScreen(baseDir+nodeCategory+"/"+nodeName+".png")
+		Imogen.CaptureScreen(baseDir+"Pictures"+"/"+nodeName+".png")
 		Imogen.DeleteGraph()
 
-		with open(baseDir+nodeCategory+"/"+nodeName+".md", "w") as f:
+		with open(baseDir+nodeCategory+".md", "a") as f:
 			f.write("# "+nodeName+"\n")
-			f.write("![node picture](./"+nodeName+".png)\n")
+			f.write("![node picture](./Pictures/"+nodeName+".png)\n")
 			f.write("Category : "+nodeCategory+"\n")
 			f.write("### Description\n")
 			f.write(node["description"]+"\n")

@@ -32,7 +32,7 @@ def generateDocumentation():
 
 		with open(baseDir+nodeCategory+".md", "a") as f:
 			f.write("# "+nodeName+"\n")
-			f.write("![node picture](./Pictures/"+nodeName+".png)\n")
+			f.write("![node picture](./Pictures/"+nodeName+".png)\n\n")
 			f.write("Category : "+nodeCategory+"\n")
 			f.write("### Description\n")
 			f.write(node["description"]+"\n")

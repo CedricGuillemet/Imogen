@@ -66,7 +66,8 @@
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
 			"rangeMinY": 0.0,
-			"rangeMaxY": 0.0
+			"rangeMaxY": 0.0,
+			"default":"0.25"
 		}]
 	}, {
 		"name": "Checker",
@@ -94,10 +95,12 @@
 		}],
 		"parameters": [{
 			"name": "Frequency",
-			"type": "Float"
+			"type": "Float",
+			"default":"4.0"
 		}, {
 			"name": "Angle",
-			"type": "Angle"
+			"type": "Angle",
+			"default":"45.0"
 		}]
 	}, {
 		"name": "SmoothStep",
@@ -766,17 +769,20 @@
 		}],
 		"parameters": [{
 			"name": "Sides",
-			"type": "Int"
+			"type": "Int",
+			"default":"5"
 		}, {
 			"name": "Radius",
 			"type": "Float",
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
 			"rangeMinY": 0.0,
-			"rangeMaxY": 0.0
+			"rangeMaxY": 0.0,
+			"default":"0.5"
 		}, {
 			"name": "T",
-			"type": "Float"
+			"type": "Float",
+			"default":"0.25"
 		}]
 	}, {
 		"name": "GradientBuilder",

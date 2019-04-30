@@ -1,6 +1,20 @@
 import Imogen
 import os
 
+def generateExample(nodeName, baseDir):
+	if nodeName == "ImageRead" :
+		Imogen.NewGraph("GraphFor"+nodeName)
+		imageRead = Imogen.AddNode(nodeName)
+		Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+		Imogen.AutoLayout()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.Render()
+		Imogen.CaptureScreen(baseDir+"Examples"+"/Example_"+nodeName+".png")
+		Imogen.DeleteGraph()
+		
 def generateDocumentation():
 	baseDir = "Documentation/"
 	
@@ -9,13 +23,18 @@ def generateDocumentation():
 		os.mkdir(baseDir)
 	except OSError:
 		pass
-	
+	Imogen.SetSynchronousEvaluation(True)
 	for node in metanodes:
 		nodeName = node["name"];
 		nodeCategory = node.get("category","None")
 		
 		try:
 			os.mkdir(baseDir+"Pictures")
+		except OSError:
+			pass
+			
+		try:
+			os.mkdir(baseDir+"Examples")
 		except OSError:
 			pass
 		
@@ -45,7 +64,8 @@ def generateDocumentation():
 					f.write("1. " + param["name"]+"\n")
 					f.write(param["description"]+"\n")
 			f.write("\n");
-
+			generateExample(nodeName, baseDir)
+			
 	with open(baseDir + "HotKeys.md", "w") as f:
 		f.write("# Default Hot Keys\n");
 		f.write("\n");
@@ -56,6 +76,7 @@ def generateDocumentation():
 			f.write(h["name"]+"|"+h["description"]+"|"+h["keys"]+"\n")
 		f.write("\n");
 		
+	Imogen.SetSynchronousEvaluation(False)
 	Imogen.Log("Documentation generated!\n")
 
 

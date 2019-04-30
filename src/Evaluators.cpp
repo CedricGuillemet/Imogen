@@ -139,9 +139,15 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         ImRect rc = interfacesRect["Graph"];
         SaveCapture(filename, int(rc.Min.x), int(rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
     });
-
+    m.def("SetSynchronousEvaluation", [](bool synchronous) {
+         Imogen::instance->GetNodeGraphControler()->mEditingContext.SetSynchronous(synchronous);
+    });
     m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
-    m.def("AddNode", [](const std::string& nodeType) { Imogen::instance->AddNode(nodeType); });
+    m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
+    m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
+        Imogen::instance->GetNodeGraphControler()->SetParameter(nodeIndex, paramName, value);
+    });
+        
     m.def("AutoLayout", []() {
         NodeGraphUpdateEvaluationOrder(Imogen::instance->GetNodeGraphControler());
         NodeGraphLayout();
@@ -684,21 +690,28 @@ void Evaluators::InitPythonModules()
 
 void Evaluators::InitPython()
 {
-    pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
-    gEvaluators.InitPythonModules();
-    pybind11::exec(R"(
-        import sys
-        import Imogen
-        class CatchImogenIO:
-            def __init__(self):
-                pass
-            def write(self, txt):
-                Imogen.Log(txt)
-        catchImogenIO = CatchImogenIO()
-        sys.stdout = catchImogenIO
-        sys.stderr = catchImogenIO
-        print("Python stdout, stderr catched.\n"))");
-    pybind11::module::import("Plugins");
+    try
+    {
+        pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
+        gEvaluators.InitPythonModules();
+        pybind11::exec(R"(
+            import sys
+            import Imogen
+            class CatchImogenIO:
+                def __init__(self):
+                    pass
+                def write(self, txt):
+                    Imogen.Log(txt)
+            catchImogenIO = CatchImogenIO()
+            sys.stdout = catchImogenIO
+            sys.stderr = catchImogenIO
+            print("Python stdout, stderr catched.\n"))");
+        pybind11::module::import("Plugins");
+    }
+    catch (std::exception e)
+    {
+        Log("InitPython Exception : %s\n", e.what());
+    }
 }
 
 void Evaluator::RunPython() const

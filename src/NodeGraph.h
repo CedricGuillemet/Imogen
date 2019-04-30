@@ -171,7 +171,7 @@ const std::vector<NodeLink>& NodeGraphGetLinks();
 const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphControlerBase* delegate,
+size_t NodeGraphAddNode(NodeGraphControlerBase* delegate,
                       int type,
                       const std::vector<unsigned char>* parameters,
                       int posx,

@@ -501,8 +501,16 @@ void NodeGraphControler::InvalidateParameters()
     }
 }
 
-void NodeGraphControler::SetKeyboardMouse(
-    float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel, bool bCtrl, bool bAlt, bool bShift)
+void NodeGraphControler::SetKeyboardMouse(float rx,
+                                          float ry,
+                                          float dx,
+                                          float dy,
+                                          bool lButDown,
+                                          bool rButDown,
+                                          float wheel,
+                                          bool bCtrl,
+                                          bool bAlt,
+                                          bool bShift)
 {
     if (mSelectedNodeIndex == -1)
         return;
@@ -694,11 +702,11 @@ void NodeGraphControler::PasteNodes()
                                                [&]() { return &mEvaluationStages.mStages; },
                                                [](int) {},
                                                [&](int index) { NodeIsAdded(index); });
-                                               
+
         mEditingContext.UserAddStage();
         size_t target = mEvaluationStages.mStages.size();
         AddSingleNode(sourceNode.mType);
-        
+
         auto& stage = mEvaluationStages.mStages.back();
         stage.mParameters = sourceNode.mParameters;
         stage.mInputSamplers = sourceNode.mInputSamplers;
@@ -789,4 +797,24 @@ bool NodeGraphControler::RenderBackground()
         return true;
     }
     return false;
+}
+
+void NodeGraphControler::SetParameter(int nodeIndex,
+                                      const std::string& parameterName,
+                                      const std::string& parameterValue)
+{
+    if (nodeIndex < 0 || nodeIndex >= mEvaluationStages.mStages.size())
+    {
+        return;
+    }
+    size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
+    int parameterIndex = GetParameterIndex(nodeType, parameterName.c_str());
+    if (parameterIndex == -1)
+    {
+        return;
+    }
+    ConTypes parameterType = GetParameterType(nodeType, parameterIndex);
+    size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
+    ParseStringToParameter(parameterValue, parameterType, &mEvaluationStages.mStages[nodeIndex].mParameters[paramOffset]);
+    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
 }

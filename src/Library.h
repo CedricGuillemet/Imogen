@@ -475,8 +475,12 @@ enum CurveType
 };
 
 size_t GetParameterTypeSize(ConTypes paramType);
+int GetParameterIndex(uint32_t nodeType, const char* parameterName);
+
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);
+ConTypes GetParameterType(uint32_t nodeType, uint32_t parameterIndex);
 size_t GetCurveCountPerParameterType(uint32_t paramType);
+void ParseStringToParameter(const std::string& str, uint32_t parameterType, void* parameterPtr);
 const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex);
 AnimationBase* AllocateAnimation(uint32_t valueType);

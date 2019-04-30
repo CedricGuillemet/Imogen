@@ -648,14 +648,14 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
     material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 
-void Imogen::AddNode(const std::string& nodeType)
+int Imogen::AddNode(const std::string& nodeType)
 {
     uint32_t type = uint32_t(GetMetaNodeIndex(nodeType));
     if (type == 0xFFFFFFFF)
     {
-        return;
+        return -1;
     }
-    NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1);
+    return int(NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1));
 }
 
 void Imogen::UpdateNewlySelectedGraph()

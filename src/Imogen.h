@@ -88,7 +88,7 @@ struct Imogen
 
     void NewMaterial(const std::string& materialName = "Name_Of_New_Material");
     // helper for python scripting
-    void AddNode(const std::string& nodeType);
+    int AddNode(const std::string& nodeType);
     void DeleteCurrentMaterial();
 
     void RunDeferedCommands();

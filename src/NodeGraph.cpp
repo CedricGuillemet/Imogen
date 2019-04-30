@@ -400,7 +400,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* controler)
     controler->UpdateEvaluationList(nodeOrderList);
 }
 
-void NodeGraphAddNode(NodeGraphControlerBase* controler,
+size_t NodeGraphAddNode(NodeGraphControlerBase* controler,
                       int type,
                       const std::vector<unsigned char>* parameters,
                       int posx,
@@ -417,6 +417,7 @@ void NodeGraphAddNode(NodeGraphControlerBase* controler,
         controler->SetParamBlock(index, *parameters);
     }
     controler->SetTimeSlot(index, frameStart, frameEnd);
+    return index;
 }
 
 void NodeGraphAddLink(NodeGraphControlerBase* controler, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)

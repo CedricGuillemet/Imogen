@@ -135,7 +135,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
         return GetByAsyncId(id, mEvaluationStages.mStages);
     }
     void NodeEdit();
-
+    void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
 protected:
     bool EditSingleParameter(unsigned int nodeIndex,
                              unsigned int parameterIndex,

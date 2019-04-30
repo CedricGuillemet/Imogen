@@ -284,6 +284,19 @@ unsigned int GetRuntimeId()
     return ++runtimeId;
 }
 
+int GetParameterIndex(uint32_t nodeType, const char* parameterName)
+{
+    const MetaNode& currentMeta = gMetaNodes[nodeType];
+    int i = 0;
+    for (const MetaParameter& param : currentMeta.mParams)
+    {
+        if (!stricmp(param.mName.c_str(), parameterName))
+            return i;
+        i++;
+    }
+    return -1;
+}
+
 size_t GetParameterTypeSize(ConTypes paramType)
 {
     switch (paramType)
@@ -490,6 +503,12 @@ size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex)
         i++;
     }
     return ret;
+}
+
+ConTypes GetParameterType(uint32_t nodeType, uint32_t parameterIndex)
+{
+    const MetaNode& currentMeta = gMetaNodes[nodeType];
+    return currentMeta.mParams[parameterIndex].mType;
 }
 
 AnimationBase* AllocateAnimation(uint32_t valueType)
@@ -752,6 +771,63 @@ void SaveMetaNodes(const char* filename)
     myfile.close();
 }
 
+void ParseStringToParameter(const std::string& str, uint32_t parameterType, void *parameterPtr)
+{
+    float* pf = (float*)parameterPtr;
+    int* pi = (int*)parameterPtr;
+    Camera* cam = (Camera*)parameterPtr;
+    ImVec2* iv2 = (ImVec2*)parameterPtr;
+    ImVec4* iv4 = (ImVec4*)parameterPtr;
+    switch (parameterType)
+    {
+        case Con_Angle:
+        case Con_Float:
+            sscanf(str.c_str(), "%f", pf);
+            break;
+        case Con_Angle2:
+        case Con_Float2:
+            sscanf(str.c_str(), "%f,%f", &pf[0], &pf[1]);
+            break;
+        case Con_Angle3:
+        case Con_Float3:
+            sscanf(str.c_str(), "%f,%f,%f", &pf[0], &pf[1], &pf[2]);
+            break;
+        case Con_Color4:
+        case Con_Float4:
+        case Con_Angle4:
+            sscanf(str.c_str(), "%f,%f,%f,%f", &pf[0], &pf[1], &pf[2], &pf[3]);
+            break;
+        case Con_Enum:
+        case Con_Int:
+            sscanf(str.c_str(), "%d", &pi[0]);
+            break;
+        case Con_Int2:
+            sscanf(str.c_str(), "%d,%d", &pi[0], &pi[1]);
+            break;
+        case Con_Ramp:
+            iv2[0] = ImVec2(0, 0);
+            iv2[1] = ImVec2(1, 1);
+            break;
+        case Con_Ramp4:
+            iv4[0] = ImVec4(0, 0, 0, 0);
+            iv4[1] = ImVec4(1, 1, 1, 1);
+            break;
+        case Con_FilenameRead:
+            strcpy((char*)parameterPtr, str.c_str());
+            break;
+        case Con_Structure:
+        case Con_FilenameWrite:
+        case Con_ForceEvaluate:
+        case Con_Camera:
+            cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
+            cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
+            break;
+        case Con_Bool:
+            pi[0] = (str == "true") ? 1 : 0;
+            break;
+    }
+}
+
 std::vector<MetaNode> ReadMetaNodes(const char* filename)
 {
     // read it back
@@ -962,57 +1038,7 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
                     size_t paramSize = GetParameterTypeSize(metaParam.mType);
                     metaParam.mDefaultValue.resize(paramSize);
                     std::string defaultStr = param["default"].GetString();
-                    float* pf = (float*)metaParam.mDefaultValue.data();
-                    int* pi = (int*)metaParam.mDefaultValue.data();
-                    Camera* cam = (Camera*)metaParam.mDefaultValue.data();
-                    ImVec2* iv2 = (ImVec2*)metaParam.mDefaultValue.data();
-                    ImVec4* iv4 = (ImVec4*)metaParam.mDefaultValue.data();
-                    switch (metaParam.mType)
-                    {
-                        case Con_Angle:
-                        case Con_Float:
-                            sscanf(defaultStr.c_str(), "%f", pf);
-                            break;
-                        case Con_Angle2:
-                        case Con_Float2:
-                            sscanf(defaultStr.c_str(), "%f,%f", &pf[0], &pf[1]);
-                            break;
-                        case Con_Angle3:
-                        case Con_Float3:
-                            sscanf(defaultStr.c_str(), "%f,%f,%f", &pf[0], &pf[1], &pf[2]);
-                            break;
-                        case Con_Color4:
-                        case Con_Float4:
-                        case Con_Angle4:
-                            sscanf(defaultStr.c_str(), "%f,%f,%f,%f", &pf[0], &pf[1], &pf[2], &pf[3]);
-                            break;
-                        case Con_Enum:
-                        case Con_Int:
-                            sscanf(defaultStr.c_str(), "%d", &pi[0]);
-                            break;
-                        case Con_Int2:
-                            sscanf(defaultStr.c_str(), "%d,%d", &pi[0], &pi[1]);
-                            break;
-                        case Con_Ramp:
-                            iv2[0] = ImVec2(0, 0);
-                            iv2[1] = ImVec2(1, 1);
-                            break;
-                        case Con_Ramp4:
-                            iv4[0] = ImVec4(0, 0, 0, 0);
-                            iv4[1] = ImVec4(1, 1, 1, 1);
-                            break;
-                        case Con_Structure:
-                        case Con_FilenameRead:
-                        case Con_FilenameWrite:
-                        case Con_ForceEvaluate:
-                        case Con_Camera:
-                            cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
-                            cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);
-                            break;
-                        case Con_Bool:
-                            pi[0] = (defaultStr == "true") ? 1 : 0;
-                            break;
-                    }
+                    ParseStringToParameter(defaultStr, metaParam.mType, metaParam.mDefaultValue.data());
                 }
 
                 curNode.mParams.emplace_back(metaParam);

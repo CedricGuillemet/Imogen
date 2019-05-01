@@ -1531,3 +1531,18 @@ ImRect GetNodesDisplayRect()
 
     return rect;
 }
+
+ImRect GetFinalNodeDisplayRect()
+{
+    auto& node = nodes[mOrders.back().mNodeIndex];
+    ImRect rect(node.Pos, node.Pos + node.Size);
+
+    // margins
+    static const float margin = 10.f;
+    rect.Min += captureOffset;
+    rect.Max += captureOffset;
+    rect.Min -= ImVec2(margin, margin);
+    rect.Max += ImVec2(margin, margin);
+
+    return rect;
+}

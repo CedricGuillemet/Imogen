@@ -134,9 +134,9 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     pybind11::class_<Image>(m, "Image");
 
     m.def("Render", []() { RenderImogenFrame(); });
-    m.def("CaptureScreen", [](const std::string& filename) {
+    m.def("CaptureScreen", [](const std::string& filename, const std::string& content) {
         extern std::map<std::string, ImRect> interfacesRect;
-        ImRect rc = interfacesRect["Graph"];
+        ImRect rc = interfacesRect[content];
         SaveCapture(filename, int(rc.Min.x), int(rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
     });
     m.def("SetSynchronousEvaluation", [](bool synchronous) {
@@ -147,7 +147,11 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
         Imogen::instance->GetNodeGraphControler()->SetParameter(nodeIndex, paramName, value);
     });
-        
+    m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
+        //Imogen::instance->GetNodeGraphControler()->AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
+        NodeGraphAddLink(
+            Imogen::instance->GetNodeGraphControler(), nodeSource, slotSource, nodeDestination, slotDestination);
+    });
     m.def("AutoLayout", []() {
         NodeGraphUpdateEvaluationOrder(Imogen::instance->GetNodeGraphControler());
         NodeGraphLayout();

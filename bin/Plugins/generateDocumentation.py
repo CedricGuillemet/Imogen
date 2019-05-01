@@ -1,19 +1,51 @@
 import Imogen
 import os
 
-def generateExample(nodeName, baseDir):
+
+def saveScreen(filePath, content):
+	Imogen.AutoLayout()
+	Imogen.Render()
+	Imogen.Render()
+	Imogen.CaptureScreen(filePath, content)
+	Imogen.DeleteGraph()
+	
+def blendExample(filePath, operation, content):
+	Imogen.NewGraph("GraphForBlend")
+	blendNode = Imogen.AddNode("Blend")
+	imageRead = Imogen.AddNode("ImageRead")
+	Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+	sineNode = Imogen.AddNode("Sine")
+	Imogen.Connect(imageRead, 0, blendNode, 0)
+	Imogen.Connect(sineNode, 0, blendNode, 1)
+	Imogen.SetParameter(blendNode, "Operation", operation)
+	saveScreen(filePath, content)
+	
+def generateExample(nodeName, baseDir, f):
 	if nodeName == "ImageRead" :
 		Imogen.NewGraph("GraphFor"+nodeName)
 		imageRead = Imogen.AddNode(nodeName)
 		Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
-		Imogen.AutoLayout()
-		Imogen.Render()
-		Imogen.Render()
-		Imogen.Render()
-		Imogen.Render()
-		Imogen.Render()
-		Imogen.CaptureScreen(baseDir+"Examples"+"/Example_"+nodeName+".png")
-		Imogen.DeleteGraph()
+		saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+	elif nodeName == "SVG" :
+		Imogen.NewGraph("GraphFor"+nodeName)
+		imageRead = Imogen.AddNode(nodeName)
+		Imogen.SetParameter(imageRead, "File name", "Media/Pictures/23.svg")
+		saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+	elif nodeName == "Blend" :
+		blendExample(baseDir+"Pictures"+"/"+nodeName+".png", "0", "FinalNode")
+		
+		f.write("Action    | Description         | Hot key | b\n");
+		f.write("-|-|-|-\n");
+
+		for index in range(0, 13):
+			blendImage = baseDir+"Examples"+"/Example_"+nodeName+"_"+str(index)+".png"
+			blendExample(blendImage, str(index), "Graph")
+			f.write("![node picture]("+blendImage+")")
+			if (index % 2) == 1:
+				f.write("\n")
+			else:
+				f.write("|")
+		f.write("\n")
 		
 def generateDocumentation():
 	baseDir = "Documentation/"
@@ -43,10 +75,7 @@ def generateDocumentation():
 		Imogen.AutoLayout()
 		Imogen.Render()
 		Imogen.Render()
-		Imogen.Render()
-		Imogen.Render()
-		Imogen.Render()
-		Imogen.CaptureScreen(baseDir+"Pictures"+"/"+nodeName+".png")
+		Imogen.CaptureScreen(baseDir+"Pictures"+"/"+nodeName+".png", "Graph")
 		Imogen.DeleteGraph()
 
 		with open(baseDir+nodeCategory+".md", "a") as f:
@@ -64,7 +93,7 @@ def generateDocumentation():
 					f.write("1. " + param["name"]+"\n")
 					f.write(param["description"]+"\n")
 			f.write("\n");
-			generateExample(nodeName, baseDir)
+			generateExample(nodeName, baseDir, f)
 			
 	with open(baseDir + "HotKeys.md", "w") as f:
 		f.write("# Default Hot Keys\n");
@@ -78,6 +107,7 @@ def generateDocumentation():
 		
 	Imogen.SetSynchronousEvaluation(False)
 	Imogen.Log("Documentation generated!\n")
+	
 
 
 Imogen.RegisterPlugin("Generate documentation", "import Plugins.generateDocumentation as plg\nplg.generateDocumentation()") 

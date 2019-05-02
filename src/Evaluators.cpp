@@ -46,6 +46,7 @@
 Evaluators gEvaluators;
 extern enki::TaskScheduler g_TS;
 
+
 struct EValuationFunction
 {
     const char* szFunctionName;
@@ -718,6 +719,22 @@ void Evaluators::InitPython()
     }
 }
 
+void Evaluators::ReloadPlugins()
+{
+    try
+    {
+        mRegisteredPlugins.clear();
+        pybind11::exec(R"(
+            import importlib
+            importlib.reload(sys.modules["Plugins"])
+            print("Python plugins reloaded.\n"))");
+    }
+    catch (std::exception e)
+    {
+        Log("Error at reloading Python modules. Exception : %s\n", e.what());
+    }
+}
+    
 void Evaluator::RunPython() const
 {
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());

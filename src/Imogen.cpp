@@ -1458,7 +1458,6 @@ void Imogen::RunDeferedCommands()
     try
     {
         pybind11::exec(tmpCommand);
-        
     }
     catch (pybind11::error_already_set& ex)
     {
@@ -1486,6 +1485,7 @@ void Imogen::ShowAppMainMenuBar()
     {
         if (ImGui::Button("Reload Plugins", buttonSize))
         {
+            Evaluators::ReloadPlugins();
         }
         ImGui::Separator();
         for (auto& plugin : mRegisteredPlugins)
@@ -1887,6 +1887,7 @@ void Imogen::ShowNodeGraph()
         ImGui::SameLine();
         if (ImGui::Button("Delete Material"))
         {
+            DeleteCurrentMaterial();
         }
         ImGui::PopItemWidth();
     }
@@ -1910,6 +1911,7 @@ void Imogen::ExportMaterial()
 }
 
 ImRect GetNodesDisplayRect();
+ImRect GetFinalNodeDisplayRect();
 std::map<std::string, ImRect> interfacesRect;
 void Imogen::Show(Builder* builder, Library& library, bool capturing)
 {
@@ -2026,17 +2028,8 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
 
     ImRect rc = GetNodesDisplayRect();
     interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
-    /*
-    if (doCapture)
-    {
-        doCapture--;
-        if (!doCapture)
-        {
-            
-            SaveCapture(int(wpos.x + rc.Min.x), int(wpos.y + rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
-        }
-    }
-    */
+    rc = GetFinalNodeDisplayRect();
+    interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
 }
 
 void Imogen::Playback(bool timeHasChanged)

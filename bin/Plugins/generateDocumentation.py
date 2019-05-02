@@ -107,7 +107,6 @@ def generateDocumentation():
 		
 	Imogen.SetSynchronousEvaluation(False)
 	Imogen.Log("Documentation generated!\n")
-	
 
 
 Imogen.RegisterPlugin("Generate documentation", "import Plugins.generateDocumentation as plg\nplg.generateDocumentation()") 

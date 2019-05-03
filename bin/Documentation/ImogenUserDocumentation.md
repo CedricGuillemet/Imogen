@@ -796,8 +796,8 @@ This is a super parameter. believe me!
 
 # Default Hot Keys
 
-Action    | Description         | Hot key
-----------|---------------------|------------------
+Action|Description|Hot key
+-|-|-
 Layout|Reorder nodes in a simpler layout|Ctrl + L
 PlayPause|Play or Stop current animation|F5
 AnimationFirstFrame|Set current time to the first frame of animation|V

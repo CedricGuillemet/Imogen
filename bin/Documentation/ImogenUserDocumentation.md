@@ -2,78 +2,66 @@
 
 
 1.[Nodes](#Nodes)
-
 1.[Default Hot Keys](#Default-Hot-Keys)
-
 
 
 # Nodes
 ## Generator
-![node picture](Pictures/Circle.png)|![node picture](Pictures/Square.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)
--|-|-|-
-Circle|Square|Checker|Sine
-![node picture](Pictures/Hexagon.png)|![node picture](Pictures/CircleSplatter.png)|![node picture](Pictures/NGon.png)|![node picture](Pictures/GradientBuilder.png)
-Hexagon|CircleSplatter|NGon|GradientBuilder
-![node picture](Pictures/ReactionDiffusion.png)|![node picture](Pictures/Disolve.png)||
-
+![node picture](Pictures/Circle.png)|![node picture](Pictures/Square.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)|![node picture](Pictures/Hexagon.png)|![node picture](Pictures/CircleSplatter.png)
+-|-|-|-|-|-
+Circle|Square|Checker|Sine|Hexagon|CircleSplatter
+![node picture](Pictures/NGon.png)|![node picture](Pictures/GradientBuilder.png)|![node picture](Pictures/ReactionDiffusion.png)|![node picture](Pictures/Disolve.png)||
+NGon|GradientBuilder|
 
 ## Transform
-![node picture](Pictures/Transform.png)|![node picture](Pictures/Pixelize.png)|![node picture](Pictures/Tile.png)|![node picture](Pictures/PolarCoords.png)
--|-|-|-
-Transform|Pixelize|Tile|PolarCoords
-![node picture](Pictures/Swirl.png)|![node picture](Pictures/Crop.png)|![node picture](Pictures/Warp.png)|![node picture](Pictures/EdgeDetect.png)
-Swirl|Crop|Warp|EdgeDetect
-![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|
-Kaleidoscope|Palette|
+![node picture](Pictures/Transform.png)|![node picture](Pictures/Pixelize.png)|![node picture](Pictures/Tile.png)|![node picture](Pictures/PolarCoords.png)|![node picture](Pictures/Swirl.png)|![node picture](Pictures/Crop.png)
+-|-|-|-|-|-
+Transform|Pixelize|Tile|PolarCoords|Swirl|Crop
+![node picture](Pictures/Warp.png)|![node picture](Pictures/EdgeDetect.png)|![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|
+Warp|EdgeDetect|Kaleidoscope|Palette|
 
 ## Filter
-![node picture](Pictures/SmoothStep.png)|![node picture](Pictures/Blur.png)|![node picture](Pictures/NormalMap.png)|![node picture](Pictures/Invert.png)
--|-|-|-
-SmoothStep|Blur|NormalMap|Invert
-![node picture](Pictures/Ramp.png)|![node picture](Pictures/Clamp.png)|![node picture](Pictures/AO.png)|
-Ramp|Clamp|
+![node picture](Pictures/SmoothStep.png)|![node picture](Pictures/Blur.png)|![node picture](Pictures/NormalMap.png)|![node picture](Pictures/Invert.png)|![node picture](Pictures/Ramp.png)|![node picture](Pictures/Clamp.png)
+-|-|-|-|-|-
+SmoothStep|Blur|NormalMap|Invert|Ramp|Clamp
+![node picture](Pictures/AO.png)||
 
 ## Material
-![node picture](Pictures/LambertMaterial.png)|![node picture](Pictures/PBR.png)|![node picture](Pictures/TerrainPreview.png)|![node picture](Pictures/PathTracer.png)
--|-|-|-
-LambertMaterial|PBR|TerrainPreview|PathTracer
-![node picture](Pictures/PBR2.png)||
+![node picture](Pictures/LambertMaterial.png)|![node picture](Pictures/PBR.png)|![node picture](Pictures/TerrainPreview.png)|![node picture](Pictures/PathTracer.png)|![node picture](Pictures/PBR2.png)|
+-|-|-|-|-|-
+LambertMaterial|PBR|TerrainPreview|PathTracer|
 
 ## Blend
-![node picture](Pictures/MADD.png)|![node picture](Pictures/Blend.png)|![node picture](Pictures/NormalMapBlending.png)|
+![node picture](Pictures/MADD.png)|![node picture](Pictures/Blend.png)|![node picture](Pictures/NormalMapBlending.png)|||
 -|-|-|-
-MADD|Blend|
+
 
 ## None
 ![node picture](Pictures/Color.png)||
 
 ## Noise
-![node picture](Pictures/iqnoise.png)|![node picture](Pictures/PerlinNoise.png)|![node picture](Pictures/Voronoi.png)|
+![node picture](Pictures/iqnoise.png)|![node picture](Pictures/PerlinNoise.png)|![node picture](Pictures/Voronoi.png)|||
 -|-|-|-
-iqnoise|PerlinNoise|
+
 
 ## File
-![node picture](Pictures/ImageRead.png)|![node picture](Pictures/ImageWrite.png)|![node picture](Pictures/Thumbnail.png)|![node picture](Pictures/SVG.png)
--|-|-|-
-ImageRead|ImageWrite|Thumbnail|SVG
-![node picture](Pictures/SceneLoader.png)|![node picture](Pictures/GLTFRead.png)||
+![node picture](Pictures/ImageRead.png)|![node picture](Pictures/ImageWrite.png)|![node picture](Pictures/Thumbnail.png)|![node picture](Pictures/SVG.png)|![node picture](Pictures/SceneLoader.png)|![node picture](Pictures/GLTFRead.png)
+-|-|-|-|-|-
+ImageRead|ImageWrite|Thumbnail|SVG|SceneLoader|GLTFRead
 
 
 ## Paint
-![node picture](Pictures/Paint2D.png)|![node picture](Pictures/Paint3D.png)||
--|-|-|-
-
+![node picture](Pictures/Paint2D.png)|![node picture](Pictures/Paint3D.png)|||
 
 ## Cubemap
-![node picture](Pictures/PhysicalSky.png)|![node picture](Pictures/CubemapView.png)|![node picture](Pictures/EquirectConverter.png)|![node picture](Pictures/CubeRadiance.png)
--|-|-|-
-PhysicalSky|CubemapView|EquirectConverter|CubeRadiance
-
+![node picture](Pictures/PhysicalSky.png)|![node picture](Pictures/CubemapView.png)|![node picture](Pictures/EquirectConverter.png)|![node picture](Pictures/CubeRadiance.png)||
+-|-|-|-|-
+PhysicalSky|CubemapView|
 
 ## Fur
-![node picture](Pictures/FurGenerator.png)|![node picture](Pictures/FurDisplay.png)|![node picture](Pictures/FurIntegrator.png)|
+![node picture](Pictures/FurGenerator.png)|![node picture](Pictures/FurDisplay.png)|![node picture](Pictures/FurIntegrator.png)|||
 -|-|-|-
-FurGenerator|FurDisplay|
+
 
 ## Circle
 ![node picture](Pictures/Circle.png)
@@ -227,13 +215,15 @@ This is a super parameter. believe me!
 1. Operation
 This is a super parameter. believe me!
 
-![node picture](Examples/Example_Blend_0.png)|![node picture](Examples/Example_Blend_1.png)|![node picture](Examples/Example_Blend_2.png)|![node picture](Examples/Example_Blend_3.png)
--|-|-|-
-blend enum 0|blend enum 1|blend enum 2|blend enum 3
-![node picture](Examples/Example_Blend_4.png)|![node picture](Examples/Example_Blend_5.png)|![node picture](Examples/Example_Blend_6.png)|![node picture](Examples/Example_Blend_7.png)
-blend enum 4|blend enum 5|blend enum 6|blend enum 7
-![node picture](Examples/Example_Blend_8.png)|![node picture](Examples/Example_Blend_9.png)|![node picture](Examples/Example_Blend_10.png)|![node picture](Examples/Example_Blend_11.png)
-blend enum 8|blend enum 9|blend enum 10|blend enum 11
+![node picture](Examples/Example_Blend_0.png)|![node picture](Examples/Example_Blend_1.png)|![node picture](Examples/Example_Blend_2.png)
+-|-|-
+blend enum 0|blend enum 1|blend enum 2
+![node picture](Examples/Example_Blend_3.png)|![node picture](Examples/Example_Blend_4.png)|![node picture](Examples/Example_Blend_5.png)
+blend enum 3|blend enum 4|blend enum 5
+![node picture](Examples/Example_Blend_6.png)|![node picture](Examples/Example_Blend_7.png)|![node picture](Examples/Example_Blend_8.png)
+blend enum 6|blend enum 7|blend enum 8
+![node picture](Examples/Example_Blend_9.png)|![node picture](Examples/Example_Blend_10.png)|![node picture](Examples/Example_Blend_11.png)
+blend enum 9|blend enum 10|blend enum 11
 ![node picture](Examples/Example_Blend_12.png)||
 
 ## Invert

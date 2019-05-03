@@ -1,12 +1,15 @@
-#Imogen - User documentation
+# Imogen - User documentation
 
 
 1.[Nodes](#Nodes)
+
 1.[Default Hot Keys](#Default-Hot-Keys)
 
 
-#Nodes
-##Generator![node picture](Pictures/Circle.png)|![node picture](Pictures/Square.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)
+
+# Nodes
+## Generator
+![node picture](Pictures/Circle.png)|![node picture](Pictures/Square.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)
 -|-|-|-
 Circle|Square|Checker|Sine
 ![node picture](Pictures/Hexagon.png)|![node picture](Pictures/CircleSplatter.png)|![node picture](Pictures/NGon.png)|![node picture](Pictures/GradientBuilder.png)
@@ -14,7 +17,8 @@ Hexagon|CircleSplatter|NGon|GradientBuilder
 ![node picture](Pictures/ReactionDiffusion.png)|![node picture](Pictures/Disolve.png)||
 
 
-##Transform![node picture](Pictures/Transform.png)|![node picture](Pictures/Pixelize.png)|![node picture](Pictures/Tile.png)|![node picture](Pictures/PolarCoords.png)
+## Transform
+![node picture](Pictures/Transform.png)|![node picture](Pictures/Pixelize.png)|![node picture](Pictures/Tile.png)|![node picture](Pictures/PolarCoords.png)
 -|-|-|-
 Transform|Pixelize|Tile|PolarCoords
 ![node picture](Pictures/Swirl.png)|![node picture](Pictures/Crop.png)|![node picture](Pictures/Warp.png)|![node picture](Pictures/EdgeDetect.png)
@@ -22,47 +26,56 @@ Swirl|Crop|Warp|EdgeDetect
 ![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|
 Kaleidoscope|Palette|
 
-##Filter![node picture](Pictures/SmoothStep.png)|![node picture](Pictures/Blur.png)|![node picture](Pictures/NormalMap.png)|![node picture](Pictures/Invert.png)
+## Filter
+![node picture](Pictures/SmoothStep.png)|![node picture](Pictures/Blur.png)|![node picture](Pictures/NormalMap.png)|![node picture](Pictures/Invert.png)
 -|-|-|-
 SmoothStep|Blur|NormalMap|Invert
 ![node picture](Pictures/Ramp.png)|![node picture](Pictures/Clamp.png)|![node picture](Pictures/AO.png)|
 Ramp|Clamp|
 
-##Material![node picture](Pictures/LambertMaterial.png)|![node picture](Pictures/PBR.png)|![node picture](Pictures/TerrainPreview.png)|![node picture](Pictures/PathTracer.png)
+## Material
+![node picture](Pictures/LambertMaterial.png)|![node picture](Pictures/PBR.png)|![node picture](Pictures/TerrainPreview.png)|![node picture](Pictures/PathTracer.png)
 -|-|-|-
 LambertMaterial|PBR|TerrainPreview|PathTracer
 ![node picture](Pictures/PBR2.png)||
 
-##Blend![node picture](Pictures/MADD.png)|![node picture](Pictures/Blend.png)|![node picture](Pictures/NormalMapBlending.png)|
+## Blend
+![node picture](Pictures/MADD.png)|![node picture](Pictures/Blend.png)|![node picture](Pictures/NormalMapBlending.png)|
 -|-|-|-
 MADD|Blend|
 
-##None![node picture](Pictures/Color.png)||
+## None
+![node picture](Pictures/Color.png)||
 
-##Noise![node picture](Pictures/iqnoise.png)|![node picture](Pictures/PerlinNoise.png)|![node picture](Pictures/Voronoi.png)|
+## Noise
+![node picture](Pictures/iqnoise.png)|![node picture](Pictures/PerlinNoise.png)|![node picture](Pictures/Voronoi.png)|
 -|-|-|-
 iqnoise|PerlinNoise|
 
-##File![node picture](Pictures/ImageRead.png)|![node picture](Pictures/ImageWrite.png)|![node picture](Pictures/Thumbnail.png)|![node picture](Pictures/SVG.png)
+## File
+![node picture](Pictures/ImageRead.png)|![node picture](Pictures/ImageWrite.png)|![node picture](Pictures/Thumbnail.png)|![node picture](Pictures/SVG.png)
 -|-|-|-
 ImageRead|ImageWrite|Thumbnail|SVG
 ![node picture](Pictures/SceneLoader.png)|![node picture](Pictures/GLTFRead.png)||
 
 
-##Paint![node picture](Pictures/Paint2D.png)|![node picture](Pictures/Paint3D.png)||
+## Paint
+![node picture](Pictures/Paint2D.png)|![node picture](Pictures/Paint3D.png)||
 -|-|-|-
 
 
-##Cubemap![node picture](Pictures/PhysicalSky.png)|![node picture](Pictures/CubemapView.png)|![node picture](Pictures/EquirectConverter.png)|![node picture](Pictures/CubeRadiance.png)
+## Cubemap
+![node picture](Pictures/PhysicalSky.png)|![node picture](Pictures/CubemapView.png)|![node picture](Pictures/EquirectConverter.png)|![node picture](Pictures/CubeRadiance.png)
 -|-|-|-
 PhysicalSky|CubemapView|EquirectConverter|CubeRadiance
 
 
-##Fur![node picture](Pictures/FurGenerator.png)|![node picture](Pictures/FurDisplay.png)|![node picture](Pictures/FurIntegrator.png)|
+## Fur
+![node picture](Pictures/FurGenerator.png)|![node picture](Pictures/FurDisplay.png)|![node picture](Pictures/FurIntegrator.png)|
 -|-|-|-
 FurGenerator|FurDisplay|
 
-##Circle
+## Circle
 ![node picture](Pictures/Circle.png)
 
 Category : Generator
@@ -74,7 +87,7 @@ This is a super parameter. believe me!
 1. T
 This is a super parameter. believe me!
 
-##Transform
+## Transform
 ![node picture](Pictures/Transform.png)
 
 Category : Transform
@@ -88,7 +101,7 @@ This is a super parameter. believe me!
 1. Rotation
 This is a super parameter. believe me!
 
-##Square
+## Square
 ![node picture](Pictures/Square.png)
 
 Category : Generator
@@ -98,7 +111,7 @@ This is a super node. believe me!
 1. Width
 This is a super parameter. believe me!
 
-##Checker
+## Checker
 ![node picture](Pictures/Checker.png)
 
 Category : Generator
@@ -107,7 +120,7 @@ This is a super node. believe me!
 ### Parameters
 No parameter for this node.
 
-##Sine
+## Sine
 ![node picture](Pictures/Sine.png)
 
 Category : Generator
@@ -119,7 +132,7 @@ This is a super parameter. believe me!
 1. Angle
 This is a super parameter. believe me!
 
-##SmoothStep
+## SmoothStep
 ![node picture](Pictures/SmoothStep.png)
 
 Category : Filter
@@ -131,7 +144,7 @@ This is a super parameter. believe me!
 1. High
 This is a super parameter. believe me!
 
-##Pixelize
+## Pixelize
 ![node picture](Pictures/Pixelize.png)
 
 Category : Transform
@@ -141,7 +154,7 @@ This is a super node. believe me!
 1. scale
 This is a super parameter. believe me!
 
-##Blur
+## Blur
 ![node picture](Pictures/Blur.png)
 
 Category : Filter
@@ -157,7 +170,7 @@ This is a super parameter. believe me!
 1. passCount
 This is a super parameter. believe me!
 
-##NormalMap
+## NormalMap
 ![node picture](Pictures/NormalMap.png)
 
 Category : Filter
@@ -169,7 +182,7 @@ This is a super parameter. believe me!
 1. Invert
 This is a super parameter. believe me!
 
-##LambertMaterial
+## LambertMaterial
 ![node picture](Pictures/LambertMaterial.png)
 
 Category : Material
@@ -179,7 +192,7 @@ This is a super node. believe me!
 1. view
 This is a super parameter. believe me!
 
-##MADD
+## MADD
 ![node picture](Pictures/MADD.png)
 
 Category : Blend
@@ -191,7 +204,7 @@ This is a super parameter. believe me!
 1. Add Color
 This is a super parameter. believe me!
 
-##Hexagon
+## Hexagon
 ![node picture](Pictures/Hexagon.png)
 
 Category : Generator
@@ -200,7 +213,7 @@ This is a super node. believe me!
 ### Parameters
 No parameter for this node.
 
-##Blend
+## Blend
 ![node picture](Pictures/Blend.png)
 
 Category : Blend
@@ -223,7 +236,7 @@ blend enum 4|blend enum 5|blend enum 6|blend enum 7
 blend enum 8|blend enum 9|blend enum 10|blend enum 11
 ![node picture](Examples/Example_Blend_12.png)||
 
-##Invert
+## Invert
 ![node picture](Pictures/Invert.png)
 
 Category : Filter
@@ -232,7 +245,7 @@ This is a super node. believe me!
 ### Parameters
 No parameter for this node.
 
-##CircleSplatter
+## CircleSplatter
 ![node picture](Pictures/CircleSplatter.png)
 
 Category : Generator
@@ -248,7 +261,7 @@ This is a super parameter. believe me!
 1. Count
 This is a super parameter. believe me!
 
-##Ramp
+## Ramp
 ![node picture](Pictures/Ramp.png)
 
 Category : Filter
@@ -258,7 +271,7 @@ This is a super node. believe me!
 1. Ramp
 This is a super parameter. believe me!
 
-##Tile
+## Tile
 ![node picture](Pictures/Tile.png)
 
 Category : Transform
@@ -274,7 +287,7 @@ This is a super parameter. believe me!
 1. Scale
 This is a super parameter. believe me!
 
-##Color
+## Color
 ![node picture](Pictures/Color.png)
 
 Category : None
@@ -284,7 +297,7 @@ This is a super node. believe me!
 1. Color
 This is a super parameter. believe me!
 
-##NormalMapBlending
+## NormalMapBlending
 ![node picture](Pictures/NormalMapBlending.png)
 
 Category : Blend
@@ -294,7 +307,7 @@ This is a super node. believe me!
 1. Technique
 This is a super parameter. believe me!
 
-##iqnoise
+## iqnoise
 ![node picture](Pictures/iqnoise.png)
 
 Category : Noise
@@ -310,7 +323,7 @@ This is a super parameter. believe me!
 1. V
 This is a super parameter. believe me!
 
-##PerlinNoise
+## PerlinNoise
 ![node picture](Pictures/PerlinNoise.png)
 
 Category : Noise
@@ -326,7 +339,7 @@ This is a super parameter. believe me!
 1. gain
 This is a super parameter. believe me!
 
-##PBR
+## PBR
 ![node picture](Pictures/PBR.png)
 
 Category : Material
@@ -340,7 +353,7 @@ This is a super parameter. believe me!
 1. Geometry
 This is a super parameter. believe me!
 
-##PolarCoords
+## PolarCoords
 ![node picture](Pictures/PolarCoords.png)
 
 Category : Transform
@@ -350,7 +363,7 @@ This is a super node. believe me!
 1. Type
 This is a super parameter. believe me!
 
-##Clamp
+## Clamp
 ![node picture](Pictures/Clamp.png)
 
 Category : Filter
@@ -362,7 +375,7 @@ This is a super parameter. believe me!
 1. Max
 This is a super parameter. believe me!
 
-##ImageRead
+## ImageRead
 ![node picture](Pictures/ImageRead.png)
 
 Category : File
@@ -384,7 +397,7 @@ This is a super parameter. believe me!
 1. -Z File name
 This is a super parameter. believe me!
 
-##ImageWrite
+## ImageWrite
 ![node picture](Pictures/ImageWrite.png)
 
 Category : File
@@ -406,7 +419,7 @@ This is a super parameter. believe me!
 1. Export
 This is a super parameter. believe me!
 
-##Thumbnail
+## Thumbnail
 ![node picture](Pictures/Thumbnail.png)
 
 Category : File
@@ -416,7 +429,7 @@ This is a super node. believe me!
 1. Make
 This is a super parameter. believe me!
 
-##Paint2D
+## Paint2D
 ![node picture](Pictures/Paint2D.png)
 
 Category : Paint
@@ -426,7 +439,7 @@ This is a super node. believe me!
 1. Size
 This is a super parameter. believe me!
 
-##Swirl
+## Swirl
 ![node picture](Pictures/Swirl.png)
 
 Category : Transform
@@ -436,7 +449,7 @@ This is a super node. believe me!
 1. Angles
 This is a super parameter. believe me!
 
-##Crop
+## Crop
 ![node picture](Pictures/Crop.png)
 
 Category : Transform
@@ -446,7 +459,7 @@ This is a super node. believe me!
 1. Quad
 This is a super parameter. believe me!
 
-##PhysicalSky
+## PhysicalSky
 ![node picture](Pictures/PhysicalSky.png)
 
 Category : Cubemap
@@ -480,7 +493,7 @@ This is a super parameter. believe me!
 1. Size
 This is a super parameter. believe me!
 
-##CubemapView
+## CubemapView
 ![node picture](Pictures/CubemapView.png)
 
 Category : Cubemap
@@ -494,7 +507,7 @@ This is a super parameter. believe me!
 1. LOD
 This is a super parameter. believe me!
 
-##EquirectConverter
+## EquirectConverter
 ![node picture](Pictures/EquirectConverter.png)
 
 Category : Cubemap
@@ -506,7 +519,7 @@ This is a super parameter. believe me!
 1. Size
 This is a super parameter. believe me!
 
-##NGon
+## NGon
 ![node picture](Pictures/NGon.png)
 
 Category : Generator
@@ -520,7 +533,7 @@ This is a super parameter. believe me!
 1. T
 This is a super parameter. believe me!
 
-##GradientBuilder
+## GradientBuilder
 ![node picture](Pictures/GradientBuilder.png)
 
 Category : Generator
@@ -530,7 +543,7 @@ This is a super node. believe me!
 1. Gradient
 This is a super parameter. believe me!
 
-##Warp
+## Warp
 ![node picture](Pictures/Warp.png)
 
 Category : Transform
@@ -542,7 +555,7 @@ This is a super parameter. believe me!
 1. Mode
 This is a super parameter. believe me!
 
-##TerrainPreview
+## TerrainPreview
 ![node picture](Pictures/TerrainPreview.png)
 
 Category : Material
@@ -552,7 +565,7 @@ This is a super node. believe me!
 1. Camera
 This is a super parameter. believe me!
 
-##AO
+## AO
 ![node picture](Pictures/AO.png)
 
 Category : Filter
@@ -568,7 +581,7 @@ This is a super parameter. believe me!
 1. radius
 This is a super parameter. believe me!
 
-##FurGenerator
+## FurGenerator
 ![node picture](Pictures/FurGenerator.png)
 
 Category : Fur
@@ -580,7 +593,7 @@ This is a super parameter. believe me!
 1. Length factor
 This is a super parameter. believe me!
 
-##FurDisplay
+## FurDisplay
 ![node picture](Pictures/FurDisplay.png)
 
 Category : Fur
@@ -590,7 +603,7 @@ This is a super node. believe me!
 1. Camera
 This is a super parameter. believe me!
 
-##FurIntegrator
+## FurIntegrator
 ![node picture](Pictures/FurIntegrator.png)
 
 Category : Fur
@@ -599,7 +612,7 @@ This is a super node. believe me!
 ### Parameters
 No parameter for this node.
 
-##SVG
+## SVG
 ![node picture](Pictures/SVG.png)
 
 Category : File
@@ -611,7 +624,7 @@ This is a super parameter. believe me!
 1. DPI
 This is a super parameter. believe me!
 
-##SceneLoader
+## SceneLoader
 ![node picture](Pictures/SceneLoader.png)
 
 Category : File
@@ -621,7 +634,7 @@ This is a super node. believe me!
 1. File name
 This is a super parameter. believe me!
 
-##PathTracer
+## PathTracer
 ![node picture](Pictures/PathTracer.png)
 
 Category : Material
@@ -633,7 +646,7 @@ This is a super parameter. believe me!
 1. Camera
 This is a super parameter. believe me!
 
-##EdgeDetect
+## EdgeDetect
 ![node picture](Pictures/EdgeDetect.png)
 
 Category : Transform
@@ -645,7 +658,7 @@ This is a super parameter. believe me!
 1. Radius
 This is a super parameter. believe me!
 
-##Voronoi
+## Voronoi
 ![node picture](Pictures/Voronoi.png)
 
 Category : Noise
@@ -661,7 +674,7 @@ This is a super parameter. believe me!
 1. Square Width
 This is a super parameter. believe me!
 
-##Kaleidoscope
+## Kaleidoscope
 ![node picture](Pictures/Kaleidoscope.png)
 
 Category : Transform
@@ -677,7 +690,7 @@ This is a super parameter. believe me!
 1. Symetry
 This is a super parameter. believe me!
 
-##Palette
+## Palette
 ![node picture](Pictures/Palette.png)
 
 Category : Transform
@@ -689,7 +702,7 @@ This is a super parameter. believe me!
 1. Dither Strength
 This is a super parameter. believe me!
 
-##ReactionDiffusion
+## ReactionDiffusion
 ![node picture](Pictures/ReactionDiffusion.png)
 
 Category : Generator
@@ -707,7 +720,7 @@ This is a super parameter. believe me!
 1. Size
 This is a super parameter. believe me!
 
-##Disolve
+## Disolve
 ![node picture](Pictures/Disolve.png)
 
 Category : Generator
@@ -725,7 +738,7 @@ This is a super parameter. believe me!
 1. VerticalShift
 This is a super parameter. believe me!
 
-##GLTFRead
+## GLTFRead
 ![node picture](Pictures/GLTFRead.png)
 
 Category : File
@@ -737,7 +750,7 @@ This is a super parameter. believe me!
 1. Camera
 This is a super parameter. believe me!
 
-##Paint3D
+## Paint3D
 ![node picture](Pictures/Paint3D.png)
 
 Category : Paint
@@ -749,7 +762,7 @@ This is a super parameter. believe me!
 1. Camera
 This is a super parameter. believe me!
 
-##CubeRadiance
+## CubeRadiance
 ![node picture](Pictures/CubeRadiance.png)
 
 Category : Cubemap
@@ -763,7 +776,7 @@ This is a super parameter. believe me!
 1. Sample Count
 This is a super parameter. believe me!
 
-##PBR2
+## PBR2
 ![node picture](Pictures/PBR2.png)
 
 Category : Material
@@ -775,7 +788,7 @@ This is a super parameter. believe me!
 1. Depth factor
 This is a super parameter. believe me!
 
-##ChannelPacker
+## ChannelPacker
 ![node picture](Pictures/ChannelPacker.png)
 
 Category : Transform
@@ -791,7 +804,7 @@ This is a super parameter. believe me!
 1. A
 This is a super parameter. believe me!
 
-#Default Hot Keys
+# Default Hot Keys
 
 Action    | Description         | Hot key
 ----------|---------------------|------------------

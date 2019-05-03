@@ -150,11 +150,11 @@ This is a super parameter. believe me!
 1. Operation
 This is a super parameter. believe me!
 
-![node picture](Documentation/Examples/Example_Blend_0.png)|![node picture](Documentation/Examples/Example_Blend_1.png)|![node picture](Documentation/Examples/Example_Blend_2.png)|![node picture](Documentation/Examples/Example_Blend_3.png)
+![node picture](Examples/Example_Blend_0.png)|![node picture](Examples/Example_Blend_1.png)|![node picture](Examples/Example_Blend_2.png)|![node picture](Examples/Example_Blend_3.png)
 -|-|-|-
 blend enum 0|blend enum 1|blend enum 2|blend enum 3
-![node picture](Documentation/Examples/Example_Blend_4.png)|![node picture](Documentation/Examples/Example_Blend_5.png)|![node picture](Documentation/Examples/Example_Blend_6.png)|![node picture](Documentation/Examples/Example_Blend_7.png)
+![node picture](Examples/Example_Blend_4.png)|![node picture](Examples/Example_Blend_5.png)|![node picture](Examples/Example_Blend_6.png)|![node picture](Examples/Example_Blend_7.png)
 blend enum 4|blend enum 5|blend enum 6|blend enum 7
-![node picture](Documentation/Examples/Example_Blend_8.png)|![node picture](Documentation/Examples/Example_Blend_9.png)|![node picture](Documentation/Examples/Example_Blend_10.png)|![node picture](Documentation/Examples/Example_Blend_11.png)
+![node picture](Examples/Example_Blend_8.png)|![node picture](Examples/Example_Blend_9.png)|![node picture](Examples/Example_Blend_10.png)|![node picture](Examples/Example_Blend_11.png)
 blend enum 8|blend enum 9|blend enum 10|blend enum 11
-![node picture](Documentation/Examples/Example_Blend_12.png)|
+![node picture](Examples/Example_Blend_12.png)|

@@ -38,7 +38,7 @@ def appendTable(tab, lineSize, f, makeLink = False):
     for t in range(0, len(tab)*2):
         if tup:
             if makeLink:
-                f.write("[{}](##{})".format(tab[index][1], tab[index][1]))
+                f.write("[{}](#{})".format(tab[index][1], tab[index][1]))
             else:
                 f.write(tab[index][1])
         else:

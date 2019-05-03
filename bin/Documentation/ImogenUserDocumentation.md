@@ -1,8 +1,8 @@
 # Imogen - User documentation
 
 
-1.[Nodes](#Nodes)
-1.[Default Hot Keys](#Default-Hot-Keys)
+1. [Nodes](#Nodes)
+1. [Default Hot Keys](#Default-Hot-Keys)
 
 
 # Nodes

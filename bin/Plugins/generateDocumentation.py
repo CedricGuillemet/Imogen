@@ -1,6 +1,6 @@
 import Imogen
 import os
-
+import math
 
 def appendHotKeys(f):
     f.write("# Default Hot Keys\n");
@@ -29,37 +29,32 @@ def blendExample(filePath, operation, content):
     Imogen.Connect(sineNode, 0, blendNode, 1)
     Imogen.SetParameter(blendNode, "Operation", operation)
     saveScreen(filePath, content)
-    
+
+
 def appendTable(tab, lineSize, f, makeLink = False):
-    index = 0
-    sepWrite = False
-    tup = False # False : thumbnail line True : text/link line
-    
-    for t in range(0, len(tab)*2):
-        if tup:
-            if makeLink:
-                f.write("[{}](#{})".format(tab[index][1], tab[index][1]))
-            else:
-                f.write(tab[index][1])
-        else:
-            if index < len(tab):
-                f.write("![node picture]("+tab[index][0]+")")
-        if (index % lineSize) == lineSize-1:
+    lt = len(tab)
+    lineSize = lineSize if lineSize < lt else lt
+    rowCount = int(math.ceil(float(lt)/float(lineSize)))
+    for t in range(0, rowCount):
+        for r in range(0,2):
+            if r and not t:
+                f.write(("-|"*(lineSize-1 if lt >= lineSize else lt))+"-\n");
+            for i in range(0, lineSize):
+                if i:
+                    f.write("|")
+                index = t * lineSize + i
+                if  index < lt:
+                    if r:
+                        if makeLink:
+                            f.write("[{}](#{})".format(tab[index][1], tab[index][1]))
+                        else:
+                            f.write(tab[index][1])
+                    else:
+                        f.write("![node picture]("+tab[index][0]+")")
+                
             f.write("\n")
-            if not tup:
-                index = index - lineSize
-                tup = True
-            else:
-                tup = False
-            if not sepWrite:
-                sepWrite = True
-                f.write(("-|"*(lineSize-1 if len(tab) >= lineSize else len(tab)))+"-\n");
-        else:
-            f.write("|")
-        index = index + 1
-        
     f.write("\n\n")
-    
+
 def generateExample(nodeName, baseDir, f):
     if nodeName == "ImageRead" :
         Imogen.NewGraph("GraphFor"+nodeName)

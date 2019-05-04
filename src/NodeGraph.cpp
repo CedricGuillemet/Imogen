@@ -401,12 +401,12 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* controler)
 }
 
 size_t NodeGraphAddNode(NodeGraphControlerBase* controler,
-                      int type,
-                      const std::vector<unsigned char>* parameters,
-                      int posx,
-                      int posy,
-                      int frameStart,
-                      int frameEnd)
+                        int type,
+                        const std::vector<unsigned char>* parameters,
+                        int posx,
+                        int posy,
+                        int frameStart,
+                        int frameEnd)
 {
     size_t index = nodes.size();
     nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
@@ -1514,35 +1514,35 @@ void NodeGraphLayout()
     }
 }
 
+ImRect DisplayRectMargin(ImRect rect)
+{
+    // margins
+    static const float margin = 10.f;
+    rect.Min += captureOffset;
+    rect.Max += captureOffset;
+    rect.Min -= ImVec2(margin, margin);
+    rect.Max += ImVec2(margin, margin);
+    return rect;
+}
+
 ImRect GetNodesDisplayRect()
 {
-    ImRect rect;
+    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     for (auto& node : nodes)
     {
         rect.Add(ImRect(node.Pos, node.Pos + node.Size));
     }
 
-    // margins
-    static const float margin = 10.f;
-    rect.Min += captureOffset;
-    rect.Max += captureOffset;
-    rect.Min -= ImVec2(margin, margin);
-    rect.Max += ImVec2(margin, margin);
-
-    return rect;
+    return DisplayRectMargin(rect);
 }
 
 ImRect GetFinalNodeDisplayRect()
 {
-    auto& node = nodes[mOrders.back().mNodeIndex];
-    ImRect rect(node.Pos, node.Pos + node.Size);
-
-    // margins
-    static const float margin = 10.f;
-    rect.Min += captureOffset;
-    rect.Max += captureOffset;
-    rect.Min -= ImVec2(margin, margin);
-    rect.Max += ImVec2(margin, margin);
-
-    return rect;
+    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
+    if (!mOrders.empty() && !nodes.empty())
+    {
+        auto& node = nodes[mOrders.back().mNodeIndex];
+        ImRect rect(node.Pos, node.Pos + node.Size);
+    }
+    return DisplayRectMargin(rect);
 }

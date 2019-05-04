@@ -155,6 +155,27 @@
 			"default":"3"
 			}
 			]
+	}, {
+		"name": "Lens",
+		"category": 0,
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Factor",
+			"type": "Float",
+			"default":"0.32"
+		},{
+			"name": "Vignette",
+			"type": "Float",
+			"default":"1.0"
+		}]
 	}
 ]
 }

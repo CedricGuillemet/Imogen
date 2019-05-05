@@ -525,10 +525,12 @@
 		}],
 		"parameters": [{
 			"name": "Min",
-			"type": "Float4"
+			"type": "Float4",
+            "default":"0.5,0.5,0.5,1.0"
 		}, {
 			"name": "Max",
-			"type": "Float4"
+			"type": "Float4",
+            "default":"0.6,0.6,0.6,1.0"
 		}]
 	}, {
 		"name": "ImageRead",
@@ -830,7 +832,8 @@
 		}],
 		"parameters": [{
 			"name": "Strength",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.1"
 		}, {
 			"name": "Mode",
 			"type": "Enum",
@@ -876,16 +879,20 @@
 		}],
 		"parameters": [{
 			"name": "strength",
-			"type": "Float"
+			"type": "Float",
+            "default":"1.0"
 		}, {
 			"name": "area",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.01"
 		}, {
 			"name": "falloff",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.03"
 		}, {
 			"name": "radius",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.001"
 		}]
 	}, {
 		"name": "FurGenerator",
@@ -1003,7 +1010,8 @@
 			"type": "Float2"
 		},{
 			"name": "Radius",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.01"
 		}]
 	}, {
 		"name": "Voronoi",

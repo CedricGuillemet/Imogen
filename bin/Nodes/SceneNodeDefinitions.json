@@ -140,19 +140,19 @@
 			"name": "G",
 			"type": "Enum",
 			"enum": "A.red|A.blue|A.green|A.alpha|B.red|B.blue|B.green|B.alpha|C.red|C.blue|C.green|C.alpha|D.red|D.blue|D.green|D.alpha|1 - A.red|1 - A.blue|1 - A.green|1 - A.alpha|1 - B.red|1 - B.blue|1 - B.green|1 - B.alpha|1 - C.red|1 - C.blue|1 - C.green|1 - C.alpha|1 - D.red|1 - D.blue|1 - D.green|1 - D.alpha|",
-			"default":"1"
+			"default":"4"
 			},
 			{
 			"name": "B",
 			"type": "Enum",
 			"enum": "A.red|A.blue|A.green|A.alpha|B.red|B.blue|B.green|B.alpha|C.red|C.blue|C.green|C.alpha|D.red|D.blue|D.green|D.alpha|1 - A.red|1 - A.blue|1 - A.green|1 - A.alpha|1 - B.red|1 - B.blue|1 - B.green|1 - B.alpha|1 - C.red|1 - C.blue|1 - C.green|1 - C.alpha|1 - D.red|1 - D.blue|1 - D.green|1 - D.alpha|",
-			"default":"2"
+			"default":"8"
 			},
 			{
 			"name": "A",
 			"type": "Enum",
 			"enum": "A.red|A.blue|A.green|A.alpha|B.red|B.blue|B.green|B.alpha|C.red|C.blue|C.green|C.alpha|D.red|D.blue|D.green|D.alpha|1 - A.red|1 - A.blue|1 - A.green|1 - A.alpha|1 - B.red|1 - B.blue|1 - B.green|1 - B.alpha|1 - C.red|1 - C.blue|1 - C.green|1 - C.alpha|1 - D.red|1 - D.blue|1 - D.green|1 - D.alpha|",
-			"default":"3"
+			"default":"12"
 			}
 			]
 	}, {

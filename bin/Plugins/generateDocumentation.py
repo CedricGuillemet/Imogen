@@ -28,7 +28,7 @@ def blendExample(filePath, operation, content):
     Imogen.Connect(sineNode, 0, blendNode, 1)
     Imogen.SetParameter(blendNode, "Operation", operation)
     saveScreen(filePath, content)
-    Imogen.DeleteGraph()
+    #Imogen.DeleteGraph()
 
 
 def appendTable(tab, lineSize, f, makeLink = False):
@@ -56,7 +56,7 @@ def appendTable(tab, lineSize, f, makeLink = False):
     f.write("\n\n")
 
 def generateExample(nodeName, baseDir, f):
-    exampleWithCatImage = ["Pixelize", "PolarCoords", "Swirl", "Crop", "Kaleidoscope", "Palette", "Blur", "Invert", "Lens", "MADD", "SmoothStep"]
+    exampleWithCatImage = ["Pixelize", "PolarCoords", "Swirl", "Crop", "Kaleidoscope", "Palette", "Blur", "Invert", "Lens", "MADD", "SmoothStep", "Clamp"]
     exampleWithCubeMap = ["CubemapView", "CubeRadiance"]
     
     if nodeName in exampleWithCubeMap:
@@ -71,12 +71,57 @@ def generateExample(nodeName, baseDir, f):
         
         exNode = Imogen.AddNode(nodeName)
         Imogen.Connect(imageRead, 0, exNode, 0)
+        if nodeName == "CubeRadiance":
+            Imogen.SetParameter(exNode, "Mode", "1")
+        if nodeName == "CubemapView":
+            Imogen.SetParameter(exNode, "Mode", "2")
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        Imogen.DeleteGraph()
+        #Imogen.DeleteGraph()
         f.write("### Example\n")
         f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
         
+    elif nodeName == "ChannelPacker":
+        Imogen.NewGraph("GraphFor"+nodeName)
+        circle = Imogen.AddNode("Circle")
+        square = Imogen.AddNode("Square")
+        checker = Imogen.AddNode("Checker")
+        color = Imogen.AddNode("Color")
+        packer = Imogen.AddNode("ChannelPacker")
+        Imogen.Connect(circle, 0, packer, 0)
+        Imogen.Connect(square, 0, packer, 1)
+        Imogen.Connect(checker, 0, packer, 2)
+        Imogen.Connect(color, 0, packer, 3)
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        #Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        
+    elif nodeName == "AO":
+        Imogen.NewGraph("GraphFor"+nodeName)
+        perlin = Imogen.AddNode("PerlinNoise")
+        ao = Imogen.AddNode("AO")
+        Imogen.Connect(perlin, 0, ao, 0)
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        #Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        
+    elif nodeName == "Ramp":
+        Imogen.NewGraph("GraphFor"+nodeName)
+        perlin = Imogen.AddNode("PerlinNoise")
+        gradient = Imogen.AddNode("GradientBuilder")
+        ramp = Imogen.AddNode("Ramp")
+        Imogen.Connect(perlin, 0, ramp, 0)
+        Imogen.Connect(gradient, 0, ramp, 1)
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        #Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
+    
     elif nodeName == "Warp":
         Imogen.NewGraph("GraphFor"+nodeName)
         circle = Imogen.AddNode("Circle")
@@ -90,7 +135,7 @@ def generateExample(nodeName, baseDir, f):
             
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        Imogen.DeleteGraph()
+        #Imogen.DeleteGraph()
         f.write("### Example\n")
         f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
 
@@ -112,17 +157,55 @@ def generateExample(nodeName, baseDir, f):
             
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        Imogen.DeleteGraph()
+        #Imogen.DeleteGraph()
         f.write("### Example\n")
         f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
-
+    elif nodeName == "NormalMapBlending":
+        Imogen.NewGraph("GraphFor"+nodeName)
+        circle = Imogen.AddNode("Circle")
+        Imogen.SetParameter(circle, "T", "1.0")
+        ngon = Imogen.AddNode("NGon")
+        normal1 = Imogen.AddNode("NormalMap")
+        normal2 = Imogen.AddNode("NormalMap")
+        Imogen.Connect(circle, 0, normal1, 0)
+        Imogen.Connect(ngon, 0, normal2, 0)
+        normalBlend = Imogen.AddNode("NormalMapBlending")
+        Imogen.Connect(normal1, 0, normalBlend, 0)
+        Imogen.Connect(normal2, 0, normalBlend, 1)
+        
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        #Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
     elif nodeName == "ImageRead" :
         Imogen.NewGraph("GraphFor"+nodeName)
         imageRead = Imogen.AddNode(nodeName)
         Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        Imogen.DeleteGraph()
+        #Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
+    elif nodeName == "EquirectConverter" :
+        Imogen.NewGraph("GraphFor"+nodeName)
+        imageRead = Imogen.AddNode("ImageRead")
+        converter = Imogen.AddNode(nodeName)
+        Imogen.SetParameter(imageRead, "File name", "Media/EnvMaps/Equirect/studio022.hdr")
+        Imogen.Connect(imageRead, 0, converter, 0)
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        #Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
+    elif nodeName == "EdgeDetect" :
+        Imogen.NewGraph("GraphFor"+nodeName)
+        voronoi = Imogen.AddNode("Voronoi")
+        edgeDetect = Imogen.AddNode("EdgeDetect")
+        Imogen.Connect(voronoi, 0, edgeDetect, 0)
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        #Imogen.DeleteGraph()
         f.write("### Example\n")
         f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
         
@@ -134,7 +217,7 @@ def generateExample(nodeName, baseDir, f):
         Imogen.Connect(imageRead, 0, exNode, 0)
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        Imogen.DeleteGraph()
+        #Imogen.DeleteGraph()
         f.write("### Example\n")
         f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
 
@@ -144,7 +227,7 @@ def generateExample(nodeName, baseDir, f):
         Imogen.SetParameter(imageRead, "File name", "Media/Pictures/23.svg")
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        Imogen.DeleteGraph()
+        #Imogen.DeleteGraph()
         f.write("### Example\n")
         f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
 
@@ -164,7 +247,7 @@ def generateExample(nodeName, baseDir, f):
         imageRead = Imogen.AddNode(nodeName)
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        Imogen.DeleteGraph()
+        #Imogen.DeleteGraph()
         f.write("### Example\n")
         f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
     

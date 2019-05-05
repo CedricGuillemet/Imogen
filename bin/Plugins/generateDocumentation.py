@@ -75,10 +75,26 @@ def generateExample(nodeName, baseDir, f):
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
         Imogen.DeleteGraph()
         f.write("### Example\n")
-        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
         
-        
-    if nodeName == "ReactionDiffusion" or nodeName == "Disolve" or nodeName == "Transform" or nodeName == "Tile" or nodeName == "NormalMap":
+    elif nodeName == "Warp":
+        Imogen.NewGraph("GraphFor"+nodeName)
+        circle = Imogen.AddNode("Circle")
+        imageRead = Imogen.AddNode("ImageRead")
+        exNode = Imogen.AddNode(nodeName)
+        Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+        Imogen.SetParameter(circle, "T", "1.0")
+        Imogen.SetParameter(exNode, "Mode", "1")
+        Imogen.Connect(imageRead, 0, exNode, 0)
+        Imogen.Connect(circle, 0, exNode, 1)
+            
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
+
+    elif nodeName == "ReactionDiffusion" or nodeName == "Disolve" or nodeName == "Transform" or nodeName == "Tile" or nodeName == "NormalMap":
         Imogen.NewGraph("GraphFor"+nodeName)
         circle = Imogen.AddNode("Circle")
         exNode = Imogen.AddNode(nodeName)
@@ -98,7 +114,7 @@ def generateExample(nodeName, baseDir, f):
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
         Imogen.DeleteGraph()
         f.write("### Example\n")
-        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
 
     elif nodeName == "ImageRead" :
         Imogen.NewGraph("GraphFor"+nodeName)
@@ -108,7 +124,7 @@ def generateExample(nodeName, baseDir, f):
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
         Imogen.DeleteGraph()
         f.write("### Example\n")
-        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
         
     elif nodeName in exampleWithCatImage :
         Imogen.NewGraph("GraphFor"+nodeName)
@@ -120,7 +136,7 @@ def generateExample(nodeName, baseDir, f):
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
         Imogen.DeleteGraph()
         f.write("### Example\n")
-        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
 
     elif nodeName == "SVG" :
         Imogen.NewGraph("GraphFor"+nodeName)
@@ -130,13 +146,13 @@ def generateExample(nodeName, baseDir, f):
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
         Imogen.DeleteGraph()
         f.write("### Example\n")
-        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
 
     elif nodeName == "Blend" :
         blendExample(baseDir+"Pictures"+"/"+nodeName+".png", "0", "FinalNode")
         
         tab = []
-        for index in range(0, 1):
+        for index in range(0, 12):
             blendImage = "Examples/Example_"+nodeName+"_"+str(index)+".png"
             blendExample(baseDir+blendImage, str(index), "Graph")
             tab.append((blendImage, "blend enum " + str(index)))
@@ -150,7 +166,7 @@ def generateExample(nodeName, baseDir, f):
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
         Imogen.DeleteGraph()
         f.write("### Example\n")
-        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        f.write("![node example](Examples"+"/Example_"+nodeName+".png"+")\n\n")
     
     
 def generateDocumentation():

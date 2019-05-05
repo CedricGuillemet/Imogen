@@ -23,8 +23,11 @@ vec4 CubemapToEquirect()
 
 vec4 EquirectConverter()
 {
+    vec4 res;
 	if (EquirectConverterParam.mode == 0)
-		return EquirectToCubemap();
+		res = EquirectToCubemap();
 	else
-		return CubemapToEquirect();
+		res = CubemapToEquirect();
+    res.a = 1.0;
+    return res;
 }

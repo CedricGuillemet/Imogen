@@ -87,7 +87,7 @@ const unsigned int glCubeFace[] = {
 const unsigned int textureFormatSize[] = {3, 3, 6, 6, 12, 4, 4, 4, 8, 8, 16, 4};
 const unsigned int textureComponentCount[] = {3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4};
 
-void SaveCapture(const std::string &filemane, int x, int y, int w, int h)
+void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
 {
     w &= 0xFFFFFFFC;
     h &= 0xFFFFFFFC;
@@ -442,7 +442,16 @@ void RenderTarget::Destroy()
     if (mGLTexDepth)
         glDeleteTextures(1, &mGLTexDepth);
     if (mFbo)
-        glDeleteFramebuffers(1, &mFbo);
+    {
+        if (glIsFramebuffer(mFbo))
+        {
+            glDeleteFramebuffers(1, &mFbo);
+        }
+        else
+        {
+            Log("Trying to delete FBO %d that is unknown to OpenGL\n", mFbo);
+        }
+    }
     if (mDepthBuffer)
         glDeleteRenderbuffers(1, &mDepthBuffer);
     mFbo = 0;
@@ -471,7 +480,10 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
         (!(depthBuffer ^ (mDepthBuffer != 0))))
         return;
     Destroy();
-
+    if (!width || !height)
+    {
+        Log("Trying to init FBO with 0 sized dimension.\n");
+    }
     mImage->mWidth = width;
     mImage->mHeight = height;
     mImage->mNumMips = 1;

@@ -136,7 +136,7 @@
 		"parameters": [{
 			"name": "scale",
 			"type": "Float",
-			"default": "1.0"
+			"default": "10.0"
 		}]
 	}, {
 		"name": "Blur",
@@ -159,7 +159,8 @@
 			"type": "Angle"
 		}, {
 			"name": "strength",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.005"
 		},{
 			"name": "passCount",
 			"type": "Int",
@@ -632,7 +633,8 @@
 		}],
 		"parameters": [{
 			"name": "Angles",
-			"type": "Angle2"
+			"type": "Angle2",
+            "default":"0.0,10.0"
 		}]
 	}, {
 		"name": "Crop",
@@ -653,7 +655,8 @@
 			"rangeMaxX": 1.0,
 			"rangeMinY": 0.0,
 			"rangeMaxY": 1.0,
-			"quadSelect": true
+			"quadSelect": true,
+            "default":"0.25,0.25,0.75,0.75"
 		}],
 		"hasUI": true
 	}, {
@@ -1041,7 +1044,8 @@
 			"type": "Angle"
 		},{
 			"name": "Splits",
-			"type": "Int"
+			"type": "Int",
+            "default": "6"
 		},{
 			"name": "Symetry",
 			"type": "Int"

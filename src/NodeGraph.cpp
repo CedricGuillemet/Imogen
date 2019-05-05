@@ -397,7 +397,10 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* controler)
     std::vector<size_t> nodeOrderList(mOrders.size());
     for (size_t i = 0; i < mOrders.size(); i++)
         nodeOrderList[i] = mOrders[i].mNodeIndex;
-    controler->UpdateEvaluationList(nodeOrderList);
+    if (controler)
+    {
+        controler->UpdateEvaluationList(nodeOrderList);
+    }
 }
 
 size_t NodeGraphAddNode(NodeGraphControlerBase* controler,
@@ -1538,11 +1541,12 @@ ImRect GetNodesDisplayRect()
 
 ImRect GetFinalNodeDisplayRect()
 {
+    NodeGraphUpdateEvaluationOrder(nullptr);
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     if (!mOrders.empty() && !nodes.empty())
     {
         auto& node = nodes[mOrders.back().mNodeIndex];
-        ImRect rect(node.Pos, node.Pos + node.Size);
+        rect = ImRect(node.Pos, node.Pos + node.Size);
     }
     return DisplayRectMargin(rect);
 }

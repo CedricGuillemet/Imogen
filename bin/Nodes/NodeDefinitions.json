@@ -116,10 +116,12 @@
 		}],
 		"parameters": [{
 			"name": "Low",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.9"
 		}, {
 			"name": "High",
-			"type": "Float"
+			"type": "Float",
+            "default":"1.0"
 		}]
 	}, {
 		"name": "Pixelize",
@@ -180,7 +182,8 @@
 		}],
 		"parameters": [{
 			"name": "spread",
-			"type": "Float"
+			"type": "Float",
+            "default":"30.0"
 		},
 		{
 			"name": "Invert",
@@ -224,10 +227,12 @@
 		}],
 		"parameters": [{
 			"name": "Mul Color",
-			"type": "Color4"
+			"type": "Color4",
+            "default":"0.5,0.5,0.5,1.0"
 		}, {
 			"name": "Add Color",
-			"type": "Color4"
+			"type": "Color4",
+            "default":"0.5,0.5,0.5,1.0"
 		}]
 	}, {
 		"name": "Hexagon",
@@ -1123,7 +1128,7 @@
 		{
 			"name": "passCount",
 			"type": "Int",
-			"default":"1"
+			"default":"10"
 		},{
 			"name": "Frequency",
 			"type": "Float",

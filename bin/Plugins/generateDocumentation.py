@@ -56,13 +56,60 @@ def appendTable(tab, lineSize, f, makeLink = False):
     f.write("\n\n")
 
 def generateExample(nodeName, baseDir, f):
-    exampleWithCatImage = ["Pixelize", "PolarCoords", "Swirl", "Crop", "Kaleidoscope", "Palette", "Blur", "Invert", "Lens"]
-    if nodeName == "ImageRead" :
+    exampleWithCatImage = ["Pixelize", "PolarCoords", "Swirl", "Crop", "Kaleidoscope", "Palette", "Blur", "Invert", "Lens", "MADD", "SmoothStep"]
+    exampleWithCubeMap = ["CubemapView", "CubeRadiance"]
+    
+    if nodeName in exampleWithCubeMap:
+        Imogen.NewGraph("GraphFor"+nodeName)
+        imageRead = Imogen.AddNode("ImageRead")
+        Imogen.SetParameter(imageRead, "+X File name", "Media/EnvMaps/Fjaderholmarna/posx.jpg")
+        Imogen.SetParameter(imageRead, "-X File name", "Media/EnvMaps/Fjaderholmarna/negx.jpg")
+        Imogen.SetParameter(imageRead, "+Y File name", "Media/EnvMaps/Fjaderholmarna/posy.jpg")
+        Imogen.SetParameter(imageRead, "-Y File name", "Media/EnvMaps/Fjaderholmarna/negy.jpg")
+        Imogen.SetParameter(imageRead, "+Z File name", "Media/EnvMaps/Fjaderholmarna/posz.jpg")
+        Imogen.SetParameter(imageRead, "-Z File name", "Media/EnvMaps/Fjaderholmarna/negz.jpg")
+        
+        exNode = Imogen.AddNode(nodeName)
+        Imogen.Connect(imageRead, 0, exNode, 0)
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        
+        
+    if nodeName == "ReactionDiffusion" or nodeName == "Disolve" or nodeName == "Transform" or nodeName == "Tile" or nodeName == "NormalMap":
+        Imogen.NewGraph("GraphFor"+nodeName)
+        circle = Imogen.AddNode("Circle")
+        exNode = Imogen.AddNode(nodeName)
+        Imogen.Connect(circle, 0, exNode, 0)
+        
+        if nodeName == "Transform":
+            Imogen.SetParameter(exNode, "Scale", "5.0,5.0")
+            Imogen.SetParameter(exNode, "Rotation", "45.0")
+        elif nodeName == "Tile":
+            Imogen.Connect(circle, 0, exNode, 1)
+            Imogen.SetParameter(exNode, "Scale", "10.0")
+            Imogen.SetParameter(exNode, "Offset 0", "0.5")
+        elif nodeName == "NormalMap":
+            Imogen.SetParameter(circle, "T", "1.0")
+            
+        saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
+        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+
+    elif nodeName == "ImageRead" :
         Imogen.NewGraph("GraphFor"+nodeName)
         imageRead = Imogen.AddNode(nodeName)
         Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+        
     elif nodeName in exampleWithCatImage :
         Imogen.NewGraph("GraphFor"+nodeName)
         imageRead = Imogen.AddNode("ImageRead")
@@ -71,29 +118,40 @@ def generateExample(nodeName, baseDir, f):
         Imogen.Connect(imageRead, 0, exNode, 0)
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+
     elif nodeName == "SVG" :
         Imogen.NewGraph("GraphFor"+nodeName)
         imageRead = Imogen.AddNode(nodeName)
         Imogen.SetParameter(imageRead, "File name", "Media/Pictures/23.svg")
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+
     elif nodeName == "Blend" :
         blendExample(baseDir+"Pictures"+"/"+nodeName+".png", "0", "FinalNode")
-        saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
+        
         tab = []
-        for index in range(0, 13):
+        for index in range(0, 1):
             blendImage = "Examples/Example_"+nodeName+"_"+str(index)+".png"
             blendExample(baseDir+blendImage, str(index), "Graph")
             tab.append((blendImage, "blend enum " + str(index)))
             
         appendTable(tab, 3, f)
+        
     else:
         Imogen.NewGraph("GraphFor"+nodeName)
         imageRead = Imogen.AddNode(nodeName)
         saveScreen(baseDir+"Examples"+"/Example_"+nodeName+".png", "Graph")
         saveScreen(baseDir+"Pictures"+"/"+nodeName+".png", "FinalNode")
-        
-    Imogen.DeleteGraph()
+        Imogen.DeleteGraph()
+        f.write("### Example\n")
+        f.write("![node example]("+baseDir+"Examples"+"/Example_"+nodeName+".png"+")\n\n")
+    
     
 def generateDocumentation():
     baseDir = "Documentation/"
@@ -147,8 +205,6 @@ def generateDocumentation():
             nodeName = node["name"];
             nodeCategory = node.get("category","None")
             
-            #generateExample(nodeName, baseDir, f)
-        
             f.write("## "+nodeName+"\n")
             nodePicture = "Pictures/"+nodeName+".png"
             f.write("![node picture]("+nodePicture+")\n\n")

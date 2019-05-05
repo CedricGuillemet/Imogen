@@ -366,40 +366,42 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     destinationBuffer = &mComputeBuffers[index];
 
     // compute buffer
-    glUseProgram(program);
+    if (destinationBuffer->mElementCount)
+    {
+        glUseProgram(program);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-    evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+        evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
-    glBufferData(
-        GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
+        glBufferData(
+            GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-    BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
-    glEnable(GL_RASTERIZER_DISCARD);
-    glBindVertexArray(feedbackVertexArray);
-    glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
-                      0,
-                      destinationBuffer->mBuffer,
-                      0,
-                      destinationBuffer->mElementCount * destinationBuffer->mElementSize);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
-    glBeginTransformFeedback(GL_POINTS);
-    glDrawArrays(GL_POINTS, 0, destinationBuffer->mElementCount);
-    glEndTransformFeedback();
 
-    glDisable(GL_RASTERIZER_DISCARD);
-    glBindVertexArray(0);
-    glUseProgram(0);
+        BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
+        glEnable(GL_RASTERIZER_DISCARD);
+        glBindVertexArray(feedbackVertexArray);
+        glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
+                          0,
+                          destinationBuffer->mBuffer,
+                          0,
+                          destinationBuffer->mElementCount * destinationBuffer->mElementSize);
 
+        glBeginTransformFeedback(GL_POINTS);
+        glDrawArrays(GL_POINTS, 0, destinationBuffer->mElementCount);
+        glEndTransformFeedback();
+
+        glDisable(GL_RASTERIZER_DISCARD);
+        glBindVertexArray(0);
+        glUseProgram(0);
+    }
     if (feedbackVertexArray)
         glDeleteVertexArrays(1, &feedbackVertexArray);
 

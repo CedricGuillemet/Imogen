@@ -532,6 +532,11 @@ void RenderTarget::InitCube(int width, int mipmapCount)
         return;
     Destroy();
 
+    if (!width)
+    {
+        Log("Trying to init FBO with 0 sized dimension.\n");
+    }
+
     mImage->mWidth = width;
     mImage->mHeight = width;
     mImage->mNumMips = mipmapCount;

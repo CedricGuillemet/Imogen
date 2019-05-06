@@ -1135,7 +1135,8 @@ namespace DrawUICallbacks
         int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
         glUniform1i(tgt, 0);
         glActiveTexture(GL_TEXTURE0);
-
+        TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
         context->mFSQuad.Render();
     }

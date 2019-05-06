@@ -38,6 +38,16 @@ def blendExample(filePath, operation, content):
     saveScreen(filePath, content)
     Imogen.DeleteGraph()
 
+def paletteExample(filePath, operation, content):
+    Imogen.NewGraph("GraphForPalette")
+    paletteNode = Imogen.AddNode("Palette")
+    imageRead = Imogen.AddNode("ImageRead")
+    Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+    Imogen.Connect(imageRead, 0, paletteNode, 0)
+    Imogen.SetParameter(paletteNode, "Palette", operation)
+    saveScreen(filePath, content)
+    Imogen.DeleteGraph()
+    
 def appendTable(tab, lineSize, f, makeLink = False):
     lt = len(tab)
     lineSize = lineSize if lineSize < lt else lt
@@ -70,21 +80,44 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "+Z File name", "Media/EnvMaps/Fjaderholmarna/posz.jpg")
     Imogen.SetParameter(node, "-Z File name", "Media/EnvMaps/Fjaderholmarna/negz.jpg")
     
-def generateExample(nodeName, baseDir, f):
+def generateExample(nodeName, baseDir, f, node):
     exampleWithCatImage = ["Pixelize", "PolarCoords", "Swirl", "Crop", "Kaleidoscope", "Palette", "Blur", "Invert", "Lens", "MADD", "SmoothStep", "Clamp"]
     exampleWithCubeMap = ["CubemapView", "CubeRadiance"]
     
     if nodeName == "Blend" :
         blendExample(baseDir+"Pictures"+"/"+nodeName+".png", "0", "FinalNode")
         tab = []
-        for index in range(0, 12):
-            blendImage = "Examples/Example_"+nodeName+"_"+str(index)+".png"
-            blendExample(baseDir+blendImage, str(index), "Graph")
-            tab.append((blendImage, "blend enum " + str(index)))
+        
+        param = next((p for p in node["parameters"] if p["typeString"] == "Enum"), None)
+        
+        index = 0
+        for enum in param["enum"]:
+            nodeImage = "Examples/Example_"+nodeName+"_"+enum+".png"
+            blendExample(baseDir+nodeImage, str(index), "Graph")
+            tab.append((nodeImage, "Mode " + enum))
+            index = index + 1
             
         appendTable(tab, 3, f)
         return
         
+    if nodeName == "Palette":
+        paletteExample(baseDir+"Pictures"+"/"+nodeName+".png", "0", "FinalNode")
+        tab = []
+        
+        param = next((p for p in node["parameters"] if p["typeString"] == "Enum"), None)
+        print(param)
+        index = 0
+        for enum in param["enum"]:
+            print("Palette example {} / {}".format(enum, index))
+            nodeImage = "Examples/Example_"+nodeName+"_"+enum+".png"
+            paletteExample(baseDir+nodeImage, str(index), "Graph")
+            tab.append((nodeImage, "Mode " + enum))
+            index = index + 1
+            
+        appendTable(tab, 3, f)
+        return
+    
+    
     Imogen.NewGraph("GraphFor"+nodeName)
     node = Imogen.AddNode(nodeName)
     
@@ -244,7 +277,7 @@ def generateDocumentation():
                     f.write("1. " + param["name"]+"\n")
                     f.write(param["description"]+"\n")
             f.write("\n");
-            generateExample(nodeName, baseDir, f)
+            generateExample(nodeName, baseDir, f, node)
         appendHotKeys(f)
         
     Imogen.SetSynchronousEvaluation(False)

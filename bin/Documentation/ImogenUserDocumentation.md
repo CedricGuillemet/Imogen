@@ -266,15 +266,17 @@ This is a super parameter. believe me!
 1. Operation
 This is a super parameter. believe me!
 
-![node picture](Examples/Example_Blend_0.png)|![node picture](Examples/Example_Blend_1.png)|![node picture](Examples/Example_Blend_2.png)
+![node picture](Examples/Example_Blend_Add.png)|![node picture](Examples/Example_Blend_Multiply.png)|![node picture](Examples/Example_Blend_Darken.png)
 -|-|-
-blend enum 0|blend enum 1|blend enum 2
-![node picture](Examples/Example_Blend_3.png)|![node picture](Examples/Example_Blend_4.png)|![node picture](Examples/Example_Blend_5.png)
-blend enum 3|blend enum 4|blend enum 5
-![node picture](Examples/Example_Blend_6.png)|![node picture](Examples/Example_Blend_7.png)|![node picture](Examples/Example_Blend_8.png)
-blend enum 6|blend enum 7|blend enum 8
-![node picture](Examples/Example_Blend_9.png)|![node picture](Examples/Example_Blend_10.png)|![node picture](Examples/Example_Blend_11.png)
-blend enum 9|blend enum 10|blend enum 11
+Mode Add|Mode Multiply|Mode Darken
+![node picture](Examples/Example_Blend_Lighten.png)|![node picture](Examples/Example_Blend_Average.png)|![node picture](Examples/Example_Blend_Screen.png)
+Mode Lighten|Mode Average|Mode Screen
+![node picture](Examples/Example_Blend_Color Burn.png)|![node picture](Examples/Example_Blend_Color Dodge.png)|![node picture](Examples/Example_Blend_Soft Light.png)
+Mode Color Burn|Mode Color Dodge|Mode Soft Light
+![node picture](Examples/Example_Blend_Subtract.png)|![node picture](Examples/Example_Blend_Difference.png)|![node picture](Examples/Example_Blend_Inverse Difference.png)
+Mode Subtract|Mode Difference|Mode Inverse Difference
+![node picture](Examples/Example_Blend_Exclusion.png)||
+Mode Exclusion||
 
 
 ## Invert
@@ -845,8 +847,16 @@ This is a super parameter. believe me!
 1. Dither Strength
 This is a super parameter. believe me!
 
-### Example
-![node example](Examples/Example_Palette.png)
+![node picture](Examples/Example_Palette_CGA 0.png)|![node picture](Examples/Example_Palette_CGA 1.png)|![node picture](Examples/Example_Palette_CGA 2.png)
+-|-|-
+Mode CGA 0|Mode CGA 1|Mode CGA 2
+![node picture](Examples/Example_Palette_CGA 3.png)|![node picture](Examples/Example_Palette_CGA 4.png)|![node picture](Examples/Example_Palette_CGA 5.png)
+Mode CGA 3|Mode CGA 4|Mode CGA 5
+![node picture](Examples/Example_Palette_EGA.png)|![node picture](Examples/Example_Palette_Gameboy (mono).png)|![node picture](Examples/Example_Palette_PICO-8.png)
+Mode EGA|Mode Gameboy (mono)|Mode PICO-8
+![node picture](Examples/Example_Palette_C64.png)||
+Mode C64||
+
 
 ## ReactionDiffusion
 ![node picture](Pictures/ReactionDiffusion.png)

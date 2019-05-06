@@ -114,7 +114,7 @@ def generateExample(nodeName, baseDir, f, node):
             tab.append((nodeImage, "Mode " + enum))
             index = index + 1
             
-        appendTable(tab, 3, f)
+        appendTable(tab, 2, f)
         return
     
     

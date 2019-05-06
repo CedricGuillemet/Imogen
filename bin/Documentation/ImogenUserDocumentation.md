@@ -847,15 +847,17 @@ This is a super parameter. believe me!
 1. Dither Strength
 This is a super parameter. believe me!
 
-![node picture](Examples/Example_Palette_CGA 0.png)|![node picture](Examples/Example_Palette_CGA 1.png)|![node picture](Examples/Example_Palette_CGA 2.png)
--|-|-
-Mode CGA 0|Mode CGA 1|Mode CGA 2
-![node picture](Examples/Example_Palette_CGA 3.png)|![node picture](Examples/Example_Palette_CGA 4.png)|![node picture](Examples/Example_Palette_CGA 5.png)
-Mode CGA 3|Mode CGA 4|Mode CGA 5
-![node picture](Examples/Example_Palette_EGA.png)|![node picture](Examples/Example_Palette_Gameboy (mono).png)|![node picture](Examples/Example_Palette_PICO-8.png)
-Mode EGA|Mode Gameboy (mono)|Mode PICO-8
-![node picture](Examples/Example_Palette_C64.png)||
-Mode C64||
+![node picture](Examples/Example_Palette_CGA0.png)|![node picture](Examples/Example_Palette_CGA1.png)
+-|-
+Mode CGA0|Mode CGA1
+![node picture](Examples/Example_Palette_CGA2.png)|![node picture](Examples/Example_Palette_CGA3.png)
+Mode CGA2|Mode CGA3
+![node picture](Examples/Example_Palette_CGA4.png)|![node picture](Examples/Example_Palette_CGA5.png)
+Mode CGA4|Mode CGA5
+![node picture](Examples/Example_Palette_EGA.png)|![node picture](Examples/Example_Palette_Gameboy(mono).png)
+Mode EGA|Mode Gameboy(mono)
+![node picture](Examples/Example_Palette_PICO-8.png)|![node picture](Examples/Example_Palette_C64.png)
+Mode PICO-8|Mode C64
 
 
 ## ReactionDiffusion

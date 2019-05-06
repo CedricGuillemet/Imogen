@@ -1236,7 +1236,7 @@
 		"parameters": [{
 			"name": "Palette",
 			"type": "Enum",
-			"enum": "CGA 0|CGA 1|CGA 2|CGA 3|CGA 4|CGA 5|EGA|Gameboy (mono)|PICO-8|C64|",
+			"enum": "CGA0|CGA1|CGA2|CGA3|CGA4|CGA5|EGA|Gameboy(mono)|PICO-8|C64|",
             "description":""
 		},
 		{

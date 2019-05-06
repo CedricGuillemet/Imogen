@@ -867,6 +867,11 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
         }
         curNode.mCategory = node["category"].GetInt();
 
+        if (node.HasMember("description"))
+        {
+            curNode.mDescription = node["description"].GetString();
+        }
+
         if (node.HasMember("hasUI"))
             curNode.mbHasUI = node["hasUI"].GetBool();
         else
@@ -993,6 +998,11 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
                 {
                     metaParam.mRangeMinX = metaParam.mRangeMinY = metaParam.mRangeMaxX = metaParam.mRangeMaxY = 0.f;
                 }
+                if (param.HasMember("description"))
+                {
+                    metaParam.mDescription = param["description"].GetString();
+                }
+
                 if (param.HasMember("loop"))
                     metaParam.mbLoop = param["loop"].GetBool();
                 else

@@ -141,7 +141,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         SaveCapture(filename, int(rc.Min.x), int(rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
     });
     m.def("SetSynchronousEvaluation", [](bool synchronous) {
-         Imogen::instance->GetNodeGraphControler()->mEditingContext.SetSynchronous(synchronous);
+        Imogen::instance->GetNodeGraphControler()->mEditingContext.SetSynchronous(synchronous);
     });
     m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
     m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
@@ -149,7 +149,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         Imogen::instance->GetNodeGraphControler()->SetParameter(nodeIndex, paramName, value);
     });
     m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
-        //Imogen::instance->GetNodeGraphControler()->AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
+        // Imogen::instance->GetNodeGraphControler()->AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
         NodeGraphAddLink(
             Imogen::instance->GetNodeGraphControler(), nodeSource, slotSource, nodeDestination, slotDestination);
     });
@@ -734,7 +734,7 @@ void Evaluators::ReloadPlugins()
         Log("Error at reloading Python modules. Exception : %s\n", e.what());
     }
 }
-    
+
 void Evaluator::RunPython() const
 {
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
@@ -918,44 +918,50 @@ namespace EvaluationAPI
     int GetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image)
     {
         if (target == -1 || target >= evaluationContext->mEvaluationStages.mStages.size())
+        {
             return EVAL_ERR;
+        }
 
-        RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
+        auto tgt = evaluationContext->GetRenderTarget(target);
+        if (!tgt)
+        {
+            return EVAL_ERR;
+        }
 
         // compute total size
-        Image& img = *tgt.mImage.get();
-        unsigned int texelSize = textureFormatSize[img.mFormat];
-        unsigned int texelFormat = glInternalFormats[img.mFormat];
+        auto img = tgt->mImage;
+        unsigned int texelSize = textureFormatSize[img->mFormat];
+        unsigned int texelFormat = glInternalFormats[img->mFormat];
         uint32_t size = 0; // img.mNumFaces * img.mWidth * img.mHeight * texelSize;
-        for (int i = 0; i < img.mNumMips; i++)
-            size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+        for (int i = 0; i < img->mNumMips; i++)
+            size += img->mNumFaces * (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
 
         image->Allocate(size);
-        image->mWidth = img.mWidth;
-        image->mHeight = img.mHeight;
-        image->mNumMips = img.mNumMips;
-        image->mFormat = img.mFormat;
-        image->mNumFaces = img.mNumFaces;
+        image->mWidth = img->mWidth;
+        image->mHeight = img->mHeight;
+        image->mNumMips = img->mNumMips;
+        image->mFormat = img->mFormat;
+        image->mNumFaces = img->mNumFaces;
 
         unsigned char* ptr = image->GetBits();
-        if (img.mNumFaces == 1)
+        if (img->mNumFaces == 1)
         {
-            glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
-            for (int i = 0; i < img.mNumMips; i++)
+            glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
+            for (int i = 0; i < img->mNumMips; i++)
             {
                 glGetTexImage(GL_TEXTURE_2D, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
-                ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+                ptr += (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
             }
         }
         else
         {
-            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt.mGLTexID);
-            for (int cube = 0; cube < img.mNumFaces; cube++)
+            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
+            for (int cube = 0; cube < img->mNumFaces; cube++)
             {
-                for (int i = 0; i < img.mNumMips; i++)
+                for (int i = 0; i < img->mNumMips; i++)
                 {
                     glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + cube, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
-                    ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+                    ptr += (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
                 }
             }
         }

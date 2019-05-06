@@ -514,6 +514,7 @@ struct MetaParameter
     bool mbLoop;
     std::string mEnumList;
     std::vector<unsigned char> mDefaultValue;
+    std::string mDescription;
     bool operator==(const MetaParameter& other) const
     {
         if (mName != other.mName)
@@ -543,6 +544,7 @@ struct MetaNode
     std::string mName;
     uint32_t mHeaderColor;
     int mCategory;
+    std::string mDescription;
     std::vector<MetaCon> mInputs;
     std::vector<MetaCon> mOutputs;
     std::vector<MetaParameter> mParams;

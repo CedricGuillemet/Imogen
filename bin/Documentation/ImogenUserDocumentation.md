@@ -271,9 +271,9 @@ This is a super parameter. believe me!
 Mode Add|Mode Multiply|Mode Darken
 ![node picture](Examples/Example_Blend_Lighten.png)|![node picture](Examples/Example_Blend_Average.png)|![node picture](Examples/Example_Blend_Screen.png)
 Mode Lighten|Mode Average|Mode Screen
-![node picture](Examples/Example_Blend_Color Burn.png)|![node picture](Examples/Example_Blend_Color Dodge.png)|![node picture](Examples/Example_Blend_Soft Light.png)
+![node picture](Examples/Example_Blend_Color_Burn.png)|![node picture](Examples/Example_Blend_Color_Dodge.png)|![node picture](Examples/Example_Blend_Soft_Light.png)
 Mode Color Burn|Mode Color Dodge|Mode Soft Light
-![node picture](Examples/Example_Blend_Subtract.png)|![node picture](Examples/Example_Blend_Difference.png)|![node picture](Examples/Example_Blend_Inverse Difference.png)
+![node picture](Examples/Example_Blend_Subtract.png)|![node picture](Examples/Example_Blend_Difference.png)|![node picture](Examples/Example_Blend_Inverse_Difference.png)
 Mode Subtract|Mode Difference|Mode Inverse Difference
 ![node picture](Examples/Example_Blend_Exclusion.png)||
 Mode Exclusion||

@@ -488,6 +488,7 @@ CurveType GetCurveTypeForParameterType(ConTypes paramType);
 struct NodeGraphControler;
 void DecodeThumbnailAsync(Material* material, NodeGraphControler* nodeGraphControler);
 size_t ComputeNodeParametersSize(size_t nodeType);
+const char* GetParameterTypeName(ConTypes paramType);
 
 struct MetaCon
 {

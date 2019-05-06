@@ -184,7 +184,20 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
                     auto p = pybind11::dict();
                     p["name"] = param.mName;
                     p["type"] = pybind11::int_(int(param.mType));
+                    p["typeString"] = GetParameterTypeName(param.mType);
                     p["description"] = "This is a super parameter. believe me!";
+                    if (param.mType == Con_Enum)
+                    {
+                        auto e = pybind11::list();
+                        p["enum"] = e;
+
+                        char *pch = strtok((char*)param.mEnumList.c_str(), "|");
+                        while (pch != NULL)
+                        {
+                            e.append(std::string(pch));
+                            pch = strtok(NULL, "|");
+                        }
+                    }
                     paramdict.append(p);
                 }
             }

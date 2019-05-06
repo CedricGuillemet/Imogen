@@ -93,6 +93,7 @@ def generateExample(nodeName, baseDir, f, node):
         index = 0
         for enum in param["enum"]:
             nodeImage = "Examples/Example_"+nodeName+"_"+enum+".png"
+            nodeImage = nodeImage.replace(" ", "_")
             blendExample(baseDir+nodeImage, str(index), "Graph")
             tab.append((nodeImage, "Mode " + enum))
             index = index + 1
@@ -105,11 +106,10 @@ def generateExample(nodeName, baseDir, f, node):
         tab = []
         
         param = next((p for p in node["parameters"] if p["typeString"] == "Enum"), None)
-        print(param)
         index = 0
         for enum in param["enum"]:
-            print("Palette example {} / {}".format(enum, index))
             nodeImage = "Examples/Example_"+nodeName+"_"+enum+".png"
+            nodeImage = nodeImage.replace(" ", "_")
             paletteExample(baseDir+nodeImage, str(index), "Graph")
             tab.append((nodeImage, "Mode " + enum))
             index = index + 1

@@ -1321,7 +1321,7 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
             ImGui::PushID(nodeIndex);
 
             // Display node contents first
-            drawList->ChannelsSetCurrent(2); // Foreground
+            drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
 
             bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler);
 
@@ -1455,12 +1455,18 @@ void RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
         }
     }
 
+    std::vector<int> inputNodes(nodes[currentIndex].InputsCount, -1);
     for (auto& link : links)
     {
-        if (link.OutputIdx == currentIndex)
-        {
-            RecurseNodeGraphLayout(positions, stacks, links, link.InputIdx, currentLayer + 1);
-        }
+        if (link.OutputIdx != currentIndex)
+            continue;
+        inputNodes[link.OutputSlot] = link.InputIdx;
+    }
+    for (auto inputNode : inputNodes)
+    {
+        if (inputNode == -1)
+            continue;
+        RecurseNodeGraphLayout(positions, stacks, links, inputNode, currentLayer + 1);
     }
 }
 

@@ -377,15 +377,22 @@ void NodeGraphControler::EditNodeParameters()
         for (size_t i = 0; i < stage.mInputSamplers.size(); i++)
         {
             InputSampler& inputSampler = stage.mInputSamplers[i];
-            static const char* wrapModes = {"REPEAT\0CLAMP_TO_EDGE\0CLAMP_TO_BORDER\0MIRRORED_REPEAT"};
+            static const char* wrapModes = {"REPEAT\0EDGE\0BORDER\0MIRROR"};
             static const char* filterModes = {"LINEAR\0NEAREST"};
-            ImGui::PushItemWidth(150);
+            ImGui::PushItemWidth(80);
             ImGui::PushID(int(99 + i));
+            HandlePinIO(index, i, false);
+			ImGui::SameLine();
             ImGui::Text("Sampler %d", i);
-            samplerDirty |= ImGui::Combo("Wrap U", (int*)&inputSampler.mWrapU, wrapModes);
-            samplerDirty |= ImGui::Combo("Wrap V", (int*)&inputSampler.mWrapV, wrapModes);
-            samplerDirty |= ImGui::Combo("Filter Min", (int*)&inputSampler.mFilterMin, filterModes);
-            samplerDirty |= ImGui::Combo("Filter Mag", (int*)&inputSampler.mFilterMag, filterModes);
+            samplerDirty |= ImGui::Combo("U", (int*)&inputSampler.mWrapU, wrapModes);
+            ImGui::SameLine();
+            samplerDirty |= ImGui::Combo("V", (int*)&inputSampler.mWrapV, wrapModes);
+            ImGui::SameLine();
+            ImGui::PushItemWidth(80);
+            samplerDirty |= ImGui::Combo("Min", (int*)&inputSampler.mFilterMin, filterModes);
+            ImGui::SameLine();
+            samplerDirty |= ImGui::Combo("Mag", (int*)&inputSampler.mFilterMag, filterModes);
+            ImGui::PopItemWidth();
             ImGui::PopID();
             ImGui::PopItemWidth();
         }
@@ -430,12 +437,22 @@ void NodeGraphControler::EditNodeParameters()
     }
 }
 
+void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t io, bool forOutput)
+{
+    ImGui::PushID(nodeIndex * 256 + io * 2 + (forOutput ? 1 : 0));
+    bool pinned = IsIOPinned(nodeIndex, io, forOutput);
+    ImGui::Checkbox("", &pinned);
+    mEvaluationStages.SetIOPin(nodeIndex, io, forOutput, pinned);
+    ImGui::PopID();
+}
+
 void NodeGraphControler::NodeEdit()
 {
     ImGuiIO& io = ImGui::GetIO();
 
     if (mSelectedNodeIndex == -1)
     {
+        /*
         for (const auto pin : mEvaluationStages.mPinnedParameters)
         {
             unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
@@ -450,7 +467,21 @@ void NodeGraphControler::NodeEdit()
             Imogen::RenderPreviewNode(nodeIndex, *this);
             ImGui::PopID();
         }
-
+		*/
+        auto& io = mEvaluationStages.mPinnedIO;
+        for (size_t nodeIndex = 0; nodeIndex < io.size(); nodeIndex++)
+			{
+            if ((io[nodeIndex]&1) == 0)
+                            {
+                continue;
+				}
+        ImGui::PushID(1717171 + nodeIndex);
+        uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
+        HandlePinIO(nodeIndex, 0, true);
+        ImGui::SameLine();
+        Imogen::RenderPreviewNode(nodeIndex, *this);
+        ImGui::PopID();
+		}
         PinnedEdit();
     }
     else
@@ -458,9 +489,8 @@ void NodeGraphControler::NodeEdit()
         if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::PushID(1717171);
-            uint32_t parameterPair = (uint32_t(mSelectedNodeIndex) << 16) + 0xDEAD;
             ImGui::BeginGroup();
-            HandlePin(parameterPair);
+            HandlePinIO(mSelectedNodeIndex, 0, true);
             unsigned int maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
             bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
             float ofs = selectedNodeAsBackground ? 0.5f : 0.f;

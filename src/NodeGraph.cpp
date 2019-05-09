@@ -1084,8 +1084,30 @@ static bool DrawNode(ImDrawList* drawList,
     node->Size = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
     ImVec2 node_rect_max = node_rect_min + node->Size;
 
-    // Display node box
+    // test nested IO
     drawList->ChannelsSetCurrent(1); // Background
+
+    for (int i = 0; i < 2; i++)
+    {
+        const size_t slotCount[2] = {node->InputsCount, node->OutputsCount};
+        const MetaCon* con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
+        for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
+        {
+			if (!controler->IsIOPinned(nodeIndex, slot_idx, i == 1))
+			{
+                            continue;
+			}
+            ImVec2 p =
+                offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
+            const float arc = 28.f * (float(i) * 0.3f + 1.0f) * (i ? 1.f : -1.f);
+            const float ofs = 0.f;
+
+            ImVec2 pts[3] = {p + ImVec2(arc + ofs, 0.f), p + ImVec2(0.f + ofs, -arc), p + ImVec2(0.f + ofs, arc)};
+            drawList->AddTriangleFilled(pts[0], pts[1], pts[2], i ? 0xFFAA5030 : 0xFF30AA50);
+            drawList->AddTriangle(pts[0], pts[1], pts[2], 0xFF000000, 2.f);
+        }
+    }
+
 
     ImGui::SetCursorScreenPos(node_rect_min);
     ImGui::InvisibleButton("node", node->Size);

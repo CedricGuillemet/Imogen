@@ -108,6 +108,11 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual bool RenderBackground();
 
+	virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
+    {
+            return mEvaluationStages.IsIOPinned(nodeIndex, io, forOutput);
+    }
+
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const
     {
@@ -145,4 +150,5 @@ protected:
     void UpdateDirtyParameter(int index);
     void EditNodeParameters();
     void HandlePin(uint32_t parameterPair);
+    void HandlePinIO(size_t nodeIndex, size_t io, bool forOutput);
 };

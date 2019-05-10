@@ -457,6 +457,10 @@ void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, b
 
 bool EvaluationStages::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
 {
+	if (nodeIndex >= mPinnedIO.size())
+	{
+            return false;
+	}
     uint32_t mask = 0;
 	if (forOutput)
 	{

@@ -49,6 +49,7 @@ enum : uint32_t
     v_animation,
     v_pinnedParameters,
     v_backgroundNode,
+	v_pinnedIO,
     v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName)                                                                                   \
@@ -230,6 +231,7 @@ struct Serialize
         ADD(v_animation, material->mFrameMin);
         ADD(v_animation, material->mFrameMax);
         ADD(v_pinnedParameters, material->mPinnedParameters);
+        ADD(v_pinnedIO, material->mPinnedIO);
         ADD(v_backgroundNode, material->mBackgroundNode);
     }
 

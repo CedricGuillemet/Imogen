@@ -405,6 +405,7 @@ struct Material
     int mFrameMin, mFrameMax;
 
     std::vector<uint32_t> mPinnedParameters;
+    std::vector<uint32_t> mPinnedIO;
     MaterialNode* Get(ASyncId id)
     {
         return GetByAsyncId(id, mMaterialNodes);

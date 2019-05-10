@@ -1321,12 +1321,14 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
             ImGui::PushID(nodeIndex);
 
             // Display node contents first
-            drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
+            //drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
 
             bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler);
 
             if (DrawNode(drawList, nodeIndex, offset, factor, controler, overInput))
                 hoveredNode = nodeIndex;
+
+            HandleConnections(drawList, nodeIndex, offset, factor, controler);
 
             ImGui::PopID();
         }

@@ -133,7 +133,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0xFF000000);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
     ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
-    float w = ImGui::GetContentRegionAvailWidth();
+    float w = ImGui::GetContentRegionAvail().x;
     int imageWidth(1), imageHeight(1);
 
     // make 2 evaluation for node to get the UI pass image size
@@ -2178,7 +2178,7 @@ Imogen::Imogen(NodeGraphControler* nodeGraphControler) : mNodeGraphControler(nod
     ImGuiContext& g = *GImGui;
     ImGuiSettingsHandler ini_handler;
     ini_handler.TypeName = "Imogen";
-    ini_handler.TypeHash = ImHash("Imogen", 0, 0);
+    ini_handler.TypeHash = ImHashStr("Imogen", 0, 0);
     ini_handler.ReadOpenFn = ReadOpen;
     ini_handler.ReadLineFn = ReadLine;
     ini_handler.WriteAllFn = WriteAll;

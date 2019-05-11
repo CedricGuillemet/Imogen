@@ -130,5 +130,5 @@ vec4 NormalMapBlending()
 {
 	vec3 n1 = texture(Sampler0, vUV).xyz;
 	vec3 n2 = texture(Sampler1, vUV).xyz;
-	return vec4(CombineNormal(n1, n2, NormalMapBlendingParam.technique) * 0.5 + 0.5, 0.0);
+	return vec4(CombineNormal(n1, n2, NormalMapBlendingParam.technique) * 0.5 + 0.5, 1.0);
 }

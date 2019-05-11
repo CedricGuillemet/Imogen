@@ -31,13 +31,12 @@
 
 struct NodeGraphControlerBase
 {
-    NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategoriesCount(0), mCategories(0)
+    NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategories(nullptr)
     {
     }
 
     int mSelectedNodeIndex;
-    int mCategoriesCount;
-    const char** mCategories;
+    const std::vector<std::string>* mCategories;
 
     virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
     virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
@@ -68,6 +67,7 @@ struct NodeGraphControlerBase
     virtual void CopyNodes(const std::vector<size_t> nodes) = 0;
     virtual void CutNodes(const std::vector<size_t> nodes) = 0;
     virtual void PasteNodes() = 0;
+    virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const = 0;
 };
 
 struct Node
@@ -172,9 +172,9 @@ const std::vector<NodeLink>& NodeGraphGetLinks();
 const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-void NodeGraphAddNode(NodeGraphControlerBase* delegate,
+size_t NodeGraphAddNode(NodeGraphControlerBase* delegate,
                       int type,
-                      const std::vector<unsigned char>& parameters,
+                      const std::vector<unsigned char>* parameters,
                       int posx,
                       int posy,
                       int frameStart,

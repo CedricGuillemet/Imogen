@@ -70,7 +70,7 @@ struct Imogen
     void Init();
     void Finish();
 
-    void Show(Builder* builder, Library& library);
+    void Show(Builder* builder, Library& library, bool capturing);
     void ValidateCurrentMaterial(Library& library);
     void DiscoverNodes(const char* extension,
                        const char* directory,
@@ -86,6 +86,19 @@ struct Imogen
     static void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI = false);
     void HandleHotKeys();
 
+    void NewMaterial(const std::string& materialName = "Name_Of_New_Material");
+    // helper for python scripting
+    int AddNode(const std::string& nodeType);
+    void DeleteCurrentMaterial();
+
+    void RunDeferedCommands();
+    static Imogen* instance;
+
+    NodeGraphControler* GetNodeGraphControler()
+    {
+        return mNodeGraphControler;
+    }
+
 protected:
     void ShowAppMainMenuBar();
     void ShowTitleBar(Builder* builder);
@@ -97,7 +110,6 @@ protected:
     void BuildCurrentMaterial(Builder* builder);
     void PlayPause();
 
-    void NewMaterial();
     void ImportMaterial();
     void ExportMaterial();
 
@@ -132,9 +144,9 @@ protected:
     bool mbPlayLoop = false;
     int mCurrentTime = 0;
 
-    std::vector<std::function<void()>> mHotkeyFunctions;
+    std::string mRunCommand;
 
-    static Imogen* instance;
+    std::vector<std::function<void()>> mHotkeyFunctions;
 };
 
 struct UndoRedo

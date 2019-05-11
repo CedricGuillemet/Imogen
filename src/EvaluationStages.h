@@ -252,7 +252,8 @@ struct EvaluationStages
 
     // pins
     void RemovePins(size_t nodeIndex);
-
+    bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
+    void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
 
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
@@ -262,6 +263,7 @@ struct EvaluationStages
     std::vector<EvaluationStage> mStages;
     std::vector<size_t> mEvaluationOrderList;
     std::vector<uint32_t> mPinnedParameters;
+    std::vector<uint32_t> mPinnedIO; // 24bits input, 8 bits output
     int mFrameMin, mFrameMax;
 
 protected:

@@ -2,6 +2,7 @@
 	"nodes": [{
 		"name": "Circle",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -14,14 +15,17 @@
 			"rangeMaxX": 0.5,
 			"rangeMinY": 0.0,
 			"rangeMaxY": 0.0,
-			"default": "0.25"
+			"default": "0.25",
+            "description":""
 		}, {
 			"name": "T",
-			"type": "Float"
+			"type": "Float",
+            "description":""
 		}]
 	}, {
 		"name": "Transform",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -39,18 +43,22 @@
 			"rangeMinY": 0.0,
 			"rangeMaxY": 1.0,
 			"relative": true,
-			"loop": false
+			"loop": false,
+            "description":""
 		}, {
 			"name": "Scale",
 			"type": "Float2",
-			"default": "1.0,1.0"
+			"default": "1.0,1.0",
+            "description":""
 		}, {
 			"name": "Rotation",
-			"type": "Angle"
+			"type": "Angle",
+            "description":""
 		}]
 	}, {
 		"name": "Square",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -66,11 +74,14 @@
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
 			"rangeMinY": 0.0,
-			"rangeMaxY": 0.0
+			"rangeMaxY": 0.0,
+			"default":"0.25",
+            "description":""
 		}]
 	}, {
 		"name": "Checker",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -83,6 +94,7 @@
 	}, {
 		"name": "Sine",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -94,14 +106,19 @@
 		}],
 		"parameters": [{
 			"name": "Frequency",
-			"type": "Float"
+			"type": "Float",
+			"default":"4.0",
+            "description":""
 		}, {
 			"name": "Angle",
-			"type": "Angle"
+			"type": "Angle",
+			"default":"45.0",
+            "description":""
 		}]
 	}, {
 		"name": "SmoothStep",
 		"category": 4,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -113,14 +130,19 @@
 		}],
 		"parameters": [{
 			"name": "Low",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.9",
+            "description":""
 		}, {
 			"name": "High",
-			"type": "Float"
+			"type": "Float",
+            "default":"1.0",
+            "description":""
 		}]
 	}, {
 		"name": "Pixelize",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -133,11 +155,13 @@
 		"parameters": [{
 			"name": "scale",
 			"type": "Float",
-			"default": "1.0"
+			"default": "10.0",
+            "description":""
 		}]
 	}, {
 		"name": "Blur",
 		"category": 4,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -150,21 +174,27 @@
 		"parameters": [{
 			"name": "Type",
 			"type": "Enum",
-			"enum": "Directional|Box|"
+			"enum": "Directional|Box|",
+            "description":""
 		},{
 			"name": "angle",
-			"type": "Angle"
+			"type": "Angle",
+            "description":""
 		}, {
 			"name": "strength",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.005",
+            "description":""
 		},{
 			"name": "passCount",
 			"type": "Int",
-			"default":"1"
+			"default":"1",
+            "description":""
 		}]
 	}, {
 		"name": "NormalMap",
 		"category": 4,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -176,16 +206,20 @@
 		}],
 		"parameters": [{
 			"name": "spread",
-			"type": "Float"
+			"type": "Float",
+            "default":"30.0",
+            "description":""
 		},
 		{
 			"name": "Invert",
 			"type": "Bool",
-			"default":"false"
+			"default":"false",
+            "description":""
 		}]
 	}, {
 		"name": "LambertMaterial",
 		"category": 2,
+        "description":"",
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Diffuse",
@@ -204,11 +238,13 @@
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
 			"rangeMinY": 0.0,
-			"rangeMaxY": 1.0
+			"rangeMaxY": 1.0,
+            "description":""
 		}]
 	}, {
 		"name": "MADD",
 		"category": 3,
+        "description":"",
 		"color": [0.7843137979507446, 0.5882353186607361, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -220,14 +256,19 @@
 		}],
 		"parameters": [{
 			"name": "Mul Color",
-			"type": "Color4"
+			"type": "Color4",
+            "default":"0.5,0.5,0.5,1.0",
+            "description":""
 		}, {
 			"name": "Add Color",
-			"type": "Color4"
+			"type": "Color4",
+            "default":"0.5,0.5,0.5,1.0",
+            "description":""
 		}]
 	}, {
 		"name": "Hexagon",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -236,6 +277,7 @@
 	}, {
 		"name": "Blend",
 		"category": 3,
+        "description":"",
 		"color": [0.7843137979507446, 0.5882353186607361, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -251,19 +293,23 @@
 		"parameters": [{
 			"name": "A",
 			"type": "Float4",
-			"default":"1.0,1.0,1.0,1.0"
+			"default":"1.0,1.0,1.0,1.0",
+            "description":""
 		}, {
 			"name": "B",
 			"type": "Float4",
-			"default":"1.0,1.0,1.0,1.0"
+			"default":"1.0,1.0,1.0,1.0",
+            "description":""
 		}, {
 			"name": "Operation",
 			"type": "Enum",
-			"enum": "Add|Multiply|Darken|Lighten|Average|Screen|Color Burn|Color Dodge|Soft Light|Subtract|Difference|Inverse Difference|Exclusion|"
+			"enum": "Add|Multiply|Darken|Lighten|Average|Screen|Color Burn|Color Dodge|Soft Light|Subtract|Difference|Inverse Difference|Exclusion|",
+            "description":""
 		}]
 	}, {
 		"name": "Invert",
 		"category": 4,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -276,6 +322,7 @@
 	}, {
 		"name": "CircleSplatter",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -287,20 +334,29 @@
 		}],
 		"parameters": [{
 			"name": "Distance",
-			"type": "Float2"
+			"type": "Float2",
+			"default":"0.0,0.45",
+            "description":""
 		}, {
 			"name": "Radius",
-			"type": "Float2"
+			"type": "Float2",
+			"default":"0.0,0.14",
+            "description":""
 		}, {
 			"name": "Angle",
-			"type": "Angle2"
+			"type": "Angle2",
+			"default":"0.0,720.0",
+            "description":""
 		}, {
 			"name": "Count",
-			"type": "Float"
+			"type": "Float",
+			"default":"20.0",
+            "description":""
 		}]
 	}, {
 		"name": "Ramp",
 		"category": 4,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -316,11 +372,13 @@
 		"parameters": [{
 			"name": "Ramp",
 			"type": "Ramp",
-			"default": ""
+			"default": "",
+            "description":""
 		}]
 	}, {
 		"name": "Tile",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -335,21 +393,26 @@
 		}],
 		"parameters": [{
 			"name": "Offset 0",
-			"type": "Float2"
+			"type": "Float2",
+            "description":""
 		}, {
 			"name": "Offset 1",
-			"type": "Float2"
+			"type": "Float2",
+            "description":""
 		}, {
 			"name": "Overlap",
-			"type": "Float2"
+			"type": "Float2",
+            "description":""
 		}, {
 			"name": "Scale",
 			"type": "Float",
-			"default": "1.0"
+			"default": "1.0",
+            "description":""
 		}]
 	}, {
 		"name": "Color",
 		"category": -1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -357,11 +420,14 @@
 		}],
 		"parameters": [{
 			"name": "Color",
-			"type": "Color4"
+			"type": "Color4",
+			"default":"0.8,0.8,0.8,1.0",
+            "description":""
 		}]
 	}, {
 		"name": "NormalMapBlending",
 		"category": 3,
+        "description":"",
 		"color": [0.7843137979507446, 0.5882353186607361, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -377,11 +443,13 @@
 		"parameters": [{
 			"name": "Technique",
 			"type": "Enum",
-			"enum": "RNM|Partial Derivatives|Whiteout|UDN|Unity|Linear|Overlay|"
+			"enum": "RNM|Partial Derivatives|Whiteout|UDN|Unity|Linear|Overlay|",
+            "description":""
 		}]
 	}, {
 		"name": "iqnoise",
 		"category": 5,
+        "description":"",
 		"color": [0.5882353186607361, 0.9803922176361084, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -398,17 +466,24 @@
 			"loop": false
 		},{
 			"name": "Size",
-			"type": "Float"
+			"type": "Float",
+			"default":"10.0",
+            "description":""
 		}, {
 			"name": "U",
-			"type": "Float"
+			"type": "Float",
+			"default":"1.0",
+            "description":""
 		}, {
 			"name": "V",
-			"type": "Float"
+			"type": "Float",
+			"default":"0.5",
+            "description":""
 		}]
 	}, {
 		"name": "PerlinNoise",
 		"category": 5,
+        "description":"",
 		"color": [0.5882353186607361, 0.9803922176361084, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -427,19 +502,23 @@
 		},{
 			"name": "Octaves",
 			"type": "Int",
-			"default": "6"
+			"default": "6",
+            "description":""
 		},{
 			"name": "lacunarity",
 			"type": "Float",
-			"default": "1.85"
+			"default": "1.85",
+            "description":""
 		},{
 			"name": "gain",
 			"type": "Float",
-			"default": "1.15"
+			"default": "1.15",
+            "description":""
 		}]
 	}, {
 		"name": "PBR",
 		"category": 2,
+        "description":"",
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Diffuse",
@@ -471,15 +550,18 @@
 			"relative": true
 		}, {
 			"name": "Displacement Factor",
-			"type": "Float"
+			"type": "Float",
+            "description":""
 		}, {
 			"name": "Geometry",
 			"type": "Enum",
-			"enum": "Door knob|Sphere|Cube|Plane|Cylinder|"
+			"enum": "Door knob|Sphere|Cube|Plane|Cylinder|",
+            "description":""
 		}]
 	}, {
 		"name": "PolarCoords",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -492,11 +574,13 @@
 		"parameters": [{
 			"name": "Type",
 			"type": "Enum",
-			"enum": "Linear to polar|Polar to linear|"
+			"enum": "Linear to polar|Polar to linear|",
+            "description":""
 		}]
 	}, {
 		"name": "Clamp",
 		"category": 4,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -508,14 +592,19 @@
 		}],
 		"parameters": [{
 			"name": "Min",
-			"type": "Float4"
+			"type": "Float4",
+            "default":"0.5,0.5,0.5,1.0",
+            "description":""
 		}, {
 			"name": "Max",
-			"type": "Float4"
+			"type": "Float4",
+            "default":"0.6,0.6,0.6,1.0",
+            "description":""
 		}]
 	}, {
 		"name": "ImageRead",
 		"category": 6,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -523,29 +612,37 @@
 		}],
 		"parameters": [{
 			"name": "File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}, {
 			"name": "+X File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}, {
 			"name": "-X File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}, {
 			"name": "+Y File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}, {
 			"name": "-Y File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}, {
 			"name": "+Z File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}, {
 			"name": "-Z File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}]
 	}, {
 		"name": "ImageWrite",
 		"category": 6,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -553,32 +650,40 @@
 		}],
 		"parameters": [{
 			"name": "File name",
-			"type": "FilenameWrite"
+			"type": "FilenameWrite",
+            "description":""
 		}, {
 			"name": "Format",
 			"type": "Enum",
-			"enum": "JPEG|PNG|TGA|BMP|HDR|DDS|KTX|MP4|"
+			"enum": "JPEG|PNG|TGA|BMP|HDR|DDS|KTX|MP4|",
+            "description":""
 		}, {
 			"name": "Quality",
 			"type": "Enum",
-			"enum": " 0 .. Best| 1| 2| 3| 4| 5 .. Medium| 6| 7| 8| 9 .. Lowest|"
+			"enum": " 0 .. Best| 1| 2| 3| 4| 5 .. Medium| 6| 7| 8| 9 .. Lowest|",
+            "description":""
 		}, {
 			"name": "Width",
-			"type": "Int"
+			"type": "Int",
+            "description":""
 		}, {
 			"name": "Height",
-			"type": "Int"
+			"type": "Int",
+            "description":""
 		}, {
 			"name": "Mode",
 			"type": "Enum",
-			"enum": "Free|Keep ratio on Y|Keep ratio on X|"
+			"enum": "Free|Keep ratio on Y|Keep ratio on X|",
+            "description":""
 		}, {
 			"name": "Export",
-			"type": "ForceEvaluate"
+			"type": "ForceEvaluate",
+            "description":""
 		}]
 	}, {
 		"name": "Thumbnail",
 		"category": 6,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -586,11 +691,13 @@
 		}],
 		"parameters": [{
 			"name": "Make",
-			"type": "ForceEvaluate"
+			"type": "ForceEvaluate",
+            "description":""
 		}]
 	}, {
 		"name": "Paint2D",
 		"category": 7,
+        "description":"",
 		"color": [0.3921568989753723, 0.9803922176361084, 0.7058823704719544, 1.0],
 		"inputs": [{
 			"name": "Brush",
@@ -603,13 +710,15 @@
 		"parameters": [{
 			"name": "Size",
 			"type": "Enum",
-			"enum": "  256|  512| 1024| 2048| 4096|"
+			"enum": "  256|  512| 1024| 2048| 4096|",
+            "description":""
 		}],
 		"hasUI": true,
 		"saveTexture": true
 	}, {
 		"name": "Swirl",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -621,11 +730,14 @@
 		}],
 		"parameters": [{
 			"name": "Angles",
-			"type": "Angle2"
+			"type": "Angle2",
+            "default":"0.0,10.0",
+            "description":""
 		}]
 	}, {
 		"name": "Crop",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -642,12 +754,15 @@
 			"rangeMaxX": 1.0,
 			"rangeMinY": 0.0,
 			"rangeMaxY": 1.0,
-			"quadSelect": true
+			"quadSelect": true,
+            "default":"0.25,0.25,0.75,0.75",
+            "description":""
 		}],
 		"hasUI": true
 	}, {
 		"name": "PhysicalSky",
 		"category": 8,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -656,59 +771,73 @@
 		"parameters": [{
 			"name": "ambient",
 			"type": "Float4",
-			"default": "0.1,0.1,0.1,2.0"
+			"default": "0.1,0.1,0.1,2.0",
+            "description":""
 		}, {
 			"name": "lightdir",
 			"type": "Float4",
-			"default": "0.57,0.594,0.57,0.0"
+			"default": "0.57,0.594,0.57,0.0",
+            "description":""
 		}, {
 			"name": "Kr",
 			"type": "Float4",
-			"default": "0.5880,0.6880,0.7830,0.0000"
+			"default": "0.5880,0.6880,0.7830,0.0000",
+            "description":""
 		}, {
 			"name": "rayleigh brightness",
 			"type": "Float",
-			"default": "4.3"
+			"default": "4.3",
+            "description":""
 		}, {
 			"name": "mie brightness",
 			"type": "Float",
-			"default": "0.2"
+			"default": "0.2",
+            "description":""
 		}, {
 			"name": "spot brightness",
 			"type": "Float",
-			"default": "1800.0"
+			"default": "1800.0",
+            "description":""
 		}, {
 			"name": "scatter strength",
 			"type": "Float",
-			"default": "0.018"
+			"default": "0.018",
+            "description":""
 		}, {
 			"name": "rayleigh strength",
 			"type": "Float",
-			"default": "0.25"
+			"default": "0.25",
+            "description":""
 		}, {
 			"name": "mie strength",
 			"type": "Float",
-			"default": "0.026"
+			"default": "0.026",
+            "description":""
 		}, {
 			"name": "rayleigh collection power",
 			"type": "Float",
-			"default": "0.81"
+			"default": "0.81",
+            "description":""
 		}, {
 			"name": "mie collection power",
 			"type": "Float",
-			"default": "0.89"
+			"default": "0.89",
+            "description":""
 		}, {
 			"name": "mie distribution",
 			"type": "Float",
-			"default": "0.53"
+			"default": "0.53",
+            "description":""
 		}, {
 			"name": "Size",
 			"type": "Enum",
-			"enum": "  256|  512| 1024| 2048| 4096|"
+			"enum": "  256|  512| 1024| 2048| 4096|",
+            "description":""
 		}]
 	}, {
 		"name": "CubemapView",
 		"category": 8,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -725,19 +854,23 @@
 			"rangeMaxX": 0.0,
 			"rangeMinY": 0.0,
 			"rangeMaxY": 1.0,
-			"relative": true
+			"relative": true,
+            "description":""
 		}, {
 			"name": "Mode",
 			"type": "Enum",
-			"enum": "Projection|Isometric|Cross|Camera|"
+			"enum": "Projection|Isometric|Cross|Camera|",
+            "description":""
 		}, {
 			"name": "LOD",
 			"type": "Float",
-			"default": "0.0"
+			"default": "0.0",
+            "description":""
 		}]
 	}, {
 		"name": "EquirectConverter",
 		"category": 8,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -750,15 +883,18 @@
 		"parameters": [{
 			"name": "Mode",
 			"type": "Enum",
-			"enum": "Equirect To Cubemap|Cubemap To Equirect|"
+			"enum": "Equirect To Cubemap|Cubemap To Equirect|",
+            "description":""
 		}, {
 			"name": "Size",
 			"type": "Enum",
-			"enum": "  256|  512| 1024| 2048| 4096|"
+			"enum": "  256|  512| 1024| 2048| 4096|",
+            "description":""
 		}]
 	}, {
 		"name": "NGon",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -766,21 +902,28 @@
 		}],
 		"parameters": [{
 			"name": "Sides",
-			"type": "Int"
+			"type": "Int",
+			"default":"5",
+            "description":""
 		}, {
 			"name": "Radius",
 			"type": "Float",
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
 			"rangeMinY": 0.0,
-			"rangeMaxY": 0.0
+			"rangeMaxY": 0.0,
+			"default":"0.5",
+            "description":""
 		}, {
 			"name": "T",
-			"type": "Float"
+			"type": "Float",
+			"default":"0.25",
+            "description":""
 		}]
 	}, {
 		"name": "GradientBuilder",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -789,11 +932,13 @@
 		"parameters": [{
 			"name": "Gradient",
 			"type": "Ramp4",
-			"default": ""
+			"default": "",
+            "description":""
 		}]
 	}, {
 		"name": "Warp",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -808,15 +953,19 @@
 		}],
 		"parameters": [{
 			"name": "Strength",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.1",
+            "description":""
 		}, {
 			"name": "Mode",
 			"type": "Enum",
-			"enum": "XY Offset|Rotation-Distance|"
+			"enum": "XY Offset|Rotation-Distance|",
+            "description":""
 		}]
 	}, {
 		"name": "TerrainPreview",
 		"category": 2,
+        "description":"",
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Height",
@@ -838,11 +987,13 @@
 		"parameters": [{
 			"name": "Camera",
 			"type": "Camera",
-			"default":""
+			"default":"",
+            "description":""
 		}]
 	}, {
 		"name": "AO",
 		"category": 4,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -854,20 +1005,29 @@
 		}],
 		"parameters": [{
 			"name": "strength",
-			"type": "Float"
+			"type": "Float",
+            "default":"1.0",
+            "description":""
 		}, {
 			"name": "area",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.01",
+            "description":""
 		}, {
 			"name": "falloff",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.03",
+            "description":""
 		}, {
 			"name": "radius",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.001",
+            "description":""
 		}]
 	}, {
 		"name": "FurGenerator",
 		"category": 9,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "Color",
@@ -882,14 +1042,17 @@
 		}],
 		"parameters": [{
 			"name": "Hair count",
-			"type": "Int"
+			"type": "Int",
+            "description":""
 		}, {
 			"name": "Length factor",
-			"type": "Float"
+			"type": "Float",
+            "description":""
 		}]
 	}, {
 		"name": "FurDisplay",
 		"category": 9,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -902,11 +1065,13 @@
 		"parameters": [{
 			"name": "Camera",
 			"type": "Camera",
-			"default": ""
+			"default": "",
+            "description":""
 		}]
 	}, {
 		"name": "FurIntegrator",
 		"category": 9,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -919,6 +1084,7 @@
 	}, {
 		"name": "SVG",
 		"category": 6,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -926,14 +1092,17 @@
 		}],
 		"parameters": [{
 			"name": "File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}, {
 			"name": "DPI",
-			"type": "Float"
+			"type": "Float",
+            "description":""
 		}]
 	}, {
 		"name": "SceneLoader",
 		"category": 6,
+        "description":"",
 		"color": [1.0, 1.0, 1.0, 1.0],
 		"outputs": [{
 			"name": "",
@@ -941,11 +1110,13 @@
 		}],
 		"parameters": [{
 			"name": "File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		}]
 	}, {
 		"name": "PathTracer",
 		"category": 2,
+        "description":"",
 		"color": [1.0, 1.0, 1.0, 1.0],
 		"inputs": [{
 			"name": "",
@@ -958,15 +1129,18 @@
 		"parameters": [{
 			"name": "Mode",
 			"type":  "Enum",
-			"enum": "Tiled|Progressive|"
+			"enum": "Tiled|Progressive|",
+            "description":""
 			}, {
 			"name" : "Camera",
 			"type": "Camera",
-			"default": ""
+			"default": "",
+            "description":""
 		}]
 	}, {
 		"name": "EdgeDetect",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -978,14 +1152,18 @@
 		}],
 		"parameters": [{
 			"name": "Edges",
-			"type": "Float2"
+			"type": "Float2",
+            "description":""
 		},{
 			"name": "Radius",
-			"type": "Float"
+			"type": "Float",
+            "default":"0.01",
+            "description":""
 		}]
 	}, {
 		"name": "Voronoi",
 		"category": 5,
+        "description":"",
 		"color": [0.5882353186607361, 0.9803922176361084, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -993,20 +1171,27 @@
 		}],
 		"parameters": [{
 			"name": "Point Count",
-			"type": "Int"
+			"type": "Int",
+			"default":"20",
+            "description":""
 		},{
 			"name": "Seed",
-			"type": "Float"
+			"type": "Float",
+			"default":"13.37",
+            "description":""
 		}, {
 			"name": "Distance Blend",
-			"type": "Float"
+			"type": "Float",
+            "description":""
 		}, {
 			"name": "Square Width",
-			"type": "Float"
+			"type": "Float",
+            "description":""
 		}]
 	}, {
 		"name": "Kaleidoscope",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -1019,20 +1204,26 @@
 		"parameters": [{
 			"name": "Center",
 			"type": "Float2",
-			"default":"0.5,0.5"
+			"default":"0.5,0.5",
+            "description":""
 		},{
 			"name": "Start Angle",
-			"type": "Angle"
+			"type": "Angle",
+            "description":""
 		},{
 			"name": "Splits",
-			"type": "Int"
+			"type": "Int",
+            "default": "6",
+            "description":""
 		},{
 			"name": "Symetry",
-			"type": "Int"
+			"type": "Int",
+            "description":""
 		}]
 	}, {
 		"name": "Palette",
 		"category": 0,
+        "description":"",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -1045,16 +1236,19 @@
 		"parameters": [{
 			"name": "Palette",
 			"type": "Enum",
-			"enum": "CGA 0|CGA 1|CGA 2|CGA 3|CGA 4|CGA 5|EGA|Gameboy (mono)|PICO-8|C64|"
+			"enum": "CGA0|CGA1|CGA2|CGA3|CGA4|CGA5|EGA|Gameboy(mono)|PICO-8|C64|",
+            "description":""
 		},
 		{
 			"name": "Dither Strength",
-			"type": "Float"
+			"type": "Float",
+            "description":""
 		}]
 	},
 	{
 		"name": "ReactionDiffusion",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -1068,28 +1262,34 @@
 			{
 			"name": "boost",
 			"type": "Float",
-			"default":"0.7"
+			"default":"0.7",
+            "description":""
 		},{
 			"name": "divisor",
 			"type": "Float",
-			"default":"3.0"
+			"default":"3.0",
+            "description":""
 		},{
 			"name": "colorStep",
 			"type": "Float",
-			"default":"0.01"
+			"default":"0.01",
+            "description":""
 		},{
 			"name": "passCount",
 			"type": "Int",
-			"default":"1002"
+			"default":"1002",
+            "description":""
 		},{
 			"name": "Size",
 			"type": "Enum",
-			"enum": "  256|  512| 1024| 2048| 4096|"
+			"enum": "  256|  512| 1024| 2048| 4096|",
+            "description":""
 		}]
 	},
 	{
 		"name": "Disolve",
 		"category": 1,
+        "description":"",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -1103,23 +1303,28 @@
 		{
 			"name": "passCount",
 			"type": "Int",
-			"default":"1"
+			"default":"10",
+            "description":""
 		},{
 			"name": "Frequency",
 			"type": "Float",
-			"default":"1.6"
+			"default":"1.6",
+            "description":""
 		},{
 			"name": "Strength",
 			"type": "Float",
-			"default":"0.25"
+			"default":"0.25",
+            "description":""
 		},{
 			"name": "Randomization",
 			"type": "Float",
-			"default":"40.0"
+			"default":"40.0",
+            "description":""
 		},{
 			"name": "VerticalShift",
 			"type": "Float",
-			"default":"0.05"
+			"default":"0.05",
+            "description":""
 		}
 		
 		

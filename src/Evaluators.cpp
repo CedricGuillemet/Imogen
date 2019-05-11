@@ -22,6 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+#include <SDL.h>
 #include <GL/gl3w.h> // Initialize with gl3wInit()
 #include "Evaluators.h"
 #include "EvaluationStages.h"
@@ -40,9 +41,11 @@
 #include "Camera.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
+#include "NodeGraphControler.h"
 
 Evaluators gEvaluators;
 extern enki::TaskScheduler g_TS;
+
 
 struct EValuationFunction
 {
@@ -117,10 +120,107 @@ struct PyNode
     MaterialNode* mNode;
     int mNodeIndex;
 };
+#include "imHotKey.h"
+extern std::vector<ImHotKey::HotKey> mHotkeys;
+
+
+void RenderImogenFrame();
+void NodeGraphLayout();
+void NodeGraphUpdateScrolling();
+void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* delegate);
+
 
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
     pybind11::class_<Image>(m, "Image");
+
+    m.def("Render", []() { RenderImogenFrame(); });
+    m.def("CaptureScreen", [](const std::string& filename, const std::string& content) {
+        extern std::map<std::string, ImRect> interfacesRect;
+        ImRect rc = interfacesRect[content];
+        SaveCapture(filename, int(rc.Min.x), int(rc.Min.y), int(rc.GetWidth()), int(rc.GetHeight()));
+    });
+    m.def("SetSynchronousEvaluation", [](bool synchronous) {
+        Imogen::instance->GetNodeGraphControler()->mEditingContext.SetSynchronous(synchronous);
+    });
+    m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
+    m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
+    m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
+        Imogen::instance->GetNodeGraphControler()->SetParameter(nodeIndex, paramName, value);
+    });
+    m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
+        // Imogen::instance->GetNodeGraphControler()->AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
+        NodeGraphAddLink(
+            Imogen::instance->GetNodeGraphControler(), nodeSource, slotSource, nodeDestination, slotDestination);
+    });
+    m.def("AutoLayout", []() {
+        NodeGraphUpdateEvaluationOrder(Imogen::instance->GetNodeGraphControler());
+        NodeGraphLayout();
+        NodeGraphUpdateScrolling();
+    });
+    m.def("DeleteGraph", []() { Imogen::instance->DeleteCurrentMaterial(); });
+
+
+    m.def("GetMetaNodes", []() {
+        auto d = pybind11::list();
+
+        for (auto& node : gMetaNodes)
+        {
+            auto n = pybind11::dict();
+            d.append(n);
+            n["name"] = node.mName;
+            n["description"] = "This is a super node. believe me!";
+            if (node.mCategory >= 0 && node.mCategory < MetaNode::mCategories.size())
+            {
+                n["category"] = MetaNode::mCategories[node.mCategory];
+            }
+
+            if (!node.mParams.empty())
+            {
+                auto paramdict = pybind11::list();
+                n["parameters"] = paramdict;
+                for (auto& param : node.mParams)
+                {
+                    auto p = pybind11::dict();
+                    p["name"] = param.mName;
+                    p["type"] = pybind11::int_(int(param.mType));
+                    p["typeString"] = GetParameterTypeName(param.mType);
+                    p["description"] = "This is a super parameter. believe me!";
+                    if (param.mType == Con_Enum)
+                    {
+                        auto e = pybind11::list();
+                        p["enum"] = e;
+
+                        char *pch = strtok((char*)param.mEnumList.c_str(), "|");
+                        while (pch != NULL)
+                        {
+                            e.append(std::string(pch));
+                            pch = strtok(NULL, "|");
+                        }
+                    }
+                    paramdict.append(p);
+                }
+            }
+        }
+
+        return d;
+    });
+
+    m.def("GetHotKeys", []() {
+        auto d = pybind11::list();
+
+        for (auto& hotkey : mHotkeys)
+        {
+            auto h = pybind11::dict();
+            d.append(h);
+            h["name"] = hotkey.functionName;
+            h["description"] = hotkey.functionLib;
+            static char combo[512];
+            ImHotKey::GetHotKeyLib(hotkey.functionKeys, combo, sizeof(combo));
+            h["keys"] = std::string(combo);
+        }
+        return d;
+    });
     auto graph = pybind11::class_<PyGraph>(m, "Graph");
     graph.def("GetEvaluationList", [](PyGraph& pyGraph) {
         auto d = pybind11::list();
@@ -608,21 +708,44 @@ void Evaluators::InitPythonModules()
 
 void Evaluators::InitPython()
 {
-    pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
-    gEvaluators.InitPythonModules();
-    pybind11::exec(R"(
-        import sys
-        import Imogen
-        class CatchImogenIO:
-            def __init__(self):
-                pass
-            def write(self, txt):
-                Imogen.Log(txt)
-        catchImogenIO = CatchImogenIO()
-        sys.stdout = catchImogenIO
-        sys.stderr = catchImogenIO
-        print("Python stdout, stderr catched.\n"))");
-    pybind11::module::import("Plugins");
+    try
+    {
+        pybind11::initialize_interpreter(true); // start the interpreter and keep it alive
+        gEvaluators.InitPythonModules();
+        pybind11::exec(R"(
+            import sys
+            import Imogen
+            class CatchImogenIO:
+                def __init__(self):
+                    pass
+                def write(self, txt):
+                    Imogen.Log(txt)
+            catchImogenIO = CatchImogenIO()
+            sys.stdout = catchImogenIO
+            sys.stderr = catchImogenIO
+            print("Python stdout, stderr catched.\n"))");
+        pybind11::module::import("Plugins");
+    }
+    catch (std::exception e)
+    {
+        Log("InitPython Exception : %s\n", e.what());
+    }
+}
+
+void Evaluators::ReloadPlugins()
+{
+    try
+    {
+        mRegisteredPlugins.clear();
+        pybind11::exec(R"(
+            import importlib
+            importlib.reload(sys.modules["Plugins"])
+            print("Python plugins reloaded.\n"))");
+    }
+    catch (std::exception e)
+    {
+        Log("Error at reloading Python modules. Exception : %s\n", e.what());
+    }
 }
 
 void Evaluator::RunPython() const
@@ -635,12 +758,18 @@ namespace EvaluationAPI
     int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, Image* image, int cubeFace)
     {
         if (image->mNumFaces != 1)
+        {
             return EVAL_ERR;
-        RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
+        }
+        auto tgt = evaluationContext->GetRenderTarget(target);
+        if (!tgt)
+        {
+            return EVAL_ERR;
+        }
 
-        tgt.InitCube(image->mWidth, image->mNumMips);
+        tgt->InitCube(image->mWidth, image->mNumMips);
 
-        Image::Upload(image, tgt.mGLTexID, cubeFace);
+        Image::Upload(image, tgt->mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, true);
         return EVAL_OK;
     }
@@ -802,44 +931,50 @@ namespace EvaluationAPI
     int GetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image)
     {
         if (target == -1 || target >= evaluationContext->mEvaluationStages.mStages.size())
+        {
             return EVAL_ERR;
+        }
 
-        RenderTarget& tgt = *evaluationContext->GetRenderTarget(target);
+        auto tgt = evaluationContext->GetRenderTarget(target);
+        if (!tgt)
+        {
+            return EVAL_ERR;
+        }
 
         // compute total size
-        Image& img = *tgt.mImage.get();
-        unsigned int texelSize = textureFormatSize[img.mFormat];
-        unsigned int texelFormat = glInternalFormats[img.mFormat];
+        auto img = tgt->mImage;
+        unsigned int texelSize = textureFormatSize[img->mFormat];
+        unsigned int texelFormat = glInternalFormats[img->mFormat];
         uint32_t size = 0; // img.mNumFaces * img.mWidth * img.mHeight * texelSize;
-        for (int i = 0; i < img.mNumMips; i++)
-            size += img.mNumFaces * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+        for (int i = 0; i < img->mNumMips; i++)
+            size += img->mNumFaces * (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
 
         image->Allocate(size);
-        image->mWidth = img.mWidth;
-        image->mHeight = img.mHeight;
-        image->mNumMips = img.mNumMips;
-        image->mFormat = img.mFormat;
-        image->mNumFaces = img.mNumFaces;
+        image->mWidth = img->mWidth;
+        image->mHeight = img->mHeight;
+        image->mNumMips = img->mNumMips;
+        image->mFormat = img->mFormat;
+        image->mNumFaces = img->mNumFaces;
 
         unsigned char* ptr = image->GetBits();
-        if (img.mNumFaces == 1)
+        if (img->mNumFaces == 1)
         {
-            glBindTexture(GL_TEXTURE_2D, tgt.mGLTexID);
-            for (int i = 0; i < img.mNumMips; i++)
+            glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
+            for (int i = 0; i < img->mNumMips; i++)
             {
                 glGetTexImage(GL_TEXTURE_2D, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
-                ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+                ptr += (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
             }
         }
         else
         {
-            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt.mGLTexID);
-            for (int cube = 0; cube < img.mNumFaces; cube++)
+            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
+            for (int cube = 0; cube < img->mNumFaces; cube++)
             {
-                for (int i = 0; i < img.mNumMips; i++)
+                for (int i = 0; i < img->mNumMips; i++)
                 {
                     glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + cube, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
-                    ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+                    ptr += (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
                 }
             }
         }

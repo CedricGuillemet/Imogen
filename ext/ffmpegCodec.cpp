@@ -109,12 +109,12 @@ namespace FFMPEGCodec
         av_log_set_level(AV_LOG_FATAL);
         if (avformat_open_input(&m_format_context, filename.c_str(), NULL, NULL) != 0) // avformat_open_input allocs format_context
         {
-            Log("\"%s\" could not open input", filename.c_str());
+            Log("\"%s\" could not open input\n", filename.c_str());
             return false;
         }
         if (avformat_find_stream_info(m_format_context, NULL) < 0)
         {
-            Log("\"%s\" could not find stream info", filename.c_str());
+            Log("\"%s\" could not find stream info\n", filename.c_str());
             return false;
         }
         m_video_stream = -1;
@@ -131,7 +131,7 @@ namespace FFMPEGCodec
             }
         }
         if (m_video_stream == -1) {
-            Log("\"%s\" could not find a valid videostream", filename.c_str());
+            Log("\"%s\" could not find a valid videostream\n", filename.c_str());
             return false;
         }
 
@@ -142,14 +142,14 @@ namespace FFMPEGCodec
         m_codec = avcodec_find_decoder(par->codec_id);
         if (!m_codec)
         {
-            Log("\"%s\" can't find decoder", filename.c_str());
+            Log("\"%s\" can't find decoder\n", filename.c_str());
             return false;
         }
 
         m_codec_context = avcodec_alloc_context3(m_codec);
         if (!m_codec_context)
         {
-            Log("\"%s\" can't allocate decoder context", filename.c_str());
+            Log("\"%s\" can't allocate decoder context\n", filename.c_str());
             return false;
         }
 
@@ -158,7 +158,7 @@ namespace FFMPEGCodec
         ret = avcodec_parameters_to_context(m_codec_context, par);
         if (ret < 0)
         {
-            Log("\"%s\" unsupported codec", filename.c_str());
+            Log("\"%s\" unsupported codec\n", filename.c_str());
             return false;
         }
 #else
@@ -172,7 +172,7 @@ namespace FFMPEGCodec
 #endif
 
         if (avcodec_open2(m_codec_context, m_codec, NULL) < 0) {
-            Log("\"%s\" could not open codec", filename.c_str());
+            Log("\"%s\" could not open codec\n", filename.c_str());
             return false;
         }
         if (!strcmp(m_codec_context->codec->name, "mjpeg") ||

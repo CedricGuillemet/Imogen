@@ -109,6 +109,13 @@ void MakeThreadContext()
     SDL_GL_MakeCurrent(window, glThreadContext);
 }
 
+std::function<void(bool capturing)> renderImogenFrame;
+
+void RenderImogenFrame()
+{
+    renderImogenFrame(true);
+}
+
 int main(int, char**)
 {
     // locale for sscanf
@@ -250,32 +257,36 @@ int main(int, char**)
                 done = true;
         }
 
+        renderImogenFrame = [&](bool capturing) {
+            // Start the Dear ImGui frame
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplSDL2_NewFrame(window);
+            ImGui::NewFrame();
+            InitCallbackRects();
+            imogen.HandleHotKeys();
 
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
-        ImGui::NewFrame();
-        InitCallbackRects();
-        imogen.HandleHotKeys();
 
+            nodeGraphControler.mEditingContext.RunDirty();
+            imogen.Show(builder, library, capturing);
 
-        nodeGraphControler.mEditingContext.RunDirty();
-        imogen.Show(builder, library);
+            // render everything
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glUseProgram(0);
 
-        // render everything
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(0);
+            glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+            glClearColor(0., 0., 0., 0.);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDisable(GL_DEPTH_TEST);
 
-        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glClearColor(0., 0., 0., 0.);
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST);
+            ImGui::Render();
+            SDL_GL_MakeCurrent(window, gl_context);
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            g_TS.RunPinnedTasks();
+        };
 
-        ImGui::Render();
-        SDL_GL_MakeCurrent(window, gl_context);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        g_TS.RunPinnedTasks();
+        renderImogenFrame(false);
         SDL_GL_SwapWindow(window);
+        imogen.RunDeferedCommands();
     }
     delete builder;
 

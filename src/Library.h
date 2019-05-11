@@ -405,6 +405,7 @@ struct Material
     int mFrameMin, mFrameMax;
 
     std::vector<uint32_t> mPinnedParameters;
+    std::vector<uint32_t> mPinnedIO;
     MaterialNode* Get(ASyncId id)
     {
         return GetByAsyncId(id, mMaterialNodes);
@@ -475,8 +476,12 @@ enum CurveType
 };
 
 size_t GetParameterTypeSize(ConTypes paramType);
+int GetParameterIndex(uint32_t nodeType, const char* parameterName);
+
 size_t GetParameterOffset(uint32_t type, uint32_t parameterIndex);
+ConTypes GetParameterType(uint32_t nodeType, uint32_t parameterIndex);
 size_t GetCurveCountPerParameterType(uint32_t paramType);
+void ParseStringToParameter(const std::string& str, uint32_t parameterType, void* parameterPtr);
 const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex);
 AnimationBase* AllocateAnimation(uint32_t valueType);
@@ -484,6 +489,7 @@ CurveType GetCurveTypeForParameterType(ConTypes paramType);
 struct NodeGraphControler;
 void DecodeThumbnailAsync(Material* material, NodeGraphControler* nodeGraphControler);
 size_t ComputeNodeParametersSize(size_t nodeType);
+const char* GetParameterTypeName(ConTypes paramType);
 
 struct MetaCon
 {
@@ -510,6 +516,7 @@ struct MetaParameter
     bool mbLoop;
     std::string mEnumList;
     std::vector<unsigned char> mDefaultValue;
+    std::string mDescription;
     bool operator==(const MetaParameter& other) const
     {
         if (mName != other.mName)
@@ -539,6 +546,7 @@ struct MetaNode
     std::string mName;
     uint32_t mHeaderColor;
     int mCategory;
+    std::string mDescription;
     std::vector<MetaCon> mInputs;
     std::vector<MetaCon> mOutputs;
     std::vector<MetaParameter> mParams;
@@ -566,6 +574,8 @@ struct MetaNode
             return false;
         return true;
     }
+
+    static const std::vector<std::string> mCategories;
 };
 
 extern std::vector<MetaNode> gMetaNodes;

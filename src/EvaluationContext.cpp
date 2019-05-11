@@ -261,9 +261,12 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                              wrap[inputSampler.mWrapV],
                              GL_TEXTURE_CUBE_MAP);
                     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
-                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage->mNumMips - 1);
                     // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                    if (tgt->mImage->mNumMips > 1)
+                    {
+                        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage->mNumMips - 1);
+                        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+                    }
                 }
             }
         }
@@ -332,10 +335,13 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     else
     {
         //
-        Swap(mComputeBuffers[index], tempBuffer);
+        if (index < mComputeBuffers.size())
+        {
+            Swap(mComputeBuffers[index], tempBuffer);
 
-        AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
-        sourceBuffer = &tempBuffer;
+            AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
+            sourceBuffer = &tempBuffer;
+        }
     }
 
     if (mComputeBuffers.size() <= index)
@@ -360,40 +366,42 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     destinationBuffer = &mComputeBuffers[index];
 
     // compute buffer
-    glUseProgram(program);
+    if (destinationBuffer->mElementCount)
+    {
+        glUseProgram(program);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-    evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
+        evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
-    glBufferData(
-        GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
+        glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
+        glBufferData(
+            GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-    BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
-    glEnable(GL_RASTERIZER_DISCARD);
-    glBindVertexArray(feedbackVertexArray);
-    glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
-                      0,
-                      destinationBuffer->mBuffer,
-                      0,
-                      destinationBuffer->mElementCount * destinationBuffer->mElementSize);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
+        glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
-    glBeginTransformFeedback(GL_POINTS);
-    glDrawArrays(GL_POINTS, 0, destinationBuffer->mElementCount);
-    glEndTransformFeedback();
 
-    glDisable(GL_RASTERIZER_DISCARD);
-    glBindVertexArray(0);
-    glUseProgram(0);
+        BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
+        glEnable(GL_RASTERIZER_DISCARD);
+        glBindVertexArray(feedbackVertexArray);
+        glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
+                          0,
+                          destinationBuffer->mBuffer,
+                          0,
+                          destinationBuffer->mElementCount * destinationBuffer->mElementSize);
 
+        glBeginTransformFeedback(GL_POINTS);
+        glDrawArrays(GL_POINTS, 0, destinationBuffer->mElementCount);
+        glEndTransformFeedback();
+
+        glDisable(GL_RASTERIZER_DISCARD);
+        glBindVertexArray(0);
+        glUseProgram(0);
+    }
     if (feedbackVertexArray)
         glDeleteVertexArrays(1, &feedbackVertexArray);
 
@@ -940,6 +948,10 @@ const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size
 void EvaluationContext::StageSetProcessing(size_t target, int processing)
 {
     mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
+    if (target >= mbProcessing.size())
+    {
+        return;
+    }
     if (mbProcessing[target] != processing)
     {
         mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
@@ -951,6 +963,10 @@ void EvaluationContext::StageSetProcessing(size_t target, int processing)
 void EvaluationContext::StageSetProgress(size_t target, float progress)
 {
     mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
+    if (target >= mProgress.size())
+    {
+        return;
+    }
     mProgress[target] = progress;
 }
 
@@ -1119,7 +1135,8 @@ namespace DrawUICallbacks
         int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
         glUniform1i(tgt, 0);
         glActiveTexture(GL_TEXTURE0);
-
+        TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
         context->mFSQuad.Render();
     }

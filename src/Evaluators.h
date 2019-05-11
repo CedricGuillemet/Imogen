@@ -76,8 +76,9 @@ struct Evaluators
     void InitPythonModules();
     pybind11::module mImogenModule;
 
-protected:
-    struct EvaluatorScript
+    static void ReloadPlugins();
+    protected:
+        struct EvaluatorScript
     {
         EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mType(-1)
         {

@@ -67,6 +67,7 @@ struct NodeGraphControlerBase
     virtual void CopyNodes(const std::vector<size_t> nodes) = 0;
     virtual void CutNodes(const std::vector<size_t> nodes) = 0;
     virtual void PasteNodes() = 0;
+    virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const = 0;
 };
 
 struct Node

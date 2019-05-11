@@ -77,6 +77,7 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
 
     InitDefaultParameters(evaluation);
     mStages.push_back(evaluation);
+    mPinnedIO.push_back(0);
 }
 
 void EvaluationStages::StageIsAdded(int index)
@@ -452,6 +453,39 @@ void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, b
         // bool enabled = time >= node.mStartFrame && time <= node.mEndFrame;
         evaluationContext->SetTargetDirty(i, Dirty::Time);
     }
+}
+
+bool EvaluationStages::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
+{
+	if (nodeIndex >= mPinnedIO.size())
+	{
+            return false;
+	}
+    uint32_t mask = 0;
+	if (forOutput)
+	{
+        mask = (1 << io) & 0xFF;
+	}
+	else
+	{
+        mask = (1 << (8 + io));
+	}
+    return mPinnedIO[nodeIndex] & mask;
+}
+
+void EvaluationStages::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned)
+{
+    uint32_t mask = 0;
+    if (forOutput)
+    {
+        mask = (1 << io) & 0xFF;
+    }
+    else
+    {
+        mask = (1 << (8 + io));
+    }
+    mPinnedIO[nodeIndex] &= ~mask;
+    mPinnedIO[nodeIndex] += pinned ? mask : 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////

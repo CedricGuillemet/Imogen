@@ -40,13 +40,15 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual void AddSingleNode(size_t type);
     virtual void UserAddNode(size_t type);
-    virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
+    virtual void AddLink(int inputIdx, int inputSlot, int outputIdx, int outputSlot)
     {
-        if (OutputIdx >= mEvaluationStages.mStages.size())
+        if (outputIdx >= mEvaluationStages.mStages.size())
             return;
 
-        mEvaluationStages.AddEvaluationInput(OutputIdx, OutputSlot, InputIdx);
-        mEditingContext.SetTargetDirty(OutputIdx, Dirty::Input);
+        mEvaluationStages.AddEvaluationInput(outputIdx, outputSlot, inputIdx);
+        mEditingContext.SetTargetDirty(outputIdx, Dirty::Input);
+        mEvaluationStages.SetIOPin(inputIdx, inputSlot, false, false);
+        mEvaluationStages.SetIOPin(outputIdx, outputSlot, false, false);
     }
     virtual void DelLink(int index, int slot)
     {
@@ -108,6 +110,11 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual bool RenderBackground();
 
+	virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
+    {
+            return mEvaluationStages.IsIOPinned(nodeIndex, io, forOutput);
+    }
+
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const
     {
@@ -145,4 +152,5 @@ protected:
     void UpdateDirtyParameter(int index);
     void EditNodeParameters();
     void HandlePin(uint32_t parameterPair);
+    void HandlePinIO(size_t nodeIndex, size_t io, bool forOutput);
 };

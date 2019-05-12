@@ -2,7 +2,7 @@
 	"nodes": [{
 		"name": "Circle",
 		"category": 1,
-        "description":"",
+        "description":"Renders a perfect Circle center in the view port.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -16,16 +16,16 @@
 			"rangeMinY": 0.0,
 			"rangeMaxY": 0.0,
 			"default": "0.25",
-            "description":""
+            "description":"Clip-space radius."
 		}, {
 			"name": "T",
 			"type": "Float",
-            "description":""
+            "description":"Interpolation factor between full white cirle (0.) and height of the hemisphere (1.)."
 		}]
 	}, {
 		"name": "Transform",
 		"category": 0,
-        "description":"",
+        "description":"Transform every source texel using the translation, rotation, scale.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -44,21 +44,21 @@
 			"rangeMaxY": 1.0,
 			"relative": true,
 			"loop": false,
-            "description":""
+            "description":"2D vector translation."
 		}, {
 			"name": "Scale",
 			"type": "Float2",
 			"default": "1.0,1.0",
-            "description":""
+            "description":"2D vector scale."
 		}, {
 			"name": "Rotation",
 			"type": "Angle",
-            "description":""
+            "description":"Angle in degrees. Center of rotation is the center of the source."
 		}]
 	}, {
 		"name": "Square",
 		"category": 1,
-        "description":"",
+        "description":"Renders a square center in the middle of the viewport.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -76,12 +76,12 @@
 			"rangeMinY": 0.0,
 			"rangeMaxY": 0.0,
 			"default":"0.25",
-            "description":""
+            "description":"Clip-space side width."
 		}]
 	}, {
 		"name": "Checker",
 		"category": 1,
-        "description":"",
+        "description":"Renders a 4 square black and white checker. Use a Transform node to scale it to any number of squares.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -94,7 +94,7 @@
 	}, {
 		"name": "Sine",
 		"category": 1,
-        "description":"",
+        "description":"Renders a one directioned sine as a greyscale value.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -108,17 +108,17 @@
 			"name": "Frequency",
 			"type": "Float",
 			"default":"4.0",
-            "description":""
+            "description":"Basically, the number of bars."
 		}, {
 			"name": "Angle",
 			"type": "Angle",
 			"default":"45.0",
-            "description":""
+            "description":"Angle in degrees of the so called bars."
 		}]
 	}, {
 		"name": "SmoothStep",
 		"category": 4,
-        "description":"",
+        "description":"Performs a smoothstep operation. Hermite interpolation between 0 and 1 when Low < x < high. This is useful in cases where a threshold function with a smooth transition is desired.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -132,17 +132,17 @@
 			"name": "Low",
 			"type": "Float",
             "default":"0.9",
-            "description":""
+            "description":"Lower value for the Hermite interpolation."
 		}, {
 			"name": "High",
 			"type": "Float",
             "default":"1.0",
-            "description":""
+            "description":"Higher value for the Hermite interpolation. Result is undertimined when high value < low value."
 		}]
 	}, {
 		"name": "Pixelize",
 		"category": 0,
-        "description":"",
+        "description":"Lower the resolution of the image using nearest filter.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -156,12 +156,12 @@
 			"name": "scale",
 			"type": "Float",
 			"default": "10.0",
-            "description":""
+            "description":"Number of pixels on a side."
 		}]
 	}, {
 		"name": "Blur",
 		"category": 4,
-        "description":"",
+        "description":"Performs a Directional of Box blur filter. Directional blur is a gaussian pass with 16 pixels. Box is 16x16.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -175,26 +175,26 @@
 			"name": "Type",
 			"type": "Enum",
 			"enum": "Directional|Box|",
-            "description":""
+            "description":"Selection of the Blur type."
 		},{
 			"name": "angle",
 			"type": "Angle",
-            "description":""
+            "description":"angle in degrees for the directional blur."
 		}, {
 			"name": "strength",
 			"type": "Float",
             "default":"0.005",
-            "description":""
+            "description":"Defines how wide the blur pass will be. The bigger, the larger area each pixel will cover."
 		},{
 			"name": "passCount",
 			"type": "Int",
 			"default":"1",
-            "description":""
+            "description":"Multiple passes are supported by this node."
 		}]
 	}, {
 		"name": "NormalMap",
 		"category": 4,
-        "description":"",
+        "description":"Computes a normal map using the Red component of the source as the height.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -208,18 +208,18 @@
 			"name": "spread",
 			"type": "Float",
             "default":"30.0",
-            "description":""
+            "description":"The bigger, the stronger the resulting normal will be."
 		},
 		{
 			"name": "Invert",
 			"type": "Bool",
 			"default":"false",
-            "description":""
+            "description":"Change the direction of the XY components of the normal."
 		}]
 	}, {
 		"name": "LambertMaterial",
 		"category": 2,
-        "description":"",
+        "description":"Experimental node.",
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Diffuse",
@@ -244,7 +244,7 @@
 	}, {
 		"name": "MADD",
 		"category": 3,
-        "description":"",
+        "description":"For each source texel, multiply and and a color value.",
 		"color": [0.7843137979507446, 0.5882353186607361, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -258,17 +258,17 @@
 			"name": "Mul Color",
 			"type": "Color4",
             "default":"0.5,0.5,0.5,1.0",
-            "description":""
+            "description":"The color to multiply the source with."
 		}, {
 			"name": "Add Color",
 			"type": "Color4",
             "default":"0.5,0.5,0.5,1.0",
-            "description":""
+            "description":"The color to add to the source."
 		}]
 	}, {
 		"name": "Hexagon",
 		"category": 1,
-        "description":"",
+        "description":"Renders an hexagon. This node is deprecated. Use the NGon node instead.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -277,13 +277,13 @@
 	}, {
 		"name": "Blend",
 		"category": 3,
-        "description":"",
+        "description":"Blends to source together using a built-in operation. Each source can also be masked and multiplied by a value.",
 		"color": [0.7843137979507446, 0.5882353186607361, 0.5882353186607361, 1.0],
 		"inputs": [{
-			"name": "",
+			"name": "A",
 			"type": "Float4"
 		}, {
-			"name": "",
+			"name": "B",
 			"type": "Float4"
 		}],
 		"outputs": [{
@@ -294,22 +294,22 @@
 			"name": "A",
 			"type": "Float4",
 			"default":"1.0,1.0,1.0,1.0",
-            "description":""
+            "description":"Color/mask to multiply A source with."
 		}, {
 			"name": "B",
 			"type": "Float4",
 			"default":"1.0,1.0,1.0,1.0",
-            "description":""
+            "description":"Color/mask to multiply A source with."
 		}, {
 			"name": "Operation",
 			"type": "Enum",
 			"enum": "Add|Multiply|Darken|Lighten|Average|Screen|Color Burn|Color Dodge|Soft Light|Subtract|Difference|Inverse Difference|Exclusion|",
-            "description":""
+            "description":"Built-ins operation used for blending. Check the examples below."
 		}]
 	}, {
 		"name": "Invert",
 		"category": 4,
-        "description":"",
+        "description":"Performs a simple color inversion for each component. Basically, for R source value, outputs 1.0 - R.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -322,7 +322,7 @@
 	}, {
 		"name": "CircleSplatter",
 		"category": 1,
-        "description":"",
+        "description":"Renders a bunch of circle with interpolated position and scales. For N circles the interpolation coefficient will be between [0/N....N/N].",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -336,27 +336,27 @@
 			"name": "Distance",
 			"type": "Float2",
 			"default":"0.0,0.45",
-            "description":""
+            "description":"First and Last value to interpolate between for the distance to the center of the viewport."
 		}, {
 			"name": "Radius",
 			"type": "Float2",
 			"default":"0.0,0.14",
-            "description":""
+            "description":"First and Last value for the interpolated circle radius."
 		}, {
 			"name": "Angle",
 			"type": "Angle2",
 			"default":"0.0,720.0",
-            "description":""
+            "description":"First and Last value for the Angle. The circle position is computed using the angle and the distance."
 		}, {
 			"name": "Count",
 			"type": "Float",
 			"default":"20.0",
-            "description":""
+            "description":"The total number of circles to render."
 		}]
 	}, {
 		"name": "Ramp",
 		"category": 4,
-        "description":"",
+        "description":"Performs a Ramp on the source components. For each source value (X coord on the ramp graph), retrieve an intensity value (Y on the ramp graph). Optionnaly use an image instead of the editable graph.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -373,7 +373,7 @@
 			"name": "Ramp",
 			"type": "Ramp",
 			"default": "",
-            "description":""
+            "description":"Graph that can be edited."
 		}]
 	}, {
 		"name": "Tile",
@@ -412,7 +412,7 @@
 	}, {
 		"name": "Color",
 		"category": -1,
-        "description":"",
+        "description":"Single plain color.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -422,12 +422,12 @@
 			"name": "Color",
 			"type": "Color4",
 			"default":"0.8,0.8,0.8,1.0",
-            "description":""
+            "description":"Single plain color."
 		}]
 	}, {
 		"name": "NormalMapBlending",
 		"category": 3,
-        "description":"",
+        "description":"Blend two normal maps into a single one. Choose the Technique that gives the best result.",
 		"color": [0.7843137979507446, 0.5882353186607361, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -444,12 +444,12 @@
 			"name": "Technique",
 			"type": "Enum",
 			"enum": "RNM|Partial Derivatives|Whiteout|UDN|Unity|Linear|Overlay|",
-            "description":""
+            "description":"Different techniques for blending. Check the examples below to see the differences."
 		}]
 	}, {
 		"name": "iqnoise",
 		"category": 5,
-        "description":"",
+        "description":"Generate noise based on work by Inigo Quilez.",
 		"color": [0.5882353186607361, 0.9803922176361084, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -463,7 +463,8 @@
 			"rangeMinY": 0.0,
 			"rangeMaxY": 1.0,
 			"relative": true,
-			"loop": false
+			"loop": false,
+            "description":"Translate the noise seeds so you can have virtualy infinite different noise."
 		},{
 			"name": "Size",
 			"type": "Float",
@@ -473,12 +474,12 @@
 			"name": "U",
 			"type": "Float",
 			"default":"1.0",
-            "description":""
+            "description":"Interpolate between centered seed (checker) to jittered random position."
 		}, {
 			"name": "V",
 			"type": "Float",
 			"default":"0.5",
-            "description":""
+            "description":"Interpolation factor between full color to distance-like color per cell."
 		}]
 	}, {
 		"name": "PerlinNoise",
@@ -498,27 +499,28 @@
 			"rangeMinY": 0.0,
 			"rangeMaxY": 1.0,
 			"relative": true,
-			"loop": false
+			"loop": false,
+            "description":"Translate the noise seeds so you can have virtualy infinite different noise."
 		},{
 			"name": "Octaves",
 			"type": "Int",
 			"default": "6",
-            "description":""
+            "description":"The number of noise with different scale for each."
 		},{
 			"name": "lacunarity",
 			"type": "Float",
 			"default": "1.85",
-            "description":""
+            "description":"Geoemtric scale applied for each octave."
 		},{
 			"name": "gain",
 			"type": "Float",
 			"default": "1.15",
-            "description":""
+            "description":"Intensity factor applied to each octave."
 		}]
 	}, {
 		"name": "PBR",
 		"category": 2,
-        "description":"",
+        "description":"Experimental Node.",
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Diffuse",
@@ -561,7 +563,7 @@
 	}, {
 		"name": "PolarCoords",
 		"category": 0,
-        "description":"",
+        "description":"Transform the source using polar coordinates.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
@@ -575,12 +577,12 @@
 			"name": "Type",
 			"type": "Enum",
 			"enum": "Linear to polar|Polar to linear|",
-            "description":""
+            "description":"Change to direction of the transformation."
 		}]
 	}, {
 		"name": "Clamp",
 		"category": 4,
-        "description":"",
+        "description":"Performs a clamp for each component of the source. Basically, sets the min and max of each component.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -594,17 +596,17 @@
 			"name": "Min",
 			"type": "Float4",
             "default":"0.5,0.5,0.5,1.0",
-            "description":""
+            "description":"The minimal value for each source component."
 		}, {
 			"name": "Max",
 			"type": "Float4",
             "default":"0.6,0.6,0.6,1.0",
-            "description":""
+            "description":"The maximal value for each source component."
 		}]
 	}, {
 		"name": "ImageRead",
 		"category": 6,
-        "description":"",
+        "description":"Imports a file from the disk. Major formats are supported. Cubemaps can be imported using one image for each face of using a cubemap .DDS/.KTX. MP4 movies can be read as well.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -613,31 +615,31 @@
 		"parameters": [{
 			"name": "File name",
 			"type": "FilenameRead",
-            "description":""
+            "description":"Single image frame or DDS/KTX cubemap."
 		}, {
 			"name": "+X File name",
 			"type": "FilenameRead",
-            "description":""
+            "description":"Cubemap image face for +X direction."
 		}, {
 			"name": "-X File name",
 			"type": "FilenameRead",
-            "description":""
+            "description":"Cubemap image face for -X direction."
 		}, {
 			"name": "+Y File name",
 			"type": "FilenameRead",
-            "description":""
+            "description":"Cubemap image face for +Y direction (Top)."
 		}, {
 			"name": "-Y File name",
 			"type": "FilenameRead",
-            "description":""
+            "description":"Cubemap image face for -Y direction (Bottom)."
 		}, {
 			"name": "+Z File name",
 			"type": "FilenameRead",
-            "description":""
+            "description":"Cubemap image face for +Z direction."
 		}, {
 			"name": "-Z File name",
 			"type": "FilenameRead",
-            "description":""
+            "description":"Cubemap image face for -Z direction."
 		}]
 	}, {
 		"name": "ImageWrite",
@@ -683,7 +685,7 @@
 	}, {
 		"name": "Thumbnail",
 		"category": 6,
-        "description":"",
+        "description":"Create a thumbnail picture from the source input and applies it to the thumbnail library view.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -692,7 +694,7 @@
 		"parameters": [{
 			"name": "Make",
 			"type": "ForceEvaluate",
-            "description":""
+            "description":"Force the evaluation without building the graph."
 		}]
 	}, {
 		"name": "Paint2D",
@@ -1283,7 +1285,7 @@
 			"name": "Size",
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
-            "description":""
+            "description":"Multiple passes are supported by this node."
 		}]
 	},
 	{
@@ -1304,7 +1306,7 @@
 			"name": "passCount",
 			"type": "Int",
 			"default":"10",
-            "description":""
+            "description":"Multiple passes are supported by this node."
 		},{
 			"name": "Frequency",
 			"type": "Float",

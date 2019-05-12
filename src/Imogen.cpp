@@ -1413,7 +1413,7 @@ void Imogen::Init()
         {"Cut", "Cut the selected nodes", []() {}},
         {"Paste", "Paste previously copy/cut nodes", []() {}},
         {"BuildMaterial", "Build current material", [&]() { BuildCurrentMaterial(mBuilder); }},
-        {"MouseState", "Show Mouse State at a tooltip", [&]() { mbShowMouseState = !mbShowMouseState; }}};
+        {"MouseState", "Show Mouse State as a tooltip", [&]() { mbShowMouseState = !mbShowMouseState; }}};
 
     mHotkeys.reserve(hotKeyFunctions.size());
     mHotkeyFunctions.reserve(hotKeyFunctions.size());
@@ -1427,7 +1427,6 @@ void Imogen::Init()
 void Imogen::Finish()
 {
 }
-
 
 const char* GetShortCutLib(const char* functionName)
 {

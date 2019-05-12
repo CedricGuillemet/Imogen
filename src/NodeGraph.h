@@ -186,3 +186,4 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* delegate);
 void NodeGraphUpdateScrolling();
 void NodeGraphSelectNode(int selectedNodeIndex);
 void NodeGraphLayout();
+bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput);

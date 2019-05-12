@@ -894,8 +894,12 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
 }
 
 
-bool HandleConnections(
-    ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase* controler, bool bDrawOnly)
+bool HandleConnections(ImDrawList* drawList,
+                       int nodeIndex,
+                       const ImVec2 offset,
+                       const float factor,
+                       NodeGraphControlerBase* controler,
+                       bool bDrawOnly)
 {
     static int editingNodeIndex;
     static int editingSlotIndex;
@@ -1097,10 +1101,10 @@ static bool DrawNode(ImDrawList* drawList,
         const MetaCon* con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
         for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
         {
-			if (!controler->IsIOPinned(nodeIndex, slot_idx, i == 1))
-			{
-                            continue;
-			}
+            if (!controler->IsIOPinned(nodeIndex, slot_idx, i == 1))
+            {
+                continue;
+            }
             ImVec2 p =
                 offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
             const float arc = 28.f * (float(i) * 0.3f + 1.0f) * (i ? 1.f : -1.f);
@@ -1344,7 +1348,7 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
             ImGui::PushID(nodeIndex);
 
             // Display node contents first
-            //drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
+            // drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
 
             bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler, false);
 
@@ -1580,4 +1584,17 @@ ImRect GetFinalNodeDisplayRect()
         rect = ImRect(node.Pos, node.Pos + node.Size);
     }
     return DisplayRectMargin(rect);
+}
+
+bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput)
+{
+	for (auto& link : links)
+	{
+            if ((link.InputIdx == nodeIndex && link.InputSlot == slotIndex && forOutput) ||
+                (link.OutputIdx == nodeIndex && link.OutputSlot == slotIndex && !forOutput))
+            {
+                return true;
+				}
+	}
+        return false;
 }

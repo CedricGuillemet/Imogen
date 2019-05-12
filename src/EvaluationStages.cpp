@@ -390,6 +390,9 @@ void EvaluationStages::RemovePins(size_t nodeIndex)
         else
             ++iter;
     }
+
+	URDel<uint32_t> undoRedoDelPinIO(int(nodeIndex), [&]() { return &mPinnedIO; });
+    iter = mPinnedIO.erase(mPinnedIO.begin() + nodeIndex);
 }
 
 float EvaluationStages::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)

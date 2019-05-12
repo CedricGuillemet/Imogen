@@ -47,7 +47,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
         mEvaluationStages.AddEvaluationInput(outputIdx, outputSlot, inputIdx);
         mEditingContext.SetTargetDirty(outputIdx, Dirty::Input);
-        mEvaluationStages.SetIOPin(inputIdx, inputSlot, false, false);
+        mEvaluationStages.SetIOPin(inputIdx, inputSlot, true, false);
         mEvaluationStages.SetIOPin(outputIdx, outputSlot, false, false);
     }
     virtual void DelLink(int index, int slot)
@@ -152,5 +152,5 @@ protected:
     void UpdateDirtyParameter(int index);
     void EditNodeParameters();
     void HandlePin(uint32_t parameterPair);
-    void HandlePinIO(size_t nodeIndex, size_t io, bool forOutput);
+    void HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput);
 };

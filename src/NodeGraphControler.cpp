@@ -437,12 +437,16 @@ void NodeGraphControler::EditNodeParameters()
     }
 }
 
-void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t io, bool forOutput)
+void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput)
 {
-    ImGui::PushID(nodeIndex * 256 + io * 2 + (forOutput ? 1 : 0));
-    bool pinned = IsIOPinned(nodeIndex, io, forOutput);
+    if (IsIOUsed(nodeIndex, slotIndex, forOutput))
+	{
+            return;
+	}
+        ImGui::PushID(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0));
+        bool pinned = IsIOPinned(nodeIndex, slotIndex, forOutput);
     ImGui::Checkbox("", &pinned);
-    mEvaluationStages.SetIOPin(nodeIndex, io, forOutput, pinned);
+        mEvaluationStages.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
     ImGui::PopID();
 }
 

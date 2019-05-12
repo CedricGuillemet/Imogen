@@ -1412,7 +1412,9 @@ void Imogen::Init()
         {"Copy", "Copy the selected nodes", []() {}},
         {"Cut", "Cut the selected nodes", []() {}},
         {"Paste", "Paste previously copy/cut nodes", []() {}},
-        {"BuildMaterial", "Build current material", [&]() { BuildCurrentMaterial(mBuilder); }}};
+        {"BuildMaterial", "Build current material", [&]() { BuildCurrentMaterial(mBuilder); }},
+        {"MouseState", "Show Mouse State at a tooltip", [&]() { mbShowMouseState = !mbShowMouseState; }}};
+
     mHotkeys.reserve(hotKeyFunctions.size());
     mHotkeyFunctions.reserve(hotKeyFunctions.size());
     for (const auto& hotKeyFunction : hotKeyFunctions)
@@ -2142,7 +2144,11 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
         {
             userdata->imogen->mLibraryViewMode = active;
         }
-        else
+        else if (sscanf(line_start, "ShowMouseState=%d", &active) == 1)
+        {
+             userdata->imogen->mbShowMouseState = active;
+        }       
+		else
         {
             for (auto& hotkey : mHotkeys)
             {
@@ -2166,6 +2172,7 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     buf->appendf("ShowNodes=%d\n", instance->mbShowNodes ? 1 : 0);
     buf->appendf("ShowLog=%d\n", instance->mbShowLog ? 1 : 0);
     buf->appendf("ShowParameters=%d\n", instance->mbShowParameters ? 1 : 0);
+    buf->appendf("ShowMouseState=%d\n", instance->mbShowMouseState ? 1 : 0);
     buf->appendf("LibraryViewMode=%d\n", instance->mLibraryViewMode);
 
     for (const auto& hotkey : mHotkeys)

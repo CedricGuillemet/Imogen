@@ -98,6 +98,10 @@ struct Imogen
     {
         return mNodeGraphControler;
     }
+    bool ShowMouseState() const
+    {
+        return mbShowMouseState;
+    }
 
 protected:
     void ShowAppMainMenuBar();
@@ -131,6 +135,7 @@ protected:
     bool mbShowNodes = false;
     bool mbShowLog = false;
     bool mbShowParameters = false;
+    bool mbShowMouseState = false;
     int mLibraryViewMode = 1;
 
     float mMainMenuDest = -440.f;

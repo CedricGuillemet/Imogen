@@ -44,6 +44,7 @@
 #include "Evaluators.h"
 #include "Loader.h"
 #include "UI.h"
+#include "imMouseState.h"
 
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
                                      GLenum type,
@@ -268,7 +269,10 @@ int main(int, char**)
 
             nodeGraphControler.mEditingContext.RunDirty();
             imogen.Show(builder, library, capturing);
-
+            if (!capturing && imogen.ShowMouseState())
+			{
+				ImMouseState();
+			}
             // render everything
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glUseProgram(0);

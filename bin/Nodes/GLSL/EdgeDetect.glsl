@@ -1,8 +1,6 @@
 layout (std140) uniform EdgeDetectBlock
 {
-	vec2 edges;
 	float radius;
-	
 } EdgeDetectParam;
 
 // Use these parameters to fiddle with settings

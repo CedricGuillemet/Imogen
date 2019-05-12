@@ -169,7 +169,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
             auto n = pybind11::dict();
             d.append(n);
             n["name"] = node.mName;
-            n["description"] = "This is a super node. believe me!";
+            n["description"] = node.mDescription;
             if (node.mCategory >= 0 && node.mCategory < MetaNode::mCategories.size())
             {
                 n["category"] = MetaNode::mCategories[node.mCategory];
@@ -185,7 +185,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
                     p["name"] = param.mName;
                     p["type"] = pybind11::int_(int(param.mType));
                     p["typeString"] = GetParameterTypeName(param.mType);
-                    p["description"] = "This is a super parameter. believe me!";
+                    p["description"] = param.mDescription;
                     if (param.mType == Con_Enum)
                     {
                         auto e = pybind11::list();

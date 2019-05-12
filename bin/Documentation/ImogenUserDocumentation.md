@@ -85,12 +85,12 @@
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Renders a perfect Circle center in the view port.
 ### Parameters
 1. Radius
-This is a super parameter. believe me!
+Clip-space radius.
 1. T
-This is a super parameter. believe me!
+Interpolation factor between full white cirle (0.) and height of the hemisphere (1.).
 
 ### Example
 ![node example](Examples/Example_Circle.png)
@@ -100,14 +100,14 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Transform every source texel using the translation, rotation, scale.
 ### Parameters
 1. Translate
-This is a super parameter. believe me!
+2D vector translation.
 1. Scale
-This is a super parameter. believe me!
+2D vector scale.
 1. Rotation
-This is a super parameter. believe me!
+Angle in degrees. Center of rotation is the center of the source.
 
 ### Example
 ![node example](Examples/Example_Transform.png)
@@ -117,10 +117,10 @@ This is a super parameter. believe me!
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Renders a square center in the middle of the viewport.
 ### Parameters
 1. Width
-This is a super parameter. believe me!
+Clip-space side width.
 
 ### Example
 ![node example](Examples/Example_Square.png)
@@ -130,7 +130,7 @@ This is a super parameter. believe me!
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Renders a 4 square black and white checker. Use a Transform node to scale it to any number of squares.
 ### Parameters
 No parameter for this node.
 
@@ -142,12 +142,12 @@ No parameter for this node.
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Renders a one directioned sine as a greyscale value.
 ### Parameters
 1. Frequency
-This is a super parameter. believe me!
+Basically, the number of bars.
 1. Angle
-This is a super parameter. believe me!
+Angle in degrees of the so called bars.
 
 ### Example
 ![node example](Examples/Example_Sine.png)
@@ -157,12 +157,12 @@ This is a super parameter. believe me!
 
 Category : Filter
 ### Description
-This is a super node. believe me!
+Performs a smoothstep operation. Hermite interpolation between 0 and 1 when Low < x < high. This is useful in cases where a threshold function with a smooth transition is desired.
 ### Parameters
 1. Low
-This is a super parameter. believe me!
+Lower value for the Hermite interpolation.
 1. High
-This is a super parameter. believe me!
+Higher value for the Hermite interpolation. Result is undertimined when high value < low value.
 
 ### Example
 ![node example](Examples/Example_SmoothStep.png)
@@ -172,10 +172,10 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Lower the resolution of the image using nearest filter.
 ### Parameters
 1. scale
-This is a super parameter. believe me!
+Number of pixels on a side.
 
 ### Example
 ![node example](Examples/Example_Pixelize.png)
@@ -185,16 +185,16 @@ This is a super parameter. believe me!
 
 Category : Filter
 ### Description
-This is a super node. believe me!
+Performs a Directional of Box blur filter. Directional blur is a gaussian pass with 16 pixels. Box is 16x16.
 ### Parameters
 1. Type
-This is a super parameter. believe me!
+Selection of the Blur type.
 1. angle
-This is a super parameter. believe me!
+angle in degrees for the directional blur.
 1. strength
-This is a super parameter. believe me!
+Defines how wide the blur pass will be. The bigger, the larger area each pixel will cover.
 1. passCount
-This is a super parameter. believe me!
+Multiple passes are supported by this node.
 
 ### Example
 ![node example](Examples/Example_Blur.png)
@@ -204,12 +204,12 @@ This is a super parameter. believe me!
 
 Category : Filter
 ### Description
-This is a super node. believe me!
+Computes a normal map using the Red component of the source as the height.
 ### Parameters
 1. spread
-This is a super parameter. believe me!
+The bigger, the stronger the resulting normal will be.
 1. Invert
-This is a super parameter. believe me!
+Change the direction of the XY components of the normal.
 
 ### Example
 ![node example](Examples/Example_NormalMap.png)
@@ -219,10 +219,10 @@ This is a super parameter. believe me!
 
 Category : Material
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. view
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_LambertMaterial.png)
@@ -232,12 +232,12 @@ This is a super parameter. believe me!
 
 Category : Blend
 ### Description
-This is a super node. believe me!
+For each source texel, multiply and and a color value.
 ### Parameters
 1. Mul Color
-This is a super parameter. believe me!
+The color to multiply the source with.
 1. Add Color
-This is a super parameter. believe me!
+The color to add to the source.
 
 ### Example
 ![node example](Examples/Example_MADD.png)
@@ -247,7 +247,7 @@ This is a super parameter. believe me!
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Renders an hexagon. This node is deprecated. Use the NGon node instead.
 ### Parameters
 No parameter for this node.
 
@@ -259,14 +259,14 @@ No parameter for this node.
 
 Category : Blend
 ### Description
-This is a super node. believe me!
+Blends to source together using a built-in operation. Each source can also be masked and multiplied by a value.
 ### Parameters
 1. A
-This is a super parameter. believe me!
+Color/mask to multiply A source with.
 1. B
-This is a super parameter. believe me!
+Color/mask to multiply A source with.
 1. Operation
-This is a super parameter. believe me!
+Built-ins operation used for blending. Check the examples below.
 
 ![node picture](Examples/Example_Blend_Add.png)|![node picture](Examples/Example_Blend_Multiply.png)|![node picture](Examples/Example_Blend_Darken.png)
 -|-|-
@@ -286,7 +286,7 @@ Mode Exclusion||
 
 Category : Filter
 ### Description
-This is a super node. believe me!
+Performs a simple color inversion for each component. Basically, for R source value, outputs 1.0 - R.
 ### Parameters
 No parameter for this node.
 
@@ -298,16 +298,16 @@ No parameter for this node.
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Renders a bunch of circle with interpolated position and scales. For N circles the interpolation coefficient will be between [0/N....N/N].
 ### Parameters
 1. Distance
-This is a super parameter. believe me!
+First and Last value to interpolate between for the distance to the center of the viewport.
 1. Radius
-This is a super parameter. believe me!
+First and Last value for the interpolated circle radius.
 1. Angle
-This is a super parameter. believe me!
+First and Last value for the Angle. The circle position is computed using the angle and the distance.
 1. Count
-This is a super parameter. believe me!
+The total number of circles to render.
 
 ### Example
 ![node example](Examples/Example_CircleSplatter.png)
@@ -317,10 +317,10 @@ This is a super parameter. believe me!
 
 Category : Filter
 ### Description
-This is a super node. believe me!
+Performs a Ramp on the source components. For each source value (X coord on the ramp graph), retrieve an intensity value (Y on the ramp graph). Optionnaly use an image instead of the editable graph.
 ### Parameters
 1. Ramp
-This is a super parameter. believe me!
+Graph that can be edited.
 
 ### Example
 ![node example](Examples/Example_Ramp.png)
@@ -330,16 +330,16 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+
 ### Parameters
 1. Offset 0
-This is a super parameter. believe me!
+
 1. Offset 1
-This is a super parameter. believe me!
+
 1. Overlap
-This is a super parameter. believe me!
+
 1. Scale
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_Tile.png)
@@ -349,10 +349,10 @@ This is a super parameter. believe me!
 
 Category : None
 ### Description
-This is a super node. believe me!
+Single plain color.
 ### Parameters
 1. Color
-This is a super parameter. believe me!
+Single plain color.
 
 ### Example
 ![node example](Examples/Example_Color.png)
@@ -362,10 +362,10 @@ This is a super parameter. believe me!
 
 Category : Blend
 ### Description
-This is a super node. believe me!
+Blend two normal maps into a single one. Choose the Technique that gives the best result.
 ### Parameters
 1. Technique
-This is a super parameter. believe me!
+Different techniques for blending. Check the examples below to see the differences.
 
 ### Example
 ![node example](Examples/Example_NormalMapBlending.png)
@@ -375,16 +375,16 @@ This is a super parameter. believe me!
 
 Category : Noise
 ### Description
-This is a super node. believe me!
+Generate noise based on work by Inigo Quilez.
 ### Parameters
 1. Translation
-This is a super parameter. believe me!
+Translate the noise seeds so you can have virtualy infinite different noise.
 1. Size
-This is a super parameter. believe me!
+
 1. U
-This is a super parameter. believe me!
+Interpolate between centered seed (checker) to jittered random position.
 1. V
-This is a super parameter. believe me!
+Interpolation factor between full color to distance-like color per cell.
 
 ### Example
 ![node example](Examples/Example_iqnoise.png)
@@ -394,16 +394,16 @@ This is a super parameter. believe me!
 
 Category : Noise
 ### Description
-This is a super node. believe me!
+
 ### Parameters
 1. Translation
-This is a super parameter. believe me!
+Translate the noise seeds so you can have virtualy infinite different noise.
 1. Octaves
-This is a super parameter. believe me!
+The number of noise with different scale for each.
 1. lacunarity
-This is a super parameter. believe me!
+Geoemtric scale applied for each octave.
 1. gain
-This is a super parameter. believe me!
+Intensity factor applied to each octave.
 
 ### Example
 ![node example](Examples/Example_PerlinNoise.png)
@@ -413,14 +413,14 @@ This is a super parameter. believe me!
 
 Category : Material
 ### Description
-This is a super node. believe me!
+Experimental Node.
 ### Parameters
 1. View
-This is a super parameter. believe me!
+
 1. Displacement Factor
-This is a super parameter. believe me!
+
 1. Geometry
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_PBR.png)
@@ -430,10 +430,10 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Transform the source using polar coordinates.
 ### Parameters
 1. Type
-This is a super parameter. believe me!
+Change to direction of the transformation.
 
 ### Example
 ![node example](Examples/Example_PolarCoords.png)
@@ -443,12 +443,12 @@ This is a super parameter. believe me!
 
 Category : Filter
 ### Description
-This is a super node. believe me!
+Performs a clamp for each component of the source. Basically, sets the min and max of each component.
 ### Parameters
 1. Min
-This is a super parameter. believe me!
+The minimal value for each source component.
 1. Max
-This is a super parameter. believe me!
+The maximal value for each source component.
 
 ### Example
 ![node example](Examples/Example_Clamp.png)
@@ -458,22 +458,22 @@ This is a super parameter. believe me!
 
 Category : File
 ### Description
-This is a super node. believe me!
+Imports a file from the disk. Major formats are supported. Cubemaps can be imported using one image for each face of using a cubemap .DDS/.KTX. MP4 movies can be read as well.
 ### Parameters
 1. File name
-This is a super parameter. believe me!
+Single image frame or DDS/KTX cubemap.
 1. +X File name
-This is a super parameter. believe me!
+Cubemap image face for +X direction.
 1. -X File name
-This is a super parameter. believe me!
+Cubemap image face for -X direction.
 1. +Y File name
-This is a super parameter. believe me!
+Cubemap image face for +Y direction (Top).
 1. -Y File name
-This is a super parameter. believe me!
+Cubemap image face for -Y direction (Bottom).
 1. +Z File name
-This is a super parameter. believe me!
+Cubemap image face for +Z direction.
 1. -Z File name
-This is a super parameter. believe me!
+Cubemap image face for -Z direction.
 
 ### Example
 ![node example](Examples/Example_ImageRead.png)
@@ -483,22 +483,22 @@ This is a super parameter. believe me!
 
 Category : File
 ### Description
-This is a super node. believe me!
+
 ### Parameters
 1. File name
-This is a super parameter. believe me!
+
 1. Format
-This is a super parameter. believe me!
+
 1. Quality
-This is a super parameter. believe me!
+
 1. Width
-This is a super parameter. believe me!
+
 1. Height
-This is a super parameter. believe me!
+
 1. Mode
-This is a super parameter. believe me!
+
 1. Export
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_ImageWrite.png)
@@ -508,10 +508,10 @@ This is a super parameter. believe me!
 
 Category : File
 ### Description
-This is a super node. believe me!
+Create a thumbnail picture from the source input and applies it to the thumbnail library view.
 ### Parameters
 1. Make
-This is a super parameter. believe me!
+Force the evaluation without building the graph.
 
 ### Example
 ![node example](Examples/Example_Thumbnail.png)
@@ -521,10 +521,10 @@ This is a super parameter. believe me!
 
 Category : Paint
 ### Description
-This is a super node. believe me!
+Paint in the parameter viewport using the connected brush. Paint picture is saved in the graph.
 ### Parameters
 1. Size
-This is a super parameter. believe me!
+Size of the output in pixels.
 
 ### Example
 ![node example](Examples/Example_Paint2D.png)
@@ -534,10 +534,10 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Performs a rotation on source based on distance to the viewport center.
 ### Parameters
 1. Angles
-This is a super parameter. believe me!
+Rotation for the inner pixels (closer to the center) and the outter pixels. Angles in degrees.
 
 ### Example
 ![node example](Examples/Example_Swirl.png)
@@ -547,10 +547,10 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Set the output as a rectangle in the source.
 ### Parameters
 1. Quad
-This is a super parameter. believe me!
+X/Y Position and width/height of the selection rectangle.
 
 ### Example
 ![node example](Examples/Example_Crop.png)
@@ -560,34 +560,34 @@ This is a super parameter. believe me!
 
 Category : Cubemap
 ### Description
-This is a super node. believe me!
+Generate a physical sky cubemap.
 ### Parameters
 1. ambient
-This is a super parameter. believe me!
+Ambient aka minimal color within the cubemap. Ambient alpha is used to modulate it with the sky.
 1. lightdir
-This is a super parameter. believe me!
+Light direction vector.
 1. Kr
-This is a super parameter. believe me!
+Kr component value.
 1. rayleigh brightness
-This is a super parameter. believe me!
+Rayleigh brightness
 1. mie brightness
-This is a super parameter. believe me!
+Mie brightness factor.
 1. spot brightness
-This is a super parameter. believe me!
+Spot/sun brightness.
 1. scatter strength
-This is a super parameter. believe me!
+Scatter strength.
 1. rayleigh strength
-This is a super parameter. believe me!
+Rayleigh strength.
 1. mie strength
-This is a super parameter. believe me!
+Mie strength.
 1. rayleigh collection power
-This is a super parameter. believe me!
+Rayleigh collection power.
 1. mie collection power
-This is a super parameter. believe me!
+Mie collection power.
 1. mie distribution
-This is a super parameter. believe me!
+Mie distribution.
 1. Size
-This is a super parameter. believe me!
+Size of the cubemap face width in pixels.
 
 ### Example
 ![node example](Examples/Example_PhysicalSky.png)
@@ -597,14 +597,14 @@ This is a super parameter. believe me!
 
 Category : Cubemap
 ### Description
-This is a super node. believe me!
+Used to display a cubemap using various techniques.
 ### Parameters
 1. view
-This is a super parameter. believe me!
+Used by the Camera technique to rotate the eye direction.
 1. Mode
-This is a super parameter. believe me!
+Techniques for display. See below for examples.
 1. LOD
-This is a super parameter. believe me!
+Use a particular LOD (mipmap) for display. Radiance cube node can help produce cubemap mipmaps.
 
 ### Example
 ![node example](Examples/Example_CubemapView.png)
@@ -614,12 +614,12 @@ This is a super parameter. believe me!
 
 Category : Cubemap
 ### Description
-This is a super node. believe me!
+Converts an equirect source (one single picture containing all environment) into a cubemap output. The inverse (cubemap -> equirect) can also be performed with this node.
 ### Parameters
 1. Mode
-This is a super parameter. believe me!
+Select to operation to perform.
 1. Size
-This is a super parameter. believe me!
+Size fo the ouput in pixels.
 
 ### Example
 ![node example](Examples/Example_EquirectConverter.png)
@@ -629,14 +629,14 @@ This is a super parameter. believe me!
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Compute N plans and color the texels behind every plan accordingly. Texels in front of any plan will be black.
 ### Parameters
 1. Sides
-This is a super parameter. believe me!
+Number of uniformly distributed plans.
 1. Radius
-This is a super parameter. believe me!
+Distance from the plan to the center of the viewport.
 1. T
-This is a super parameter. believe me!
+Interpolation factor between full white color and distance to the nearest plan.
 
 ### Example
 ![node example](Examples/Example_NGon.png)
@@ -646,10 +646,10 @@ This is a super parameter. believe me!
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Computes a linear gradient based on key values(position/color).
 ### Parameters
 1. Gradient
-This is a super parameter. believe me!
+Double click to add a click. Click and drag a key to move it position. Modify the color for the selected key.
 
 ### Example
 ![node example](Examples/Example_GradientBuilder.png)
@@ -659,12 +659,12 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Displace each source texel using the Warp input.
 ### Parameters
 1. Strength
-This is a super parameter. believe me!
+How strong is the displacement. Clip-space value.
 1. Mode
-This is a super parameter. believe me!
+One of 2 modes. XY offset : R and G channels are used for X and Y displacement. Rotation-Distance: R is used as an angle (0..1 -> 0..2pi) and G is the length of the displacement.
 
 ### Example
 ![node example](Examples/Example_Warp.png)
@@ -674,10 +674,10 @@ This is a super parameter. believe me!
 
 Category : Material
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. Camera
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_TerrainPreview.png)
@@ -687,16 +687,16 @@ This is a super parameter. believe me!
 
 Category : Filter
 ### Description
-This is a super node. believe me!
+Compute ambient occlusion based on an input heightmap.
 ### Parameters
 1. strength
-This is a super parameter. believe me!
+Strength of the occlusion. The higher value, the stronger dark you'll get.
 1. area
-This is a super parameter. believe me!
+Area size used to compute the AO. The higher value, the bigger area.
 1. falloff
-This is a super parameter. believe me!
+How much each sample influence the AO.
 1. radius
-This is a super parameter. believe me!
+Radius in clipspace used for the computation.
 
 ### Example
 ![node example](Examples/Example_AO.png)
@@ -706,12 +706,12 @@ This is a super parameter. believe me!
 
 Category : Fur
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. Hair count
-This is a super parameter. believe me!
+
 1. Length factor
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_FurGenerator.png)
@@ -721,10 +721,10 @@ This is a super parameter. believe me!
 
 Category : Fur
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. Camera
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_FurDisplay.png)
@@ -734,7 +734,7 @@ This is a super parameter. believe me!
 
 Category : Fur
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 No parameter for this node.
 
@@ -746,12 +746,12 @@ No parameter for this node.
 
 Category : File
 ### Description
-This is a super node. believe me!
+Import an SVG vector graphics image and rasterize it to an image output.
 ### Parameters
 1. File name
-This is a super parameter. believe me!
+Relative or absolute filepath of the SVG file.
 1. DPI
-This is a super parameter. believe me!
+Resolution used for rendering the SVG. The higher value, the bigger the image will be.
 
 ### Example
 ![node example](Examples/Example_SVG.png)
@@ -761,10 +761,10 @@ This is a super parameter. believe me!
 
 Category : File
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. File name
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_SceneLoader.png)
@@ -774,12 +774,12 @@ This is a super parameter. believe me!
 
 Category : Material
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. Mode
-This is a super parameter. believe me!
+
 1. Camera
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_PathTracer.png)
@@ -789,12 +789,10 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Performs an edge detection on the source. Texels that are close in intensity with the neighbours will be white. Black if the difference is strong.
 ### Parameters
-1. Edges
-This is a super parameter. believe me!
 1. Radius
-This is a super parameter. believe me!
+The radius size in clipspace used for detection. The higher value, the broader the search is.
 
 ### Example
 ![node example](Examples/Example_EdgeDetect.png)
@@ -804,16 +802,16 @@ This is a super parameter. believe me!
 
 Category : Noise
 ### Description
-This is a super node. believe me!
+Generates a Voronoi texture based on random seeds.
 ### Parameters
 1. Point Count
-This is a super parameter. believe me!
+The number of seeds.
 1. Seed
-This is a super parameter. believe me!
+The seeds random position base value.
 1. Distance Blend
-This is a super parameter. believe me!
+Distance computation type interpolate between Euclydean distance (0.) and Manhattan Distance (1.)
 1. Square Width
-This is a super parameter. believe me!
+Size of each seed in clipspace size.
 
 ### Example
 ![node example](Examples/Example_Voronoi.png)
@@ -823,16 +821,16 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Duplicates portion of the source using rotation and symetry. Basically, computes N plans and duplicate what's in front of the plane to the other with or without symetry.
 ### Parameters
 1. Center
-This is a super parameter. believe me!
+Center of the operation in clipspace coordinates [0..1]
 1. Start Angle
-This is a super parameter. believe me!
+Angle in degrees of the first plan. Total sum of plan angle is 360 deg.
 1. Splits
-This is a super parameter. believe me!
+How many split plans to use.
 1. Symetry
-This is a super parameter. believe me!
+Enable symetry for even plans.
 
 ### Example
 ![node example](Examples/Example_Kaleidoscope.png)
@@ -842,12 +840,12 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Find the closest color inside the predefined palette for each texel in the source. Using optional dithering.
 ### Parameters
 1. Palette
-This is a super parameter. believe me!
+Predefined palette. Check examples below for results.
 1. Dither Strength
-This is a super parameter. believe me!
+Bayer dithering strength (0 = none, 1 = full dither).
 
 ![node picture](Examples/Example_Palette_CGA0.png)|![node picture](Examples/Example_Palette_CGA1.png)
 -|-
@@ -867,18 +865,18 @@ Mode PICO-8|Mode C64
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Use multipass to compute a Reaction Diffusion generative synthesis from a source image. Pass count must be a multiple of 3. First 2 passes are used to blur the image.
 ### Parameters
 1. boost
-This is a super parameter. believe me!
+Component boost
 1. divisor
-This is a super parameter. believe me!
+Reaction divisor.
 1. colorStep
-This is a super parameter. believe me!
+Component color step.
 1. passCount
-This is a super parameter. believe me!
+Multiple passes are supported by this node.
 1. Size
-This is a super parameter. believe me!
+Size of the output in pixels
 
 ### Example
 ![node example](Examples/Example_ReactionDiffusion.png)
@@ -888,18 +886,18 @@ This is a super parameter. believe me!
 
 Category : Generator
 ### Description
-This is a super node. believe me!
+Apply a fluid dynamic-like process on the source image. A noise is computed and is used to displace the source.
 ### Parameters
 1. passCount
-This is a super parameter. believe me!
+Multiple passes are supported by this node.
 1. Frequency
-This is a super parameter. believe me!
+Noise frequency. The higher, the more noise you'll get.
 1. Strength
-This is a super parameter. believe me!
+Noise strength.
 1. Randomization
-This is a super parameter. believe me!
+How much randomization is applied.
 1. VerticalShift
-This is a super parameter. believe me!
+How much in clip-space is moved to the top. Somekind of force applied to texels.
 
 ### Example
 ![node example](Examples/Example_Disolve.png)
@@ -909,12 +907,12 @@ This is a super parameter. believe me!
 
 Category : File
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. File name
-This is a super parameter. believe me!
+
 1. Camera
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_GLTFRead.png)
@@ -924,12 +922,12 @@ This is a super parameter. believe me!
 
 Category : Paint
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. Size
-This is a super parameter. believe me!
+
 1. Camera
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_Paint3D.png)
@@ -939,14 +937,14 @@ This is a super parameter. believe me!
 
 Category : Cubemap
 ### Description
-This is a super node. believe me!
+Compute cubemap radiance or irradiance and generate a cubemap with optional mipmaps
 ### Parameters
 1. Mode
-This is a super parameter. believe me!
+Radiance or Irradiance.
 1. Size
-This is a super parameter. believe me!
+Size of the output cubemap face width in pixels.
 1. Sample Count
-This is a super parameter. believe me!
+The samples count used for the blur. The more samplem the higher quality.
 
 ### Example
 ![node example](Examples/Example_CubeRadiance.png)
@@ -956,12 +954,12 @@ This is a super parameter. believe me!
 
 Category : Material
 ### Description
-This is a super node. believe me!
+Experimental node.
 ### Parameters
 1. View
-This is a super parameter. believe me!
+
 1. Depth factor
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_PBR2.png)
@@ -971,16 +969,16 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Pack channels from 1 to 4 inputs into a new output. This can be used to pack normal/roughness/metallic into a 4 channels image.
 ### Parameters
 1. R
-This is a super parameter. believe me!
+The source image and its channel used for Red in the output.
 1. G
-This is a super parameter. believe me!
+The source image and its channel used for Green in the output.
 1. B
-This is a super parameter. believe me!
+The source image and its channel used for Blue in the output.
 1. A
-This is a super parameter. believe me!
+The source image and its channel used for Alpha in the output.
 
 ### Example
 ![node example](Examples/Example_ChannelPacker.png)
@@ -990,12 +988,12 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Deforms the source using a lens computation with an optionnal vignette shading.
 ### Parameters
 1. Factor
-This is a super parameter. believe me!
+Lens factor strength.
 1. Vignette
-This is a super parameter. believe me!
+Vignette shading: Corners get darker. 0 to disable vignette.
 
 ### Example
 ![node example](Examples/Example_Lens.png)
@@ -1005,10 +1003,10 @@ This is a super parameter. believe me!
 
 Category : Transform
 ### Description
-This is a super node. believe me!
+Generate a signed distance field from a black and white source image.
 ### Parameters
 1. passCount
-This is a super parameter. believe me!
+
 
 ### Example
 ![node example](Examples/Example_Distance.png)
@@ -1041,5 +1039,5 @@ Copy|Copy the selected nodes|Ctrl + C
 Cut|Cut the selected nodes|Ctrl + X
 Paste|Paste previously copy/cut nodes|Ctrl + V
 BuildMaterial|Build current material|Ctrl + B
-MouseState|Show Mouse State at a tooltip|Ctrl + M
+MouseState|Show Mouse State as a tooltip|Ctrl + M
 

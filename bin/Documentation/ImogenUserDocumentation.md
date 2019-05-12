@@ -20,6 +20,8 @@
 [Transform](#Transform)|[Pixelize](#Pixelize)|[Tile](#Tile)|[PolarCoords](#PolarCoords)|[Swirl](#Swirl)|[Crop](#Crop)
 ![node picture](Pictures/Warp.png)|![node picture](Pictures/EdgeDetect.png)|![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|![node picture](Pictures/Lens.png)
 [Warp](#Warp)|[EdgeDetect](#EdgeDetect)|[Kaleidoscope](#Kaleidoscope)|[Palette](#Palette)|[ChannelPacker](#ChannelPacker)|[Lens](#Lens)
+![node picture](Pictures/Distance.png)|||||
+[Distance](#Distance)|||||
 
 
 ## Filter
@@ -266,17 +268,9 @@ This is a super parameter. believe me!
 1. Operation
 This is a super parameter. believe me!
 
-![node picture](Examples/Example_Blend_Add.png)|![node picture](Examples/Example_Blend_Multiply.png)|![node picture](Examples/Example_Blend_Darken.png)
--|-|-
-Mode Add|Mode Multiply|Mode Darken
-![node picture](Examples/Example_Blend_Lighten.png)|![node picture](Examples/Example_Blend_Average.png)|![node picture](Examples/Example_Blend_Screen.png)
-Mode Lighten|Mode Average|Mode Screen
-![node picture](Examples/Example_Blend_Color_Burn.png)|![node picture](Examples/Example_Blend_Color_Dodge.png)|![node picture](Examples/Example_Blend_Soft_Light.png)
-Mode Color Burn|Mode Color Dodge|Mode Soft Light
-![node picture](Examples/Example_Blend_Subtract.png)|![node picture](Examples/Example_Blend_Difference.png)|![node picture](Examples/Example_Blend_Inverse_Difference.png)
-Mode Subtract|Mode Difference|Mode Inverse Difference
-![node picture](Examples/Example_Blend_Exclusion.png)||
-Mode Exclusion||
+![node picture](Examples/Example_Blend_Add.png)
+-
+Mode Add
 
 
 ## Invert
@@ -847,17 +841,9 @@ This is a super parameter. believe me!
 1. Dither Strength
 This is a super parameter. believe me!
 
-![node picture](Examples/Example_Palette_CGA0.png)|![node picture](Examples/Example_Palette_CGA1.png)
--|-
-Mode CGA0|Mode CGA1
-![node picture](Examples/Example_Palette_CGA2.png)|![node picture](Examples/Example_Palette_CGA3.png)
-Mode CGA2|Mode CGA3
-![node picture](Examples/Example_Palette_CGA4.png)|![node picture](Examples/Example_Palette_CGA5.png)
-Mode CGA4|Mode CGA5
-![node picture](Examples/Example_Palette_EGA.png)|![node picture](Examples/Example_Palette_Gameboy(mono).png)
-Mode EGA|Mode Gameboy(mono)
-![node picture](Examples/Example_Palette_PICO-8.png)|![node picture](Examples/Example_Palette_C64.png)
-Mode PICO-8|Mode C64
+![node picture](Examples/Example_Palette_CGA0.png)
+-
+Mode CGA0
 
 
 ## ReactionDiffusion
@@ -997,6 +983,19 @@ This is a super parameter. believe me!
 
 ### Example
 ![node example](Examples/Example_Lens.png)
+
+## Distance
+![node picture](Pictures/Distance.png)
+
+Category : Transform
+### Description
+This is a super node. believe me!
+### Parameters
+1. passCount
+This is a super parameter. believe me!
+
+### Example
+![node example](Examples/Example_Distance.png)
 
 # Default Hot Keys
 

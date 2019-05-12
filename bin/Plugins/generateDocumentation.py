@@ -203,6 +203,12 @@ def generateExample(nodeName, baseDir, f, node):
     elif nodeName == "EdgeDetect" :
         voronoi = Imogen.AddNode("Voronoi")
         Imogen.Connect(voronoi, 0, node, 0)
+
+    elif nodeName == "Distance" :
+        ngon = Imogen.AddNode("NGon")
+        Imogen.SetParameter(ngon, "T", "1.0")
+        Imogen.SetParameter(ngon, "Radius", "0.15")
+        Imogen.Connect(ngon, 0, node, 0)
         
     elif nodeName in exampleWithCatImage :
         imageRead = Imogen.AddNode("ImageRead")

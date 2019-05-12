@@ -895,7 +895,7 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
 
 
 bool HandleConnections(
-    ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase* controler)
+    ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase* controler, bool bDrawOnly)
 {
     static int editingNodeIndex;
     static int editingSlotIndex;
@@ -956,6 +956,7 @@ bool HandleConnections(
             drawList->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
             drawList->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
         }
+
         if (closestConn != -1)
         {
             const char* conText = con[closestConn].mName.c_str();
@@ -966,7 +967,7 @@ bool HandleConnections(
             drawList->AddText(io.FontDefault, 16, closestTextPos + ImVec2(1, 1), IM_COL32(0, 0, 0, 255), conText);
             drawList->AddText(io.FontDefault, 16, closestTextPos, IM_COL32(250, 250, 250, 255), conText);
             bool inputToOutput = (!editingInput && !i) || (editingInput && i);
-            if (nodeOperation == NO_EditingLink && !io.MouseDown[0])
+            if (nodeOperation == NO_EditingLink && !io.MouseDown[0] && !bDrawOnly)
             {
                 if (inputToOutput)
                 {
@@ -1019,7 +1020,7 @@ bool HandleConnections(
             // when ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() is uncommented, one can't click the node
             // input/output when mouse is over the node itself.
             if (nodeOperation == NO_None &&
-                /*ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() &&*/ io.MouseClicked[0])
+                /*ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() &&*/ io.MouseClicked[0] && !bDrawOnly)
             {
                 nodeOperation = NO_EditingLink;
                 editingInput = i == 0;
@@ -1345,12 +1346,12 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
             // Display node contents first
             //drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
 
-            bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler);
+            bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler, false);
 
             if (DrawNode(drawList, nodeIndex, offset, factor, controler, overInput))
                 hoveredNode = nodeIndex;
 
-            HandleConnections(drawList, nodeIndex, offset, factor, controler);
+            HandleConnections(drawList, nodeIndex, offset, factor, controler, true);
 
             ImGui::PopID();
         }

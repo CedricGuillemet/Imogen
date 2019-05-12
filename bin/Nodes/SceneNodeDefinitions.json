@@ -197,6 +197,25 @@
 			"default":"1.0",
             "description":""
 		}]
+	}, {
+		"name": "Distance",
+		"category": 0,
+        "description":"",
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "passCount",
+			"type": "Int",
+            "default": "1",
+            "description":""
+		}]
 	}
 ]
 }

@@ -117,7 +117,7 @@ Angle in degrees. Center of rotation is the center of the source.
 
 Category : Generator
 ### Description
-Renders a square center in the middle of the viewport.
+Renders a square centered in the middle of the viewport. Deprecated node. Use the NGon node.
 ### Parameters
 1. Width
 Clip-space side width.
@@ -330,16 +330,16 @@ Graph that can be edited.
 
 Category : Transform
 ### Description
-
+Generate a tile map of the source image. With optional overlap. An optional Color input can be used to modulate the tiles color. Color is uniform per tile and picked at its center in the output image.
 ### Parameters
 1. Offset 0
-
+X,Y offset applied to even tiles. Offset in clipspace.
 1. Offset 1
-
+X,Y offset applied to odd tiles. Offset in clipspace.
 1. Overlap
-
+Amount of overlap between odd and even tiles.
 1. Scale
-
+The number of tiles in X and Y in the output.
 
 ### Example
 ![node example](Examples/Example_Tile.png)

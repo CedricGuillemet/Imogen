@@ -58,7 +58,7 @@
 	}, {
 		"name": "Square",
 		"category": 1,
-        "description":"Renders a square center in the middle of the viewport.",
+        "description":"Renders a square centered in the middle of the viewport. Deprecated node. Use the NGon node.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -378,13 +378,13 @@
 	}, {
 		"name": "Tile",
 		"category": 0,
-        "description":"",
+        "description":"Generate a tile map of the source image. With optional overlap. An optional Color input can be used to modulate the tiles color. Color is uniform per tile and picked at its center in the output image.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "",
 			"type": "Float4"
 		}, {
-			"name": "",
+			"name": "Color",
 			"type": "Float4"
 		}],
 		"outputs": [{
@@ -394,20 +394,20 @@
 		"parameters": [{
 			"name": "Offset 0",
 			"type": "Float2",
-            "description":""
+            "description":"X,Y offset applied to even tiles. Offset in clipspace."
 		}, {
 			"name": "Offset 1",
 			"type": "Float2",
-            "description":""
+            "description":"X,Y offset applied to odd tiles. Offset in clipspace."
 		}, {
 			"name": "Overlap",
 			"type": "Float2",
-            "description":""
+            "description":"Amount of overlap between odd and even tiles."
 		}, {
 			"name": "Scale",
 			"type": "Float",
 			"default": "1.0",
-            "description":""
+            "description":"The number of tiles in X and Y in the output."
 		}]
 	}, {
 		"name": "Color",

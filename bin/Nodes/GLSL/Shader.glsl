@@ -122,6 +122,14 @@ vec4 boxmap( sampler2D sam, in vec3 p, in vec3 n, in float k )
 	return (x*m.x + y*m.y + z*m.z)/(m.x+m.y+m.z);
 }
 
+vec2 boxUV(vec3 p, vec3 n)
+{
+	vec2 uv = p.xy;
+	uv = mix(uv, p.zy*sign(n.x), (abs(n.x)>0.5)?1.0:0.0 );
+	uv = mix(uv, p.zx*sign(n.y), (abs(n.y)>0.5)?1.0:0.0 );
+	return uv;
+}
+
 vec2 envMapEquirect(vec3 wcNormal, float flipEnvMap) {
   //I assume envMap texture has been flipped the WebGL way (pixel 0,0 is a the bottom)
   //therefore we flip wcNorma.y as acos(1) = 0
@@ -201,6 +209,96 @@ float UnionRound( float a, float b, float k )
 {
     float h = clamp( 0.5 + 0.5 * ( b - a ) / k, 0.0, 1.0 );
     return mix( b, a, h ) - k * h * ( 1.0 - h );
+}
+
+float sdRoundBox( vec3 p, vec3 b, float r )
+{
+  vec3 d = abs(p) - b;
+  return length(max(d,0.0)) - r
+         + min(max(d.x,max(d.y,d.z)),0.0); // remove this line for an only partially signed sdf 
+}
+
+mat3 cotangent_frame( vec3 N, vec3 p, vec2 uv )
+{
+    // get edge vectors of the pixel triangle
+    vec3 dp1 = dFdx( p );
+    vec3 dp2 = dFdy( p );
+    vec2 duv1 = dFdx( uv );
+    vec2 duv2 = dFdy( uv );
+
+    // solve the linear system
+    vec3 dp2perp = cross( dp2, N );
+    vec3 dp1perp = cross( N, dp1 );
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+    // construct a scale-invariant frame 
+    float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+    return mat3( T * invmax, B * invmax, N );
+}
+
+float GetHeight(sampler2D heightSampler, vec2 texCoords)
+{
+    return texture(heightSampler, texCoords).r;
+}
+
+//Parallax Occlusion Mapping from: https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
+vec2 ParallaxMapping(sampler2D heightSampler, vec2 texCoords, vec3 viewDir, float depthFactor)
+{ 
+    const float height_scale = depthFactor;
+    // number of depth layers
+    const float minLayers = 8.0;
+    const float maxLayers = 32.0;
+    float numLayers = mix(maxLayers, minLayers, min(abs(viewDir.z), 1.0));  
+    // calculate the size of each layer
+    float layerDepth = 1.0 / numLayers;
+    // depth of current layer
+    float currentLayerDepth = 0.0;
+    // the amount to shift the texture coordinates per layer (from vector P)
+    vec2 P = viewDir.xy * height_scale; 
+    vec2 deltaTexCoords = P / numLayers; 
+
+    // get initial values
+    vec2  currentTexCoords     = texCoords;
+    float currentDepthMapValue = GetHeight(heightSampler, currentTexCoords);
+  
+    while(currentLayerDepth < currentDepthMapValue)
+    {
+        // shift texture coordinates along direction of P
+        currentTexCoords -= deltaTexCoords;
+        // get depthmap value at current texture coordinates
+        currentDepthMapValue = GetHeight(heightSampler, currentTexCoords);  
+        // get depth of next layer
+        currentLayerDepth += layerDepth;  
+    }
+
+    // get texture coordinates before collision (reverse operations)
+    vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+    // get depth after and before collision for linear interpolation
+    float afterDepth  = currentDepthMapValue - currentLayerDepth;
+    float beforeDepth = GetHeight(heightSampler, prevTexCoords) + layerDepth - currentLayerDepth;
+ 
+    // interpolation of texture coordinates
+    float weight = afterDepth / (afterDepth - beforeDepth);
+    vec2 finalTexCoords = mix(currentTexCoords, prevTexCoords, weight);
+
+    return finalTexCoords;  
+} 
+
+vec4 cubemap2D( sampler2D sam, in vec3 d )
+{
+    vec3 n = abs(d);
+    vec3 s = dFdx(d);
+    vec3 t = dFdy(d);
+         if(n.x>n.y && n.x>n.z) {d=d.xyz;s=s.xyz;t=t.xyz;}
+    else if(n.y>n.x && n.y>n.z) {d=d.yzx;s=s.yzx;t=t.yzx;}
+    else                        {d=d.zxy;s=s.zxy;t=t.zxy;}
+    vec2 q = d.yz/d.x;
+    return textureGrad( sam, 
+                        0.5*q + 0.5,
+                        0.5*(s.yz-q*s.x)/d.x,
+                        0.5*(t.yz-q*t.x)/d.x );
 }
 
 

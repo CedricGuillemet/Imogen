@@ -129,6 +129,7 @@ bool editingInput = false;
 static ImVec2 scrolling = ImVec2(0.0f, 0.0f);
 float factor = 1.0f;
 float factorTarget = 1.0f;
+ImVec2 captureOffset;
 
 enum NodeOperation
 {
@@ -396,23 +397,30 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* controler)
     std::vector<size_t> nodeOrderList(mOrders.size());
     for (size_t i = 0; i < mOrders.size(); i++)
         nodeOrderList[i] = mOrders[i].mNodeIndex;
-    controler->UpdateEvaluationList(nodeOrderList);
+    if (controler)
+    {
+        controler->UpdateEvaluationList(nodeOrderList);
+    }
 }
 
-void NodeGraphAddNode(NodeGraphControlerBase* controler,
-                      int type,
-                      const std::vector<unsigned char>& parameters,
-                      int posx,
-                      int posy,
-                      int frameStart,
-                      int frameEnd)
+size_t NodeGraphAddNode(NodeGraphControlerBase* controler,
+                        int type,
+                        const std::vector<unsigned char>* parameters,
+                        int posx,
+                        int posy,
+                        int frameStart,
+                        int frameEnd)
 {
     size_t index = nodes.size();
     nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
 
     controler->AddSingleNode(type);
-    controler->SetParamBlock(index, parameters);
+    if (parameters)
+    {
+        controler->SetParamBlock(index, *parameters);
+    }
     controler->SetTimeSlot(index, frameStart, frameEnd);
+    return index;
 }
 
 void NodeGraphAddLink(NodeGraphControlerBase* controler, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
@@ -618,9 +626,9 @@ static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase* 
                         }
                     }
 
-                    for (int iCateg = 0; iCateg < controler->mCategoriesCount; iCateg++)
+                    for (unsigned int iCateg = 0; iCateg < controler->mCategories->size(); iCateg++)
                     {
-                        if (ImGui::BeginMenu(controler->mCategories[iCateg]))
+                        if (ImGui::BeginMenu((*controler->mCategories)[iCateg].c_str()))
                         {
                             for (int i = 0; i < metaNodeCount; i++)
                             {
@@ -886,8 +894,12 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
 }
 
 
-bool HandleConnections(
-    ImDrawList* drawList, int nodeIndex, const ImVec2 offset, const float factor, NodeGraphControlerBase* controler)
+bool HandleConnections(ImDrawList* drawList,
+                       int nodeIndex,
+                       const ImVec2 offset,
+                       const float factor,
+                       NodeGraphControlerBase* controler,
+                       bool bDrawOnly)
 {
     static int editingNodeIndex;
     static int editingSlotIndex;
@@ -948,6 +960,7 @@ bool HandleConnections(
             drawList->AddText(io.FontDefault, 14, textPos + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), conText);
             drawList->AddText(io.FontDefault, 14, textPos, IM_COL32(150, 150, 150, 255), conText);
         }
+
         if (closestConn != -1)
         {
             const char* conText = con[closestConn].mName.c_str();
@@ -958,7 +971,7 @@ bool HandleConnections(
             drawList->AddText(io.FontDefault, 16, closestTextPos + ImVec2(1, 1), IM_COL32(0, 0, 0, 255), conText);
             drawList->AddText(io.FontDefault, 16, closestTextPos, IM_COL32(250, 250, 250, 255), conText);
             bool inputToOutput = (!editingInput && !i) || (editingInput && i);
-            if (nodeOperation == NO_EditingLink && !io.MouseDown[0])
+            if (nodeOperation == NO_EditingLink && !io.MouseDown[0] && !bDrawOnly)
             {
                 if (inputToOutput)
                 {
@@ -1011,7 +1024,7 @@ bool HandleConnections(
             // when ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() is uncommented, one can't click the node
             // input/output when mouse is over the node itself.
             if (nodeOperation == NO_None &&
-                /*ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() &&*/ io.MouseClicked[0])
+                /*ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() &&*/ io.MouseClicked[0] && !bDrawOnly)
             {
                 nodeOperation = NO_EditingLink;
                 editingInput = i == 0;
@@ -1079,8 +1092,30 @@ static bool DrawNode(ImDrawList* drawList,
     node->Size = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
     ImVec2 node_rect_max = node_rect_min + node->Size;
 
-    // Display node box
+    // test nested IO
     drawList->ChannelsSetCurrent(1); // Background
+
+    for (int i = 0; i < 2; i++)
+    {
+        const size_t slotCount[2] = {node->InputsCount, node->OutputsCount};
+        const MetaCon* con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
+        for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
+        {
+            if (!controler->IsIOPinned(nodeIndex, slot_idx, i == 1))
+            {
+                continue;
+            }
+            ImVec2 p =
+                offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
+            const float arc = 28.f * (float(i) * 0.3f + 1.0f) * (i ? 1.f : -1.f);
+            const float ofs = 0.f;
+
+            ImVec2 pts[3] = {p + ImVec2(arc + ofs, 0.f), p + ImVec2(0.f + ofs, -arc), p + ImVec2(0.f + ofs, arc)};
+            drawList->AddTriangleFilled(pts[0], pts[1], pts[2], i ? 0xFFAA5030 : 0xFF30AA50);
+            drawList->AddTriangle(pts[0], pts[1], pts[2], 0xFF000000, 2.f);
+        }
+    }
+
 
     ImGui::SetCursorScreenPos(node_rect_min);
     ImGui::InvisibleButton("node", node->Size);
@@ -1232,11 +1267,13 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
 
     const ImVec2 windowPos = ImGui::GetCursorScreenPos();
     const ImVec2 canvasSize = ImGui::GetWindowSize();
+    const ImVec2 scrollRegionLocalPos(0, 50);
 
     ImRect regionRect(windowPos, windowPos + canvasSize);
 
     HandleZoomScroll(regionRect);
     ImVec2 offset = ImGui::GetCursorScreenPos() + scrolling * factor;
+    captureOffset = scrollRegionLocalPos + scrolling * factor + ImVec2(10.f, 0.f);
 
     {
         ImGui::BeginChild("rugs_region", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
@@ -1258,7 +1295,7 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(30, 30, 30, 200));
 
-    ImGui::SetCursorPos(ImVec2(0, 50));
+    ImGui::SetCursorPos(scrollRegionLocalPos);
     ImGui::BeginChild("scrolling_region",
                       ImVec2(0, 0),
                       true,
@@ -1311,12 +1348,14 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
             ImGui::PushID(nodeIndex);
 
             // Display node contents first
-            drawList->ChannelsSetCurrent(2); // Foreground
+            // drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
 
-            bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler);
+            bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler, false);
 
             if (DrawNode(drawList, nodeIndex, offset, factor, controler, overInput))
                 hoveredNode = nodeIndex;
+
+            HandleConnections(drawList, nodeIndex, offset, factor, controler, true);
 
             ImGui::PopID();
         }
@@ -1445,12 +1484,18 @@ void RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
         }
     }
 
+    std::vector<int> inputNodes(nodes[currentIndex].InputsCount, -1);
     for (auto& link : links)
     {
-        if (link.OutputIdx == currentIndex)
-        {
-            RecurseNodeGraphLayout(positions, stacks, links, link.InputIdx, currentLayer + 1);
-        }
+        if (link.OutputIdx != currentIndex)
+            continue;
+        inputNodes[link.OutputSlot] = link.InputIdx;
+    }
+    for (auto inputNode : inputNodes)
+    {
+        if (inputNode == -1)
+            continue;
+        RecurseNodeGraphLayout(positions, stacks, links, inputNode, currentLayer + 1);
     }
 }
 
@@ -1505,4 +1550,51 @@ void NodeGraphLayout()
     {
         delete undo;
     }
+}
+
+ImRect DisplayRectMargin(ImRect rect)
+{
+    // margins
+    static const float margin = 10.f;
+    rect.Min += captureOffset;
+    rect.Max += captureOffset;
+    rect.Min -= ImVec2(margin, margin);
+    rect.Max += ImVec2(margin, margin);
+    return rect;
+}
+
+ImRect GetNodesDisplayRect()
+{
+    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
+    for (auto& node : nodes)
+    {
+        rect.Add(ImRect(node.Pos, node.Pos + node.Size));
+    }
+
+    return DisplayRectMargin(rect);
+}
+
+ImRect GetFinalNodeDisplayRect()
+{
+    NodeGraphUpdateEvaluationOrder(nullptr);
+    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
+    if (!mOrders.empty() && !nodes.empty())
+    {
+        auto& node = nodes[mOrders.back().mNodeIndex];
+        rect = ImRect(node.Pos, node.Pos + node.Size);
+    }
+    return DisplayRectMargin(rect);
+}
+
+bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput)
+{
+	for (auto& link : links)
+	{
+            if ((link.InputIdx == nodeIndex && link.InputSlot == slotIndex && forOutput) ||
+                (link.OutputIdx == nodeIndex && link.OutputSlot == slotIndex && !forOutput))
+            {
+                return true;
+				}
+	}
+        return false;
 }

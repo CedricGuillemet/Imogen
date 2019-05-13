@@ -35,10 +35,7 @@
 NodeGraphControler::NodeGraphControler()
     : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
 {
-    mCategoriesCount = 10;
-    static const char* categories[] = {
-        "Transform", "Generator", "Material", "Blend", "Filter", "Noise", "File", "Paint", "Cubemap", "Fur"};
-    mCategories = categories;
+    mCategories = &MetaNode::mCategories;
 }
 
 void NodeGraphControler::Clear()
@@ -380,15 +377,22 @@ void NodeGraphControler::EditNodeParameters()
         for (size_t i = 0; i < stage.mInputSamplers.size(); i++)
         {
             InputSampler& inputSampler = stage.mInputSamplers[i];
-            static const char* wrapModes = {"REPEAT\0CLAMP_TO_EDGE\0CLAMP_TO_BORDER\0MIRRORED_REPEAT"};
+            static const char* wrapModes = {"REPEAT\0EDGE\0BORDER\0MIRROR"};
             static const char* filterModes = {"LINEAR\0NEAREST"};
-            ImGui::PushItemWidth(150);
+            ImGui::PushItemWidth(80);
             ImGui::PushID(int(99 + i));
+            HandlePinIO(index, i, false);
+			ImGui::SameLine();
             ImGui::Text("Sampler %d", i);
-            samplerDirty |= ImGui::Combo("Wrap U", (int*)&inputSampler.mWrapU, wrapModes);
-            samplerDirty |= ImGui::Combo("Wrap V", (int*)&inputSampler.mWrapV, wrapModes);
-            samplerDirty |= ImGui::Combo("Filter Min", (int*)&inputSampler.mFilterMin, filterModes);
-            samplerDirty |= ImGui::Combo("Filter Mag", (int*)&inputSampler.mFilterMag, filterModes);
+            samplerDirty |= ImGui::Combo("U", (int*)&inputSampler.mWrapU, wrapModes);
+            ImGui::SameLine();
+            samplerDirty |= ImGui::Combo("V", (int*)&inputSampler.mWrapV, wrapModes);
+            ImGui::SameLine();
+            ImGui::PushItemWidth(80);
+            samplerDirty |= ImGui::Combo("Min", (int*)&inputSampler.mFilterMin, filterModes);
+            ImGui::SameLine();
+            samplerDirty |= ImGui::Combo("Mag", (int*)&inputSampler.mFilterMag, filterModes);
+            ImGui::PopItemWidth();
             ImGui::PopID();
             ImGui::PopItemWidth();
         }
@@ -433,12 +437,26 @@ void NodeGraphControler::EditNodeParameters()
     }
 }
 
+void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput)
+{
+    if (IsIOUsed(nodeIndex, slotIndex, forOutput))
+	{
+            return;
+	}
+        ImGui::PushID(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0));
+        bool pinned = IsIOPinned(nodeIndex, slotIndex, forOutput);
+    ImGui::Checkbox("", &pinned);
+        mEvaluationStages.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
+    ImGui::PopID();
+}
+
 void NodeGraphControler::NodeEdit()
 {
     ImGuiIO& io = ImGui::GetIO();
 
     if (mSelectedNodeIndex == -1)
     {
+        /*
         for (const auto pin : mEvaluationStages.mPinnedParameters)
         {
             unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
@@ -453,7 +471,21 @@ void NodeGraphControler::NodeEdit()
             Imogen::RenderPreviewNode(nodeIndex, *this);
             ImGui::PopID();
         }
-
+		*/
+        auto& io = mEvaluationStages.mPinnedIO;
+        for (size_t nodeIndex = 0; nodeIndex < io.size(); nodeIndex++)
+			{
+            if ((io[nodeIndex]&1) == 0)
+                            {
+                continue;
+				}
+        ImGui::PushID(1717171 + nodeIndex);
+        uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
+        HandlePinIO(nodeIndex, 0, true);
+        ImGui::SameLine();
+        Imogen::RenderPreviewNode(nodeIndex, *this);
+        ImGui::PopID();
+		}
         PinnedEdit();
     }
     else
@@ -461,9 +493,8 @@ void NodeGraphControler::NodeEdit()
         if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::PushID(1717171);
-            uint32_t parameterPair = (uint32_t(mSelectedNodeIndex) << 16) + 0xDEAD;
             ImGui::BeginGroup();
-            HandlePin(parameterPair);
+            HandlePinIO(mSelectedNodeIndex, 0, true);
             unsigned int maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
             bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
             float ofs = selectedNodeAsBackground ? 0.5f : 0.f;
@@ -504,8 +535,16 @@ void NodeGraphControler::InvalidateParameters()
     }
 }
 
-void NodeGraphControler::SetKeyboardMouse(
-    float rx, float ry, float dx, float dy, bool lButDown, bool rButDown, float wheel, bool bCtrl, bool bAlt, bool bShift)
+void NodeGraphControler::SetKeyboardMouse(float rx,
+                                          float ry,
+                                          float dx,
+                                          float dy,
+                                          bool lButDown,
+                                          bool rButDown,
+                                          float wheel,
+                                          bool bCtrl,
+                                          bool bAlt,
+                                          bool bShift)
 {
     if (mSelectedNodeIndex == -1)
         return;
@@ -697,11 +736,11 @@ void NodeGraphControler::PasteNodes()
                                                [&]() { return &mEvaluationStages.mStages; },
                                                [](int) {},
                                                [&](int index) { NodeIsAdded(index); });
-                                               
+
         mEditingContext.UserAddStage();
         size_t target = mEvaluationStages.mStages.size();
         AddSingleNode(sourceNode.mType);
-        
+
         auto& stage = mEvaluationStages.mStages.back();
         stage.mParameters = sourceNode.mParameters;
         stage.mInputSamplers = sourceNode.mInputSamplers;
@@ -792,4 +831,24 @@ bool NodeGraphControler::RenderBackground()
         return true;
     }
     return false;
+}
+
+void NodeGraphControler::SetParameter(int nodeIndex,
+                                      const std::string& parameterName,
+                                      const std::string& parameterValue)
+{
+    if (nodeIndex < 0 || nodeIndex >= mEvaluationStages.mStages.size())
+    {
+        return;
+    }
+    size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
+    int parameterIndex = GetParameterIndex(nodeType, parameterName.c_str());
+    if (parameterIndex == -1)
+    {
+        return;
+    }
+    ConTypes parameterType = GetParameterType(nodeType, parameterIndex);
+    size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
+    ParseStringToParameter(parameterValue, parameterType, &mEvaluationStages.mStages[nodeIndex].mParameters[paramOffset]);
+    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
 }

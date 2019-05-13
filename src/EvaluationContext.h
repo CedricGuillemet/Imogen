@@ -110,6 +110,10 @@ struct EvaluationContext
     {
         return mbSynchronousEvaluation;
     }
+    void SetSynchronous(bool synchronous)
+    {
+        mbSynchronousEvaluation = synchronous;
+    }
     void SetTargetDirty(size_t target, DirtyFlag dirtyflag, bool onlyChild = false);
     int StageIsProcessing(size_t target) const
     {

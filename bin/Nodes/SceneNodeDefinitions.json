@@ -2,6 +2,7 @@
 	"nodes": [{
 		"name": "GLTFRead",
 		"category": 6,
+        "description":"Experimental node.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -9,16 +10,19 @@
 		}],
 		"parameters": [{
 			"name": "File name",
-			"type": "FilenameRead"
+			"type": "FilenameRead",
+            "description":""
 		},
 		{
 			"name": "Camera",
 			"type": "Camera",
-			"default":""
+			"default":"",
+            "description":""
 		}]
 	},{
 	"name": "Paint3D",
 		"category": 7,
+        "description":"Experimental node.",
 		"color": [0.3921568989753723, 0.9803922176361084, 0.7058823704719544, 1.0],
 		"inputs": [{
 			"name": "Model",
@@ -34,12 +38,14 @@
 		"parameters": [{
 			"name": "Size",
 			"type": "Enum",
-			"enum": "  256|  512| 1024| 2048| 4096|"
+			"enum": "  256|  512| 1024| 2048| 4096|",
+            "description":""
 		},
 		{
 			"name": "Camera",
 			"type": "Camera",
-			"default":""
+			"default":"",
+            "description":""
 		}],
 		"hasUI": true,
 		"saveTexture": true
@@ -47,6 +53,7 @@
 		,{
 		"name": "CubeRadiance",
 		"category": 8,
+        "description":"Compute cubemap radiance or irradiance and generate a cubemap with optional mipmaps",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -60,18 +67,155 @@
 			"name": "Mode",
 			"type": "Enum",
 			"enum": "Radiance|Irradiance|",
-			"default": "0"
+			"default": "0",
+            "description":"Radiance or Irradiance."
 		},{
 			"name": "Size",
 			"type": "Enum",
 			"enum": "Source|   256|   512|  1024|  2048|  4096|",
-			"default":"0"
+			"default":"0",
+            "description":"Size of the output cubemap face width in pixels."
 		},{
 			"name": "Sample Count",
 			"type": "Int",
-			"default":"100"
+			"default":"100",
+            "description":"The samples count used for the blur. The more samplem the higher quality."
 		}
 		]
-		}
+		}, {
+		"name": "PBR2",
+		"category": 2,
+        "description":"Experimental node.",
+		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "Albedo",
+			"type": "Float4"
+		}, {
+			"name": "Normal",
+			"type": "Float4"
+		}, {
+			"name": "Depth",
+			"type": "Float4"
+		}, {
+			"name": "Roughness",
+			"type": "Float4"
+		}, {
+			"name": "Cubemap",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "View",
+			"type": "Float2",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+            "description":""
+		},{
+			"name": "Depth factor",
+			"type": "Float",
+			"default":"0.0",
+            "description":""
+		}]
+	}, {
+		"name": "ChannelPacker",
+		"category": 0,
+        "description":"Pack channels from 1 to 4 inputs into a new output. This can be used to pack normal/roughness/metallic into a 4 channels image.",
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "A",
+			"type": "Float4"
+		},{
+			"name": "B",
+			"type": "Float4"
+		},{
+			"name": "C",
+			"type": "Float4"
+		},{
+			"name": "D",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "R",
+			"type": "Enum",
+			"enum": "A.red|A.blue|A.green|A.alpha|B.red|B.blue|B.green|B.alpha|C.red|C.blue|C.green|C.alpha|D.red|D.blue|D.green|D.alpha|1 - A.red|1 - A.blue|1 - A.green|1 - A.alpha|1 - B.red|1 - B.blue|1 - B.green|1 - B.alpha|1 - C.red|1 - C.blue|1 - C.green|1 - C.alpha|1 - D.red|1 - D.blue|1 - D.green|1 - D.alpha|",
+			"default":"0",
+            "description":"The source image and its channel used for Red in the output."
+			},
+			{
+			"name": "G",
+			"type": "Enum",
+			"enum": "A.red|A.blue|A.green|A.alpha|B.red|B.blue|B.green|B.alpha|C.red|C.blue|C.green|C.alpha|D.red|D.blue|D.green|D.alpha|1 - A.red|1 - A.blue|1 - A.green|1 - A.alpha|1 - B.red|1 - B.blue|1 - B.green|1 - B.alpha|1 - C.red|1 - C.blue|1 - C.green|1 - C.alpha|1 - D.red|1 - D.blue|1 - D.green|1 - D.alpha|",
+			"default":"4",
+            "description":"The source image and its channel used for Green in the output."
+			},
+			{
+			"name": "B",
+			"type": "Enum",
+			"enum": "A.red|A.blue|A.green|A.alpha|B.red|B.blue|B.green|B.alpha|C.red|C.blue|C.green|C.alpha|D.red|D.blue|D.green|D.alpha|1 - A.red|1 - A.blue|1 - A.green|1 - A.alpha|1 - B.red|1 - B.blue|1 - B.green|1 - B.alpha|1 - C.red|1 - C.blue|1 - C.green|1 - C.alpha|1 - D.red|1 - D.blue|1 - D.green|1 - D.alpha|",
+			"default":"8",
+            "description":"The source image and its channel used for Blue in the output."
+			},
+			{
+			"name": "A",
+			"type": "Enum",
+			"enum": "A.red|A.blue|A.green|A.alpha|B.red|B.blue|B.green|B.alpha|C.red|C.blue|C.green|C.alpha|D.red|D.blue|D.green|D.alpha|1 - A.red|1 - A.blue|1 - A.green|1 - A.alpha|1 - B.red|1 - B.blue|1 - B.green|1 - B.alpha|1 - C.red|1 - C.blue|1 - C.green|1 - C.alpha|1 - D.red|1 - D.blue|1 - D.green|1 - D.alpha|",
+			"default":"12",
+            "description":"The source image and its channel used for Alpha in the output."
+			}
+			]
+	}, {
+		"name": "Lens",
+		"category": 0,
+        "description":"Deforms the source using a lens computation with an optionnal vignette shading.",
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Factor",
+			"type": "Float",
+			"default":"0.32",
+            "description":"Lens factor strength."
+		},{
+			"name": "Vignette",
+			"type": "Float",
+			"default":"1.0",
+            "description":"Vignette shading: Corners get darker. 0 to disable vignette."
+		}]
+	}, {
+		"name": "Distance",
+		"category": 0,
+        "description":"Generate a signed distance field from a black and white source image.",
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "passCount",
+			"type": "Int",
+            "default": "1",
+            "description":""
+		}]
+	}
 ]
 }

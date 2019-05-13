@@ -1,6 +1,21 @@
 -------------------------------------------------------------------------------
 Imogen - 0.13 codename Chameleon Genet 
 
+New:
+- Removed text edit for nodes shader. Edit them with your favorite editor and press F7 to hotload them
+- User documentation visible on github
+- Signed Distance node
+- Box Blur node with multipass
+- Channel packer node
+- Lens node with optional vignette
+- invert in NormalMap node
+- Perlin noise node
+- Mouse State toolip to show how the mouse is used for educative vdeos
+- Improved imgInspect 
+
+Fixed:
+- Clamp node,  invert node
+
 -------------------------------------------------------------------------------
 Imogen - 0.12 codename Bear Geki
 

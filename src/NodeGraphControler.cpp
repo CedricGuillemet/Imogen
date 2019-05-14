@@ -31,6 +31,7 @@
 #include "Evaluators.h"
 #include "UI.h"
 #include "Utils.h"
+#include "UndoRedo.h"
 
 NodeGraphControler::NodeGraphControler()
     : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)

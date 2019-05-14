@@ -617,17 +617,17 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
         dstNode.mFrameStart = srcNode.mStartFrame;
         dstNode.mFrameEnd = srcNode.mEndFrame;
     }
-    auto links = NodeGraphGetLinks();
+    auto links = nodeGraphControler.mModel.GetLinks();
     material.mMaterialConnections.resize(links.size());
     for (size_t i = 0; i < links.size(); i++)
     {
         MaterialConnection& materialConnection = material.mMaterialConnections[i];
-        materialConnection.mInputNode = links[i].InputIdx;
-        materialConnection.mInputSlot = links[i].InputSlot;
-        materialConnection.mOutputNode = links[i].OutputIdx;
-        materialConnection.mOutputSlot = links[i].OutputSlot;
+        materialConnection.mInputNode = links[i].mInputIdx;
+        materialConnection.mInputSlot = links[i].mInputSlot;
+        materialConnection.mOutputNode = links[i].mOutputIdx;
+        materialConnection.mOutputSlot = links[i].mOutputSlot;
     }
-    auto rugs = NodeGraphRugs();
+    auto rugs = nodeGraphControler.mModel.GetRugs();
     material.mMaterialRugs.resize(rugs.size());
     for (size_t i = 0; i < rugs.size(); i++)
     {
@@ -655,7 +655,8 @@ int Imogen::AddNode(const std::string& nodeType)
     {
         return -1;
     }
-    return int(NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1));
+    //return int(NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1));
+    return mNodeGraphControler->mModel.AddNode(type, ImVec2(0,0));
 }
 
 void Imogen::UpdateNewlySelectedGraph()
@@ -671,13 +672,16 @@ void Imogen::UpdateNewlySelectedGraph()
             MaterialNode& node = material.mMaterialNodes[i];
             if (node.mType == 0xFFFFFFFF)
                 continue;
-            NodeGraphAddNode(mNodeGraphControler,
+            /*NodeGraphAddNode(mNodeGraphControler,
                              node.mType,
                              &node.mParameters,
                              node.mPosX,
                              node.mPosY,
                              node.mFrameStart,
                              node.mFrameEnd);
+							 */
+            mNodeGraphControler->mModel.AddNode(node.mType, ImVec2(node.mPosX,
+                             node.mPosY));
             auto& lastNode = mNodeGraphControler->mEvaluationStages.mStages.back();
             if (!node.mImage.empty())
             {
@@ -691,19 +695,25 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
             MaterialConnection& materialConnection = material.mMaterialConnections[i];
-            NodeGraphAddLink(mNodeGraphControler,
+            /*NodeGraphAddLink(mNodeGraphControler,
                              materialConnection.mInputNode,
                              materialConnection.mInputSlot,
                              materialConnection.mOutputNode,
                              materialConnection.mOutputSlot);
+							 */
+            mNodeGraphControler->mModel.AddLink(materialConnection.mInputNode,
+                                                materialConnection.mInputSlot,
+                                                materialConnection.mOutputNode,
+                                                materialConnection.mOutputSlot);
         }
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {
             MaterialNodeRug& rug = material.mMaterialRugs[i];
-            NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
+            //NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
+            mNodeGraphControler->mModel.AddRug(ImVec2(rug.mPosX, rug.mPosY), ImVec2(rug.mSizeX, rug.mSizeY), rug.mColor, rug.mComment);
         }
         NodeGraphUpdateEvaluationOrder(mNodeGraphControler);
-        NodeGraphUpdateScrolling();
+        NodeGraphUpdateScrolling(&mNodeGraphControler->mModel);
         mCurrentTime = 0;
         mbIsPlaying = false;
         mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);

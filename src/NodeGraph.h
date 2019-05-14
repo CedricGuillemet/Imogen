@@ -29,6 +29,7 @@
 #include <string>
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "Library.h"
 
 struct NodeGraphControlerBase
 {
@@ -70,12 +71,11 @@ struct NodeGraphControlerBase
     virtual void PasteNodes() = 0;
     virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const = 0;
 };
-
+/*
 struct Node
 {
     int mType;
-    ImVec2 Pos, Size;
-    size_t InputsCount, OutputsCount;
+    ImVec2 mPos;
     bool mbSelected;
     Node() : mbSelected(false)
     {
@@ -84,34 +84,31 @@ struct Node
 
     ImVec2 GetInputSlotPos(int slot_no, float factor) const
     {
-        return ImVec2(Pos.x * factor, Pos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
+        ImVec2 Size(100, 100);
+        unsigned int InputsCount = gMetaNodes[mType].mInputs.size();
+        return ImVec2(mPos.x * factor, mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
     }
     ImVec2 GetOutputSlotPos(int slot_no, float factor) const
     {
-        return ImVec2(Pos.x * factor + Size.x,
-                      Pos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
+        unsigned int OutputsCount = gMetaNodes[mType].mOutputs.size();
+        ImVec2 Size(100, 100);
+        return ImVec2(mPos.x * factor + Size.x,
+                      mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
     }
     ImRect GetNodeRect(float factor)
     {
-        return ImRect(Pos * factor, Pos * factor + Size);
+        ImVec2 Size(100, 100);
+        return ImRect(mPos * factor, mPos * factor + Size);
     }
 
     bool operator!=(const Node& other) const
     {
         if (mType != other.mType)
             return true;
-        if (InputsCount != other.InputsCount)
-            return true;
-        if (OutputsCount != other.OutputsCount)
-            return true;
-        if (Pos.x != other.Pos.x)
-            return true;
-        if (Pos.y != other.Pos.y)
-            return true;
 
-        if (Size.x != other.Size.x)
+        if (mPos.x != other.mPos.x)
             return true;
-        if (Size.y != other.Size.y)
+        if (mPos.y != other.mPos.y)
             return true;
 
         return false;
@@ -137,7 +134,7 @@ struct NodeLink
                OutputSlot == other.OutputSlot;
     }
 };
-
+*/
 inline bool operator!=(const ImVec2 r1, const ImVec2 r2)
 {
     if (r1.x != r2.x)
@@ -146,7 +143,7 @@ inline bool operator!=(const ImVec2 r1, const ImVec2 r2)
         return true;
     return false;
 }
-
+/*
 struct NodeRug
 {
     ImVec2 mPos, mSize;
@@ -166,13 +163,15 @@ struct NodeRug
         return false;
     }
 };
-
-void NodeGraph(NodeGraphControlerBase* delegate, bool enabled);
+*/
+class GraphModel;
+void NodeGraph(GraphModel* model, NodeGraphControlerBase* delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
-const std::vector<NodeLink>& NodeGraphGetLinks();
-const std::vector<NodeRug>& NodeGraphRugs();
+//const std::vector<NodeLink>& NodeGraphGetLinks();
+//const std::vector<NodeRug>& NodeGraphRugs();
 ImVec2 NodeGraphGetNodePos(size_t index);
 
+/*
 size_t NodeGraphAddNode(NodeGraphControlerBase* delegate,
                       int type,
                       const std::vector<unsigned char>* parameters,
@@ -182,9 +181,11 @@ size_t NodeGraphAddNode(NodeGraphControlerBase* delegate,
                       int frameEnd);
 void NodeGraphAddRug(
     int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
+	
 void NodeGraphAddLink(NodeGraphControlerBase* delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
+*/
 void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* delegate);
-void NodeGraphUpdateScrolling();
+void NodeGraphUpdateScrolling(GraphModel* model);
 void NodeGraphSelectNode(int selectedNodeIndex);
 void NodeGraphLayout();
 bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput);

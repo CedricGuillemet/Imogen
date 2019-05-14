@@ -31,7 +31,6 @@
 #include <algorithm>
 #include <map>
 
-
 EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 {
 }
@@ -42,9 +41,9 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     //#ifdef _DEBUG needed for fur
     evaluation.mTypename = gMetaNodes[nodeType].mName;
     //#endif
-    #if USE_FFMPEG
+#if USE_FFMPEG
     evaluation.mDecoder = NULL;
-    #endif
+#endif
     evaluation.mUseCountByOthers = 0;
     evaluation.mType = nodeType;
     evaluation.mBlendingSrc = ONE;

@@ -26,6 +26,7 @@
 #include "Loader.h"
 #include "UI.h"
 #include "imMouseState.h"
+#include "UndoRedo.h"
 
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.

@@ -45,6 +45,7 @@
 #include "Loader.h"
 #include "UI.h"
 #include "imMouseState.h"
+#include "UndoRedo.h"
 
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
                                      GLenum type,

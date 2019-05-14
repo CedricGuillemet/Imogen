@@ -31,6 +31,8 @@
 #include "ImGradient.h"
 #include "Library.h"
 #include "EvaluationContext.h"
+#include "UndoRedo.h"
+#include "GraphModel.h"
 
 struct NodeGraphControler : public NodeGraphControlerBase
 {
@@ -143,6 +145,9 @@ struct NodeGraphControler : public NodeGraphControlerBase
     }
     void NodeEdit();
     void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
+
+	GraphModel mModel;
+
 protected:
     bool EditSingleParameter(unsigned int nodeIndex,
                              unsigned int parameterIndex,

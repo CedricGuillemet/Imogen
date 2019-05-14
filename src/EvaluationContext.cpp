@@ -29,6 +29,7 @@
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "NodeGraphControler.h"
+#include "UndoRedo.h"
 
 static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};
 static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};

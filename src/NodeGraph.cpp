@@ -445,7 +445,7 @@ void NodeGraphUpdateEvaluationOrder(GraphModel* model, NodeGraphControlerBase* c
         nodeOrderList[i] = mOrders[i].mNodeIndex;
     if (controler)
     {
-        controler->UpdateEvaluationList(nodeOrderList);
+        model->SetEvaluationOrder(nodeOrderList);
     }
 }
 /*
@@ -1096,7 +1096,7 @@ static bool DrawNode(GraphModel* model,
         const MetaCon* con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
         for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
         {
-            if (!controler->IsIOPinned(nodeIndex, slot_idx, i == 1))
+            if (!model->IsIOPinned(nodeIndex, slot_idx, i == 1))
             {
                 continue;
             }

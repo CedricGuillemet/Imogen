@@ -34,7 +34,9 @@
 #include "UndoRedo.h"
 
 NodeGraphControler::NodeGraphControler()
-    : mbMouseDragging(false), mEditingContext(mEvaluationStages, false, 1024, 1024), mUndoRedoParamSetMouse(nullptr)
+    : mbMouseDragging(false)
+    , mEditingContext(mModel.mEvaluationStages, false, 1024, 1024)
+    , mUndoRedoParamSetMouse(nullptr)
 {
     mCategories = &MetaNode::mCategories;
 }
@@ -43,17 +45,17 @@ void NodeGraphControler::Clear()
 {
     mSelectedNodeIndex = -1;
     mBackgroundNode = -1;
-    mEvaluationStages.Clear();
-    mEvaluationStages.mStages.clear();
+    // mEvaluationStages.Clear();
+    // mEvaluationStages.mStages.clear();
     mEditingContext.Clear();
 }
 
 void NodeGraphControler::SetParamBlock(size_t index, const std::vector<unsigned char>& parameters)
 {
-    auto& stage = mEvaluationStages.mStages[index];
+    auto& stage = mModel.mEvaluationStages.mStages[index];
     stage.mParameters = parameters;
-    mEvaluationStages.SetEvaluationParameters(index, parameters);
-    mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
+    mModel.mEvaluationStages.SetEvaluationParameters(index, parameters);
+    mModel.mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
     mEditingContext.SetTargetDirty(index, Dirty::Parameter);
 }
 /*
@@ -99,26 +101,29 @@ void NodeGraphControler::UserDeleteNode(size_t index)
     }
 }
 */
-void NodeGraphControler::HandlePin(uint32_t parameterPair)
+void NodeGraphControler::HandlePin(size_t nodeIndex, size_t parameterIndex)
 {
-    auto pinIter = std::find(
-        mEvaluationStages.mPinnedParameters.begin(), mEvaluationStages.mPinnedParameters.end(), parameterPair);
-    bool hasPin = pinIter != mEvaluationStages.mPinnedParameters.end();
-    bool checked = hasPin;
+    bool checked = mModel.IsParameterPinned(nodeIndex, parameterIndex);
     if (ImGui::Checkbox("", &checked))
     {
+#if 0
         if (hasPin)
         {
-            URDel<uint32_t> undoRedoDelPin(int(&(*pinIter) - mEvaluationStages.mPinnedParameters.data()),
+            /*URDel<uint32_t> undoRedoDelPin(int(&(*pinIter) - mEvaluationStages.mPinnedParameters.data()),
                                            [&]() { return &mEvaluationStages.mPinnedParameters; });
+                                           */
             mEvaluationStages.mPinnedParameters.erase(pinIter);
         }
         else
         {
-            URAdd<uint32_t> undoRedoAddNode(int(mEvaluationStages.mPinnedParameters.size()),
-                                            [&]() { return &mEvaluationStages.mPinnedParameters; });
+            /*URAdd<uint32_t> undoRedoAddNode(int(mEvaluationStages.mPinnedParameters.size()),
+                                            [&]() { return &mEvaluationStages.mPinnedParameters; });*/
             mEvaluationStages.mPinnedParameters.push_back(parameterPair);
         }
+#endif
+        mModel.BeginTransaction(true);
+        mModel.SetParameterPin(nodeIndex, parameterIndex, checked);
+        mModel.EndTransaction();
     }
 }
 
@@ -130,7 +135,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
     bool dirty = false;
     uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
     ImGui::PushID(parameterPair * 4);
-    HandlePin(parameterPair);
+    HandlePin(nodeIndex, parameterIndex);
     ImGui::SameLine();
     switch (param.mType)
     {
@@ -322,8 +327,8 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
 
 void NodeGraphControler::UpdateDirtyParameter(int index)
 {
-    auto& stage = mEvaluationStages.mStages[index];
-    mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
+    auto& stage = mModel.mEvaluationStages.mStages[index];
+    mModel.mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
     mEditingContext.SetTargetDirty(index, Dirty::Parameter);
 }
 
@@ -368,7 +373,7 @@ void NodeGraphControler::EditNodeParameters()
 
     if (ImGui::CollapsingHeader("Samplers", 0))
     {
-        URChange<std::vector<InputSampler>> undoRedoSampler(int(index),
+        /*URChange<std::vector<InputSampler>> undoRedoSampler(int(index),
                                                             [&](int index) { return &stage.mInputSamplers; },
                                                             [&](int index) {
                                                                 auto& node = mEvaluationStages.mStages[index];
@@ -376,7 +381,7 @@ void NodeGraphControler::EditNodeParameters()
                                                                     index, stage.mInputSamplers);
                                                                 mEditingContext.SetTargetDirty(index, Dirty::Sampler);
                                                             });
-
+*/
         for (size_t i = 0; i < stage.mInputSamplers.size(); i++)
         {
             InputSampler& inputSampler = stage.mInputSamplers[i];
@@ -385,7 +390,7 @@ void NodeGraphControler::EditNodeParameters()
             ImGui::PushItemWidth(80);
             ImGui::PushID(int(99 + i));
             HandlePinIO(index, i, false);
-			ImGui::SameLine();
+            ImGui::SameLine();
             ImGui::Text("Sampler %d", i);
             samplerDirty |= ImGui::Combo("U", (int*)&inputSampler.mWrapU, wrapModes);
             ImGui::SameLine();
@@ -406,17 +411,17 @@ void NodeGraphControler::EditNodeParameters()
         }
         else
         {
-            undoRedoSampler.Discard();
+            // undoRedoSampler.Discard();
         }
     }
     if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
-    URChange<std::vector<unsigned char>> undoRedoParameter(
+    /*URChange<std::vector<unsigned char>> undoRedoParameter(
         int(index),
         [&](int index) { return &mEvaluationStages.mStages[index].mParameters; },
         [&](int index) { UpdateDirtyParameter(index); });
-
+*/
     unsigned char* paramBuffer = stage.mParameters.data();
     int i = 0;
     for (const MetaParameter& param : currentMeta.mParams)
@@ -436,20 +441,20 @@ void NodeGraphControler::EditNodeParameters()
     }
     else
     {
-        undoRedoParameter.Discard();
+        // undoRedoParameter.Discard();
     }
 }
 
 void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput)
 {
     if (mModel.IsIOUsed(nodeIndex, slotIndex, forOutput))
-	{
-            return;
-	}
-        ImGui::PushID(int(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0)));
-        bool pinned = IsIOPinned(nodeIndex, slotIndex, forOutput);
+    {
+        return;
+    }
+    ImGui::PushID(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0));
+    bool pinned = IsIOPinned(nodeIndex, slotIndex, forOutput);
     ImGui::Checkbox("", &pinned);
-        mEvaluationStages.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
+    mEvaluationStages.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
     ImGui::PopID();
 }
 
@@ -474,21 +479,21 @@ void NodeGraphControler::NodeEdit()
             Imogen::RenderPreviewNode(nodeIndex, *this);
             ImGui::PopID();
         }
-		*/
+                */
         auto& io = mEvaluationStages.mPinnedIO;
         for (size_t nodeIndex = 0; nodeIndex < io.size(); nodeIndex++)
-			{
-            if ((io[nodeIndex]&1) == 0)
-                            {
+        {
+            if ((io[nodeIndex] & 1) == 0)
+            {
                 continue;
-				}
-        ImGui::PushID(int(1717171 + nodeIndex));
-        uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
-        HandlePinIO(nodeIndex, 0, true);
-        ImGui::SameLine();
-        Imogen::RenderPreviewNode(int(nodeIndex), *this);
-        ImGui::PopID();
-		}
+            }
+            ImGui::PushID(1717171 + nodeIndex);
+            uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
+            HandlePinIO(nodeIndex, 0, true);
+            ImGui::SameLine();
+            Imogen::RenderPreviewNode(nodeIndex, *this);
+            ImGui::PopID();
+        }
         PinnedEdit();
     }
     else
@@ -562,10 +567,11 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     }
     if ((lButDown || rButDown) && !mUndoRedoParamSetMouse)
     {
-        mUndoRedoParamSetMouse = new URChange<std::vector<unsigned char>>(
-            mSelectedNodeIndex,
-            [&](int index) { return &mEvaluationStages.mStages[index].mParameters; },
-            [&](int index) { UpdateDirtyParameter(index); });
+        /* mUndoRedoParamSetMouse = new URChange<std::vector<unsigned char>>(
+             mSelectedNodeIndex,
+             [&](int index) { return &mEvaluationStages.mStages[index].mParameters; },
+             [&](int index) { UpdateDirtyParameter(index); });
+             */
     }
     const MetaNode* metaNodes = gMetaNodes.data();
     size_t res = 0;
@@ -758,47 +764,7 @@ void NodeGraphControler::PasteNodes()
 }
 
 // animation
-AnimTrack* NodeGraphControler::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
-{
-    for (auto& animTrack : mEvaluationStages.mAnimTrack)
-    {
-        if (animTrack.mNodeIndex == nodeIndex && animTrack.mParamIndex == parameterIndex)
-            return &animTrack;
-    }
-    return NULL;
-}
 
-void NodeGraphControler::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
-{
-    if (nodeIndex == -1)
-    {
-        return;
-    }
-    URDummy urDummy;
-
-    AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
-    if (!animTrack)
-    {
-        URAdd<AnimTrack> urAdd(int(mEvaluationStages.mAnimTrack.size()), [&] { return &mEvaluationStages.mAnimTrack; });
-        uint32_t parameterType = gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mParams[parameterIndex].mType;
-        AnimTrack newTrack;
-        newTrack.mNodeIndex = nodeIndex;
-        newTrack.mParamIndex = parameterIndex;
-        newTrack.mValueType = parameterType;
-        newTrack.mAnimation = AllocateAnimation(parameterType);
-        mEvaluationStages.mAnimTrack.push_back(newTrack);
-        animTrack = &mEvaluationStages.mAnimTrack.back();
-    }
-    URChange<AnimTrack> urChange(int(animTrack - mEvaluationStages.mAnimTrack.data()),
-                                 [&](int index) { return &mEvaluationStages.mAnimTrack[index]; });
-    EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
-    size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
-    animTrack->mAnimation->SetValue(frame, &stage.mParameters[parameterOffset]);
-}
-
-void NodeGraphControler::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed)
-{
-}
 
 void NodeGraphControler::DrawNodeImage(ImDrawList* drawList,
                                        const ImRect& rc,
@@ -834,24 +800,4 @@ bool NodeGraphControler::RenderBackground()
         return true;
     }
     return false;
-}
-
-void NodeGraphControler::SetParameter(int nodeIndex,
-                                      const std::string& parameterName,
-                                      const std::string& parameterValue)
-{
-    if (nodeIndex < 0 || nodeIndex >= mEvaluationStages.mStages.size())
-    {
-        return;
-    }
-    size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
-    int parameterIndex = GetParameterIndex(uint32_t(nodeType), parameterName.c_str());
-    if (parameterIndex == -1)
-    {
-        return;
-    }
-    ConTypes parameterType = GetParameterType(uint32_t(nodeType), parameterIndex);
-    size_t paramOffset = GetParameterOffset(uint32_t(nodeType), parameterIndex);
-    ParseStringToParameter(parameterValue, parameterType, &mEvaluationStages.mStages[nodeIndex].mParameters[paramOffset]);
-    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
 }

@@ -160,7 +160,7 @@ void EvaluationStages::DelEvaluationInput(size_t target, int slot)
     mStages[target].mInput.mInputs[slot] = -1;
 }
 
-void EvaluationStages::SetEvaluationOrder(const std::vector<size_t> nodeOrderList)
+void EvaluationStages::SetEvaluationOrder(const std::vector<size_t>& nodeOrderList)
 {
     mEvaluationOrderList = nodeOrderList;
 }
@@ -378,7 +378,7 @@ void EvaluationStages::RemoveAnimation(size_t nodeIndex)
 
 void EvaluationStages::RemovePins(size_t nodeIndex)
 {
-    auto iter = mPinnedParameters.begin();
+    /*auto iter = mPinnedParameters.begin();
     for (; iter != mPinnedParameters.end();)
     {
         uint32_t pin = *iter;
@@ -393,7 +393,22 @@ void EvaluationStages::RemovePins(size_t nodeIndex)
     }
 
 	URDel<uint32_t> undoRedoDelPinIO(int(nodeIndex), [&]() { return &mPinnedIO; });
-    iter = mPinnedIO.erase(mPinnedIO.begin() + nodeIndex);
+    */
+    mPinnedParameters.erase(mPinnedParameters.begin() + nodeIndex);
+    mPinnedIO.erase(mPinnedIO.begin() + nodeIndex);
+}
+
+bool EvaluationStages::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
+{
+    uint32_t mask = 1 << parameterIndex;
+    return mPinnedParameters[nodeIndex] & mask;
+}
+
+void EvaluationStages::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
+{
+    uint32_t mask = 1 << parameterIndex;
+    mPinnedParameters[nodeIndex] &= ~mask;
+    mPinnedParameters[nodeIndex] += pinned ? mask : 0;
 }
 
 float EvaluationStages::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)

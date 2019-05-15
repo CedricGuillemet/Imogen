@@ -212,7 +212,7 @@ struct EvaluationStages
     void SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& inputSamplers);
     void AddEvaluationInput(size_t target, int slot, int source);
     void DelEvaluationInput(size_t target, int slot);
-    void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
+    void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
     void SetKeyboardMouse(int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
     void Clear();
@@ -251,10 +251,11 @@ struct EvaluationStages
     void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
 
     // pins
-    void RemovePins(size_t nodeIndex);
+    
     bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
-
+    bool IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const;
+    void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 
@@ -262,7 +263,7 @@ struct EvaluationStages
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;
     std::vector<size_t> mEvaluationOrderList;
-    std::vector<uint32_t> mPinnedParameters;
+    std::vector<uint32_t> mPinnedParameters; // 32bits -> 32parameters
     std::vector<uint32_t> mPinnedIO; // 24bits input, 8 bits output
     int mFrameMin, mFrameMax;
 
@@ -271,4 +272,5 @@ protected:
     void StageIsAdded(int index);
     void StageIsDeleted(int index);
     void InitDefaultParameters(EvaluationStage& stage);
+    void RemovePins(size_t nodeIndex);
 };

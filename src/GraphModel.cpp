@@ -44,6 +44,7 @@ void GraphModel::Clear()
     mRugs.clear();
     mUndoRedoHandler->Clear();
     mSelectedNodeIndex = -1;
+    mEvaluationStages.Clear();
 }
 
 void GraphModel::BeginTransaction(bool undoable)
@@ -96,16 +97,26 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
         return;
     }
 
+    assert(outputNodeIndex < mEvaluationStages.mStages.size());
+
     NodeLink nl;
     nl.mInputIdx = inputNodeIndex;
     nl.mInputSlot = inputSlotIndex;
     nl.mOutputIdx = outputNodeIndex;
     nl.mOutputSlot = outputSlotIndex;
     mLinks.push_back(nl);
+
+
+    mEvaluationStages.AddEvaluationInput(outputNodeIndex, outputSlotIndex, inputNodeIndex);
+    //mEditingContext.SetTargetDirty(outputIdx, Dirty::Input);
+    mEvaluationStages.SetIOPin(inputNodeIndex, inputSlotIndex, true, false);
+    mEvaluationStages.SetIOPin(outputNodeIndex, outputSlotIndex, false, false);
 }
-void GraphModel::DelLink(size_t index, size_t slot)
+void GraphModel::DelLink(size_t nodeIndex, size_t slotIndex)
 {
     assert(mbTransaction);
+
+    mEvaluationStages.DelEvaluationInput(nodeIndex, slotIndex);
 }
 void GraphModel::AddRug(ImVec2 position, ImVec2 size, uint32_t color, const std::string& comment)
 {
@@ -235,4 +246,99 @@ void GraphModel::SetSamplers(size_t nodeIndex, const std::vector <InputSampler>&
 {
     assert(mbTransaction);
     mEvaluationStages.SetSamplers(nodeIndex, samplers);
+}
+
+void GraphModel::SetEvaluationOrder(const std::vector<size_t>& nodeOrderList)
+{
+    assert(!mbTransaction);
+    mEvaluationStages.SetEvaluationOrder(nodeOrderList);
+}
+bool GraphModel::NodeHasUI(size_t nodeIndex) const
+{
+    if (mEvaluationStages.mStages.size() <= nodeIndex)
+        return false;
+    return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI;
+}
+
+bool GraphModel::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
+{
+    return mEvaluationStages.IsIOPinned(nodeIndex, io, forOutput);
+}
+
+
+void GraphModel::SetParameter(int nodeIndex,
+                                      const std::string& parameterName,
+                                      const std::string& parameterValue)
+{
+    assert(mbTransaction);
+    if (nodeIndex < 0 || nodeIndex >= mEvaluationStages.mStages.size())
+    {
+        return;
+    }
+    size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
+    int parameterIndex = GetParameterIndex(nodeType, parameterName.c_str());
+    if (parameterIndex == -1)
+    {
+        return;
+    }
+    ConTypes parameterType = GetParameterType(nodeType, parameterIndex);
+    size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
+    ParseStringToParameter(
+        parameterValue, parameterType, &mEvaluationStages.mStages[nodeIndex].mParameters[paramOffset]);
+    //mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+}
+
+AnimTrack* GraphModel::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
+{
+    for (auto& animTrack : mEvaluationStages.mAnimTrack)
+    {
+        if (animTrack.mNodeIndex == nodeIndex && animTrack.mParamIndex == parameterIndex)
+            return &animTrack;
+    }
+    return NULL;
+}
+
+void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
+{
+    assert(mbTransaction);
+    if (nodeIndex == -1)
+    {
+        return;
+    }
+    //URDummy urDummy;
+
+    AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
+    if (!animTrack)
+    {
+        //URAdd<AnimTrack> urAdd(int(mEvaluationStages.mAnimTrack.size()), [&] { return &mEvaluationStages.mAnimTrack; });
+        uint32_t parameterType = gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mParams[parameterIndex].mType;
+        AnimTrack newTrack;
+        newTrack.mNodeIndex = nodeIndex;
+        newTrack.mParamIndex = parameterIndex;
+        newTrack.mValueType = parameterType;
+        newTrack.mAnimation = AllocateAnimation(parameterType);
+        mEvaluationStages.mAnimTrack.push_back(newTrack);
+        animTrack = &mEvaluationStages.mAnimTrack.back();
+    }
+    /*URChange<AnimTrack> urChange(int(animTrack - mEvaluationStages.mAnimTrack.data()),
+                                 [&](int index) { return &mEvaluationStages.mAnimTrack[index]; });*/
+    EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
+    size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
+    animTrack->mAnimation->SetValue(frame, &stage.mParameters[parameterOffset]);
+}
+
+void GraphModel::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const
+{
+}
+
+void GraphModel::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned)
+{
+    assert(mbTransaction);
+    mEvaluationStages.SetIOPin(nodeIndex, io, forOutput, pinned);
+}
+
+void GraphModel::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
+{
+    assert(mbTransaction);
+    mEvaluationStages.SetParameterPin(nodeIndex, parameterIndex, pinned);
 }

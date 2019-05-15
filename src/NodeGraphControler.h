@@ -42,6 +42,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     //virtual void AddSingleNode(size_t type);
     //virtual void UserAddNode(size_t type);
+    /*
     virtual void AddLink(int inputIdx, int inputSlot, int outputIdx, int outputSlot)
     {
         if (outputIdx >= mEvaluationStages.mStages.size())
@@ -57,6 +58,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
         mEvaluationStages.DelEvaluationInput(index, slot);
         mEditingContext.SetTargetDirty(index, Dirty::Input);
     }
+    */
     //virtual void UserDeleteNode(size_t index);
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
 
@@ -82,12 +84,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
                   bool bAlt,
                   bool bShift);
 
-    bool NodeHasUI(size_t nodeIndex) const
-    {
-        if (mEvaluationStages.mStages.size() <= nodeIndex)
-            return false;
-        return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI;
-    }
+    
     virtual int NodeIsProcesing(size_t nodeIndex) const
     {
         return mEditingContext.StageIsProcessing(nodeIndex);
@@ -99,9 +96,9 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual bool NodeIsCubemap(size_t nodeIndex) const;
     virtual bool NodeIs2D(size_t nodeIndex) const;
     virtual bool NodeIsCompute(size_t nodeIndex) const;
-    virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList)
+    virtual void UpdateEvaluationList(const std::vector<size_t>& nodeOrderList)
     {
-        mEvaluationStages.SetEvaluationOrder(nodeOrderList);
+        mModel.SetEvaluationOrder(nodeOrderList);
     }
     virtual ImVec2 GetEvaluationSize(size_t nodeIndex) const;
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex);
@@ -112,15 +109,12 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual bool RenderBackground();
 
-	virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
-    {
-            return mEvaluationStages.IsIOPinned(nodeIndex, io, forOutput);
-    }
+
 
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const
     {
-        return mEvaluationStages.GetAnimTrack();
+        return mModel.GetAnimTrack();
     }
 
 
@@ -133,7 +127,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
 
     EvaluationContext mEditingContext;
-    EvaluationStages mEvaluationStages;
+    //EvaluationStages mEvaluationStages;
     std::vector<EvaluationStage> mStagesClipboard;
     int mBackgroundNode;
     bool mbMouseDragging;
@@ -141,7 +135,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     EvaluationStage* Get(ASyncId id)
     {
-        return GetByAsyncId(id, mEvaluationStages.mStages);
+        return GetByAsyncId(id, mModel.mEvaluationStages.mStages);
     }
     void NodeEdit();
     void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
@@ -156,6 +150,6 @@ protected:
     //void NodeIsAdded(int index);
     void UpdateDirtyParameter(int index);
     void EditNodeParameters();
-    void HandlePin(uint32_t parameterPair);
+    void HandlePin(size_t nodeIndex, size_t parameterIndex);
     void HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput);
 };

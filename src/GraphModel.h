@@ -87,11 +87,17 @@ public:
     void SelectNode(size_t nodeIndex);
     void DeleteSelectedNodes();
     void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
-    void DelLink(size_t index, size_t slot);
+    void DelLink(size_t nodeIndex, size_t slotIndex);
     void AddRug(ImVec2 position, ImVec2 size, uint32_t color, const std::string& comment);
     void DelRug(size_t rugIndex);
     void SetRug(size_t rugIndex, const NodeRug& rug);
     void SetSamplers(size_t nodeIndex, const std::vector <InputSampler>& sampler);
+    void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
+    void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
+    void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
+    AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
+    void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
+    void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
 
     // getters
 
@@ -114,15 +120,24 @@ public:
     }
     ImVec2 GetNodePos(size_t nodeIndex) const;
     bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const;
+    bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
+    bool IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const;
+    
     const EvaluationStages& GetEvaluationStages() const
     {
         return mEvaluationStages;
     }
+    const std::vector<AnimTrack>& GetAnimTrack() const
+    {
+        return mEvaluationStages.GetAnimTrack();
+    }
+    void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const;
     // clipboard
     void CopyNodes(const std::vector<size_t> nodes);
     void CutNodes(const std::vector<size_t> nodes);
     void PasteNodes();
 
+    EvaluationStages mEvaluationStages;
 
 private:
     bool mbTransaction;
@@ -133,5 +148,5 @@ private:
     std::vector<NodeLink> mLinks;
     std::vector<NodeRug> mRugs;
 
-    EvaluationStages mEvaluationStages;
+    
 };

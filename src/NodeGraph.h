@@ -39,22 +39,11 @@ struct NodeGraphControlerBase
     int mSelectedNodeIndex;
     const std::vector<std::string>* mCategories;
 
-    //virtual void UpdateEvaluationList(const std::vector<size_t> nodeOrderList) = 0;
-    //virtual void AddLink(int InputIdx, int InputSlot, int OutputIdx, int OutputSlot) = 0;
-    //virtual void DelLink(int index, int slot) = 0;
     virtual unsigned int GetNodeTexture(size_t index) = 0;
-    // A new node has been added in the graph. Do a push_back on your node array
-    // add node for batch(loading graph)
-    //virtual void AddSingleNode(size_t type) = 0;
-    // add  by user interface
-    //virtual void UserAddNode(size_t type) = 0;
-    // node deleted
-    //virtual void UserDeleteNode(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) const = 0;
 
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
     virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd) = 0;
-    //virtual bool NodeHasUI(size_t nodeIndex) const = 0;
     virtual int NodeIsProcesing(size_t nodeIndex) const = 0;
     virtual float NodeProgress(size_t nodeIndex) const = 0;
     virtual bool NodeIsCubemap(size_t nodeIndex) const = 0;

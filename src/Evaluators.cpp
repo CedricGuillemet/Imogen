@@ -145,7 +145,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
     m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
-        Imogen::instance->GetNodeGraphControler()->SetParameter(nodeIndex, paramName, value);
+        Imogen::instance->GetNodeGraphControler()->mModel.SetParameter(nodeIndex, paramName, value);
     });
     m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
         // Imogen::instance->GetNodeGraphControler()->AddLink(nodeSource, slotSource, nodeDestination, slotDestination);

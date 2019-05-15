@@ -262,9 +262,15 @@ bool GraphModel::NodeHasUI(size_t nodeIndex) const
 
 bool GraphModel::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
 {
+    assert(!mbTransaction);
     return mEvaluationStages.IsIOPinned(nodeIndex, io, forOutput);
 }
 
+bool GraphModel::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
+{
+    assert(!mbTransaction);
+    return mEvaluationStages.IsParameterPinned(nodeIndex, parameterIndex);
+}
 
 void GraphModel::SetParameter(int nodeIndex,
                                       const std::string& parameterName,

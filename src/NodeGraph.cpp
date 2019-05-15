@@ -37,7 +37,7 @@
 #include <array>
 #include "imgui_markdown/imgui_markdown.h"
 #include "UI.h"
-#include "UndoRedo.h"
+//#include "UndoRedo.h"
 #include "GraphModel.h"
 
 void AddExtractedView(size_t nodeIndex);
@@ -47,6 +47,28 @@ static inline float Distance(ImVec2& a, ImVec2& b)
 {
     return sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }
+
+
+ImVec2 GetInputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
+{
+    ImVec2 Size(100, 100);
+    unsigned int InputsCount = gMetaNodes[node.mType].mInputs.size();
+    return ImVec2(node.mPos.x * factor,
+                  node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
+}
+ImVec2 GetOutputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
+{
+    unsigned int OutputsCount = gMetaNodes[node.mType].mOutputs.size();
+    ImVec2 Size(100, 100);
+    return ImVec2(node.mPos.x * factor + Size.x,
+                  node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
+}
+ImRect GetNodeRect(const GraphModel::Node& node, float factor)
+{
+    ImVec2 Size(100, 100);
+    return ImRect(node.mPos * factor, node.mPos * factor + Size);
+}
+
 /*
 Node::Node(int type, const ImVec2& pos)
 {
@@ -118,9 +140,9 @@ const float NODE_SLOT_RADIUS = 8.0f;
 const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
 static std::vector<NodeOrder> mOrders;
-//static std::vector<Node> nodes;
-//static std::vector<NodeLink> links;
-//static std::vector<NodeRug> rugs;
+// static std::vector<Node> nodes;
+// static std::vector<NodeLink> links;
+// static std::vector<NodeRug> rugs;
 static std::vector<GraphModel::Node> mNodesClipboard;
 static int editRug = -1;
 
@@ -172,8 +194,8 @@ void NodeGraphClear()
     /*nodes.clear();
     links.clear();
     rugs.clear();
-	*/
-    editRug = NULL;
+        */
+    editRug = -1;
     nodeOperation = NO_None;
     factor = 1.0f;
     factorTarget = 1.0f;
@@ -189,12 +211,12 @@ const std::vector<NodeRug>& NodeGraphRugs()
     return rugs;
 }
 */
-int DisplayRugs(GraphModel *model, int editRug, ImDrawList* drawList, ImVec2 offset, float factor)
+int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 offset, float factor)
 {
     ImGuiIO& io = ImGui::GetIO();
     int ret = editRug;
 
-	const auto& nodes = model->GetNodes();
+    const auto& nodes = model->GetNodes();
     const auto& rugs = model->GetRugs();
 
     // mouse pointer over any node?
@@ -202,7 +224,7 @@ int DisplayRugs(GraphModel *model, int editRug, ImDrawList* drawList, ImVec2 off
     for (auto& node : nodes)
     {
         ImVec2 node_rect_min = offset + node.mPos * factor;
-        ImVec2 node_rect_max = node_rect_min + ImVec2(100,100);
+        ImVec2 node_rect_max = node_rect_min + ImVec2(100, 100);
         if (ImRect(node_rect_min, node_rect_max).Contains(io.MousePos))
         {
             overAnyNode = true;
@@ -236,10 +258,10 @@ int DisplayRugs(GraphModel *model, int editRug, ImDrawList* drawList, ImVec2 off
                 for (auto& node : nodes)
                 {
                     ImVec2 node_rect_min = offset + node.mPos * factor;
-                    ImVec2 node_rect_max = node_rect_min + ImVec2(100,100);
+                    ImVec2 node_rect_max = node_rect_min + ImVec2(100, 100);
                     if (rugRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                     {
-                        node.mbSelected = true;
+                        // node.mbSelected = true; todo
                     }
                 }
             }
@@ -267,11 +289,11 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     ImGuiIO& io = ImGui::GetIO();
     const auto& rugs = model->GetRugs();
     ImVec2 commentSize = rugs[rugIndex].mSize * factor;
-    static NodeRug* movingRug = NULL;
-    static NodeRug* sizingRug = NULL;
-    //auto* rug = &rugs[rugIndex];
-    //int rugIndex = int(rug - rugs.data());
-    //URChange<NodeRug> undoRedoRug(rugIndex, [model](int index) { return &model->GetRugs()[index]; }, [](int) {});
+    static int movingRug = -1;
+    static int sizingRug = -1;
+    GraphModel::NodeRug rug = rugs[rugIndex];
+    // int rugIndex = int(rug - rugs.data());
+    // URChange<NodeRug> undoRedoRug(rugIndex, [model](int index) { return &model->GetRugs()[index]; }, [](int) {});
     GraphModel::NodeRug editingRug = rugs[rugIndex];
     bool dirtyRug = false;
     ImVec2 node_rect_min = offset + editingRug.mPos * factor;
@@ -281,12 +303,12 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
 
 
-    drawList->AddRectFilled(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xE0000000, 10.0f, 15);
-    drawList->AddRect(node_rect_min, node_rect_max, (rug->mColor & 0xFFFFFF) + 0xFF000000, 10.0f, 15, 2.f);
+    drawList->AddRectFilled(node_rect_min, node_rect_max, (rug.mColor & 0xFFFFFF) + 0xE0000000, 10.0f, 15);
+    drawList->AddRect(node_rect_min, node_rect_max, (rug.mColor & 0xFFFFFF) + 0xFF000000, 10.0f, 15, 2.f);
     drawList->AddTriangleFilled(node_rect_min + commentSize - ImVec2(25, 8),
                                 node_rect_min + commentSize - ImVec2(8, 25),
                                 node_rect_min + commentSize - ImVec2(8, 8),
-                                (rug->mColor & 0xFFFFFF) + 0x90000000);
+                                (rug.mColor & 0xFFFFFF) + 0x90000000);
 
     ImGui::SetCursorScreenPos(node_rect_min + ImVec2(5, 5));
     ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
@@ -306,7 +328,10 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
         if (ImGui::Button("   "))
         {
-            rug->mColor = buttonColor;
+            model->BeginTransaction(true);
+            rug.mColor = buttonColor;
+            model->SetRug(rugIndex, rug);
+            model->EndTransaction();
             dirtyRug = true;
         }
         ImGui::PopStyleColor(3);
@@ -316,10 +341,10 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
 
     if (ImGui::Button("Delete"))
     {
-        //undoRedoRug.Discard();
-        //int index = int(rug - rugs.data());
-        //URDel<NodeRug> undoRedoDelRug(index, []() { return &rugs; }, [](int) {}, [](int) {});
-        //rugs.erase(rugs.begin() + index);
+        // undoRedoRug.Discard();
+        // int index = int(rug - rugs.data());
+        // URDel<NodeRug> undoRedoDelRug(index, []() { return &rugs; }, [](int) {}, [](int) {});
+        // rugs.erase(rugs.begin() + index);
         model->BeginTransaction(true);
         model->DelRug(rugIndex);
         model->EndTransaction();
@@ -332,13 +357,13 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     if (insideSizingRect.Contains(io.MousePos))
         if (nodeOperation == NO_None && io.MouseDown[0] /* && !mouseMoved*/)
         {
-            sizingRug = rug;
+            sizingRug = rugIndex;
             createUndo = true;
             nodeOperation = NO_SizingRug;
         }
     if (sizingRug && !io.MouseDown[0])
     {
-        sizingRug = NULL;
+        sizingRug = -1;
         commitUndo = true;
         nodeOperation = NO_None;
     }
@@ -346,65 +371,71 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     if (rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos))
         if (nodeOperation == NO_None && io.MouseDown[0] /*&& !mouseMoved*/)
         {
-            movingRug = rug;
+            movingRug = rugIndex;
             createUndo = true;
             nodeOperation = NO_MovingRug;
         }
     if (movingRug && !io.MouseDown[0])
     {
         commitUndo = true;
-        movingRug = NULL;
+        movingRug = -1;
         nodeOperation = NO_None;
     }
 
     // undo/redo for sizing/moving
-    //static URChange<NodeRug>* undoRedoRugcm = NULL;
+    // static URChange<NodeRug>* undoRedoRugcm = NULL;
     if (createUndo)
     {
-        //undoRedoRugcm = new URChange<NodeRug>(rugIndex, [](int index) { return &rugs[index]; }, [](int) {});
+        // undoRedoRugcm = new URChange<NodeRug>(rugIndex, [](int index) { return &rugs[index]; }, [](int) {});
         model->BeginTransaction(true);
     }
     if (commitUndo)
     {
-        //delete undoRedoRugcm;
-        //undoRedoRugcm = NULL;
+        // delete undoRedoRugcm;
+        // undoRedoRugcm = NULL;
         model->EndTransaction();
     }
     if (dirtyRug)
     {
-        //undoRedoRug.Discard();
+        // undoRedoRug.Discard();
         model->BeginTransaction(true);
         model->SetRug(rugIndex, editingRug);
         model->EndTransaction();
     }
 
-    if (sizingRug && ImGui::IsMouseDragging(0))
-        sizingRug->mSize += io.MouseDelta;
-    if (movingRug && ImGui::IsMouseDragging(0))
-        movingRug->mPos += io.MouseDelta;
+    if (sizingRug != -1 && ImGui::IsMouseDragging(0))
+    {
+        //sizingrug.mSize += io.MouseDelta;
+    }
+    if (movingRug != -1 && ImGui::IsMouseDragging(0))
+    {
+        //movingrug.mPos += io.MouseDelta;
+    }
 
     if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
         return true;
     return false;
 }
 
-bool RecurseIsLinked(int from, int to)
+bool RecurseIsLinked(const std::vector<GraphModel::NodeLink>& links, int from, int to)
 {
     for (auto& link : links)
     {
-        if (link.InputIdx == from)
+        if (link.mInputIdx == from)
         {
-            if (link.OutputIdx == to)
+            if (link.mOutputIdx == to)
                 return true;
 
-            if (RecurseIsLinked(link.OutputIdx, to))
+            if (RecurseIsLinked(links, link.mOutputIdx, to))
                 return true;
         }
     }
     return false;
 }
 
-void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* controler)
+void NodeGraphUpdateEvaluationOrder(const std::vector<GraphModel::NodeLink>& links,
+                                    const std::vector<GraphModel::Node>& nodes,
+                                    NodeGraphControlerBase* controler)
 {
     mOrders = ComputeEvaluationOrder(links, nodes.size());
     std::sort(mOrders.begin(), mOrders.end());
@@ -416,7 +447,7 @@ void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* controler)
         controler->UpdateEvaluationList(nodeOrderList);
     }
 }
-
+/*
 size_t NodeGraphAddNode(NodeGraphControlerBase* controler,
                         int type,
                         const std::vector<unsigned char>* parameters,
@@ -436,7 +467,8 @@ size_t NodeGraphAddNode(NodeGraphControlerBase* controler,
     controler->SetTimeSlot(index, frameStart, frameEnd);
     return index;
 }
-
+*/
+/*
 void NodeGraphAddLink(NodeGraphControlerBase* controler, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
 {
     if (InputIdx >= nodes.size() || OutputIdx >= nodes.size())
@@ -453,13 +485,14 @@ void NodeGraphAddLink(NodeGraphControlerBase* controler, int InputIdx, int Input
     links.push_back(nl);
     controler->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 }
-
+*/
+/*
 ImVec2 NodeGraphGetNodePos(size_t index)
 {
     return nodes[index].mPos;
 }
-
-void NodeGraphUpdateScrolling(GraphModel *model)
+*/
+void NodeGraphUpdateScrolling(GraphModel* model)
 {
     const auto& nodes = model->GetNodes();
     const auto& rugs = model->GetRugs();
@@ -490,6 +523,7 @@ void NodeGraphAddRug(
 */
 static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase* controler)
 {
+#if 0
     ImGuiIO& io = ImGui::GetIO();
     size_t metaNodeCount = gMetaNodes.size();
     const MetaNode* metaNodes = gMetaNodes.data();
@@ -642,10 +676,15 @@ static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase* 
         controler->PasteNodes();
         NodeGraphUpdateEvaluationOrder(controler);
     }
+#endif
 }
 
-static void DisplayLinks(GraphModel *model, 
-    ImDrawList* drawList, const ImVec2 offset, const float factor, const ImRect regionRect, int hoveredNode)
+static void DisplayLinks(GraphModel* model,
+                         ImDrawList* drawList,
+                         const ImVec2 offset,
+                         const float factor,
+                         const ImRect regionRect,
+                         int hoveredNode)
 {
     const auto& links = model->GetLinks();
     const auto& nodes = model->GetNodes();
@@ -654,8 +693,8 @@ static void DisplayLinks(GraphModel *model,
         const auto* link = &links[link_idx];
         const auto* node_inp = &nodes[link->mInputIdx];
         const auto* node_out = &nodes[link->mOutputIdx];
-        ImVec2 p1 = offset + node_inp->GetOutputSlotPos(link->mInputSlot, factor);
-        ImVec2 p2 = offset + node_out->GetInputSlotPos(link->mOutputSlot, factor);
+        ImVec2 p1 = offset + GetOutputSlotPos(*node_inp, link->mInputSlot, factor);
+        ImVec2 p2 = offset + GetInputSlotPos(*node_out, link->mOutputSlot, factor);
 
         // con. view clipping
         if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
@@ -761,16 +800,19 @@ static void DisplayLinks(GraphModel *model,
     }
 }
 
-static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const float factor, ImRect contentRect)
+static void HandleQuadSelection(
+    GraphModel* model, ImDrawList* drawList, const ImVec2 offset, const float factor, ImRect contentRect)
 {
     ImGuiIO& io = ImGui::GetIO();
     static ImVec2 quadSelectPos;
+    auto& nodes = model->GetNodes();
 
     ImRect editingRugRect(ImVec2(FLT_MAX, FLT_MAX), ImVec2(FLT_MAX, FLT_MAX));
     if (editRug != -1)
     {
-        ImVec2 commentSize = editRug->mSize * factor;
-        ImVec2 node_rect_min = (offset + editRug->mPos) * factor;
+        const auto& rug = model->GetRugs()[editRug];
+        ImVec2 commentSize = rug.mSize * factor;
+        ImVec2 node_rect_min = (offset + rug.mPos) * factor;
         ImVec2 node_rect_max = node_rect_min + commentSize;
         editingRugRect = ImRect(node_rect_min, node_rect_max);
     }
@@ -787,8 +829,8 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
             {
                 for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
                 {
-                    Node* node = &nodes[nodeIndex];
-                    node->mbSelected = false;
+                    const auto* node = &nodes[nodeIndex];
+                    // node->mbSelected = false; todo
                 }
             }
 
@@ -796,26 +838,26 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
             ImRect selectionRect(bmin, bmax);
             for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
             {
-                Node* node = &nodes[nodeIndex];
+                const auto* node = &nodes[nodeIndex];
                 ImVec2 node_rect_min = offset + node->mPos * factor;
-                ImVec2 node_rect_max = node_rect_min + ImVec2(100,100);
+                ImVec2 node_rect_max = node_rect_min + ImVec2(100, 100);
                 if (selectionRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                 {
-                    if (io.KeyCtrl)
+                    /*if (io.KeyCtrl) todo
                     {
                         node->mbSelected = false;
                     }
                     else
                     {
                         node->mbSelected = true;
-                    }
+                    }*/
                 }
                 else
                 {
-                    if (!io.KeyShift)
+                    /*if (!io.KeyShift) todo
                     {
                         node->mbSelected = false;
-                    }
+                    }*/
                 }
             }
         }
@@ -829,7 +871,8 @@ static void HandleQuadSelection(ImDrawList* drawList, const ImVec2 offset, const
 }
 
 
-bool HandleConnections(ImDrawList* drawList,
+bool HandleConnections(GraphModel* model,
+                       ImDrawList* drawList,
                        int nodeIndex,
                        const ImVec2 offset,
                        const float factor,
@@ -838,8 +881,10 @@ bool HandleConnections(ImDrawList* drawList,
 {
     static int editingNodeIndex;
     static int editingSlotIndex;
+    const auto& links = model->GetLinks();
+    const auto& nodes = model->GetNodes();
 
-    auto deleteLink = [controler](int index) {
+    /*auto deleteLink = [controler](int index) {
         NodeLink& link = links[index];
         controler->DelLink(link.OutputIdx, link.OutputSlot);
         NodeGraphUpdateEvaluationOrder(controler);
@@ -848,15 +893,15 @@ bool HandleConnections(ImDrawList* drawList,
         NodeLink& link = links[index];
         controler->AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
         NodeGraphUpdateEvaluationOrder(controler);
-    };
-
+    }; todo
+        */
     size_t metaNodeCount = gMetaNodes.size();
     const MetaNode* metaNodes = gMetaNodes.data();
     ImGuiIO& io = ImGui::GetIO();
-    Node* node = &nodes[nodeIndex];
+    const GraphModel::Node* node = &nodes[nodeIndex];
 
-	unsigned int InputsCount = gMetaNodes[node->mType].mInputs.size();
-	unsigned int OutputsCount = gMetaNodes[node->mType].mOutputs.size();
+    unsigned int InputsCount = gMetaNodes[node->mType].mInputs.size();
+    unsigned int OutputsCount = gMetaNodes[node->mType].mOutputs.size();
 
     // draw/use inputs/outputs
     bool hoverSlot = false;
@@ -871,7 +916,7 @@ bool HandleConnections(ImDrawList* drawList,
         for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
         {
             ImVec2 p =
-                offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
+                offset + (i ? GetOutputSlotPos(*node, slot_idx, factor) : GetInputSlotPos(*node, slot_idx, factor));
             float distance = Distance(p, io.MousePos);
             bool overCon = (nodeOperation == NO_None || nodeOperation == NO_EditingLink) &&
                            (distance < NODE_SLOT_RADIUS * 2.f) && (distance < closestDistance);
@@ -883,7 +928,7 @@ bool HandleConnections(ImDrawList* drawList,
                 p + ImVec2(-NODE_SLOT_RADIUS * (i ? -1.f : 1.f) * (overCon ? 3.f : 2.f) - (i ? 0 : textSize.x),
                            -textSize.y / 2);
 
-            ImRect nodeRect = node->GetNodeRect(factor);
+            ImRect nodeRect = GetNodeRect(*node, factor);
             if (overCon || (nodeRect.Contains(io.MousePos - offset) && closestConn == -1 &&
                             (editingInput == (i != 0)) && nodeOperation == NO_EditingLink))
             {
@@ -914,13 +959,13 @@ bool HandleConnections(ImDrawList* drawList,
                 if (inputToOutput)
                 {
                     // check loopback
-                    NodeLink nl;
+                    GraphModel::NodeLink nl;
                     if (editingInput)
-                        nl = NodeLink(nodeIndex, closestConn, editingNodeIndex, editingSlotIndex);
+                        nl = GraphModel::NodeLink{nodeIndex, closestConn, editingNodeIndex, editingSlotIndex};
                     else
-                        nl = NodeLink(editingNodeIndex, editingSlotIndex, nodeIndex, closestConn);
+                        nl = GraphModel::NodeLink{editingNodeIndex, editingSlotIndex, nodeIndex, closestConn};
 
-                    if (RecurseIsLinked(nl.OutputIdx, nl.InputIdx))
+                    if (RecurseIsLinked(links, nl.mOutputIdx, nl.mInputIdx))
                     {
                         Log("Acyclic graph. Loop is not allowed.\n");
                         break;
@@ -938,24 +983,32 @@ bool HandleConnections(ImDrawList* drawList,
                     // check already connected output
                     for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
                     {
-                        NodeLink& link = links[linkIndex];
-                        if (link.OutputIdx == nl.OutputIdx && link.OutputSlot == nl.OutputSlot)
+                        auto& link = links[linkIndex];
+                        if (link.mOutputIdx == nl.mOutputIdx && link.mOutputSlot == nl.mOutputSlot)
                         {
-                            URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+                            /*URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
                             controler->DelLink(link.OutputIdx, link.OutputSlot);
                             links.erase(links.begin() + linkIndex);
                             NodeGraphUpdateEvaluationOrder(controler);
+                                                        */
+                            model->BeginTransaction(true);
+                            model->DelLink(link.mOutputIdx, link.mOutputSlot);
+                            model->EndTransaction();
                             break;
                         }
                     }
 
                     if (!alreadyExisting)
                     {
-                        URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
+                        /*URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
 
                         links.push_back(nl);
-                        controler->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
+                        controler->AddLink(nl.mInputIdx, nl.mInputSlot, nl.mOutputIdx, nl.mOutputSlot);
                         NodeGraphUpdateEvaluationOrder(controler);
+                                                */
+                        model->BeginTransaction(true);
+                        model->AddLink(nl.mInputIdx, nl.mInputSlot, nl.mOutputIdx, nl.mOutputSlot);
+                        model->EndTransaction();
                     }
                 }
             }
@@ -974,13 +1027,17 @@ bool HandleConnections(ImDrawList* drawList,
                     // remove existing link
                     for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
                     {
-                        NodeLink& link = links[linkIndex];
-                        if (link.OutputIdx == nodeIndex && link.OutputSlot == closestConn)
+                        auto& link = links[linkIndex];
+                        if (link.mOutputIdx == nodeIndex && link.mOutputSlot == closestConn)
                         {
-                            URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+                            /*URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
                             controler->DelLink(link.OutputIdx, link.OutputSlot);
                             links.erase(links.begin() + linkIndex);
                             NodeGraphUpdateEvaluationOrder(controler);
+                                                        */
+                            model->BeginTransaction(true);
+                            model->DelLink(link.mOutputIdx, link.mOutputSlot);
+                            model->EndTransaction();
                             break;
                         }
                     }
@@ -1002,7 +1059,8 @@ static void DrawGrid(ImDrawList* drawList, ImVec2 windowPos, const ImVec2 canvas
 }
 
 // return true if node is hovered
-static bool DrawNode(ImDrawList* drawList,
+static bool DrawNode(GraphModel* model,
+                     ImDrawList* drawList,
                      int nodeIndex,
                      const ImVec2 offset,
                      const float factor,
@@ -1011,7 +1069,8 @@ static bool DrawNode(ImDrawList* drawList,
 {
     ImGuiIO& io = ImGui::GetIO();
     const MetaNode* metaNodes = gMetaNodes.data();
-    Node* node = &nodes[nodeIndex];
+    const auto& nodes = model->GetNodes();
+    const auto* node = &nodes[nodeIndex];
     ImVec2 node_rect_min = offset + node->mPos * factor;
 
     bool old_any_active = ImGui::IsAnyItemActive();
@@ -1027,8 +1086,8 @@ static bool DrawNode(ImDrawList* drawList,
 
     // Save the size of what we have emitted and whether any of the widgets are being used
     bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-    ImVec2(100,100) = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
-    ImVec2 node_rect_max = node_rect_min + ImVec2(100,100);
+    ImVec2(100, 100) = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
+    ImVec2 node_rect_max = node_rect_min + ImVec2(100, 100);
 
     // test nested IO
     drawList->ChannelsSetCurrent(1); // Background
@@ -1046,7 +1105,7 @@ static bool DrawNode(ImDrawList* drawList,
                 continue;
             }
             ImVec2 p =
-                offset + (i ? node->GetOutputSlotPos(slot_idx, factor) : node->GetInputSlotPos(slot_idx, factor));
+                offset + (i ? GetOutputSlotPos(*node, slot_idx, factor) : GetInputSlotPos(*node, slot_idx, factor));
             const float arc = 28.f * (float(i) * 0.3f + 1.0f) * (i ? 1.f : -1.f);
             const float ofs = 0.f;
 
@@ -1058,7 +1117,7 @@ static bool DrawNode(ImDrawList* drawList,
 
 
     ImGui::SetCursorScreenPos(node_rect_min);
-    ImGui::InvisibleButton("node", ImVec2(100,100));
+    ImGui::InvisibleButton("node", ImVec2(100, 100));
     bool nodeHovered = false;
     if (ImGui::IsItemHovered() && nodeOperation == NO_None && !overInput)
     {
@@ -1071,12 +1130,13 @@ static bool DrawNode(ImDrawList* drawList,
         {
             if (!node->mbSelected)
             {
-                if (!io.KeyShift)
+                /*if (!io.KeyShift)
                 {
                     for (auto& selnode : nodes)
                         selnode.mbSelected = false;
                 }
-                node->mbSelected = true;
+                node->mbSelected = true; todo
+                                */
             }
         }
     }
@@ -1104,8 +1164,8 @@ static bool DrawNode(ImDrawList* drawList,
     float progress = controler->NodeProgress(nodeIndex);
     if (progress > FLT_EPSILON && progress < 1.f - FLT_EPSILON)
     {
-        ImVec2 progressLineA = node_rect_max - ImVec2(ImVec2(100,100).x - 2.f, 3.f);
-        ImVec2 progressLineB = progressLineA + ImVec2(ImVec2(100,100).x - 4.f, 0.f);
+        ImVec2 progressLineA = node_rect_max - ImVec2(ImVec2(100, 100).x - 2.f, 3.f);
+        ImVec2 progressLineB = progressLineA + ImVec2(ImVec2(100, 100).x - 4.f, 0.f);
         drawList->AddLine(progressLineA, progressLineB, 0xFF400000, 3.f);
         drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
     }
@@ -1170,8 +1230,9 @@ static bool DrawNode(ImDrawList* drawList,
     return nodeHovered;
 }
 
-void ComputeDelegateSelection(NodeGraphControlerBase* controler)
+void ComputeDelegateSelection(GraphModel* model, NodeGraphControlerBase* controler)
 {
+    const auto& nodes = model->GetNodes();
     // only one selection allowed for delegate
     controler->mSelectedNodeIndex = -1;
     for (auto& node : nodes)
@@ -1190,7 +1251,7 @@ void ComputeDelegateSelection(NodeGraphControlerBase* controler)
         }
     }
 }
-
+/* todo
 void NodeGraphSelectNode(int selectedNodeIndex)
 {
     for (size_t i = 0; i < nodes.size(); i++)
@@ -1198,8 +1259,8 @@ void NodeGraphSelectNode(int selectedNodeIndex)
         nodes[i].mbSelected = selectedNodeIndex == i;
     }
 }
-
-void NodeGraph(GraphModel *model, NodeGraphControlerBase* controler, bool enabled)
+*/
+void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enabled)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
@@ -1208,6 +1269,7 @@ void NodeGraph(GraphModel *model, NodeGraphControlerBase* controler, bool enable
     const ImVec2 windowPos = ImGui::GetCursorScreenPos();
     const ImVec2 canvasSize = ImGui::GetWindowSize();
     const ImVec2 scrollRegionLocalPos(0, 50);
+    const auto& nodes = model->GetNodes();
 
     ImRect regionRect(windowPos, windowPos + canvasSize);
 
@@ -1259,7 +1321,7 @@ void NodeGraph(GraphModel *model, NodeGraphControlerBase* controler, bool enable
     // Display links
     drawList->ChannelsSplit(3);
     drawList->ChannelsSetCurrent(1); // Background
-    DisplayLinks(drawList, offset, factor, regionRect, hoveredNode);
+    DisplayLinks(model, drawList, offset, factor, regionRect, hoveredNode);
 
     // edit node link
     if (nodeOperation == NO_EditingLink)
@@ -1276,12 +1338,12 @@ void NodeGraph(GraphModel *model, NodeGraphControlerBase* controler, bool enable
     {
         for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
         {
-            Node* node = &nodes[nodeIndex];
+            const auto* node = &nodes[nodeIndex];
             if (node->mbSelected != (i != 0))
                 continue;
 
             // node view clipping
-            ImRect nodeRect = node->GetNodeRect(factor);
+            ImRect nodeRect = GetNodeRect(*node, factor);
             nodeRect.Min += offset;
             nodeRect.Max += offset;
             if (!regionRect.Overlaps(nodeRect))
@@ -1292,12 +1354,12 @@ void NodeGraph(GraphModel *model, NodeGraphControlerBase* controler, bool enable
             // Display node contents first
             // drawList->ChannelsSetCurrent(i+1); // channel 2 = Foreground channel 1 = background
 
-            bool overInput = HandleConnections(drawList, nodeIndex, offset, factor, controler, false);
+            bool overInput = HandleConnections(model, drawList, nodeIndex, offset, factor, controler, false);
 
-            if (DrawNode(drawList, nodeIndex, offset, factor, controler, overInput))
+            if (DrawNode(model, drawList, nodeIndex, offset, factor, controler, overInput))
                 hoveredNode = nodeIndex;
 
-            HandleConnections(drawList, nodeIndex, offset, factor, controler, true);
+            HandleConnections(model, drawList, nodeIndex, offset, factor, controler, true);
 
             ImGui::PopID();
         }
@@ -1310,7 +1372,8 @@ void NodeGraph(GraphModel *model, NodeGraphControlerBase* controler, bool enable
         {
             if (!node.mbSelected)
                 continue;
-            node.mPos += io.MouseDelta / factor;
+            // todo
+            // node.mPos += io.MouseDelta / factor;
         }
     }
 
@@ -1319,7 +1382,7 @@ void NodeGraph(GraphModel *model, NodeGraphControlerBase* controler, bool enable
 
 
     // quad selection
-    HandleQuadSelection(drawList, offset, factor, regionRect);
+    HandleQuadSelection(model, drawList, offset, factor, regionRect);
 
     drawList->ChannelsMerge();
 
@@ -1372,7 +1435,7 @@ nodeGraphExit:;
     ImGui::PopStyleColor(1);
     ImGui::PopStyleVar(2);
 
-    ComputeDelegateSelection(controler);
+    ComputeDelegateSelection(model, controler);
 
     ImGui::EndGroup();
     ImGui::PopStyleVar(3);
@@ -1385,12 +1448,16 @@ struct NodePosition
     int mStackIndex;
 };
 
-void RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
+void RecurseNodeGraphLayout(GraphModel* model,
+                            std::vector<NodePosition>& positions,
                             std::map<int, int>& stacks,
-                            const std::vector<NodeLink>& links,
+
                             size_t currentIndex,
                             int currentLayer)
 {
+    const auto& nodes = model->GetNodes();
+    const auto& links = model->GetLinks();
+
     if (positions[currentIndex].mLayer == -1)
     {
         positions[currentIndex].mLayer = currentLayer;
@@ -1426,45 +1493,48 @@ void RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
         }
     }
 
-	unsigned int InputsCount = gMetaNodes[nodes[currentIndex].mType].mInputs.size();
+    unsigned int InputsCount = gMetaNodes[nodes[currentIndex].mType].mInputs.size();
     std::vector<int> inputNodes(InputsCount, -1);
     for (auto& link : links)
     {
-        if (link.OutputIdx != currentIndex)
+        if (link.mOutputIdx != currentIndex)
             continue;
-        inputNodes[link.OutputSlot] = link.InputIdx;
+        inputNodes[link.mOutputSlot] = link.mInputIdx;
     }
     for (auto inputNode : inputNodes)
     {
         if (inputNode == -1)
             continue;
-        RecurseNodeGraphLayout(positions, stacks, links, inputNode, currentLayer + 1);
+        RecurseNodeGraphLayout(model, positions, stacks, inputNode, currentLayer + 1);
     }
 }
 
-void NodeGraphLayout()
+void NodeGraphLayout(GraphModel* model)
 {
-    URDummy dummy;
+    // URDummy dummy;
     std::vector<size_t> nodeOrderList(mOrders.size());
+
+    const auto& nodes = model->GetNodes();
 
     // get stack/layer pos
     std::vector<NodePosition> nodePositions(nodes.size(), {-1, -1});
     std::map<int, int> stacks;
     ImRect sourceRect, destRect;
-    std::vector<URChange<Node>*> undos(nodes.size());
-
+    // std::vector<URChange<Node>*> undos(nodes.size());
+    model->BeginTransaction(true);
+    std::vector<ImVec2> nodePos(nodes.size());
     // compute source bounds
     for (unsigned int i = 0; i < nodes.size(); i++)
     {
-        const Node& node = nodes[i];
-        sourceRect.Add(ImRect(node.mPos, node.mPos + ImVec2(100,100)));
-        undos[i] = new URChange<Node>(i, [](int index) { return &nodes[index]; }, [](int) {});
+        const auto& node = nodes[i];
+        sourceRect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
+        // undos[i] = new URChange<Node>(i, [](int index) { return &nodes[index]; }, [](int) {});
     }
 
     for (unsigned int i = 0; i < nodes.size(); i++)
     {
         size_t nodeIndex = mOrders[nodes.size() - i - 1].mNodeIndex;
-        RecurseNodeGraphLayout(nodePositions, stacks, links, nodeIndex, 0);
+        RecurseNodeGraphLayout(model, nodePositions, stacks, nodeIndex, 0);
     }
 
     // set x,y position from layer/stack
@@ -1472,29 +1542,27 @@ void NodeGraphLayout()
     {
         size_t nodeIndex = mOrders[i].mNodeIndex;
         auto& layout = nodePositions[nodeIndex];
-        nodes[nodeIndex].mPos = ImVec2(-layout.mLayer * 180.f, layout.mStackIndex * 140.f);
+        nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, layout.mStackIndex * 140.f);
     }
 
     // new bounds
     for (auto& node : nodes)
     {
-        destRect.Add(ImRect(node.mPos, node.mPos + ImVec2(100,100)));
+        destRect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
     }
 
     // move all nodes
     ImVec2 offset = sourceRect.GetCenter() - destRect.GetCenter();
-    for (auto& node : nodes)
+    for (auto& pos : nodePos)
     {
-        node.mPos += offset;
+        pos += offset;
     }
-
+    // todo: apply position
     // finish undo
-    for (auto& undo : undos)
-    {
-        delete undo;
-    }
+    model->EndTransaction();
 }
 
+/* todo
 ImRect DisplayRectMargin(ImRect rect)
 {
     // margins
@@ -1511,7 +1579,7 @@ ImRect GetNodesDisplayRect()
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     for (auto& node : nodes)
     {
-        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(100,100)));
+        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
     }
 
     return DisplayRectMargin(rect);
@@ -1524,20 +1592,21 @@ ImRect GetFinalNodeDisplayRect()
     if (!mOrders.empty() && !nodes.empty())
     {
         auto& node = nodes[mOrders.back().mNodeIndex];
-        rect = ImRect(node.mPos, node.mPos + ImVec2(100,100));
+        rect = ImRect(node.mPos, node.mPos + ImVec2(100, 100));
     }
     return DisplayRectMargin(rect);
 }
 
 bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput)
 {
-	for (auto& link : links)
-	{
-            if ((link.InputIdx == nodeIndex && link.InputSlot == slotIndex && forOutput) ||
-                (link.OutputIdx == nodeIndex && link.OutputSlot == slotIndex && !forOutput))
-            {
-                return true;
-				}
-	}
-        return false;
+    for (auto& link : links)
+    {
+        if ((link.InputIdx == nodeIndex && link.InputSlot == slotIndex && forOutput) ||
+            (link.OutputIdx == nodeIndex && link.OutputSlot == slotIndex && !forOutput))
+        {
+            return true;
+        }
+    }
+    return false;
 }
+*/

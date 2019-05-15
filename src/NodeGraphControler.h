@@ -118,10 +118,10 @@ struct NodeGraphControler : public NodeGraphControlerBase
     }
 
 
-    void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
-    void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);
+    //void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
+    //void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);
 
-    AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
+    //AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
 
     void PinnedEdit();
 
@@ -138,7 +138,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
         return GetByAsyncId(id, mModel.mEvaluationStages.mStages);
     }
     void NodeEdit();
-    void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
+    //void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
 
 	GraphModel mModel;
 

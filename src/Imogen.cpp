@@ -919,7 +919,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
         for (size_t curve = 0; curve < mPts.size();)
         {
-            AnimTrack& animTrack = *mNodeGraphControler.GetAnimTrack(mNodeIndex, mParameterIndex[curve]);
+            AnimTrack& animTrack = *mNodeGraphControler.mModel.GetAnimTrack(mNodeIndex, mParameterIndex[curve]);
             animTrack.mNodeIndex = mNodeIndex;
             animTrack.mParamIndex = mParameterIndex[curve];
             animTrack.mValueType = mValueType[curve];
@@ -1335,7 +1335,7 @@ struct MySequence : public ImSequencer::SequenceInterface
                 ImVec2 keyValue = curveEdit.mPts[selPoint.curveIndex][keyIndex];
                 uint32_t parameterIndex = curveEdit.mParameterIndex[selPoint.curveIndex];
                 AnimTrack* animTrack =
-                    mNodeGraphControler.GetAnimTrack(mNodeGraphControler.mSelectedNodeIndex, parameterIndex);
+                    mNodeGraphControler.mModel.GetAnimTrack(mNodeGraphControler.mSelectedNodeIndex, parameterIndex);
                 // UndoRedo *undoRedo = nullptr;
                 // undoRedo = new URChange<AnimTrack>(int(animTrack - gNodeDelegate.GetAnimTrack().data()), [](int
                 // index) { return &gNodeDelegate.mAnimTrack[index]; });
@@ -1420,7 +1420,7 @@ void Imogen::Init()
         {"DeleteSelectedNodes", "Delete selected nodes in the current graph", []() {}},
         {"AnimationSetKey",
          "Make a new animation key with the current parameters values at the current time",
-         [&]() { mNodeGraphControler->MakeKey(mCurrentTime, uint32_t(mNodeGraphControler->mSelectedNodeIndex), 0); }},
+         [&]() { mNodeGraphControler->mModel.MakeKey(mCurrentTime, uint32_t(mNodeGraphControler->mSelectedNodeIndex), 0); }},
         {"HotKeyEditor", "Open the Hotkey editor window", [&]() { ImGui::OpenPopup("HotKeys Editor"); }},
         {"NewNodePopup", "Open the new node menu", []() {}},
         {"Undo", "Undo the last operation", []() { gUndoRedoHandler.Undo(); }},
@@ -1829,7 +1829,7 @@ void Imogen::ShowTimeLine()
     ImGui::SameLine(0, 40.f);
     if (Button("AnimationSetKey", "Make Key", ImVec2(0, 0)) && selectedEntry != -1)
     {
-        mNodeGraphControler->MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
+        mNodeGraphControler->mModel.MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
     }
 
     ImGui::SameLine(0, 50.f);

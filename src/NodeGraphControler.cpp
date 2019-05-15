@@ -335,19 +335,19 @@ void NodeGraphControler::UpdateDirtyParameter(int index)
 void NodeGraphControler::PinnedEdit()
 {
     int dirtyNode = -1;
-    for (const auto pin : mEvaluationStages.mPinnedParameters)
+    for (const auto pin : mModel.mEvaluationStages.mPinnedParameters)
     {
         unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
         unsigned int parameterIndex = pin & 0xFFFF;
 
-        size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
+        size_t nodeType = mModel.mEvaluationStages.mStages[nodeIndex].mType;
         const MetaNode& metaNode = gMetaNodes[nodeType];
         if (parameterIndex >= metaNode.mParams.size())
             continue;
 
         ImGui::PushID(171717 + pin);
         const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
-        unsigned char* paramBuffer = mEvaluationStages.mStages[nodeIndex].mParameters.data();
+        unsigned char* paramBuffer = mModel.mEvaluationStages.mStages[nodeIndex].mParameters.data();
         paramBuffer += GetParameterOffset(uint32_t(nodeType), parameterIndex);
         if (EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam))
             dirtyNode = nodeIndex;
@@ -368,7 +368,7 @@ void NodeGraphControler::EditNodeParameters()
     bool dirty = false;
     bool forceEval = false;
     bool samplerDirty = false;
-    auto& stage = mEvaluationStages.mStages[index];
+    auto& stage = mModel.mEvaluationStages.mStages[index];
     const MetaNode& currentMeta = metaNodes[stage.mType];
 
     if (ImGui::CollapsingHeader("Samplers", 0))
@@ -406,7 +406,7 @@ void NodeGraphControler::EditNodeParameters()
         }
         if (samplerDirty)
         {
-            mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
+            mModel.SetSamplers(index, stage.mInputSamplers);
             mEditingContext.SetTargetDirty(index, Dirty::Sampler);
         }
         else
@@ -452,9 +452,13 @@ void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool fo
         return;
     }
     ImGui::PushID(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0));
-    bool pinned = IsIOPinned(nodeIndex, slotIndex, forOutput);
-    ImGui::Checkbox("", &pinned);
-    mEvaluationStages.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
+    bool pinned = mModel.IsIOPinned(nodeIndex, slotIndex, forOutput);
+    if (ImGui::Checkbox("", &pinned))
+    {
+        mModel.BeginTransaction(true);
+        mModel.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
+        mModel.EndTransaction();
+    }
     ImGui::PopID();
 }
 
@@ -480,7 +484,7 @@ void NodeGraphControler::NodeEdit()
             ImGui::PopID();
         }
                 */
-        auto& io = mEvaluationStages.mPinnedIO;
+        auto& io = mModel.mEvaluationStages.mPinnedIO;
         for (size_t nodeIndex = 0; nodeIndex < io.size(); nodeIndex++)
         {
             if ((io[nodeIndex] & 1) == 0)
@@ -523,23 +527,23 @@ void NodeGraphControler::NodeEdit()
 
 void NodeGraphControler::SetTimeSlot(size_t index, int frameStart, int frameEnd)
 {
-    auto& stage = mEvaluationStages.mStages[index];
+    auto& stage = mModel.mEvaluationStages.mStages[index];
     stage.mStartFrame = frameStart;
     stage.mEndFrame = frameEnd;
 }
 
 void NodeGraphControler::SetTimeDuration(size_t index, int duration)
 {
-    auto& stage = mEvaluationStages.mStages[index];
+    auto& stage = mModel.mEvaluationStages.mStages[index];
     stage.mEndFrame = stage.mStartFrame + duration;
 }
 
 void NodeGraphControler::InvalidateParameters()
 {
-    for (size_t i = 0; i < mEvaluationStages.mStages.size(); i++)
+    for (size_t i = 0; i < mModel.mEvaluationStages.mStages.size(); i++)
     {
-        auto& stage = mEvaluationStages.mStages[i];
-        mEvaluationStages.SetEvaluationParameters(i, stage.mParameters);
+        auto& stage = mModel.mEvaluationStages.mStages[i];
+        mModel.mEvaluationStages.SetEvaluationParameters(i, stage.mParameters);
     }
 }
 
@@ -575,9 +579,9 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     }
     const MetaNode* metaNodes = gMetaNodes.data();
     size_t res = 0;
-    const MetaNode& metaNode = metaNodes[mEvaluationStages.mStages[mSelectedNodeIndex].mType];
+    const MetaNode& metaNode = metaNodes[mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mType];
 
-    unsigned char* paramBuffer = mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
+    unsigned char* paramBuffer = mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
     bool parametersUseMouse = false;
 
     // camera handling
@@ -622,7 +626,7 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     }
 
     //
-    paramBuffer = mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
+    paramBuffer = mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
     if (lButDown)
     {
         for (auto& param : metaNode.mParams)
@@ -685,9 +689,8 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     }
     if (metaNode.mbHasUI || parametersUseMouse)
     {
-        mEvaluationStages.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
-        mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex,
-                                                  mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
+        mModel.mEvaluationStages.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
+        mModel.mEvaluationStages.SetEvaluationParameters(mSelectedNodeIndex, mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
         mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
     }
 }
@@ -707,7 +710,7 @@ bool NodeGraphControler::NodeIsCompute(size_t nodeIndex) const
         return true;
     return false;
     */
-    return (gEvaluators.GetMask(mEvaluationStages.mStages[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
+    return (gEvaluators.GetMask(mModel.mEvaluationStages.mStages[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
 }
 
 bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex) const
@@ -729,7 +732,7 @@ void NodeGraphControler::CopyNodes(const std::vector<size_t> nodes)
 {
     mStagesClipboard.clear();
     for (auto nodeIndex : nodes)
-        mStagesClipboard.push_back(mEvaluationStages.mStages[nodeIndex]);
+        mStagesClipboard.push_back(mModel.mEvaluationStages.mStages[nodeIndex]);
 }
 
 void NodeGraphControler::CutNodes(const std::vector<size_t> nodes)

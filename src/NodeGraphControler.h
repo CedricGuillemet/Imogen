@@ -40,8 +40,6 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     void Clear();
 
-    //virtual void AddSingleNode(size_t type);
-    //virtual void UserAddNode(size_t type);
     /*
     virtual void AddLink(int inputIdx, int inputSlot, int outputIdx, int outputSlot)
     {
@@ -109,25 +107,16 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     virtual bool RenderBackground();
 
-
-
     // animation
     const std::vector<AnimTrack>& GetAnimTrack() const
     {
         return mModel.GetAnimTrack();
     }
 
-
-    //void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
-    //void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed);
-
-    //AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
-
     void PinnedEdit();
 
 
     EvaluationContext mEditingContext;
-    //EvaluationStages mEvaluationStages;
     std::vector<EvaluationStage> mStagesClipboard;
     int mBackgroundNode;
     bool mbMouseDragging;
@@ -138,7 +127,6 @@ struct NodeGraphControler : public NodeGraphControlerBase
         return GetByAsyncId(id, mModel.mEvaluationStages.mStages);
     }
     void NodeEdit();
-    //void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
 
 	GraphModel mModel;
 

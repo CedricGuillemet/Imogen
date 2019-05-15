@@ -1906,7 +1906,7 @@ void Imogen::ShowNodeGraph()
         }
         ImGui::PopItemWidth();
     }
-    NodeGraph(mNodeGraphControler, mSelectedMaterial != -1);
+    NodeGraph(&mNodeGraphControler->mModel, mNodeGraphControler, mSelectedMaterial != -1);
 }
 
 void Imogen::ExportMaterial()

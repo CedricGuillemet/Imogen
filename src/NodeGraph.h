@@ -70,119 +70,14 @@ struct NodeGraphControlerBase
     virtual void PasteNodes() = 0;
     virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const = 0;
 };
-/*
-struct Node
-{
-    int mType;
-    ImVec2 mPos;
-    bool mbSelected;
-    Node() : mbSelected(false)
-    {
-    }
-    Node(int type, const ImVec2& pos);
 
-    ImVec2 GetInputSlotPos(int slot_no, float factor) const
-    {
-        ImVec2 Size(100, 100);
-        unsigned int InputsCount = gMetaNodes[mType].mInputs.size();
-        return ImVec2(mPos.x * factor, mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
-    }
-    ImVec2 GetOutputSlotPos(int slot_no, float factor) const
-    {
-        unsigned int OutputsCount = gMetaNodes[mType].mOutputs.size();
-        ImVec2 Size(100, 100);
-        return ImVec2(mPos.x * factor + Size.x,
-                      mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
-    }
-    ImRect GetNodeRect(float factor)
-    {
-        ImVec2 Size(100, 100);
-        return ImRect(mPos * factor, mPos * factor + Size);
-    }
-
-    bool operator!=(const Node& other) const
-    {
-        if (mType != other.mType)
-            return true;
-
-        if (mPos.x != other.mPos.x)
-            return true;
-        if (mPos.y != other.mPos.y)
-            return true;
-
-        return false;
-    }
-};
-
-struct NodeLink
-{
-    int InputIdx, InputSlot, OutputIdx, OutputSlot;
-    NodeLink()
-    {
-    }
-    NodeLink(int input_idx, int input_slot, int output_idx, int output_slot)
-    {
-        InputIdx = input_idx;
-        InputSlot = input_slot;
-        OutputIdx = output_idx;
-        OutputSlot = output_slot;
-    }
-    bool operator==(const NodeLink& other) const
-    {
-        return InputIdx == other.InputIdx && InputSlot == other.InputSlot && OutputIdx == other.OutputIdx &&
-               OutputSlot == other.OutputSlot;
-    }
-};
-*/
-inline bool operator!=(const ImVec2 r1, const ImVec2 r2)
-{
-    if (r1.x != r2.x)
-        return true;
-    if (r1.y != r2.y)
-        return true;
-    return false;
-}
-/*
-struct NodeRug
-{
-    ImVec2 mPos, mSize;
-    uint32_t mColor;
-    std::string mText;
-
-    bool operator!=(const NodeRug& other) const
-    {
-        if (mPos != other.mPos)
-            return true;
-        if (mSize != other.mSize)
-            return false;
-        if (mColor != other.mColor)
-            return true;
-        if (mText != other.mText)
-            return true;
-        return false;
-    }
-};
-*/
 class GraphModel;
 void NodeGraph(GraphModel* model, NodeGraphControlerBase* delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
-//const std::vector<NodeLink>& NodeGraphGetLinks();
-//const std::vector<NodeRug>& NodeGraphRugs();
+
 ImVec2 NodeGraphGetNodePos(size_t index);
 
-/*
-size_t NodeGraphAddNode(NodeGraphControlerBase* delegate,
-                      int type,
-                      const std::vector<unsigned char>* parameters,
-                      int posx,
-                      int posy,
-                      int frameStart,
-                      int frameEnd);
-void NodeGraphAddRug(
-    int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment);
-	
-void NodeGraphAddLink(NodeGraphControlerBase* delegate, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot);
-*/
+
 void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* delegate);
 void NodeGraphUpdateScrolling(GraphModel* model);
 void NodeGraphSelectNode(int selectedNodeIndex);

@@ -64,6 +64,11 @@ public:
     struct NodeLink
     {
         int mInputIdx, mInputSlot, mOutputIdx, mOutputSlot;
+		bool operator==(const NodeLink& other) const
+		{
+            return mInputIdx == other.mInputIdx && mInputSlot == other.mInputSlot &&
+                    mOutputIdx == other.mOutputIdx && mOutputSlot == other.mOutputSlot;
+		}
     };
 
 
@@ -119,7 +124,7 @@ private:
     UndoRedoHandler* mUndoRedoHandler;
 
 	int mSelectedNodeIndex;
-	static std::vector<Node> mNodes;
-    static std::vector<NodeLink> mLinks;
-    static std::vector<NodeRug> mRugs;
+	std::vector<Node> mNodes;
+    std::vector<NodeLink> mLinks;
+    std::vector<NodeRug> mRugs;
 };

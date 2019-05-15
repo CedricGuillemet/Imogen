@@ -153,13 +153,13 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         /*NodeGraphAddLink(
             Imogen::instance->GetNodeGraphControler(), nodeSource, slotSource, nodeDestination, slotDestination);
 			*/
-        Imogen::instance->GetNodeGraphControler().mModel.AddLink(
+        Imogen::instance->GetNodeGraphControler()->mModel.AddLink(
             nodeSource, slotSource, nodeDestination, slotDestination);
     });
     m.def("AutoLayout", []() {
         NodeGraphUpdateEvaluationOrder(Imogen::instance->GetNodeGraphControler());
         NodeGraphLayout();
-        NodeGraphUpdateScrolling(&Imogen::instance->GetNodeGraphControler().mModel);
+        NodeGraphUpdateScrolling(&Imogen::instance->GetNodeGraphControler()->mModel);
     });
     m.def("DeleteGraph", []() { Imogen::instance->DeleteCurrentMaterial(); });
 

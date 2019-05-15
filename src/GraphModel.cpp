@@ -131,7 +131,7 @@ void GraphModel::DeleteSelectedNodes()
         if (!mNodes[selection].mbSelected)
             continue;
         URDel<Node> undoRedoDelNode(int(selection),
-                                    []() { return &mNodes; },
+                                    [this]() { return &mNodes; },
                                     [this](int index) {
                                         // recompute link indices
                                         for (int id = 0; id < mLinks.size(); id++)

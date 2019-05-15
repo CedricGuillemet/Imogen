@@ -47,7 +47,7 @@ void GraphModel::Clear()
 }
 
 void GraphModel::BeginTransaction(bool undoable)
-    {
+{
     assert(!mbTransaction);
 
     mbTransaction = true;
@@ -72,14 +72,15 @@ void GraphModel::Redo()
 }
 
 
-int GraphModel::AddNode(size_t type, ImVec2 position)
+size_t GraphModel::AddNode(size_t type, ImVec2 position)
 {
     assert(mbTransaction);
 
     // size_t index = nodes.size();
     mNodes.push_back(Node(type, position));
+    mEvaluationStages.AddSingleEvaluation(type);
 
-	return mNodes.size() - 1;
+    return mNodes.size() - 1;
 }
 void GraphModel::DelNode(size_t nodeIndex)
 {
@@ -141,7 +142,7 @@ void GraphModel::DeleteSelectedNodes()
                                             if (mLinks[id].mOutputIdx > index)
                                                 mLinks[id].mOutputIdx--;
                                         }
-                                        //NodeGraphUpdateEvaluationOrder(controler); todo
+                                        // NodeGraphUpdateEvaluationOrder(controler); todo
                                         mSelectedNodeIndex = -1;
                                     },
                                     [this](int index) {
@@ -154,7 +155,7 @@ void GraphModel::DeleteSelectedNodes()
                                                 mLinks[id].mOutputIdx++;
                                         }
 
-                                        //NodeGraphUpdateEvaluationOrder(controler); todo
+                                        // NodeGraphUpdateEvaluationOrder(controler); todo
                                         mSelectedNodeIndex = -1;
                                     });
 
@@ -200,22 +201,38 @@ void GraphModel::DeleteSelectedNodes()
 
         // delete links
         mNodes.erase(mNodes.begin() + selection);
-        //NodeGraphUpdateEvaluationOrder(controler); todo
+        // NodeGraphUpdateEvaluationOrder(controler); todo
 
         // inform delegate
-        //controler->UserDeleteNode(selection); todo
+        // controler->UserDeleteNode(selection); todo
     }
 }
 bool GraphModel::IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const
 {
-    /*for (auto& link : mLinks)
+    for (auto& link : mLinks)
     {
-        if ((link.InputIdx == nodeIndex && link.InputSlot == slotIndex && forOutput) ||
-            (link.OutputIdx == nodeIndex && link.OutputSlot == slotIndex && !forOutput))
+        if ((link.mInputIdx == nodeIndex && link.mInputSlot == slotIndex && forOutput) ||
+            (link.mOutputIdx == nodeIndex && link.mOutputSlot == slotIndex && !forOutput))
         {
             return true;
         }
     }
-        */
     return false;
+}
+
+void GraphModel::SelectNode(size_t nodeIndex)
+{
+    //assert(mbTransaction);
+    mNodes[nodeIndex].mbSelected = true;
+}
+
+ImVec2 GraphModel::GetNodePos(size_t nodeIndex) const
+{
+    return mNodes[nodeIndex].mPos;
+}
+
+void GraphModel::SetSamplers(size_t nodeIndex, const std::vector <InputSampler>& samplers)
+{
+    assert(mbTransaction);
+    mEvaluationStages.SetSamplers(nodeIndex, samplers);
 }

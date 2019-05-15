@@ -110,7 +110,7 @@ void EvaluationStages::StageIsDeleted(int index)
         }
     }
 }
-
+/*
 void EvaluationStages::UserAddEvaluation(size_t nodeType)
 {
     URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()),
@@ -131,7 +131,7 @@ void EvaluationStages::UserDeleteEvaluation(size_t target)
     StageIsDeleted(int(target));
     mStages.erase(mStages.begin() + target);
 }
-
+*/
 void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters)
 {
     EvaluationStage& stage = mStages[target];
@@ -141,9 +141,9 @@ void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<
         stage.mDecoder = NULL;
 }
 
-void EvaluationStages::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
+void EvaluationStages::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& inputSamplers)
 {
-    mStages[target].mInputSamplers = inputSamplers;
+    mStages[nodeIndex].mInputSamplers = inputSamplers;
 }
 
 void EvaluationStages::AddEvaluationInput(size_t target, int slot, int source)

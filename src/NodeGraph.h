@@ -45,11 +45,11 @@ struct NodeGraphControlerBase
     virtual unsigned int GetNodeTexture(size_t index) = 0;
     // A new node has been added in the graph. Do a push_back on your node array
     // add node for batch(loading graph)
-    virtual void AddSingleNode(size_t type) = 0;
+    //virtual void AddSingleNode(size_t type) = 0;
     // add  by user interface
-    virtual void UserAddNode(size_t type) = 0;
+    //virtual void UserAddNode(size_t type) = 0;
     // node deleted
-    virtual void UserDeleteNode(size_t index) = 0;
+    //virtual void UserDeleteNode(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) const = 0;
 
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
@@ -75,11 +75,11 @@ class GraphModel;
 void NodeGraph(GraphModel* model, NodeGraphControlerBase* delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
 
-ImVec2 NodeGraphGetNodePos(size_t index);
 
-
-void NodeGraphUpdateEvaluationOrder(NodeGraphControlerBase* delegate);
+void NodeGraphUpdateEvaluationOrder(GraphModel* model, NodeGraphControlerBase* delegate);
 void NodeGraphUpdateScrolling(GraphModel* model);
-void NodeGraphSelectNode(int selectedNodeIndex);
-void NodeGraphLayout();
-bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput);
+void NodeGraphLayout(GraphModel* model);
+
+
+ImRect GetFinalNodeDisplayRect(GraphModel* model);
+ImRect GetNodesDisplayRect(GraphModel* model);

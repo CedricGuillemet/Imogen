@@ -194,8 +194,8 @@ struct EvaluationStages
     EvaluationStages();
 
     void AddSingleEvaluation(size_t nodeType);
-    void UserAddEvaluation(size_t nodeType);
-    void UserDeleteEvaluation(size_t target);
+    //void UserAddEvaluation(size_t nodeType);
+    //void UserDeleteEvaluation(size_t target);
 
     //
     size_t GetStagesCount() const
@@ -209,7 +209,7 @@ struct EvaluationStages
     size_t GetEvaluationImageDuration(size_t target);
 
     void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);
-    void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
+    void SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& inputSamplers);
     void AddEvaluationInput(size_t target, int slot, int source);
     void DelEvaluationInput(size_t target, int slot);
     void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);

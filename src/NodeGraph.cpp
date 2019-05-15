@@ -404,11 +404,11 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
 
     if (sizingRug != -1 && ImGui::IsMouseDragging(0))
     {
-        //sizingrug.mSize += io.MouseDelta;
+        // sizingrug.mSize += io.MouseDelta;
     }
     if (movingRug != -1 && ImGui::IsMouseDragging(0))
     {
-        //movingrug.mPos += io.MouseDelta;
+        // movingrug.mPos += io.MouseDelta;
     }
 
     if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
@@ -432,10 +432,11 @@ bool RecurseIsLinked(const std::vector<GraphModel::NodeLink>& links, int from, i
     return false;
 }
 
-void NodeGraphUpdateEvaluationOrder(const std::vector<GraphModel::NodeLink>& links,
-                                    const std::vector<GraphModel::Node>& nodes,
-                                    NodeGraphControlerBase* controler)
+void NodeGraphUpdateEvaluationOrder(GraphModel* model, NodeGraphControlerBase* controler)
 {
+    const auto& links = model->GetLinks();
+    const auto& nodes = model->GetNodes();
+
     mOrders = ComputeEvaluationOrder(links, nodes.size());
     std::sort(mOrders.begin(), mOrders.end());
     std::vector<size_t> nodeOrderList(mOrders.size());
@@ -485,12 +486,7 @@ void NodeGraphAddLink(NodeGraphControlerBase* controler, int InputIdx, int Input
     controler->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
 }
 */
-/*
-ImVec2 NodeGraphGetNodePos(size_t index)
-{
-    return nodes[index].mPos;
-}
-*/
+
 void NodeGraphUpdateScrolling(GraphModel* model)
 {
     const auto& nodes = model->GetNodes();
@@ -1559,7 +1555,6 @@ void NodeGraphLayout(GraphModel* model)
     model->EndTransaction();
 }
 
-/* todo
 ImRect DisplayRectMargin(ImRect rect)
 {
     // margins
@@ -1571,8 +1566,9 @@ ImRect DisplayRectMargin(ImRect rect)
     return rect;
 }
 
-ImRect GetNodesDisplayRect()
+ImRect GetNodesDisplayRect(GraphModel* model)
 {
+    const auto& nodes = model->GetNodes();
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     for (auto& node : nodes)
     {
@@ -1582,9 +1578,10 @@ ImRect GetNodesDisplayRect()
     return DisplayRectMargin(rect);
 }
 
-ImRect GetFinalNodeDisplayRect()
+ImRect GetFinalNodeDisplayRect(GraphModel* model)
 {
-    NodeGraphUpdateEvaluationOrder(nullptr);
+    const auto& nodes = model->GetNodes();
+    NodeGraphUpdateEvaluationOrder(model, nullptr);
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     if (!mOrders.empty() && !nodes.empty())
     {
@@ -1593,17 +1590,3 @@ ImRect GetFinalNodeDisplayRect()
     }
     return DisplayRectMargin(rect);
 }
-
-bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput)
-{
-    for (auto& link : links)
-    {
-        if ((link.InputIdx == nodeIndex && link.InputSlot == slotIndex && forOutput) ||
-            (link.OutputIdx == nodeIndex && link.OutputSlot == slotIndex && !forOutput))
-        {
-            return true;
-        }
-    }
-    return false;
-}
-*/

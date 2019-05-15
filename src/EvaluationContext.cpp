@@ -1001,7 +1001,7 @@ EvaluationStages BuildEvaluationFromMaterial(Material& material)
         auto& lastNode = evaluationStages.mStages.back();
         lastNode.mParameters = node.mParameters;
         lastNode.mInputSamplers = node.mInputSamplers;
-        evaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
+        evaluationStages.SetSamplers(i, node.mInputSamplers);
     }
     for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
     {

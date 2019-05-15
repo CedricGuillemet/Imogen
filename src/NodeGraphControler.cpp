@@ -53,15 +53,15 @@ void NodeGraphControler::SetParamBlock(size_t index, const std::vector<unsigned 
     auto& stage = mEvaluationStages.mStages[index];
     stage.mParameters = parameters;
     mEvaluationStages.SetEvaluationParameters(index, parameters);
-    mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
+    mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
     mEditingContext.SetTargetDirty(index, Dirty::Parameter);
 }
-
+/*
 void NodeGraphControler::NodeIsAdded(int index)
 {
     auto& stage = mEvaluationStages.mStages[index];
     mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
-    mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
+    mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
     mEditingContext.SetTargetDirty(index, Dirty::Input);
 };
 
@@ -98,7 +98,7 @@ void NodeGraphControler::UserDeleteNode(size_t index)
         mBackgroundNode--;
     }
 }
-
+*/
 void NodeGraphControler::HandlePin(uint32_t parameterPair)
 {
     auto pinIter = std::find(
@@ -372,7 +372,7 @@ void NodeGraphControler::EditNodeParameters()
                                                             [&](int index) { return &stage.mInputSamplers; },
                                                             [&](int index) {
                                                                 auto& node = mEvaluationStages.mStages[index];
-                                                                mEvaluationStages.SetEvaluationSampler(
+                                                                mEvaluationStages.SetSamplers(
                                                                     index, stage.mInputSamplers);
                                                                 mEditingContext.SetTargetDirty(index, Dirty::Sampler);
                                                             });
@@ -401,7 +401,7 @@ void NodeGraphControler::EditNodeParameters()
         }
         if (samplerDirty)
         {
-            mEvaluationStages.SetEvaluationSampler(index, stage.mInputSamplers);
+            mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
             mEditingContext.SetTargetDirty(index, Dirty::Sampler);
         }
         else
@@ -442,7 +442,7 @@ void NodeGraphControler::EditNodeParameters()
 
 void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput)
 {
-    if (IsIOUsed(int(nodeIndex), int(slotIndex), forOutput))
+    if (mModel.IsIOUsed(nodeIndex, slotIndex, forOutput))
 	{
             return;
 	}
@@ -733,7 +733,7 @@ void NodeGraphControler::CutNodes(const std::vector<size_t> nodes)
 
 void NodeGraphControler::PasteNodes()
 {
-    for (auto& sourceNode : mStagesClipboard)
+    /*for (auto& sourceNode : mStagesClipboard) todo
     {
         URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
                                                [&]() { return &mEvaluationStages.mStages; },
@@ -742,7 +742,7 @@ void NodeGraphControler::PasteNodes()
 
         mEditingContext.UserAddStage();
         size_t target = mEvaluationStages.mStages.size();
-        AddSingleNode(sourceNode.mType);
+        //AddSingleNode(sourceNode.mType); todo
 
         auto& stage = mEvaluationStages.mStages.back();
         stage.mParameters = sourceNode.mParameters;
@@ -751,10 +751,10 @@ void NodeGraphControler::PasteNodes()
         stage.mEndFrame = sourceNode.mEndFrame;
 
         mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
-        mEvaluationStages.SetEvaluationSampler(target, stage.mInputSamplers);
+        mEvaluationStages.SetSamplers(target, stage.mInputSamplers);
         mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
         mEditingContext.SetTargetDirty(target, Dirty::All);
-    }
+    }*/
 }
 
 // animation

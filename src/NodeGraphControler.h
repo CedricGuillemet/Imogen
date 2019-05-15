@@ -40,8 +40,8 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     void Clear();
 
-    virtual void AddSingleNode(size_t type);
-    virtual void UserAddNode(size_t type);
+    //virtual void AddSingleNode(size_t type);
+    //virtual void UserAddNode(size_t type);
     virtual void AddLink(int inputIdx, int inputSlot, int outputIdx, int outputSlot)
     {
         if (outputIdx >= mEvaluationStages.mStages.size())
@@ -57,7 +57,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
         mEvaluationStages.DelEvaluationInput(index, slot);
         mEditingContext.SetTargetDirty(index, Dirty::Input);
     }
-    virtual void UserDeleteNode(size_t index);
+    //virtual void UserDeleteNode(size_t index);
     virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
 
     virtual unsigned int GetNodeTexture(size_t index)
@@ -153,7 +153,7 @@ protected:
                              unsigned int parameterIndex,
                              void* paramBuffer,
                              const MetaParameter& param);
-    void NodeIsAdded(int index);
+    //void NodeIsAdded(int index);
     void UpdateDirtyParameter(int index);
     void EditNodeParameters();
     void HandlePin(uint32_t parameterPair);

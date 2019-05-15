@@ -611,7 +611,7 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
         dstNode.mTypeName = metaNode.mName;
         dstNode.mParameters = srcNode.mParameters;
         dstNode.mInputSamplers = srcNode.mInputSamplers;
-        ImVec2 nodePos = NodeGraphGetNodePos(i);
+        ImVec2 nodePos = nodeGraphControler.mModel.GetNodePos(i);
         dstNode.mPosX = int32_t(nodePos.x);
         dstNode.mPosY = int32_t(nodePos.y);
         dstNode.mFrameStart = srcNode.mStartFrame;
@@ -644,7 +644,7 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
     material.mFrameMax = nodeGraphControler.mEvaluationStages.mFrameMax;
     material.mPinnedParameters = nodeGraphControler.mEvaluationStages.mPinnedParameters;
     material.mPinnedIO = nodeGraphControler.mEvaluationStages.mPinnedIO;
-    
+
     material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 
@@ -655,8 +655,8 @@ int Imogen::AddNode(const std::string& nodeType)
     {
         return -1;
     }
-    //return int(NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1));
-    return mNodeGraphControler->mModel.AddNode(type, ImVec2(0,0));
+    // return int(NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1));
+    return mNodeGraphControler->mModel.AddNode(type, ImVec2(0, 0));
 }
 
 void Imogen::UpdateNewlySelectedGraph()
@@ -665,7 +665,7 @@ void Imogen::UpdateNewlySelectedGraph()
     if (mSelectedMaterial != -1)
     {
         ClearAll();
-
+        mNodeGraphControler->mModel.BeginTransaction(false);
         Material& material = library.mMaterials[mSelectedMaterial];
         for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
         {
@@ -679,18 +679,17 @@ void Imogen::UpdateNewlySelectedGraph()
                              node.mPosY,
                              node.mFrameStart,
                              node.mFrameEnd);
-							 */
-            mNodeGraphControler->mModel.AddNode(node.mType, ImVec2(node.mPosX,
-                             node.mPosY));
-            auto& lastNode = mNodeGraphControler->mEvaluationStages.mStages.back();
+                                                         */
+            auto nodeIndex = mNodeGraphControler->mModel.AddNode(node.mType, ImVec2(float(node.mPosX), float(node.mPosY)));
+            auto& lastNode = mNodeGraphControler->mModel.GetEvaluationStages().mStages.back();
             if (!node.mImage.empty())
             {
                 mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
                 g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
                     &node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
             }
-            lastNode.mInputSamplers = node.mInputSamplers;
-            mNodeGraphControler->mEvaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
+            //lastNode.mInputSamplers = node.mInputSamplers;
+            mNodeGraphControler->mModel.SetSamplers(nodeIndex, node.mInputSamplers);
         }
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
@@ -700,7 +699,7 @@ void Imogen::UpdateNewlySelectedGraph()
                              materialConnection.mInputSlot,
                              materialConnection.mOutputNode,
                              materialConnection.mOutputSlot);
-							 */
+                                                         */
             mNodeGraphControler->mModel.AddLink(materialConnection.mInputNode,
                                                 materialConnection.mInputSlot,
                                                 materialConnection.mOutputNode,
@@ -709,10 +708,13 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {
             MaterialNodeRug& rug = material.mMaterialRugs[i];
-            //NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
-            mNodeGraphControler->mModel.AddRug(ImVec2(rug.mPosX, rug.mPosY), ImVec2(rug.mSizeX, rug.mSizeY), rug.mColor, rug.mComment);
+            // NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
+            mNodeGraphControler->mModel.AddRug(ImVec2(float(rug.mPosX), float(rug.mPosY)),
+                                               ImVec2(float(rug.mSizeX), float(rug.mSizeY)),
+                                               rug.mColor,
+                                               rug.mComment);
         }
-        NodeGraphUpdateEvaluationOrder(mNodeGraphControler);
+        NodeGraphUpdateEvaluationOrder(&mNodeGraphControler->mModel, mNodeGraphControler);
         NodeGraphUpdateScrolling(&mNodeGraphControler->mModel);
         mCurrentTime = 0;
         mbIsPlaying = false;
@@ -728,6 +730,7 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
         mNodeGraphControler->mEditingContext.RunAll();
+        mNodeGraphControler->mModel.EndTransaction();
     }
 }
 
@@ -1393,7 +1396,7 @@ void Imogen::Init()
         std::function<void()> function;
     };
     static const std::vector<HotKeyFunction> hotKeyFunctions = {
-        {"Layout", "Reorder nodes in a simpler layout", []() { NodeGraphLayout(); }},
+        {"Layout", "Reorder nodes in a simpler layout", [&]() { NodeGraphLayout(&GetNodeGraphControler()->mModel); }},
         {"PlayPause", "Play or Stop current animation", [&]() { PlayPause(); }},
         {"AnimationFirstFrame",
          "Set current time to the first frame of animation",
@@ -1521,7 +1524,7 @@ void Imogen::ShowAppMainMenuBar()
     {
         if (Button("Layout", "Layout", buttonSize))
         {
-            NodeGraphLayout();
+            NodeGraphLayout(&GetNodeGraphControler()->mModel);
         }
         if (Button("MaterialExport", "Export Material", buttonSize))
         {
@@ -1872,7 +1875,7 @@ void Imogen::ShowTimeLine()
     if (selectedEntry != -1)
     {
         mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
-        NodeGraphSelectNode(selectedEntry);
+        mNodeGraphControler->mModel.SelectNode(selectedEntry);
         auto& imoNode = mNodeGraphControler->mEvaluationStages.mStages[selectedEntry];
         mNodeGraphControler->mEvaluationStages.SetStageLocalTime(
             &mNodeGraphControler->mEditingContext,
@@ -1932,8 +1935,8 @@ void Imogen::ExportMaterial()
     #endif
 }
 
-ImRect GetNodesDisplayRect();
-ImRect GetFinalNodeDisplayRect();
+ImRect GetNodesDisplayRect(GraphModel* model);
+ImRect GetFinalNodeDisplayRect(GraphModel* model);
 std::map<std::string, ImRect> interfacesRect;
 void Imogen::Show(Builder* builder, Library& library, bool capturing)
 {
@@ -2048,9 +2051,9 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
 
     Playback(currentTime != mCurrentTime);
 
-    ImRect rc = GetNodesDisplayRect();
+    ImRect rc = GetNodesDisplayRect(&mNodeGraphControler->mModel);
     interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
-    rc = GetFinalNodeDisplayRect();
+    rc = GetFinalNodeDisplayRect(&mNodeGraphControler->mModel);
     interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
 }
 
@@ -2162,9 +2165,9 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
         }
         else if (sscanf(line_start, "ShowMouseState=%d", &active) == 1)
         {
-             userdata->imogen->mbShowMouseState = active;
-        }       
-		else
+            userdata->imogen->mbShowMouseState = active;
+        }
+        else
         {
             for (auto& hotkey : mHotkeys)
             {

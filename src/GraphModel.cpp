@@ -77,6 +77,23 @@ void GraphModel::Redo()
     mUndoRedoHandler->Redo();
 }
 
+void GraphModel::MoveSelectedNodes(const ImVec2 delta)
+{
+    assert(mbTransaction);
+    for (auto& node : mNodes)
+    {
+		if (!node.mbSelected)
+		{
+                    continue;
+		}
+		node.mPos += delta;
+	}
+}
+
+void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
+{
+    mNodes[nodeIndex].mPos = position;
+}
 
 size_t GraphModel::AddNode(size_t type, ImVec2 position)
 {
@@ -236,10 +253,10 @@ bool GraphModel::IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const
     return false;
 }
 
-void GraphModel::SelectNode(size_t nodeIndex)
+void GraphModel::SelectNode(size_t nodeIndex, bool selected)
 {
     // assert(mbTransaction);
-    mNodes[nodeIndex].mbSelected = true;
+    mNodes[nodeIndex].mbSelected = selected;
 }
 
 ImVec2 GraphModel::GetNodePos(size_t nodeIndex) const
@@ -267,13 +284,11 @@ bool GraphModel::NodeHasUI(size_t nodeIndex) const
 
 bool GraphModel::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
 {
-    assert(!mbTransaction);
     return mEvaluationStages.IsIOPinned(nodeIndex, io, forOutput);
 }
 
 bool GraphModel::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
 {
-    assert(!mbTransaction);
     return mEvaluationStages.IsParameterPinned(nodeIndex, parameterIndex);
 }
 

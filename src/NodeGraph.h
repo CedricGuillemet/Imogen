@@ -32,12 +32,11 @@
 
 struct NodeGraphControlerBase
 {
-    NodeGraphControlerBase() : mSelectedNodeIndex(-1), mCategories(nullptr)
+    NodeGraphControlerBase() : mSelectedNodeIndex(-1)
     {
     }
 
     int mSelectedNodeIndex;
-    const std::vector<std::string>* mCategories;
 
     virtual unsigned int GetNodeTexture(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) const = 0;
@@ -48,7 +47,7 @@ struct NodeGraphControlerBase
     virtual bool NodeIs2D(size_t nodeIndex) const = 0;
     virtual bool NodeIsCompute(size_t nodeIndex) const = 0;
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) = 0;
-
+    virtual void ContextMenu(ImVec2 offset, int nodeHovered) = 0;
     // return false if background must be rendered by node graph
     virtual bool RenderBackground() = 0;
 

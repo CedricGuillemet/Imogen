@@ -79,6 +79,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
     void NodeEdit();
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex);
     virtual bool RenderBackground();
+    virtual void ContextMenu(ImVec2 offset, int nodeHovered);
 
     virtual void UpdateEvaluationList(const std::vector<size_t>& nodeOrderList)
     {

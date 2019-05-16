@@ -265,11 +265,9 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     static int movingRug = -1;
     static int sizingRug = -1;
     GraphModel::NodeRug rug = rugs[rugIndex];
-    // int rugIndex = int(rug - rugs.data());
-    // URChange<NodeRug> undoRedoRug(rugIndex, [model](int index) { return &model->GetRugs()[index]; }, [](int) {});
-    GraphModel::NodeRug editingRug = rugs[rugIndex];
+
     bool dirtyRug = false;
-    ImVec2 node_rect_min = offset + editingRug.mPos * factor;
+    ImVec2 node_rect_min = offset + rug.mPos * factor;
     ImVec2 node_rect_max = node_rect_min + commentSize;
     ImRect rugRect(node_rect_min, node_rect_max);
     ImRect insideSizingRect(node_rect_min + commentSize - ImVec2(30, 30), node_rect_min + commentSize);
@@ -286,7 +284,7 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     ImGui::SetCursorScreenPos(node_rect_min + ImVec2(5, 5));
     ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
-    dirtyRug |= ImGui::InputTextMultiline("", &editingRug.mText, (node_rect_max - node_rect_min) - ImVec2(30, 30));
+    dirtyRug |= ImGui::InputTextMultiline("", &rug.mText, (node_rect_max - node_rect_min) - ImVec2(30, 30));
     ImGui::PopStyleColor(2);
 
     ImGui::SetCursorScreenPos(node_rect_min + ImVec2(10, commentSize.y - 30));
@@ -314,10 +312,6 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
 
     if (ImGui::Button("Delete"))
     {
-        // undoRedoRug.Discard();
-        // int index = int(rug - rugs.data());
-        // URDel<NodeRug> undoRedoDelRug(index, []() { return &rugs; }, [](int) {}, [](int) {});
-        // rugs.erase(rugs.begin() + index);
         model->BeginTransaction(true);
         model->DelRug(rugIndex);
         model->EndTransaction();
@@ -356,33 +350,32 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     }
 
     // undo/redo for sizing/moving
-    // static URChange<NodeRug>* undoRedoRugcm = NULL;
     if (createUndo)
     {
-        // undoRedoRugcm = new URChange<NodeRug>(rugIndex, [](int index) { return &rugs[index]; }, [](int) {});
         model->BeginTransaction(true);
     }
     if (commitUndo)
     {
-        // delete undoRedoRugcm;
-        // undoRedoRugcm = NULL;
         model->EndTransaction();
     }
     if (dirtyRug)
     {
-        // undoRedoRug.Discard();
         model->BeginTransaction(true);
-        model->SetRug(rugIndex, editingRug);
+        model->SetRug(rugIndex, rug);
         model->EndTransaction();
     }
 
     if (sizingRug != -1 && ImGui::IsMouseDragging(0))
     {
-        // sizingrug.mSize += io.MouseDelta;
+        auto sizeRug = rugs[sizingRug];
+        sizeRug.mSize += io.MouseDelta * factor;
+        model->SetRug(sizingRug, sizeRug);
     }
     if (movingRug != -1 && ImGui::IsMouseDragging(0))
     {
-        // movingrug.mPos += io.MouseDelta;
+        auto moveRug = rugs[movingRug];
+        moveRug.mPos += io.MouseDelta * factor;
+        model->SetRug(movingRug, moveRug);
     }
 
     if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
@@ -443,170 +436,6 @@ void NodeGraphUpdateScrolling(GraphModel* model)
     }
 
     scrolling = ImVec2(40, 40) - scrolling;
-}
-/*
-void NodeGraphAddRug(
-    int32_t posX, int32_t posY, int32_t sizeX, int32_t sizeY, uint32_t color, const std::string comment)
-{
-    rugs.push_back({ImVec2(float(posX), float(posY)), ImVec2(float(sizeX), float(sizeY)), color, comment});
-}
-*/
-static void ContextMenu(ImVec2 offset, int nodeHovered, NodeGraphControlerBase* controler)
-{
-#if 0
-    ImGuiIO& io = ImGui::GetIO();
-    size_t metaNodeCount = gMetaNodes.size();
-    const MetaNode* metaNodes = gMetaNodes.data();
-
-    bool copySelection = false;
-    bool deleteSelection = false;
-    bool pasteSelection = false;
-
-    // Draw context menu
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
-    if (ImGui::BeginPopup("context_menu"))
-    {
-        Node* node = nodeHovered != -1 ? &nodes[nodeHovered] : NULL;
-        ImVec2 scene_pos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
-        if (node)
-        {
-            ImGui::Text(metaNodes[node->mType].mName.c_str());
-            ImGui::Separator();
-
-            if (ImGui::MenuItem("Extract view", NULL, false))
-            {
-                AddExtractedView(nodeHovered);
-            }
-        }
-        else
-        {
-            auto AddNode = [&](int i) {
-                auto addDelNodeLambda = [controler](int) {
-                    NodeGraphUpdateEvaluationOrder(controler);
-                    controler->mSelectedNodeIndex = -1;
-                };
-                URAdd<Node> undoRedoAddRug(
-                    int(nodes.size()), []() { return &nodes; }, addDelNodeLambda, addDelNodeLambda);
-
-                nodes.push_back(Node(i, scene_pos));
-                controler->UserAddNode(i);
-                addDelNodeLambda(0);
-            };
-
-            static char inputText[64] = {0};
-            if (ImGui::IsWindowAppearing())
-                ImGui::SetKeyboardFocusHere();
-            ImGui::InputText("", inputText, sizeof(inputText));
-            {
-                if (strlen(inputText))
-                {
-                    for (int i = 0; i < metaNodeCount; i++)
-                    {
-                        const char* nodeName = metaNodes[i].mName.c_str();
-                        bool displayNode =
-                            !strlen(inputText) ||
-                            ImStristr(nodeName, nodeName + strlen(nodeName), inputText, inputText + strlen(inputText));
-                        if (displayNode && ImGui::MenuItem(nodeName, NULL, false))
-                        {
-                            AddNode(i);
-                        }
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < metaNodeCount; i++)
-                    {
-                        const char* nodeName = metaNodes[i].mName.c_str();
-                        if (metaNodes[i].mCategory == -1 && ImGui::MenuItem(nodeName, NULL, false))
-                        {
-                            AddNode(i);
-                        }
-                    }
-
-                    for (unsigned int iCateg = 0; iCateg < controler->mCategories->size(); iCateg++)
-                    {
-                        if (ImGui::BeginMenu((*controler->mCategories)[iCateg].c_str()))
-                        {
-                            for (int i = 0; i < metaNodeCount; i++)
-                            {
-                                const char* nodeName = metaNodes[i].mName.c_str();
-                                if (metaNodes[i].mCategory == iCateg && ImGui::MenuItem(nodeName, NULL, false))
-                                {
-                                    AddNode(i);
-                                }
-                            }
-                            ImGui::EndMenu();
-                        }
-                    }
-                }
-            }
-        }
-
-        ImGui::Separator();
-        if (ImGui::MenuItem("Add rug", NULL, false))
-        {
-            URAdd<NodeRug> undoRedoAddRug(int(rugs.size()), []() { return &rugs; }, [](int) {}, [](int) {});
-            rugs.push_back({scene_pos, ImVec2(400, 200), 0xFFA0A0A0, "Description\nEdit me with a double click."});
-        }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Delete", "Del", false))
-        {
-            deleteSelection = true;
-        }
-        if (ImGui::MenuItem("Copy", "CTRL+C"))
-        {
-            copySelection = true;
-        }
-        if (ImGui::MenuItem("Paste", "CTRL+V", false, !mNodesClipboard.empty()))
-        {
-            pasteSelection = true;
-        }
-
-        ImGui::EndPopup();
-    }
-    ImGui::PopStyleVar();
-
-    if (copySelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_C)))
-    {
-        mNodesClipboard.clear();
-        std::vector<size_t> selection;
-        for (size_t i = 0; i < nodes.size(); i++)
-        {
-            if (!nodes[i].mbSelected)
-                continue;
-            mNodesClipboard.push_back(nodes[i]);
-            selection.push_back(i);
-        }
-        controler->CopyNodes(selection);
-    }
-
-    if (deleteSelection || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Delete)))
-    {
-        //DeleteSelectedNodes(controler); todo
-    }
-
-    if (pasteSelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_V)))
-    {
-        URDummy undoRedoDummy;
-        ImVec2 min(FLT_MAX, FLT_MAX);
-        for (auto& clipboardNode : mNodesClipboard)
-        {
-            min.x = ImMin(clipboardNode.mPos.x, min.x);
-            min.y = ImMin(clipboardNode.mPos.y, min.y);
-        }
-        for (auto& selnode : nodes)
-            selnode.mbSelected = false;
-        for (auto& clipboardNode : mNodesClipboard)
-        {
-            URAdd<Node> undoRedoAddRug(int(nodes.size()), []() { return &nodes; }, [](int index) {}, [](int index) {});
-            nodes.push_back(clipboardNode);
-            nodes.back().mPos += (io.MousePos - offset) / factor - min;
-            nodes.back().mbSelected = true;
-        }
-        controler->PasteNodes();
-        NodeGraphUpdateEvaluationOrder(controler);
-    }
-#endif
 }
 
 static void DisplayLinks(GraphModel* model,
@@ -1330,7 +1159,7 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
 
     if (openContextMenu)
         ImGui::OpenPopup("context_menu");
-    ContextMenu(offset, contextMenuHoverNode, controler);
+    controler->ContextMenu(offset, contextMenuHoverNode);
 
     // Scrolling
     if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && io.MouseClicked[2] && nodeOperation == NO_None)
@@ -1424,7 +1253,6 @@ void RecurseNodeGraphLayout(GraphModel* model,
 
 void NodeGraphLayout(GraphModel* model)
 {
-    // URDummy dummy;
     std::vector<size_t> nodeOrderList(mOrders.size());
 
     const auto& nodes = model->GetNodes();
@@ -1433,7 +1261,6 @@ void NodeGraphLayout(GraphModel* model)
     std::vector<NodePosition> nodePositions(nodes.size(), {-1, -1});
     std::map<int, int> stacks;
     ImRect sourceRect, destRect;
-    // std::vector<URChange<Node>*> undos(nodes.size());
     model->BeginTransaction(true);
     std::vector<ImVec2> nodePos(nodes.size());
     // compute source bounds
@@ -1441,7 +1268,6 @@ void NodeGraphLayout(GraphModel* model)
     {
         const auto& node = nodes[i];
         sourceRect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
-        // undos[i] = new URChange<Node>(i, [](int index) { return &nodes[index]; }, [](int) {});
     }
 
     for (unsigned int i = 0; i < nodes.size(); i++)
@@ -1474,7 +1300,6 @@ void NodeGraphLayout(GraphModel* model)
     {
         model->SetNodePosition(i, nodePos[i]);
 	}
-    // todo: apply position
     // finish undo
     model->EndTransaction();
 }

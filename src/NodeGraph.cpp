@@ -228,13 +228,14 @@ int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 off
             }
             else if (io.KeyShift && ImGui::IsMouseClicked(0))
             {
-                for (auto& node : nodes)
+                for (auto i = 0;i<nodes.size();i++)
                 {
+                    auto& node = nodes[i];
                     ImVec2 node_rect_min = offset + node.mPos * factor;
                     ImVec2 node_rect_max = node_rect_min + ImVec2(100, 100);
                     if (rugRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                     {
-                        // node.mbSelected = true; todo
+                        model->SelectNode(i);
                     }
                 }
             }
@@ -759,8 +760,7 @@ static void HandleQuadSelection(
             {
                 for (int nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
                 {
-                    const auto* node = &nodes[nodeIndex];
-                    // node->mbSelected = false; todo
+                    model->SelectNode(nodeIndex, false);
                 }
             }
 
@@ -773,21 +773,21 @@ static void HandleQuadSelection(
                 ImVec2 node_rect_max = node_rect_min + ImVec2(100, 100);
                 if (selectionRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                 {
-                    /*if (io.KeyCtrl) todo
+                    if (io.KeyCtrl)
                     {
-                        node->mbSelected = false;
+                        model->SelectNode(nodeIndex, false);
                     }
                     else
                     {
-                        node->mbSelected = true;
-                    }*/
+                        model->SelectNode(nodeIndex, true);
+                    }
                 }
                 else
                 {
-                    /*if (!io.KeyShift) todo
+                    if (!io.KeyShift)
                     {
-                        node->mbSelected = false;
-                    }*/
+                        model->SelectNode(nodeIndex, false);
+                    }
                 }
             }
         }
@@ -814,17 +814,6 @@ bool HandleConnections(GraphModel* model,
     const auto& links = model->GetLinks();
     const auto& nodes = model->GetNodes();
 
-    /*auto deleteLink = [controler](int index) {
-        NodeLink& link = links[index];
-        controler->DelLink(link.OutputIdx, link.OutputSlot);
-        NodeGraphUpdateEvaluationOrder(controler);
-    };
-    auto addLink = [controler](int index) {
-        NodeLink& link = links[index];
-        controler->AddLink(link.InputIdx, link.InputSlot, link.OutputIdx, link.OutputSlot);
-        NodeGraphUpdateEvaluationOrder(controler);
-    }; todo
-        */
     size_t metaNodeCount = gMetaNodes.size();
     const MetaNode* metaNodes = gMetaNodes.data();
     ImGuiIO& io = ImGui::GetIO();
@@ -1060,19 +1049,24 @@ static bool DrawNode(GraphModel* model,
         {
             if (!node->mbSelected)
             {
-                /*if (!io.KeyShift)
+                if (!io.KeyShift)
                 {
-                    for (auto& selnode : nodes)
-                        selnode.mbSelected = false;
+                    for (auto i =0;i<nodes.size();i++)
+					{
+                        model->SelectNode(i, false);
+					}
                 }
-                node->mbSelected = true; todo
-                                */
+				model->SelectNode(nodeIndex);
             }
         }
     }
     if (node_moving_active && io.MouseDown[0])
     {
-        nodeOperation = NO_MovingNodes;
+        if (nodeOperation != NO_MovingNodes)
+		{
+			nodeOperation = NO_MovingNodes;
+			model->BeginTransaction(true);
+		}
     }
 
     bool currentSelectedNode = node->mbSelected;
@@ -1181,15 +1175,7 @@ void ComputeDelegateSelection(GraphModel* model, NodeGraphControlerBase* control
         }
     }
 }
-/* todo
-void NodeGraphSelectNode(int selectedNodeIndex)
-{
-    for (size_t i = 0; i < nodes.size(); i++)
-    {
-        nodes[i].mbSelected = selectedNodeIndex == i;
-    }
-}
-*/
+
 void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enabled)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
@@ -1298,18 +1284,14 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
 
     if (nodeOperation == NO_MovingNodes)
     {
-        for (auto& node : nodes)
-        {
-            if (!node.mbSelected)
-                continue;
-            // todo
-            // node.mPos += io.MouseDelta / factor;
-        }
+        if (fabsf(io.MouseDelta.x) > FLT_EPSILON && fabsf(io.MouseDelta.x) > FLT_EPSILON)
+		{
+			model->MoveSelectedNodes(io.MouseDelta / factor);
+		}
     }
 
     // rugs
     drawList->ChannelsSetCurrent(0);
-
 
     // quad selection
     HandleQuadSelection(model, drawList, offset, factor, regionRect);
@@ -1333,6 +1315,10 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     else if (nodeOperation != NO_None && !io.MouseDown[0])
     {
         nodeOperation = NO_None;
+		if (model->InTransaction())
+		{
+			model->EndTransaction();
+		}
     }
 
     // Open context menu
@@ -1487,6 +1473,10 @@ void NodeGraphLayout(GraphModel* model)
     {
         pos += offset;
     }
+    for (unsigned int i = 0; i < nodes.size(); i++)
+    {
+        model->SetNodePosition(i, nodePos[i]);
+	}
     // todo: apply position
     // finish undo
     model->EndTransaction();

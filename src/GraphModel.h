@@ -83,7 +83,9 @@ public:
     // setters
     size_t AddNode(size_t type, ImVec2 position);
     void DelNode(size_t nodeIndex);
-    void SelectNode(size_t nodeIndex);
+    void SelectNode(size_t nodeIndex, bool selected = true);
+    void MoveSelectedNodes(const ImVec2 delta);
+    void SetNodePosition(size_t nodeIndex, const ImVec2 position);
     void DeleteSelectedNodes();
     void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
     void DelLink(size_t nodeIndex, size_t slotIndex);
@@ -104,7 +106,7 @@ public:
 
 	void SetParameterPins(const std::vector<uint32_t>& pins)
     {
-            mEvaluationStages.SetParameterPins(pins);
+        mEvaluationStages.SetParameterPins(pins);
     }
     void SetIOPins(const std::vector<uint32_t>& pins)
     {

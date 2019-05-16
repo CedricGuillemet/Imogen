@@ -140,9 +140,6 @@ const float NODE_SLOT_RADIUS = 8.0f;
 const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
 static std::vector<NodeOrder> mOrders;
-// static std::vector<Node> nodes;
-// static std::vector<NodeLink> links;
-// static std::vector<NodeRug> rugs;
 static std::vector<GraphModel::Node> mNodesClipboard;
 static int editRug = -1;
 
@@ -191,26 +188,12 @@ void HandleZoomScroll(ImRect regionRect)
 
 void NodeGraphClear()
 {
-    /*nodes.clear();
-    links.clear();
-    rugs.clear();
-        */
     editRug = -1;
     nodeOperation = NO_None;
     factor = 1.0f;
     factorTarget = 1.0f;
 }
-/*
-const std::vector<NodeLink>& NodeGraphGetLinks()
-{
-    return links;
-}
 
-const std::vector<NodeRug>& NodeGraphRugs()
-{
-    return rugs;
-}
-*/
 int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 offset, float factor)
 {
     ImGuiIO& io = ImGui::GetIO();

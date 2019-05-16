@@ -194,8 +194,8 @@ struct EvaluationStages
     EvaluationStages();
 
     void AddSingleEvaluation(size_t nodeType);
-    //void UserAddEvaluation(size_t nodeType);
-    //void UserDeleteEvaluation(size_t target);
+    // void UserAddEvaluation(size_t nodeType);
+    // void UserDeleteEvaluation(size_t target);
 
     //
     size_t GetStagesCount() const
@@ -213,7 +213,8 @@ struct EvaluationStages
     void AddEvaluationInput(size_t target, int slot, int source);
     void DelEvaluationInput(size_t target, int slot);
     void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
-    void SetKeyboardMouse(int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
+    void SetKeyboardMouse(
+        int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
     void Clear();
 
@@ -251,11 +252,26 @@ struct EvaluationStages
     void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
 
     // pins
-    
     bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
     bool IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const;
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
+    void SetParameterPins(const std::vector<uint32_t>& pins)
+    {
+        mPinnedParameters = pins;
+    }
+    void SetIOPins(const std::vector<uint32_t>& pins)
+    {
+        mPinnedIO = pins;
+    }
+    const std::vector<uint32_t>& GetParameterPins() const
+    {
+        return mPinnedParameters;
+    }
+    const std::vector<uint32_t>& GetIOPins() const
+    {
+        return mPinnedIO;
+    }
     // ffmpeg encoders
     #if USE_FFMPEG
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
@@ -264,11 +280,11 @@ struct EvaluationStages
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;
     std::vector<size_t> mEvaluationOrderList;
-    std::vector<uint32_t> mPinnedParameters; // 32bits -> 32parameters
-    std::vector<uint32_t> mPinnedIO; // 24bits input, 8 bits output
     int mFrameMin, mFrameMax;
 
 protected:
+    std::vector<uint32_t> mPinnedParameters; // 32bits -> 32parameters
+    std::vector<uint32_t> mPinnedIO;         // 24bits input, 8 bits output
 
     void StageIsAdded(int index);
     void StageIsDeleted(int index);

@@ -380,7 +380,7 @@ void EvaluationStages::RemoveAnimation(size_t nodeIndex)
     for (int i = 0; i < int(tracks.size()); i++)
     {
         int index = tracks[i] - i;
-        URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; });
+        //URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; }); todo
         mAnimTrack.erase(mAnimTrack.begin() + index);
     }
 }

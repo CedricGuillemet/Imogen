@@ -54,6 +54,11 @@ void GraphModel::BeginTransaction(bool undoable)
     mbTransaction = true;
 }
 
+bool GraphModel::InTransaction() const
+{
+    return mbTransaction;
+}
+
 void GraphModel::EndTransaction()
 {
     assert(mbTransaction);
@@ -108,7 +113,7 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
 
 
     mEvaluationStages.AddEvaluationInput(outputNodeIndex, outputSlotIndex, inputNodeIndex);
-    //mEditingContext.SetTargetDirty(outputIdx, Dirty::Input);
+    // mEditingContext.SetTargetDirty(outputIdx, Dirty::Input);
     mEvaluationStages.SetIOPin(inputNodeIndex, inputSlotIndex, true, false);
     mEvaluationStages.SetIOPin(outputNodeIndex, outputSlotIndex, false, false);
 }
@@ -233,7 +238,7 @@ bool GraphModel::IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const
 
 void GraphModel::SelectNode(size_t nodeIndex)
 {
-    //assert(mbTransaction);
+    // assert(mbTransaction);
     mNodes[nodeIndex].mbSelected = true;
 }
 
@@ -242,7 +247,7 @@ ImVec2 GraphModel::GetNodePos(size_t nodeIndex) const
     return mNodes[nodeIndex].mPos;
 }
 
-void GraphModel::SetSamplers(size_t nodeIndex, const std::vector <InputSampler>& samplers)
+void GraphModel::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& samplers)
 {
     assert(mbTransaction);
     mEvaluationStages.SetSamplers(nodeIndex, samplers);
@@ -272,9 +277,7 @@ bool GraphModel::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) cons
     return mEvaluationStages.IsParameterPinned(nodeIndex, parameterIndex);
 }
 
-void GraphModel::SetParameter(int nodeIndex,
-                                      const std::string& parameterName,
-                                      const std::string& parameterValue)
+void GraphModel::SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue)
 {
     assert(mbTransaction);
     if (nodeIndex < 0 || nodeIndex >= mEvaluationStages.mStages.size())
@@ -291,7 +294,7 @@ void GraphModel::SetParameter(int nodeIndex,
     size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
     ParseStringToParameter(
         parameterValue, parameterType, &mEvaluationStages.mStages[nodeIndex].mParameters[paramOffset]);
-    //mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+    // mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
 }
 
 AnimTrack* GraphModel::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
@@ -311,12 +314,13 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
     {
         return;
     }
-    //URDummy urDummy;
+    // URDummy urDummy;
 
     AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
     if (!animTrack)
     {
-        //URAdd<AnimTrack> urAdd(int(mEvaluationStages.mAnimTrack.size()), [&] { return &mEvaluationStages.mAnimTrack; });
+        // URAdd<AnimTrack> urAdd(int(mEvaluationStages.mAnimTrack.size()), [&] { return &mEvaluationStages.mAnimTrack;
+        // });
         uint32_t parameterType = gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mParams[parameterIndex].mType;
         AnimTrack newTrack;
         newTrack.mNodeIndex = nodeIndex;
@@ -347,4 +351,79 @@ void GraphModel::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool p
 {
     assert(mbTransaction);
     mEvaluationStages.SetParameterPin(nodeIndex, parameterIndex, pinned);
+}
+
+void GraphModel::SetNodeParameter(size_t nodeIndex, const std::vector<unsigned char>& parameters)
+{
+    assert(mbTransaction);
+    auto& stage = mEvaluationStages.mStages[nodeIndex];
+    stage.mParameters = parameters;
+    mEvaluationStages.SetEvaluationParameters(nodeIndex, parameters);
+    // mModel.mEvaluationStages.SetSamplers(nodeIndex, stage.mInputSamplers);
+    // mEditingContext.SetTargetDirty(index, Dirty::Parameter);
+}
+
+void GraphModel::SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd)
+{
+    assert(mbTransaction);
+
+    auto& stage = mEvaluationStages.mStages[nodeIndex];
+    stage.mStartFrame = frameStart;
+    stage.mEndFrame = frameEnd;
+}
+
+void GraphModel::SetKeyboardMouse(
+    size_t nodeIndex, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift)
+{
+    assert(mbTransaction);
+
+    mEvaluationStages.SetKeyboardMouse(
+        nodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
+}
+
+
+void GraphModel::CopySelectedNodes()
+{
+    mStagesClipboard.clear();
+    mNodesClipboard.clear();
+    for (auto i = 0; i < mNodes.size(); i++)
+    {
+        if (!mNodes[i].mbSelected)
+        {
+            continue;
+        }
+        mStagesClipboard.push_back(mEvaluationStages.mStages[i]);
+        mNodesClipboard.push_back(mNodes[i]);
+    }
+}
+
+void GraphModel::CutSelectedNodes()
+{
+    mStagesClipboard.clear();
+}
+
+void GraphModel::PasteNodes()
+{
+    /*for (auto& sourceNode : mStagesClipboard) todo
+    {
+        URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
+                                               [&]() { return &mEvaluationStages.mStages; },
+                                               [](int) {},
+                                               [&](int index) { NodeIsAdded(index); });
+
+        mEditingContext.UserAddStage();
+        size_t target = mEvaluationStages.mStages.size();
+        //AddSingleNode(sourceNode.mType); todo
+
+        auto& stage = mEvaluationStages.mStages.back();
+        stage.mParameters = sourceNode.mParameters;
+        stage.mInputSamplers = sourceNode.mInputSamplers;
+        stage.mStartFrame = sourceNode.mStartFrame;
+        stage.mEndFrame = sourceNode.mEndFrame;
+
+        mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
+        mEvaluationStages.SetSamplers(target, stage.mInputSamplers);
+        mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
+        mEditingContext.SetTargetDirty(target, Dirty::All);
+    }*/
 }

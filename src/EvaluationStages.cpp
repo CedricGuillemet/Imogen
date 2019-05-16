@@ -30,7 +30,6 @@
 #include <algorithm>
 #include <map>
 #include <GL/gl3w.h>
-//#include "UndoRedo.h"
 
 EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 {

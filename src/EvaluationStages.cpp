@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <map>
 #include <GL/gl3w.h>
-#include "UndoRedo.h"
+//#include "UndoRedo.h"
 
 EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 {
@@ -371,7 +371,7 @@ void EvaluationStages::RemoveAnimation(size_t nodeIndex)
     for (int i = 0; i < int(tracks.size()); i++)
     {
         int index = tracks[i] - i;
-        URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; });
+        //URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; }); todo
         mAnimTrack.erase(mAnimTrack.begin() + index);
     }
 }

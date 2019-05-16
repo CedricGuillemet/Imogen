@@ -133,9 +133,6 @@ struct EvaluationContext
     void AllocRenderTargetsForEditingPreview();
 
     void AllocateComputeBuffer(int target, int elementCount, int elementSize);
-    // edit context only
-    void UserAddStage();
-    void UserDeleteStage(size_t index);
 
     struct ComputeBuffer
     {

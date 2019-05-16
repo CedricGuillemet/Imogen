@@ -42,20 +42,19 @@ struct NodeGraphControlerBase
     virtual unsigned int GetNodeTexture(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) const = 0;
 
-    virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& paramBlock) = 0;
-    virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd) = 0;
     virtual int NodeIsProcesing(size_t nodeIndex) const = 0;
     virtual float NodeProgress(size_t nodeIndex) const = 0;
     virtual bool NodeIsCubemap(size_t nodeIndex) const = 0;
     virtual bool NodeIs2D(size_t nodeIndex) const = 0;
     virtual bool NodeIsCompute(size_t nodeIndex) const = 0;
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) = 0;
+
     // return false if background must be rendered by node graph
     virtual bool RenderBackground() = 0;
 
     // clipboard
-    virtual void CopyNodes(const std::vector<size_t> nodes) = 0;
-    virtual void CutNodes(const std::vector<size_t> nodes) = 0;
+    virtual void CopySelectedNodes() = 0;
+    virtual void CutSelectedNodes() = 0;
     virtual void PasteNodes() = 0;
 };
 

@@ -70,14 +70,13 @@ public:
         }
     };
 
-
     // Transaction
     void Clear();
     void BeginTransaction(bool undoable);
+    bool InTransaction() const;
     void EndTransaction();
 
     // undo/redo
-
     void Undo();
     void Redo();
 
@@ -98,13 +97,20 @@ public:
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
+    void SetNodeParameter(size_t nodeIndex, const std::vector<unsigned char>& parameters);
+    void SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd);
+    void SetKeyboardMouse(
+        size_t nodeIndex, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
 
+	void SetParameterPins(const std::vector<uint32_t>& pins)
+    {
+            mEvaluationStages.SetParameterPins(pins);
+    }
+    void SetIOPins(const std::vector<uint32_t>& pins)
+    {
+        mEvaluationStages.SetIOPins(pins);
+    }
     // getters
-
-    // linked to runtime...not sure
-    bool NodeIsCubemap(size_t nodeIndex) const;
-    bool NodeIs2D(size_t nodeIndex) const;
-    bool NodeIsCompute(size_t nodeIndex) const;
     bool NodeHasUI(size_t nodeIndex) const;
     const std::vector<NodeRug>& GetRugs() const
     {
@@ -132,9 +138,18 @@ public:
         return mEvaluationStages.GetAnimTrack();
     }
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const;
+    const std::vector<uint32_t>& GetParameterPins() const
+    {
+        return mEvaluationStages.GetParameterPins();
+    }
+    const std::vector<uint32_t>& GetIOPins() const
+    {
+        return mEvaluationStages.GetIOPins();
+    }
+
     // clipboard
-    void CopyNodes(const std::vector<size_t> nodes);
-    void CutNodes(const std::vector<size_t> nodes);
+    void CopySelectedNodes();
+    void CutSelectedNodes();
     void PasteNodes();
 
     EvaluationStages mEvaluationStages;
@@ -148,5 +163,8 @@ private:
     std::vector<NodeLink> mLinks;
     std::vector<NodeRug> mRugs;
 
+
+	std::vector<Node> mNodesClipboard;
+	std::vector<EvaluationStage> mStagesClipboard;
     
 };

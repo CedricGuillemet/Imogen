@@ -641,11 +641,11 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
         rug.mColor = rugs[i].mColor;
         rug.mComment = rugs[i].mText;
     }
-    material.mAnimTrack = nodeGraphControler.GetAnimTrack();
+    material.mAnimTrack = nodeGraphControler.mModel.GetAnimTrack();
     material.mFrameMin = nodeGraphControler.mModel.mEvaluationStages.mFrameMin;
     material.mFrameMax = nodeGraphControler.mModel.mEvaluationStages.mFrameMax;
-    material.mPinnedParameters = nodeGraphControler.mModel.mEvaluationStages.mPinnedParameters;
-    material.mPinnedIO = nodeGraphControler.mModel.mEvaluationStages.mPinnedIO;
+    material.mPinnedParameters = nodeGraphControler.mModel.GetParameterPins();
+    material.mPinnedIO = nodeGraphControler.mModel.GetIOPins();
 
     material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
@@ -674,15 +674,12 @@ void Imogen::UpdateNewlySelectedGraph()
             MaterialNode& node = material.mMaterialNodes[i];
             if (node.mType == 0xFFFFFFFF)
                 continue;
-            /*NodeGraphAddNode(mNodeGraphControler,
-                             node.mType,
-                             &node.mParameters,
-                             node.mPosX,
-                             node.mPosY,
-                             node.mFrameStart,
-                             node.mFrameEnd);
-                                                         */
+
             auto nodeIndex = mNodeGraphControler->mModel.AddNode(node.mType, ImVec2(float(node.mPosX), float(node.mPosY)));
+            mNodeGraphControler->mModel.SetNodeParameter(nodeIndex, node.mParameters);
+            mNodeGraphControler->mModel.SetTimeSlot(nodeIndex, node.mFrameStart, node.mFrameEnd);
+            mNodeGraphControler->mModel.SetSamplers(nodeIndex, node.mInputSamplers);
+
             auto& lastNode = mNodeGraphControler->mModel.GetEvaluationStages().mStages.back();
             if (!node.mImage.empty())
             {
@@ -690,18 +687,10 @@ void Imogen::UpdateNewlySelectedGraph()
                 g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
                     &node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
             }
-            //lastNode.mInputSamplers = node.mInputSamplers;
-            mNodeGraphControler->mModel.SetSamplers(nodeIndex, node.mInputSamplers);
         }
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
             MaterialConnection& materialConnection = material.mMaterialConnections[i];
-            /*NodeGraphAddLink(mNodeGraphControler,
-                             materialConnection.mInputNode,
-                             materialConnection.mInputSlot,
-                             materialConnection.mOutputNode,
-                             materialConnection.mOutputSlot);
-                                                         */
             mNodeGraphControler->mModel.AddLink(materialConnection.mInputNode,
                                                 materialConnection.mInputSlot,
                                                 materialConnection.mOutputNode,
@@ -710,13 +699,12 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {
             MaterialNodeRug& rug = material.mMaterialRugs[i];
-            // NodeGraphAddRug(rug.mPosX, rug.mPosY, rug.mSizeX, rug.mSizeY, rug.mColor, rug.mComment);
             mNodeGraphControler->mModel.AddRug(ImVec2(float(rug.mPosX), float(rug.mPosY)),
                                                ImVec2(float(rug.mSizeX), float(rug.mSizeY)),
                                                rug.mColor,
                                                rug.mComment);
         }
-        NodeGraphUpdateEvaluationOrder(&mNodeGraphControler->mModel, mNodeGraphControler);
+        
         NodeGraphUpdateScrolling(&mNodeGraphControler->mModel);
         mCurrentTime = 0;
         mbIsPlaying = false;
@@ -724,15 +712,18 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mModel.mEvaluationStages.SetAnimTrack(material.mAnimTrack);
         mNodeGraphControler->mModel.mEvaluationStages.mFrameMin = material.mFrameMin;
         mNodeGraphControler->mModel.mEvaluationStages.mFrameMax = material.mFrameMax;
-        mNodeGraphControler->mModel.mEvaluationStages.mPinnedParameters = material.mPinnedParameters;
-        mNodeGraphControler->mModel.mEvaluationStages.mPinnedIO = material.mPinnedIO;
-        mNodeGraphControler->mModel.mEvaluationStages.mPinnedIO.resize(material.mMaterialNodes.size(), 0);
+        mNodeGraphControler->mModel.SetParameterPins(material.mPinnedParameters);
+        //mNodeGraphControler->mModel.mEvaluationStages.mPinnedParameters.resize(material.mMaterialNodes.size(), 0);
+        mNodeGraphControler->mModel.SetIOPins(material.mPinnedIO);
+        //mNodeGraphControler->mModel.mEvaluationStages.mPinnedIO.resize(material.mMaterialNodes.size(), 0);
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
         mNodeGraphControler->mEditingContext.RunAll();
         mNodeGraphControler->mModel.EndTransaction();
+
+		NodeGraphUpdateEvaluationOrder(&mNodeGraphControler->mModel, mNodeGraphControler);
     }
 }
 
@@ -1064,12 +1055,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         BakeValuesToAnimationTrack();
     }
 
-    static std::vector<UndoRedo*> undoRedoEditCurves;
     virtual void BeginEdit(int /*index*/)
     {
-        assert(gUndoRedoHandler.mCurrent == nullptr);
-        URDummy urDummy;
-
         for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
         {
             uint32_t parameterIndex = mParameterIndex[curve];
@@ -1079,8 +1066,6 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             {
                 if (track.mNodeIndex == mNodeGraphControler.mSelectedNodeIndex && track.mParamIndex == parameterIndex)
                 {
-                    undoRedoEditCurves.push_back(new URChange<AnimTrack>(
-                        index, [&](int index) { return &mNodeGraphControler.mModel.mEvaluationStages.mAnimTrack[index]; }));
                     parameterFound = true;
                     break;
                 }
@@ -1088,8 +1073,6 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             }
             if (!parameterFound)
             {
-                undoRedoEditCurves.push_back(
-                    new URAdd<AnimTrack>(index, [&]() { return &mNodeGraphControler.mModel.mEvaluationStages.mAnimTrack; }));
                 AnimTrack animTrack;
                 animTrack.mNodeIndex = mNodeIndex;
                 animTrack.mParamIndex = mParameterIndex[curve];
@@ -1102,9 +1085,6 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     virtual void EndEdit()
     {
-        for (auto ur : undoRedoEditCurves)
-            delete ur;
-        undoRedoEditCurves.clear();
     }
 
     void MakeCurvesVisible()
@@ -1165,12 +1145,10 @@ private:
     }
 };
 
-std::vector<UndoRedo*> AnimCurveEdit::undoRedoEditCurves;
-
 struct MySequence : public ImSequencer::SequenceInterface
 {
     MySequence(NodeGraphControler& NodeGraphControler)
-        : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX), undoRedoChange(nullptr)
+        : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX)
     {
     }
 
@@ -1199,14 +1177,9 @@ struct MySequence : public ImSequencer::SequenceInterface
 
     virtual void BeginEdit(int index)
     {
-        assert(undoRedoChange == nullptr);
-        undoRedoChange = new URChange<EvaluationStage>(
-            index, [&](int index) { return &mNodeGraphControler.mModel.mEvaluationStages.mStages[index]; });
     }
     virtual void EndEdit()
     {
-        delete undoRedoChange;
-        undoRedoChange = NULL;
         mNodeGraphControler.mModel.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, mCurrentTime, false);
     }
 
@@ -1370,7 +1343,6 @@ struct MySequence : public ImSequencer::SequenceInterface
     ImVec2 getKeyFrameOrValue;
     float mCurveMin, mCurveMax;
     int mCurrentTime;
-    URChange<EvaluationStage>* undoRedoChange;
 };
 
 std::vector<ImHotKey::HotKey> mHotkeys;
@@ -1420,8 +1392,8 @@ void Imogen::Init()
          [&]() { mNodeGraphControler->mModel.MakeKey(mCurrentTime, uint32_t(mNodeGraphControler->mSelectedNodeIndex), 0); }},
         {"HotKeyEditor", "Open the Hotkey editor window", [&]() { ImGui::OpenPopup("HotKeys Editor"); }},
         {"NewNodePopup", "Open the new node menu", []() {}},
-        {"Undo", "Undo the last operation", []() { gUndoRedoHandler.Undo(); }},
-        {"Redo", "Redo the last undo", []() { gUndoRedoHandler.Redo(); }},
+        {"Undo", "Undo the last operation", []() { Imogen::instance->GetNodeGraphControler()->mModel.Undo(); }},
+        {"Redo", "Redo the last undo", []() { Imogen::instance->GetNodeGraphControler()->mModel.Redo(); }},
         {"Copy", "Copy the selected nodes", []() {}},
         {"Cut", "Cut the selected nodes", []() {}},
         {"Paste", "Paste previously copy/cut nodes", []() {}},
@@ -1852,11 +1824,9 @@ void Imogen::ShowTimeLine()
     ImGui::PushItemWidth(120);
     if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
     {
-        URChange<EvaluationStage> undoRedoChange(
-            selectedEntry, [&](int index) { return &mNodeGraphControler->mModel.mEvaluationStages.mStages[index]; });
         timeMask[1] = ImMax(timeMask[1], timeMask[0]);
         timeMask[0] = ImMin(timeMask[1], timeMask[0]);
-        mNodeGraphControler->SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
+        mNodeGraphControler->mModel.SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
     }
     ImGui::PopItemWidth();
     ImGui::PopItemWidth();
@@ -2221,6 +2191,5 @@ void Imogen::ClearAll()
     NodeGraphClear();
     InitCallbackRects();
     ClearExtractedViews();
-    gUndoRedoHandler.Clear();
     mSequence->Clear();
 }

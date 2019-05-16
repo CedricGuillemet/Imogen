@@ -31,7 +31,7 @@
 #include "ImGradient.h"
 #include "Library.h"
 #include "EvaluationContext.h"
-#include "UndoRedo.h"
+//#include "UndoRedo.h"
 #include "GraphModel.h"
 
 struct NodeGraphControler : public NodeGraphControlerBase
@@ -40,49 +40,28 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     void Clear();
 
-    /*
-    virtual void AddLink(int inputIdx, int inputSlot, int outputIdx, int outputSlot)
-    {
-        if (outputIdx >= mEvaluationStages.mStages.size())
-            return;
+	// modifiers
+    virtual void CopySelectedNodes();
+    virtual void CutSelectedNodes();
+    virtual void PasteNodes();
 
-        mEvaluationStages.AddEvaluationInput(outputIdx, outputSlot, inputIdx);
-        mEditingContext.SetTargetDirty(outputIdx, Dirty::Input);
-        mEvaluationStages.SetIOPin(inputIdx, inputSlot, true, false);
-        mEvaluationStages.SetIOPin(outputIdx, outputSlot, false, false);
-    }
-    virtual void DelLink(int index, int slot)
-    {
-        mEvaluationStages.DelEvaluationInput(index, slot);
-        mEditingContext.SetTargetDirty(index, Dirty::Input);
-    }
-    */
-    //virtual void UserDeleteNode(size_t index);
-    virtual void SetParamBlock(size_t index, const std::vector<unsigned char>& parameters);
 
+    void SetKeyboardMouse(float rx,
+                          float ry,
+                          float dx,
+                          float dy,
+                          bool lButDown,
+                          bool rButDown,
+                          float wheel,
+                          bool bCtrl,
+                          bool bAlt,
+                          bool bShift);
+
+	// accessors
     virtual unsigned int GetNodeTexture(size_t index)
     {
         return mEditingContext.GetEvaluationTexture(index);
     }
-
-
-    virtual void SetTimeSlot(size_t index, int frameStart, int frameEnd);
-    void SetTimeDuration(size_t index, int duration);
-
-    void InvalidateParameters();
-
-    void SetKeyboardMouse(float rx,
-                  float ry,
-                  float dx,
-                  float dy,
-                  bool lButDown,
-                  bool rButDown,
-                  float wheel,
-                  bool bCtrl,
-                  bool bAlt,
-                  bool bShift);
-
-    
     virtual int NodeIsProcesing(size_t nodeIndex) const
     {
         return mEditingContext.StageIsProcessing(nodeIndex);
@@ -94,50 +73,42 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual bool NodeIsCubemap(size_t nodeIndex) const;
     virtual bool NodeIs2D(size_t nodeIndex) const;
     virtual bool NodeIsCompute(size_t nodeIndex) const;
+    virtual ImVec2 GetEvaluationSize(size_t nodeIndex) const;
+
+
+	// UI
+    void NodeEdit();
+    virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex);
+    virtual bool RenderBackground();
+
     virtual void UpdateEvaluationList(const std::vector<size_t>& nodeOrderList)
     {
         mModel.SetEvaluationOrder(nodeOrderList);
     }
-    virtual ImVec2 GetEvaluationSize(size_t nodeIndex) const;
-    virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex);
-
-    virtual void CopyNodes(const std::vector<size_t> nodes);
-    virtual void CutNodes(const std::vector<size_t> nodes);
-    virtual void PasteNodes();
-
-    virtual bool RenderBackground();
-
-    // animation
-    const std::vector<AnimTrack>& GetAnimTrack() const
-    {
-        return mModel.GetAnimTrack();
-    }
-
-    void PinnedEdit();
-
 
     EvaluationContext mEditingContext;
-    std::vector<EvaluationStage> mStagesClipboard;
+    
     int mBackgroundNode;
-    bool mbMouseDragging;
-    URChange<std::vector<unsigned char>>* mUndoRedoParamSetMouse;
+    
 
     EvaluationStage* Get(ASyncId id)
     {
         return GetByAsyncId(id, mModel.mEvaluationStages.mStages);
     }
-    void NodeEdit();
-
+    
 	GraphModel mModel;
 
 protected:
+    bool mbMouseDragging;
+
     bool EditSingleParameter(unsigned int nodeIndex,
                              unsigned int parameterIndex,
                              void* paramBuffer,
                              const MetaParameter& param);
-    //void NodeIsAdded(int index);
+    void PinnedEdit();
     void UpdateDirtyParameter(int index);
     void EditNodeParameters();
     void HandlePin(size_t nodeIndex, size_t parameterIndex);
     void HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput);
+    
 };

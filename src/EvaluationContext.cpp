@@ -29,7 +29,7 @@
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "NodeGraphControler.h"
-#include "UndoRedo.h"
+//#include "UndoRedo.h"
 
 static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};
 static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
@@ -896,33 +896,6 @@ void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool 
     }
 }
 
-void EvaluationContext::UserAddStage()
-{
-    URAdd<std::shared_ptr<RenderTarget>> undoRedoAddRenderTarget(int(mStageTarget.size()),
-                                                                 [&]() { return &mStageTarget; });
-    URAdd<DirtyFlag> undoRedoAddDirty(int(mDirtyFlags.size()), [&]() { return &mDirtyFlags; });
-    URAdd<int> undoRedoAddProcessing(int(mbProcessing.size()), [&]() { return &mbProcessing; });
-    URAdd<float> undoRedoAddProgress(int(mProgress.size()), [&]() { return &mProgress; });
-
-    mStageTarget.push_back(std::make_shared<RenderTarget>());
-    mDirtyFlags.push_back(Dirty::All);
-    mbProcessing.push_back(0);
-    mProgress.push_back(0.f);
-}
-
-void EvaluationContext::UserDeleteStage(size_t index)
-{
-    URDel<std::shared_ptr<RenderTarget>> undoRedoDelRenderTarget(int(index), [&]() { return &mStageTarget; });
-    URDel<DirtyFlag> undoRedoDelDirty(int(index), [&]() { return &mDirtyFlags; });
-    URDel<int> undoRedoDelProcessing(int(index), [&]() { return &mbProcessing; });
-    URDel<float> undoRedoDelProgress(int(index), [&]() { return &mProgress; });
-
-    mStageTarget.erase(mStageTarget.begin() + index);
-    mDirtyFlags.erase(mDirtyFlags.begin() + index);
-    mbProcessing.erase(mbProcessing.begin() + index);
-    mProgress.erase(mProgress.begin() + index);
-}
-
 void EvaluationContext::AllocateComputeBuffer(int target, int elementCount, int elementSize)
 {
     if (mComputeBuffers.size() <= target)
@@ -1013,8 +986,8 @@ EvaluationStages BuildEvaluationFromMaterial(Material& material)
     evaluationStages.SetAnimTrack(material.mAnimTrack);
     evaluationStages.mFrameMin = material.mFrameMin;
     evaluationStages.mFrameMax = material.mFrameMax;
-    evaluationStages.mPinnedParameters = material.mPinnedParameters;
-
+    evaluationStages.SetParameterPins(material.mPinnedParameters);
+    evaluationStages.SetIOPins(material.mPinnedIO);
     return evaluationStages;
 }
 

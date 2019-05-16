@@ -31,7 +31,6 @@
 #include "Evaluators.h"
 #include "UI.h"
 #include "Utils.h"
-//#include "UndoRedo.h"
 
 NodeGraphControler::NodeGraphControler()
     : mbMouseDragging(false)
@@ -44,8 +43,6 @@ void NodeGraphControler::Clear()
 {
     mSelectedNodeIndex = -1;
     mBackgroundNode = -1;
-    // mEvaluationStages.Clear();
-    // mEvaluationStages.mStages.clear();
     mModel.Clear();
     mEditingContext.Clear();
 }

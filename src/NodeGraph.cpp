@@ -37,7 +37,6 @@
 #include <array>
 #include "imgui_markdown/imgui_markdown.h"
 #include "UI.h"
-//#include "UndoRedo.h"
 #include "GraphModel.h"
 
 void AddExtractedView(size_t nodeIndex);
@@ -47,7 +46,6 @@ static inline float Distance(ImVec2& a, ImVec2& b)
 {
     return sqrtf((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 }
-
 
 ImVec2 GetInputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
 {
@@ -69,14 +67,6 @@ ImRect GetNodeRect(const GraphModel::Node& node, float factor)
     return ImRect(node.mPos * factor, node.mPos * factor + Size);
 }
 
-/*
-Node::Node(int type, const ImVec2& pos)
-{
-    mType = type;
-    mPos = pos;
-    mbSelected = false;
-}
-*/
 struct NodeOrder
 {
     size_t mNodeIndex;
@@ -431,45 +421,6 @@ void NodeGraphUpdateEvaluationOrder(GraphModel* model, NodeGraphControlerBase* c
         model->SetEvaluationOrder(nodeOrderList);
     }
 }
-/*
-size_t NodeGraphAddNode(NodeGraphControlerBase* controler,
-                        int type,
-                        const std::vector<unsigned char>* parameters,
-                        int posx,
-                        int posy,
-                        int frameStart,
-                        int frameEnd)
-{
-    size_t index = nodes.size();
-    nodes.push_back(Node(type, ImVec2(float(posx), float(posy))));
-
-    controler->AddSingleNode(type);
-    if (parameters)
-    {
-        controler->SetParamBlock(index, *parameters);
-    }
-    controler->SetTimeSlot(index, frameStart, frameEnd);
-    return index;
-}
-*/
-/*
-void NodeGraphAddLink(NodeGraphControlerBase* controler, int InputIdx, int InputSlot, int OutputIdx, int OutputSlot)
-{
-    if (InputIdx >= nodes.size() || OutputIdx >= nodes.size())
-    {
-        Log("Error : Link node index doesn't correspond to an existing node.");
-        return;
-    }
-
-    NodeLink nl;
-    nl.InputIdx = InputIdx;
-    nl.InputSlot = InputSlot;
-    nl.OutputIdx = OutputIdx;
-    nl.OutputSlot = OutputSlot;
-    links.push_back(nl);
-    controler->AddLink(nl.InputIdx, nl.InputSlot, nl.OutputIdx, nl.OutputSlot);
-}
-*/
 
 void NodeGraphUpdateScrolling(GraphModel* model)
 {

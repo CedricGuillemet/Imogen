@@ -417,6 +417,11 @@ void GraphModel::CutSelectedNodes()
     mStagesClipboard.clear();
 }
 
+bool GraphModel::IsClipboardEmpty() const
+{
+    return mStagesClipboard.empty();
+}
+
 void GraphModel::PasteNodes()
 {
     /*for (auto& sourceNode : mStagesClipboard) todo

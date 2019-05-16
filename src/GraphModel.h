@@ -153,6 +153,7 @@ public:
     void CopySelectedNodes();
     void CutSelectedNodes();
     void PasteNodes();
+    bool IsClipboardEmpty() const;
 
     EvaluationStages mEvaluationStages;
 

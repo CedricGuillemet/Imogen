@@ -38,7 +38,7 @@
 #include "UI.h"
 #include "GraphModel.h"
 
-void AddExtractedView(size_t nodeIndex);
+
 extern ImGui::MarkdownConfig mdConfig;
 
 static inline float Distance(ImVec2& a, ImVec2& b)

@@ -370,41 +370,30 @@ void EvaluationStages::RemoveAnimation(size_t nodeIndex)
     for (int i = 0; i < int(tracks.size()); i++)
     {
         int index = tracks[i] - i;
-        //URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; }); todo
+        // URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; }); todo
         mAnimTrack.erase(mAnimTrack.begin() + index);
     }
 }
 
 void EvaluationStages::RemovePins(size_t nodeIndex)
 {
-    /*auto iter = mPinnedParameters.begin();
-    for (; iter != mPinnedParameters.end();)
-    {
-        uint32_t pin = *iter;
-        if (((pin >> 16) & 0xFFFF) == nodeIndex)
-        {
-            URDel<uint32_t> undoRedoDelPin(int(&(*iter) - mPinnedParameters.data()),
-                                           [&]() { return &mPinnedParameters; });
-            iter = mPinnedParameters.erase(iter);
-        }
-        else
-            ++iter;
-    }
-
-	URDel<uint32_t> undoRedoDelPinIO(int(nodeIndex), [&]() { return &mPinnedIO; });
-    */
     mPinnedParameters.erase(mPinnedParameters.begin() + nodeIndex);
     mPinnedIO.erase(mPinnedIO.begin() + nodeIndex);
 }
 
 bool EvaluationStages::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
 {
+    if (nodeIndex >= mPinnedParameters.size())
+    {
+        return false;
+    }
     uint32_t mask = 1 << parameterIndex;
     return mPinnedParameters[nodeIndex] & mask;
 }
 
 void EvaluationStages::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
 {
+    mPinnedParameters.resize(mStages.size(), false);
     uint32_t mask = 1 << parameterIndex;
     mPinnedParameters[nodeIndex] &= ~mask;
     mPinnedParameters[nodeIndex] += pinned ? mask : 0;
@@ -475,25 +464,26 @@ void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, b
 
 bool EvaluationStages::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
 {
-	if (nodeIndex >= mPinnedIO.size())
-	{
-            return false;
-	}
+    if (nodeIndex >= mPinnedIO.size())
+    {
+        return false;
+    }
     uint32_t mask = 0;
-	if (forOutput)
-	{
+    if (forOutput)
+    {
         mask = (1 << io) & 0xFF;
-	}
-	else
-	{
+    }
+    else
+    {
         mask = (1 << (8 + io));
-	}
+    }
     return mPinnedIO[nodeIndex] & mask;
 }
 
 void EvaluationStages::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned)
 {
-    uint32_t mask = 0;
+    mPinnedIO.resize(mStages.size(), 0);
+	uint32_t mask = 0;
     if (forOutput)
     {
         mask = (1 << io) & 0xFF;
@@ -588,7 +578,7 @@ void Scene::Mesh::Draw() const
         prim.Draw();
     }
 }
-void Scene::Draw(EvaluationContext *context, EvaluationInfo& evaluationInfo) const
+void Scene::Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const
 {
     for (unsigned int i = 0; i < mMeshIndex.size(); i++)
     {

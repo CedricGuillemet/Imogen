@@ -140,11 +140,11 @@ void GraphModel::DelLink(size_t nodeIndex, size_t slotIndex)
 
     mEvaluationStages.DelEvaluationInput(nodeIndex, slotIndex);
 }
-void GraphModel::AddRug(ImVec2 position, ImVec2 size, uint32_t color, const std::string& comment)
+void GraphModel::AddRug(const NodeRug& rug)
 {
     assert(mbTransaction);
 
-    mRugs.push_back({position, size, color, comment});
+    mRugs.push_back(rug);
 }
 void GraphModel::DelRug(size_t rugIndex)
 {
@@ -446,4 +446,24 @@ void GraphModel::PasteNodes()
         mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
         mEditingContext.SetTargetDirty(target, Dirty::All);
     }*/
+
+	        // URDummy undoRedoDummy;
+    /*
+    ImVec2 min(FLT_MAX, FLT_MAX);
+    for (auto& clipboardNode : mNodesClipboard)
+    {
+        min.x = ImMin(clipboardNode.mPos.x, min.x);
+        min.y = ImMin(clipboardNode.mPos.y, min.y);
+    }
+    for (auto& selnode : nodes)
+        selnode.mbSelected = false;
+    for (auto& clipboardNode : mNodesClipboard)
+    {
+        // URAdd<Node> undoRedoAddRug(int(nodes.size()), []() { return &nodes; }, [](int index) {}, [](int index)
+        // {});
+        nodes.push_back(clipboardNode);
+        nodes.back().mPos += (io.MousePos - offset) / factor - min;
+        nodes.back().mbSelected = true;
+    }
+	*/
 }

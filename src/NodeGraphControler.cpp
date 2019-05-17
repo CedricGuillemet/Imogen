@@ -645,7 +645,7 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     }
 }
 
-void NodeGraphControler::ContextMenu(ImVec2 offset, int nodeHovered)
+void NodeGraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
 {
     ImGuiIO& io = ImGui::GetIO();
     size_t metaNodeCount = gMetaNodes.size();
@@ -661,7 +661,6 @@ void NodeGraphControler::ContextMenu(ImVec2 offset, int nodeHovered)
     if (ImGui::BeginPopup("context_menu"))
     {
         auto* node = nodeHovered != -1 ? &nodes[nodeHovered] : NULL;
-        ImVec2 scene_pos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
         if (node)
         {
             ImGui::Text(metaNodes[node->mType].mName.c_str());
@@ -675,20 +674,8 @@ void NodeGraphControler::ContextMenu(ImVec2 offset, int nodeHovered)
         else
         {
             auto AddNode = [&](int nodeType) {
-                /*auto addDelNodeLambda = [controler](int) {
-                    NodeGraphUpdateEvaluationOrder(controler);
-                    controler->mSelectedNodeIndex = -1;
-                };
-                URAdd<Node> undoRedoAddRug(
-                    int(nodes.size()), []() { return &nodes; }, addDelNodeLambda, addDelNodeLambda);
-
-                nodes.push_back(Node(i, scene_pos));
-                controler->UserAddNode(i);
-                addDelNodeLambda(0);
-                */
                 mModel.BeginTransaction(true);
-                mModel.AddNode(nodeType);
-                mModel.setm
+                mModel.AddNode(nodeType, scenePos);
                 mModel.EndTransaction();
             };
 
@@ -722,9 +709,10 @@ void NodeGraphControler::ContextMenu(ImVec2 offset, int nodeHovered)
                         }
                     }
 
-                    for (unsigned int iCateg = 0; iCateg < controler->mCategories->size(); iCateg++)
+					const auto& categories = MetaNode::mCategories;
+                    for (unsigned int iCateg = 0; iCateg < categories.size(); iCateg++)
                     {
-                        if (ImGui::BeginMenu((*controler->mCategories)[iCateg].c_str()))
+                        if (ImGui::BeginMenu(categories[iCateg].c_str()))
                         {
                             for (int i = 0; i < metaNodeCount; i++)
                             {
@@ -744,10 +732,8 @@ void NodeGraphControler::ContextMenu(ImVec2 offset, int nodeHovered)
         ImGui::Separator();
         if (ImGui::MenuItem("Add rug", NULL, false))
         {
-            // URAdd<NodeRug> undoRedoAddRug(int(rugs.size()), []() { return &rugs; }, [](int) {}, [](int) {});
-            // rugs.push_back({scene_pos, ImVec2(400, 200), 0xFFA0A0A0, "Description\nEdit me with a double click."});
             GraphModel::NodeRug rug = {
-                scene_pos, ImVec2(400, 200), 0xFFA0A0A0, "Description\nEdit me with a double click."};
+                scenePos, ImVec2(400, 200), 0xFFA0A0A0, "Description\nEdit me with a double click."};
             mModel.BeginTransaction(true);
             mModel.AddRug(rug);
             mModel.EndTransaction();
@@ -772,45 +758,18 @@ void NodeGraphControler::ContextMenu(ImVec2 offset, int nodeHovered)
 
     if (copySelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_C)))
     {
-        /*mNodesClipboard.clear();
-        std::vector<size_t> selection;
-        for (size_t i = 0; i < nodes.size(); i++)
-        {
-            if (!nodes[i].mbSelected)
-                continue;
-            mNodesClipboard.push_back(nodes[i]);
-            selection.push_back(i);
-        }
-        */
         mModel.CopySelectedNodes();
     }
 
     if (deleteSelection || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Delete)))
     {
-        // DeleteSelectedNodes(controler); todo
+        mModel.CutSelectedNodes();
     }
 
     if (pasteSelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_V)))
     {
-        // URDummy undoRedoDummy;
-        ImVec2 min(FLT_MAX, FLT_MAX);
-        for (auto& clipboardNode : mNodesClipboard)
-        {
-            min.x = ImMin(clipboardNode.mPos.x, min.x);
-            min.y = ImMin(clipboardNode.mPos.y, min.y);
-        }
-        for (auto& selnode : nodes)
-            selnode.mbSelected = false;
-        for (auto& clipboardNode : mNodesClipboard)
-        {
-            // URAdd<Node> undoRedoAddRug(int(nodes.size()), []() { return &nodes; }, [](int index) {}, [](int index)
-            // {});
-            nodes.push_back(clipboardNode);
-            nodes.back().mPos += (io.MousePos - offset) / factor - min;
-            nodes.back().mbSelected = true;
-        }
-        controler->PasteNodes();
-        NodeGraphUpdateEvaluationOrder(controler);
+        mModel.PasteNodes();
+        //NodeGraphUpdateEvaluationOrder(controler);
     }
 }
 bool NodeGraphControler::NodeIs2D(size_t nodeIndex) const

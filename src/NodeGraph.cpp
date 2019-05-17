@@ -1159,7 +1159,9 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
 
     if (openContextMenu)
         ImGui::OpenPopup("context_menu");
-    controler->ContextMenu(offset, contextMenuHoverNode);
+	                
+	ImVec2 scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
+    controler->ContextMenu(scenePos, contextMenuHoverNode);
 
     // Scrolling
     if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && io.MouseClicked[2] && nodeOperation == NO_None)

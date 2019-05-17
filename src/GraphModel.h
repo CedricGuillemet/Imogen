@@ -89,7 +89,7 @@ public:
     void DeleteSelectedNodes();
     void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
     void DelLink(size_t nodeIndex, size_t slotIndex);
-    void AddRug(ImVec2 position, ImVec2 size, uint32_t color, const std::string& comment);
+    void AddRug(const NodeRug& rug);
     void DelRug(size_t rugIndex);
     void SetRug(size_t rugIndex, const NodeRug& rug);
     void SetSamplers(size_t nodeIndex, const std::vector <InputSampler>& sampler);

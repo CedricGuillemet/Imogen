@@ -699,10 +699,10 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {
             MaterialNodeRug& rug = material.mMaterialRugs[i];
-            mNodeGraphControler->mModel.AddRug(ImVec2(float(rug.mPosX), float(rug.mPosY)),
+            mNodeGraphControler->mModel.AddRug({ImVec2(float(rug.mPosX), float(rug.mPosY)),
                                                ImVec2(float(rug.mSizeX), float(rug.mSizeY)),
                                                rug.mColor,
-                                               rug.mComment);
+                                               rug.mComment});
         }
         
         NodeGraphUpdateScrolling(&mNodeGraphControler->mModel);

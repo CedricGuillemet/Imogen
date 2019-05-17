@@ -90,7 +90,7 @@ size_t PickBestNode(const std::vector<NodeOrder>& orders)
 }
 
 void RecurseSetPriority(std::vector<NodeOrder>& orders,
-                        const std::vector<GraphModel::NodeLink>& links,
+                        const std::vector<GraphModel::Link>& links,
                         size_t currentIndex,
                         size_t currentPriority,
                         size_t& undeterminedNodeCount)
@@ -108,7 +108,7 @@ void RecurseSetPriority(std::vector<NodeOrder>& orders,
     }
 }
 
-std::vector<NodeOrder> ComputeEvaluationOrder(const std::vector<GraphModel::NodeLink>& links, size_t nodeCount)
+std::vector<NodeOrder> ComputeEvaluationOrder(const std::vector<GraphModel::Link>& links, size_t nodeCount)
 {
     std::vector<NodeOrder> orders(nodeCount);
     for (size_t i = 0; i < nodeCount; i++)
@@ -130,7 +130,6 @@ const float NODE_SLOT_RADIUS = 8.0f;
 const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
 static std::vector<NodeOrder> mOrders;
-static std::vector<GraphModel::Node> mNodesClipboard;
 static int editRug = -1;
 
 static ImVec2 editingNodeSource;
@@ -265,7 +264,7 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     ImVec2 commentSize = rugs[rugIndex].mSize * factor;
     static int movingRug = -1;
     static int sizingRug = -1;
-    GraphModel::NodeRug rug = rugs[rugIndex];
+    GraphModel::Rug rug = rugs[rugIndex];
 
     bool dirtyRug = false;
     ImVec2 node_rect_min = offset + rug.mPos * factor;
@@ -384,7 +383,7 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     return false;
 }
 
-bool RecurseIsLinked(const std::vector<GraphModel::NodeLink>& links, int from, int to)
+bool RecurseIsLinked(const std::vector<GraphModel::Link>& links, int from, int to)
 {
     for (auto& link : links)
     {
@@ -707,11 +706,11 @@ bool HandleConnections(GraphModel* model,
                 if (inputToOutput)
                 {
                     // check loopback
-                    GraphModel::NodeLink nl;
+                    GraphModel::Link nl;
                     if (editingInput)
-                        nl = GraphModel::NodeLink{nodeIndex, closestConn, editingNodeIndex, editingSlotIndex};
+                        nl = GraphModel::Link{nodeIndex, closestConn, editingNodeIndex, editingSlotIndex};
                     else
-                        nl = GraphModel::NodeLink{editingNodeIndex, editingSlotIndex, nodeIndex, closestConn};
+                        nl = GraphModel::Link{editingNodeIndex, editingSlotIndex, nodeIndex, closestConn};
 
                     if (RecurseIsLinked(links, nl.mOutputIdx, nl.mInputIdx))
                     {
@@ -734,7 +733,7 @@ bool HandleConnections(GraphModel* model,
                         auto& link = links[linkIndex];
                         if (link.mOutputIdx == nl.mOutputIdx && link.mOutputSlot == nl.mOutputSlot)
                         {
-                            /*URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+                            /*URDel<Link> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
                             controler->DelLink(link.OutputIdx, link.OutputSlot);
                             links.erase(links.begin() + linkIndex);
                             NodeGraphUpdateEvaluationOrder(controler);
@@ -748,7 +747,7 @@ bool HandleConnections(GraphModel* model,
 
                     if (!alreadyExisting)
                     {
-                        /*URAdd<NodeLink> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
+                        /*URAdd<Link> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
 
                         links.push_back(nl);
                         controler->AddLink(nl.mInputIdx, nl.mInputSlot, nl.mOutputIdx, nl.mOutputSlot);
@@ -778,7 +777,7 @@ bool HandleConnections(GraphModel* model,
                         auto& link = links[linkIndex];
                         if (link.mOutputIdx == nodeIndex && link.mOutputSlot == closestConn)
                         {
-                            /*URDel<NodeLink> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
+                            /*URDel<Link> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
                             controler->DelLink(link.OutputIdx, link.OutputSlot);
                             links.erase(links.begin() + linkIndex);
                             NodeGraphUpdateEvaluationOrder(controler);

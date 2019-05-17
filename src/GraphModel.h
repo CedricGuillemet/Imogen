@@ -38,14 +38,12 @@ public:
     GraphModel();
     ~GraphModel();
 
-
-    struct NodeRug
+    struct Rug
     {
         ImVec2 mPos, mSize;
         uint32_t mColor;
         std::string mText;
     };
-
 
     struct Node
     {
@@ -60,10 +58,10 @@ public:
         bool mbSelected;
     };
 
-    struct NodeLink
+    struct Link
     {
         int mInputIdx, mInputSlot, mOutputIdx, mOutputSlot;
-        bool operator==(const NodeLink& other) const
+        bool operator==(const Link& other) const
         {
             return mInputIdx == other.mInputIdx && mInputSlot == other.mInputSlot && mOutputIdx == other.mOutputIdx &&
                    mOutputSlot == other.mOutputSlot;
@@ -89,9 +87,9 @@ public:
     void DeleteSelectedNodes();
     void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
     void DelLink(size_t nodeIndex, size_t slotIndex);
-    void AddRug(const NodeRug& rug);
+    void AddRug(const Rug& rug);
     void DelRug(size_t rugIndex);
-    void SetRug(size_t rugIndex, const NodeRug& rug);
+    void SetRug(size_t rugIndex, const Rug& rug);
     void SetSamplers(size_t nodeIndex, const std::vector <InputSampler>& sampler);
     void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
     void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
@@ -114,7 +112,7 @@ public:
     }
     // getters
     bool NodeHasUI(size_t nodeIndex) const;
-    const std::vector<NodeRug>& GetRugs() const
+    const std::vector<Rug>& GetRugs() const
     {
         return mRugs;
     }
@@ -122,7 +120,7 @@ public:
     {
         return mNodes;
     }
-    const std::vector<NodeLink>& GetLinks() const
+    const std::vector<Link>& GetLinks() const
     {
         return mLinks;
     }
@@ -163,8 +161,8 @@ private:
 
     int mSelectedNodeIndex;
     std::vector<Node> mNodes;
-    std::vector<NodeLink> mLinks;
-    std::vector<NodeRug> mRugs;
+    std::vector<Link> mLinks;
+    std::vector<Rug> mRugs;
 
 
 	std::vector<Node> mNodesClipboard;

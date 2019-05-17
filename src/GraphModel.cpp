@@ -121,7 +121,7 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
 
     assert(outputNodeIndex < mEvaluationStages.mStages.size());
 
-    NodeLink nl;
+    Link nl;
     nl.mInputIdx = inputNodeIndex;
     nl.mInputSlot = inputSlotIndex;
     nl.mOutputIdx = outputNodeIndex;
@@ -140,7 +140,7 @@ void GraphModel::DelLink(size_t nodeIndex, size_t slotIndex)
 
     mEvaluationStages.DelEvaluationInput(nodeIndex, slotIndex);
 }
-void GraphModel::AddRug(const NodeRug& rug)
+void GraphModel::AddRug(const Rug& rug)
 {
     assert(mbTransaction);
 
@@ -151,7 +151,7 @@ void GraphModel::DelRug(size_t rugIndex)
     assert(mbTransaction);
 }
 
-void GraphModel::SetRug(size_t rugIndex, const NodeRug& rug)
+void GraphModel::SetRug(size_t rugIndex, const Rug& rug)
 {
     assert(mbTransaction);
     mRugs[rugIndex] = rug;
@@ -203,15 +203,15 @@ void GraphModel::DeleteSelectedNodes()
             auto& link = mLinks[i];
             if (link.mInputIdx == selection || link.mOutputIdx == selection)
             {
-                URDel<NodeLink> undoRedoDelNodeLink(
+                URDel<Link> undoRedoDelNodeLink(
                     int(i),
                     [this]() { return &mLinks; },
                     [this](int index) {
-                        NodeLink& link = mLinks[index];
+                        Link& link = mLinks[index];
                         DelLink(link.mOutputIdx, link.mOutputSlot);
                     },
                     [this](int index) {
-                        NodeLink& link = mLinks[index];
+                        Link& link = mLinks[index];
                         AddLink(link.mInputIdx, link.mInputSlot, link.mOutputIdx, link.mOutputSlot);
                     });
 
@@ -390,8 +390,6 @@ void GraphModel::SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd)
 void GraphModel::SetKeyboardMouse(
     size_t nodeIndex, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift)
 {
-    assert(mbTransaction);
-
     mEvaluationStages.SetKeyboardMouse(
         nodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
 }

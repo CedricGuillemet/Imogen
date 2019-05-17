@@ -640,7 +640,10 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     if (metaNode.mbHasUI || parametersUseMouse)
     {
         mModel.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
-        mModel.SetNodeParameter(mSelectedNodeIndex, mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
+        if (mModel.InTransaction())
+		{
+			mModel.SetNodeParameter(mSelectedNodeIndex, mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
+		}
         mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
     }
 }
@@ -732,7 +735,7 @@ void NodeGraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
         ImGui::Separator();
         if (ImGui::MenuItem("Add rug", NULL, false))
         {
-            GraphModel::NodeRug rug = {
+            GraphModel::Rug rug = {
                 scenePos, ImVec2(400, 200), 0xFFA0A0A0, "Description\nEdit me with a double click."};
             mModel.BeginTransaction(true);
             mModel.AddRug(rug);

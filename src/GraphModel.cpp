@@ -28,17 +28,21 @@
 #include "UndoRedo.h"
 
 
-GraphModel::GraphModel() : mbTransaction(false), mUndoRedoHandler(new UndoRedoHandler), mSelectedNodeIndex(-1)
+GraphModel::GraphModel()
+    : mbTransaction(false), mUndoRedoHandler(new UndoRedoHandler), mSelectedNodeIndex(-1), mUndoRedo(nullptr)
 {
 }
 
 GraphModel::~GraphModel()
 {
+    assert(!mbTransaction);
     delete mUndoRedoHandler;
 }
 
 void GraphModel::Clear()
 {
+    assert(!mbTransaction);
+
     mNodes.clear();
     mLinks.clear();
     mRugs.clear();
@@ -52,6 +56,10 @@ void GraphModel::BeginTransaction(bool undoable)
     assert(!mbTransaction);
 
     mbTransaction = true;
+    if (undoable)
+    {
+        mUndoRedo = new URDummy;
+    }
 }
 
 bool GraphModel::InTransaction() const
@@ -63,6 +71,7 @@ void GraphModel::EndTransaction()
 {
     assert(mbTransaction);
     mbTransaction = false;
+    delete mUndoRedo;
 }
 
 void GraphModel::Undo()
@@ -82,16 +91,17 @@ void GraphModel::MoveSelectedNodes(const ImVec2 delta)
     assert(mbTransaction);
     for (auto& node : mNodes)
     {
-		if (!node.mbSelected)
-		{
-                    continue;
-		}
-		node.mPos += delta;
-	}
+        if (!node.mbSelected)
+        {
+            continue;
+        }
+        node.mPos += delta;
+    }
 }
 
 void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
 {
+    assert(mbTransaction);
     mNodes[nodeIndex].mPos = position;
 }
 
@@ -105,10 +115,12 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
 
     return mNodes.size() - 1;
 }
+
 void GraphModel::DelNode(size_t nodeIndex)
 {
     assert(mbTransaction);
 }
+
 void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
 {
     assert(mbTransaction);
@@ -130,22 +142,24 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
 
 
     mEvaluationStages.AddEvaluationInput(outputNodeIndex, outputSlotIndex, inputNodeIndex);
-    // mEditingContext.SetTargetDirty(outputIdx, Dirty::Input);
     mEvaluationStages.SetIOPin(inputNodeIndex, inputSlotIndex, true, false);
     mEvaluationStages.SetIOPin(outputNodeIndex, outputSlotIndex, false, false);
 }
+
 void GraphModel::DelLink(size_t nodeIndex, size_t slotIndex)
 {
     assert(mbTransaction);
 
     mEvaluationStages.DelEvaluationInput(nodeIndex, slotIndex);
 }
+
 void GraphModel::AddRug(const Rug& rug)
 {
     assert(mbTransaction);
 
     mRugs.push_back(rug);
 }
+
 void GraphModel::DelRug(size_t rugIndex)
 {
     assert(mbTransaction);
@@ -240,6 +254,7 @@ void GraphModel::DeleteSelectedNodes()
         // controler->UserDeleteNode(selection); todo
     }
 }
+
 bool GraphModel::IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const
 {
     for (auto& link : mLinks)
@@ -275,6 +290,7 @@ void GraphModel::SetEvaluationOrder(const std::vector<size_t>& nodeOrderList)
     assert(!mbTransaction);
     mEvaluationStages.SetEvaluationOrder(nodeOrderList);
 }
+
 bool GraphModel::NodeHasUI(size_t nodeIndex) const
 {
     if (mEvaluationStages.mStages.size() <= nodeIndex)
@@ -445,7 +461,7 @@ void GraphModel::PasteNodes()
         mEditingContext.SetTargetDirty(target, Dirty::All);
     }*/
 
-	        // URDummy undoRedoDummy;
+            // URDummy undoRedoDummy;
     /*
     ImVec2 min(FLT_MAX, FLT_MAX);
     for (auto& clipboardNode : mNodesClipboard)
@@ -463,5 +479,5 @@ void GraphModel::PasteNodes()
         nodes.back().mPos += (io.MousePos - offset) / factor - min;
         nodes.back().mbSelected = true;
     }
-	*/
+    */
 }

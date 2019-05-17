@@ -29,8 +29,9 @@
 #include <string>
 #include <stdint.h>
 #include "EvaluationStages.h"
-struct UndoRedoHandler;
 
+struct UndoRedoHandler;
+struct UndoRedo;
 
 class GraphModel
 {
@@ -158,6 +159,7 @@ public:
 private:
     bool mbTransaction;
     UndoRedoHandler* mUndoRedoHandler;
+    UndoRedo* mUndoRedo;
 
     int mSelectedNodeIndex;
     std::vector<Node> mNodes;

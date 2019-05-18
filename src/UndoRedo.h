@@ -164,15 +164,17 @@ struct URChange : public UndoRedo
         if (gUndoRedoHandler.mbProcessing || mbDiscarded)
             return;
 
-        if (*GetElements(mIndex) != mPreDo)
+        //if (*GetElements(mIndex) != mPreDo)
         {
             mPostDo = *GetElements(mIndex);
             gUndoRedoHandler.AddUndo(*this);
         }
+        /*
         else
         {
             // TODO: should not be here unless asking for too much useless undo
         }
+		*/
     }
     virtual void Undo()
     {

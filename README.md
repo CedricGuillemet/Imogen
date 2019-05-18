@@ -79,4 +79,7 @@ GLSL-PathTracer - knightcrawler25 https://github.com/knightcrawler25/GLSL-PathTr
 
 imgui_markdown - Juliette Foucaut https://github.com/juliettef/imgui_markdown
 
+IconFontCppHeaders - Juliette Foucaut https://github.com/juliettef/IconFontCppHeaders
+
 CGLTF - Johannes Kuhlmann https://github.com/jkuhlmann/cgltf
+

@@ -41,6 +41,7 @@
 #include "imgui_markdown/imgui_markdown.h"
 #include "imHotKey.h"
 #include "imgInspect.h"
+#include "IconsFontAwesome4.h"
 
 Imogen* Imogen::instance = nullptr;
 unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
@@ -768,7 +769,9 @@ void Imogen::ImportMaterial()
 void Imogen::LibraryEdit(Library& library)
 {
     int previousSelection = mSelectedMaterial;
-    if (Button("MaterialNew", "New Material", ImVec2(0, 0)))
+    if (Button("MaterialNew",
+               ICON_FA_PLUS " New Material",
+               ImVec2(0, 0)))
     {
         NewMaterial();
     }

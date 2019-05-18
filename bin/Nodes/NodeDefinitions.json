@@ -82,6 +82,17 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
+			"name": "Translation",
+			"type": "Float2",
+			"default": "0.0,0.0",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false,
+            "description":"Translate the sine to adjust its start and end."
+		},{
 			"name": "Frequency",
 			"type": "Float",
 			"default":"4.0",

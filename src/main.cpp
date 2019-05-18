@@ -208,8 +208,10 @@ int main(int, char**)
 
     ImGuiIO& io = ImGui::GetIO();
 
+	TagTime("Context");
     InitFonts();
 
+	TagTime("Fonts");
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);

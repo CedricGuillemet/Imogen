@@ -145,19 +145,19 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
     m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
+        Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
         Imogen::instance->GetNodeGraphControler()->mModel.SetParameter(nodeIndex, paramName, value);
+        Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
     });
     m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
-        // Imogen::instance->GetNodeGraphControler()->AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
-        /*NodeGraphAddLink(
-            Imogen::instance->GetNodeGraphControler(), nodeSource, slotSource, nodeDestination, slotDestination);
-			*/
-        Imogen::instance->GetNodeGraphControler()->mModel.AddLink(
-            nodeSource, slotSource, nodeDestination, slotDestination);
+        Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
+        Imogen::instance->GetNodeGraphControler()
+            ->mModel.AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
+        Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
     });
     m.def("AutoLayout", []() {
-        NodeGraphUpdateEvaluationOrder(
-            &Imogen::instance->GetNodeGraphControler()->mModel, Imogen::instance->GetNodeGraphControler());
+        NodeGraphUpdateEvaluationOrder(&Imogen::instance->GetNodeGraphControler()->mModel,
+                                       Imogen::instance->GetNodeGraphControler());
         NodeGraphLayout(&Imogen::instance->GetNodeGraphControler()->mModel);
         NodeGraphUpdateScrolling(&Imogen::instance->GetNodeGraphControler()->mModel);
     });
@@ -194,7 +194,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
                         auto e = pybind11::list();
                         p["enum"] = e;
 
-                        char *pch = strtok((char*)param.mEnumList.c_str(), "|");
+                        char* pch = strtok((char*)param.mEnumList.c_str(), "|");
                         while (pch != NULL)
                         {
                             e.append(std::string(pch));

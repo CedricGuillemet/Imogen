@@ -56,29 +56,6 @@
             "description":"Angle in degrees. Center of rotation is the center of the source."
 		}]
 	}, {
-		"name": "Square",
-		"category": 1,
-        "description":"Renders a square centered in the middle of the viewport. Deprecated node. Use the NGon node.",
-		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
-		"inputs": [{
-			"name": "",
-			"type": "Float"
-		}],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "Width",
-			"type": "Float",
-			"rangeMinX": -0.5,
-			"rangeMaxX": 0.5,
-			"rangeMinY": 0.0,
-			"rangeMaxY": 0.0,
-			"default":"0.25",
-            "description":"Clip-space side width."
-		}]
-	}, {
 		"name": "Checker",
 		"category": 1,
         "description":"Renders a 4 square black and white checker. Use a Transform node to scale it to any number of squares.",
@@ -219,7 +196,8 @@
 	}, {
 		"name": "LambertMaterial",
 		"category": 2,
-        "description":"Experimental node.",
+        "description":"simental node.",
+        "experimental":true,
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Diffuse",
@@ -264,15 +242,6 @@
 			"type": "Color4",
             "default":"0.5,0.5,0.5,1.0",
             "description":"The color to add to the source."
-		}]
-	}, {
-		"name": "Hexagon",
-		"category": 1,
-        "description":"Renders an hexagon. This node is deprecated. Use the NGon node instead.",
-		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
 		}]
 	}, {
 		"name": "Blend",
@@ -521,6 +490,7 @@
 		"name": "PBR",
 		"category": 2,
         "description":"Experimental Node.",
+        "experimental":true,
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Diffuse",
@@ -921,6 +891,10 @@
 			"type": "Float",
 			"default":"0.25",
             "description":"Interpolation factor between full white color and distance to the nearest plan."
+		},{
+			"name": "Start Angle",
+			"type": "Angle",
+            "description":"Angle in degrees of the first vertex."
 		}]
 	}, {
 		"name": "GradientBuilder",
@@ -968,6 +942,7 @@
 		"name": "TerrainPreview",
 		"category": 2,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Height",
@@ -1030,6 +1005,7 @@
 		"name": "FurGenerator",
 		"category": 9,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "Color",
@@ -1055,6 +1031,7 @@
 		"name": "FurDisplay",
 		"category": 9,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -1074,6 +1051,7 @@
 		"name": "FurIntegrator",
 		"category": 9,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",
@@ -1105,6 +1083,7 @@
 		"name": "SceneLoader",
 		"category": 6,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [1.0, 1.0, 1.0, 1.0],
 		"outputs": [{
 			"name": "",
@@ -1119,6 +1098,7 @@
 		"name": "PathTracer",
 		"category": 2,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [1.0, 1.0, 1.0, 1.0],
 		"inputs": [{
 			"name": "",

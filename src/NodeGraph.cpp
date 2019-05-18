@@ -226,7 +226,7 @@ int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 off
             }
             else if (io.KeyShift && ImGui::IsMouseClicked(0))
             {
-                for (auto i = 0;i<nodes.size();i++)
+                for (auto i = 0; i < nodes.size(); i++)
                 {
                     auto& node = nodes[i];
                     ImVec2 node_rect_min = offset + node.mPos * factor;
@@ -817,6 +817,8 @@ static bool DrawNode(GraphModel* model,
     const MetaNode* metaNodes = gMetaNodes.data();
     const auto& nodes = model->GetNodes();
     const auto* node = &nodes[nodeIndex];
+    const auto& metaNode = metaNodes[node->mType];
+
     ImVec2 node_rect_min = offset + node->mPos * factor;
 
     bool old_any_active = ImGui::IsAnyItemActive();
@@ -832,18 +834,18 @@ static bool DrawNode(GraphModel* model,
 
     // Save the size of what we have emitted and whether any of the widgets are being used
     bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-    ImVec2(100, 100) = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
+    // ImVec2(100, 100) = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
     ImVec2 node_rect_max = node_rect_min + ImVec2(100, 100);
 
     // test nested IO
     drawList->ChannelsSetCurrent(1); // Background
-    unsigned int InputsCount = gMetaNodes[node->mType].mInputs.size();
-    unsigned int OutputsCount = gMetaNodes[node->mType].mOutputs.size();
+    unsigned int InputsCount = metaNode.mInputs.size();
+    unsigned int OutputsCount = metaNode.mOutputs.size();
 
     for (int i = 0; i < 2; i++)
     {
         const size_t slotCount[2] = {InputsCount, OutputsCount};
-        const MetaCon* con = i ? metaNodes[node->mType].mOutputs.data() : metaNodes[node->mType].mInputs.data();
+        const MetaCon* con = i ? metaNode.mOutputs.data() : metaNode.mInputs.data();
         for (int slot_idx = 0; slot_idx < slotCount[i]; slot_idx++)
         {
             if (!model->IsIOPinned(nodeIndex, slot_idx, i == 1))
@@ -878,107 +880,114 @@ static bool DrawNode(GraphModel* model,
             {
                 if (!io.KeyShift)
                 {
-                    for (auto i =0;i<nodes.size();i++)
-					{
+                    for (auto i = 0; i < nodes.size(); i++)
+                    {
                         model->SelectNode(i, false);
-					}
+                    }
                 }
-				model->SelectNode(nodeIndex);
+                model->SelectNode(nodeIndex);
             }
         }
     }
     if (node_moving_active && io.MouseDown[0])
     {
         if (nodeOperation != NO_MovingNodes)
-		{
-			nodeOperation = NO_MovingNodes;
-			model->BeginTransaction(true);
-		}
+        {
+            nodeOperation = NO_MovingNodes;
+            model->BeginTransaction(true);
+        }
     }
 
     bool currentSelectedNode = node->mbSelected;
 
-    ImU32 node_bg_color = nodeHovered ? IM_COL32(85, 85, 85, 255) : IM_COL32(60, 60, 60, 255);
+    // [experimental][hovered]
+    static const uint32_t nodeBGColors[2][2] = {{IM_COL32(60, 60, 60, 255), IM_COL32(85, 85, 85, 255)},
+                                                {IM_COL32(80, 50, 20, 255), IM_COL32(105, 75, 45, 255)}};
 
-    drawList->AddRect(node_rect_min,
-                      node_rect_max,
-                      currentSelectedNode ? IM_COL32(255, 130, 30, 255) : IM_COL32(100, 100, 100, 0),
-                      2.0f,
-                      15,
-                      currentSelectedNode ? 6.f : 2.f);
+	bool experimental = metaNode.mbExperimental;
+	 ImU32 node_bg_color = nodeBGColors[experimental?1:0][nodeHovered?1:0];
 
-    ImVec2 imgPos = node_rect_min + ImVec2(14, 25);
-    ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
-    float imgSizeComp = std::min(imgSize.x, imgSize.y);
+	drawList->AddRect(node_rect_min,
+					  node_rect_max,
+					  currentSelectedNode ? IM_COL32(255, 130, 30, 255) : IM_COL32(100, 100, 100, 0),
+					  2.0f,
+					  15,
+					  currentSelectedNode ? 6.f : 2.f);
 
-    drawList->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
-    float progress = controler->NodeProgress(nodeIndex);
-    if (progress > FLT_EPSILON && progress < 1.f - FLT_EPSILON)
-    {
-        ImVec2 progressLineA = node_rect_max - ImVec2(ImVec2(100, 100).x - 2.f, 3.f);
-        ImVec2 progressLineB = progressLineA + ImVec2(ImVec2(100, 100).x - 4.f, 0.f);
-        drawList->AddLine(progressLineA, progressLineB, 0xFF400000, 3.f);
-        drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
-    }
-    ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
-    if (!nodeIsCompute)
-        drawList->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
+	ImVec2 imgPos = node_rect_min + ImVec2(14, 25);
+	ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
+	float imgSizeComp = std::min(imgSize.x, imgSize.y);
 
-    ImVec2 imageSize = controler->GetEvaluationSize(nodeIndex);
-    float imageRatio = 1.f;
-    if (imageSize.x > 0.f && imageSize.y > 0.f)
-        imageRatio = imageSize.y / imageSize.x;
-    ImVec2 quadSize = imgPosMax - imgPos;
-    ImVec2 marge(0.f, 0.f);
-    if (imageRatio > 1.f)
-    {
-        marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
-    }
-    else
-    {
-        marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
-    }
+	drawList->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
+	float progress = controler->NodeProgress(nodeIndex);
+	if (progress > FLT_EPSILON && progress < 1.f - FLT_EPSILON)
+	{
+		ImVec2 progressLineA = node_rect_max - ImVec2(ImVec2(100, 100).x - 2.f, 3.f);
+		ImVec2 progressLineB = progressLineA + ImVec2(ImVec2(100, 100).x - 4.f, 0.f);
+		drawList->AddLine(progressLineA, progressLineB, 0xFF400000, 3.f);
+		drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
+	}
+	ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
+	if (!nodeIsCompute)
+		drawList->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
 
-    controler->DrawNodeImage(drawList, ImRect(imgPos, imgPosMax), marge, nodeIndex);
+	ImVec2 imageSize = controler->GetEvaluationSize(nodeIndex);
+	float imageRatio = 1.f;
+	if (imageSize.x > 0.f && imageSize.y > 0.f)
+		imageRatio = imageSize.y / imageSize.x;
+	ImVec2 quadSize = imgPosMax - imgPos;
+	ImVec2 marge(0.f, 0.f);
+	if (imageRatio > 1.f)
+	{
+		marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
+	}
+	else
+	{
+		marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
+	}
 
-    drawList->AddRectFilled(
-        node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), metaNodes[node->mType].mHeaderColor, 2.0f);
-    drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), true);
-    drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
-    drawList->PopClipRect();
+	controler->DrawNodeImage(drawList, ImRect(imgPos, imgPosMax), marge, nodeIndex);
+
+	drawList->AddRectFilled(node_rect_min,
+							ImVec2(node_rect_max.x, node_rect_min.y + 20),
+							metaNodes[node->mType].mHeaderColor,
+							2.0f);
+	drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), true);
+	drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), metaNodes[node->mType].mName.c_str());
+	drawList->PopClipRect();
 
 
-    unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
-    unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
-    unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
+	unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
+	unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
+	unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
 
-    ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
-    ImVec2 bmpInfoSize(20, 20);
-    if (controler->NodeIsCompute(nodeIndex))
-    {
-        drawList->AddImageQuad((ImTextureID)(uint64_t)stageCompute,
-                               bmpInfoPos,
-                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-                               bmpInfoPos + bmpInfoSize,
-                               bmpInfoPos + ImVec2(0., bmpInfoSize.y));
-    }
-    else if (controler->NodeIs2D(nodeIndex))
-    {
-        drawList->AddImageQuad((ImTextureID)(uint64_t)stage2D,
-                               bmpInfoPos,
-                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-                               bmpInfoPos + bmpInfoSize,
-                               bmpInfoPos + ImVec2(0., bmpInfoSize.y));
-    }
-    else if (controler->NodeIsCubemap(nodeIndex))
-    {
-        drawList->AddImageQuad((ImTextureID)(uint64_t)stagecubemap,
-                               bmpInfoPos + ImVec2(0., bmpInfoSize.y),
-                               bmpInfoPos + bmpInfoSize,
-                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-                               bmpInfoPos);
-    }
-    return nodeHovered;
+	ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
+	ImVec2 bmpInfoSize(20, 20);
+	if (controler->NodeIsCompute(nodeIndex))
+	{
+		drawList->AddImageQuad((ImTextureID)(uint64_t)stageCompute,
+							   bmpInfoPos,
+							   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+							   bmpInfoPos + bmpInfoSize,
+							   bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+	}
+	else if (controler->NodeIs2D(nodeIndex))
+	{
+		drawList->AddImageQuad((ImTextureID)(uint64_t)stage2D,
+							   bmpInfoPos,
+							   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+							   bmpInfoPos + bmpInfoSize,
+							   bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+	}
+	else if (controler->NodeIsCubemap(nodeIndex))
+	{
+		drawList->AddImageQuad((ImTextureID)(uint64_t)stagecubemap,
+							   bmpInfoPos + ImVec2(0., bmpInfoSize.y),
+							   bmpInfoPos + bmpInfoSize,
+							   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+							   bmpInfoPos);
+	}
+	return nodeHovered;
 }
 
 void ComputeDelegateSelection(GraphModel* model, NodeGraphControlerBase* controler)
@@ -1110,9 +1119,9 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     if (nodeOperation == NO_MovingNodes)
     {
         if (fabsf(io.MouseDelta.x) > FLT_EPSILON && fabsf(io.MouseDelta.x) > FLT_EPSILON)
-		{
-			model->MoveSelectedNodes(io.MouseDelta / factor);
-		}
+        {
+            model->MoveSelectedNodes(io.MouseDelta / factor);
+        }
     }
 
     // rugs
@@ -1140,10 +1149,10 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     else if (nodeOperation != NO_None && !io.MouseDown[0])
     {
         nodeOperation = NO_None;
-		if (model->InTransaction())
-		{
-			model->EndTransaction();
-		}
+        if (model->InTransaction())
+        {
+            model->EndTransaction();
+        }
     }
 
     // Open context menu
@@ -1158,8 +1167,8 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
 
     if (openContextMenu)
         ImGui::OpenPopup("context_menu");
-	                
-	ImVec2 scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
+
+    ImVec2 scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
     controler->ContextMenu(scenePos, contextMenuHoverNode);
 
     // Scrolling
@@ -1300,7 +1309,7 @@ void NodeGraphLayout(GraphModel* model)
     for (unsigned int i = 0; i < nodes.size(); i++)
     {
         model->SetNodePosition(i, nodePos[i]);
-	}
+    }
     // finish undo
     model->EndTransaction();
 }

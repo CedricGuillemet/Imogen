@@ -261,9 +261,10 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     ImGuiIO& io = ImGui::GetIO();
     const auto& rugs = model->GetRugs();
     ImVec2 commentSize = rugs[rugIndex].mSize * factor;
-    static int movingRug = -1;
-    static int sizingRug = -1;
+    static int movingSizingRug = -1;
     GraphModel::Rug rug = rugs[rugIndex];
+    static GraphModel::Rug editingRug;
+    static GraphModel::Rug editingRugSource;
 
     bool dirtyRug = false;
     ImVec2 node_rect_min = offset + rug.mPos * factor;
@@ -298,10 +299,7 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(i / 7.0f, 0.8f, 0.8f));
         if (ImGui::Button("   "))
         {
-            model->BeginTransaction(true);
             rug.mColor = buttonColor;
-            model->SetRug(rugIndex, rug);
-            model->EndTransaction();
             dirtyRug = true;
         }
         ImGui::PopStyleColor(3);
@@ -319,44 +317,50 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
 
     bool createUndo = false;
     bool commitUndo = false;
-    bool mouseMoved = fabsf(io.MouseDelta.x) > FLT_EPSILON && fabsf(io.MouseDelta.y) > FLT_EPSILON;
+
     if (insideSizingRect.Contains(io.MousePos))
-        if (nodeOperation == NO_None && io.MouseDown[0] /* && !mouseMoved*/)
+	{
+        if (nodeOperation == NO_None && ImGui::IsMouseDragging(0, 1))
         {
-            sizingRug = rugIndex;
+            movingSizingRug = rugIndex;
             createUndo = true;
             nodeOperation = NO_SizingRug;
+            editingRugSource = editingRug = rug;
         }
-    if (sizingRug && !io.MouseDown[0])
-    {
-        sizingRug = -1;
-        commitUndo = true;
-        nodeOperation = NO_None;
-    }
+	}
 
     if (rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos))
-        if (nodeOperation == NO_None && io.MouseDown[0] /*&& !mouseMoved*/)
+    {
+        if (nodeOperation == NO_None && ImGui::IsMouseDragging(0, 1))
         {
-            movingRug = rugIndex;
+            movingSizingRug = rugIndex;
             createUndo = true;
             nodeOperation = NO_MovingRug;
+            editingRugSource = editingRug = rug;
         }
-    if (movingRug && !io.MouseDown[0])
+	}
+
+    if (movingSizingRug != -1 && !io.MouseDown[0])
     {
         commitUndo = true;
-        movingRug = -1;
         nodeOperation = NO_None;
     }
 
     // undo/redo for sizing/moving
-    if (createUndo)
-    {
-        model->BeginTransaction(true);
-    }
     if (commitUndo)
     {
+		// set back value 
+        model->BeginTransaction(false);
+        model->SetRug(movingSizingRug, editingRugSource);
         model->EndTransaction();
+
+		// add undo
+        model->BeginTransaction(true);
+        model->SetRug(movingSizingRug, editingRug);
+        model->EndTransaction();
+        movingSizingRug = -1;
     }
+
     if (dirtyRug)
     {
         model->BeginTransaction(true);
@@ -364,17 +368,19 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
         model->EndTransaction();
     }
 
-    if (sizingRug != -1 && ImGui::IsMouseDragging(0))
+    if (movingSizingRug != -1 && ImGui::IsMouseDragging(0))
     {
-        auto sizeRug = rugs[sizingRug];
-        sizeRug.mSize += io.MouseDelta * factor;
-        model->SetRug(sizingRug, sizeRug);
-    }
-    if (movingRug != -1 && ImGui::IsMouseDragging(0))
-    {
-        auto moveRug = rugs[movingRug];
-        moveRug.mPos += io.MouseDelta * factor;
-        model->SetRug(movingRug, moveRug);
+        if (nodeOperation == NO_MovingRug)
+		{
+			editingRug.mPos += io.MouseDelta * factor;
+		}
+		else if (nodeOperation == NO_SizingRug)
+		{
+            editingRug.mSize += io.MouseDelta * factor;
+		}
+        model->BeginTransaction(false);
+        model->SetRug(movingSizingRug, editingRug);
+        model->EndTransaction();
     }
 
     if ((io.MouseClicked[0] || io.MouseClicked[1]) && !rugRect.Contains(io.MousePos))
@@ -422,7 +428,18 @@ void NodeGraphUpdateScrolling(GraphModel* model)
     if (nodes.empty() && rugs.empty())
         return;
 
-    scrolling = nodes[0].mPos;
+	if (!nodes.empty())
+	{
+		scrolling = nodes[0].mPos;
+	}
+	else if (!rugs.empty())
+	{
+        scrolling = rugs[0].mPos;
+	}
+	else
+	{
+        scrolling = ImVec2(0, 0);
+	}
     for (auto& node : nodes)
     {
         scrolling.x = std::min(scrolling.x, node.mPos.x);
@@ -1135,7 +1152,9 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     if (editRug != -1)
     {
         if (EditRug(model, editRug, drawList, offset, factor))
-            editRug = NULL;
+		{
+            editRug = -1;
+		}
     }
 
     // releasing mouse button means it's done in any operation

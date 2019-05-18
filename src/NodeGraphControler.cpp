@@ -428,7 +428,7 @@ void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool fo
     {
         return;
     }
-    ImGui::PushID(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0));
+    ImGui::PushID(int(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0)));
     bool pinned = mModel.IsIOPinned(nodeIndex, slotIndex, forOutput);
     if (ImGui::Checkbox("", &pinned))
     {

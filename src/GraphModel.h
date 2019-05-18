@@ -158,7 +158,6 @@ public:
 
 private:
     bool mbTransaction;
-    UndoRedoHandler* mUndoRedoHandler;
     UndoRedo* mUndoRedo;
 
     int mSelectedNodeIndex;

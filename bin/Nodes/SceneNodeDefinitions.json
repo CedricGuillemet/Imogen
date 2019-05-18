@@ -3,6 +3,7 @@
 		"name": "GLTFRead",
 		"category": 6,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
@@ -23,6 +24,7 @@
 	"name": "Paint3D",
 		"category": 7,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.3921568989753723, 0.9803922176361084, 0.7058823704719544, 1.0],
 		"inputs": [{
 			"name": "Model",
@@ -86,6 +88,7 @@
 		"name": "PBR2",
 		"category": 2,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
 		"inputs": [{
 			"name": "Albedo",

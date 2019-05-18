@@ -655,9 +655,10 @@ int Imogen::AddNode(const std::string& nodeType)
     {
         return -1;
     }
-    // return int(NodeGraphAddNode(mNodeGraphControler, type, nullptr, 0, 0, 0, 1));
+    mNodeGraphControler->mModel.BeginTransaction(false);
     auto nodeIndex = mNodeGraphControler->mModel.AddNode(type, ImVec2(0, 0));
     mNodeGraphControler->mModel.SetTimeSlot(nodeIndex, 0, 1);
+    mNodeGraphControler->mModel.EndTransaction();
     return int(nodeIndex);
 }
 

@@ -7,11 +7,11 @@
 
 # Nodes
 ## Generator
-![node picture](Pictures/Circle.png)|![node picture](Pictures/Square.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)|![node picture](Pictures/Hexagon.png)|![node picture](Pictures/CircleSplatter.png)
+![node picture](Pictures/Circle.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)|![node picture](Pictures/CircleSplatter.png)|![node picture](Pictures/NGon.png)|![node picture](Pictures/GradientBuilder.png)
 -|-|-|-|-|-
-[Circle](#Circle)|[Square](#Square)|[Checker](#Checker)|[Sine](#Sine)|[Hexagon](#Hexagon)|[CircleSplatter](#CircleSplatter)
-![node picture](Pictures/NGon.png)|![node picture](Pictures/GradientBuilder.png)|![node picture](Pictures/ReactionDiffusion.png)|![node picture](Pictures/Disolve.png)||
-[NGon](#NGon)|[GradientBuilder](#GradientBuilder)|[ReactionDiffusion](#ReactionDiffusion)|[Disolve](#Disolve)||
+[Circle](#Circle)|[Checker](#Checker)|[Sine](#Sine)|[CircleSplatter](#CircleSplatter)|[NGon](#NGon)|[GradientBuilder](#GradientBuilder)
+![node picture](Pictures/ReactionDiffusion.png)|![node picture](Pictures/Disolve.png)||||
+[ReactionDiffusion](#ReactionDiffusion)|[Disolve](#Disolve)||||
 
 
 ## Transform
@@ -112,19 +112,6 @@ Angle in degrees. Center of rotation is the center of the source.
 ### Example
 ![node example](Examples/Example_Transform.png)
 
-## Square
-![node picture](Pictures/Square.png)
-
-Category : Generator
-### Description
-Renders a square centered in the middle of the viewport. Deprecated node. Use the NGon node.
-### Parameters
-1. Width
-Clip-space side width.
-
-### Example
-![node example](Examples/Example_Square.png)
-
 ## Checker
 ![node picture](Pictures/Checker.png)
 
@@ -219,7 +206,7 @@ Change the direction of the XY components of the normal.
 
 Category : Material
 ### Description
-Experimental node.
+simental node.
 ### Parameters
 1. view
 
@@ -241,18 +228,6 @@ The color to add to the source.
 
 ### Example
 ![node example](Examples/Example_MADD.png)
-
-## Hexagon
-![node picture](Pictures/Hexagon.png)
-
-Category : Generator
-### Description
-Renders an hexagon. This node is deprecated. Use the NGon node instead.
-### Parameters
-No parameter for this node.
-
-### Example
-![node example](Examples/Example_Hexagon.png)
 
 ## Blend
 ![node picture](Pictures/Blend.png)

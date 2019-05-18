@@ -4,13 +4,14 @@ layout (std140) uniform NGonBlock
 	int sides;
 	float radius;
 	float t;
+    float angle;
 };
 
 vec4 NGon()
 {
     vec2 p = vUV - vec2(0.5);
     
-    vec2 d = vec2(0.0, 1.0);
+    vec2 d = vec2(cos(angle), sin(angle));
     float ng = 0.0;
     float col = 0.0;
     

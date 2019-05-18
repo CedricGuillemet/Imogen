@@ -72,6 +72,7 @@ void GraphModel::EndTransaction()
     assert(mbTransaction);
     mbTransaction = false;
     delete mUndoRedo;
+    mUndoRedo = nullptr;
 }
 
 void GraphModel::Undo()

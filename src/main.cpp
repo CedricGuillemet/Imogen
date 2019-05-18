@@ -215,11 +215,8 @@ int main(int, char**)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
-
-    // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
 
     // Setup Platform/Renderer bindings
     ImGui_ImplSDL2_InitForOpenGL(loopdata.mWindow, loopdata.mGLContext);

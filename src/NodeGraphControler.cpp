@@ -300,16 +300,16 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
     return dirty;
 }
 
-void NodeGraphControler::UpdateDirtyParameter(int index)
+void NodeGraphControler::UpdateDirtyParameter(size_t nodeIndex, const std::vector<unsigned char> parameters)
 {
-    auto& stage = mModel.mEvaluationStages.mStages[index];
-    mModel.mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
-    mEditingContext.SetTargetDirty(index, Dirty::Parameter);
+    mModel.SetParameters(nodeIndex, parameters);
+    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
 }
 
 void NodeGraphControler::PinnedEdit()
 {
     int dirtyNode = -1;
+    Parameters dirtyParameters;
     for (const auto pin : mModel.GetParameterPins())
     {
         if (!pin)
@@ -326,49 +326,46 @@ void NodeGraphControler::PinnedEdit()
 
         ImGui::PushID(171717 + pin);
         const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
-        unsigned char* paramBuffer = mModel.mEvaluationStages.mStages[nodeIndex].mParameters.data();
+        auto parameters = mModel.GetParameters(nodeIndex);
+        unsigned char* paramBuffer = parameters.data();
         paramBuffer += GetParameterOffset(uint32_t(nodeType), parameterIndex);
         if (EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam))
+		{
             dirtyNode = nodeIndex;
+			dirtyParameters = parameters;
+		}
 
         ImGui::PopID();
     }
     if (dirtyNode != -1)
     {
-        UpdateDirtyParameter(dirtyNode);
+        UpdateDirtyParameter(dirtyNode, dirtyParameters);
     }
 }
 
 void NodeGraphControler::EditNodeParameters()
 {
-    size_t index = mSelectedNodeIndex;
+    size_t nodeIndex = mSelectedNodeIndex;
 
     const MetaNode* metaNodes = gMetaNodes.data();
     bool dirty = false;
     bool forceEval = false;
     bool samplerDirty = false;
-    auto& stage = mModel.mEvaluationStages.mStages[index];
+    const auto& stage = mModel.mEvaluationStages.mStages[nodeIndex];
     const MetaNode& currentMeta = metaNodes[stage.mType];
 
+    // edit samplers
+    auto samplers = mModel.GetSamplers(nodeIndex);
     if (ImGui::CollapsingHeader("Samplers", 0))
     {
-        /*URChange<std::vector<InputSampler>> undoRedoSampler(int(index),
-                                                            [&](int index) { return &stage.mInputSamplers; },
-                                                            [&](int index) {
-                                                                auto& node = mEvaluationStages.mStages[index];
-                                                                mEvaluationStages.SetSamplers(
-                                                                    index, stage.mInputSamplers);
-                                                                mEditingContext.SetTargetDirty(index, Dirty::Sampler);
-                                                            });
-*/
-        for (size_t i = 0; i < stage.mInputSamplers.size(); i++)
+        for (size_t i = 0; i < samplers.size(); i++)
         {
-            InputSampler& inputSampler = stage.mInputSamplers[i];
+            InputSampler& inputSampler = samplers[i];
             static const char* wrapModes = {"REPEAT\0EDGE\0BORDER\0MIRROR"};
             static const char* filterModes = {"LINEAR\0NEAREST"};
             ImGui::PushItemWidth(80);
             ImGui::PushID(int(99 + i));
-            HandlePinIO(index, i, false);
+            HandlePinIO(nodeIndex, i, false);
             ImGui::SameLine();
             ImGui::Text("Sampler %d", i);
             samplerDirty |= ImGui::Combo("U", (int*)&inputSampler.mWrapU, wrapModes);
@@ -385,29 +382,24 @@ void NodeGraphControler::EditNodeParameters()
         }
         if (samplerDirty)
         {
-            mModel.SetSamplers(index, stage.mInputSamplers);
-            mEditingContext.SetTargetDirty(index, Dirty::Sampler);
-        }
-        else
-        {
-            // undoRedoSampler.Discard();
+            mModel.BeginTransaction(true);
+            mModel.SetSamplers(nodeIndex, samplers);
+            mModel.EndTransaction();
+            mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
         }
     }
     if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
         return;
 
-    /*URChange<std::vector<unsigned char>> undoRedoParameter(
-        int(index),
-        [&](int index) { return &mEvaluationStages.mStages[index].mParameters; },
-        [&](int index) { UpdateDirtyParameter(index); });
-*/
-    unsigned char* paramBuffer = stage.mParameters.data();
+    // edit parameters
+    auto parameters = mModel.GetParameters(nodeIndex);
+    auto paramBuffer = parameters.data();
     int i = 0;
     for (const MetaParameter& param : currentMeta.mParams)
     {
         ImGui::PushID(667889 + i);
 
-        dirty |= EditSingleParameter((unsigned int)(index), i, paramBuffer, param);
+        dirty |= EditSingleParameter((unsigned int)(nodeIndex), i, paramBuffer, param);
 
         ImGui::PopID();
         paramBuffer += GetParameterTypeSize(param.mType);
@@ -416,11 +408,7 @@ void NodeGraphControler::EditNodeParameters()
 
     if (dirty)
     {
-        UpdateDirtyParameter(int(index));
-    }
-    else
-    {
-        // undoRedoParameter.Discard();
+        UpdateDirtyParameter(int(nodeIndex), parameters);
     }
 }
 
@@ -533,7 +521,8 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     size_t res = 0;
     const MetaNode& metaNode = metaNodes[mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mType];
 
-    unsigned char* paramBuffer = mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
+    Parameters parameters = mModel.GetParameters(mSelectedNodeIndex);
+    unsigned char* paramBuffer = parameters.data();
     bool parametersUseMouse = false;
 
     // camera handling
@@ -578,7 +567,7 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     }
 
     //
-    paramBuffer = mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters.data();
+    paramBuffer = parameters.data();
     if (lButDown)
     {
         for (auto& param : metaNode.mParams)
@@ -644,7 +633,7 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
         mModel.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
         if (mModel.InTransaction())
 		{
-			mModel.SetNodeParameter(mSelectedNodeIndex, mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mParameters);
+            mModel.SetParameters(mSelectedNodeIndex, parameters);
 		}
         mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
     }

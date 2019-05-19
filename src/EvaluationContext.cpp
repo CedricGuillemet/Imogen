@@ -215,6 +215,7 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
 
 void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                                      unsigned int program,
+                                     size_t nodeIndex,
                                      std::shared_ptr<RenderTarget> reusableTarget)
 {
     const Input& input = evaluationStage.mInput;
@@ -252,7 +253,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
 
             if (tgt)
             {
-                const InputSampler& inputSampler = evaluationStage.mInputSamplers[inputIndex];
+                const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[nodeIndex][inputIndex];
                 if (tgt->mImage->mNumFaces == 1)
                 {
                     glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
@@ -299,7 +300,7 @@ int EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluationS
 }
 
 void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationStage,
-                                            size_t index,
+                                            size_t nodeIndex,
                                             EvaluationInfo& evaluationInfo)
 {
     if (bladeIA == -1)
@@ -333,10 +334,10 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     int computeBufferIndex = GetBindedComputeBuffer(evaluationStage);
     if (computeBufferIndex != -1)
     {
-        if (mComputeBuffers.size() <= index || (!mComputeBuffers[index].mBuffer))
+        if (mComputeBuffers.size() <= nodeIndex || (!mComputeBuffers[nodeIndex].mBuffer))
         {
             // only allocate if needed
-            AllocateComputeBuffer(int(index),
+            AllocateComputeBuffer(int(nodeIndex),
                                   mComputeBuffers[computeBufferIndex].mElementCount,
                                   mComputeBuffers[computeBufferIndex].mElementSize);
         }
@@ -345,16 +346,16 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     else
     {
         //
-        if (index < mComputeBuffers.size())
+        if (nodeIndex < mComputeBuffers.size())
         {
-            Swap(mComputeBuffers[index], tempBuffer);
+            Swap(mComputeBuffers[nodeIndex], tempBuffer);
 
-            AllocateComputeBuffer(int(index), tempBuffer.mElementCount, tempBuffer.mElementSize);
+            AllocateComputeBuffer(int(nodeIndex), tempBuffer.mElementCount, tempBuffer.mElementSize);
             sourceBuffer = &tempBuffer;
         }
     }
 
-    if (mComputeBuffers.size() <= index)
+    if (mComputeBuffers.size() <= nodeIndex)
         return; // no compute buffer destination, no source either -> non connected node -> early exit
 
     /// build source VAO
@@ -373,11 +374,12 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glBindVertexArray(0);
 
 
-    destinationBuffer = &mComputeBuffers[index];
+    destinationBuffer = &mComputeBuffers[nodeIndex];
 
     // compute buffer
     if (destinationBuffer->mElementCount)
     {
+        const Parameters& parameters = mEvaluationStages.mParameters[nodeIndex];
         glUseProgram(program);
 
         glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
@@ -387,7 +389,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
 
         glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
         glBufferData(
-            GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+            GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
@@ -395,7 +397,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 
-        BindTextures(evaluationStage, program, std::shared_ptr<RenderTarget>());
+        BindTextures(evaluationStage, program, nodeIndex, std::shared_ptr<RenderTarget>());
         glEnable(GL_RASTERIZER_DISCARD);
         glBindVertexArray(feedbackVertexArray);
         glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
@@ -422,12 +424,12 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
 }
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
-                                     size_t index,
+                                     size_t nodeIndex,
                                      EvaluationInfo& evaluationInfo)
 {
     const Input& input = evaluationStage.mInput;
 
-    auto tgt = mStageTarget[index];
+    auto tgt = mStageTarget[nodeIndex];
 
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
@@ -450,8 +452,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     // parameters
     glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
 
+    const Parameters& parameters = mEvaluationStages.mParameters[nodeIndex];
     glBufferData(
-        GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
+        GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     glEnable(GL_BLEND);
@@ -459,13 +462,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
     glUseProgram(program);
 
-    Camera* camera = mEvaluationStages.GetCameraParameter(index);
+    Camera* camera = mEvaluationStages.GetCameraParameter(nodeIndex);
     if (camera)
     {
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
-    int passCount = mEvaluationStages.GetIntParameter(index, "passCount", 1);
+    int passCount = mEvaluationStages.GetIntParameter(nodeIndex, "passCount", 1);
     auto transientTarget = std::make_shared<RenderTarget>(RenderTarget());
     if (passCount > 1)
     {
@@ -514,7 +517,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
                 glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
-                BindTextures(evaluationStage, program, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
+                BindTextures(evaluationStage, program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);
@@ -588,17 +591,17 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     glDisable(GL_BLEND);
 }
 
-void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo)
+void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
     try // todo: find a better solution than a try catch
     {
         const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
         if (evaluator.mCFunction)
         {
-            int res = evaluator.mCFunction((unsigned char*)evaluationStage.mParameters.data(), &evaluationInfo, this);
+            int res = evaluator.mCFunction((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
             if (res == EVAL_DIRTY)
             {
-                mStillDirty.push_back(uint32_t(index));
+                mStillDirty.push_back(uint32_t(nodeIndex));
             }
         }
     }
@@ -974,8 +977,7 @@ EvaluationStages BuildEvaluationFromMaterial(Material& material)
         MaterialNode& node = material.mMaterialNodes[i];
         evaluationStages.AddSingleEvaluation(node.mType);
         auto& lastNode = evaluationStages.mStages.back();
-        lastNode.mParameters = node.mParameters;
-        lastNode.mInputSamplers = node.mInputSamplers;
+        evaluationStages.SetParameters(i, node.mParameters);
         evaluationStages.SetSamplers(i, node.mInputSamplers);
     }
     for (size_t i = 0; i < material.mMaterialConnections.size(); i++)

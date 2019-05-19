@@ -73,13 +73,15 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     evaluation.renderer = nullptr;
     evaluation.mRuntimeUniqueId = GetRuntimeId();
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
-    evaluation.mInputSamplers.resize(inputCount);
     evaluation.mStartFrame = mFrameMin;
     evaluation.mEndFrame = mFrameMax;
 
-    InitDefaultParameters(evaluation);
+    mParameters.push_back(Parameters());
+    InitDefaultParameters(evaluation, mParameters.back());
     mStages.push_back(evaluation);
     mPinnedIO.push_back(0);
+    mPinnedParameters.push_back(0);
+    mInputSamplers.push_back(Samplers(inputCount));
 }
 
 void EvaluationStages::StageIsAdded(int index)
@@ -133,11 +135,12 @@ void EvaluationStages::UserDeleteEvaluation(size_t target)
     mStages.erase(mStages.begin() + target);
 }
 */
-void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters)
+void EvaluationStages::SetEvaluationParameters(size_t nodeIndex, const Parameters& parameters)
 {
-    EvaluationStage& stage = mStages[target];
-    stage.mParameters = parameters;
 #if USE_FFMPEG
+    EvaluationStage& stage = mStages[nodeIndex];
+    mParameters[nodeIndex] = parameters;
+
     if (stage.mDecoder)
         stage.mDecoder = NULL;
 #endif
@@ -145,7 +148,7 @@ void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<
 
 void EvaluationStages::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& inputSamplers)
 {
-    mStages[nodeIndex].mInputSamplers = inputSamplers;
+    mInputSamplers[nodeIndex] = inputSamplers;
 }
 
 void EvaluationStages::AddEvaluationInput(size_t target, int slot, int source)
@@ -247,16 +250,17 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
     return decoder;
 }
 #endif
-Camera* EvaluationStages::GetCameraParameter(size_t index)
+
+Camera* EvaluationStages::GetCameraParameter(size_t nodeIndex)
 {
-    if (index >= mStages.size())
+    if (nodeIndex >= mStages.size())
         return NULL;
-    EvaluationStage& stage = mStages[index];
+    EvaluationStage& stage = mStages[nodeIndex];
     const MetaNode* metaNodes = gMetaNodes.data();
     const MetaNode& currentMeta = metaNodes[stage.mType];
     const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    stage.mParameters.resize(paramsSize);
-    unsigned char* paramBuffer = stage.mParameters.data();
+    mParameters[nodeIndex].resize(paramsSize);
+    unsigned char* paramBuffer = mParameters[nodeIndex].data();
     for (const MetaParameter& param : currentMeta.mParams)
     {
         if (param.mType == Con_Camera)
@@ -270,16 +274,16 @@ Camera* EvaluationStages::GetCameraParameter(size_t index)
     return NULL;
 }
 // TODO : create parameter struct with templated accessors
-int EvaluationStages::GetIntParameter(size_t index, const char* parameterName, int defaultValue)
+int EvaluationStages::GetIntParameter(size_t nodeIndex, const char* parameterName, int defaultValue)
 {
-    if (index >= mStages.size())
+    if (nodeIndex >= mStages.size())
         return NULL;
-    EvaluationStage& stage = mStages[index];
+    EvaluationStage& stage = mStages[nodeIndex];
     const MetaNode* metaNodes = gMetaNodes.data();
     const MetaNode& currentMeta = metaNodes[stage.mType];
     const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    stage.mParameters.resize(paramsSize);
-    unsigned char* paramBuffer = stage.mParameters.data();
+    mParameters[nodeIndex].resize(paramsSize);
+    unsigned char* paramBuffer = mParameters[nodeIndex].data();
     for (const MetaParameter& param : currentMeta.mParams)
     {
         if (param.mType == Con_Int)
@@ -295,13 +299,13 @@ int EvaluationStages::GetIntParameter(size_t index, const char* parameterName, i
     return defaultValue;
 }
 
-void EvaluationStages::InitDefaultParameters(EvaluationStage& stage)
+void EvaluationStages::InitDefaultParameters(const EvaluationStage& stage, Parameters& parameters)
 {
     const MetaNode* metaNodes = gMetaNodes.data();
     const MetaNode& currentMeta = metaNodes[stage.mType];
     const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    stage.mParameters.resize(paramsSize);
-    unsigned char* paramBuffer = stage.mParameters.data();
+    parameters.resize(paramsSize);
+    unsigned char* paramBuffer = parameters.data();
     memset(paramBuffer, 0, paramsSize);
     int i = 0;
     for (const MetaParameter& param : currentMeta.mParams)
@@ -325,19 +329,20 @@ void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, size_t 
 {
     bool animatedNodes = false;
     EvaluationStage& stage = mStages[nodeIndex];
+    Parameters parameters = mParameters[nodeIndex];
     for (auto& animTrack : mAnimTrack)
     {
         if (animTrack.mNodeIndex == nodeIndex)
         {
             size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-            animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
+            animTrack.mAnimation->GetValue(frame, &parameters[parameterOffset]);
 
             animatedNodes = true;
         }
     }
     if (animatedNodes)
     {
-        SetEvaluationParameters(nodeIndex, stage.mParameters);
+        SetEvaluationParameters(nodeIndex, parameters);
         context->SetTargetDirty(nodeIndex, Dirty::Parameter);
     }
 }
@@ -352,13 +357,13 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
 
         animatedNodes[animTrack.mNodeIndex] = true;
         size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-        animTrack.mAnimation->GetValue(frame, &stage.mParameters[parameterOffset]);
+        animTrack.mAnimation->GetValue(frame, &mParameters[animTrack.mNodeIndex][parameterOffset]);
     }
     for (size_t i = 0; i < animatedNodes.size(); i++)
     {
         if (!animatedNodes[i])
             continue;
-        SetEvaluationParameters(i, mStages[i].mParameters);
+        SetEvaluationParameters(i, mParameters[i]);
         context->SetTargetDirty(i, Dirty::Parameter);
     }
 }
@@ -409,11 +414,11 @@ void EvaluationStages::SetParameterPin(size_t nodeIndex, size_t parameterIndex, 
     mPinnedParameters[nodeIndex] += pinned ? mask : 0;
 }
 
-float EvaluationStages::GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex)
+float EvaluationStages::GetParameterComponentValue(size_t nodeIndex, int parameterIndex, int componentIndex)
 {
-    EvaluationStage& stage = mStages[index];
+    EvaluationStage& stage = mStages[nodeIndex];
     size_t paramOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
-    unsigned char* ptr = &stage.mParameters.data()[paramOffset];
+    const unsigned char* ptr = &mParameters[nodeIndex].data()[paramOffset];
     const MetaNode* metaNodes = gMetaNodes.data();
     const MetaNode& currentMeta = metaNodes[stage.mType];
     switch (currentMeta.mParams[parameterIndex].mType)

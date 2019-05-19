@@ -173,6 +173,7 @@ protected:
 
     void BindTextures(const EvaluationStage& evaluationStage,
                       unsigned int program,
+                      size_t nodeIndex,
                       std::shared_ptr<RenderTarget> reusableTarget);
     void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 

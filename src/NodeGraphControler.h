@@ -106,7 +106,7 @@ protected:
                              void* paramBuffer,
                              const MetaParameter& param);
     void PinnedEdit();
-    void UpdateDirtyParameter(int index);
+    void UpdateDirtyParameter(size_t nodeIndex, const std::vector<unsigned char> parameters);
     void EditNodeParameters();
     void HandlePin(size_t nodeIndex, size_t parameterIndex);
     void HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput);

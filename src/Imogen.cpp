@@ -358,7 +358,7 @@ struct PinnedTaskUploadImage : PinnedTask
             if (node)
             {
                 EvaluationAPI::SetEvaluationImage(&mControler->mEditingContext, int(nodeIndex), mImage);
-                mControler->mModel.mEvaluationStages.SetEvaluationParameters(nodeIndex, node->mParameters);
+                mControler->mModel.mEvaluationStages.SetEvaluationParameters(nodeIndex, mControler->mModel.GetParameters(nodeIndex));
                 mControler->mEditingContext.StageSetProcessing(nodeIndex, false);
             }
             Image::Free(mImage);
@@ -610,8 +610,8 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
 
         dstNode.mType = uint32_t(srcNode.mType);
         dstNode.mTypeName = metaNode.mName;
-        dstNode.mParameters = srcNode.mParameters;
-        dstNode.mInputSamplers = srcNode.mInputSamplers;
+        dstNode.mParameters = nodeGraphControler.mModel.mEvaluationStages.mParameters[i];
+        dstNode.mInputSamplers = nodeGraphControler.mModel.mEvaluationStages.mInputSamplers[i];
         ImVec2 nodePos = nodeGraphControler.mModel.GetNodePos(i);
         dstNode.mPosX = int32_t(nodePos.x);
         dstNode.mPosY = int32_t(nodePos.y);
@@ -678,7 +678,7 @@ void Imogen::UpdateNewlySelectedGraph()
                 continue;
 
             auto nodeIndex = mNodeGraphControler->mModel.AddNode(node.mType, ImVec2(float(node.mPosX), float(node.mPosY)));
-            mNodeGraphControler->mModel.SetNodeParameter(nodeIndex, node.mParameters);
+            mNodeGraphControler->mModel.SetParameters(nodeIndex, node.mParameters);
             mNodeGraphControler->mModel.SetTimeSlot(nodeIndex, node.mFrameStart, node.mFrameEnd);
             mNodeGraphControler->mModel.SetSamplers(nodeIndex, node.mInputSamplers);
 

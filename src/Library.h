@@ -152,10 +152,10 @@ struct MaterialNodeRug
 
 struct MaterialConnection
 {
-    uint32_t mInputNode;
-    uint32_t mOutputNode;
-    uint8_t mInputSlot;
-    uint8_t mOutputSlot;
+    uint32_t mInputNodeIndex;
+    uint32_t mOutputNodeIndex;
+    uint8_t mInputSlotIndex;
+    uint8_t mOutputSlotIndex;
 };
 
 struct AnimationBase

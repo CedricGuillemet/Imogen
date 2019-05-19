@@ -61,11 +61,11 @@ public:
 
     struct Link
     {
-        int mInputIdx, mInputSlot, mOutputIdx, mOutputSlot;
+        int mInputNodeIndex, mInputSlotIndex, mOutputNodeIndex, mOutputSlotIndex;
         bool operator==(const Link& other) const
         {
-            return mInputIdx == other.mInputIdx && mInputSlot == other.mInputSlot && mOutputIdx == other.mOutputIdx &&
-                   mOutputSlot == other.mOutputSlot;
+            return mInputNodeIndex == other.mInputNodeIndex && mInputSlotIndex == other.mInputSlotIndex &&
+                   mOutputNodeIndex == other.mOutputNodeIndex && mOutputSlotIndex == other.mOutputSlotIndex;
         }
     };
 
@@ -87,7 +87,7 @@ public:
     void SetNodePosition(size_t nodeIndex, const ImVec2 position);
     void DeleteSelectedNodes();
     void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
-    void DelLink(size_t nodeIndex, size_t slotIndex);
+    void DelLink(size_t linkIndex);
     void AddRug(const Rug& rug);
     void DelRug(size_t rugIndex);
     void SetRug(size_t rugIndex, const Rug& rug);
@@ -172,5 +172,8 @@ private:
 
 	std::vector<Node> mNodesClipboard;
 	std::vector<EvaluationStage> mStagesClipboard;
+
+    void AddLinkHelper(int index);
+    void DeleteLinkHelper(int index);
     
 };

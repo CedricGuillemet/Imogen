@@ -102,7 +102,7 @@ void GraphModel::MoveSelectedNodes(const ImVec2 delta)
         {
             continue;
         }
-        auto ur =mUndoRedo
+        auto ur = mUndoRedo
                 ? std::make_unique<URChange<Node>>(int(i), [&](int index) { return &mNodes[index]; }, [](int) {})
                 : nullptr;
         node.mPos += delta;
@@ -119,16 +119,33 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
 {
     assert(mbTransaction);
 
+    size_t nodeIndex = mNodes.size();
+
     // size_t index = nodes.size();
     mNodes.push_back(Node(type, position));
     mEvaluationStages.AddSingleEvaluation(type);
 
-    return mNodes.size() - 1;
+    /*mEvaluationStages.SetIOPin(inputNodeIndex, inputSlotIndex, true, false);
+    mEvaluationStages.SetIOPin(outputNodeIndex, outputSlotIndex, false, false);
+*/
+    return nodeIndex;
 }
 
 void GraphModel::DelNode(size_t nodeIndex)
 {
     assert(mbTransaction);
+}
+
+void GraphModel::DeleteLinkHelper(int index)
+{
+    const Link& link = mLinks[index];
+    mEvaluationStages.DelEvaluationInput(link.mOutputNodeIndex, link.mOutputSlotIndex);
+}
+
+void GraphModel::AddLinkHelper(int index)
+{
+    const Link& link = mLinks[index];
+    mEvaluationStages.AddEvaluationInput(link.mOutputNodeIndex, link.mOutputSlotIndex, link.mInputNodeIndex);
 }
 
 void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
@@ -143,24 +160,34 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
 
     assert(outputNodeIndex < mEvaluationStages.mStages.size());
 
-    Link nl;
-    nl.mInputIdx = inputNodeIndex;
-    nl.mInputSlot = inputSlotIndex;
-    nl.mOutputIdx = outputNodeIndex;
-    nl.mOutputSlot = outputSlotIndex;
-    mLinks.push_back(nl);
+    auto delLink = [&](int index) { DeleteLinkHelper(index); };
+    auto addLink = [&](int index) { AddLinkHelper(index); };
 
+    size_t linkIndex = mLinks.size();
 
-    mEvaluationStages.AddEvaluationInput(outputNodeIndex, outputSlotIndex, inputNodeIndex);
-    mEvaluationStages.SetIOPin(inputNodeIndex, inputSlotIndex, true, false);
-    mEvaluationStages.SetIOPin(outputNodeIndex, outputSlotIndex, false, false);
+    auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; }, delLink, addLink)
+                  : nullptr;
+    Link link;
+    link.mInputNodeIndex = inputNodeIndex;
+    link.mInputSlotIndex = inputSlotIndex;
+    link.mOutputNodeIndex = outputNodeIndex;
+    link.mOutputSlotIndex = outputSlotIndex;
+    mLinks.push_back(link);
+    AddLinkHelper(linkIndex);
 }
 
-void GraphModel::DelLink(size_t nodeIndex, size_t slotIndex)
+void GraphModel::DelLink(size_t linkIndex)
 {
     assert(mbTransaction);
 
-    mEvaluationStages.DelEvaluationInput(nodeIndex, slotIndex);
+    auto delLink = [&](int index) { DeleteLinkHelper(index); };
+    auto addLink = [&](int index) { AddLinkHelper(index); };
+
+    auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, addLink, delLink)
+                  : nullptr;
+    
+    DeleteLinkHelper(linkIndex);
+    mLinks.erase(mLinks.begin() + linkIndex);
 }
 
 void GraphModel::AddRug(const Rug& rug)
@@ -208,10 +235,10 @@ void GraphModel::DeleteSelectedNodes()
                                         // recompute link indices
                                         for (int id = 0; id < mLinks.size(); id++)
                                         {
-                                            if (mLinks[id].mInputIdx > index)
-                                                mLinks[id].mInputIdx--;
-                                            if (mLinks[id].mOutputIdx > index)
-                                                mLinks[id].mOutputIdx--;
+                                            if (mLinks[id].mInputNodeIndex > index)
+                                                mLinks[id].mInputNodeIndex--;
+                                            if (mLinks[id].mOutputNodeIndex > index)
+                                                mLinks[id].mOutputNodeIndex--;
                                         }
                                         // NodeGraphUpdateEvaluationOrder(controler); todo
                                         mSelectedNodeIndex = -1;
@@ -220,10 +247,10 @@ void GraphModel::DeleteSelectedNodes()
                                         // recompute link indices
                                         for (int id = 0; id < mLinks.size(); id++)
                                         {
-                                            if (mLinks[id].mInputIdx >= index)
-                                                mLinks[id].mInputIdx++;
-                                            if (mLinks[id].mOutputIdx >= index)
-                                                mLinks[id].mOutputIdx++;
+                                            if (mLinks[id].mInputNodeIndex >= index)
+                                                mLinks[id].mInputNodeIndex++;
+                                            if (mLinks[id].mOutputNodeIndex >= index)
+                                                mLinks[id].mOutputNodeIndex++;
                                         }
 
                                         // NodeGraphUpdateEvaluationOrder(controler); todo
@@ -232,25 +259,24 @@ void GraphModel::DeleteSelectedNodes()
 
         for (int id = 0; id < mLinks.size(); id++)
         {
-            if (mLinks[id].mInputIdx == selection || mLinks[id].mOutputIdx == selection)
-                DelLink(mLinks[id].mOutputIdx, mLinks[id].mOutputSlot);
+            if (mLinks[id].mInputNodeIndex == selection || mLinks[id].mOutputNodeIndex == selection)
+                DelLink(id);
         }
         // auto iter = links.begin();
         for (size_t i = 0; i < mLinks.size();)
         {
             auto& link = mLinks[i];
-            if (link.mInputIdx == selection || link.mOutputIdx == selection)
+            if (link.mInputNodeIndex == selection || link.mOutputNodeIndex == selection)
             {
                 URDel<Link> undoRedoDelNodeLink(
                     int(i),
                     [this]() { return &mLinks; },
                     [this](int index) {
-                        Link& link = mLinks[index];
-                        DelLink(link.mOutputIdx, link.mOutputSlot);
+                        DelLink(index);
                     },
                     [this](int index) {
                         Link& link = mLinks[index];
-                        AddLink(link.mInputIdx, link.mInputSlot, link.mOutputIdx, link.mOutputSlot);
+                        AddLink(link.mInputNodeIndex, link.mInputSlotIndex, link.mOutputNodeIndex, link.mOutputSlotIndex);
                     });
 
                 mLinks.erase(mLinks.begin() + i);
@@ -264,10 +290,10 @@ void GraphModel::DeleteSelectedNodes()
         // recompute link indices
         for (int id = 0; id < mLinks.size(); id++)
         {
-            if (mLinks[id].mInputIdx > selection)
-                mLinks[id].mInputIdx--;
-            if (mLinks[id].mOutputIdx > selection)
-                mLinks[id].mOutputIdx--;
+            if (mLinks[id].mInputNodeIndex > selection)
+                mLinks[id].mInputNodeIndex--;
+            if (mLinks[id].mOutputNodeIndex > selection)
+                mLinks[id].mOutputNodeIndex--;
         }
 
         // delete links
@@ -283,8 +309,8 @@ bool GraphModel::IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const
 {
     for (auto& link : mLinks)
     {
-        if ((link.mInputIdx == nodeIndex && link.mInputSlot == slotIndex && forOutput) ||
-            (link.mOutputIdx == nodeIndex && link.mOutputSlot == slotIndex && !forOutput))
+        if ((link.mInputNodeIndex == nodeIndex && link.mInputSlotIndex == slotIndex && forOutput) ||
+            (link.mOutputNodeIndex == nodeIndex && link.mOutputSlotIndex == slotIndex && !forOutput))
         {
             return true;
         }

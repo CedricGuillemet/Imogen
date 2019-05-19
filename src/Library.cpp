@@ -213,10 +213,10 @@ struct Serialize
 
     void Ser(MaterialConnection* materialConnection)
     {
-        ADD(v_initial, materialConnection->mInputNode);
-        ADD(v_initial, materialConnection->mOutputNode);
-        ADD(v_initial, materialConnection->mInputSlot);
-        ADD(v_initial, materialConnection->mOutputSlot);
+        ADD(v_initial, materialConnection->mInputNodeIndex);
+        ADD(v_initial, materialConnection->mOutputNodeIndex);
+        ADD(v_initial, materialConnection->mInputSlotIndex);
+        ADD(v_initial, materialConnection->mOutputSlotIndex);
     }
 
     void Ser(Material* material)

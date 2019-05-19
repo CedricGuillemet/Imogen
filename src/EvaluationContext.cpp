@@ -981,7 +981,7 @@ EvaluationStages BuildEvaluationFromMaterial(Material& material)
     {
         MaterialConnection& materialConnection = material.mMaterialConnections[i];
         evaluationStages.AddEvaluationInput(
-            materialConnection.mOutputNode, materialConnection.mInputSlot, materialConnection.mInputNode);
+            materialConnection.mOutputNodeIndex, materialConnection.mInputSlotIndex, materialConnection.mInputNodeIndex);
     }
 
     evaluationStages.SetAnimTrack(material.mAnimTrack);

@@ -511,17 +511,14 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     {
         mModel.EndTransaction();
     }
-    if ((lButDown || rButDown) && !mModel.InTransaction())
-    {
-        mModel.BeginTransaction(true);
-    }
+
     const MetaNode* metaNodes = gMetaNodes.data();
     size_t res = 0;
     const MetaNode& metaNode = metaNodes[mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mType];
 
     Parameters parameters = mModel.GetParameters(mSelectedNodeIndex);
     unsigned char* paramBuffer = parameters.data();
-    bool parametersUseMouse = false;
+    bool parametersDirty = false;
 
     // camera handling
     for (auto& param : metaNode.mParams)
@@ -530,7 +527,11 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
         if (param.mType == Con_Camera)
         {
             Camera* cam = (Camera*)paramBuffer;
-            cam->mPosition += cam->mDirection * wheel;
+            if (fabsf(wheel)>0.f)
+            {
+               cam->mPosition += cam->mDirection * wheel;
+                parametersDirty = true;
+            }
             Vec4 right = Cross(cam->mUp, cam->mDirection);
             right.y = 0.f; // keep head up
             right.Normalize();
@@ -540,10 +541,12 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
                 if (io.MouseDown[2])
                 {
                     cam->mPosition += (right * io.MouseDelta.x + cam->mUp * io.MouseDelta.y) * 0.01f;
+                    parametersDirty = true;
                 }
                 if (io.MouseDown[1])
                 {
                     cam->mPosition += (cam->mDirection * io.MouseDelta.y) * 0.01f;
+                    parametersDirty = true;
                 }
                 if (io.MouseDown[0])
                 {
@@ -557,9 +560,9 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
                     cam->mDirection.TransformVector(res);
                     cam->mUp.Cross(cam->mDirection, right);
                     cam->mUp.Normalize();
+                    parametersDirty = true;
                 }
             }
-            parametersUseMouse = true;
         }
         paramBuffer += GetParameterTypeSize(param.mType);
     }
@@ -571,15 +574,9 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
         for (auto& param : metaNode.mParams)
         {
             float* paramFlt = (float*)paramBuffer;
-            if (param.mType == Con_Camera)
-            {
-                Camera* cam = (Camera*)paramBuffer;
-                if (cam->mDirection.LengthSq() < FLT_EPSILON)
-                    cam->mDirection.Set(0.f, 0.f, 1.f);
-                cam->mPosition += cam->mDirection * wheel;
-            }
             if (param.mbQuadSelect && param.mType == Con_Float4)
             {
+                parametersDirty = true;
                 if (!mbMouseDragging)
                 {
                     paramFlt[2] = paramFlt[0] = rx;
@@ -596,6 +593,7 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
 
             if (param.mRangeMinX != 0.f || param.mRangeMaxX != 0.f)
             {
+                parametersDirty = true;
                 if (param.mbRelative)
                 {
                     paramFlt[0] += (param.mRangeMaxX - param.mRangeMinX) * dx;
@@ -610,6 +608,7 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
             }
             if (param.mRangeMinY != 0.f || param.mRangeMaxY != 0.f)
             {
+                parametersDirty = true;
                 if (param.mbRelative)
                 {
                     paramFlt[1] += (param.mRangeMaxY - param.mRangeMinY) * dy;
@@ -623,13 +622,17 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
                 }
             }
             paramBuffer += GetParameterTypeSize(param.mType);
-            parametersUseMouse = true;
         }
     }
-    if (metaNode.mbHasUI || parametersUseMouse)
+    if (metaNode.mbHasUI || parametersDirty)
     {
         mModel.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
-        if (mModel.InTransaction())
+
+        if ((lButDown || rButDown) && !mModel.InTransaction() && parametersDirty)
+        {
+            mModel.BeginTransaction(true);
+        }
+        if (parametersDirty && mModel.InTransaction())
 		{
             mModel.SetParameters(mSelectedNodeIndex, parameters);
 		}

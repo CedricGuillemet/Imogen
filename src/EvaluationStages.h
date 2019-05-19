@@ -197,10 +197,7 @@ struct EvaluationStages
     EvaluationStages();
 
     void AddSingleEvaluation(size_t nodeType);
-    // void UserAddEvaluation(size_t nodeType);
-    // void UserDeleteEvaluation(size_t target);
 
-    //
     size_t GetStagesCount() const
     {
         return mStages.size();
@@ -211,7 +208,7 @@ struct EvaluationStages
     }
     size_t GetEvaluationImageDuration(size_t target);
 
-    void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);
+    void SetEvaluationParameters(size_t target, const Parameters& parameters);
     void SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& inputSamplers);
     void AddEvaluationInput(size_t target, int slot, int source);
     void DelEvaluationInput(size_t target, int slot);
@@ -226,12 +223,10 @@ struct EvaluationStages
         return mEvaluationOrderList;
     }
 
-
     const EvaluationStage& GetEvaluationStage(size_t index) const
     {
         return mStages[index];
     }
-
 
     Camera* GetCameraParameter(size_t index);
     int GetIntParameter(size_t index, const char* parameterName, int defaultValue);
@@ -277,12 +272,13 @@ struct EvaluationStages
     }
     const Parameters& GetParameters(size_t nodeIndex) const
     {
-     return mParameters[nodeIndex];
+        return mParameters[nodeIndex];
     }
     void SetParameters(size_t nodeIndex, const Parameters& parameters)
     {
         mParameters[nodeIndex] = parameters;
     }
+
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 

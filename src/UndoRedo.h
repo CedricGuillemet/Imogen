@@ -52,18 +52,14 @@ struct UndoRedo
     {
         mSubUndoRedo.push_back(std::make_shared<T>(subUndoRedo));
     }
-    void Discard()
+
+    bool HasSubUndoRedo() const
     {
-        mbDiscarded = true;
-    }
-    bool IsDiscarded() const
-    {
-        return mbDiscarded;
+        return !mSubUndoRedo.empty();
     }
 
 protected:
     std::vector<std::shared_ptr<UndoRedo>> mSubUndoRedo;
-    bool mbDiscarded;
 };
 
 struct UndoRedoHandler
@@ -101,8 +97,6 @@ struct UndoRedoHandler
     template<typename T>
     void AddUndo(const T& undoRedo)
     {
-        if (undoRedo.IsDiscarded())
-            return;
         if (mCurrent && &undoRedo != mCurrent)
             mCurrent->AddSubUndoRedo(undoRedo);
         else
@@ -130,7 +124,7 @@ struct UndoRedoHandler
 
 extern UndoRedoHandler gUndoRedoHandler;
 
-inline UndoRedo::UndoRedo() : mbDiscarded(false)
+inline UndoRedo::UndoRedo()
 {
     if (!gUndoRedoHandler.mCurrent)
     {
@@ -161,7 +155,7 @@ struct URChange : public UndoRedo
     }
     virtual ~URChange()
     {
-        if (gUndoRedoHandler.mbProcessing || mbDiscarded)
+        if (gUndoRedoHandler.mbProcessing)
             return;
 
         //if (*GetElements(mIndex) != mPreDo)
@@ -239,7 +233,7 @@ struct URDel : public UndoRedo
     }
     virtual ~URDel()
     {
-        if (gUndoRedoHandler.mbProcessing || mbDiscarded)
+        if (gUndoRedoHandler.mbProcessing)
             return;
         // add to handler
         gUndoRedoHandler.AddUndo(*this);
@@ -277,7 +271,7 @@ struct URAdd : public UndoRedo
     }
     virtual ~URAdd()
     {
-        if (gUndoRedoHandler.mbProcessing || mbDiscarded)
+        if (gUndoRedoHandler.mbProcessing)
             return;
 
         mAddedElement = (*GetElements())[mIndex];

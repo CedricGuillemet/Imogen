@@ -91,14 +91,14 @@ public:
     void AddRug(const Rug& rug);
     void DelRug(size_t rugIndex);
     void SetRug(size_t rugIndex, const Rug& rug);
-    void SetSamplers(size_t nodeIndex, const std::vector <InputSampler>& sampler);
+    void SetSamplers(size_t nodeIndex, const Samplers& sampler);
     void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
-    void SetParameter(int nodeIndex, const std::string& parameterName, const std::string& parameterValue);
+    void SetParameter(size_t nodeIndex, const std::string& parameterName, const std::string& parameterValue);
+    void SetParameters(size_t nodeIndex, const Parameters& parameters);
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
-    void SetNodeParameter(size_t nodeIndex, const std::vector<unsigned char>& parameters);
     void SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd);
     void SetKeyboardMouse(
         size_t nodeIndex, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
@@ -147,7 +147,11 @@ public:
     {
         return mEvaluationStages.GetIOPins();
     }
-
+    const std::vector<unsigned char>& GetParameters(size_t nodeIndex) const;
+    const Samplers& GetSamplers(size_t nodeIndex) const
+    {
+        return mEvaluationStages.mInputSamplers[nodeIndex];
+    }
     // clipboard
     void CopySelectedNodes();
     void CutSelectedNodes();

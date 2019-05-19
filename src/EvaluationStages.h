@@ -124,6 +124,9 @@ struct Scene
     void Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const;
 };
 
+typedef std::vector<unsigned char> Parameters;
+typedef std::vector<InputSampler> Samplers;
+
 struct EvaluationStage
 {
     //#ifdef _DEBUG needed for fur rendering
@@ -132,9 +135,8 @@ struct EvaluationStage
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
     size_t mType;
     unsigned int mRuntimeUniqueId;
-    std::vector<unsigned char> mParameters;
     Input mInput;
-    std::vector<InputSampler> mInputSamplers;
+    
     int gEvaluationMask; // see EvaluationMask
     int mUseCountByOthers;
     int mBlendingSrc;
@@ -160,7 +162,7 @@ struct EvaluationStage
     std::shared_ptr<Scene> mGScene;
     void* renderer;
     Image DecodeImage();
-
+#if 0
     bool operator!=(const EvaluationStage& other) const
     {
         if (mType != other.mType)
@@ -186,6 +188,7 @@ struct EvaluationStage
             return true;
         return false;
     }
+#endif
 };
 
 // simple API
@@ -272,6 +275,14 @@ struct EvaluationStages
     {
         return mPinnedIO;
     }
+    const Parameters& GetParameters(size_t nodeIndex) const
+    {
+     return mParameters[nodeIndex];
+    }
+    void SetParameters(size_t nodeIndex, const Parameters& parameters)
+    {
+        mParameters[nodeIndex] = parameters;
+    }
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 
@@ -279,14 +290,17 @@ struct EvaluationStages
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;
     std::vector<size_t> mEvaluationOrderList;
+    std::vector<uint32_t> mPinnedParameters; // 32bits -> 32parameters
+    std::vector<uint32_t> mPinnedIO;         // 24bits input, 8 bits output
+    std::vector<Parameters> mParameters;
+    std::vector<Samplers> mInputSamplers;
     int mFrameMin, mFrameMax;
 
 protected:
-    std::vector<uint32_t> mPinnedParameters; // 32bits -> 32parameters
-    std::vector<uint32_t> mPinnedIO;         // 24bits input, 8 bits output
+
 
     void StageIsAdded(int index);
     void StageIsDeleted(int index);
-    void InitDefaultParameters(EvaluationStage& stage);
+    void InitDefaultParameters(const EvaluationStage& stage, Parameters& parameters);
     void RemovePins(size_t nodeIndex);
 };

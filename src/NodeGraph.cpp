@@ -911,7 +911,6 @@ static bool DrawNode(GraphModel* model,
         if (nodeOperation != NO_MovingNodes)
         {
             nodeOperation = NO_MovingNodes;
-            model->BeginTransaction(true);
         }
     }
 
@@ -1135,8 +1134,12 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
 
     if (nodeOperation == NO_MovingNodes)
     {
-        if (fabsf(io.MouseDelta.x) > FLT_EPSILON && fabsf(io.MouseDelta.x) > FLT_EPSILON)
+        if (ImGui::IsMouseDragging(0, 1))
         {
+            if (!model->InTransaction())
+            {
+                model->BeginTransaction(true);
+            }
             model->MoveSelectedNodes(io.MouseDelta / factor);
         }
     }

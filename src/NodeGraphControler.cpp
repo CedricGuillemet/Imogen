@@ -35,9 +35,8 @@
 void AddExtractedView(size_t nodeIndex);
 
 NodeGraphControler::NodeGraphControler()
-    : mbMouseDragging(false), mEditingContext(mModel.mEvaluationStages, false, 1024, 1024)
+    : mbMouseDragging(false), mbUsingMouse(false), mEditingContext(mModel.mEvaluationStages, false, 1024, 1024)
 {
-    // mCategories = &MetaNode::mCategories;
 }
 
 void NodeGraphControler::Clear()
@@ -499,7 +498,8 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
                                           float wheel,
                                           bool bCtrl,
                                           bool bAlt,
-                                          bool bShift)
+                                          bool bShift,
+                                            bool bValidInput)
 {
     if (mSelectedNodeIndex == -1)
         return;
@@ -507,9 +507,10 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     if (!lButDown)
         mbMouseDragging = false;
 
-    if (!lButDown && !rButDown && mModel.InTransaction())
+    if (!lButDown && !rButDown && mModel.InTransaction() && mbUsingMouse)
     {
         mModel.EndTransaction();
+        mbUsingMouse = false;
     }
 
     const MetaNode* metaNodes = gMetaNodes.data();
@@ -628,11 +629,12 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     {
         mModel.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
 
-        if ((lButDown || rButDown) && !mModel.InTransaction() && parametersDirty)
+        if ((lButDown || rButDown) && !mModel.InTransaction() && parametersDirty && bValidInput)
         {
             mModel.BeginTransaction(true);
+            mbUsingMouse = true;
         }
-        if (parametersDirty && mModel.InTransaction())
+        if (parametersDirty && mModel.InTransaction() && bValidInput)
 		{
             mModel.SetParameters(mSelectedNodeIndex, parameters);
 		}

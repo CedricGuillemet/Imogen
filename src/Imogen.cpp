@@ -285,7 +285,8 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
                                                 io.MouseWheel,
                                                 io.KeyCtrl,
                                                 io.KeyAlt,
-                                                io.KeyShift);
+                                                io.KeyShift,
+                                                true);
         }
         lastSentExit = -1;
     }
@@ -295,7 +296,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
         {
             lastSentExit = selNode;
             nodeGraphControler.SetKeyboardMouse(
-                -9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f, false, false, false);
+                -9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f, false, false, false, false);
         }
     }
 }

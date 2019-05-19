@@ -95,12 +95,16 @@ void GraphModel::Redo()
 void GraphModel::MoveSelectedNodes(const ImVec2 delta)
 {
     assert(mbTransaction);
-    for (auto& node : mNodes)
+    for (size_t i = 0 ; i < mNodes.size(); i++)
     {
+        auto& node = mNodes[i];
         if (!node.mbSelected)
         {
             continue;
         }
+        auto ur =mUndoRedo
+                ? std::make_unique<URChange<Node>>(int(i), [&](int index) { return &mNodes[index]; }, [](int) {})
+                : nullptr;
         node.mPos += delta;
     }
 }

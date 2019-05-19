@@ -54,7 +54,8 @@ struct NodeGraphControler : public NodeGraphControlerBase
                           float wheel,
                           bool bCtrl,
                           bool bAlt,
-                          bool bShift);
+                          bool bShift,
+                          bool bValidInput);
 
 	// accessors
     virtual unsigned int GetNodeTexture(size_t index)
@@ -100,7 +101,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
 protected:
     bool mbMouseDragging;
-
+    bool mbUsingMouse;
     bool EditSingleParameter(unsigned int nodeIndex,
                              unsigned int parameterIndex,
                              void* paramBuffer,

@@ -624,10 +624,10 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
     for (size_t i = 0; i < links.size(); i++)
     {
         MaterialConnection& materialConnection = material.mMaterialConnections[i];
-        materialConnection.mInputNode = links[i].mInputIdx;
-        materialConnection.mInputSlot = links[i].mInputSlot;
-        materialConnection.mOutputNode = links[i].mOutputIdx;
-        materialConnection.mOutputSlot = links[i].mOutputSlot;
+        materialConnection.mInputNodeIndex = links[i].mInputNodeIndex;
+        materialConnection.mInputSlotIndex = links[i].mInputSlotIndex;
+        materialConnection.mOutputNodeIndex = links[i].mOutputNodeIndex;
+        materialConnection.mOutputSlotIndex = links[i].mOutputSlotIndex;
     }
     auto rugs = nodeGraphControler.mModel.GetRugs();
     material.mMaterialRugs.resize(rugs.size());
@@ -694,10 +694,10 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
             MaterialConnection& materialConnection = material.mMaterialConnections[i];
-            mNodeGraphControler->mModel.AddLink(materialConnection.mInputNode,
-                                                materialConnection.mInputSlot,
-                                                materialConnection.mOutputNode,
-                                                materialConnection.mOutputSlot);
+            mNodeGraphControler->mModel.AddLink(materialConnection.mInputNodeIndex,
+                                                materialConnection.mInputSlotIndex,
+                                                materialConnection.mOutputNodeIndex,
+                                                materialConnection.mOutputSlotIndex);
         }
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {

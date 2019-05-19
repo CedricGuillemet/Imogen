@@ -50,13 +50,13 @@ static inline float Distance(ImVec2& a, ImVec2& b)
 ImVec2 GetInputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
 {
     ImVec2 Size(100, 100);
-    unsigned int InputsCount = gMetaNodes[node.mType].mInputs.size();
+    size_t InputsCount = gMetaNodes[node.mType].mInputs.size();
     return ImVec2(node.mPos.x * factor,
                   node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
 }
 ImVec2 GetOutputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
 {
-    unsigned int OutputsCount = gMetaNodes[node.mType].mOutputs.size();
+    size_t OutputsCount = gMetaNodes[node.mType].mOutputs.size();
     ImVec2 Size(100, 100);
     return ImVec2(node.mPos.x * factor + Size.x,
                   node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
@@ -101,9 +101,9 @@ void RecurseSetPriority(std::vector<NodeOrder>& orders,
     orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
     for (auto& link : links)
     {
-        if (link.mOutputIdx == currentIndex)
+        if (link.mOutputNodeIndex == currentIndex)
         {
-            RecurseSetPriority(orders, links, link.mInputIdx, currentPriority + 1, undeterminedNodeCount);
+            RecurseSetPriority(orders, links, link.mInputNodeIndex, currentPriority + 1, undeterminedNodeCount);
         }
     }
 }
@@ -393,12 +393,12 @@ bool RecurseIsLinked(const std::vector<GraphModel::Link>& links, int from, int t
 {
     for (auto& link : links)
     {
-        if (link.mInputIdx == from)
+        if (link.mInputNodeIndex == from)
         {
-            if (link.mOutputIdx == to)
+            if (link.mOutputNodeIndex == to)
                 return true;
 
-            if (RecurseIsLinked(links, link.mOutputIdx, to))
+            if (RecurseIsLinked(links, link.mOutputNodeIndex, to))
                 return true;
         }
     }
@@ -467,17 +467,17 @@ static void DisplayLinks(GraphModel* model,
     for (int link_idx = 0; link_idx < links.size(); link_idx++)
     {
         const auto* link = &links[link_idx];
-        const auto* node_inp = &nodes[link->mInputIdx];
-        const auto* node_out = &nodes[link->mOutputIdx];
-        ImVec2 p1 = offset + GetOutputSlotPos(*node_inp, link->mInputSlot, factor);
-        ImVec2 p2 = offset + GetInputSlotPos(*node_out, link->mOutputSlot, factor);
+        const auto* node_inp = &nodes[link->mInputNodeIndex];
+        const auto* node_out = &nodes[link->mOutputNodeIndex];
+        ImVec2 p1 = offset + GetOutputSlotPos(*node_inp, link->mInputSlotIndex, factor);
+        ImVec2 p2 = offset + GetInputSlotPos(*node_out, link->mOutputSlotIndex, factor);
 
         // con. view clipping
         if ((p1.y < 0.f && p2.y < 0.f) || (p1.y > regionRect.Max.y && p2.y > regionRect.Max.y) ||
             (p1.x < 0.f && p2.x < 0.f) || (p1.x > regionRect.Max.x && p2.x > regionRect.Max.x))
             continue;
 
-        bool highlightCons = hoveredNode == link->mInputIdx || hoveredNode == link->mOutputIdx;
+        bool highlightCons = hoveredNode == link->mInputNodeIndex || hoveredNode == link->mOutputNodeIndex;
         uint32_t col = gMetaNodes[node_inp->mType].mHeaderColor | (highlightCons ? 0xF0F0F0 : 0);
         ;
         // curves
@@ -664,8 +664,8 @@ bool HandleConnections(GraphModel* model,
     ImGuiIO& io = ImGui::GetIO();
     const GraphModel::Node* node = &nodes[nodeIndex];
 
-    unsigned int InputsCount = gMetaNodes[node->mType].mInputs.size();
-    unsigned int OutputsCount = gMetaNodes[node->mType].mOutputs.size();
+    size_t InputsCount = gMetaNodes[node->mType].mInputs.size();
+    size_t OutputsCount = gMetaNodes[node->mType].mOutputs.size();
 
     // draw/use inputs/outputs
     bool hoverSlot = false;
@@ -729,7 +729,7 @@ bool HandleConnections(GraphModel* model,
                     else
                         nl = GraphModel::Link{editingNodeIndex, editingSlotIndex, nodeIndex, closestConn};
 
-                    if (RecurseIsLinked(links, nl.mOutputIdx, nl.mInputIdx))
+                    if (RecurseIsLinked(links, nl.mOutputNodeIndex, nl.mInputNodeIndex))
                     {
                         Log("Acyclic graph. Loop is not allowed.\n");
                         break;
@@ -748,7 +748,7 @@ bool HandleConnections(GraphModel* model,
                     for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
                     {
                         auto& link = links[linkIndex];
-                        if (link.mOutputIdx == nl.mOutputIdx && link.mOutputSlot == nl.mOutputSlot)
+                        if (link.mOutputNodeIndex == nl.mOutputNodeIndex && link.mOutputSlotIndex == nl.mOutputSlotIndex)
                         {
                             /*URDel<Link> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
                             controler->DelLink(link.OutputIdx, link.OutputSlot);
@@ -756,7 +756,7 @@ bool HandleConnections(GraphModel* model,
                             NodeGraphUpdateEvaluationOrder(controler);
                                                         */
                             model->BeginTransaction(true);
-                            model->DelLink(link.mOutputIdx, link.mOutputSlot);
+                            model->DelLink(linkIndex);
                             model->EndTransaction();
                             break;
                         }
@@ -767,11 +767,11 @@ bool HandleConnections(GraphModel* model,
                         /*URAdd<Link> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
 
                         links.push_back(nl);
-                        controler->AddLink(nl.mInputIdx, nl.mInputSlot, nl.mOutputIdx, nl.mOutputSlot);
+                        controler->AddLink(nl.mInputNodeIndex, nl.mInputSlotIndex, nl.mOutputNodeIndex, nl.mOutputSlotIndex);
                         NodeGraphUpdateEvaluationOrder(controler);
                                                 */
                         model->BeginTransaction(true);
-                        model->AddLink(nl.mInputIdx, nl.mInputSlot, nl.mOutputIdx, nl.mOutputSlot);
+                        model->AddLink(nl.mInputNodeIndex, nl.mInputSlotIndex, nl.mOutputNodeIndex, nl.mOutputSlotIndex);
                         model->EndTransaction();
                     }
                 }
@@ -792,7 +792,7 @@ bool HandleConnections(GraphModel* model,
                     for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
                     {
                         auto& link = links[linkIndex];
-                        if (link.mOutputIdx == nodeIndex && link.mOutputSlot == closestConn)
+                        if (link.mOutputNodeIndex == nodeIndex && link.mOutputSlotIndex == closestConn)
                         {
                             /*URDel<Link> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
                             controler->DelLink(link.OutputIdx, link.OutputSlot);
@@ -800,7 +800,7 @@ bool HandleConnections(GraphModel* model,
                             NodeGraphUpdateEvaluationOrder(controler);
                                                         */
                             model->BeginTransaction(true);
-                            model->DelLink(link.mOutputIdx, link.mOutputSlot);
+                            model->DelLink(linkIndex);
                             model->EndTransaction();
                             break;
                         }
@@ -857,8 +857,8 @@ static bool DrawNode(GraphModel* model,
 
     // test nested IO
     drawList->ChannelsSetCurrent(1); // Background
-    unsigned int InputsCount = metaNode.mInputs.size();
-    unsigned int OutputsCount = metaNode.mOutputs.size();
+    size_t InputsCount = metaNode.mInputs.size();
+    size_t OutputsCount = metaNode.mOutputs.size();
 
     for (int i = 0; i < 2; i++)
     {
@@ -1270,13 +1270,13 @@ void RecurseNodeGraphLayout(GraphModel* model,
         }
     }
 
-    unsigned int InputsCount = gMetaNodes[nodes[currentIndex].mType].mInputs.size();
+    size_t InputsCount = gMetaNodes[nodes[currentIndex].mType].mInputs.size();
     std::vector<int> inputNodes(InputsCount, -1);
     for (auto& link : links)
     {
-        if (link.mOutputIdx != currentIndex)
+        if (link.mOutputNodeIndex != currentIndex)
             continue;
-        inputNodes[link.mOutputSlot] = link.mInputIdx;
+        inputNodes[link.mOutputSlotIndex] = link.mInputNodeIndex;
     }
     for (auto inputNode : inputNodes)
     {

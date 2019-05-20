@@ -113,6 +113,9 @@ void GraphModel::MoveSelectedNodes(const ImVec2 delta)
 void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
 {
     assert(mbTransaction);
+    auto ur = mUndoRedo
+        ? std::make_unique<URChange<Node>>(int(nodeIndex), [&](int index) { return &mNodes[index]; }, [](int) {})
+        : nullptr;
     mNodes[nodeIndex].mPos = position;
 }
 
@@ -633,4 +636,117 @@ ImRect GraphModel::GetFinalNodeDisplayRect() const
         rect = ImRect(node.mPos, node.mPos + ImVec2(100, 100));
     }
     return DisplayRectMargin(rect);
+}
+
+void GraphModel::RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
+    std::map<int, int>& stacks,
+    size_t currentIndex,
+    int currentLayer)
+{
+    const auto& nodes = mNodes;
+    const auto& links = mLinks;
+
+    if (positions[currentIndex].mLayer == -1)
+    {
+        positions[currentIndex].mLayer = currentLayer;
+        int layer = positions[currentIndex].mLayer = currentLayer;
+        if (stacks.find(layer) != stacks.end())
+            stacks[layer]++;
+        else
+            stacks[layer] = 0;
+        positions[currentIndex].mStackIndex = stacks[currentLayer];
+    }
+    else
+    {
+        // already hooked node
+        if (currentLayer > positions[currentIndex].mLayer)
+        {
+            // remove stack at current pos
+            int currentStack = positions[currentIndex].mStackIndex;
+            for (auto& pos : positions)
+            {
+                if (pos.mLayer == positions[currentIndex].mLayer && pos.mStackIndex > currentStack)
+                {
+                    pos.mStackIndex--;
+                    stacks[pos.mLayer]--;
+                }
+            }
+            // apply new one
+            int layer = positions[currentIndex].mLayer = currentLayer;
+            if (stacks.find(layer) != stacks.end())
+                stacks[layer]++;
+            else
+                stacks[layer] = 0;
+            positions[currentIndex].mStackIndex = stacks[currentLayer];
+        }
+    }
+
+    size_t InputsCount = gMetaNodes[nodes[currentIndex].mType].mInputs.size();
+    std::vector<int> inputNodes(InputsCount, -1);
+    for (auto& link : links)
+    {
+        if (link.mOutputNodeIndex != currentIndex)
+            continue;
+        inputNodes[link.mOutputSlotIndex] = link.mInputNodeIndex;
+    }
+    for (auto inputNode : inputNodes)
+    {
+        if (inputNode == -1)
+            continue;
+        RecurseNodeGraphLayout(positions, stacks, inputNode, currentLayer + 1);
+    }
+}
+
+void GraphModel::NodeGraphLayout()
+{
+    auto orderList = mEvaluationStages.GetForwardEvaluationOrder();
+
+    // get stack/layer pos
+    std::vector<NodePosition> nodePositions(mNodes.size(), { -1, -1 });
+    std::map<int, int> stacks;
+    ImRect sourceRect, destRect;
+    BeginTransaction(true);
+    std::vector<ImVec2> nodePos(mNodes.size());
+
+    // compute source bounds
+    for (unsigned int i = 0; i < mNodes.size(); i++)
+    {
+        const auto& node = mNodes[i];
+        sourceRect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
+    }
+
+    for (unsigned int i = 0; i < mNodes.size(); i++)
+    {
+        size_t nodeIndex = orderList[mNodes.size() - i - 1];
+        RecurseNodeGraphLayout(nodePositions, stacks, nodeIndex, 0);
+    }
+
+    // set x,y position from layer/stack
+    for (unsigned int i = 0; i < mNodes.size(); i++)
+    {
+        size_t nodeIndex = orderList[i];
+        auto& layout = nodePositions[nodeIndex];
+        nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, layout.mStackIndex * 140.f);
+    }
+
+    // new bounds
+    for (unsigned int i = 0; i < mNodes.size(); i++)
+    {
+        ImVec2 newPos = nodePos[i];
+        destRect.Add(ImRect(newPos, newPos + ImVec2(100, 100)));
+    }
+
+    // move all nodes
+    ImVec2 offset = sourceRect.GetCenter() - destRect.GetCenter();
+    for (auto& pos : nodePos)
+    {
+        pos += offset;
+    }
+    for (unsigned int i = 0; i < mNodes.size(); i++)
+    {
+        SetNodePosition(i, nodePos[i]);
+    }
+
+    // finish undo
+    EndTransaction();
 }

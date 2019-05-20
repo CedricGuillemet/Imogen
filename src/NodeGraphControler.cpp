@@ -358,7 +358,9 @@ void NodeGraphControler::EditNodeParameters()
 
     if (dirty)
     {
+        mModel.BeginTransaction(true);
         mModel.SetParameters(nodeIndex, parameters);
+        mModel.EndTransaction();
     }
 }
 

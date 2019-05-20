@@ -22,14 +22,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-
 #pragma once
+
 #include <vector>
 #include <stdint.h>
 #include <string>
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "Library.h"
 
 struct NodeGraphControlerBase
 {
@@ -59,5 +58,4 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* delegate, bool enabled
 void NodeGraphClear(); // delegate is not called
 
 void NodeGraphUpdateScrolling(GraphModel* model);
-void NodeGraphLayout(GraphModel* model);
 

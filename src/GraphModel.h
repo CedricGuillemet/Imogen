@@ -110,6 +110,9 @@ public:
     {
         mEvaluationStages.SetIOPins(pins);
     }
+    // transaction is handled is the function
+    void NodeGraphLayout();
+
     // getters
     bool NodeHasUI(size_t nodeIndex) const;
     const std::vector<Rug>& GetRugs() const
@@ -184,4 +187,15 @@ private:
     void AddNodeHelper(int nodeIndex);
     void DeleteNodeHelper(int nodeIndex);
     void RemoveAnimation(size_t nodeIndex);
+
+    struct NodePosition
+    {
+        int mLayer;
+        int mStackIndex;
+    };
+
+    void RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
+        std::map<int, int>& stacks,
+        size_t currentIndex,
+        int currentLayer);
 };

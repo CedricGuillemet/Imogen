@@ -274,17 +274,17 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
             Image::Free(&pickerImage);
             ImVec2 ratio((io.MousePos.x - rc.Min.x) / rc.GetSize().x, (io.MousePos.y - rc.Min.y) / rc.GetSize().y);
             ImVec2 deltaRatio((io.MouseDelta.x) / rc.GetSize().x, (io.MouseDelta.y) / rc.GetSize().y);
-            nodeGraphControler.SetKeyboardMouse(ratio.x,
-                                                ratio.y,
-                                                deltaRatio.x,
-                                                deltaRatio.y,
-                                                io.MouseDown[0],
-                                                io.MouseDown[1],
-                                                io.MouseWheel,
-                                                io.KeyCtrl,
-                                                io.KeyAlt,
-                                                io.KeyShift,
-                                                true);
+            UIInput input = {ratio.x,
+                             ratio.y,
+                             deltaRatio.x,
+                             deltaRatio.y,
+                             io.MouseWheel,
+                             io.MouseDown[0],
+                             io.MouseDown[1],
+                             io.KeyCtrl,
+                             io.KeyAlt,
+                             io.KeyShift};
+            nodeGraphControler.SetKeyboardMouse(input, true);
         }
         lastSentExit = -1;
     }
@@ -293,8 +293,19 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
         if (lastSentExit != selNode)
         {
             lastSentExit = selNode;
-            nodeGraphControler.SetKeyboardMouse(
-                -9999.f, -9999.f, -9999.f, -9999.f, false, false, 0.f, false, false, false, false);
+            UIInput input = {
+                -9999.f,
+                -9999.f,
+                -9999.f,
+                -9999.f,
+                0,
+                false,
+                false,
+                false,
+                false,
+                false
+            };
+            nodeGraphControler.SetKeyboardMouse(input, false);
         }
     }
 }
@@ -725,8 +736,6 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
         mNodeGraphControler->mEditingContext.RunAll();
         mNodeGraphControler->mModel.EndTransaction();
-
-		NodeGraphUpdateEvaluationOrder(&mNodeGraphControler->mModel, mNodeGraphControler);
     }
 }
 
@@ -2028,9 +2037,9 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
 
     Playback(currentTime != mCurrentTime);
 
-    ImRect rc = GetNodesDisplayRect(&mNodeGraphControler->mModel);
+    ImRect rc = mNodeGraphControler->mModel.GetNodesDisplayRect();
     interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
-    rc = GetFinalNodeDisplayRect(&mNodeGraphControler->mModel);
+    rc = mNodeGraphControler->mModel.GetFinalNodeDisplayRect();
     interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
 }
 

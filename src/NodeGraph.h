@@ -52,21 +52,12 @@ struct NodeGraphControlerBase
     // return false if background must be rendered by node graph
     virtual bool RenderBackground() = 0;
 
-    // clipboard
-    virtual void CopySelectedNodes() = 0;
-    virtual void CutSelectedNodes() = 0;
-    virtual void PasteNodes() = 0;
 };
 
 class GraphModel;
 void NodeGraph(GraphModel* model, NodeGraphControlerBase* delegate, bool enabled);
 void NodeGraphClear(); // delegate is not called
 
-
-void NodeGraphUpdateEvaluationOrder(GraphModel* model, NodeGraphControlerBase* delegate);
 void NodeGraphUpdateScrolling(GraphModel* model);
 void NodeGraphLayout(GraphModel* model);
 
-
-ImRect GetFinalNodeDisplayRect(GraphModel* model);
-ImRect GetNodesDisplayRect(GraphModel* model);

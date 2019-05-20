@@ -47,49 +47,6 @@ void NodeGraphControler::Clear()
     mEditingContext.Clear();
 }
 
-/*
-void NodeGraphControler::NodeIsAdded(int index)
-{
-    auto& stage = mEvaluationStages.mStages[index];
-    mEvaluationStages.SetEvaluationParameters(index, stage.mParameters);
-    mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
-    mEditingContext.SetTargetDirty(index, Dirty::Input);
-};
-
-void NodeGraphControler::AddSingleNode(size_t type)
-{
-    mEvaluationStages.AddSingleEvaluation(type);
-    NodeIsAdded(int(mEvaluationStages.mStages.size()) - 1);
-}
-
-void NodeGraphControler::UserAddNode(size_t type)
-{
-    URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
-                                           [&]() { return &mEvaluationStages.mStages; },
-                                           [](int) {},
-                                           [&](int index) { NodeIsAdded(index); });
-
-    mEditingContext.UserAddStage();
-    AddSingleNode(type);
-}
-
-void NodeGraphControler::UserDeleteNode(size_t index)
-{
-    URDummy urdummy;
-    mEvaluationStages.RemoveAnimation(index);
-    mEvaluationStages.RemovePins(index);
-    mEditingContext.UserDeleteStage(index);
-    mEvaluationStages.UserDeleteEvaluation(index);
-    if (mBackgroundNode == int(index))
-    {
-        mBackgroundNode = -1;
-    }
-    else if (mBackgroundNode > int(index))
-    {
-        mBackgroundNode--;
-    }
-}
-*/
 void NodeGraphControler::HandlePin(size_t nodeIndex, size_t parameterIndex)
 {
     bool checked = mModel.IsParameterPinned(nodeIndex, parameterIndex);
@@ -299,12 +256,6 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
     return dirty;
 }
 
-void NodeGraphControler::UpdateDirtyParameter(size_t nodeIndex, const std::vector<unsigned char> parameters)
-{
-    mModel.SetParameters(nodeIndex, parameters);
-    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
-}
-
 void NodeGraphControler::PinnedEdit()
 {
     int dirtyNode = -1;
@@ -338,7 +289,7 @@ void NodeGraphControler::PinnedEdit()
     }
     if (dirtyNode != -1)
     {
-        UpdateDirtyParameter(dirtyNode, dirtyParameters);
+        mModel.SetParameters(dirtyNode, dirtyParameters);
     }
 }
 
@@ -407,13 +358,13 @@ void NodeGraphControler::EditNodeParameters()
 
     if (dirty)
     {
-        UpdateDirtyParameter(int(nodeIndex), parameters);
+        mModel.SetParameters(nodeIndex, parameters);
     }
 }
 
 void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput)
 {
-    if (mModel.IsIOUsed(nodeIndex, slotIndex, forOutput))
+    if (mModel.IsIOUsed(nodeIndex, int(slotIndex), forOutput))
     {
         return;
     }
@@ -434,22 +385,6 @@ void NodeGraphControler::NodeEdit()
 
     if (mSelectedNodeIndex == -1)
     {
-        /*
-        for (const auto pin : mEvaluationStages.mPinnedParameters)
-        {
-            unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
-            unsigned int parameterIndex = pin & 0xFFFF;
-            if (parameterIndex != 0xDEAD)
-                continue;
-
-            ImGui::PushID(1717171 + nodeIndex);
-            uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
-            HandlePin(parameterPair);
-            ImGui::SameLine();
-            Imogen::RenderPreviewNode(nodeIndex, *this);
-            ImGui::PopID();
-        }
-                */
         auto& io = mModel.GetIOPins();
         for (size_t nodeIndex = 0; nodeIndex < io.size(); nodeIndex++)
         {
@@ -457,11 +392,11 @@ void NodeGraphControler::NodeEdit()
             {
                 continue;
             }
-            ImGui::PushID(1717171 + nodeIndex);
+            ImGui::PushID(int(1717171 + nodeIndex));
             uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
             HandlePinIO(nodeIndex, 0, true);
             ImGui::SameLine();
-            Imogen::RenderPreviewNode(nodeIndex, *this);
+            Imogen::RenderPreviewNode(int(nodeIndex), *this);
             ImGui::PopID();
         }
         PinnedEdit();
@@ -489,27 +424,24 @@ void NodeGraphControler::NodeEdit()
 
         EditNodeParameters();
     }
+    // apply dirty list
+    const auto& dirtyList = mModel.GetDirtyList();
+    for (const auto& dirtyItem : dirtyList)
+    {
+        mEditingContext.SetTargetDirty(dirtyItem.mNodeIndex, dirtyItem.mFlags);
+    }
+    mModel.ClearDirtyList();
 }
 
-void NodeGraphControler::SetKeyboardMouse(float rx,
-                                          float ry,
-                                          float dx,
-                                          float dy,
-                                          bool lButDown,
-                                          bool rButDown,
-                                          float wheel,
-                                          bool bCtrl,
-                                          bool bAlt,
-                                          bool bShift,
-                                            bool bValidInput)
+void NodeGraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
 {
     if (mSelectedNodeIndex == -1)
         return;
 
-    if (!lButDown)
+    if (!input.mLButDown)
         mbMouseDragging = false;
 
-    if (!lButDown && !rButDown && mModel.InTransaction() && mbUsingMouse)
+    if (!input.mLButDown && !input.mRButDown && mModel.InTransaction() && mbUsingMouse)
     {
         mModel.EndTransaction();
         mbUsingMouse = false;
@@ -530,9 +462,9 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
         if (param.mType == Con_Camera)
         {
             Camera* cam = (Camera*)paramBuffer;
-            if (fabsf(wheel)>0.f)
+            if (fabsf(input.mWheel)>0.f)
             {
-               cam->mPosition += cam->mDirection * wheel;
+               cam->mPosition += cam->mDirection * input.mWheel;
                 parametersDirty = true;
             }
             Vec4 right = Cross(cam->mUp, cam->mDirection);
@@ -572,7 +504,7 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
 
     //
     paramBuffer = parameters.data();
-    if (lButDown)
+    if (input.mLButDown)
     {
         for (auto& param : metaNode.mParams)
         {
@@ -582,14 +514,14 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
                 parametersDirty = true;
                 if (!mbMouseDragging)
                 {
-                    paramFlt[2] = paramFlt[0] = rx;
-                    paramFlt[3] = paramFlt[1] = 1.f - ry;
+                    paramFlt[2] = paramFlt[0] = input.mRx;
+                    paramFlt[3] = paramFlt[1] = 1.f - input.mRy;
                     mbMouseDragging = true;
                 }
                 else
                 {
-                    paramFlt[2] = rx;
-                    paramFlt[3] = 1.f - ry;
+                    paramFlt[2] = input.mRx;
+                    paramFlt[3] = 1.f - input.mRy;
                 }
                 continue;
             }
@@ -599,14 +531,14 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
                 parametersDirty = true;
                 if (param.mbRelative)
                 {
-                    paramFlt[0] += (param.mRangeMaxX - param.mRangeMinX) * dx;
+                    paramFlt[0] += (param.mRangeMaxX - param.mRangeMinX) * input.mDx;
                     if (param.mbLoop)
                         paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) +
                                       min(param.mRangeMinX, param.mRangeMaxX);
                 }
                 else
                 {
-                    paramFlt[0] = ImLerp(param.mRangeMinX, param.mRangeMaxX, rx);
+                    paramFlt[0] = ImLerp(param.mRangeMinX, param.mRangeMaxX, input.mRx);
                 }
             }
             if (param.mRangeMinY != 0.f || param.mRangeMaxY != 0.f)
@@ -614,14 +546,14 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
                 parametersDirty = true;
                 if (param.mbRelative)
                 {
-                    paramFlt[1] += (param.mRangeMaxY - param.mRangeMinY) * dy;
+                    paramFlt[1] += (param.mRangeMaxY - param.mRangeMinY) * input.mDy;
                     if (param.mbLoop)
                         paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) +
                                       min(param.mRangeMinY, param.mRangeMaxY);
                 }
                 else
                 {
-                    paramFlt[1] = ImLerp(param.mRangeMinY, param.mRangeMaxY, ry);
+                    paramFlt[1] = ImLerp(param.mRangeMinY, param.mRangeMaxY, input.mRx);
                 }
             }
             paramBuffer += GetParameterTypeSize(param.mType);
@@ -629,9 +561,9 @@ void NodeGraphControler::SetKeyboardMouse(float rx,
     }
     if (metaNode.mbHasUI || parametersDirty)
     {
-        mModel.SetKeyboardMouse(mSelectedNodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
+        mModel.SetKeyboardMouse(mSelectedNodeIndex, input);
 
-        if ((lButDown || rButDown) && !mModel.InTransaction() && parametersDirty && bValidInput)
+        if ((input.mLButDown || input.mRButDown) && !mModel.InTransaction() && parametersDirty && bValidInput)
         {
             mModel.BeginTransaction(true);
             mbUsingMouse = true;
@@ -767,8 +699,7 @@ void NodeGraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
 
     if (pasteSelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_V)))
     {
-        mModel.PasteNodes();
-        //NodeGraphUpdateEvaluationOrder(controler);
+        mModel.PasteNodes(scenePos);
     }
 }
 bool NodeGraphControler::NodeIs2D(size_t nodeIndex) const
@@ -833,19 +764,4 @@ bool NodeGraphControler::RenderBackground()
         return true;
     }
     return false;
-}
-
-void NodeGraphControler::CopySelectedNodes()
-{
-    mModel.CopySelectedNodes();
-}
-
-void NodeGraphControler::CutSelectedNodes()
-{
-    mModel.CutSelectedNodes();
-}
-
-void NodeGraphControler::PasteNodes()
-{
-    mModel.PasteNodes();
 }

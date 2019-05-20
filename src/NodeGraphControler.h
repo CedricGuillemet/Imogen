@@ -39,23 +39,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
 
     void Clear();
 
-	// modifiers
-    virtual void CopySelectedNodes();
-    virtual void CutSelectedNodes();
-    virtual void PasteNodes();
-
-
-    void SetKeyboardMouse(float rx,
-                          float ry,
-                          float dx,
-                          float dy,
-                          bool lButDown,
-                          bool rButDown,
-                          float wheel,
-                          bool bCtrl,
-                          bool bAlt,
-                          bool bShift,
-                          bool bValidInput);
+    void SetKeyboardMouse(const UIInput& input, bool bValidInput);
 
 	// accessors
     virtual unsigned int GetNodeTexture(size_t index)
@@ -102,12 +86,13 @@ struct NodeGraphControler : public NodeGraphControlerBase
 protected:
     bool mbMouseDragging;
     bool mbUsingMouse;
+    
+
     bool EditSingleParameter(unsigned int nodeIndex,
                              unsigned int parameterIndex,
                              void* paramBuffer,
                              const MetaParameter& param);
     void PinnedEdit();
-    void UpdateDirtyParameter(size_t nodeIndex, const std::vector<unsigned char> parameters);
     void EditNodeParameters();
     void HandlePin(size_t nodeIndex, size_t parameterIndex);
     void HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput);

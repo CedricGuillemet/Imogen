@@ -31,7 +31,7 @@
 #include <algorithm>
 #include <map>
 
-EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
+EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1), mInputNodeIndex(-1)
 {
 }
 
@@ -82,33 +82,34 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     mPinnedIO.push_back(0);
     mPinnedParameters.push_back(0);
     mInputSamplers.push_back(Samplers(inputCount));
+    //mAnimTrack.push_back(AnimTrack());
 }
 
-void EvaluationStages::StageIsAdded(int index)
+void EvaluationStages::StageIsAdded(size_t nodeIndex)
 {
     for (size_t i = 0; i < mStages.size(); i++)
     {
-        if (i == index)
+        if (i == nodeIndex)
             continue;
         auto& evaluation = mStages[i];
         for (auto& inp : evaluation.mInput.mInputs)
         {
-            if (inp >= index)
+            if (inp >= nodeIndex)
                 inp++;
         }
     }
 }
 
-void EvaluationStages::StageIsDeleted(int index)
+void EvaluationStages::StageIsDeleted(size_t nodeIndex)
 {
-    EvaluationStage& ev = mStages[index];
+    EvaluationStage& ev = mStages[nodeIndex];
 
     // shift all connections
     for (auto& evaluation : mStages)
     {
         for (auto& inp : evaluation.mInput.mInputs)
         {
-            if (inp >= index)
+            if (inp >= nodeIndex)
                 inp--;
         }
     }
@@ -172,15 +173,19 @@ void EvaluationStages::SetEvaluationOrder(const std::vector<size_t>& nodeOrderLi
 
 void EvaluationStages::Clear()
 {
-    mStages.clear();
     mEvaluationOrderList.clear();
+
+    mStages.clear();
     mAnimTrack.clear();
+    mPinnedIO.clear();
+    mPinnedParameters.clear();
+    mInputSamplers.clear();
+    mParameters.clear();
 }
 
-void EvaluationStages::SetKeyboardMouse(
-    int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift)
+void EvaluationStages::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
 {
-    for (auto& ev : mStages)
+    /*for (auto& ev : mStages)
     {
         ev.mRx = -9999.f;
         ev.mRy = -9999.f;
@@ -190,7 +195,7 @@ void EvaluationStages::SetKeyboardMouse(
         ev.mbAlt = false;
         ev.mbShift = false;
     }
-    auto& ev = mStages[target];
+    auto& ev = mStages[nodeIndex];
     ev.mRx = rx;
     ev.mRy = 1.f - ry; // inverted for UI
     ev.mLButDown = lButDown;
@@ -198,6 +203,9 @@ void EvaluationStages::SetKeyboardMouse(
     ev.mbCtrl = bCtrl;
     ev.mbAlt = bAlt;
     ev.mbShift = bShift;
+*/
+    mInputs = input;
+    mInputNodeIndex = nodeIndex;
 }
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
@@ -368,28 +376,6 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
     }
 }
 
-void EvaluationStages::RemoveAnimation(size_t nodeIndex)
-{
-    if (mAnimTrack.empty())
-        return;
-    std::vector<int> tracks;
-    for (int i = 0; i < int(mAnimTrack.size()); i++)
-    {
-        const AnimTrack& animTrack = mAnimTrack[i];
-        if (animTrack.mNodeIndex == nodeIndex)
-            tracks.push_back(i);
-    }
-    if (tracks.empty())
-        return;
-
-    for (int i = 0; i < int(tracks.size()); i++)
-    {
-        int index = tracks[i] - i;
-        // URDel<AnimTrack> urDel(index, [&] { return &mAnimTrack; }); todo
-        mAnimTrack.erase(mAnimTrack.begin() + index);
-    }
-}
-
 void EvaluationStages::RemovePins(size_t nodeIndex)
 {
     mPinnedParameters.erase(mPinnedParameters.begin() + nodeIndex);
@@ -511,6 +497,72 @@ void EvaluationStages::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, boo
     mPinnedIO[nodeIndex] += pinned ? mask : 0;
 }
 
+
+size_t EvaluationStages::PickBestNode(const std::vector<EvaluationStages::NodeOrder>& orders) const
+{
+    for (auto& order : orders)
+    {
+        if (order.mNodePriority == 0)
+            return order.mNodeIndex;
+    }
+    // issue!
+    assert(0);
+    return -1;
+}
+
+void EvaluationStages::RecurseSetPriority(std::vector<EvaluationStages::NodeOrder>& orders,
+    size_t currentIndex,
+    size_t currentPriority,
+    size_t& undeterminedNodeCount) const
+{
+    if (!orders[currentIndex].mNodePriority)
+        undeterminedNodeCount--;
+
+    orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
+    for (auto input : mStages[currentIndex].mInput.mInputs)
+    {
+        if (input == -1)
+        {
+            continue;
+        }
+
+        RecurseSetPriority(orders, input, currentPriority + 1, undeterminedNodeCount);
+    }
+}
+
+std::vector<EvaluationStages::NodeOrder> EvaluationStages::ComputeEvaluationOrders()
+{
+    size_t nodeCount = mStages.size();
+
+    std::vector<NodeOrder> orders(nodeCount);
+    for (size_t i = 0; i < nodeCount; i++)
+    {
+        orders[i].mNodeIndex = i;
+        orders[i].mNodePriority = 0;
+    }
+    size_t undeterminedNodeCount = nodeCount;
+    while (undeterminedNodeCount)
+    {
+        size_t currentIndex = PickBestNode(orders);
+        RecurseSetPriority(orders, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
+    };
+    //
+    return orders;
+}
+
+void EvaluationStages::ComputeEvaluationOrder()
+{
+    mEvaluationOrderList.clear();
+
+    auto orders = ComputeEvaluationOrders();
+    std::sort(orders.begin(), orders.end());
+    mEvaluationOrderList.resize(orders.size());
+    for (size_t i = 0; i < orders.size(); i++)
+    {
+        mEvaluationOrderList[i] = orders[i].mNodeIndex;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void Scene::Mesh::Primitive::Draw() const
@@ -613,3 +665,4 @@ Scene::~Scene()
 {
     // todo : clear ia/va
 }
+

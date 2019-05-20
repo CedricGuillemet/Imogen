@@ -100,8 +100,7 @@ public:
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
     void SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd);
-    void SetKeyboardMouse(
-        size_t nodeIndex, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
+    void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
 
 	void SetParameterPins(const std::vector<uint32_t>& pins)
     {
@@ -126,7 +125,7 @@ public:
         return mLinks;
     }
     ImVec2 GetNodePos(size_t nodeIndex) const;
-    bool IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const;
+    bool IsIOUsed(size_t nodeIndex, int slotIndex, bool forOutput) const;
     bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
     bool IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const;
     
@@ -152,10 +151,15 @@ public:
     {
         return mEvaluationStages.mInputSamplers[nodeIndex];
     }
+    ImRect GetNodesDisplayRect() const;
+    ImRect GetFinalNodeDisplayRect() const;
+    const std::vector<DirtyList>& GetDirtyList() const { return mDirtyList; }
+    void ClearDirtyList() { mDirtyList.clear(); }
+
     // clipboard
     void CopySelectedNodes();
     void CutSelectedNodes();
-    void PasteNodes();
+    void PasteNodes(ImVec2 viewOffsetPosition);
     bool IsClipboardEmpty() const;
 
     EvaluationStages mEvaluationStages;
@@ -173,7 +177,11 @@ private:
 	std::vector<Node> mNodesClipboard;
 	std::vector<EvaluationStage> mStagesClipboard;
 
-    void AddLinkHelper(int index);
-    void DeleteLinkHelper(int index);
-    
+    std::vector<DirtyList> mDirtyList;
+    void SetDirty(size_t nodeIndex, DirtyFlag flags) { mDirtyList.push_back({nodeIndex, flags});}
+    void AddLinkHelper(int nodeIndex);
+    void DeleteLinkHelper(int nodeIndex);
+    void AddNodeHelper(int nodeIndex);
+    void DeleteNodeHelper(int nodeIndex);
+    void RemoveAnimation(size_t nodeIndex);
 };

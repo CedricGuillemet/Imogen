@@ -40,6 +40,27 @@ struct ImDrawCmd;
 struct EvaluationContext;
 struct EvaluationInfo;
 
+struct Dirty
+{
+    enum
+    {
+        Input = 1 << 0,
+        Parameter = 1 << 1,
+        Mouse = 1 << 2,
+        Camera = 1 << 3,
+        Time = 1 << 4,
+        Sampler = 1 << 5,
+        All = 0xFF
+    };
+};
+typedef unsigned char DirtyFlag;
+
+struct DirtyList
+{
+    size_t mNodeIndex;
+    DirtyFlag mFlags;
+};
+
 enum BlendOp
 {
     ZERO,
@@ -125,6 +146,20 @@ struct Scene
 typedef std::vector<unsigned char> Parameters;
 typedef std::vector<InputSampler> Samplers;
 
+struct UIInput
+{
+    float mRx;
+    float mRy;
+    float mDx;
+    float mDy;
+    float mWheel;
+    uint8_t mLButDown : 1;
+    uint8_t mRButDown : 1;
+    uint8_t mbCtrl : 1;
+    uint8_t mbAlt : 1;
+    uint8_t mbShift : 1;
+};
+
 struct EvaluationStage
 {
     //#ifdef _DEBUG needed for fur rendering
@@ -136,7 +171,7 @@ struct EvaluationStage
     size_t mType;
     unsigned int mRuntimeUniqueId;
     Input mInput;
-    
+
     int gEvaluationMask; // see EvaluationMask
     int mUseCountByOthers;
     int mBlendingSrc;
@@ -148,47 +183,13 @@ struct EvaluationStage
     bool mbClearBuffer;
     // Camera
     Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
-    // mouse
-    float mRx;
-    float mRy;
-    uint8_t mLButDown : 1;
-    uint8_t mRButDown : 1;
-    uint8_t mbCtrl : 1;
-    uint8_t mbAlt : 1;
-    uint8_t mbShift : 1;
+
 
     // scene render
     void* mScene; // for path tracer
     std::shared_ptr<Scene> mGScene;
     void* renderer;
     Image DecodeImage();
-#if 0
-    bool operator!=(const EvaluationStage& other) const
-    {
-        if (mType != other.mType)
-            return true;
-        if (mParameters != other.mParameters)
-            return true;
-        if (mRuntimeUniqueId != other.mRuntimeUniqueId)
-            return true;
-        if (mStartFrame != other.mStartFrame)
-            return true;
-        if (mEndFrame != other.mEndFrame)
-            return true;
-        if (mInputSamplers.size() != other.mInputSamplers.size())
-            return true;
-        /*
-        for (size_t i = 0; i < mInputSamplers.size(); i++)
-        {
-            if (mInputSamplers[i] != other.mInputSamplers[i])
-                return true;
-        }
-        */
-        if (mParameterViewMatrix != other.mParameterViewMatrix)
-            return true;
-        return false;
-    }
-#endif
 };
 
 // simple API
@@ -213,8 +214,7 @@ struct EvaluationStages
     void AddEvaluationInput(size_t target, int slot, int source);
     void DelEvaluationInput(size_t target, int slot);
     void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
-    void SetKeyboardMouse(
-        int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
+    void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
     void Clear();
 
@@ -222,6 +222,7 @@ struct EvaluationStages
     {
         return mEvaluationOrderList;
     }
+    void ComputeEvaluationOrder();
 
     const EvaluationStage& GetEvaluationStage(size_t index) const
     {
@@ -286,18 +287,36 @@ struct EvaluationStages
     // Data
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;
-    std::vector<size_t> mEvaluationOrderList;
     std::vector<uint32_t> mPinnedParameters; // 32bits -> 32parameters
     std::vector<uint32_t> mPinnedIO;         // 24bits input, 8 bits output
     std::vector<Parameters> mParameters;
     std::vector<Samplers> mInputSamplers;
     int mFrameMin, mFrameMax;
 
+    UIInput mInputs;
+    size_t mInputNodeIndex;
+
+    std::vector<size_t> mEvaluationOrderList;
+
+    void StageIsAdded(size_t nodeIindex);
+    void StageIsDeleted(size_t nodeIndex);
+
 protected:
 
 
-    void StageIsAdded(int index);
-    void StageIsDeleted(int index);
+    struct NodeOrder
+    {
+        size_t mNodeIndex;
+        size_t mNodePriority;
+        bool operator<(const NodeOrder& other) const
+        {
+            return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
+        }
+    };
+    std::vector<NodeOrder> ComputeEvaluationOrders();
+    void RecurseSetPriority(std::vector<NodeOrder>& orders, size_t currentIndex, size_t currentPriority, size_t& undeterminedNodeCount) const;
+    size_t PickBestNode(const std::vector<EvaluationStages::NodeOrder>& orders) const;
+
     void InitDefaultParameters(const EvaluationStage& stage, Parameters& parameters);
     void RemovePins(size_t nodeIndex);
 };

@@ -125,8 +125,6 @@ extern std::vector<ImHotKey::HotKey> mHotkeys;
 
 void RenderImogenFrame();
 void NodeGraphUpdateScrolling(GraphModel* model);
-void NodeGraphUpdateEvaluationOrder(GraphModel* model, NodeGraphControlerBase* delegate);
-
 
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
@@ -155,8 +153,8 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
     });
     m.def("AutoLayout", []() {
-        NodeGraphUpdateEvaluationOrder(&Imogen::instance->GetNodeGraphControler()->mModel,
-                                       Imogen::instance->GetNodeGraphControler());
+        //NodeGraphUpdateEvaluationOrder(&Imogen::instance->GetNodeGraphControler()->mModel,
+        //                               Imogen::instance->GetNodeGraphControler());
         NodeGraphLayout(&Imogen::instance->GetNodeGraphControler()->mModel);
         NodeGraphUpdateScrolling(&Imogen::instance->GetNodeGraphControler()->mModel);
     });

@@ -55,20 +55,7 @@ struct EvaluationInfo
     int mipmapCount;
 };
 
-struct Dirty
-{
-    enum
-    {
-        Input = 1 << 0,
-        Parameter = 1 << 1,
-        Mouse = 1 << 2,
-        Camera = 1 << 3,
-        Time = 1 << 4,
-        Sampler = 1 << 5,
-        All = 0xFF
-    };
-};
-typedef unsigned char DirtyFlag;
+
 
 struct EvaluationContext
 {
@@ -200,6 +187,8 @@ protected:
     int mCurrentTime;
 
     unsigned int mParametersGLSLBuffer;
+
+    void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const;
 };
 
 struct Builder

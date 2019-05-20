@@ -78,6 +78,7 @@ void GraphModel::EndTransaction()
     }
     delete mUndoRedo;
     mUndoRedo = nullptr;
+    mEvaluationStages.ComputeEvaluationOrder();
 }
 
 void GraphModel::Undo()
@@ -115,25 +116,77 @@ void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
     mNodes[nodeIndex].mPos = position;
 }
 
+void GraphModel::AddNodeHelper(int nodeIndex)
+{
+    mEvaluationStages.StageIsAdded(nodeIndex);
+}
+
+void GraphModel::DeleteNodeHelper(int nodeIndex)
+{
+    mEvaluationStages.StageIsDeleted(nodeIndex);
+    RemoveAnimation(nodeIndex);
+}
+
+void GraphModel::RemoveAnimation(size_t nodeIndex)
+{
+    auto& animTracks = mEvaluationStages.mAnimTrack;
+    if (animTracks.empty())
+        return;
+    std::vector<int> tracks;
+    for (int i = 0; i < int(animTracks.size()); i++)
+    {
+        const AnimTrack& animTrack = animTracks[i];
+        if (animTrack.mNodeIndex == nodeIndex)
+            tracks.push_back(i);
+    }
+    if (tracks.empty())
+        return;
+
+    for (int i = 0; i < int(tracks.size()); i++)
+    {
+        int index = tracks[i] - i;
+        auto urAnimTrack = mUndoRedo ? std::make_unique<URDel<AnimTrack>>(index, [&] { return &animTracks; }):nullptr;
+        animTracks.erase(animTracks.begin() + index);
+    }
+}
 size_t GraphModel::AddNode(size_t type, ImVec2 position)
 {
     assert(mbTransaction);
 
     size_t nodeIndex = mNodes.size();
 
-    // size_t index = nodes.size();
-    mNodes.push_back(Node(type, position));
-    mEvaluationStages.AddSingleEvaluation(type);
+    auto delNode = [&](int index) { DeleteNodeHelper(index); };
+    auto addNode = [&](int index) { AddNodeHelper(index); };
 
-    /*mEvaluationStages.SetIOPin(inputNodeIndex, inputSlotIndex, true, false);
-    mEvaluationStages.SetIOPin(outputNodeIndex, outputSlotIndex, false, false);
-*/
+    auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [&]() { return &mNodes; }, delNode, addNode) : nullptr;
+    auto urStage = mUndoRedo ? std::make_unique<URAdd<EvaluationStage>>(int(nodeIndex), [&]() { return &mEvaluationStages.mStages; }) : nullptr;
+    auto urPinnedeParameters = mUndoRedo ? std::make_unique<URAdd<uint32_t>>(int(nodeIndex), [&]() { return &mEvaluationStages.mPinnedParameters; })
+                            : nullptr;
+    auto urPinnedIO = mUndoRedo ? std::make_unique<URAdd<uint32_t>>(int(nodeIndex), [&]() { return &mEvaluationStages.mPinnedIO; })
+                        : nullptr;
+    auto urParameters = mUndoRedo ? std::make_unique<URAdd<Parameters>>(int(nodeIndex), [&]() { return &mEvaluationStages.mParameters; })
+                            : nullptr;
+    auto urInputSamplers = mUndoRedo ? std::make_unique<URAdd<Samplers>>(int(nodeIndex), [&]() { return &mEvaluationStages.mInputSamplers; })
+                    : nullptr;
+
+    mNodes.push_back(Node(int(type), position));
+    mEvaluationStages.AddSingleEvaluation(type);
+    AddNodeHelper(int(nodeIndex));
     return nodeIndex;
 }
 
 void GraphModel::DelNode(size_t nodeIndex)
 {
     assert(mbTransaction);
+    /*
+    if (mBackgroundNode == int(index))
+    {
+        mBackgroundNode = -1;
+    }
+    else if (mBackgroundNode > int(index))
+    {
+        mBackgroundNode--;
+    }*/
 }
 
 void GraphModel::DeleteLinkHelper(int index)
@@ -168,12 +221,12 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
     auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; }, delLink, addLink)
                   : nullptr;
     Link link;
-    link.mInputNodeIndex = inputNodeIndex;
-    link.mInputSlotIndex = inputSlotIndex;
-    link.mOutputNodeIndex = outputNodeIndex;
-    link.mOutputSlotIndex = outputSlotIndex;
+    link.mInputNodeIndex = int(inputNodeIndex);
+    link.mInputSlotIndex = int(inputSlotIndex);
+    link.mOutputNodeIndex = int(outputNodeIndex);
+    link.mOutputSlotIndex = int(outputSlotIndex);
     mLinks.push_back(link);
-    AddLinkHelper(linkIndex);
+    AddLinkHelper(int(linkIndex));
 }
 
 void GraphModel::DelLink(size_t linkIndex)
@@ -186,7 +239,7 @@ void GraphModel::DelLink(size_t linkIndex)
     auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, addLink, delLink)
                   : nullptr;
     
-    DeleteLinkHelper(linkIndex);
+    DeleteLinkHelper(int(linkIndex));
     mLinks.erase(mLinks.begin() + linkIndex);
 }
 
@@ -298,19 +351,15 @@ void GraphModel::DeleteSelectedNodes()
 
         // delete links
         mNodes.erase(mNodes.begin() + selection);
-        // NodeGraphUpdateEvaluationOrder(controler); todo
-
-        // inform delegate
-        // controler->UserDeleteNode(selection); todo
     }
 }
 
-bool GraphModel::IsIOUsed(int nodeIndex, int slotIndex, bool forOutput) const
+bool GraphModel::IsIOUsed(size_t nodeIndex, int slotIndex, bool forOutput) const
 {
     for (auto& link : mLinks)
     {
-        if ((link.mInputNodeIndex == nodeIndex && link.mInputSlotIndex == slotIndex && forOutput) ||
-            (link.mOutputNodeIndex == nodeIndex && link.mOutputSlotIndex == slotIndex && !forOutput))
+        if ((link.mInputNodeIndex == int(nodeIndex) && link.mInputSlotIndex == slotIndex && forOutput) ||
+            (link.mOutputNodeIndex == int(nodeIndex) && link.mOutputSlotIndex == slotIndex && !forOutput))
         {
             return true;
         }
@@ -375,7 +424,7 @@ void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName
     {
         return;
     }
-    size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
+    uint32_t nodeType = uint32_t(mEvaluationStages.mStages[nodeIndex].mType);
     int parameterIndex = GetParameterIndex(nodeType, parameterName.c_str());
     if (parameterIndex == -1)
     {
@@ -385,7 +434,7 @@ void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName
     size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
     ParseStringToParameter(
         parameterValue, parameterType, &mEvaluationStages.mParameters[nodeIndex][paramOffset]);
-    // mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+    SetDirty(nodeIndex, Dirty::Parameter);
 }
 
 AnimTrack* GraphModel::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
@@ -449,7 +498,7 @@ void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char
 {
     assert(mbTransaction);
 
-    auto ur = mUndoRedo ? std::make_unique<URChange<std::vector<unsigned char>>>(
+    auto ur = mUndoRedo ? std::make_unique<URChange<Parameters>>(
                               int(nodeIndex),
                               [&](int index) { return &mEvaluationStages.mParameters[index]; },
                               [&](int index) {
@@ -460,7 +509,7 @@ void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char
                         : nullptr;
 
     mEvaluationStages.mParameters[nodeIndex] = parameters;
-    //mEditingContext.SetTargetDirty(index, Dirty::Parameter);
+    SetDirty(nodeIndex, Dirty::Parameter);
 }
 
 void GraphModel::SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd)
@@ -472,12 +521,10 @@ void GraphModel::SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd)
     stage.mEndFrame = frameEnd;
 }
 
-void GraphModel::SetKeyboardMouse(
-    size_t nodeIndex, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift)
+void GraphModel::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
 {
-    mEvaluationStages.SetKeyboardMouse(nodeIndex, rx, ry, lButDown, rButDown, bCtrl, bAlt, bShift);
+    mEvaluationStages.SetKeyboardMouse(nodeIndex, input);
 }
-
 
 void GraphModel::CopySelectedNodes()
 {
@@ -497,6 +544,8 @@ void GraphModel::CopySelectedNodes()
 void GraphModel::CutSelectedNodes()
 {
     mStagesClipboard.clear();
+    CopySelectedNodes();
+    DeleteSelectedNodes();
 }
 
 bool GraphModel::IsClipboardEmpty() const
@@ -504,53 +553,84 @@ bool GraphModel::IsClipboardEmpty() const
     return mStagesClipboard.empty();
 }
 
-void GraphModel::PasteNodes()
+void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
 {
-    /*for (auto& sourceNode : mStagesClipboard) todo
+    for (size_t i = 0;i<mNodesClipboard.size();i++)
     {
-        URAdd<EvaluationStage> undoRedoAddNode(int(mEvaluationStages.mStages.size()),
-                                               [&]() { return &mEvaluationStages.mStages; },
-                                               [](int) {},
-                                               [&](int index) { NodeIsAdded(index); });
-
-        mEditingContext.UserAddStage();
-        size_t target = mEvaluationStages.mStages.size();
+        const Node& node = mNodes[i];
+        //mEditingContext.UserAddStage();
+        //size_t target = mEvaluationStages.mStages.size();
         //AddSingleNode(sourceNode.mType); todo
+        auto nodeIndex = AddNode(node.mType, node.mPos);
+        //mEvaluationStages.AddSingleEvaluation(sourceNode.mType);
+        //auto& stage = mEvaluationStages.mStages[nodeIndex];
+        //stage.mParameters = sourceNode.mParameters;
+        //stage.mInputSamplers = sourceNode.mInputSamplers;
+        //stage.mStartFrame = sourceNode.mStartFrame;
+        //stage.mEndFrame = sourceNode.mEndFrame;
 
-        auto& stage = mEvaluationStages.mStages.back();
-        stage.mParameters = sourceNode.mParameters;
-        stage.mInputSamplers = sourceNode.mInputSamplers;
-        stage.mStartFrame = sourceNode.mStartFrame;
-        stage.mEndFrame = sourceNode.mEndFrame;
-
-        mEvaluationStages.SetEvaluationParameters(target, stage.mParameters);
-        mEvaluationStages.SetSamplers(target, stage.mInputSamplers);
-        mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
-        mEditingContext.SetTargetDirty(target, Dirty::All);
-    }*/
-
-    // URDummy undoRedoDummy;
-    /*
+        //mEvaluationStages.SetEvaluationParameters(nodeIndex, stage.mParameters);
+        //mEvaluationStages.SetSamplers(nodeIndex, stage.mInputSamplers);
+        //mEvaluationStages.SetIOPin(nodeIndex, )
+        //mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
+        //mEditingContext.SetTargetDirty(target, Dirty::All);
+    }
     ImVec2 min(FLT_MAX, FLT_MAX);
     for (auto& clipboardNode : mNodesClipboard)
     {
         min.x = ImMin(clipboardNode.mPos.x, min.x);
         min.y = ImMin(clipboardNode.mPos.y, min.y);
     }
-    for (auto& selnode : nodes)
+    for (auto& selnode : mNodes)
+    {
         selnode.mbSelected = false;
+    }
     for (auto& clipboardNode : mNodesClipboard)
     {
-        // URAdd<Node> undoRedoAddRug(int(nodes.size()), []() { return &nodes; }, [](int index) {}, [](int index)
-        // {});
-        nodes.push_back(clipboardNode);
-        nodes.back().mPos += (io.MousePos - offset) / factor - min;
-        nodes.back().mbSelected = true;
+        auto ur = mUndoRedo ? std::make_unique<URAdd<Node>>(int(mNodes.size()), [&]() { return &mNodes; }) : nullptr;
+        mNodes.push_back(clipboardNode);
+        mNodes.back().mPos += viewOffsetPosition;//(io.MousePos - offset) / factor - min;
+        mNodes.back().mbSelected = true;
     }
-    */
 }
 
 const std::vector<unsigned char>& GraphModel::GetParameters(size_t nodeIndex) const
 {
     return mEvaluationStages.mParameters[nodeIndex];
+}
+
+
+static ImRect DisplayRectMargin(ImRect rect)
+{
+    extern ImVec2 captureOffset;
+    // margins
+    static const float margin = 10.f;
+    rect.Min += captureOffset;
+    rect.Max += captureOffset;
+    rect.Min -= ImVec2(margin, margin);
+    rect.Max += ImVec2(margin, margin);
+    return rect;
+}
+
+ImRect GraphModel::GetNodesDisplayRect() const
+{
+    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
+    for (auto& node : mNodes)
+    {
+        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
+    }
+
+    return DisplayRectMargin(rect);
+}
+
+ImRect GraphModel::GetFinalNodeDisplayRect() const
+{
+    auto& evaluationOrder = mEvaluationStages.GetForwardEvaluationOrder();
+    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
+    if (!evaluationOrder.empty() && !mNodes.empty())
+    {
+        auto& node = mNodes[evaluationOrder.back()];
+        rect = ImRect(node.mPos, node.mPos + ImVec2(100, 100));
+    }
+    return DisplayRectMargin(rect);
 }

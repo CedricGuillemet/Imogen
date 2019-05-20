@@ -80,7 +80,6 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     mPinnedIO.push_back(0);
     mPinnedParameters.push_back(0);
     mInputSamplers.push_back(Samplers(inputCount));
-    //mAnimTrack.push_back(AnimTrack());
 }
 
 void EvaluationStages::StageIsAdded(size_t nodeIndex)
@@ -92,8 +91,10 @@ void EvaluationStages::StageIsAdded(size_t nodeIndex)
         auto& evaluation = mStages[i];
         for (auto& inp : evaluation.mInput.mInputs)
         {
-            if (inp >= nodeIndex)
+            if (inp >= int(nodeIndex))
+            {
                 inp++;
+            }
         }
     }
 }

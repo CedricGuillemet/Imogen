@@ -729,9 +729,7 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mModel.mEvaluationStages.mFrameMin = material.mFrameMin;
         mNodeGraphControler->mModel.mEvaluationStages.mFrameMax = material.mFrameMax;
         mNodeGraphControler->mModel.SetParameterPins(material.mPinnedParameters);
-        //mNodeGraphControler->mModel.mEvaluationStages.mPinnedParameters.resize(material.mMaterialNodes.size(), 0);
         mNodeGraphControler->mModel.SetIOPins(material.mPinnedIO);
-        //mNodeGraphControler->mModel.mEvaluationStages.mPinnedIO.resize(material.mMaterialNodes.size(), 0);
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
@@ -1381,7 +1379,7 @@ void Imogen::Init()
         std::function<void()> function;
     };
     static const std::vector<HotKeyFunction> hotKeyFunctions = {
-        {"Layout", "Reorder nodes in a simpler layout", [&]() { NodeGraphLayout(&GetNodeGraphControler()->mModel); }},
+        {"Layout", "Reorder nodes in a simpler layout", [&]() { GetNodeGraphControler()->mModel.NodeGraphLayout(); }},
         {"PlayPause", "Play or Stop current animation", [&]() { PlayPause(); }},
         {"AnimationFirstFrame",
          "Set current time to the first frame of animation",
@@ -1507,7 +1505,7 @@ void Imogen::ShowAppMainMenuBar()
     {
         if (Button("Layout", "Layout", buttonSize))
         {
-            NodeGraphLayout(&GetNodeGraphControler()->mModel);
+            GetNodeGraphControler()->mModel.NodeGraphLayout();
         }
         if (Button("MaterialExport", "Export Material", buttonSize))
         {

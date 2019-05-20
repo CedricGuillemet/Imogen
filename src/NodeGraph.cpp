@@ -66,69 +66,9 @@ ImRect GetNodeRect(const GraphModel::Node& node, float factor)
     return ImRect(node.mPos * factor, node.mPos * factor + Size);
 }
 
-struct NodeOrder
-{
-    size_t mNodeIndex;
-    size_t mNodePriority;
-    bool operator<(const NodeOrder& other) const
-    {
-        return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
-    }
-};
-
-size_t PickBestNode(const std::vector<NodeOrder>& orders)
-{
-    for (auto& order : orders)
-    {
-        if (order.mNodePriority == 0)
-            return order.mNodeIndex;
-    }
-    // issue!
-    assert(0);
-    return -1;
-}
-
-void RecurseSetPriority(std::vector<NodeOrder>& orders,
-                        const std::vector<GraphModel::Link>& links,
-                        size_t currentIndex,
-                        size_t currentPriority,
-                        size_t& undeterminedNodeCount)
-{
-    if (!orders[currentIndex].mNodePriority)
-        undeterminedNodeCount--;
-
-    orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
-    for (auto& link : links)
-    {
-        if (link.mOutputNodeIndex == currentIndex)
-        {
-            RecurseSetPriority(orders, links, link.mInputNodeIndex, currentPriority + 1, undeterminedNodeCount);
-        }
-    }
-}
-
-std::vector<NodeOrder> ComputeEvaluationOrder(const std::vector<GraphModel::Link>& links, size_t nodeCount)
-{
-    std::vector<NodeOrder> orders(nodeCount);
-    for (size_t i = 0; i < nodeCount; i++)
-    {
-        orders[i].mNodeIndex = i;
-        orders[i].mNodePriority = 0;
-    }
-    size_t undeterminedNodeCount = nodeCount;
-    while (undeterminedNodeCount)
-    {
-        size_t currentIndex = PickBestNode(orders);
-        RecurseSetPriority(orders, links, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
-    };
-    //
-    return orders;
-}
-
 const float NODE_SLOT_RADIUS = 8.0f;
 const ImVec2 NODE_WINDOW_PADDING(8.0f, 8.0f);
 
-static std::vector<NodeOrder> mOrders;
 static int editRug = -1;
 
 static ImVec2 editingNodeSource;
@@ -404,21 +344,7 @@ bool RecurseIsLinked(const std::vector<GraphModel::Link>& links, int from, int t
     return false;
 }
 
-void NodeGraphUpdateEvaluationOrder(GraphModel* model, NodeGraphControlerBase* controler)
-{
-    const auto& links = model->GetLinks();
-    const auto& nodes = model->GetNodes();
 
-    mOrders = ComputeEvaluationOrder(links, nodes.size());
-    std::sort(mOrders.begin(), mOrders.end());
-    std::vector<size_t> nodeOrderList(mOrders.size());
-    for (size_t i = 0; i < mOrders.size(); i++)
-        nodeOrderList[i] = mOrders[i].mNodeIndex;
-    if (controler)
-    {
-        model->SetEvaluationOrder(nodeOrderList);
-    }
-}
 
 void NodeGraphUpdateScrolling(GraphModel* model)
 {
@@ -749,11 +675,6 @@ bool HandleConnections(GraphModel* model,
                         auto& link = links[linkIndex];
                         if (link.mOutputNodeIndex == nl.mOutputNodeIndex && link.mOutputSlotIndex == nl.mOutputSlotIndex)
                         {
-                            /*URDel<Link> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
-                            controler->DelLink(link.OutputIdx, link.OutputSlot);
-                            links.erase(links.begin() + linkIndex);
-                            NodeGraphUpdateEvaluationOrder(controler);
-                                                        */
                             model->BeginTransaction(true);
                             model->DelLink(linkIndex);
                             model->EndTransaction();
@@ -763,12 +684,6 @@ bool HandleConnections(GraphModel* model,
 
                     if (!alreadyExisting)
                     {
-                        /*URAdd<Link> undoRedoAdd(int(links.size()), []() { return &links; }, deleteLink, addLink);
-
-                        links.push_back(nl);
-                        controler->AddLink(nl.mInputNodeIndex, nl.mInputSlotIndex, nl.mOutputNodeIndex, nl.mOutputSlotIndex);
-                        NodeGraphUpdateEvaluationOrder(controler);
-                                                */
                         model->BeginTransaction(true);
                         model->AddLink(nl.mInputNodeIndex, nl.mInputSlotIndex, nl.mOutputNodeIndex, nl.mOutputSlotIndex);
                         model->EndTransaction();
@@ -793,11 +708,6 @@ bool HandleConnections(GraphModel* model,
                         auto& link = links[linkIndex];
                         if (link.mOutputNodeIndex == nodeIndex && link.mOutputSlotIndex == closestConn)
                         {
-                            /*URDel<Link> undoRedoDel(linkIndex, []() { return &links; }, deleteLink, addLink);
-                            controler->DelLink(link.OutputIdx, link.OutputSlot);
-                            links.erase(links.begin() + linkIndex);
-                            NodeGraphUpdateEvaluationOrder(controler);
-                                                        */
                             model->BeginTransaction(true);
                             model->DelLink(linkIndex);
                             model->EndTransaction();
@@ -1039,6 +949,8 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     const ImVec2 scrollRegionLocalPos(0, 50);
     const auto& nodes = model->GetNodes();
 
+    ImVec2 scenePos;
+
     ImRect regionRect(windowPos, windowPos + canvasSize);
 
     HandleZoomScroll(regionRect);
@@ -1190,7 +1102,7 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     if (openContextMenu)
         ImGui::OpenPopup("context_menu");
 
-    ImVec2 scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
+    scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
     controler->ContextMenu(scenePos, contextMenuHoverNode);
 
     // Scrolling
@@ -1285,10 +1197,8 @@ void RecurseNodeGraphLayout(GraphModel* model,
 
 void NodeGraphLayout(GraphModel* model)
 {
-    std::vector<size_t> nodeOrderList(mOrders.size());
-
     const auto& nodes = model->GetNodes();
-
+    auto orderList = model->mEvaluationStages.GetForwardEvaluationOrder();
     // get stack/layer pos
     std::vector<NodePosition> nodePositions(nodes.size(), {-1, -1});
     std::map<int, int> stacks;
@@ -1304,14 +1214,14 @@ void NodeGraphLayout(GraphModel* model)
 
     for (unsigned int i = 0; i < nodes.size(); i++)
     {
-        size_t nodeIndex = mOrders[nodes.size() - i - 1].mNodeIndex;
+        size_t nodeIndex = orderList[nodes.size() - i - 1];
         RecurseNodeGraphLayout(model, nodePositions, stacks, nodeIndex, 0);
     }
 
     // set x,y position from layer/stack
     for (unsigned int i = 0; i < nodes.size(); i++)
     {
-        size_t nodeIndex = mOrders[i].mNodeIndex;
+        size_t nodeIndex = orderList[i];
         auto& layout = nodePositions[nodeIndex];
         nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, layout.mStackIndex * 140.f);
     }
@@ -1334,40 +1244,4 @@ void NodeGraphLayout(GraphModel* model)
     }
     // finish undo
     model->EndTransaction();
-}
-
-ImRect DisplayRectMargin(ImRect rect)
-{
-    // margins
-    static const float margin = 10.f;
-    rect.Min += captureOffset;
-    rect.Max += captureOffset;
-    rect.Min -= ImVec2(margin, margin);
-    rect.Max += ImVec2(margin, margin);
-    return rect;
-}
-
-ImRect GetNodesDisplayRect(GraphModel* model)
-{
-    const auto& nodes = model->GetNodes();
-    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
-    for (auto& node : nodes)
-    {
-        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
-    }
-
-    return DisplayRectMargin(rect);
-}
-
-ImRect GetFinalNodeDisplayRect(GraphModel* model)
-{
-    const auto& nodes = model->GetNodes();
-    NodeGraphUpdateEvaluationOrder(model, nullptr);
-    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
-    if (!mOrders.empty() && !nodes.empty())
-    {
-        auto& node = nodes[mOrders.back().mNodeIndex];
-        rect = ImRect(node.mPos, node.mPos + ImVec2(100, 100));
-    }
-    return DisplayRectMargin(rect);
 }

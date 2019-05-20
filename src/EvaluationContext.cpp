@@ -119,17 +119,33 @@ EvaluationContext::~EvaluationContext()
     Clear();
 }
 
-static void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage)
+void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const
 {
-    evaluationInfo.mouse[0] = evaluationStage.mRx;
-    evaluationInfo.mouse[1] = evaluationStage.mRy;
-    evaluationInfo.mouse[2] = evaluationStage.mLButDown ? 1.f : 0.f;
-    evaluationInfo.mouse[3] = evaluationStage.mRButDown ? 1.f : 0.f;
+    if (mEvaluationStages.mInputNodeIndex == evaluationInfo.targetIndex)
+    {
+        const auto& input = mEvaluationStages.mInputs;
+        evaluationInfo.mouse[0] = input.mRx;
+        evaluationInfo.mouse[1] = 1.f - input.mRy;
+        evaluationInfo.mouse[2] = input.mLButDown ? 1.f : 0.f;
+        evaluationInfo.mouse[3] = input.mRButDown ? 1.f : 0.f;
 
-    evaluationInfo.keyModifier[0] = evaluationStage.mbCtrl ? 1 : 0;
-    evaluationInfo.keyModifier[1] = evaluationStage.mbAlt ? 1 : 0;
-    evaluationInfo.keyModifier[2] = evaluationStage.mbShift ? 1 : 0;
-    evaluationInfo.keyModifier[3] = 0;
+        evaluationInfo.keyModifier[0] = input.mbCtrl ? 1 : 0;
+        evaluationInfo.keyModifier[1] = input.mbAlt ? 1 : 0;
+        evaluationInfo.keyModifier[2] = input.mbShift ? 1 : 0;
+        evaluationInfo.keyModifier[3] = 0;
+    }
+    else
+    {
+        evaluationInfo.mouse[0] = -99999.f;
+        evaluationInfo.mouse[1] = -99999.f;
+        evaluationInfo.mouse[2] = 0.f;
+        evaluationInfo.mouse[3] = 0.f;
+
+        evaluationInfo.keyModifier[0] = 0;
+        evaluationInfo.keyModifier[1] = 0;
+        evaluationInfo.keyModifier[2] = 0;
+        evaluationInfo.keyModifier[3] = 0;
+    }
 }
 
 void EvaluationContext::Clear()
@@ -716,7 +732,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     mEvaluationInfo.mFrame = mCurrentTime;
     mEvaluationInfo.mDirtyFlag = mDirtyFlags[nodeIndex];
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
-    SetKeyboardMouseInfos(mEvaluationInfo, currentStage);
+    SetKeyboardMouseInfos(mEvaluationInfo);
 
     if (currentStage.gEvaluationMask & EvaluationC)
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);

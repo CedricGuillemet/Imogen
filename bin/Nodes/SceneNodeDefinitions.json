@@ -219,6 +219,42 @@
             "default": "1",
             "description":""
 		}]
+	}, {
+		"name": "Multiplex",
+		"category": 0,
+        "description":"Route one input into the output. This choice can be propagated to further nodes.",
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"height": 200,
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": []
 	}
 ]
 }

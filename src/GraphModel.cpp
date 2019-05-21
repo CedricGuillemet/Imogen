@@ -49,6 +49,7 @@ void GraphModel::Clear()
     gUndoRedoHandler.Clear();
     mSelectedNodeIndex = -1;
     mEvaluationStages.Clear();
+    mDirtyList.clear();
 }
 
 void GraphModel::BeginTransaction(bool undoable)
@@ -749,4 +750,20 @@ void GraphModel::NodeGraphLayout()
 
     // finish undo
     EndTransaction();
+}
+
+bool GraphModel::RecurseIsLinked(int from, int to) const
+{
+    for (auto& link : mLinks)
+    {
+        if (link.mInputNodeIndex == from)
+        {
+            if (link.mOutputNodeIndex == to)
+                return true;
+
+            if (RecurseIsLinked(link.mOutputNodeIndex, to))
+                return true;
+        }
+    }
+    return false;
 }

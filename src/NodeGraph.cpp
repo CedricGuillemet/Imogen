@@ -329,24 +329,6 @@ bool EditRug(GraphModel* model, int rugIndex, ImDrawList* drawList, ImVec2 offse
     return false;
 }
 
-bool RecurseIsLinked(const std::vector<GraphModel::Link>& links, int from, int to)
-{
-    for (auto& link : links)
-    {
-        if (link.mInputNodeIndex == from)
-        {
-            if (link.mOutputNodeIndex == to)
-                return true;
-
-            if (RecurseIsLinked(links, link.mOutputNodeIndex, to))
-                return true;
-        }
-    }
-    return false;
-}
-
-
-
 void NodeGraphUpdateScrolling(GraphModel* model)
 {
     const auto& nodes = model->GetNodes();
@@ -655,7 +637,7 @@ bool HandleConnections(GraphModel* model,
                     else
                         nl = GraphModel::Link{editingNodeIndex, editingSlotIndex, nodeIndex, closestConn};
 
-                    if (RecurseIsLinked(links, nl.mOutputNodeIndex, nl.mInputNodeIndex))
+                    if (model->RecurseIsLinked(nl.mOutputNodeIndex, nl.mInputNodeIndex))
                     {
                         Log("Acyclic graph. Loop is not allowed.\n");
                         break;

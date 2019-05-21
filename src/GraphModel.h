@@ -156,6 +156,9 @@ public:
     }
     ImRect GetNodesDisplayRect() const;
     ImRect GetFinalNodeDisplayRect() const;
+    bool RecurseIsLinked(int from, int to) const;
+
+    // dirty
     const std::vector<DirtyList>& GetDirtyList() const { return mDirtyList; }
     void ClearDirtyList() { mDirtyList.clear(); }
 

@@ -334,6 +334,8 @@ size_t GetParameterTypeSize(ConTypes paramType)
             return sizeof(int);
         case Con_Camera:
             return sizeof(Camera);
+        case Con_Multiplexer:
+            return sizeof(int);
         default:
             assert(0);
     }
@@ -343,7 +345,7 @@ size_t GetParameterTypeSize(ConTypes paramType)
 static const char* parameterNames[] = {
     "Float",        "Float2",        "Float3",        "Float4", "Color4", "Int",    "Int2",
     "Ramp",         "Angle",         "Angle2",        "Angle3", "Angle4", "Enum",   "Structure",
-    "FilenameRead", "FilenameWrite", "ForceEvaluate", "Bool",   "Ramp4",  "Camera", "Any",
+    "FilenameRead", "FilenameWrite", "ForceEvaluate", "Bool",   "Ramp4",  "Camera", "Multiplexer", "Any",
 };
 
 const char* GetParameterTypeName(ConTypes paramType)
@@ -397,6 +399,8 @@ size_t GetCurveCountPerParameterType(uint32_t paramType)
             return 1;
         case Con_Camera:
             return 7;
+        case Con_Multiplexer:
+            return 1;
         default:
             assert(0);
     }
@@ -441,6 +445,8 @@ const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex)
             return "";
         case Con_Camera:
             return cameraSuffixes[suffixIndex];
+        case Con_Multiplexer:
+            return "";
         default:
             assert(0);
     }
@@ -486,6 +492,8 @@ uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex)
             return 0xFFF0F0F0;
         case Con_Camera:
             return cameraColors[suffixIndex];
+        case Con_Multiplexer:
+            return 0xFFAABBCC;
         default:
             assert(0);
     }
@@ -554,6 +562,8 @@ AnimationBase* AllocateAnimation(uint32_t valueType)
             return new Animation<Vec4>;
         case Con_Camera:
             return new Animation<Camera>;
+        case Con_Multiplexer:
+            return new Animation<int>;
     }
     return NULL;
 }
@@ -599,6 +609,8 @@ CurveType GetCurveTypeForParameterType(ConTypes paramType)
             return CurveNone;
         case Con_Camera:
             return CurveSmooth;
+        case Con_Multiplexer:
+            return CurveLinear;
     }
     return CurveNone;
 }
@@ -799,6 +811,7 @@ void ParseStringToParameter(const std::string& str, uint32_t parameterType, void
         case Con_Angle4:
             sscanf(str.c_str(), "%f,%f,%f,%f", &pf[0], &pf[1], &pf[2], &pf[3]);
             break;
+        case Con_Multiplexer:
         case Con_Enum:
         case Con_Int:
             sscanf(str.c_str(), "%d", &pi[0]);

@@ -462,6 +462,7 @@ enum ConTypes
     Con_Bool,
     Con_Ramp4,
     Con_Camera,
+    Con_Multiplexer,
     Con_Any,
 };
 

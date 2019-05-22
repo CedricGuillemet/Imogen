@@ -489,12 +489,20 @@ void GraphModel::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<b
 void GraphModel::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned)
 {
     assert(mbTransaction);
+    auto ur = mUndoRedo ? std::make_unique<URChange<uint32_t>>(
+        int(nodeIndex),
+        [&](int index) { return &mEvaluationStages.mPinnedIO[index]; })
+        : nullptr;
     mEvaluationStages.SetIOPin(nodeIndex, io, forOutput, pinned);
 }
 
 void GraphModel::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
 {
     assert(mbTransaction);
+    auto ur = mUndoRedo ? std::make_unique<URChange<uint32_t>>(
+        int(nodeIndex),
+        [&](int index) { return &mEvaluationStages.mPinnedParameters[index]; })
+        : nullptr;
     mEvaluationStages.SetParameterPin(nodeIndex, parameterIndex, pinned);
 }
 

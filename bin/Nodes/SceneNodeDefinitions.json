@@ -254,7 +254,12 @@
 			"name": "",
 			"type": "Float4"
 		}],
-		"parameters": []
+		"parameters": [{
+			"name": "Multiplexer",
+			"type": "Multiplexer",
+            "default": "-1",
+            "description":"Input selection passed thru the output."
+		}]
 	}
 ]
 }

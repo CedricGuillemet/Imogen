@@ -253,8 +253,8 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
         {
             float displayWidth = ImGui::GetContentRegionAvail().x;
             static const float iconWidth = 50.f;
-            int displayCount = std::max(int(floorf(displayWidth/iconWidth)), 1);
-            int lineCount = int(ceilf(8.f/float(displayCount)));
+            unsigned int displayCount = std::max(int(floorf(displayWidth/iconWidth)), 1);
+            unsigned int lineCount = int(ceilf(8.f/float(displayCount)));
             unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
             
             // get inputs

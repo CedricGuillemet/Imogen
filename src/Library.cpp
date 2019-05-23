@@ -50,6 +50,7 @@ enum : uint32_t
     v_pinnedParameters,
     v_backgroundNode,
 	v_pinnedIO,
+    v_multiplexInput,
     v_lastVersion
 };
 #define ADD(_fieldAdded, _fieldName)                                                                                   \
@@ -180,6 +181,17 @@ struct Serialize
         ADD(v_animation, animTrack->mAnimation);
     }
 
+    void Ser(MultiplexInput* multiplexInput)
+    {
+        if (doWrite)
+        {
+            fwrite(multiplexInput, sizeof(MultiplexInput), 1, fp);
+        }
+        else
+        {
+            fread(multiplexInput, sizeof(MultiplexInput), 1, fp);
+        }
+    }
     void Ser(InputSampler* inputSampler)
     {
         ADD(v_initial, inputSampler->mWrapU);
@@ -233,6 +245,7 @@ struct Serialize
         ADD(v_pinnedParameters, material->mPinnedParameters);
         ADD(v_pinnedIO, material->mPinnedIO);
         ADD(v_backgroundNode, material->mBackgroundNode);
+        ADD(v_multiplexInput, material->mMultiplexInputs)
     }
 
     bool Ser(Library* library)

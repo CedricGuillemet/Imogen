@@ -95,7 +95,6 @@ struct Input
     int mOverrideInputs[8];
 };
 
-
 struct Scene
 {
     Scene()
@@ -280,6 +279,14 @@ struct EvaluationStages
         mParameters[nodeIndex] = parameters;
     }
 
+    const std::vector<MultiplexInput>& GetMultiplexInputs() const
+    {
+        return mMultiplexInputs;
+    }
+    void SetMultiplexInputs(const std::vector<MultiplexInput>& multiplexInputs)
+    {
+        mMultiplexInputs = multiplexInputs;
+    }
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 
@@ -290,6 +297,7 @@ struct EvaluationStages
     std::vector<uint32_t> mPinnedIO;         // 24bits input, 8 bits output
     std::vector<Parameters> mParameters;
     std::vector<Samplers> mInputSamplers;
+    std::vector<MultiplexInput> mMultiplexInputs;
     int mFrameMin, mFrameMax;
 
     UIInput mInputs;

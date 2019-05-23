@@ -220,6 +220,7 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
 }
 
 void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
+                                     MultiplexInput& multiplexInput,
                                      unsigned int program,
                                      size_t nodeIndex,
                                      std::shared_ptr<RenderTarget> reusableTarget)
@@ -230,7 +231,13 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
         glActiveTexture(GL_TEXTURE0 + inputIndex);
         int targetIndex = input.mOverrideInputs[inputIndex];
         if (targetIndex < 0)
-            targetIndex = input.mInputs[inputIndex];
+        {
+            targetIndex = multiplexInput.mInputs[inputIndex];
+            if (targetIndex < 0)
+            {
+                targetIndex = input.mInputs[inputIndex];
+            }
+        }
         if (targetIndex < 0)
         {
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -403,7 +410,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 
-        BindTextures(evaluationStage, program, nodeIndex, std::shared_ptr<RenderTarget>());
+        BindTextures(evaluationStage, mEvaluationStages.mMultiplexInputs[nodeIndex], program, nodeIndex, std::shared_ptr<RenderTarget>());
         glEnable(GL_RASTERIZER_DISCARD);
         glBindVertexArray(feedbackVertexArray);
         glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
@@ -540,7 +547,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
                 glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
-                BindTextures(evaluationStage, program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
+                BindTextures(evaluationStage, mEvaluationStages.mMultiplexInputs[nodeIndex], program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);

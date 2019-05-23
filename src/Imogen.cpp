@@ -603,9 +603,10 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
     if (materialIndex == -1)
         return;
     Material& material = library.mMaterials[materialIndex];
-    material.mMaterialNodes.resize(nodeGraphControler.mModel.mEvaluationStages.mStages.size());
+    auto nodeCount = nodeGraphControler.mModel.mEvaluationStages.mStages.size();
+    material.mMaterialNodes.resize(nodeCount);
 
-    for (size_t i = 0; i < nodeGraphControler.mModel.mEvaluationStages.mStages.size(); i++)
+    for (size_t i = 0; i < nodeCount; i++)
     {
         auto srcNode = nodeGraphControler.mModel.mEvaluationStages.mStages[i];
         MaterialNode& dstNode = material.mMaterialNodes[i];
@@ -659,7 +660,7 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
     material.mFrameMax = nodeGraphControler.mModel.mEvaluationStages.mFrameMax;
     material.mPinnedParameters = nodeGraphControler.mModel.GetParameterPins();
     material.mPinnedIO = nodeGraphControler.mModel.GetIOPins();
-
+    material.mMultiplexInputs = nodeGraphControler.mModel.mEvaluationStages.GetMultiplexInputs();
     material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 
@@ -685,7 +686,8 @@ void Imogen::UpdateNewlySelectedGraph()
         ClearAll();
         mNodeGraphControler->mModel.BeginTransaction(false);
         Material& material = library.mMaterials[mSelectedMaterial];
-        for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
+        auto nodeCount = material.mMaterialNodes.size();
+        for (size_t i = 0; i < nodeCount; i++)
         {
             MaterialNode& node = material.mMaterialNodes[i];
             if (node.mType == 0xFFFFFFFF)
@@ -730,6 +732,8 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mModel.mEvaluationStages.mFrameMax = material.mFrameMax;
         mNodeGraphControler->mModel.SetParameterPins(material.mPinnedParameters);
         mNodeGraphControler->mModel.SetIOPins(material.mPinnedIO);
+        mNodeGraphControler->mModel.mEvaluationStages.SetMultiplexInputs(material.mMultiplexInputs);
+        mNodeGraphControler->mModel.mEvaluationStages.mMultiplexInputs.resize(nodeCount);
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);

@@ -80,6 +80,7 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     mPinnedIO.push_back(0);
     mPinnedParameters.push_back(0);
     mInputSamplers.push_back(Samplers(inputCount));
+    mMultiplexInputs.push_back(MultiplexInput());
 }
 
 void EvaluationStages::StageIsAdded(size_t nodeIndex)

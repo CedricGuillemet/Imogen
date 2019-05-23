@@ -159,6 +159,7 @@ protected:
     void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
 
     void BindTextures(const EvaluationStage& evaluationStage,
+                      MultiplexInput& multiplexInput,
                       unsigned int program,
                       size_t nodeIndex,
                       std::shared_ptr<RenderTarget> reusableTarget);

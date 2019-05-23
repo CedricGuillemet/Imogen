@@ -92,5 +92,6 @@ protected:
     void EditNodeParameters();
     void HandlePin(size_t nodeIndex, size_t parameterIndex);
     void HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput);
+    void ShowMultiplexed(const std::vector<size_t>& inputs);
     
 };

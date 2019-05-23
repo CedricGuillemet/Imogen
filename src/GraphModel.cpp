@@ -173,6 +173,9 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
     auto urInputSamplers = mUndoRedo ? std::make_unique<URAdd<Samplers>>(int(nodeIndex), [&]() { return &mEvaluationStages.mInputSamplers; })
                     : nullptr;
 
+    auto urMultiplexInputs = mUndoRedo ? std::make_unique<URAdd<MultiplexInput>>(int(nodeIndex), [&]() { return &mEvaluationStages.mMultiplexInputs; })
+        : nullptr;
+    
     mNodes.push_back(Node(int(type), position));
     mEvaluationStages.AddSingleEvaluation(type);
     AddNodeHelper(int(nodeIndex));

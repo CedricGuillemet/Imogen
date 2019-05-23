@@ -76,6 +76,15 @@ inline Camera Lerp(Camera a, Camera b, float t)
     return a.Lerp(b, t);
 }
 
+struct MultiplexInput
+{
+    MultiplexInput()
+    {
+        memset(mInputs, -1, sizeof(int) * 8);
+    }
+    int mInputs[8];
+};
+
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
 // based on the unique id
@@ -405,6 +414,8 @@ struct Material
 
     std::vector<uint32_t> mPinnedParameters;
     std::vector<uint32_t> mPinnedIO;
+    std::vector<MultiplexInput> mMultiplexInputs;
+
     MaterialNode* Get(ASyncId id)
     {
         return GetByAsyncId(id, mMaterialNodes);

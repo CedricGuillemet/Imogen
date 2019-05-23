@@ -253,14 +253,9 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
             break;
         case Con_Multiplexer:
         {
-            float displayWidth = ImGui::GetContentRegionAvail().x;
-            static const float iconWidth = 50.f;
-            unsigned int displayCount = std::max(int(floorf(displayWidth/iconWidth)), 1);
-            unsigned int lineCount = int(ceilf(8.f/float(displayCount)));
-            unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
             
             // get inputs
-            std::vector<int> inputs;
+            /*std::vector<int> inputs;
             std::vector<int> inputIndex;
             int currentIndex = -1;
             const auto& stage = mModel.mEvaluationStages.mStages[nodeIndex];
@@ -272,50 +267,61 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
                 inputs.push_back(input);
                 inputIndex.push_back(currentIndex);
             }
-            // draw buttons
-            ImGui::BeginGroup();
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1,1));
-            auto buttonsToDraw = inputs.size();;
-            int index = 0;
-            int& value = *(int*)paramBuffer;
-            for (unsigned int line = 0;line<lineCount;line++)
-            {
-                for (unsigned int disp = 0;disp<displayCount;disp++)
-                {
-                    if (!buttonsToDraw)
-                    {
-                        continue;
-                    }
-                    ImGui::PushID(index);
-                    auto texture = GetNodeTexture(inputs[index]);
-                    if (ImGui::ImageButton((ImTextureID)(int64_t)texture, ImVec2(iconWidth, iconWidth), ImVec2(0,0), ImVec2(1,1), -1, ImVec4(0,0,0,1)))
-                    {
-                        dirty = true;
-                        value = inputIndex[index];
-                    }
-
-                    if (value == inputIndex[index])
-                    {
-                        ImRect rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
-                        ImDrawList* drawList = ImGui::GetWindowDrawList();
-                        drawList->AddRect(rc.Min, rc.Max, 0xFF0000FF, 2.f, 15, 2.f);
-                    }
-                    ImGui::PopID();
-                    if (disp != (displayCount-1) && buttonsToDraw)
-                    {
-                        ImGui::SameLine();
-                    }
-                    buttonsToDraw--;
-                    index++;
-                }
-            }
-            ImGui::PopStyleVar();
-            ImGui::EndGroup();
+            */
         }
         break;
     }
     ImGui::PopID();
     return dirty;
+}
+
+void NodeGraphControler::ShowMultiplexed(const std::vector<size_t>& inputs)
+{
+    float displayWidth = ImGui::GetContentRegionAvail().x;
+    static const float iconWidth = 50.f;
+    unsigned int displayCount = std::max(int(floorf(displayWidth / iconWidth)), 1);
+    unsigned int lineCount = int(ceilf(float(inputs.size()) / float(displayCount)));
+
+    // draw buttons
+    ImGui::BeginGroup();
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1, 1));
+    auto buttonsToDraw = inputs.size();;
+    int index = 0;
+    //int& value = *(int*)paramBuffer;
+    for (unsigned int line = 0; line < lineCount; line++)
+    {
+        for (unsigned int disp = 0; disp < displayCount; disp++)
+        {
+            if (!buttonsToDraw)
+            {
+                continue;
+            }
+            ImGui::PushID(index);
+            auto texture = GetNodeTexture(inputs[index]);
+            if (ImGui::ImageButton((ImTextureID)(int64_t)texture, ImVec2(iconWidth, iconWidth), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 1)))
+            {
+                //dirty = true;
+                //value = inputIndex[index];
+            }
+
+            /*if (value == inputIndex[index])
+            {
+                ImRect rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+                ImDrawList* drawList = ImGui::GetWindowDrawList();
+                drawList->AddRect(rc.Min, rc.Max, 0xFF0000FF, 2.f, 15, 2.f);
+            }
+            */
+            ImGui::PopID();
+            if (disp != (displayCount - 1) && buttonsToDraw)
+            {
+                ImGui::SameLine();
+            }
+            buttonsToDraw--;
+            index++;
+        }
+    }
+    ImGui::PopStyleVar();
+    ImGui::EndGroup();
 }
 
 void NodeGraphControler::PinnedEdit()
@@ -418,6 +424,15 @@ void NodeGraphControler::EditNodeParameters()
         i++;
     }
 
+    std::vector<size_t> inputs;
+    mModel.mEvaluationStages.GetMultiplexedInputs(nodeIndex, inputs);
+    if (inputs.size() > 1)
+    {
+        // todo: handle case when node is connected to a multiplexer but multiplexer has only 1 input
+        // only 1 element in input but should show multiplexed anyway
+        ShowMultiplexed(inputs);
+    }
+    
     if (dirty)
     {
         mModel.BeginTransaction(true);

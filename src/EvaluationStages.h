@@ -287,6 +287,9 @@ struct EvaluationStages
     {
         mMultiplexInputs = multiplexInputs;
     }
+
+    void GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const;
+
     // ffmpeg encoders
     #if USE_FFMPEG
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);

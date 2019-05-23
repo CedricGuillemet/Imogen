@@ -565,6 +565,37 @@ void EvaluationStages::ComputeEvaluationOrder()
     }
 }
 
+bool NodeTypeHasMultiplexer(size_t nodeType)
+{
+    for(const auto& parameter : gMetaNodes[nodeType].mParams)
+    {
+        if (parameter.mType == Con_Multiplexer)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const
+{
+    for (auto& input: mStages[nodeIndex].mInput.mInputs)
+    {
+        if (input == -1)
+        {
+            continue;
+        }
+        if (!NodeTypeHasMultiplexer(mStages[input].mType))
+        {
+            list.push_back(input);
+        }
+        else
+        {
+            GetMultiplexedInputs(input, list);
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void Scene::Mesh::Primitive::Draw() const

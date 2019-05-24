@@ -288,7 +288,8 @@ struct EvaluationStages
         mMultiplexInputs = multiplexInputs;
     }
 
-    void GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const;
+    
+    bool GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const;
 
     // ffmpeg encoders
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
@@ -329,4 +330,6 @@ protected:
 
     void InitDefaultParameters(const EvaluationStage& stage, Parameters& parameters);
     void RemovePins(size_t nodeIndex);
+
+    void GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const;
 };

@@ -596,6 +596,21 @@ void EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t
     }
 }
 
+bool EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const
+{
+    int input = mStages[nodeIndex].mInput.mInputs[slotIndex];
+    if (input == -1)
+    {
+        return false;
+    }
+    if (NodeTypeHasMultiplexer(mStages[input].mType))
+    {
+        GetMultiplexedInputs(input, list);
+        return true;
+    }
+    return false;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void Scene::Mesh::Primitive::Draw() const

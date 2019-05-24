@@ -714,7 +714,7 @@ void GraphModel::NodeGraphLayout()
     auto orderList = mEvaluationStages.GetForwardEvaluationOrder();
 
     // get stack/layer pos
-    std::vector<NodePosition> nodePositions(mNodes.size(), { -1, -1 });
+    std::vector<NodePosition> nodePositions(mNodes.size(), { -1, -1, -1 });
     std::map<int, int> stacks;
     ImRect sourceRect, destRect;
     BeginTransaction(true);
@@ -733,12 +733,33 @@ void GraphModel::NodeGraphLayout()
         RecurseNodeGraphLayout(nodePositions, stacks, nodeIndex, 0);
     }
 
-    // set x,y position from layer/stack
+    // set corresponding node index in nodePosition
     for (unsigned int i = 0; i < mNodes.size(); i++)
     {
-        size_t nodeIndex = orderList[i];
+        int nodeIndex = int(orderList[i]);
         auto& layout = nodePositions[nodeIndex];
-        nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, layout.mStackIndex * 140.f);
+        layout.mNodeIndex = nodeIndex;
+    }
+
+    // sort nodePositions
+    std::sort(nodePositions.begin(), nodePositions.end());
+
+    // set x,y position from layer/stack
+    float currentStackHeight = 0.f;
+    int currentLayerIndex = -1;
+    for (unsigned int i = 0; i < nodePositions.size(); i++)
+    {
+        auto& layout = nodePositions[i];
+        if (currentLayerIndex != layout.mLayer)
+        {
+            currentLayerIndex = layout.mLayer;
+            currentStackHeight = 0.f;
+        }
+        size_t nodeIndex = layout.mNodeIndex;
+        const auto& node = mNodes[nodeIndex];
+        float height = float(gMetaNodes[node.mType].mDefaultHeight);
+        nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, currentStackHeight);
+        currentStackHeight += height + 40.f;
     }
 
     // new bounds

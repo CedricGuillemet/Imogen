@@ -275,8 +275,9 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
     return dirty;
 }
 
-void NodeGraphControler::ShowMultiplexed(const std::vector<size_t>& inputs)
+int NodeGraphControler::ShowMultiplexed(const std::vector<size_t>& inputs, int currentMultiplexedOveride)
 {
+    int ret = -1;
     float displayWidth = ImGui::GetContentRegionAvail().x;
     static const float iconWidth = 50.f;
     unsigned int displayCount = std::max(int(floorf(displayWidth / iconWidth)), 1);
@@ -287,7 +288,6 @@ void NodeGraphControler::ShowMultiplexed(const std::vector<size_t>& inputs)
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1, 1));
     auto buttonsToDraw = inputs.size();;
     int index = 0;
-    //int& value = *(int*)paramBuffer;
     for (unsigned int line = 0; line < lineCount; line++)
     {
         for (unsigned int disp = 0; disp < displayCount; disp++)
@@ -298,19 +298,18 @@ void NodeGraphControler::ShowMultiplexed(const std::vector<size_t>& inputs)
             }
             ImGui::PushID(index);
             auto texture = GetNodeTexture(inputs[index]);
-            if (ImGui::ImageButton((ImTextureID)(int64_t)texture, ImVec2(iconWidth, iconWidth), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 1)))
+            if (ImGui::ImageButton((ImTextureID)(int64_t)texture, ImVec2(iconWidth, iconWidth), ImVec2(0, 1), ImVec2(1, 0), -1, ImVec4(0, 0, 0, 1)))
             {
-                //dirty = true;
-                //value = inputIndex[index];
+                ret = index;
             }
 
-            /*if (value == inputIndex[index])
+            if (currentMultiplexedOveride == inputs[index])
             {
                 ImRect rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
                 ImDrawList* drawList = ImGui::GetWindowDrawList();
                 drawList->AddRect(rc.Min, rc.Max, 0xFF0000FF, 2.f, 15, 2.f);
             }
-            */
+            
             ImGui::PopID();
             if (disp != (displayCount - 1) && buttonsToDraw)
             {
@@ -322,6 +321,7 @@ void NodeGraphControler::ShowMultiplexed(const std::vector<size_t>& inputs)
     }
     ImGui::PopStyleVar();
     ImGui::EndGroup();
+    return ret;
 }
 
 void NodeGraphControler::PinnedEdit()
@@ -425,12 +425,17 @@ void NodeGraphControler::EditNodeParameters()
     }
 
     std::vector<size_t> inputs;
-    mModel.mEvaluationStages.GetMultiplexedInputs(nodeIndex, inputs);
-    if (inputs.size() > 1)
+    if (mModel.mEvaluationStages.GetMultiplexedInputs(nodeIndex, 0, inputs))
     {
-        // todo: handle case when node is connected to a multiplexer but multiplexer has only 1 input
-        // only 1 element in input but should show multiplexed anyway
-        ShowMultiplexed(inputs);
+        int slotIndex = 0;
+        int currentMultiplexedOveride = mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex];
+
+        int selectedMultiplexIndex = ShowMultiplexed(inputs, currentMultiplexedOveride);
+        if (selectedMultiplexIndex != -1)
+        {
+            mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex] = inputs[selectedMultiplexIndex];
+            mEditingContext.SetTargetDirty(nodeIndex, Dirty::Input);
+        }
     }
     
     if (dirty)

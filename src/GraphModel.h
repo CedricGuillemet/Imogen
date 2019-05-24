@@ -195,6 +195,24 @@ private:
     {
         int mLayer;
         int mStackIndex;
+        int mNodeIndex; // used for sorting
+
+        bool operator <(const NodePosition& other) const
+        {
+            if (mLayer < other.mLayer)
+            {
+                return true;
+            }
+            if (mLayer > other.mLayer)
+            {
+                return false;
+            }
+            if (mStackIndex<other.mStackIndex)
+            {
+                return true;
+            }
+            return false;
+        }
     };
 
     void RecurseNodeGraphLayout(std::vector<NodePosition>& positions,

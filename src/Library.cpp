@@ -37,7 +37,7 @@
 int Log(const char* szFormat, ...);
 
 const std::vector<std::string> MetaNode::mCategories = {
-    "Transform", "Generator", "Material", "Blend", "Filter", "Noise", "File", "Paint", "Cubemap", "Fur"};
+    "Transform", "Generator", "Material", "Blend", "Filter", "Noise", "File", "Paint", "Cubemap", "Fur", "Tools"};
 
 enum : uint32_t
 {
@@ -911,6 +911,11 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
         else 
             curNode.mHeight = 100;
 
+        if (node.HasMember("width"))
+            curNode.mWidth = node["width"].GetInt();
+        else
+            curNode.mWidth = 100;
+        
 		if (node.HasMember("experimental"))
             curNode.mbExperimental = node["experimental"].GetBool();
         else

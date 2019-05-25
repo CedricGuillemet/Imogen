@@ -50,23 +50,23 @@ static inline float Distance(ImVec2& a, ImVec2& b)
 ImVec2 GetInputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
 {
     const auto& metaNode = gMetaNodes[node.mType];
-    ImVec2 Size = ImVec2(100, metaNode.mHeight) * factor;
+    ImVec2 Size = ImVec2(metaNode.mWidth, metaNode.mHeight) * factor;
     size_t InputsCount = gMetaNodes[node.mType].mInputs.size();
     return ImVec2(node.mPos.x * factor,
-                  node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
+                  node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1) + 8.f);
 }
 ImVec2 GetOutputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
 {
     const auto& metaNode = gMetaNodes[node.mType];
     size_t OutputsCount = gMetaNodes[node.mType].mOutputs.size();
-    ImVec2 Size = ImVec2(100, metaNode.mHeight) * factor;
+    ImVec2 Size = ImVec2(metaNode.mWidth, metaNode.mHeight) * factor;
     return ImVec2(node.mPos.x * factor + Size.x,
-                  node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
+                  node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1) + 8.f);
 }
 ImRect GetNodeRect(const GraphModel::Node& node, float factor)
 {
     const auto& metaNode = gMetaNodes[node.mType];
-    ImVec2 Size = ImVec2(100, metaNode.mHeight) * factor;
+    ImVec2 Size = ImVec2(metaNode.mWidth, metaNode.mHeight) * factor;
     return ImRect(node.mPos * factor, node.mPos * factor + Size);
 }
 
@@ -140,7 +140,7 @@ int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 off
     {
         const auto& metaNode = gMetaNodes[node.mType];
         ImVec2 node_rect_min = offset + node.mPos * factor;
-        ImVec2 node_rect_max = node_rect_min + ImVec2(100, metaNode.mHeight) * factor;
+        ImVec2 node_rect_max = node_rect_min + ImVec2(metaNode.mWidth, metaNode.mHeight) * factor;
         if (ImRect(node_rect_min, node_rect_max).Contains(io.MousePos))
         {
             overAnyNode = true;
@@ -175,7 +175,7 @@ int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 off
                 {
                     auto& node = nodes[i];
                     ImVec2 node_rect_min = offset + node.mPos * factor;
-                    ImVec2 node_rect_max = node_rect_min + ImVec2(100, gMetaNodes[node.mType].mHeight) * factor;
+                    ImVec2 node_rect_max = node_rect_min + ImVec2(gMetaNodes[node.mType].mWidth, gMetaNodes[node.mType].mHeight) * factor;
                     if (rugRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                     {
                         model->SelectNode(i);
@@ -527,7 +527,7 @@ static void HandleQuadSelection(
             {
                 const auto* node = &nodes[nodeIndex];
                 ImVec2 node_rect_min = offset + node->mPos * factor;
-                ImVec2 node_rect_max = node_rect_min + ImVec2(100, gMetaNodes[node->mType].mHeight) * factor;
+                ImVec2 node_rect_max = node_rect_min + ImVec2(gMetaNodes[node->mType].mWidth, gMetaNodes[node->mType].mHeight) * factor;
                 if (selectionRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                 {
                     if (io.KeyCtrl)
@@ -737,7 +737,7 @@ static bool DrawNode(GraphModel* model,
 
     bool old_any_active = ImGui::IsAnyItemActive();
     ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-    ImVec2 nodeSize = ImVec2(100, metaNode.mHeight) * factor;
+    ImVec2 nodeSize = ImVec2(metaNode.mWidth, metaNode.mHeight) * factor;
     const bool nodeIsCompute = controler->NodeIsCompute(nodeIndex);
     ImGui::InvisibleButton("canvas", nodeSize);
 

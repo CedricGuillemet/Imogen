@@ -815,3 +815,14 @@ bool GraphModel::RecurseIsLinked(int from, int to) const
     }
     return false;
 }
+
+void GraphModel::SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex)
+{
+    assert(mbTransaction);
+    auto ur = mUndoRedo
+        ? std::make_unique<URChange<MultiplexInput>>(int(nodeIndex), [&](int index) { return &mEvaluationStages.mMultiplexInputs[index]; }, [&](int nodeIndex) { SetDirty(nodeIndex, Dirty::Input); })
+        : nullptr;
+
+    mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex] = multiplex;
+    SetDirty(nodeIndex, Dirty::Input);
+}

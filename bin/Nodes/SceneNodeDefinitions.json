@@ -221,9 +221,10 @@
 		}]
 	}, {
 		"name": "Multiplex",
-		"category": 0,
+		"category": 10,
         "description":"Route one input into the output. This choice can be propagated to further nodes.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+        "width": 80,
 		"height": 200,
 		"inputs": [{
 			"name": "",

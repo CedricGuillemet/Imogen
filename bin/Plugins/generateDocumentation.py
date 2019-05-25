@@ -184,6 +184,15 @@ def generateExample(nodeName, baseDir, f, node):
         Imogen.Connect(normal1, 0, node, 0)
         Imogen.Connect(normal2, 0, node, 1)
         
+    elif nodeName == "Multiplex":
+        circle = Imogen.AddNode("Circle")
+        ngon = Imogen.AddNode("NGon")
+        imageRead = Imogen.AddNode("ImageRead")
+        Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+        Imogen.Connect(circle, 0, node, 0)
+        Imogen.Connect(ngon, 0, node, 1)
+        Imogen.Connect(imageRead, 0, node, 4)
+        
     elif nodeName == "ImageRead" :
         Imogen.SetParameter(node, "File name", "Media/Pictures/PartyCat.jpg")
 

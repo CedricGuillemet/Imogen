@@ -101,7 +101,7 @@ public:
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
     void SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd);
     void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
-
+    void SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex);
 	void SetParameterPins(const std::vector<uint32_t>& pins)
     {
         mEvaluationStages.SetParameterPins(pins);
@@ -157,6 +157,7 @@ public:
     ImRect GetNodesDisplayRect() const;
     ImRect GetFinalNodeDisplayRect() const;
     bool RecurseIsLinked(int from, int to) const;
+    int GetMultiplexed(size_t nodeIndex, size_t slotIndex) const { return mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex]; }
 
     // dirty
     const std::vector<DirtyList>& GetDirtyList() const { return mDirtyList; }

@@ -92,69 +92,69 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
             dirty |= ImGui::InputInt2(param.mName.c_str(), (int*)paramBuffer);
             break;
         case Con_Ramp:
-        {
-            RampEdit curveEditDelegate;
-            curveEditDelegate.mPointCount = 0;
-            for (int k = 0; k < 8; k++)
             {
-                curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
-                if (k && curveEditDelegate.mPts[k - 1].x > curveEditDelegate.mPts[k].x)
-                    break;
-                curveEditDelegate.mPointCount++;
-            }
-            float regionWidth = ImGui::GetWindowContentRegionWidth();
-            if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth), 974))
-            {
-                for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
+                RampEdit curveEditDelegate;
+                curveEditDelegate.mPointCount = 0;
+                for (int k = 0; k < 8; k++)
                 {
-                    ((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
-                    ((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+                    curveEditDelegate.mPts[k] = ImVec2(((float*)paramBuffer)[k * 2], ((float*)paramBuffer)[k * 2 + 1]);
+                    if (k && curveEditDelegate.mPts[k - 1].x > curveEditDelegate.mPts[k].x)
+                        break;
+                    curveEditDelegate.mPointCount++;
                 }
-                ((float*)paramBuffer)[0] = 0.f;
-                ((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
-                for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+                float regionWidth = ImGui::GetWindowContentRegionWidth();
+                if (ImCurveEdit::Edit(curveEditDelegate, ImVec2(regionWidth, regionWidth), 974))
                 {
-                    ((float*)paramBuffer)[k * 2] = -1.f;
+                    for (size_t k = 0; k < curveEditDelegate.mPointCount; k++)
+                    {
+                        ((float*)paramBuffer)[k * 2] = curveEditDelegate.mPts[k].x;
+                        ((float*)paramBuffer)[k * 2 + 1] = curveEditDelegate.mPts[k].y;
+                    }
+                    ((float*)paramBuffer)[0] = 0.f;
+                    ((float*)paramBuffer)[(curveEditDelegate.mPointCount - 1) * 2] = 1.f;
+                    for (size_t k = curveEditDelegate.mPointCount; k < 8; k++)
+                    {
+                        ((float*)paramBuffer)[k * 2] = -1.f;
+                    }
+                    dirty = true;
                 }
-                dirty = true;
             }
-        }
-        break;
+            break;
         case Con_Ramp4:
-        {
-            float regionWidth = ImGui::GetWindowContentRegionWidth();
-            GradientEdit gradientDelegate;
-
-            gradientDelegate.mPointCount = 0;
-
-            for (int k = 0; k < 8; k++)
             {
-                gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
-                if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
-                    break;
-                gradientDelegate.mPointCount++;
-            }
+                float regionWidth = ImGui::GetWindowContentRegionWidth();
+                GradientEdit gradientDelegate;
 
-            int colorIndex;
-            dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
-            if (colorIndex != -1)
-            {
-                dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
-            }
-            if (dirty)
-            {
-                for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
+                gradientDelegate.mPointCount = 0;
+
+                for (int k = 0; k < 8; k++)
                 {
-                    ((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
+                    gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
+                    if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
+                        break;
+                    gradientDelegate.mPointCount++;
                 }
-                ((ImVec4*)paramBuffer)[0].w = 0.f;
-                ((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
-                for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
+
+                int colorIndex;
+                dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
+                if (colorIndex != -1)
                 {
-                    ((ImVec4*)paramBuffer)[k].w = -1.f;
+                    dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
+                }
+                if (dirty)
+                {
+                    for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
+                    {
+                        ((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
+                    }
+                    ((ImVec4*)paramBuffer)[0].w = 0.f;
+                    ((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
+                    for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
+                    {
+                        ((ImVec4*)paramBuffer)[k].w = -1.f;
+                    }
                 }
             }
-        }
         break;
         case Con_Angle:
             ((float*)paramBuffer)[0] = RadToDeg(((float*)paramBuffer)[0]);
@@ -211,15 +211,15 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
             ImGui::Text(param.mName.c_str());
             break;
         case Con_Enum:
-        {
-            std::string cbString = param.mEnumList;
-            for (auto& c : cbString)
             {
-                if (c == '|')
-                    c = '\0';
+                std::string cbString = param.mEnumList;
+                for (auto& c : cbString)
+                {
+                    if (c == '|')
+                        c = '\0';
+                }
+                dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
             }
-            dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
-        }
         break;
         case Con_ForceEvaluate:
             if (ImGui::Button(param.mName.c_str()))
@@ -231,15 +231,15 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
             }
             break;
         case Con_Bool:
-        {
-            bool checked = (*(int*)paramBuffer) != 0;
-            if (ImGui::Checkbox(param.mName.c_str(), &checked))
             {
-                *(int*)paramBuffer = checked ? 1 : 0;
-                dirty = true;
+                bool checked = (*(int*)paramBuffer) != 0;
+                if (ImGui::Checkbox(param.mName.c_str(), &checked))
+                {
+                    *(int*)paramBuffer = checked ? 1 : 0;
+                    dirty = true;
+                }
             }
-        }
-        break;
+            break;
         case Con_Camera:
             if (ImGui::Button("Reset"))
             {
@@ -250,24 +250,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
             }
             break;
         case Con_Multiplexer:
-        {
-            
-            // get inputs
-            /*std::vector<int> inputs;
-            std::vector<int> inputIndex;
-            int currentIndex = -1;
-            const auto& stage = mModel.mEvaluationStages.mStages[nodeIndex];
-            for (auto input : stage.mInput.mInputs)
-            {
-                currentIndex++;
-                if (input == -1)
-                    continue;
-                inputs.push_back(input);
-                inputIndex.push_back(currentIndex);
-            }
-            */
-        }
-        break;
+            break;
     }
     ImGui::PopID();
     return dirty;
@@ -428,14 +411,14 @@ void NodeGraphControler::EditNodeParameters()
         std::vector<size_t> inputs;
         if (mModel.mEvaluationStages.GetMultiplexedInputs(nodeIndex, slotIndex, inputs))
         {
-            int slotIndex = 0;
-            int currentMultiplexedOveride = mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex];
+            int currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
 
             int selectedMultiplexIndex = ShowMultiplexed(inputs, currentMultiplexedOveride);
-            if (selectedMultiplexIndex != -1)
+            if (selectedMultiplexIndex != -1 && inputs[selectedMultiplexIndex] != currentMultiplexedOveride)
             {
-                mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex] = int(inputs[selectedMultiplexIndex]);
-                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Input);
+                mModel.BeginTransaction(true);
+                mModel.SetMultiplexed(nodeIndex, slotIndex, inputs[selectedMultiplexIndex]);
+                mModel.EndTransaction();
             }
             break;
         }

@@ -907,9 +907,9 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
         }
 
         if (node.HasMember("height"))
-            curNode.mDefaultHeight = node["height"].GetInt();
+            curNode.mHeight = node["height"].GetInt();
         else 
-            curNode.mDefaultHeight = 100;
+            curNode.mHeight = 100;
 
 		if (node.HasMember("experimental"))
             curNode.mbExperimental = node["experimental"].GetBool();

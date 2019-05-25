@@ -120,9 +120,11 @@ void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
     mNodes[nodeIndex].mPos = position;
 }
 
+// called when a node is added by user, or with undo/redo
 void GraphModel::AddNodeHelper(int nodeIndex)
 {
     mEvaluationStages.StageIsAdded(nodeIndex);
+    SetDirty(nodeIndex, Dirty::All);
 }
 
 void GraphModel::DeleteNodeHelper(int nodeIndex)
@@ -296,11 +298,14 @@ void GraphModel::DeleteSelectedNodes()
                                         for (int id = 0; id < mLinks.size(); id++)
                                         {
                                             if (mLinks[id].mInputNodeIndex > index)
+                                            {
                                                 mLinks[id].mInputNodeIndex--;
+                                            }
                                             if (mLinks[id].mOutputNodeIndex > index)
+                                            {
                                                 mLinks[id].mOutputNodeIndex--;
+                                            }
                                         }
-                                        // NodeGraphUpdateEvaluationOrder(controler); todo
                                         mSelectedNodeIndex = -1;
                                     },
                                     [this](int index) {
@@ -308,21 +313,25 @@ void GraphModel::DeleteSelectedNodes()
                                         for (int id = 0; id < mLinks.size(); id++)
                                         {
                                             if (mLinks[id].mInputNodeIndex >= index)
+                                            {
                                                 mLinks[id].mInputNodeIndex++;
+                                            }
                                             if (mLinks[id].mOutputNodeIndex >= index)
+                                            {
                                                 mLinks[id].mOutputNodeIndex++;
+                                            }
                                         }
-
-                                        // NodeGraphUpdateEvaluationOrder(controler); todo
                                         mSelectedNodeIndex = -1;
                                     });
 
         for (int id = 0; id < mLinks.size(); id++)
         {
             if (mLinks[id].mInputNodeIndex == selection || mLinks[id].mOutputNodeIndex == selection)
+            {
                 DelLink(id);
+            }
         }
-        // auto iter = links.begin();
+
         for (size_t i = 0; i < mLinks.size();)
         {
             auto& link = mLinks[i];
@@ -351,9 +360,13 @@ void GraphModel::DeleteSelectedNodes()
         for (int id = 0; id < mLinks.size(); id++)
         {
             if (mLinks[id].mInputNodeIndex > selection)
+            {
                 mLinks[id].mInputNodeIndex--;
+            }
             if (mLinks[id].mOutputNodeIndex > selection)
+            {
                 mLinks[id].mOutputNodeIndex--;
+            }
         }
 
         // delete links
@@ -632,7 +645,8 @@ ImRect GraphModel::GetNodesDisplayRect() const
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     for (auto& node : mNodes)
     {
-        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, 100)));
+        int height = gMetaNodes[node.mType].mHeight;
+        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, height)));
     }
 
     return DisplayRectMargin(rect);
@@ -645,7 +659,8 @@ ImRect GraphModel::GetFinalNodeDisplayRect() const
     if (!evaluationOrder.empty() && !mNodes.empty())
     {
         auto& node = mNodes[evaluationOrder.back()];
-        rect = ImRect(node.mPos, node.mPos + ImVec2(100, 100));
+        int height = gMetaNodes[node.mType].mHeight;
+        rect = ImRect(node.mPos, node.mPos + ImVec2(100, height));
     }
     return DisplayRectMargin(rect);
 }
@@ -757,7 +772,7 @@ void GraphModel::NodeGraphLayout()
         }
         size_t nodeIndex = layout.mNodeIndex;
         const auto& node = mNodes[nodeIndex];
-        float height = float(gMetaNodes[node.mType].mDefaultHeight);
+        float height = float(gMetaNodes[node.mType].mHeight);
         nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, currentStackHeight);
         currentStackHeight += height + 40.f;
     }
@@ -766,6 +781,7 @@ void GraphModel::NodeGraphLayout()
     for (unsigned int i = 0; i < mNodes.size(); i++)
     {
         ImVec2 newPos = nodePos[i];
+        // todo: support height more closely with metanodes
         destRect.Add(ImRect(newPos, newPos + ImVec2(100, 100)));
     }
 

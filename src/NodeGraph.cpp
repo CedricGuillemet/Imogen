@@ -50,7 +50,7 @@ static inline float Distance(ImVec2& a, ImVec2& b)
 ImVec2 GetInputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
 {
     const auto& metaNode = gMetaNodes[node.mType];
-    ImVec2 Size(100, metaNode.mDefaultHeight);
+    ImVec2 Size = ImVec2(100, metaNode.mHeight) * factor;
     size_t InputsCount = gMetaNodes[node.mType].mInputs.size();
     return ImVec2(node.mPos.x * factor,
                   node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1));
@@ -59,14 +59,14 @@ ImVec2 GetOutputSlotPos(const GraphModel::Node& node, int slot_no, float factor)
 {
     const auto& metaNode = gMetaNodes[node.mType];
     size_t OutputsCount = gMetaNodes[node.mType].mOutputs.size();
-    ImVec2 Size(100, metaNode.mDefaultHeight);
+    ImVec2 Size = ImVec2(100, metaNode.mHeight) * factor;
     return ImVec2(node.mPos.x * factor + Size.x,
                   node.mPos.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1));
 }
 ImRect GetNodeRect(const GraphModel::Node& node, float factor)
 {
     const auto& metaNode = gMetaNodes[node.mType];
-    ImVec2 Size(100, metaNode.mDefaultHeight);
+    ImVec2 Size = ImVec2(100, metaNode.mHeight) * factor;
     return ImRect(node.mPos * factor, node.mPos * factor + Size);
 }
 
@@ -140,7 +140,7 @@ int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 off
     {
         const auto& metaNode = gMetaNodes[node.mType];
         ImVec2 node_rect_min = offset + node.mPos * factor;
-        ImVec2 node_rect_max = node_rect_min + ImVec2(100, metaNode.mDefaultHeight);
+        ImVec2 node_rect_max = node_rect_min + ImVec2(100, metaNode.mHeight) * factor;
         if (ImRect(node_rect_min, node_rect_max).Contains(io.MousePos))
         {
             overAnyNode = true;
@@ -175,7 +175,7 @@ int DisplayRugs(GraphModel* model, int editRug, ImDrawList* drawList, ImVec2 off
                 {
                     auto& node = nodes[i];
                     ImVec2 node_rect_min = offset + node.mPos * factor;
-                    ImVec2 node_rect_max = node_rect_min + ImVec2(100, gMetaNodes[node.mType].mDefaultHeight);
+                    ImVec2 node_rect_max = node_rect_min + ImVec2(100, gMetaNodes[node.mType].mHeight) * factor;
                     if (rugRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                     {
                         model->SelectNode(i);
@@ -527,7 +527,7 @@ static void HandleQuadSelection(
             {
                 const auto* node = &nodes[nodeIndex];
                 ImVec2 node_rect_min = offset + node->mPos * factor;
-                ImVec2 node_rect_max = node_rect_min + ImVec2(100, gMetaNodes[node->mType].mDefaultHeight);
+                ImVec2 node_rect_max = node_rect_min + ImVec2(100, gMetaNodes[node->mType].mHeight) * factor;
                 if (selectionRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                 {
                     if (io.KeyCtrl)
@@ -737,19 +737,16 @@ static bool DrawNode(GraphModel* model,
 
     bool old_any_active = ImGui::IsAnyItemActive();
     ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
-
+    ImVec2 nodeSize = ImVec2(100, metaNode.mHeight) * factor;
     const bool nodeIsCompute = controler->NodeIsCompute(nodeIndex);
-    if (nodeIsCompute)
-        ImGui::InvisibleButton("canvas", ImVec2(100, 50) * factor);
-    else
-        ImGui::InvisibleButton("canvas", ImVec2(100, metaNode.mDefaultHeight) * factor);
-    bool node_moving_active =
-        ImGui::IsItemActive(); // must be called right after creating the control we want to be able to move
+    ImGui::InvisibleButton("canvas", nodeSize);
+
+    // must be called right after creating the control we want to be able to move
+    bool node_moving_active = ImGui::IsItemActive(); 
 
     // Save the size of what we have emitted and whether any of the widgets are being used
     bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-    // ImVec2(100, 100) = ImGui::GetItemRectSize() + NODE_WINDOW_PADDING + NODE_WINDOW_PADDING;
-    ImVec2 node_rect_max = node_rect_min + ImVec2(100, metaNode.mDefaultHeight);
+    ImVec2 node_rect_max = node_rect_min + nodeSize;
 
     // test nested IO
     drawList->ChannelsSetCurrent(1); // Background
@@ -779,7 +776,7 @@ static bool DrawNode(GraphModel* model,
 
 
     ImGui::SetCursorScreenPos(node_rect_min);
-    ImGui::InvisibleButton("node", ImVec2(100, metaNode.mDefaultHeight));
+    ImGui::InvisibleButton("node", nodeSize);
     bool nodeHovered = false;
     if (ImGui::IsItemHovered() && nodeOperation == NO_None && !overInput)
     {
@@ -835,8 +832,8 @@ static bool DrawNode(GraphModel* model,
 	float progress = controler->NodeProgress(nodeIndex);
 	if (progress > FLT_EPSILON && progress < 1.f - FLT_EPSILON)
 	{
-		ImVec2 progressLineA = node_rect_max - ImVec2(ImVec2(100, metaNode.mDefaultHeight).x - 2.f, 3.f);
-		ImVec2 progressLineB = progressLineA + ImVec2(ImVec2(100, metaNode.mDefaultHeight).x - 4.f, 0.f);
+		ImVec2 progressLineA = node_rect_max - ImVec2(nodeSize.x - 2.f, 3.f);
+		ImVec2 progressLineB = progressLineA + ImVec2(nodeSize.x * factor - 4.f, 0.f);
 		drawList->AddLine(progressLineA, progressLineB, 0xFF400000, 3.f);
 		drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
 	}
@@ -934,7 +931,7 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     const ImVec2 scrollRegionLocalPos(0, 50);
     const auto& nodes = model->GetNodes();
 
-    ImVec2 scenePos;
+    static ImVec2 scenePos;
 
     ImRect regionRect(windowPos, windowPos + canvasSize);
 
@@ -1087,9 +1084,11 @@ void NodeGraph(GraphModel* model, NodeGraphControlerBase* controler, bool enable
     }
 
     if (openContextMenu)
+    {
+        scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
         ImGui::OpenPopup("context_menu");
-
-    scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
+    }
+    
     controler->ContextMenu(scenePos, contextMenuHoverNode);
 
     // Scrolling

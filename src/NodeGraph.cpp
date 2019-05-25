@@ -841,8 +841,6 @@ static bool DrawNode(GraphModel* model,
 		drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
 	}
 	ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
-	if (!nodeIsCompute)
-		drawList->AddRectFilled(imgPos, imgPosMax, 0xFF000000);
 
 	ImVec2 imageSize = controler->GetEvaluationSize(nodeIndex);
 	float imageRatio = 1.f;

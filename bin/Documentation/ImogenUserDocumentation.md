@@ -20,8 +20,8 @@
 [Transform](#Transform)|[Pixelize](#Pixelize)|[Tile](#Tile)|[PolarCoords](#PolarCoords)|[Swirl](#Swirl)|[Crop](#Crop)
 ![node picture](Pictures/Warp.png)|![node picture](Pictures/EdgeDetect.png)|![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|![node picture](Pictures/Lens.png)
 [Warp](#Warp)|[EdgeDetect](#EdgeDetect)|[Kaleidoscope](#Kaleidoscope)|[Palette](#Palette)|[ChannelPacker](#ChannelPacker)|[Lens](#Lens)
-![node picture](Pictures/Distance.png)|||||
-[Distance](#Distance)|||||
+![node picture](Pictures/Distance.png)|![node picture](Pictures/Multiplex.png)||||
+[Distance](#Distance)|[Multiplex](#Multiplex)||||
 
 
 ## Filter
@@ -131,6 +131,8 @@ Category : Generator
 ### Description
 Renders a one directioned sine as a greyscale value.
 ### Parameters
+1. Translation
+Translate the sine to adjust its start and end.
 1. Frequency
 Basically, the number of bars.
 1. Angle
@@ -612,6 +614,8 @@ Number of uniformly distributed plans.
 Distance from the plan to the center of the viewport.
 1. T
 Interpolation factor between full white color and distance to the nearest plan.
+1. Start Angle
+Angle in degrees of the first vertex.
 
 ### Example
 ![node example](Examples/Example_NGon.png)
@@ -985,6 +989,19 @@ Generate a signed distance field from a black and white source image.
 
 ### Example
 ![node example](Examples/Example_Distance.png)
+
+## Multiplex
+![node picture](Pictures/Multiplex.png)
+
+Category : Transform
+### Description
+Route one input into the output. This choice can be propagated to further nodes.
+### Parameters
+1. Multiplexer
+Input selection passed thru the output.
+
+### Example
+![node example](Examples/Example_Multiplex.png)
 
 # Default Hot Keys
 

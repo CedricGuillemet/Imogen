@@ -562,7 +562,7 @@ struct MetaNode
     std::vector<MetaCon> mOutputs;
     std::vector<MetaParameter> mParams;
 
-    int mDefaultHeight;
+    int mHeight;
     bool mbHasUI;
     bool mbSaveTexture;
     bool mbExperimental;

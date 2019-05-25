@@ -1063,6 +1063,7 @@
 		"category": 9,
         "description":"Experimental node.",
         "experimental":true,
+        "height": 50,
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"inputs": [{
 			"name": "",

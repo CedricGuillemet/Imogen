@@ -422,20 +422,25 @@ void NodeGraphControler::EditNodeParameters()
         i++;
     }
 
-    std::vector<size_t> inputs;
-    if (mModel.mEvaluationStages.GetMultiplexedInputs(nodeIndex, 0, inputs))
+    // check for every possible inputs. only the first will be used for multiplexed inputs
+    for (unsigned int slotIndex = 0; slotIndex < 8; slotIndex++)
     {
-        int slotIndex = 0;
-        int currentMultiplexedOveride = mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex];
-
-        int selectedMultiplexIndex = ShowMultiplexed(inputs, currentMultiplexedOveride);
-        if (selectedMultiplexIndex != -1)
+        std::vector<size_t> inputs;
+        if (mModel.mEvaluationStages.GetMultiplexedInputs(nodeIndex, slotIndex, inputs))
         {
-            mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex] = inputs[selectedMultiplexIndex];
-            mEditingContext.SetTargetDirty(nodeIndex, Dirty::Input);
+            int slotIndex = 0;
+            int currentMultiplexedOveride = mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex];
+
+            int selectedMultiplexIndex = ShowMultiplexed(inputs, currentMultiplexedOveride);
+            if (selectedMultiplexIndex != -1)
+            {
+                mModel.mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex] = int(inputs[selectedMultiplexIndex]);
+                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Input);
+            }
+            break;
         }
     }
-    
+
     if (dirty)
     {
         mModel.BeginTransaction(true);
@@ -817,6 +822,11 @@ void NodeGraphControler::DrawNodeImage(ImDrawList* drawList,
                                        const ImVec2 marge,
                                        const size_t nodeIndex)
 {
+    bool nodeIsCompute = NodeIsCompute(nodeIndex);
+    if (nodeIsCompute)
+    {
+        return;
+    }
     if (NodeIsProcesing(nodeIndex) == 1)
     {
         AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUIProgress, nodeIndex, &mEditingContext);
@@ -825,16 +835,19 @@ void NodeGraphControler::DrawNodeImage(ImDrawList* drawList,
     {
         AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUICubemap, nodeIndex, &mEditingContext);
     }
-    else if (NodeIsCompute(nodeIndex))
-    {
-    }
     else
     {
-        drawList->AddImage((ImTextureID)(int64_t)(GetNodeTexture(size_t(nodeIndex))),
+        auto textureID = GetNodeTexture(size_t(nodeIndex));
+        if (textureID)
+        {
+            
+            drawList->AddRectFilled(rc.Min, rc.Max, 0xFF000000);
+            drawList->AddImage((ImTextureID)(int64_t)textureID,
                            rc.Min + marge,
                            rc.Max - marge,
                            ImVec2(0, 1),
                            ImVec2(1, 0));
+        }
     }
 }
 

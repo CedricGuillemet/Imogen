@@ -247,27 +247,6 @@ struct EvaluationStages
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
     void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
 
-    // pins
-    bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
-    void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
-    bool IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const;
-    void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
-    void SetParameterPins(const std::vector<uint32_t>& pins)
-    {
-        mPinnedParameters = pins;
-    }
-    void SetIOPins(const std::vector<uint32_t>& pins)
-    {
-        mPinnedIO = pins;
-    }
-    const std::vector<uint32_t>& GetParameterPins() const
-    {
-        return mPinnedParameters;
-    }
-    const std::vector<uint32_t>& GetIOPins() const
-    {
-        return mPinnedIO;
-    }
     const Parameters& GetParameters(size_t nodeIndex) const
     {
         return mParameters[nodeIndex];
@@ -296,8 +275,6 @@ struct EvaluationStages
     // Data
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;
-    std::vector<uint32_t> mPinnedParameters; // 32bits -> 32parameters
-    std::vector<uint32_t> mPinnedIO;         // 24bits input, 8 bits output
     std::vector<Parameters> mParameters;
     std::vector<Samplers> mInputSamplers;
     std::vector<MultiplexInput> mMultiplexInputs;
@@ -327,7 +304,6 @@ protected:
     size_t PickBestNode(const std::vector<EvaluationStages::NodeOrder>& orders) const;
 
     void InitDefaultParameters(const EvaluationStage& stage, Parameters& parameters);
-    void RemovePins(size_t nodeIndex);
 
     void GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const;
 };

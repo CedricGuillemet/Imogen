@@ -48,14 +48,16 @@ public:
 
     struct Node
     {
-        Node(int type, ImVec2 position) : mType(type), mPos(position), mbSelected(false)
+        Node(int type, ImVec2 position) : mType(type), mPos(position), mbSelected(false), mPinnedIO(0), mPinnedParameters(0)
         {
         }
-        Node() : mbSelected(false)
+        Node() : mbSelected(false), mPinnedIO(0), mPinnedParameters(0)
         {
         }
         int mType;
         ImVec2 mPos;
+        uint32_t mPinnedIO;
+        uint32_t mPinnedParameters;
         bool mbSelected;
     };
 
@@ -103,11 +105,18 @@ public:
     void SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex);
 	void SetParameterPins(const std::vector<uint32_t>& pins)
     {
-        mEvaluationStages.SetParameterPins(pins);
+        for (auto i = 0;i<pins.size();i++)
+        {
+            mNodes[i].mPinnedParameters = pins[i];
+        }
+
     }
     void SetIOPins(const std::vector<uint32_t>& pins)
     {
-        mEvaluationStages.SetIOPins(pins);
+        for (auto i = 0; i < pins.size(); i++)
+        {
+            mNodes[i].mPinnedIO = pins[i];
+        }
     }
     // transaction is handled is the function
     void NodeGraphLayout();
@@ -140,13 +149,26 @@ public:
         return mEvaluationStages.GetAnimTrack();
     }
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const;
-    const std::vector<uint32_t>& GetParameterPins() const
+    const std::vector<uint32_t> GetParameterPins() const
     {
-        return mEvaluationStages.GetParameterPins();
+        std::vector<uint32_t> ret;
+        ret.reserve(mNodes.size());
+        for (auto& node : mNodes)
+        {
+            ret.push_back(node.mPinnedParameters);
+        }
+        return ret;
     }
-    const std::vector<uint32_t>& GetIOPins() const
+    const std::vector<uint32_t> GetIOPins() const
     {
-        return mEvaluationStages.GetIOPins();
+        std::vector<uint32_t> ret;
+        ret.reserve(mNodes.size());
+        for (auto& node : mNodes)
+        {
+            ret.push_back(node.mPinnedIO);
+        }
+        return ret;
+
     }
     const std::vector<unsigned char>& GetParameters(size_t nodeIndex) const;
     const Samplers& GetSamplers(size_t nodeIndex) const

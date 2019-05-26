@@ -185,10 +185,6 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
 
     auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [&]() { return &mNodes; }, delNode, addNode) : nullptr;
     auto urStage = mUndoRedo ? std::make_unique<URAdd<EvaluationStage>>(int(nodeIndex), [&]() { return &mEvaluationStages.mStages; }) : nullptr;
-    auto urPinnedeParameters = mUndoRedo ? std::make_unique<URAdd<uint32_t>>(int(nodeIndex), [&]() { return &mEvaluationStages.mPinnedParameters; })
-                            : nullptr;
-    auto urPinnedIO = mUndoRedo ? std::make_unique<URAdd<uint32_t>>(int(nodeIndex), [&]() { return &mEvaluationStages.mPinnedIO; })
-                        : nullptr;
     auto urParameters = mUndoRedo ? std::make_unique<URAdd<Parameters>>(int(nodeIndex), [&]() { return &mEvaluationStages.mParameters; })
                             : nullptr;
     auto urInputSamplers = mUndoRedo ? std::make_unique<URAdd<Samplers>>(int(nodeIndex), [&]() { return &mEvaluationStages.mInputSamplers; })
@@ -359,10 +355,6 @@ void GraphModel::DeleteSelectedNodes()
 
         // delete stage data
         auto urStage = mUndoRedo ? std::make_unique<URDel<EvaluationStage>>(int(selection), [&]() { return &mEvaluationStages.mStages; }) : nullptr;
-        auto urPinnedeParameters = mUndoRedo ? std::make_unique<URDel<uint32_t>>(int(selection), [&]() { return &mEvaluationStages.mPinnedParameters; })
-            : nullptr;
-        auto urPinnedIO = mUndoRedo ? std::make_unique<URDel<uint32_t>>(int(selection), [&]() { return &mEvaluationStages.mPinnedIO; })
-            : nullptr;
         auto urParameters = mUndoRedo ? std::make_unique<URDel<Parameters>>(int(selection), [&]() { return &mEvaluationStages.mParameters; })
             : nullptr;
         auto urInputSamplers = mUndoRedo ? std::make_unique<URDel<Samplers>>(int(selection), [&]() { return &mEvaluationStages.mInputSamplers; })
@@ -376,9 +368,7 @@ void GraphModel::DeleteSelectedNodes()
     }
 
     assert(mEvaluationStages.mStages.size() == mNodes.size());
-    assert(mEvaluationStages.mPinnedParameters.size() == mNodes.size());
     assert(mEvaluationStages.mParameters.size() == mNodes.size());
-    assert(mEvaluationStages.mPinnedIO.size() == mNodes.size());
     assert(mEvaluationStages.mInputSamplers.size() == mNodes.size());
     assert(mEvaluationStages.mMultiplexInputs.size() == mNodes.size());
 }
@@ -434,16 +424,6 @@ bool GraphModel::NodeHasUI(size_t nodeIndex) const
     if (mEvaluationStages.mStages.size() <= nodeIndex)
         return false;
     return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI;
-}
-
-bool GraphModel::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
-{
-    return mEvaluationStages.IsIOPinned(nodeIndex, io, forOutput);
-}
-
-bool GraphModel::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
-{
-    return mEvaluationStages.IsParameterPinned(nodeIndex, parameterIndex);
 }
 
 void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName, const std::string& parameterValue)
@@ -514,21 +494,36 @@ void GraphModel::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<b
 void GraphModel::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned)
 {
     assert(mbTransaction);
-    auto ur = mUndoRedo ? std::make_unique<URChange<uint32_t>>(
+    auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
         int(nodeIndex),
-        [&](int index) { return &mEvaluationStages.mPinnedIO[index]; })
+        [&](int index) { return &mNodes[index]; })
         : nullptr;
-    mEvaluationStages.SetIOPin(nodeIndex, io, forOutput, pinned);
+
+    uint32_t mask = 0;
+    if (forOutput)
+    {
+        mask = (1 << io) & 0xFF;
+    }
+    else
+    {
+        mask = (1 << (8 + io));
+    }
+    mNodes[nodeIndex].mPinnedIO &= ~mask;
+    mNodes[nodeIndex].mPinnedIO += pinned ? mask : 0;
+
 }
 
 void GraphModel::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
 {
     assert(mbTransaction);
-    auto ur = mUndoRedo ? std::make_unique<URChange<uint32_t>>(
+    auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
         int(nodeIndex),
-        [&](int index) { return &mEvaluationStages.mPinnedParameters[index]; })
+        [&](int index) { return &mNodes[index]; })
         : nullptr;
-    mEvaluationStages.SetParameterPin(nodeIndex, parameterIndex, pinned);
+
+    uint32_t mask = 1 << parameterIndex;
+    mNodes[nodeIndex].mPinnedParameters &= ~mask;
+    mNodes[nodeIndex].mPinnedParameters += pinned ? mask : 0;
 }
 
 void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char>& parameters)
@@ -848,3 +843,24 @@ void GraphModel::SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiple
     mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex] = multiplex;
     SetDirty(nodeIndex, Dirty::Input);
 }
+
+bool GraphModel::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
+{
+    uint32_t mask = 1 << parameterIndex;
+    return mNodes[nodeIndex].mPinnedParameters & mask;
+}
+
+bool GraphModel::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
+{
+    uint32_t mask = 0;
+    if (forOutput)
+    {
+        mask = (1 << io) & 0xFF;
+    }
+    else
+    {
+        mask = (1 << (8 + io));
+    }
+    return mNodes[nodeIndex].mPinnedIO & mask;
+}
+

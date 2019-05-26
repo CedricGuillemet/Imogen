@@ -656,16 +656,10 @@ void EvaluationContext::AllocRenderTargetsForEditingPreview()
 void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate)
 {
     std::vector<std::shared_ptr<RenderTarget>> freeRenderTargets;
-    std::vector<int> useCount(mEvaluations.size(), 0);
-    /*for (size_t i = 0; i < stageCount; i++)
-    {
-        useCount[i] = mEvaluationStages.mUseCountByOthers[i];
-    }
-    compute use count here!
-    */
+    auto useCount = mEvaluationStages.mUseCountByOthers;
     for (auto index : nodesToEvaluate)
     {
-        if (!mEvaluationStages.mUseCountByOthers[index])
+        if (!useCount[index])
             continue;
 
         if (freeRenderTargets.empty())
@@ -982,8 +976,6 @@ EvaluationStages BuildEvaluationFromMaterial(Material& material)
     evaluationStages.SetAnimTrack(material.mAnimTrack);
     evaluationStages.mFrameMin = material.mFrameMin;
     evaluationStages.mFrameMax = material.mFrameMax;
-    evaluationStages.SetParameterPins(material.mPinnedParameters);
-    evaluationStages.SetIOPins(material.mPinnedIO);
     return evaluationStages;
 }
 

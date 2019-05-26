@@ -129,6 +129,17 @@ void GraphModel::AddNodeHelper(int nodeIndex)
 
 void GraphModel::DeleteNodeHelper(int nodeIndex)
 {
+    for (int id = 0; id < mLinks.size(); id++)
+    {
+        if (mLinks[id].mInputNodeIndex > nodeIndex)
+        {
+            mLinks[id].mInputNodeIndex--;
+        }
+        if (mLinks[id].mOutputNodeIndex > nodeIndex)
+        {
+            mLinks[id].mOutputNodeIndex--;
+        }
+    }
     mEvaluationStages.StageIsDeleted(nodeIndex);
     RemoveAnimation(nodeIndex);
 }
@@ -307,18 +318,6 @@ void GraphModel::DeleteSelectedNodes()
         auto ur = mUndoRedo ? std::make_unique<URDel<Node>>(int(selection),
                                     [this]() { return &mNodes; },
                                     [this](int index) {
-                                        // recompute link indices
-                                        for (int id = 0; id < mLinks.size(); id++)
-                                        {
-                                            if (mLinks[id].mInputNodeIndex > index)
-                                            {
-                                                mLinks[id].mInputNodeIndex--;
-                                            }
-                                            if (mLinks[id].mOutputNodeIndex > index)
-                                            {
-                                                mLinks[id].mOutputNodeIndex--;
-                                            }
-                                        }
                                         mSelectedNodeIndex = -1;
                                         DeleteNodeHelper(index);
                                     },
@@ -371,19 +370,6 @@ void GraphModel::DeleteSelectedNodes()
             }
         }
 
-        // recompute link indices
-        for (int id = 0; id < mLinks.size(); id++)
-        {
-            if (mLinks[id].mInputNodeIndex > selection)
-            {
-                mLinks[id].mInputNodeIndex--;
-            }
-            if (mLinks[id].mOutputNodeIndex > selection)
-            {
-                mLinks[id].mOutputNodeIndex--;
-            }
-        }
-
         // delete stage data
         auto urStage = mUndoRedo ? std::make_unique<URDel<EvaluationStage>>(int(selection), [&]() { return &mEvaluationStages.mStages; }) : nullptr;
         auto urPinnedeParameters = mUndoRedo ? std::make_unique<URDel<uint32_t>>(int(selection), [&]() { return &mEvaluationStages.mPinnedParameters; })
@@ -399,6 +385,7 @@ void GraphModel::DeleteSelectedNodes()
 
         mNodes.erase(mNodes.begin() + selection);
         mEvaluationStages.DelSingleEvaluation(selection);
+        DeleteNodeHelper(selection);
     }
 
     assert(mEvaluationStages.mStages.size() == mNodes.size());

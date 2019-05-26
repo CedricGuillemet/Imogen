@@ -83,6 +83,16 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     mMultiplexInputs.push_back(MultiplexInput());
 }
 
+void EvaluationStages::DelSingleEvaluation(size_t nodeIndex)
+{
+    mStages.erase(mStages.begin() + nodeIndex);
+    mPinnedParameters.erase(mPinnedParameters.begin() + nodeIndex);
+    mPinnedIO.erase(mPinnedIO.begin() + nodeIndex);
+    mParameters.erase(mParameters.begin() + nodeIndex);
+    mInputSamplers.erase(mInputSamplers.begin() + nodeIndex);
+    mMultiplexInputs.erase(mMultiplexInputs.begin() + nodeIndex);
+}
+
 void EvaluationStages::StageIsAdded(size_t nodeIndex)
 {
     for (size_t i = 0; i < mStages.size(); i++)
@@ -114,28 +124,7 @@ void EvaluationStages::StageIsDeleted(size_t nodeIndex)
         }
     }
 }
-/*
-void EvaluationStages::UserAddEvaluation(size_t nodeType)
-{
-    URAdd<EvaluationStage> undoRedoAddStage(int(mStages.size()),
-                                            [&]() { return &mStages; },
-                                            [&](int index) { StageIsDeleted(index); },
-                                            [&](int index) { StageIsAdded(index); });
 
-    AddSingleEvaluation(nodeType);
-}
-
-void EvaluationStages::UserDeleteEvaluation(size_t target)
-{
-    URDel<EvaluationStage> undoRedoDelStage(int(target),
-                                            [&]() { return &mStages; },
-                                            [&](int index) { StageIsDeleted(index); },
-                                            [&](int index) { StageIsAdded(index); });
-
-    StageIsDeleted(int(target));
-    mStages.erase(mStages.begin() + target);
-}
-*/
 void EvaluationStages::SetEvaluationParameters(size_t nodeIndex, const Parameters& parameters)
 {
     EvaluationStage& stage = mStages[nodeIndex];

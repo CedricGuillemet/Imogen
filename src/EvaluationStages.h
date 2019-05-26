@@ -169,7 +169,6 @@ struct EvaluationStage
 #endif
     size_t mType;
     unsigned int mRuntimeUniqueId;
-    Input mInput;
 
     int gEvaluationMask; // see EvaluationMask
     int mUseCountByOthers;
@@ -210,8 +209,10 @@ struct EvaluationStages
 
     void SetEvaluationParameters(size_t target, const Parameters& parameters);
     void SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& inputSamplers);
-    void AddEvaluationInput(size_t target, int slot, int source);
-    void DelEvaluationInput(size_t target, int slot);
+
+
+    void ClearInputs();
+    void SetEvaluationInput(size_t target, int slot, int source);
     void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
     void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
@@ -305,10 +306,12 @@ struct EvaluationStages
     std::vector<MultiplexInput> mMultiplexInputs;
     int mFrameMin, mFrameMax;
 
-    UIInput mInputs;
+    UIInput mUIInputs;
     size_t mInputNodeIndex;
 
+    // runtime
     std::vector<size_t> mEvaluationOrderList;
+    std::vector<Input> mInputs;
 
     void StageIsAdded(size_t nodeIindex);
     void StageIsDeleted(size_t nodeIndex);

@@ -1006,7 +1006,7 @@ EvaluationStages BuildEvaluationFromMaterial(Material& material)
     for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
     {
         MaterialConnection& materialConnection = material.mMaterialConnections[i];
-        evaluationStages.AddEvaluationInput(
+        evaluationStages.SetEvaluationInput(
             materialConnection.mOutputNodeIndex, materialConnection.mInputSlotIndex, materialConnection.mInputNodeIndex);
     }
 

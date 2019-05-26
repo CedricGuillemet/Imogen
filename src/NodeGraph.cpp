@@ -662,18 +662,19 @@ bool HandleConnections(GraphModel* model,
                         auto& link = links[linkIndex];
                         if (link.mOutputNodeIndex == nl.mOutputNodeIndex && link.mOutputSlotIndex == nl.mOutputSlotIndex)
                         {
-                            model->BeginTransaction(true);
+                            if (!model->InTransaction())
+                                model->BeginTransaction(true);
                             model->DelLink(linkIndex);
-                            model->EndTransaction();
+                            
                             break;
                         }
                     }
 
                     if (!alreadyExisting)
                     {
-                        model->BeginTransaction(true);
+                        if (!model->InTransaction())
+                            model->BeginTransaction(true);
                         model->AddLink(nl.mInputNodeIndex, nl.mInputSlotIndex, nl.mOutputNodeIndex, nl.mOutputSlotIndex);
-                        model->EndTransaction();
                     }
                 }
             }
@@ -695,15 +696,19 @@ bool HandleConnections(GraphModel* model,
                         auto& link = links[linkIndex];
                         if (link.mOutputNodeIndex == nodeIndex && link.mOutputSlotIndex == closestConn)
                         {
-                            model->BeginTransaction(true);
+                            if (!model->InTransaction())
+                                model->BeginTransaction(true);
                             model->DelLink(linkIndex);
-                            model->EndTransaction();
                             break;
                         }
                     }
                 }
             }
         }
+    }
+    if (model->InTransaction())
+    {
+        model->EndTransaction();
     }
     return hoverSlot;
 }

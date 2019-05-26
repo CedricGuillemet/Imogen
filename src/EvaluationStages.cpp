@@ -46,13 +46,7 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
 #endif
     evaluation.mUseCountByOthers = 0;
     evaluation.mType = uint16_t(nodeType);
-    evaluation.mBlendingSrc = ONE;
-    evaluation.mBlendingDst = ZERO;
     evaluation.mLocalTime = 0;
-    evaluation.gEvaluationMask = gEvaluators.GetMask(nodeType);
-    evaluation.mbDepthBuffer = false;
-    evaluation.mbClearBuffer = false;
-    evaluation.mVertexSpace = 0;
     static std::shared_ptr<Scene> defaultScene;
     if (!defaultScene)
     {

@@ -419,7 +419,7 @@ void NodeGraphControler::EditNodeParameters()
             if (selectedMultiplexIndex != -1 && inputs[selectedMultiplexIndex] != currentMultiplexedOveride)
             {
                 mModel.BeginTransaction(true);
-                mModel.SetMultiplexed(nodeIndex, slotIndex, inputs[selectedMultiplexIndex]);
+                mModel.SetMultiplexed(nodeIndex, slotIndex, int(inputs[selectedMultiplexIndex]));
                 mModel.EndTransaction();
             }
             break;

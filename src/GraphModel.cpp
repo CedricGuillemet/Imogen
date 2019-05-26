@@ -80,6 +80,13 @@ void GraphModel::EndTransaction()
     delete mUndoRedo;
     mUndoRedo = nullptr;
     mEvaluationStages.ComputeEvaluationOrder();
+
+    // set inputs
+    mEvaluationStages.ClearInputs();
+    for(const auto& link: mLinks)
+    {
+        mEvaluationStages.SetEvaluationInput(link.mOutputNodeIndex, link.mInputSlotIndex, link.mInputNodeIndex);
+    }
 }
 
 void GraphModel::Undo()
@@ -195,19 +202,6 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
     return nodeIndex;
 }
 
-void GraphModel::DeleteLinkHelper(int index)
-{
-    const Link& link = mLinks[index];
-    mEvaluationStages.DelEvaluationInput(link.mOutputNodeIndex, link.mOutputSlotIndex);
-}
-
-void GraphModel::AddLinkHelper(int index)
-{
-    const Link& link = mLinks[index];
-    mEvaluationStages.AddEvaluationInput(link.mOutputNodeIndex, link.mOutputSlotIndex, link.mInputNodeIndex);
-}
-
-
 void GraphModel::AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
 {
     size_t linkIndex = mLinks.size();
@@ -217,7 +211,6 @@ void GraphModel::AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, s
     link.mOutputNodeIndex = int(outputNodeIndex);
     link.mOutputSlotIndex = int(outputSlotIndex);
     mLinks.push_back(link);
-    AddLinkHelper(int(linkIndex));
 }
 
 void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
@@ -232,12 +225,9 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
 
     assert(outputNodeIndex < mEvaluationStages.mStages.size());
 
-    auto delLink = [&](int index) { DeleteLinkHelper(index); };
-    auto addLink = [&](int index) { AddLinkHelper(index); };
-
     size_t linkIndex = mLinks.size();
 
-    auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; }, delLink, addLink)
+    auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; })
                   : nullptr;
 
     AddLinkInternal(inputNodeIndex, inputSlotIndex, outputNodeIndex, outputSlotIndex);

@@ -139,18 +139,16 @@ void EvaluationStages::SetSamplers(size_t nodeIndex, const std::vector<InputSamp
     mInputSamplers[nodeIndex] = inputSamplers;
 }
 
-void EvaluationStages::AddEvaluationInput(size_t target, int slot, int source)
+void EvaluationStages::ClearInputs()
 {
-    if (mStages.size() <= target || mStages[target].mInput.mInputs[slot] == source)
-        return;
-    mStages[target].mInput.mInputs[slot] = source;
-    mStages[source].mUseCountByOthers++;
+    mInputs.clear();
 }
 
-void EvaluationStages::DelEvaluationInput(size_t target, int slot)
+void EvaluationStages::SetEvaluationInput(size_t nodeIndex, int slot, int source)
 {
-    mStages[mStages[target].mInput.mInputs[slot]].mUseCountByOthers--;
-    mStages[target].mInput.mInputs[slot] = -1;
+    mInputs.resize(mStages.size());
+    mInputs[nodeIndex].mInputs[slot] = source;
+    mStages[source].mUseCountByOthers++;
 }
 
 void EvaluationStages::SetEvaluationOrder(const std::vector<size_t>& nodeOrderList)

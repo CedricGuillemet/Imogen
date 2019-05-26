@@ -185,8 +185,6 @@ private:
 
     std::vector<DirtyList> mDirtyList;
     void SetDirty(size_t nodeIndex, DirtyFlag flags) { mDirtyList.push_back({nodeIndex, flags});}
-    void AddLinkHelper(int nodeIndex);
-    void DeleteLinkHelper(int nodeIndex);
     void AddNodeHelper(int nodeIndex);
     void DeleteNodeHelper(int nodeIndex);
 

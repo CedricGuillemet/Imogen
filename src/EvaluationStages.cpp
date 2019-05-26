@@ -70,8 +70,6 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     mParameters.push_back(Parameters());
     InitDefaultParameters(evaluation, mParameters.back());
     mStages.push_back(evaluation);
-    mPinnedIO.push_back(0);
-    mPinnedParameters.push_back(0);
     mInputSamplers.push_back(Samplers(inputCount));
     mMultiplexInputs.push_back(MultiplexInput());
 }
@@ -79,8 +77,6 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
 void EvaluationStages::DelSingleEvaluation(size_t nodeIndex)
 {
     mStages.erase(mStages.begin() + nodeIndex);
-    mPinnedParameters.erase(mPinnedParameters.begin() + nodeIndex);
-    mPinnedIO.erase(mPinnedIO.begin() + nodeIndex);
     mParameters.erase(mParameters.begin() + nodeIndex);
     mInputSamplers.erase(mInputSamplers.begin() + nodeIndex);
     mMultiplexInputs.erase(mMultiplexInputs.begin() + nodeIndex);
@@ -128,8 +124,6 @@ void EvaluationStages::Clear()
 
     mStages.clear();
     mAnimTrack.clear();
-    mPinnedIO.clear();
-    mPinnedParameters.clear();
     mInputSamplers.clear();
     mParameters.clear();
 }
@@ -300,30 +294,6 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
     }
 }
 
-void EvaluationStages::RemovePins(size_t nodeIndex)
-{
-    mPinnedParameters.erase(mPinnedParameters.begin() + nodeIndex);
-    mPinnedIO.erase(mPinnedIO.begin() + nodeIndex);
-}
-
-bool EvaluationStages::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
-{
-    if (nodeIndex >= mPinnedParameters.size())
-    {
-        return false;
-    }
-    uint32_t mask = 1 << parameterIndex;
-    return mPinnedParameters[nodeIndex] & mask;
-}
-
-void EvaluationStages::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
-{
-    mPinnedParameters.resize(mStages.size(), false);
-    uint32_t mask = 1 << parameterIndex;
-    mPinnedParameters[nodeIndex] &= ~mask;
-    mPinnedParameters[nodeIndex] += pinned ? mask : 0;
-}
-
 float EvaluationStages::GetParameterComponentValue(size_t nodeIndex, int parameterIndex, int componentIndex)
 {
     EvaluationStage& stage = mStages[nodeIndex];
@@ -387,39 +357,6 @@ void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, b
     }
 }
 
-bool EvaluationStages::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
-{
-    if (nodeIndex >= mPinnedIO.size())
-    {
-        return false;
-    }
-    uint32_t mask = 0;
-    if (forOutput)
-    {
-        mask = (1 << io) & 0xFF;
-    }
-    else
-    {
-        mask = (1 << (8 + io));
-    }
-    return mPinnedIO[nodeIndex] & mask;
-}
-
-void EvaluationStages::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned)
-{
-    mPinnedIO.resize(mStages.size(), 0);
-	uint32_t mask = 0;
-    if (forOutput)
-    {
-        mask = (1 << io) & 0xFF;
-    }
-    else
-    {
-        mask = (1 << (8 + io));
-    }
-    mPinnedIO[nodeIndex] &= ~mask;
-    mPinnedIO[nodeIndex] += pinned ? mask : 0;
-}
 
 
 size_t EvaluationStages::PickBestNode(const std::vector<EvaluationStages::NodeOrder>& orders) const

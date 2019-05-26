@@ -77,15 +77,7 @@ static const float rotMatrices[6][16] = {
 
     //-z
     {-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
-/*
-static const EvaluationContext::RenderingState EvaluationContext::defaultRenderingState = {
-    ONE,
-    ZERO,
-    0,
-    false,
-    false
-};
-*/
+
 EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
                                      bool synchronousEvaluation,
                                      int defaultWidth,
@@ -339,6 +331,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
 
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
+    const auto& evaluation = mEvaluations[nodeIndex];
 
     // allocate buffer
     unsigned int feedbackVertexArray = 0;
@@ -348,29 +341,26 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     int computeBufferIndex = GetBindedComputeBuffer(nodeIndex);
     if (computeBufferIndex != -1)
     {
-        if (mComputeBuffers.size() <= nodeIndex || (!mComputeBuffers[nodeIndex].mBuffer))
+        if (!mEvaluations[nodeIndex].mComputeBuffer.mBuffer)
         {
             // only allocate if needed
             AllocateComputeBuffer(int(nodeIndex),
-                                  mComputeBuffers[computeBufferIndex].mElementCount,
-                                  mComputeBuffers[computeBufferIndex].mElementSize);
+                mEvaluations[computeBufferIndex].mComputeBuffer.mElementCount,
+                mEvaluations[computeBufferIndex].mComputeBuffer.mElementSize);
         }
-        sourceBuffer = &mComputeBuffers[computeBufferIndex];
+        sourceBuffer = &mEvaluations[computeBufferIndex].mComputeBuffer;
     }
     else
     {
         //
-        if (nodeIndex < mComputeBuffers.size())
-        {
-            Swap(mComputeBuffers[nodeIndex], tempBuffer);
+        Swap(mEvaluations[nodeIndex].mComputeBuffer, tempBuffer);
 
-            AllocateComputeBuffer(int(nodeIndex), tempBuffer.mElementCount, tempBuffer.mElementSize);
-            sourceBuffer = &tempBuffer;
-        }
+        AllocateComputeBuffer(int(nodeIndex), tempBuffer.mElementCount, tempBuffer.mElementSize);
+        sourceBuffer = &tempBuffer;
     }
 
-    if (mComputeBuffers.size() <= nodeIndex)
-        return; // no compute buffer destination, no source either -> non connected node -> early exit
+    //if (mComputeBuffers.size() <= nodeIndex)
+    //    return; // no compute buffer destination, no source either -> non connected node -> early exit
 
     /// build source VAO
     glGenVertexArrays(1, &feedbackVertexArray);
@@ -388,7 +378,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     glBindVertexArray(0);
 
 
-    destinationBuffer = &mComputeBuffers[nodeIndex];
+    destinationBuffer = &mEvaluations[nodeIndex].mComputeBuffer;
 
     // compute buffer
     if (destinationBuffer->mElementCount)
@@ -397,7 +387,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         glUseProgram(program);
 
         glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-        evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
+        evaluationInfo.mVertexSpace = evaluation.mVertexSpace;
         glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -443,11 +433,12 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 {
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
 
-    auto tgt = mStageTarget[nodeIndex];
+    const auto& evaluation = mEvaluations[nodeIndex];
+    const auto tgt = evaluation.mTarget;
 
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
-    const int blendOps[] = {evaluationStage.mBlendingSrc, evaluationStage.mBlendingDst};
+    const int blendOps[] = {evaluation.mBlendingSrc, evaluation.mBlendingDst};
     unsigned int blend[] = {GL_ONE, GL_ZERO};
 
     if (!program)
@@ -540,7 +531,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 evaluationInfo.mipmapCount = mipmapCount;
 
                 glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-                evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
+                evaluationInfo.mVertexSpace = evaluation.mVertexSpace;
                 glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -553,11 +544,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);
                 glClearDepth(1.f);
-                if (evaluationStage.mbClearBuffer)
+                if (evaluation.mbClearBuffer)
                 {
-                    glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
+                    glClear(GL_COLOR_BUFFER_BIT | (evaluation.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
                 }
-                if (evaluationStage.mbDepthBuffer)
+                if (evaluation.mbDepthBuffer)
                 {
                     glDepthFunc(GL_LEQUAL);
                     glEnable(GL_DEPTH_TEST);
@@ -568,7 +559,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                     /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(nodeIndex);
                     if (sourceBuffer != -1)
                     {
-                        const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
+                        const ComputeBuffer* buffer = &mEvaluations[sourceBuffer].mComputeBuffer;
                         unsigned int vao;
                         glGenVertexArrays(1, &vao);
                         glBindVertexArray(vao);
@@ -667,11 +658,12 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 {
     std::vector<std::shared_ptr<RenderTarget>> freeRenderTargets;
     std::vector<int> useCount(mEvaluations.size(), 0);
-    for (size_t i = 0; i < stageCount; i++)
+    /*for (size_t i = 0; i < stageCount; i++)
     {
         useCount[i] = mEvaluationStages.mUseCountByOthers[i];
     }
     compute use count here!
+    */
     for (auto index : nodesToEvaluate)
     {
         if (!mEvaluationStages.mUseCountByOthers[index])
@@ -679,11 +671,11 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 
         if (freeRenderTargets.empty())
         {
-            mStageTarget[index] = std::make_shared<RenderTarget>();
+            mEvaluations[index].mTarget = std::make_shared<RenderTarget>();
         }
         else
         {
-            mStageTarget[index] = freeRenderTargets.back();
+            mEvaluations[index].mTarget = freeRenderTargets.back();
             freeRenderTargets.pop_back();
         }
 
@@ -821,7 +813,7 @@ void EvaluationContext::RunDirty()
     for (size_t index = 0; index < evaluationOrderList.size(); index++)
     {
         size_t currentNodeIndex = evaluationOrderList[index];
-        if (currentNodeIndex < mDirtyFlags.size() && mDirtyFlags[currentNodeIndex]) // TODOUNDO
+        if (mEvaluations[currentNodeIndex].mDirtyFlag)
             nodesToEvaluate.push_back(currentNodeIndex);
     }
     AllocRenderTargetsForEditingPreview();
@@ -831,10 +823,9 @@ void EvaluationContext::RunDirty()
 void EvaluationContext::DirtyAll()
 {
     // tag all as dirty
-    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
-    for (auto& dirty : mDirtyFlags)
+    for (auto& evaluation : mEvaluations)
     {
-        dirty = Dirty::All;
+        evaluation.mDirtyFlag = Dirty::Parameter;
     }
 }
 
@@ -877,9 +868,20 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
 
 void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool onlyChild)
 {
-    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
+    if (dirtyFlag & (Dirty::AddedNode | Dirty::DeletedNode))
+    {
+        if (dirtyFlag & Dirty::AddedNode)
+        {
+            mEvaluations.insert(mEvaluations.begin() + target, Evaluation());
+        }
+        else
+        {
+            mEvaluations.erase(mEvaluations.begin() + target);
+        }
+    }
+
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
-    mDirtyFlags[target] = dirtyFlag;
+    mEvaluations[target].mDirtyFlag = dirtyFlag;
     for (size_t i = 0; i < evaluationOrderList.size(); i++)
     {
         size_t currentNodeIndex = evaluationOrderList[i];
@@ -889,15 +891,14 @@ void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool 
         for (i++; i < evaluationOrderList.size(); i++)
         {
             currentNodeIndex = evaluationOrderList[i];
-            if (currentNodeIndex >= mDirtyFlags.size() || mDirtyFlags[currentNodeIndex]) // TODOUNDO
+            if (mEvaluations[currentNodeIndex].mDirtyFlag)
                 continue;
 
-            //auto& currentEvaluation = mEvaluationStages.GetEvaluationStage(currentNodeIndex);
             for (auto inp : mEvaluationStages.mInputs[currentNodeIndex].mInputs)
             {
-                if (inp >= 0 && mDirtyFlags[inp])
+                if (inp >= 0 && mEvaluations[inp].mDirtyFlag)
                 {
-                    mDirtyFlags[currentNodeIndex] = Dirty::Input;
+                    mEvaluations[currentNodeIndex].mDirtyFlag = Dirty::Input;
                     break;
                 }
             }
@@ -905,7 +906,7 @@ void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool 
     }
     if (onlyChild)
     {
-        mDirtyFlags[target] = false;
+        mEvaluations[target].mDirtyFlag = 0;
     }
 }
 

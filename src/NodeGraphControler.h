@@ -77,6 +77,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
         return GetByAsyncId(id, mModel.mEvaluationStages.mStages);
     }
     
+    void ApplyDirtyList();
 	GraphModel mModel;
 
 protected:

@@ -722,7 +722,7 @@ void Imogen::UpdateNewlySelectedGraph()
                                                rug.mColor,
                                                rug.mComment});
         }
-        
+        mNodeGraphControler->mModel.EndTransaction();
         NodeGraphUpdateScrolling(&mNodeGraphControler->mModel);
         mCurrentTime = 0;
         mbIsPlaying = false;
@@ -735,11 +735,13 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mModel.mEvaluationStages.SetMultiplexInputs(material.mMultiplexInputs);
         mNodeGraphControler->mModel.mEvaluationStages.mMultiplexInputs.resize(nodeCount);
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
-        mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
-        mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
+
+        mNodeGraphControler->ApplyDirtyList();
         mNodeGraphControler->mEditingContext.RunAll();
-        mNodeGraphControler->mModel.EndTransaction();
+        //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
+        //mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
+
     }
 }
 

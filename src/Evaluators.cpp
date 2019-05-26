@@ -797,7 +797,7 @@ namespace EvaluationAPI
 
     void SetBlendingMode(EvaluationContext* evaluationContext, int target, int blendSrc, int blendDst)
     {
-        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
+        EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
 
         evaluation.mBlendingSrc = blendSrc;
         evaluation.mBlendingDst = blendDst;
@@ -805,19 +805,19 @@ namespace EvaluationAPI
 
     void EnableDepthBuffer(EvaluationContext* evaluationContext, int target, int enable)
     {
-        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
+        EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
         evaluation.mbDepthBuffer = enable != 0;
     }
 
     void EnableFrameClear(EvaluationContext* evaluationContext, int target, int enable)
     {
-        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
+        EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
         evaluation.mbClearBuffer = enable != 0;
     }
 
     void SetVertexSpace(EvaluationContext* evaluationContext, int target, int vertexSpace)
     {
-        EvaluationStage& evaluation = evaluationContext->mEvaluationStages.mStages[target];
+        EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
         evaluation.mVertexSpace = vertexSpace;
     }
 
@@ -843,7 +843,7 @@ namespace EvaluationAPI
         // if (gCurrentContext->GetEvaluationInfo().uiPass)
         //    return EVAL_OK;
         renderTarget->InitBuffer(
-            imageWidth, imageHeight, evaluationContext->mEvaluationStages.mStages[target].mbDepthBuffer);
+            imageWidth, imageHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
         return EVAL_OK;
     }
 
@@ -994,7 +994,7 @@ namespace EvaluationAPI
         unsigned char* ptr = image->GetBits();
         if (image->mNumFaces == 1)
         {
-            tgt->InitBuffer(image->mWidth, image->mHeight, stage.mbDepthBuffer);
+            tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
 
             glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
 

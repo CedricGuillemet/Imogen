@@ -93,38 +93,6 @@ void EvaluationStages::DelSingleEvaluation(size_t nodeIndex)
     mMultiplexInputs.erase(mMultiplexInputs.begin() + nodeIndex);
 }
 
-void EvaluationStages::StageIsAdded(size_t nodeIndex)
-{
-    for (size_t i = 0; i < mStages.size(); i++)
-    {
-        if (i == nodeIndex)
-            continue;
-        auto& evaluation = mStages[i];
-        for (auto& inp : evaluation.mInput.mInputs)
-        {
-            if (inp >= int(nodeIndex))
-            {
-                inp++;
-            }
-        }
-    }
-}
-
-void EvaluationStages::StageIsDeleted(size_t nodeIndex)
-{
-    EvaluationStage& ev = mStages[nodeIndex];
-
-    // shift all connections
-    for (auto& evaluation : mStages)
-    {
-        for (auto& inp : evaluation.mInput.mInputs)
-        {
-            if (inp >= nodeIndex)
-                inp--;
-        }
-    }
-}
-
 void EvaluationStages::SetEvaluationParameters(size_t nodeIndex, const Parameters& parameters)
 {
     EvaluationStage& stage = mStages[nodeIndex];
@@ -141,12 +109,15 @@ void EvaluationStages::SetSamplers(size_t nodeIndex, const std::vector<InputSamp
 
 void EvaluationStages::ClearInputs()
 {
-    mInputs.clear();
+    mInputs.resize(mStages.size());
+    for (auto& input : mInputs)
+    {
+        input = Input();
+    }
 }
 
 void EvaluationStages::SetEvaluationInput(size_t nodeIndex, int slot, int source)
 {
-    mInputs.resize(mStages.size());
     mInputs[nodeIndex].mInputs[slot] = source;
     mStages[source].mUseCountByOthers++;
 }
@@ -170,26 +141,7 @@ void EvaluationStages::Clear()
 
 void EvaluationStages::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
 {
-    /*for (auto& ev : mStages)
-    {
-        ev.mRx = -9999.f;
-        ev.mRy = -9999.f;
-        ev.mLButDown = false;
-        ev.mRButDown = false;
-        ev.mbCtrl = false;
-        ev.mbAlt = false;
-        ev.mbShift = false;
-    }
-    auto& ev = mStages[nodeIndex];
-    ev.mRx = rx;
-    ev.mRy = 1.f - ry; // inverted for UI
-    ev.mLButDown = lButDown;
-    ev.mRButDown = rButDown;
-    ev.mbCtrl = bCtrl;
-    ev.mbAlt = bAlt;
-    ev.mbShift = bShift;
-*/
-    mInputs = input;
+    mUIInputs = input;
     mInputNodeIndex = nodeIndex;
 }
 
@@ -496,7 +448,7 @@ void EvaluationStages::RecurseSetPriority(std::vector<EvaluationStages::NodeOrde
         undeterminedNodeCount--;
 
     orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
-    for (auto input : mStages[currentIndex].mInput.mInputs)
+    for (auto input : mInputs[currentIndex].mInputs)
     {
         if (input == -1)
         {
@@ -554,7 +506,7 @@ bool NodeTypeHasMultiplexer(size_t nodeType)
 
 void EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const
 {
-    for (auto& input: mStages[nodeIndex].mInput.mInputs)
+    for (auto& input: mInputs[nodeIndex].mInputs)
     {
         if (input == -1)
         {
@@ -573,7 +525,7 @@ void EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t
 
 bool EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const
 {
-    int input = mStages[nodeIndex].mInput.mInputs[slotIndex];
+    int input = mInputs[nodeIndex].mInputs[slotIndex];
     if (input == -1)
     {
         return false;

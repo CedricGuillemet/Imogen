@@ -925,7 +925,7 @@ namespace EvaluationAPI
 
     int OverrideInput(EvaluationContext* evaluationContext, int target, int inputIndex, int newInputTarget)
     {
-        evaluationContext->mEvaluationStages.mStages[target].mInput.mOverrideInputs[inputIndex] = newInputTarget;
+        evaluationContext->mEvaluationStages.mInputs[target].mOverrideInputs[inputIndex] = newInputTarget;
         return EVAL_OK;
     }
 

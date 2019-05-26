@@ -133,7 +133,7 @@ void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) co
 {
     if (mEvaluationStages.mInputNodeIndex == evaluationInfo.targetIndex)
     {
-        const auto& input = mEvaluationStages.mInputs;
+        const auto& input = mEvaluationStages.mUIInputs;
         evaluationInfo.mouse[0] = input.mRx;
         evaluationInfo.mouse[1] = 1.f - input.mRy;
         evaluationInfo.mouse[2] = input.mLButDown ? 1.f : 0.f;
@@ -235,7 +235,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                                      size_t nodeIndex,
                                      std::shared_ptr<RenderTarget> reusableTarget)
 {
-    const Input& input = evaluationStage.mInput;
+    const Input& input = mEvaluationStages.mInputs[nodeIndex];
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         glActiveTexture(GL_TEXTURE0 + inputIndex);
@@ -307,9 +307,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
     }
 }
 
-int EvaluationContext::GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const
+int EvaluationContext::GetBindedComputeBuffer(size_t nodeIndex) const
 {
-    const Input& input = evaluationStage.mInput;
+    const Input& input = mEvaluationStages.mInputs[nodeIndex];
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         int targetIndex = input.mInputs[inputIndex];
@@ -354,7 +354,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     ComputeBuffer* destinationBuffer = NULL;
     ComputeBuffer* sourceBuffer = NULL;
     ComputeBuffer tempBuffer;
-    int computeBufferIndex = GetBindedComputeBuffer(evaluationStage);
+    int computeBufferIndex = GetBindedComputeBuffer(nodeIndex);
     if (computeBufferIndex != -1)
     {
         if (mComputeBuffers.size() <= nodeIndex || (!mComputeBuffers[nodeIndex].mBuffer))
@@ -450,7 +450,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                                      size_t nodeIndex,
                                      EvaluationInfo& evaluationInfo)
 {
-    const Input& input = evaluationStage.mInput;
+    const Input& input = mEvaluationStages.mInputs[nodeIndex];
 
     auto tgt = mStageTarget[nodeIndex];
 
@@ -562,7 +562,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 if (evaluationStage.mTypename == "FurDisplay")
                 {
-                    /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
+                    /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(nodeIndex);
                     if (sourceBuffer != -1)
                     {
                         const ComputeBuffer* buffer = &mComputeBuffers[sourceBuffer];
@@ -693,7 +693,7 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
             freeRenderTargets.pop_back();
         }
 
-        const Input& input = evaluation.mInput;
+        const Input& input = mEvaluationStages.mInputs[index];
         for (auto targetIndex : input.mInputs)
         {
             if (targetIndex == -1)
@@ -718,7 +718,7 @@ void EvaluationContext::PreRun()
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
     auto& currentStage = mEvaluationStages.GetEvaluationStage(nodeIndex);
-    const Input& input = currentStage.mInput;
+    const Input& input = mEvaluationStages.mInputs[nodeIndex];
 
     // check processing
     for (auto& inp : input.mInputs)
@@ -806,10 +806,9 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
-void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& usedNodes)
+void EvaluationContext::RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes)
 {
-    const EvaluationStage& evaluation = mEvaluationStages.GetEvaluationStage(target);
-    const Input& input = evaluation.mInput;
+    const Input& input = mEvaluationStages.mInputs[nodeIndex];
 
     for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
     {
@@ -819,8 +818,8 @@ void EvaluationContext::RecurseBackward(size_t target, std::vector<size_t>& used
         RecurseBackward(targetIndex, usedNodes);
     }
 
-    if (std::find(usedNodes.begin(), usedNodes.end(), target) == usedNodes.end())
-        usedNodes.push_back(target);
+    if (std::find(usedNodes.begin(), usedNodes.end(), nodeIndex) == usedNodes.end())
+        usedNodes.push_back(nodeIndex);
 }
 
 void EvaluationContext::RunDirty()
@@ -905,8 +904,8 @@ void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool 
             if (currentNodeIndex >= mDirtyFlags.size() || mDirtyFlags[currentNodeIndex]) // TODOUNDO
                 continue;
 
-            auto& currentEvaluation = mEvaluationStages.GetEvaluationStage(currentNodeIndex);
-            for (auto inp : currentEvaluation.mInput.mInputs)
+            //auto& currentEvaluation = mEvaluationStages.GetEvaluationStage(currentNodeIndex);
+            for (auto inp : mEvaluationStages.mInputs[currentNodeIndex].mInputs)
             {
                 if (inp >= 0 && mDirtyFlags[inp])
                 {

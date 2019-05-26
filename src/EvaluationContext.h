@@ -157,7 +157,7 @@ protected:
     bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
     void RunNode(size_t nodeIndex);
 
-    void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
+    void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 
     void BindTextures(const EvaluationStage& evaluationStage,
                       MultiplexInput& multiplexInput,
@@ -167,7 +167,7 @@ protected:
     void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
 
-    int GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const;
+    int GetBindedComputeBuffer(size_t nodeIndex) const;
 
 
     std::vector<std::shared_ptr<RenderTarget>> mStageTarget; // 1 per stage

@@ -79,14 +79,16 @@ void GraphModel::EndTransaction()
     }
     delete mUndoRedo;
     mUndoRedo = nullptr;
-    mEvaluationStages.ComputeEvaluationOrder();
-
+    
     // set inputs
     mEvaluationStages.ClearInputs();
     for(const auto& link: mLinks)
     {
         mEvaluationStages.SetEvaluationInput(link.mOutputNodeIndex, link.mInputSlotIndex, link.mInputNodeIndex);
     }
+
+    // inputs are fresh, can compute evaluation order
+    mEvaluationStages.ComputeEvaluationOrder();
 }
 
 void GraphModel::Undo()
@@ -130,7 +132,6 @@ void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
 // called when a node is added by user, or with undo/redo
 void GraphModel::AddNodeHelper(int nodeIndex)
 {
-    mEvaluationStages.StageIsAdded(nodeIndex);
     SetDirty(nodeIndex, Dirty::All);
 }
 
@@ -147,7 +148,6 @@ void GraphModel::DeleteNodeHelper(int nodeIndex)
             mLinks[id].mOutputNodeIndex--;
         }
     }
-    mEvaluationStages.StageIsDeleted(nodeIndex);
     RemoveAnimation(nodeIndex);
 }
 
@@ -235,7 +235,6 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
 
 void GraphModel::DelLinkInternal(size_t linkIndex)
 {
-    DeleteLinkHelper(int(linkIndex));
     mLinks.erase(mLinks.begin() + linkIndex);
 }
 
@@ -243,10 +242,7 @@ void GraphModel::DelLink(size_t linkIndex)
 {
     assert(mbTransaction);
 
-    auto delLink = [&](int index) { DeleteLinkHelper(index); };
-    auto addLink = [&](int index) { AddLinkHelper(index); };
-
-    auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, delLink, addLink)
+    auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; })
                   : nullptr;
     DelLinkInternal(linkIndex);
 }
@@ -256,7 +252,7 @@ void GraphModel::AddRug(const Rug& rug)
     assert(mbTransaction);
 
     auto ur = mUndoRedo
-                  ? std::make_unique<URAdd<Rug>>(int(mRugs.size()), [&]() { return &mRugs; }, [](int) {}, [](int) {})
+                  ? std::make_unique<URAdd<Rug>>(int(mRugs.size()), [&]() { return &mRugs; })
                   : nullptr;
 
     mRugs.push_back(rug);
@@ -266,7 +262,7 @@ void GraphModel::DelRug(size_t rugIndex)
 {
     assert(mbTransaction);
 
-    auto ur = mUndoRedo ? std::make_unique<URDel<Rug>>(int(rugIndex), [&]() { return &mRugs; }, [](int) {}, [](int) {})
+    auto ur = mUndoRedo ? std::make_unique<URDel<Rug>>(int(rugIndex), [&]() { return &mRugs; })
                         : nullptr;
 
     mRugs.erase(mRugs.begin() + rugIndex);

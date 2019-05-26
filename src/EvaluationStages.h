@@ -313,11 +313,7 @@ struct EvaluationStages
     std::vector<size_t> mEvaluationOrderList;
     std::vector<Input> mInputs;
 
-    void StageIsAdded(size_t nodeIindex);
-    void StageIsDeleted(size_t nodeIndex);
-
 protected:
-
 
     struct NodeOrder
     {

@@ -299,7 +299,6 @@ void GraphModel::DeleteSelectedNodes()
 {
     assert(HasSelectedNodes());
 
-    auto urdummy = mUndoRedo ? std::make_unique<URDummy>() : nullptr;
     for (int selection = int(mNodes.size()) - 1; selection >= 0; selection--)
     {
         if (!mNodes[selection].mbSelected)

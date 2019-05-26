@@ -667,20 +667,18 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
     if (!mStageTarget.empty())
         return;
 
-    // auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     size_t stageCount = mEvaluationStages.GetStagesCount();
     mStageTarget.resize(stageCount, NULL);
     std::vector<std::shared_ptr<RenderTarget>> freeRenderTargets;
     std::vector<int> useCount(stageCount, 0);
     for (size_t i = 0; i < stageCount; i++)
     {
-        useCount[i] = mEvaluationStages.GetEvaluationStage(i).mUseCountByOthers;
+        useCount[i] = mEvaluationStages.mUseCountByOthers[i];
     }
 
     for (auto index : nodesToEvaluate)
     {
-        const EvaluationStage& evaluation = mEvaluationStages.GetEvaluationStage(index);
-        if (!evaluation.mUseCountByOthers)
+        if (!mEvaluationStages.mUseCountByOthers[index])
             continue;
 
         if (freeRenderTargets.empty())

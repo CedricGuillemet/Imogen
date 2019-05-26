@@ -184,20 +184,6 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
     return nodeIndex;
 }
 
-void GraphModel::DelNode(size_t nodeIndex)
-{
-    assert(mbTransaction);
-    /*
-    if (mBackgroundNode == int(index))
-    {
-        mBackgroundNode = -1;
-    }
-    else if (mBackgroundNode > int(index))
-    {
-        mBackgroundNode--;
-    }*/
-}
-
 void GraphModel::DeleteLinkHelper(int index)
 {
     const Link& link = mLinks[index];
@@ -208,6 +194,19 @@ void GraphModel::AddLinkHelper(int index)
 {
     const Link& link = mLinks[index];
     mEvaluationStages.AddEvaluationInput(link.mOutputNodeIndex, link.mOutputSlotIndex, link.mInputNodeIndex);
+}
+
+
+void GraphModel::AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
+{
+    size_t linkIndex = mLinks.size();
+    Link link;
+    link.mInputNodeIndex = int(inputNodeIndex);
+    link.mInputSlotIndex = int(inputSlotIndex);
+    link.mOutputNodeIndex = int(outputNodeIndex);
+    link.mOutputSlotIndex = int(outputSlotIndex);
+    mLinks.push_back(link);
+    AddLinkHelper(int(linkIndex));
 }
 
 void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
@@ -229,13 +228,14 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
 
     auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; }, delLink, addLink)
                   : nullptr;
-    Link link;
-    link.mInputNodeIndex = int(inputNodeIndex);
-    link.mInputSlotIndex = int(inputSlotIndex);
-    link.mOutputNodeIndex = int(outputNodeIndex);
-    link.mOutputSlotIndex = int(outputSlotIndex);
-    mLinks.push_back(link);
-    AddLinkHelper(int(linkIndex));
+
+    AddLinkInternal(inputNodeIndex, inputSlotIndex, outputNodeIndex, outputSlotIndex);
+}
+
+void GraphModel::DelLinkInternal(size_t linkIndex)
+{
+    DeleteLinkHelper(int(linkIndex));
+    mLinks.erase(mLinks.begin() + linkIndex);
 }
 
 void GraphModel::DelLink(size_t linkIndex)
@@ -245,11 +245,9 @@ void GraphModel::DelLink(size_t linkIndex)
     auto delLink = [&](int index) { DeleteLinkHelper(index); };
     auto addLink = [&](int index) { AddLinkHelper(index); };
 
-    auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, addLink, delLink)
+    auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, delLink, addLink)
                   : nullptr;
-    
-    DeleteLinkHelper(int(linkIndex));
-    mLinks.erase(mLinks.begin() + linkIndex);
+    DelLinkInternal(linkIndex);
 }
 
 void GraphModel::AddRug(const Rug& rug)
@@ -284,14 +282,30 @@ void GraphModel::SetRug(size_t rugIndex, const Rug& rug)
     mRugs[rugIndex] = rug;
 }
 
+bool GraphModel::HasSelectedNodes() const
+{
+    bool hasSelectedNode = false;
+    for (int selection = int(mNodes.size()) - 1; selection >= 0; selection--)
+    {
+        if (mNodes[selection].mbSelected)
+        {
+            return true;
+        }
+    }
+    return false;    
+}
+
 void GraphModel::DeleteSelectedNodes()
 {
-    URDummy urDummy;
+    assert(HasSelectedNodes());
+
+    auto urdummy = mUndoRedo ? std::make_unique<URDummy>() : nullptr;
     for (int selection = int(mNodes.size()) - 1; selection >= 0; selection--)
     {
         if (!mNodes[selection].mbSelected)
             continue;
-        URDel<Node> undoRedoDelNode(int(selection),
+        
+        auto ur = mUndoRedo ? std::make_unique<URDel<Node>>(int(selection),
                                     [this]() { return &mNodes; },
                                     [this](int index) {
                                         // recompute link indices
@@ -307,6 +321,7 @@ void GraphModel::DeleteSelectedNodes()
                                             }
                                         }
                                         mSelectedNodeIndex = -1;
+                                        DeleteNodeHelper(index);
                                     },
                                     [this](int index) {
                                         // recompute link indices
@@ -322,7 +337,8 @@ void GraphModel::DeleteSelectedNodes()
                                             }
                                         }
                                         mSelectedNodeIndex = -1;
-                                    });
+                                        AddNodeHelper(index);
+                                    }) : nullptr;
 
         for (int id = 0; id < mLinks.size(); id++)
         {
@@ -337,16 +353,16 @@ void GraphModel::DeleteSelectedNodes()
             auto& link = mLinks[i];
             if (link.mInputNodeIndex == selection || link.mOutputNodeIndex == selection)
             {
-                URDel<Link> undoRedoDelNodeLink(
+                auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(
                     int(i),
                     [this]() { return &mLinks; },
                     [this](int index) {
-                        DelLink(index);
+                        DelLinkInternal(index);
                     },
                     [this](int index) {
                         Link& link = mLinks[index];
-                        AddLink(link.mInputNodeIndex, link.mInputSlotIndex, link.mOutputNodeIndex, link.mOutputSlotIndex);
-                    });
+                        AddLinkInternal(link.mInputNodeIndex, link.mInputSlotIndex, link.mOutputNodeIndex, link.mOutputSlotIndex);
+                    }) : nullptr;
 
                 mLinks.erase(mLinks.begin() + i);
             }
@@ -369,9 +385,29 @@ void GraphModel::DeleteSelectedNodes()
             }
         }
 
-        // delete links
+        // delete stage data
+        auto urStage = mUndoRedo ? std::make_unique<URDel<EvaluationStage>>(int(selection), [&]() { return &mEvaluationStages.mStages; }) : nullptr;
+        auto urPinnedeParameters = mUndoRedo ? std::make_unique<URDel<uint32_t>>(int(selection), [&]() { return &mEvaluationStages.mPinnedParameters; })
+            : nullptr;
+        auto urPinnedIO = mUndoRedo ? std::make_unique<URDel<uint32_t>>(int(selection), [&]() { return &mEvaluationStages.mPinnedIO; })
+            : nullptr;
+        auto urParameters = mUndoRedo ? std::make_unique<URDel<Parameters>>(int(selection), [&]() { return &mEvaluationStages.mParameters; })
+            : nullptr;
+        auto urInputSamplers = mUndoRedo ? std::make_unique<URDel<Samplers>>(int(selection), [&]() { return &mEvaluationStages.mInputSamplers; })
+            : nullptr;
+        auto urMultiplexInputs = mUndoRedo ? std::make_unique<URDel<MultiplexInput>>(int(selection), [&]() { return &mEvaluationStages.mMultiplexInputs; })
+            : nullptr;
+
         mNodes.erase(mNodes.begin() + selection);
+        mEvaluationStages.DelSingleEvaluation(selection);
     }
+
+    assert(mEvaluationStages.mStages.size() == mNodes.size());
+    assert(mEvaluationStages.mPinnedParameters.size() == mNodes.size());
+    assert(mEvaluationStages.mParameters.size() == mNodes.size());
+    assert(mEvaluationStages.mPinnedIO.size() == mNodes.size());
+    assert(mEvaluationStages.mInputSamplers.size() == mNodes.size());
+    assert(mEvaluationStages.mMultiplexInputs.size() == mNodes.size());
 }
 
 bool GraphModel::IsIOUsed(size_t nodeIndex, int slotIndex, bool forOutput) const
@@ -571,9 +607,15 @@ void GraphModel::CopySelectedNodes()
 
 void GraphModel::CutSelectedNodes()
 {
+    if (!HasSelectedNodes())
+    {
+        return;
+    }
     mStagesClipboard.clear();
     CopySelectedNodes();
+    BeginTransaction(true);
     DeleteSelectedNodes();
+    EndTransaction();
 }
 
 bool GraphModel::IsClipboardEmpty() const
@@ -645,8 +687,9 @@ ImRect GraphModel::GetNodesDisplayRect() const
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     for (auto& node : mNodes)
     {
+        int width = gMetaNodes[node.mType].mWidth;
         int height = gMetaNodes[node.mType].mHeight;
-        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(100, height)));
+        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(float(width), float(height))));
     }
 
     return DisplayRectMargin(rect);
@@ -659,8 +702,9 @@ ImRect GraphModel::GetFinalNodeDisplayRect() const
     if (!evaluationOrder.empty() && !mNodes.empty())
     {
         auto& node = mNodes[evaluationOrder.back()];
+        int width = gMetaNodes[node.mType].mWidth;
         int height = gMetaNodes[node.mType].mHeight;
-        rect = ImRect(node.mPos, node.mPos + ImVec2(100, height));
+        rect = ImRect(node.mPos, node.mPos + ImVec2(float(width), float(height)));
     }
     return DisplayRectMargin(rect);
 }

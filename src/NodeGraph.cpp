@@ -800,7 +800,7 @@ static bool DrawNode(GraphModel* model,
             }
         }
     }
-    if (node_moving_active && io.MouseDown[0])
+    if (node_moving_active && io.MouseDown[0] && nodeHovered)
     {
         if (nodeOperation != NO_MovingNodes)
         {

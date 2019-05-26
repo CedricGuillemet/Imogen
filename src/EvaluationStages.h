@@ -197,7 +197,7 @@ struct EvaluationStages
     EvaluationStages();
 
     void AddSingleEvaluation(size_t nodeType);
-
+    void DelSingleEvaluation(size_t nodeIndex);
     size_t GetStagesCount() const
     {
         return mStages.size();

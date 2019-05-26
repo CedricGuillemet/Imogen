@@ -81,7 +81,6 @@ public:
 
     // setters
     size_t AddNode(size_t type, ImVec2 position);
-    void DelNode(size_t nodeIndex);
     void SelectNode(size_t nodeIndex, bool selected = true);
     void MoveSelectedNodes(const ImVec2 delta);
     void SetNodePosition(size_t nodeIndex, const ImVec2 position);
@@ -190,6 +189,9 @@ private:
     void DeleteLinkHelper(int nodeIndex);
     void AddNodeHelper(int nodeIndex);
     void DeleteNodeHelper(int nodeIndex);
+
+    void DelLinkInternal(size_t linkIndex);
+    void AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
     void RemoveAnimation(size_t nodeIndex);
 
     struct NodePosition
@@ -220,4 +222,5 @@ private:
         std::map<int, int>& stacks,
         size_t currentIndex,
         int currentLayer);
+    bool HasSelectedNodes() const;
 };

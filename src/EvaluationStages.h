@@ -52,7 +52,8 @@ struct Dirty
         Camera = 1 << 3,
         Time = 1 << 4,
         Sampler = 1 << 5,
-        All = 0xFF
+        AddedNode = 1 << 6,
+        DeletedNode = 1 << 7
     };
 };
 typedef unsigned char DirtyFlag;
@@ -170,25 +171,20 @@ struct EvaluationStage
     uint16_t mType;
     unsigned int mRuntimeUniqueId;
 
-    uint8_t gEvaluationMask; // see EvaluationMask
-    uint8_t mBlendingSrc;
-    uint8_t mBlendingDst;
-    uint8_t mVertexSpace; // UV, worldspace
-
-    int mLocalTime;
     int mStartFrame, mEndFrame;
     
-    bool mbDepthBuffer;
-    bool mbClearBuffer;
     // Camera
     Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
-
 
     // scene render
     void* mScene; // for path tracer
     std::shared_ptr<Scene> mGScene;
     void* renderer;
     Image DecodeImage();
+
+    // runtime -> context
+   
+    int mLocalTime;
 };
 
 // simple API
@@ -309,7 +305,7 @@ struct EvaluationStages
     UIInput mUIInputs;
     size_t mInputNodeIndex;
 
-    // runtime
+    // runtime -> context?
     std::vector<size_t> mEvaluationOrderList;
     std::vector<Input> mInputs;
     std::vector<uint8_t> mUseCountByOthers;

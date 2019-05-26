@@ -81,16 +81,14 @@ struct EvaluationContext
     unsigned int GetEvaluationTexture(size_t target);
     std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
     {
-        if (target >= mStageTarget.size())
-            return NULL;
-        return mStageTarget[target];
+        assert(target < mEvaluations.size());
+        return mEvaluations[target].mTarget;
     }
 
     const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
     {
-        if (target >= mStageTarget.size())
-            return NULL;
-        return mStageTarget[target];
+        assert(target < mEvaluations.size());
+        return mEvaluations[target].mTarget;
     }
 
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
@@ -105,15 +103,13 @@ struct EvaluationContext
     void SetTargetDirty(size_t target, DirtyFlag dirtyflag, bool onlyChild = false);
     int StageIsProcessing(size_t target) const
     {
-        if (target >= mbProcessing.size())
-            return 0;
-        return mbProcessing[target];
+        assert (target < mEvaluations.size());
+        return mEvaluations[target].mProcessing;
     }
     float StageGetProgress(size_t target) const
     {
-        if (target >= mProgress.size())
-            return 0.f;
-        return mProgress[target];
+        assert(target < mEvaluations.size());
+        return mEvaluations[target].mProgress;
     }
     void StageSetProcessing(size_t target, int processing);
     void StageSetProgress(size_t target, float progress);
@@ -129,7 +125,6 @@ struct EvaluationContext
         unsigned int mElementSize;
     };
 
-    const ComputeBuffer* GetComputeBuffer(size_t index) const;
     void Clear();
 
     unsigned int GetMaterialUniqueId() const
@@ -147,7 +142,6 @@ struct EvaluationContext
     void DirtyAll();
 
 protected:
-    void PreRun();
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
@@ -169,13 +163,25 @@ protected:
     int GetBindedComputeBuffer(size_t nodeIndex) const;
 
 
-    std::vector<std::shared_ptr<RenderTarget>> mStageTarget; // 1 per stage
-    std::vector<ComputeBuffer> mComputeBuffers;
+    struct Evaluation
+    {
+        std::shared_ptr<RenderTarget> mTarget;
+        float mProgress;
+        ComputeBuffer mComputeBuffer;
+
+        uint8_t mDirtyFlag;
+        uint8_t mProcessing;
+        uint8_t mBlendingSrc;
+        uint8_t mBlendingDst;
+        uint8_t mVertexSpace; // UV, worldspace
+        uint8_t mbDepthBuffer : 1;
+        uint8_t mbClearBuffer : 1;
+        uint8_t mbActive : 1;
+    };
+    std::vector<Evaluation> mEvaluations;
+
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
-    std::vector<DirtyFlag> mDirtyFlags;
-    std::vector<int> mbProcessing;
-    std::vector<float> mProgress;
-    std::vector<bool> mActive;
+
     EvaluationInfo mEvaluationInfo;
 
     std::vector<int> mStillDirty;

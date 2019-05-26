@@ -77,8 +77,15 @@ static const float rotMatrices[6][16] = {
 
     //-z
     {-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
-
-
+/*
+static const EvaluationContext::RenderingState EvaluationContext::defaultRenderingState = {
+    ONE,
+    ZERO,
+    0,
+    false,
+    false
+};
+*/
 EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
                                      bool synchronousEvaluation,
                                      int defaultWidth,
@@ -150,32 +157,26 @@ void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) co
 
 void EvaluationContext::Clear()
 {
-    for (auto tgt : mStageTarget)
+    for (auto& eval : mEvaluations)
     {
-        if (!tgt)
+        if (eval.mTarget)
         {
-            continue;
+            eval.mTarget->Destroy();
         }
-        tgt->Destroy();
+        if (eval.mComputeBuffer.mBuffer)
+        {
+            glDeleteBuffers(1, &eval.mComputeBuffer.mBuffer);
+        }
     }
-    mStageTarget.clear();
-    for (auto& buffer : mComputeBuffers)
-    {
-        glDeleteBuffers(1, &buffer.mBuffer);
-    }
-    mComputeBuffers.clear();
-    mDirtyFlags.clear();
-    mbProcessing.clear();
-    mProgress.clear();
 }
 
 unsigned int EvaluationContext::GetEvaluationTexture(size_t target)
 {
-    if (target >= mStageTarget.size())
+    assert (target < mEvaluations.size());
+    const auto& tgt = mEvaluations[target].mTarget;
+    if (!tgt)
         return 0;
-    if (!mStageTarget[target])
-        return 0;
-    return mStageTarget[target]->mGLTexID;
+    return tgt->mGLTexID;
 }
 
 unsigned int bladesVertexArray;
@@ -261,7 +262,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
             }
             else
             {
-                tgt = mStageTarget[targetIndex];
+                tgt = mEvaluations[targetIndex].mTarget;
             }
 
             if (tgt)
@@ -302,9 +303,9 @@ int EvaluationContext::GetBindedComputeBuffer(size_t nodeIndex) const
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
-        int targetIndex = input.mInputs[inputIndex];
-        if (targetIndex != -1 && targetIndex < mComputeBuffers.size() && mComputeBuffers[targetIndex].mBuffer &&
-            mActive[targetIndex])
+        const int targetIndex = input.mInputs[inputIndex];
+        const auto& evaluation = mEvaluations[targetIndex];
+        if (targetIndex != -1 && evaluation.mComputeBuffer.mBuffer && evaluation.mbActive)
         {
             return targetIndex;
         }
@@ -653,30 +654,24 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
     // alloc targets
-    mStageTarget.resize(mEvaluationStages.GetStagesCount(), NULL);
     for (size_t i = 0; i < mEvaluationStages.GetStagesCount(); i++)
     {
-        if (!mStageTarget[i])
+        if (!mEvaluations[i].mTarget)
         {
-            mStageTarget[i] = std::make_shared<RenderTarget>();
+            mEvaluations[i].mTarget = std::make_shared<RenderTarget>();
         }
     }
 }
 
 void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate)
 {
-    if (!mStageTarget.empty())
-        return;
-
-    size_t stageCount = mEvaluationStages.GetStagesCount();
-    mStageTarget.resize(stageCount, NULL);
     std::vector<std::shared_ptr<RenderTarget>> freeRenderTargets;
-    std::vector<int> useCount(stageCount, 0);
+    std::vector<int> useCount(mEvaluations.size(), 0);
     for (size_t i = 0; i < stageCount; i++)
     {
         useCount[i] = mEvaluationStages.mUseCountByOthers[i];
     }
-
+    compute use count here!
     for (auto index : nodesToEvaluate)
     {
         if (!mEvaluationStages.mUseCountByOthers[index])
@@ -701,63 +696,63 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
             useCount[targetIndex]--;
             if (!useCount[targetIndex])
             {
-                freeRenderTargets.push_back(mStageTarget[targetIndex]);
+                freeRenderTargets.push_back(mEvaluations[targetIndex].mTarget);
             }
         }
     }
-}
-void EvaluationContext::PreRun()
-{
-    mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
-    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
-    mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
-    mActive.resize(mEvaluationStages.GetStagesCount(), false);
 }
 
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
     auto& currentStage = mEvaluationStages.GetEvaluationStage(nodeIndex);
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
+    auto& evaluation = mEvaluations[nodeIndex];
 
     // check processing
     for (auto& inp : input.mInputs)
     {
         if (inp < 0)
             continue;
-        if (mbProcessing[inp])
+        if (mEvaluations[inp].mProcessing)
         {
-            mbProcessing[nodeIndex] = 1;
+            evaluation.mProcessing = 1;
             return;
         }
     }
 
-    mbProcessing[nodeIndex] = 0;
+    evaluation.mProcessing = 0;
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
     mEvaluationInfo.mFrame = mCurrentTime;
-    mEvaluationInfo.mDirtyFlag = mDirtyFlags[nodeIndex];
+    mEvaluationInfo.mDirtyFlag = evaluation.mDirtyFlag;
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetKeyboardMouseInfos(mEvaluationInfo);
+    int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 
-    if (currentStage.gEvaluationMask & EvaluationC)
+    if (evaluationMask & EvaluationC)
+    {
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
+    }
 
-    if (currentStage.gEvaluationMask & EvaluationPython)
+    if (evaluationMask & EvaluationPython)
+    {
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
+    }
 
-    if (currentStage.gEvaluationMask & EvaluationGLSLCompute)
+    if (evaluationMask & EvaluationGLSLCompute)
     {
         EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);
     }
 
-    if (currentStage.gEvaluationMask & EvaluationGLSL)
+    if (evaluationMask & EvaluationGLSL)
     {
-        if (!mStageTarget[nodeIndex]->mGLTexID)
-            mStageTarget[nodeIndex]->InitBuffer(mDefaultWidth, mDefaultHeight, currentStage.mbDepthBuffer);
+        if (!evaluation.mTarget->mGLTexID)
+            evaluation.mTarget->InitBuffer(mDefaultWidth, mDefaultHeight, evaluation.mbDepthBuffer);
 
         EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
     }
-    mDirtyFlags[nodeIndex] = 0;
+
+    evaluation.mDirtyFlag = 0;
 }
 
 bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
@@ -769,12 +764,13 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
     {
-        mActive[nodeIndex] = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame &&
+        auto& evaluation = mEvaluations[nodeIndex];
+        evaluation.mbActive = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame &&
                              mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
-        if (!mActive[nodeIndex])
+        if (!evaluation.mbActive)
             continue;
         RunNode(nodeIndex);
-        anyNodeIsProcessing |= mbProcessing[nodeIndex] != 0;
+        anyNodeIsProcessing |= evaluation.mProcessing != 0;
     }
     // set dirty nodes that tell so
     for (auto index : mStillDirty)
@@ -791,8 +787,6 @@ void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationIn
 {
     GLint last_viewport[4];
     glGetIntegerv(GL_VIEWPORT, last_viewport);
-
-    PreRun();
 
     mEvaluationInfo = evaluationInfo;
 
@@ -821,7 +815,6 @@ void EvaluationContext::RecurseBackward(size_t nodeIndex, std::vector<size_t>& u
 
 void EvaluationContext::RunDirty()
 {
-    PreRun();
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     std::vector<size_t> nodesToEvaluate;
@@ -847,7 +840,6 @@ void EvaluationContext::DirtyAll()
 
 void EvaluationContext::RunAll()
 {
-    PreRun();
     DirtyAll();
     // get list of nodes to run
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
@@ -858,7 +850,6 @@ void EvaluationContext::RunAll()
 
 bool EvaluationContext::RunBackward(size_t nodeIndex)
 {
-    PreRun();
     memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
     mEvaluationInfo.forcedDirty = true;
     std::vector<size_t> nodesToEvaluate;
@@ -920,9 +911,7 @@ void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool 
 
 void EvaluationContext::AllocateComputeBuffer(int target, int elementCount, int elementSize)
 {
-    if (mComputeBuffers.size() <= target)
-        mComputeBuffers.resize(target + 1);
-    ComputeBuffer& buffer = mComputeBuffers[target];
+    ComputeBuffer& buffer = mEvaluations[target].mComputeBuffer;
     buffer.mElementCount = elementCount;
     buffer.mElementSize = elementSize;
     if (!buffer.mBuffer)
@@ -933,37 +922,19 @@ void EvaluationContext::AllocateComputeBuffer(int target, int elementCount, int 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-const EvaluationContext::ComputeBuffer* EvaluationContext::GetComputeBuffer(size_t index) const
-{
-    ComputeBuffer res;
-    if (mComputeBuffers.size() <= index)
-        return nullptr;
-    return &mComputeBuffers[index];
-}
 
 void EvaluationContext::StageSetProcessing(size_t target, int processing)
 {
-    mbProcessing.resize(mEvaluationStages.GetStagesCount(), 0);
-    if (target >= mbProcessing.size())
+    if (mEvaluations[target].mProcessing != processing)
     {
-        return;
+        mEvaluations[target].mProgress = 0.f;
     }
-    if (mbProcessing[target] != processing)
-    {
-        mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
-        mProgress[target] = 0.f;
-    }
-    mbProcessing[target] = processing;
+    mEvaluations[target].mProcessing = processing;
 }
 
 void EvaluationContext::StageSetProgress(size_t target, float progress)
 {
-    mProgress.resize(mEvaluationStages.GetStagesCount(), 0.f);
-    if (target >= mProgress.size())
-    {
-        return;
-    }
-    mProgress[target] = progress;
+    mEvaluations[target].mProgress = progress;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -132,7 +132,7 @@ void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
 // called when a node is added by user, or with undo/redo
 void GraphModel::AddNodeHelper(int nodeIndex)
 {
-    SetDirty(nodeIndex, Dirty::All);
+    SetDirty(nodeIndex, Dirty::AddedNode);
 }
 
 void GraphModel::DeleteNodeHelper(int nodeIndex)
@@ -149,6 +149,7 @@ void GraphModel::DeleteNodeHelper(int nodeIndex)
         }
     }
     RemoveAnimation(nodeIndex);
+    SetDirty(nodeIndex, Dirty::DeletedNode);
 }
 
 void GraphModel::RemoveAnimation(size_t nodeIndex)
@@ -597,6 +598,11 @@ bool GraphModel::IsClipboardEmpty() const
 
 void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
 {
+    if (IsClipboardEmpty())
+    {
+        return;
+    }
+    BeginTransaction(true);
     for (size_t i = 0;i<mNodesClipboard.size();i++)
     {
         const Node& node = mNodes[i];
@@ -634,13 +640,13 @@ void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
         mNodes.back().mPos += viewOffsetPosition;//(io.MousePos - offset) / factor - min;
         mNodes.back().mbSelected = true;
     }
+    EndTransaction();
 }
 
 const std::vector<unsigned char>& GraphModel::GetParameters(size_t nodeIndex) const
 {
     return mEvaluationStages.mParameters[nodeIndex];
 }
-
 
 static ImRect DisplayRectMargin(ImRect rect)
 {

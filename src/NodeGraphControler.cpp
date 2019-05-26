@@ -496,6 +496,11 @@ void NodeGraphControler::NodeEdit()
 
         EditNodeParameters();
     }
+    ApplyDirtyList();
+}
+
+void NodeGraphControler::ApplyDirtyList()
+{
     // apply dirty list
     const auto& dirtyList = mModel.GetDirtyList();
     for (const auto& dirtyItem : dirtyList)

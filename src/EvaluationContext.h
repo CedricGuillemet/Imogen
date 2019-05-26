@@ -142,6 +142,31 @@ struct EvaluationContext
     unsigned int mEvaluationStateGLSLBuffer;
     void DirtyAll();
 
+    struct Evaluation
+    {
+        std::shared_ptr<RenderTarget> mTarget;
+        
+        ComputeBuffer mComputeBuffer;
+        float mProgress             = 0.f;
+
+        uint8_t mDirtyFlag          = 0;
+        uint8_t mProcessing         = false;
+        uint8_t mBlendingSrc        = ONE;
+        uint8_t mBlendingDst        = ZERO;
+        uint8_t mVertexSpace        = 0; // UV, worldspace
+        union
+        {
+            uint8_t u = 0;
+            struct
+            {
+                uint8_t mbDepthBuffer : 1;
+                uint8_t mbClearBuffer : 1;
+                uint8_t mbActive : 1;
+            };
+        };
+    };
+    std::vector<Evaluation> mEvaluations;
+
 protected:
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
@@ -162,7 +187,6 @@ protected:
 
 
     int GetBindedComputeBuffer(size_t nodeIndex) const;
-
 
     std::vector<ComputeBuffer> mComputeBuffers;
 #if USE_FFMPEG    
@@ -185,7 +209,6 @@ protected:
         uint8_t mbActive : 1;
     };
     std::vector<Evaluation> mEvaluations;
-
 
     EvaluationInfo mEvaluationInfo;
 

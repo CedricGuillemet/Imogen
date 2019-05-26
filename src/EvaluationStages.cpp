@@ -42,8 +42,7 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     evaluation.mTypename = gMetaNodes[nodeType].mName;
     //#endif
     evaluation.mDecoder = NULL;
-    evaluation.mUseCountByOthers = 0;
-    evaluation.mType = nodeType;
+    evaluation.mType = uint16_t(nodeType);
     evaluation.mBlendingSrc = ONE;
     evaluation.mBlendingDst = ZERO;
     evaluation.mLocalTime = 0;
@@ -110,16 +109,18 @@ void EvaluationStages::SetSamplers(size_t nodeIndex, const std::vector<InputSamp
 void EvaluationStages::ClearInputs()
 {
     mInputs.resize(mStages.size());
-    for (auto& input : mInputs)
+    mUseCountByOthers.resize(mStages.size());
+    for (size_t i = 0;i<mStages.size();i++)
     {
-        input = Input();
+        mInputs[i] = Input();
+        mUseCountByOthers[i] = 0;
     }
 }
 
 void EvaluationStages::SetEvaluationInput(size_t nodeIndex, int slot, int source)
 {
     mInputs[nodeIndex].mInputs[slot] = source;
-    mStages[source].mUseCountByOthers++;
+    mUseCountByOthers[source]++;
 }
 
 void EvaluationStages::SetEvaluationOrder(const std::vector<size_t>& nodeOrderList)

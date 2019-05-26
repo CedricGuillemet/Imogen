@@ -167,16 +167,17 @@ struct EvaluationStage
     std::string mTypename;
     //#endif
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
-    size_t mType;
+    uint16_t mType;
     unsigned int mRuntimeUniqueId;
 
-    int gEvaluationMask; // see EvaluationMask
-    int mUseCountByOthers;
-    int mBlendingSrc;
-    int mBlendingDst;
+    uint8_t gEvaluationMask; // see EvaluationMask
+    uint8_t mBlendingSrc;
+    uint8_t mBlendingDst;
+    uint8_t mVertexSpace; // UV, worldspace
+
     int mLocalTime;
     int mStartFrame, mEndFrame;
-    int mVertexSpace; // UV, worldspace
+    
     bool mbDepthBuffer;
     bool mbClearBuffer;
     // Camera
@@ -311,6 +312,7 @@ struct EvaluationStages
     // runtime
     std::vector<size_t> mEvaluationOrderList;
     std::vector<Input> mInputs;
+    std::vector<uint8_t> mUseCountByOthers;
 
 protected:
 

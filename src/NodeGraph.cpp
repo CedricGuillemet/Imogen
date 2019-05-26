@@ -738,14 +738,6 @@ static bool DrawNode(GraphModel* model,
     ImGui::SetCursorScreenPos(node_rect_min + NODE_WINDOW_PADDING);
     ImVec2 nodeSize = ImVec2(metaNode.mWidth, metaNode.mHeight) * factor;
     const bool nodeIsCompute = controler->NodeIsCompute(nodeIndex);
-    ImGui::InvisibleButton("canvas", nodeSize);
-
-    // must be called right after creating the control we want to be able to move
-    bool node_moving_active = ImGui::IsItemActive(); 
-
-    // Save the size of what we have emitted and whether any of the widgets are being used
-    bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
-    ImVec2 node_rect_max = node_rect_min + nodeSize;
 
     // test nested IO
     drawList->ChannelsSetCurrent(1); // Background
@@ -773,9 +765,15 @@ static bool DrawNode(GraphModel* model,
         }
     }
 
-
     ImGui::SetCursorScreenPos(node_rect_min);
     ImGui::InvisibleButton("node", nodeSize);
+    // must be called right after creating the control we want to be able to move
+    bool node_moving_active = ImGui::IsItemActive();
+
+    // Save the size of what we have emitted and whether any of the widgets are being used
+    bool node_widgets_active = (!old_any_active && ImGui::IsAnyItemActive());
+    ImVec2 node_rect_max = node_rect_min + nodeSize;
+
     bool nodeHovered = false;
     if (ImGui::IsItemHovered() && nodeOperation == NO_None && !overInput)
     {

@@ -69,6 +69,8 @@ struct EvaluationContext
     void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
     void RunDirty();
 
+
+    void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
     int GetCurrentTime() const
     {
         return mCurrentTime;
@@ -165,6 +167,9 @@ struct EvaluationContext
         };
     };
     std::vector<Evaluation> mEvaluations;
+
+    UIInput mUIInputs;
+    size_t mInputNodeIndex;
 
 protected:
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);

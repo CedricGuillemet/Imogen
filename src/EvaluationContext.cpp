@@ -94,6 +94,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
     , mRuntimeUniqueId(-1)
+    , mInputNodeIndex(-1)
 {
     mFSQuad.Init();
 
@@ -128,19 +129,24 @@ EvaluationContext::~EvaluationContext()
     Clear();
 }
 
+void EvaluationContext::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
+{
+    mUIInputs = input;
+    mInputNodeIndex = nodeIndex;
+}
+
 void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const
 {
-    if (mEvaluationStages.mInputNodeIndex == evaluationInfo.targetIndex)
+    if (mInputNodeIndex == evaluationInfo.targetIndex)
     {
-        const auto& input = mEvaluationStages.mUIInputs;
-        evaluationInfo.mouse[0] = input.mRx;
-        evaluationInfo.mouse[1] = 1.f - input.mRy;
-        evaluationInfo.mouse[2] = input.mLButDown ? 1.f : 0.f;
-        evaluationInfo.mouse[3] = input.mRButDown ? 1.f : 0.f;
+        evaluationInfo.mouse[0] = mUIInputs.mRx;
+        evaluationInfo.mouse[1] = 1.f - mUIInputs.mRy;
+        evaluationInfo.mouse[2] = mUIInputs.mLButDown ? 1.f : 0.f;
+        evaluationInfo.mouse[3] = mUIInputs.mRButDown ? 1.f : 0.f;
 
-        evaluationInfo.keyModifier[0] = input.mbCtrl ? 1 : 0;
-        evaluationInfo.keyModifier[1] = input.mbAlt ? 1 : 0;
-        evaluationInfo.keyModifier[2] = input.mbShift ? 1 : 0;
+        evaluationInfo.keyModifier[0] = mUIInputs.mbCtrl ? 1 : 0;
+        evaluationInfo.keyModifier[1] = mUIInputs.mbAlt ? 1 : 0;
+        evaluationInfo.keyModifier[2] = mUIInputs.mbShift ? 1 : 0;
         evaluationInfo.keyModifier[3] = 0;
     }
     else
@@ -170,6 +176,7 @@ void EvaluationContext::Clear()
             glDeleteBuffers(1, &eval.mComputeBuffer.mBuffer);
         }
     }
+    mInputNodeIndex = -1;
 }
 
 unsigned int EvaluationContext::GetEvaluationTexture(size_t target)

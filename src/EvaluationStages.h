@@ -211,7 +211,7 @@ struct EvaluationStages
     void ClearInputs();
     void SetEvaluationInput(size_t target, int slot, int source);
     void SetEvaluationOrder(const std::vector<size_t>& nodeOrderList);
-    void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
+    
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
     void Clear();
 
@@ -280,8 +280,6 @@ struct EvaluationStages
     std::vector<MultiplexInput> mMultiplexInputs;
     int mFrameMin, mFrameMax;
 
-    UIInput mUIInputs;
-    size_t mInputNodeIndex;
 
     // runtime -> context?
     std::vector<size_t> mEvaluationOrderList;

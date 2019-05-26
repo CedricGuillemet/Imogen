@@ -638,7 +638,7 @@ void NodeGraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput
     }
     if (metaNode.mbHasUI || parametersDirty)
     {
-        mModel.SetKeyboardMouse(mSelectedNodeIndex, input);
+        mEditingContext.SetKeyboardMouse(mSelectedNodeIndex, input);
 
         if ((input.mLButDown || input.mRButDown) && !mModel.InTransaction() && parametersDirty && bValidInput)
         {

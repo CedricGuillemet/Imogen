@@ -553,11 +553,6 @@ void GraphModel::SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd)
     stage.mEndFrame = frameEnd;
 }
 
-void GraphModel::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
-{
-    mEvaluationStages.SetKeyboardMouse(nodeIndex, input);
-}
-
 void GraphModel::CopySelectedNodes()
 {
     mStagesClipboard.clear();

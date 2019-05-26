@@ -31,7 +31,7 @@
 #include <algorithm>
 #include <map>
 
-EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1), mInputNodeIndex(-1)
+EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 {
 }
 
@@ -133,11 +133,6 @@ void EvaluationStages::Clear()
     mParameters.clear();
 }
 
-void EvaluationStages::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
-{
-    mUIInputs = input;
-    mInputNodeIndex = nodeIndex;
-}
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {

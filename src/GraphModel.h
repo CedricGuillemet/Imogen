@@ -101,7 +101,6 @@ public:
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
     void SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd);
-    void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
     void SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex);
 	void SetParameterPins(const std::vector<uint32_t>& pins)
     {

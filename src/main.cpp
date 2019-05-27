@@ -208,10 +208,10 @@ int main(int, char**)
 
     ImGuiIO& io = ImGui::GetIO();
 
-	TagTime("Context");
+    TagTime("Context");
     InitFonts();
 
-	TagTime("Fonts");
+    TagTime("Fonts");
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -273,9 +273,9 @@ int main(int, char**)
             nodeGraphControler.mEditingContext.RunDirty();
             imogen.Show(builder, library, capturing);
             if (!capturing && imogen.ShowMouseState())
-			{
-				ImMouseState();
-			}
+            {
+                ImMouseState();
+            }
             // render everything
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glUseProgram(0);

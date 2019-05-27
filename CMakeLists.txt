@@ -23,9 +23,9 @@ file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
-	${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
-	${CMAKE_SOURCE_DIR}/ext/SOIL/src/*.c
-	${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/SOIL/src/*.c
+    ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
 )
 
 if(WIN32)

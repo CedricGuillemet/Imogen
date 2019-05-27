@@ -1,7 +1,7 @@
 /**
  * cgltf - a single-file glTF 2.0 parser written in C99.
  *
- * Version: 1.0
+ * Version: 1.1
  *
  * Website: https://github.com/jkuhlmann/cgltf
  *
@@ -35,8 +35,15 @@
  * variable.
  *
  * `cgltf_result cgltf_load_buffers(const cgltf_options*, cgltf_data*,
- * const char*)` can be optionally called to open and read buffer
- * files using the `FILE*` APIs.
+ * const char* gltf_path)` can be optionally called to open and read buffer
+ * files using the `FILE*` APIs. The `gltf_path` argument is the path to
+ * the original glTF file, which allows the parser to resolve the path to
+ * buffer files.
+ *
+ * `cgltf_result cgltf_load_buffer_base64(const cgltf_options* options,
+ * cgltf_size size, const char* base64, void** out_data)` decodes
+ * base64-encoded data content. Used internally by `cgltf_load_buffers()`
+ * and may be useful if you're not dealing with normal files.
  *
  * `cgltf_result cgltf_parse_file(const cgltf_options* options, const
  * char* path, cgltf_data** out_data)` can be used to open the given
@@ -509,7 +516,10 @@ cgltf_result cgltf_parse_file(
 cgltf_result cgltf_load_buffers(
 		const cgltf_options* options,
 		cgltf_data* data,
-		const char* base_path);
+		const char* gltf_path);
+
+
+cgltf_result cgltf_load_buffer_base64(const cgltf_options* options, cgltf_size size, const char* base64, void** out_data);
 
 cgltf_result cgltf_validate(
 		cgltf_data* data);
@@ -832,18 +842,18 @@ static void cgltf_combine_paths(char* path, const char* base, const char* uri)
 	}
 }
 
-static cgltf_result cgltf_load_buffer_file(const cgltf_options* options, cgltf_size size, const char* uri, const char* base_path, void** out_data)
+static cgltf_result cgltf_load_buffer_file(const cgltf_options* options, cgltf_size size, const char* uri, const char* gltf_path, void** out_data)
 {
 	void* (*memory_alloc)(void*, cgltf_size) = options->memory_alloc ? options->memory_alloc : &cgltf_default_alloc;
 	void (*memory_free)(void*, void*) = options->memory_free ? options->memory_free : &cgltf_default_free;
 
-	char* path = (char*)memory_alloc(options->memory_user_data, strlen(uri) + strlen(base_path) + 1);
+	char* path = (char*)memory_alloc(options->memory_user_data, strlen(uri) + strlen(gltf_path) + 1);
 	if (!path)
 	{
 		return cgltf_result_out_of_memory;
 	}
 
-	cgltf_combine_paths(path, base_path, uri);
+	cgltf_combine_paths(path, gltf_path, uri);
 
 	FILE* file = fopen(path, "rb");
 
@@ -876,7 +886,7 @@ static cgltf_result cgltf_load_buffer_file(const cgltf_options* options, cgltf_s
 	return cgltf_result_success;
 }
 
-static cgltf_result cgltf_load_buffer_base64(const cgltf_options* options, cgltf_size size, const char* base64, void** out_data)
+cgltf_result cgltf_load_buffer_base64(const cgltf_options* options, cgltf_size size, const char* base64, void** out_data)
 {
 	void* (*memory_alloc)(void*, cgltf_size) = options->memory_alloc ? options->memory_alloc : &cgltf_default_alloc;
 	void (*memory_free)(void*, void*) = options->memory_free ? options->memory_free : &cgltf_default_free;
@@ -923,7 +933,7 @@ static cgltf_result cgltf_load_buffer_base64(const cgltf_options* options, cgltf
 	return cgltf_result_success;
 }
 
-cgltf_result cgltf_load_buffers(const cgltf_options* options, cgltf_data* data, const char* base_path)
+cgltf_result cgltf_load_buffers(const cgltf_options* options, cgltf_data* data, const char* gltf_path)
 {
 	if (options == NULL)
 	{
@@ -974,7 +984,7 @@ cgltf_result cgltf_load_buffers(const cgltf_options* options, cgltf_data* data, 
 		}
 		else if (strstr(uri, "://") == NULL)
 		{
-			cgltf_result res = cgltf_load_buffer_file(options, data->buffers[i].size, uri, base_path, &data->buffers[i].data);
+			cgltf_result res = cgltf_load_buffer_file(options, data->buffers[i].size, uri, gltf_path, &data->buffers[i].data);
 
 			if (res != cgltf_result_success)
 			{
@@ -1791,9 +1801,9 @@ static int cgltf_parse_json_primitive(cgltf_options* options, jsmntok_t const* t
 				return i;
 			}
 
-			for (cgltf_size j = 0; j < out_prim->targets_count; ++j)
+			for (cgltf_size k = 0; k < out_prim->targets_count; ++k)
 			{
-				i = cgltf_parse_json_attribute_list(options, tokens, i, json_chunk, &out_prim->targets[j].attributes, &out_prim->targets[j].attributes_count);
+				i = cgltf_parse_json_attribute_list(options, tokens, i, json_chunk, &out_prim->targets[k].attributes, &out_prim->targets[k].attributes_count);
 				if (i < 0)
 				{
 					return i;
@@ -3767,7 +3777,16 @@ static cgltf_size cgltf_component_size(cgltf_component_type component_type) {
 
 static cgltf_size cgltf_calc_size(cgltf_type type, cgltf_component_type component_type)
 {
-    return cgltf_component_size(component_type) * cgltf_num_components(type);
+	cgltf_size component_size = cgltf_component_size(component_type);
+	if (type == cgltf_type_mat2 && component_size == 1)
+	{
+		return 8 * component_size;
+	}
+	else if (type == cgltf_type_mat3 && (component_size == 1 || component_size == 2))
+	{
+		return 12 * component_size;
+	}
+	return component_size * cgltf_num_components(type);
 }
 
 static int cgltf_fixup_pointers(cgltf_data* out_data);

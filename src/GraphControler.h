@@ -37,7 +37,7 @@ struct GraphControler : public GraphEditorDelegate
 
     void SetKeyboardMouse(const UIInput& input, bool bValidInput);
 
-	// accessors
+    // accessors
     virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(index); }
     virtual int NodeIsProcesing(size_t nodeIndex) const { return mEditingContext.StageIsProcessing(nodeIndex); }
     virtual float NodeProgress(size_t nodeIndex) const { return mEditingContext.StageGetProgress(nodeIndex); }
@@ -70,7 +70,7 @@ struct GraphControler : public GraphEditorDelegate
 
 
 
-	// UI
+    // UI
     void NodeEdit();
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex);
     virtual bool RenderBackground();
@@ -87,7 +87,7 @@ struct GraphControler : public GraphEditorDelegate
     }
     */
     void ApplyDirtyList();
-	GraphModel mModel;
+    GraphModel mModel;
 
 protected:
     bool mbMouseDragging;

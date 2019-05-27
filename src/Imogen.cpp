@@ -659,8 +659,7 @@ void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int 
         rug.mComment = rugs[i].mText;
     }
     material.mAnimTrack = model.GetAnimTrack();
-    material.mFrameMin = model.mFrameMin;
-    material.mFrameMax = model.mFrameMax;
+    model.GetStartEndFrame(material.mFrameMin, material.mFrameMax);
     material.mPinnedParameters = model.GetParameterPins();
     material.mPinnedIO = model.GetIOPins();
     material.mMultiplexInputs = model.GetMultiplexInputs();
@@ -687,7 +686,8 @@ void Imogen::UpdateNewlySelectedGraph()
     if (mSelectedMaterial != -1)
     {
         ClearAll();
-        mNodeGraphControler->mModel.BeginTransaction(false);
+        auto& model = mNodeGraphControler->mModel;
+        model.BeginTransaction(false);
         Material& material = library.mMaterials[mSelectedMaterial];
         auto nodeCount = material.mMaterialNodes.size();
         for (size_t i = 0; i < nodeCount; i++)
@@ -696,10 +696,10 @@ void Imogen::UpdateNewlySelectedGraph()
             if (node.mType == 0xFFFFFFFF)
                 continue;
 
-            auto nodeIndex = mNodeGraphControler->mModel.AddNode(node.mType, ImVec2(float(node.mPosX), float(node.mPosY)));
-            mNodeGraphControler->mModel.SetParameters(nodeIndex, node.mParameters);
-            mNodeGraphControler->mModel.SetTimeSlot(nodeIndex, node.mFrameStart, node.mFrameEnd);
-            mNodeGraphControler->mModel.SetSamplers(nodeIndex, node.mInputSamplers);
+            auto nodeIndex = model.AddNode(node.mType, ImVec2(float(node.mPosX), float(node.mPosY)));
+            model.SetParameters(nodeIndex, node.mParameters);
+            model.SetTimeSlot(nodeIndex, node.mFrameStart, node.mFrameEnd);
+            model.SetSamplers(nodeIndex, node.mInputSamplers);
 
             /*auto& lastNode = mNodeGraphControler->mModel.GetEvaluationStages().mStages.back(); todo
             if (!node.mImage.empty())
@@ -713,7 +713,7 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
             MaterialConnection& materialConnection = material.mMaterialConnections[i];
-            mNodeGraphControler->mModel.AddLink(materialConnection.mInputNodeIndex,
+            model.AddLink(materialConnection.mInputNodeIndex,
                                                 materialConnection.mInputSlotIndex,
                                                 materialConnection.mOutputNodeIndex,
                                                 materialConnection.mOutputSlotIndex);
@@ -721,22 +721,23 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
         {
             MaterialNodeRug& rug = material.mMaterialRugs[i];
-            mNodeGraphControler->mModel.AddRug({ImVec2(float(rug.mPosX), float(rug.mPosY)),
+            model.AddRug({ImVec2(float(rug.mPosX), float(rug.mPosY)),
                                                ImVec2(float(rug.mSizeX), float(rug.mSizeY)),
                                                rug.mColor,
                                                rug.mComment});
         }
-        mNodeGraphControler->mModel.EndTransaction();
+        model.SetStartEndFrame(material.mFrameMin, material.mFrameMax);
+        model.SetAnimTrack(material.mAnimTrack);
+        model.SetParameterPins(material.mPinnedParameters);
+        model.SetIOPins(material.mPinnedIO);
+        model.SetMultiplexInputs(material.mMultiplexInputs);
+        model.EndTransaction();
         GraphEditorUpdateScrolling(mNodeGraphControler);
+
         mCurrentTime = 0;
         mbIsPlaying = false;
         mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
-        mNodeGraphControler->mModel.SetAnimTrack(material.mAnimTrack);
-        mNodeGraphControler->mModel.mFrameMin = material.mFrameMin;
-        mNodeGraphControler->mModel.mFrameMax = material.mFrameMax;
-        mNodeGraphControler->mModel.SetParameterPins(material.mPinnedParameters);
-        mNodeGraphControler->mModel.SetIOPins(material.mPinnedIO);
-        mNodeGraphControler->mModel.SetMultiplexInputs(material.mMultiplexInputs);
+
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
@@ -1196,11 +1197,15 @@ struct MySequence : public ImSequencer::SequenceInterface
     }
     virtual int GetFrameMin() const
     {
-        return mNodeGraphControler.mModel.mFrameMin;
+        int startFrame, endFrame;
+        mNodeGraphControler.mModel.GetStartEndFrame(startFrame, endFrame);
+        return startFrame;
     }
     virtual int GetFrameMax() const
     {
-        return mNodeGraphControler.mModel.mFrameMax;
+        int startFrame, endFrame;
+        mNodeGraphControler.mModel.GetStartEndFrame(startFrame, endFrame);
+        return endFrame;
     }
 
     virtual void BeginEdit(int index)
@@ -1291,8 +1296,11 @@ struct MySequence : public ImSequencer::SequenceInterface
             mbVisible.clear();
         }
 
-        ImVec2 curveMin(float(mNodeGraphControler.mModel.mFrameMin), mCurveMin);
-        ImVec2 curveMax(float(mNodeGraphControler.mModel.mFrameMax), mCurveMax);
+        int startFrame, endFrame;
+        mNodeGraphControler.mModel.GetStartEndFrame(startFrame, endFrame);
+
+        ImVec2 curveMin(float(startFrame), mCurveMin);
+        ImVec2 curveMax(float(endFrame), mCurveMax);
         AnimCurveEdit curveEdit(mNodeGraphControler,
                                 curveMin,
                                 curveMax,
@@ -1404,7 +1412,11 @@ void Imogen::Init()
         {"PlayPause", "Play or Stop current animation", [&]() { PlayPause(); }},
         {"AnimationFirstFrame",
          "Set current time to the first frame of animation",
-         [&]() { mCurrentTime = mNodeGraphControler->mModel.mFrameMin; }},
+         [&]() { 
+            int startFrame, endFrame;
+            GetNodeGraphControler()->mModel.GetStartEndFrame(startFrame, endFrame);
+            mCurrentTime = startFrame;
+         }},
         {"AnimationNextFrame", "Move to the next animation frame", [&]() { mCurrentTime++; }},
         {"AnimationPreviousFrame", "Move to previous animation frame", [&]() { mCurrentTime--; }},
         {"MaterialExport", "Export current material to a file", [&]() { ExportMaterial(); }},
@@ -1764,7 +1776,10 @@ void Imogen::PlayPause()
 {
     if (!mbIsPlaying)
     {
-        mCurrentTime = mNodeGraphControler->mModel.mFrameMin;
+        int startFrame, endFrame;
+        auto& model = mNodeGraphControler->mModel;
+        model.GetStartEndFrame(startFrame, endFrame);
+        mCurrentTime = startFrame;
     }
     mbIsPlaying = !mbIsPlaying;
 }
@@ -1776,14 +1791,18 @@ void Imogen::ShowTimeLine()
 
     mSequence->SetCurrentTime(mCurrentTime);
 
+    int startFrame, endFrame;
+    auto& model = mNodeGraphControler->mModel;
+    model.GetStartEndFrame(startFrame, endFrame);
+
     ImGui::PushItemWidth(80);
     ImGui::PushID(200);
-    ImGui::InputInt("", &mNodeGraphControler->mModel.mFrameMin, 0, 0);
+    bool dirtyFrame = ImGui::InputInt("", &startFrame, 0, 0);
     ImGui::PopID();
     ImGui::SameLine();
     if (Button("AnimationFirstFrame", "|<", ImVec2(0, 0)))
     {
-        mCurrentTime = mNodeGraphControler->mModel.mFrameMin;
+        mCurrentTime = startFrame;
     }
     ImGui::SameLine();
     if (Button("AnimationPreviousFrame", "<", ImVec2(0, 0)))
@@ -1806,7 +1825,7 @@ void Imogen::ShowTimeLine()
     ImGui::SameLine();
     if (ImGui::Button(">|"))
     {
-        mCurrentTime = mNodeGraphControler->mModel.mFrameMax;
+        mCurrentTime = endFrame;
     }
     ImGui::SameLine();
 
@@ -1827,7 +1846,14 @@ void Imogen::ShowTimeLine()
 
     ImGui::SameLine();
     ImGui::PushID(202);
-    ImGui::InputInt("", &mNodeGraphControler->mModel.mFrameMax, 0, 0);
+    dirtyFrame |= ImGui::InputInt("", &endFrame, 0, 0);
+
+    if (dirtyFrame)
+    {
+        model.BeginTransaction(true);
+        model.SetStartEndFrame(startFrame, endFrame);
+        model.EndTransaction();
+    }
     ImGui::PopID();
     ImGui::SameLine();
     ImGui::SameLine(0, 40.f);
@@ -2065,11 +2091,13 @@ void Imogen::Playback(bool timeHasChanged)
     if (mbIsPlaying)
     {
         mCurrentTime++;
-        if (mCurrentTime >= mNodeGraphControler->mModel.mFrameMax)
+        int startFrame, endFrame;
+        mNodeGraphControler->mModel.GetStartEndFrame(startFrame, endFrame);
+        if (mCurrentTime >= endFrame)
         {
             if (mbPlayLoop)
             {
-                mCurrentTime = mNodeGraphControler->mModel.mFrameMin;
+                mCurrentTime = startFrame;
             }
             else
             {

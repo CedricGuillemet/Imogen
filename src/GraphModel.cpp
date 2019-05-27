@@ -23,14 +23,14 @@
 // SOFTWARE.
 //
 
-#include "GraphModel.h"
 #include <assert.h>
-#include "UndoRedo.h"
 #include <algorithm>
+#include "GraphModel.h"
+#include "UndoRedo.h"
 
 extern UndoRedoHandler gUndoRedoHandler;
 
-GraphModel::GraphModel() : mbTransaction(false), mSelectedNodeIndex(-1), mUndoRedo(nullptr)
+GraphModel::GraphModel() : mbTransaction(false), mSelectedNodeIndex(-1), mUndoRedo(nullptr), mFrameMin(0), mFrameMax(1)
 {
 }
 
@@ -48,7 +48,6 @@ void GraphModel::Clear()
     mRugs.clear();
     gUndoRedoHandler.Clear();
     mSelectedNodeIndex = -1;
-    mEvaluationStages.Clear();
     mDirtyList.clear();
 }
 
@@ -80,27 +79,40 @@ void GraphModel::EndTransaction()
     delete mUndoRedo;
     mUndoRedo = nullptr;
     
+    UpdateEvaluation();
+    
+}
+
+void GraphModel::UpdateEvaluation()
+{
     // set inputs
-    mEvaluationStages.ClearInputs();
+    mInputs.resize(mNodes.size());
+    for (size_t i = 0; i < mNodes.size(); i++)
+    {
+        mInputs[i] = Input();
+    }
     for(const auto& link: mLinks)
     {
-        mEvaluationStages.SetEvaluationInput(link.mOutputNodeIndex, link.mInputSlotIndex, link.mInputNodeIndex);
+        auto source = link.mInputNodeIndex;
+        mInputs[link.mOutputNodeIndex].mInputs[link.mInputSlotIndex] = source;
     }
 
     // inputs are fresh, can compute evaluation order
-    mEvaluationStages.ComputeEvaluationOrder();
+    ComputeEvaluationOrder();
 }
 
 void GraphModel::Undo()
 {
     assert(!mbTransaction);
     gUndoRedoHandler.Undo();
+    UpdateEvaluation();
 }
 
 void GraphModel::Redo()
 {
     assert(!mbTransaction);
     gUndoRedoHandler.Redo();
+    UpdateEvaluation();
 }
 
 void GraphModel::MoveSelectedNodes(const ImVec2 delta)
@@ -154,13 +166,12 @@ void GraphModel::DeleteNodeHelper(int nodeIndex)
 
 void GraphModel::RemoveAnimation(size_t nodeIndex)
 {
-    auto& animTracks = mEvaluationStages.mAnimTrack;
-    if (animTracks.empty())
+    if (mAnimTrack.empty())
         return;
     std::vector<int> tracks;
-    for (int i = 0; i < int(animTracks.size()); i++)
+    for (int i = 0; i < int(mAnimTrack.size()); i++)
     {
-        const AnimTrack& animTrack = animTracks[i];
+        const AnimTrack& animTrack = mAnimTrack[i];
         if (animTrack.mNodeIndex == nodeIndex)
             tracks.push_back(i);
     }
@@ -170,8 +181,8 @@ void GraphModel::RemoveAnimation(size_t nodeIndex)
     for (int i = 0; i < int(tracks.size()); i++)
     {
         int index = tracks[i] - i;
-        auto urAnimTrack = mUndoRedo ? std::make_unique<URDel<AnimTrack>>(index, [&] { return &animTracks; }):nullptr;
-        animTracks.erase(animTracks.begin() + index);
+        auto urAnimTrack = mUndoRedo ? std::make_unique<URDel<AnimTrack>>(index, [&] { return &mAnimTrack; }):nullptr;
+        mAnimTrack.erase(mAnimTrack.begin() + index);
     }
 }
 size_t GraphModel::AddNode(size_t type, ImVec2 position)
@@ -184,17 +195,9 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
     auto addNode = [&](int index) { AddNodeHelper(index); };
 
     auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [&]() { return &mNodes; }, delNode, addNode) : nullptr;
-    auto urStage = mUndoRedo ? std::make_unique<URAdd<EvaluationStage>>(int(nodeIndex), [&]() { return &mEvaluationStages.mStages; }) : nullptr;
-    auto urParameters = mUndoRedo ? std::make_unique<URAdd<Parameters>>(int(nodeIndex), [&]() { return &mEvaluationStages.mParameters; })
-                            : nullptr;
-    auto urInputSamplers = mUndoRedo ? std::make_unique<URAdd<Samplers>>(int(nodeIndex), [&]() { return &mEvaluationStages.mInputSamplers; })
-                    : nullptr;
-
-    auto urMultiplexInputs = mUndoRedo ? std::make_unique<URAdd<MultiplexInput>>(int(nodeIndex), [&]() { return &mEvaluationStages.mMultiplexInputs; })
-        : nullptr;
     
-    mNodes.push_back(Node(int(type), position));
-    mEvaluationStages.AddSingleEvaluation(type);
+    mNodes.push_back(Node(int(type), position, mFrameMin, mFrameMax));
+    InitDefaultParameters(type, mNodes[nodeIndex].mParameters);
     AddNodeHelper(int(nodeIndex));
     return nodeIndex;
 }
@@ -219,8 +222,6 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
         // Log("Error : Link node index doesn't correspond to an existing node.");
         return;
     }
-
-    assert(outputNodeIndex < mEvaluationStages.mStages.size());
 
     size_t linkIndex = mLinks.size();
 
@@ -353,24 +354,9 @@ void GraphModel::DeleteSelectedNodes()
             }
         }
 
-        // delete stage data
-        auto urStage = mUndoRedo ? std::make_unique<URDel<EvaluationStage>>(int(selection), [&]() { return &mEvaluationStages.mStages; }) : nullptr;
-        auto urParameters = mUndoRedo ? std::make_unique<URDel<Parameters>>(int(selection), [&]() { return &mEvaluationStages.mParameters; })
-            : nullptr;
-        auto urInputSamplers = mUndoRedo ? std::make_unique<URDel<Samplers>>(int(selection), [&]() { return &mEvaluationStages.mInputSamplers; })
-            : nullptr;
-        auto urMultiplexInputs = mUndoRedo ? std::make_unique<URDel<MultiplexInput>>(int(selection), [&]() { return &mEvaluationStages.mMultiplexInputs; })
-            : nullptr;
-
         mNodes.erase(mNodes.begin() + selection);
-        mEvaluationStages.DelSingleEvaluation(selection);
         DeleteNodeHelper(selection);
     }
-
-    assert(mEvaluationStages.mStages.size() == mNodes.size());
-    assert(mEvaluationStages.mParameters.size() == mNodes.size());
-    assert(mEvaluationStages.mInputSamplers.size() == mNodes.size());
-    assert(mEvaluationStages.mMultiplexInputs.size() == mNodes.size());
 }
 
 bool GraphModel::IsIOUsed(size_t nodeIndex, int slotIndex, bool forOutput) const
@@ -401,39 +387,27 @@ void GraphModel::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& 
 {
     assert(mbTransaction);
 
-    auto ur = mUndoRedo ? std::make_unique<URChange<std::vector<InputSampler>>>(
+    auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
                               int(nodeIndex),
-                              [&](int index) { return &mEvaluationStages.mInputSamplers[index]; },
+                              [&](int index) { return &mNodes[index]; },
                               [&](int index) {
                                   // auto& stage = mEvaluationStages.mStages[index];
                                   // mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
                                   // mEditingContext.SetTargetDirty(index, Dirty::Sampler);
                               })
                         : nullptr;
-    mEvaluationStages.SetSamplers(nodeIndex, samplers);
-}
-
-void GraphModel::SetEvaluationOrder(const std::vector<size_t>& nodeOrderList)
-{
-    assert(!mbTransaction);
-    mEvaluationStages.SetEvaluationOrder(nodeOrderList);
+    mNodes[nodeIndex].mSamplers = samplers;
 }
 
 bool GraphModel::NodeHasUI(size_t nodeIndex) const
 {
-    if (mEvaluationStages.mStages.size() <= nodeIndex)
-        return false;
-    return gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mbHasUI;
+    return gMetaNodes[mNodes[nodeIndex].mType].mbHasUI;
 }
 
 void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName, const std::string& parameterValue)
 {
     assert(mbTransaction);
-    if (nodeIndex < 0 || nodeIndex >= mEvaluationStages.mStages.size())
-    {
-        return;
-    }
-    uint32_t nodeType = uint32_t(mEvaluationStages.mStages[nodeIndex].mType);
+    uint32_t nodeType = uint32_t(mNodes[nodeIndex].mType);
     int parameterIndex = GetParameterIndex(nodeType, parameterName.c_str());
     if (parameterIndex == -1)
     {
@@ -442,13 +416,13 @@ void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName
     ConTypes parameterType = GetParameterType(nodeType, parameterIndex);
     size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
     ParseStringToParameter(
-        parameterValue, parameterType, &mEvaluationStages.mParameters[nodeIndex][paramOffset]);
+        parameterValue, parameterType, &mNodes[nodeIndex].mParameters[paramOffset]);
     SetDirty(nodeIndex, Dirty::Parameter);
 }
 
 AnimTrack* GraphModel::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
 {
-    for (auto& animTrack : mEvaluationStages.mAnimTrack)
+    for (auto& animTrack : mAnimTrack)
     {
         if (animTrack.mNodeIndex == nodeIndex && animTrack.mParamIndex == parameterIndex)
             return &animTrack;
@@ -471,20 +445,20 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
         // URAdd<AnimTrack> urAdd(int(mEvaluationStages.mAnimTrack.size()), [&] { return
         // &mEvaluationStages.mAnimTrack;
         // });
-        uint32_t parameterType = gMetaNodes[mEvaluationStages.mStages[nodeIndex].mType].mParams[parameterIndex].mType;
+        uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mType].mParams[parameterIndex].mType;
         AnimTrack newTrack;
         newTrack.mNodeIndex = nodeIndex;
         newTrack.mParamIndex = parameterIndex;
         newTrack.mValueType = parameterType;
         newTrack.mAnimation = AllocateAnimation(parameterType);
-        mEvaluationStages.mAnimTrack.push_back(newTrack);
-        animTrack = &mEvaluationStages.mAnimTrack.back();
+        mAnimTrack.push_back(newTrack);
+        animTrack = &mAnimTrack.back();
     }
     /*URChange<AnimTrack> urChange(int(animTrack - mEvaluationStages.mAnimTrack.data()),
                                  [&](int index) { return &mEvaluationStages.mAnimTrack[index]; });*/
-    EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
-    size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
-    animTrack->mAnimation->SetValue(frame, &mEvaluationStages.mParameters[parameterOffset]);
+    //EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
+    size_t parameterOffset = GetParameterOffset(uint32_t(mNodes[nodeIndex].mType), parameterIndex);
+    animTrack->mAnimation->SetValue(frame, &mNodes[nodeIndex].mParameters[parameterOffset]);
 }
 
 void GraphModel::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const
@@ -530,9 +504,9 @@ void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char
 {
     assert(mbTransaction);
 
-    auto ur = mUndoRedo ? std::make_unique<URChange<Parameters>>(
+    auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
                               int(nodeIndex),
-                              [&](int index) { return &mEvaluationStages.mParameters[index]; },
+                              [&](int index) { return &mNodes[index]; },
                               [&](int index) {
                                   // auto& stage = mEvaluationStages.mStages[index];
                                   // mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
@@ -540,7 +514,7 @@ void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char
                               })
                         : nullptr;
 
-    mEvaluationStages.mParameters[nodeIndex] = parameters;
+    mNodes[nodeIndex].mParameters = parameters;
     SetDirty(nodeIndex, Dirty::Parameter);
 }
 
@@ -548,14 +522,13 @@ void GraphModel::SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd)
 {
     assert(mbTransaction);
 
-    auto& stage = mEvaluationStages.mStages[nodeIndex];
-    stage.mStartFrame = frameStart;
-    stage.mEndFrame = frameEnd;
+    auto& node = mNodes[nodeIndex];
+    node.mStartFrame = frameStart;
+    node.mEndFrame = frameEnd;
 }
 
 void GraphModel::CopySelectedNodes()
 {
-    mStagesClipboard.clear();
     mNodesClipboard.clear();
     for (auto i = 0; i < mNodes.size(); i++)
     {
@@ -563,7 +536,6 @@ void GraphModel::CopySelectedNodes()
         {
             continue;
         }
-        mStagesClipboard.push_back(mEvaluationStages.mStages[i]);
         mNodesClipboard.push_back(mNodes[i]);
     }
 }
@@ -574,7 +546,6 @@ void GraphModel::CutSelectedNodes()
     {
         return;
     }
-    mStagesClipboard.clear();
     CopySelectedNodes();
     BeginTransaction(true);
     DeleteSelectedNodes();
@@ -583,7 +554,7 @@ void GraphModel::CutSelectedNodes()
 
 bool GraphModel::IsClipboardEmpty() const
 {
-    return mStagesClipboard.empty();
+    return mNodesClipboard.empty();
 }
 
 void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
@@ -593,7 +564,7 @@ void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
         return;
     }
     BeginTransaction(true);
-    for (size_t i = 0;i<mNodesClipboard.size();i++)
+    for (size_t i = 0; i < mNodesClipboard.size(); i++)
     {
         const Node& node = mNodes[i];
         //mEditingContext.UserAddStage();
@@ -633,9 +604,9 @@ void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
     EndTransaction();
 }
 
-const std::vector<unsigned char>& GraphModel::GetParameters(size_t nodeIndex) const
+const Parameters& GraphModel::GetParameters(size_t nodeIndex) const
 {
-    return mEvaluationStages.mParameters[nodeIndex];
+    return mNodes[nodeIndex].mParameters;
 }
 
 static ImRect DisplayRectMargin(ImRect rect)
@@ -665,7 +636,7 @@ ImRect GraphModel::GetNodesDisplayRect() const
 
 ImRect GraphModel::GetFinalNodeDisplayRect() const
 {
-    auto& evaluationOrder = mEvaluationStages.GetForwardEvaluationOrder();
+    auto& evaluationOrder = mEvaluationOrderList;
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     if (!evaluationOrder.empty() && !mNodes.empty())
     {
@@ -738,7 +709,7 @@ void GraphModel::RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
 
 void GraphModel::NodeGraphLayout()
 {
-    auto orderList = mEvaluationStages.GetForwardEvaluationOrder();
+    auto orderList = mEvaluationOrderList;
 
     // get stack/layer pos
     std::vector<NodePosition> nodePositions(mNodes.size(), { -1, -1, -1 });
@@ -832,10 +803,10 @@ void GraphModel::SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiple
 {
     assert(mbTransaction);
     auto ur = mUndoRedo
-        ? std::make_unique<URChange<MultiplexInput>>(int(nodeIndex), [&](int index) { return &mEvaluationStages.mMultiplexInputs[index]; }, [&](int nodeIndex) { SetDirty(nodeIndex, Dirty::Input); })
+        ? std::make_unique<URChange<Node>>(int(nodeIndex), [&](int index) { return &mNodes[index]; }, [&](int nodeIndex) { SetDirty(nodeIndex, Dirty::Input); })
         : nullptr;
 
-    mEvaluationStages.mMultiplexInputs[nodeIndex].mInputs[slotIndex] = multiplex;
+    mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex] = multiplex;
     SetDirty(nodeIndex, Dirty::Input);
 }
 
@@ -859,3 +830,162 @@ bool GraphModel::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
     return mNodes[nodeIndex].mPinnedIO & mask;
 }
 
+static bool NodeTypeHasMultiplexer(size_t nodeType)
+{
+    for (const auto& parameter : gMetaNodes[nodeType].mParams)
+    {
+        if (parameter.mType == Con_Multiplexer)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void GraphModel::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const
+{
+    for (auto& input : mInputs[nodeIndex].mInputs)
+    {
+        if (input == -1)
+        {
+            continue;
+        }
+        if (!NodeTypeHasMultiplexer(mNodes[input].mType))
+        {
+            list.push_back(input);
+        }
+        else
+        {
+            GetMultiplexedInputs(input, list);
+        }
+    }
+}
+
+bool GraphModel::GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const
+{
+    int input = mInputs[nodeIndex].mInputs[slotIndex];
+    if (input == -1)
+    {
+        return false;
+    }
+    if (NodeTypeHasMultiplexer(mNodes[input].mType))
+    {
+        GetMultiplexedInputs(input, list);
+        return true;
+    }
+    return false;
+}
+
+void GraphModel::SetParameterPins(const std::vector<uint32_t>& pins)
+{
+    for (auto i = 0; i < pins.size(); i++)
+    {
+        mNodes[i].mPinnedParameters = pins[i];
+    }
+
+}
+void GraphModel::SetIOPins(const std::vector<uint32_t>& pins)
+{
+    for (auto i = 0; i < pins.size(); i++)
+    {
+        mNodes[i].mPinnedIO = pins[i];
+    }
+}
+
+const std::vector<uint32_t> GraphModel::GetParameterPins() const
+{
+    std::vector<uint32_t> ret;
+    ret.reserve(mNodes.size());
+    for (auto& node : mNodes)
+    {
+        ret.push_back(node.mPinnedParameters);
+    }
+    return ret;
+}
+const std::vector<uint32_t> GraphModel::GetIOPins() const
+{
+    std::vector<uint32_t> ret;
+    ret.reserve(mNodes.size());
+    for (auto& node : mNodes)
+    {
+        ret.push_back(node.mPinnedIO);
+    }
+    return ret;
+
+}
+
+size_t GraphModel::PickBestNode(const std::vector<GraphModel::NodeOrder>& orders) const
+{
+    for (auto& order : orders)
+    {
+        if (order.mNodePriority == 0)
+            return order.mNodeIndex;
+    }
+    // issue!
+    assert(0);
+    return -1;
+}
+
+void GraphModel::RecurseSetPriority(std::vector<GraphModel::NodeOrder>& orders,
+    size_t currentIndex,
+    size_t currentPriority,
+    size_t& undeterminedNodeCount) const
+{
+    if (!orders[currentIndex].mNodePriority)
+        undeterminedNodeCount--;
+
+    orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
+    for (auto input : mInputs[currentIndex].mInputs)
+    {
+        if (input == -1)
+        {
+            continue;
+        }
+
+        RecurseSetPriority(orders, input, currentPriority + 1, undeterminedNodeCount);
+    }
+}
+
+std::vector<GraphModel::NodeOrder> GraphModel::ComputeEvaluationOrders()
+{
+    size_t nodeCount = mNodes.size();
+
+    std::vector<NodeOrder> orders(nodeCount);
+    for (size_t i = 0; i < nodeCount; i++)
+    {
+        orders[i].mNodeIndex = i;
+        orders[i].mNodePriority = 0;
+    }
+    size_t undeterminedNodeCount = nodeCount;
+    while (undeterminedNodeCount)
+    {
+        size_t currentIndex = PickBestNode(orders);
+        RecurseSetPriority(orders, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
+    };
+    //
+    return orders;
+}
+
+void GraphModel::ComputeEvaluationOrder()
+{
+    mEvaluationOrderList.clear();
+
+    auto orders = ComputeEvaluationOrders();
+    std::sort(orders.begin(), orders.end());
+    mEvaluationOrderList.resize(orders.size());
+    for (size_t i = 0; i < orders.size(); i++)
+    {
+        mEvaluationOrderList[i] = orders[i].mNodeIndex;
+    }
+}
+
+const std::vector<MultiplexInput> GraphModel::GetMultiplexInputs() const
+{
+    std::vector<MultiplexInput> ret;
+    ret.reserve(mNodes.size());
+    for (const auto& node : mNodes)
+    {
+        ret.push_back(node.mMultiplexInput);
+    }
+    return ret;
+}

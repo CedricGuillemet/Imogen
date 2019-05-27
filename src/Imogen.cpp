@@ -196,8 +196,9 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
                 mouseUVCoord = ImVec2(mouseUVPosv.x, mouseUVPosv.y);
 
                 Vec4 uva(0, 0), uvb(1, 1);
+                auto nodeType = nodeGraphControler.mModel.GetNodeType(selNode);
                 Mat4x4* viewMatrix = nodeGraphControler.mModel.mEvaluationStages.GetParameterViewMatrix(selNode);
-                Camera* nodeCamera = nodeGraphControler.mModel.mEvaluationStages.GetCameraParameter(selNode);
+                const Camera* nodeCamera = GetCameraParameter(nodeType, nodeGraphControler.mModel.GetParameters(selNode));
                 if (viewMatrix && !nodeCamera)
                 {
                     Mat4x4& res = *viewMatrix;
@@ -656,11 +657,11 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
         rug.mComment = rugs[i].mText;
     }
     material.mAnimTrack = nodeGraphControler.mModel.GetAnimTrack();
-    material.mFrameMin = nodeGraphControler.mModel.mEvaluationStages.mFrameMin;
-    material.mFrameMax = nodeGraphControler.mModel.mEvaluationStages.mFrameMax;
+    material.mFrameMin = nodeGraphControler.mModel.mFrameMin;
+    material.mFrameMax = nodeGraphControler.mModel.mFrameMax;
     material.mPinnedParameters = nodeGraphControler.mModel.GetParameterPins();
     material.mPinnedIO = nodeGraphControler.mModel.GetIOPins();
-    material.mMultiplexInputs = nodeGraphControler.mModel.mEvaluationStages.GetMultiplexInputs();
+    material.mMultiplexInputs = nodeGraphControler.mModel.GetMultiplexInputs();
     material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 
@@ -728,8 +729,8 @@ void Imogen::UpdateNewlySelectedGraph()
         mbIsPlaying = false;
         mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
         mNodeGraphControler->mModel.mEvaluationStages.SetAnimTrack(material.mAnimTrack);
-        mNodeGraphControler->mModel.mEvaluationStages.mFrameMin = material.mFrameMin;
-        mNodeGraphControler->mModel.mEvaluationStages.mFrameMax = material.mFrameMax;
+        mNodeGraphControler->mModel.mFrameMin = material.mFrameMin;
+        mNodeGraphControler->mModel.mFrameMax = material.mFrameMax;
         mNodeGraphControler->mModel.SetParameterPins(material.mPinnedParameters);
         mNodeGraphControler->mModel.SetIOPins(material.mPinnedIO);
         mNodeGraphControler->mModel.mEvaluationStages.SetMultiplexInputs(material.mMultiplexInputs);
@@ -883,8 +884,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 {
                     curvePts.resize(2);
                     auto& node = mNodeGraphControler.mModel.mEvaluationStages.mStages[mNodeIndex];
-                    float value = mNodeGraphControler.mModel.mEvaluationStages.GetParameterComponentValue(
-                        nodeIndex, parameterIndex, int(curveIndex));
+                    float value = GetParameterComponentValue(
+                        nodeIndex, mNodeGraphControler.mModel.GetParameters(nodeIndex),parameterIndex, int(curveIndex));
                     curvePts[0] = ImVec2(float(node.mStartFrame) + 0.5f, value);
                     curvePts[1] = ImVec2(float(node.mEndFrame) + 0.5f, value);
                 }
@@ -1082,7 +1083,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             uint32_t parameterIndex = mParameterIndex[curve];
             bool parameterFound = false;
             int index = 0;
-            for (auto& track : mNodeGraphControler.mModel.mEvaluationStages.mAnimTrack)
+            for (auto& track : mNodeGraphControler.mModel.GetAnimTrack())
             {
                 if (track.mNodeIndex == mNodeGraphControler.mSelectedNodeIndex && track.mParamIndex == parameterIndex)
                 {
@@ -1188,11 +1189,11 @@ struct MySequence : public ImSequencer::SequenceInterface
     }
     virtual int GetFrameMin() const
     {
-        return mNodeGraphControler.mModel.mEvaluationStages.mFrameMin;
+        return mNodeGraphControler.mModel.mFrameMin;
     }
     virtual int GetFrameMax() const
     {
-        return mNodeGraphControler.mModel.mEvaluationStages.mFrameMax;
+        return mNodeGraphControler.mModel.mFrameMax;
     }
 
     virtual void BeginEdit(int index)
@@ -1276,8 +1277,8 @@ struct MySequence : public ImSequencer::SequenceInterface
             mbVisible.clear();
         }
 
-        ImVec2 curveMin(float(mNodeGraphControler.mModel.mEvaluationStages.mFrameMin), mCurveMin);
-        ImVec2 curveMax(float(mNodeGraphControler.mModel.mEvaluationStages.mFrameMax), mCurveMax);
+        ImVec2 curveMin(float(mNodeGraphControler.mModel.mFrameMin), mCurveMin);
+        ImVec2 curveMax(float(mNodeGraphControler.mModel.mFrameMax), mCurveMax);
         AnimCurveEdit curveEdit(mNodeGraphControler,
                                 curveMin,
                                 curveMax,
@@ -1389,7 +1390,7 @@ void Imogen::Init()
         {"PlayPause", "Play or Stop current animation", [&]() { PlayPause(); }},
         {"AnimationFirstFrame",
          "Set current time to the first frame of animation",
-         [&]() { mCurrentTime = mNodeGraphControler->mModel.mEvaluationStages.mFrameMin; }},
+         [&]() { mCurrentTime = mNodeGraphControler->mModel.mFrameMin; }},
         {"AnimationNextFrame", "Move to the next animation frame", [&]() { mCurrentTime++; }},
         {"AnimationPreviousFrame", "Move to previous animation frame", [&]() { mCurrentTime--; }},
         {"MaterialExport", "Export current material to a file", [&]() { ExportMaterial(); }},
@@ -1747,7 +1748,7 @@ void Imogen::PlayPause()
 {
     if (!mbIsPlaying)
     {
-        mCurrentTime = mNodeGraphControler->mModel.mEvaluationStages.mFrameMin;
+        mCurrentTime = mNodeGraphControler->mModel.mFrameMin;
     }
     mbIsPlaying = !mbIsPlaying;
 }
@@ -1761,12 +1762,12 @@ void Imogen::ShowTimeLine()
 
     ImGui::PushItemWidth(80);
     ImGui::PushID(200);
-    ImGui::InputInt("", &mNodeGraphControler->mModel.mEvaluationStages.mFrameMin, 0, 0);
+    ImGui::InputInt("", &mNodeGraphControler->mModel.mFrameMin, 0, 0);
     ImGui::PopID();
     ImGui::SameLine();
     if (Button("AnimationFirstFrame", "|<", ImVec2(0, 0)))
     {
-        mCurrentTime = mNodeGraphControler->mModel.mEvaluationStages.mFrameMin;
+        mCurrentTime = mNodeGraphControler->mModel.mFrameMin;
     }
     ImGui::SameLine();
     if (Button("AnimationPreviousFrame", "<", ImVec2(0, 0)))
@@ -1789,7 +1790,7 @@ void Imogen::ShowTimeLine()
     ImGui::SameLine();
     if (ImGui::Button(">|"))
     {
-        mCurrentTime = mNodeGraphControler->mModel.mEvaluationStages.mFrameMax;
+        mCurrentTime = mNodeGraphControler->mModel.mFrameMax;
     }
     ImGui::SameLine();
 
@@ -1810,7 +1811,7 @@ void Imogen::ShowTimeLine()
 
     ImGui::SameLine();
     ImGui::PushID(202);
-    ImGui::InputInt("", &mNodeGraphControler->mModel.mEvaluationStages.mFrameMax, 0, 0);
+    ImGui::InputInt("", &mNodeGraphControler->mModel.mFrameMax, 0, 0);
     ImGui::PopID();
     ImGui::SameLine();
     ImGui::SameLine(0, 40.f);
@@ -2045,11 +2046,11 @@ void Imogen::Playback(bool timeHasChanged)
     if (mbIsPlaying)
     {
         mCurrentTime++;
-        if (mCurrentTime >= mNodeGraphControler->mModel.mEvaluationStages.mFrameMax)
+        if (mCurrentTime >= mNodeGraphControler->mModel.mFrameMax)
         {
             if (mbPlayLoop)
             {
-                mCurrentTime = mNodeGraphControler->mModel.mEvaluationStages.mFrameMin;
+                mCurrentTime = mNodeGraphControler->mModel.mFrameMin;
             }
             else
             {

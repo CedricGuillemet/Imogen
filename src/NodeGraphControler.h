@@ -38,22 +38,34 @@ struct NodeGraphControler : public NodeGraphControlerBase
     void SetKeyboardMouse(const UIInput& input, bool bValidInput);
 
 	// accessors
-    virtual unsigned int GetNodeTexture(size_t index)
-    {
-        return mEditingContext.GetEvaluationTexture(index);
-    }
-    virtual int NodeIsProcesing(size_t nodeIndex) const
-    {
-        return mEditingContext.StageIsProcessing(nodeIndex);
-    }
-    virtual float NodeProgress(size_t nodeIndex) const
-    {
-        return mEditingContext.StageGetProgress(nodeIndex);
-    }
+    virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(index); }
+    virtual int NodeIsProcesing(size_t nodeIndex) const { return mEditingContext.StageIsProcessing(nodeIndex); }
+    virtual float NodeProgress(size_t nodeIndex) const { return mEditingContext.StageGetProgress(nodeIndex); }
     virtual bool NodeIsCubemap(size_t nodeIndex) const;
     virtual bool NodeIs2D(size_t nodeIndex) const;
     virtual bool NodeIsCompute(size_t nodeIndex) const;
     virtual ImVec2 GetEvaluationSize(size_t nodeIndex) const;
+
+
+    // operations
+    virtual bool InTransaction() { return mModel.InTransaction(); }
+    virtual void BeginTransaction(bool undoable) { mModel.BeginTransaction(undoable); }
+    virtual void EndTransaction() { mModel.EndTransaction(); }
+
+    virtual void DelRug(size_t rugIndex) { mModel.DelRug(rugIndex); }
+    virtual void SelectNode(size_t nodeIndex, bool selected = true) { mModel.SelectNode(nodeIndex); }
+    virtual void MoveSelectedNodes(const ImVec2 delta) { mModel.MoveSelectedNodes(delta); }
+
+    virtual void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex) { mModel.AddLink(inputNodeIndex, inputSlotIndex, outputNodeIndex, outputSlotIndex); }
+    virtual void DelLink(size_t linkIndex) { mModel.DelLink(linkIndex); }
+
+    virtual void SetRug(size_t rugIndex, const ImRect& rect, const char *szText, uint32_t color) { mModel.SetRug(rugIndex, GraphModel::Rug{rect.Min, rect.GetSize(), color, std::string(szText)}); }
+
+    // accessors
+    virtual const std::vector<Node>& GetNodes() { return mNodes; }
+    virtual const std::vector<Rug> GetRugs() { return mRugs; }
+    virtual const std::vector<Link> GetLinks() { return mLinks; }
+
 
 
 	// UI
@@ -62,21 +74,16 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual bool RenderBackground();
     virtual void ContextMenu(ImVec2 offset, int nodeHovered);
 
-    virtual void UpdateEvaluationList(const std::vector<size_t>& nodeOrderList)
-    {
-        mModel.SetEvaluationOrder(nodeOrderList);
-    }
-
     EvaluationContext mEditingContext;
-    
+    EvaluationStages mEvaluationStages;
     int mBackgroundNode;
     
 
-    EvaluationStage* Get(ASyncId id)
+    /*EvaluationStage* Get(ASyncId id)
     {
         return GetByAsyncId(id, mModel.mEvaluationStages.mStages);
     }
-    
+    */
     void ApplyDirtyList();
 	GraphModel mModel;
 
@@ -84,6 +91,9 @@ protected:
     bool mbMouseDragging;
     bool mbUsingMouse;
     
+    std::vector<Node> mNodes;
+    std::vector<Rug> mRugs;
+    std::vector<Link> mLinks;
 
     bool EditSingleParameter(unsigned int nodeIndex,
                              unsigned int parameterIndex,
@@ -94,5 +104,5 @@ protected:
     void HandlePin(size_t nodeIndex, size_t parameterIndex);
     void HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput);
     int ShowMultiplexed(const std::vector<size_t>& inputs, int currentMultiplexedOveride);
-    
+    void ComputeGraphArrays();
 };

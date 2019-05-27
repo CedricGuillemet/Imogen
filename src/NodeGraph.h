@@ -31,30 +31,72 @@
 
 struct NodeGraphControlerBase
 {
-    NodeGraphControlerBase() : mSelectedNodeIndex(-1)
-    {
-    }
+    int mSelectedNodeIndex = -1;
 
-    int mSelectedNodeIndex;
-
+    // getters
     virtual unsigned int GetNodeTexture(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) const = 0;
-
     virtual int NodeIsProcesing(size_t nodeIndex) const = 0;
     virtual float NodeProgress(size_t nodeIndex) const = 0;
     virtual bool NodeIsCubemap(size_t nodeIndex) const = 0;
     virtual bool NodeIs2D(size_t nodeIndex) const = 0;
     virtual bool NodeIsCompute(size_t nodeIndex) const = 0;
+    virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const = 0;
+    virtual bool RecurseIsLinked(int from, int to) const = 0;
+    virtual unsigned int GetBitmapInfo(size_t nodeIndex) const = 0;
+
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) = 0;
     virtual void ContextMenu(ImVec2 offset, int nodeHovered) = 0;
+
+    // operations
+    virtual bool InTransaction() = 0;
+    virtual void BeginTransaction(bool undoable) = 0;
+    virtual void EndTransaction() = 0;
+
+    virtual void DelRug(size_t rugIndex) = 0;
+    virtual void SelectNode(size_t nodeIndex, bool selected = true) = 0;
+    virtual void MoveSelectedNodes(const ImVec2 delta) = 0;
+    
+    virtual void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex) = 0;
+    virtual void DelLink(size_t linkIndex) = 0;
+
+    virtual void SetRug(size_t rugIndex, const ImRect& rect, const char *szText, uint32_t color) = 0;
+
     // return false if background must be rendered by node graph
     virtual bool RenderBackground() = 0;
 
+    struct Node
+    {
+        const char *mName;
+        ImRect mRect;
+        uint32_t mHeaderColor;
+        uint32_t mBackgroundColor;
+        std::vector<const char*> mInputs;
+        std::vector<const char*> mOutputs;
+        bool mbSelected;
+    };
+
+    struct Rug
+    {
+        ImRect mRect;
+        const char* mText;
+        uint32_t mColor;
+    };
+
+    struct Link
+    {
+        int mInputNodeIndex, mInputSlotIndex, mOutputNodeIndex, mOutputSlotIndex;
+    };
+
+    // node/links/rugs retrieval
+    virtual const std::vector<Node>& GetNodes() = 0;
+    virtual const std::vector<Rug> GetRugs() = 0;
+    virtual const std::vector<Link> GetLinks() = 0;
 };
 
 class GraphModel;
-void NodeGraph(GraphModel* model, NodeGraphControlerBase* delegate, bool enabled);
-void NodeGraphClear(); // delegate is not called
+void NodeGraph(NodeGraphControlerBase* delegate, bool enabled);
+void NodeGraphClear();
 
-void NodeGraphUpdateScrolling(GraphModel* model);
+void NodeGraphUpdateScrolling(NodeGraphControlerBase* delegate);
 

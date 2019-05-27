@@ -29,7 +29,7 @@
 #include <fstream>
 #include <streambuf>
 #include "EvaluationStages.h"
-#include "NodeGraphControler.h"
+#include "GraphControler.h"
 #include "Library.h"
 #include "TaskScheduler.h"
 #include "stb_image.h"
@@ -127,7 +127,7 @@ void ClearExtractedViews()
     mExtratedViews.clear();
 }
 
-void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI)
+void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, bool forceUI)
 {
     ImGuiIO& io = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -348,7 +348,7 @@ struct SortedResource
 
 struct PinnedTaskUploadImage : enki::IPinnedTask
 {
-    PinnedTaskUploadImage(Image* image, ASyncId identifier, bool isThumbnail, NodeGraphControler* controler)
+    PinnedTaskUploadImage(Image* image, ASyncId identifier, bool isThumbnail, GraphControler* controler)
         : enki::IPinnedTask(0) // set pinned thread to 0
         , mImage(image)
         , mIdentifier(identifier)
@@ -381,14 +381,14 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
         }
     }
     Image* mImage;
-    NodeGraphControler* mControler;
+    GraphControler* mControler;
     ASyncId mIdentifier;
     bool mbIsThumbnail;
 };
 
 struct DecodeThumbnailTaskSet : enki::ITaskSet
 {
-    DecodeThumbnailTaskSet(std::vector<uint8_t>* src, ASyncId identifier, NodeGraphControler* nodeGraphControler)
+    DecodeThumbnailTaskSet(std::vector<uint8_t>* src, ASyncId identifier, GraphControler* nodeGraphControler)
         : enki::ITaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
     {
     }
@@ -414,7 +414,7 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
     }
     ASyncId mIdentifier;
     std::vector<uint8_t>* mSrc;
-    NodeGraphControler* mNodeGraphControler;
+    GraphControler* mNodeGraphControler;
 };
 
 struct EncodeImageTaskSet : enki::ITaskSet
@@ -455,7 +455,7 @@ struct EncodeImageTaskSet : enki::ITaskSet
 
 struct DecodeImageTaskSet : enki::ITaskSet
 {
-    DecodeImageTaskSet(std::vector<uint8_t>* src, ASyncId identifier, NodeGraphControler* nodeGraphControler)
+    DecodeImageTaskSet(std::vector<uint8_t>* src, ASyncId identifier, GraphControler* nodeGraphControler)
         : enki::ITaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
     {
     }
@@ -480,7 +480,7 @@ struct DecodeImageTaskSet : enki::ITaskSet
     }
     ASyncId mIdentifier;
     std::vector<uint8_t>* mSrc;
-    NodeGraphControler* mNodeGraphControler;
+    GraphControler* mNodeGraphControler;
 };
 
 void Imogen::DecodeThumbnailAsync(Material* material)
@@ -600,7 +600,7 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
     return ret;
 }
 
-void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, int materialIndex)
+void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int materialIndex)
 {
     if (materialIndex == -1)
         return;
@@ -729,7 +729,7 @@ void Imogen::UpdateNewlySelectedGraph()
                                                rug.mComment});
         }
         mNodeGraphControler->mModel.EndTransaction();
-        NodeGraphUpdateScrolling(mNodeGraphControler);
+        GraphEditorUpdateScrolling(mNodeGraphControler);
         mCurrentTime = 0;
         mbIsPlaying = false;
         mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
@@ -855,14 +855,14 @@ void Imogen::SetExistingMaterialActive(int materialIndex)
 
 struct AnimCurveEdit : public ImCurveEdit::Delegate
 {
-    AnimCurveEdit(NodeGraphControler& NodeGraphControler,
+    AnimCurveEdit(GraphControler& GraphControler,
                   ImVec2& min,
                   ImVec2& max,
                   std::vector<AnimTrack>& animTrack,
                   std::vector<bool>& visible,
                   int nodeIndex,
                   int currentTime)
-        : mNodeGraphControler(NodeGraphControler)
+        : mNodeGraphControler(GraphControler)
         , mMin(min)
         , mMax(max)
         , mAnimTrack(animTrack)
@@ -1161,7 +1161,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     ImVec2 &mMin, &mMax;
     int mNodeIndex;
     int mCurrentTime;
-    NodeGraphControler& mNodeGraphControler;
+    GraphControler& mNodeGraphControler;
 
 private:
     void SortValues(size_t curveIndex)
@@ -1175,8 +1175,8 @@ private:
 
 struct MySequence : public ImSequencer::SequenceInterface
 {
-    MySequence(NodeGraphControler& NodeGraphControler)
-        : mNodeGraphControler(NodeGraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX)
+    MySequence(GraphControler& GraphControler)
+        : mNodeGraphControler(GraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX)
     {
     }
 
@@ -1366,7 +1366,7 @@ struct MySequence : public ImSequencer::SequenceInterface
         mCurveMax = curveMax.y;
     }
 
-    NodeGraphControler& mNodeGraphControler;
+    GraphControler& mNodeGraphControler;
     std::vector<bool> mbExpansions;
     std::vector<bool> mbVisible;
     ImVector<ImCurveEdit::EditPoint> mSelectedCurvePoints;
@@ -1912,7 +1912,7 @@ void Imogen::ShowNodeGraph()
         }
         ImGui::PopItemWidth();
     }
-    NodeGraph(mNodeGraphControler, mSelectedMaterial != -1);
+    GraphEditor(mNodeGraphControler, mSelectedMaterial != -1);
 }
 
 void Imogen::ExportMaterial()
@@ -2197,7 +2197,7 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     }
 }
 
-Imogen::Imogen(NodeGraphControler* nodeGraphControler) : mNodeGraphControler(nodeGraphControler)
+Imogen::Imogen(GraphControler* nodeGraphControler) : mNodeGraphControler(nodeGraphControler)
 {
     mSequence = new MySequence(*nodeGraphControler);
     mdConfig.userData = this;
@@ -2222,7 +2222,7 @@ Imogen::~Imogen()
 void Imogen::ClearAll()
 {
     mNodeGraphControler->Clear();
-    NodeGraphClear();
+    GraphEditorClear();
     InitCallbackRects();
     ClearExtractedViews();
     mSequence->Clear();

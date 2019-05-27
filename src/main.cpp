@@ -33,8 +33,8 @@
 #include <stdlib.h>
 #include <io.h>
 #include <fcntl.h>
-#include "NodeGraph.h"
-#include "NodeGraphControler.h"
+#include "GraphEditor.h"
+#include "GraphControler.h"
 #include "EvaluationStages.h"
 #include "Imogen.h"
 #include "TaskScheduler.h"
@@ -203,7 +203,7 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    NodeGraphControler nodeGraphControler;
+    GraphControler nodeGraphControler;
     Imogen imogen(&nodeGraphControler);
 
     ImGuiIO& io = ImGui::GetIO();

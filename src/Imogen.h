@@ -32,7 +32,7 @@
 #include "imgui_internal.h"
 #include "Library.h"
 
-struct NodeGraphControler;
+struct GraphControler;
 struct Evaluation;
 struct Library;
 struct Builder;
@@ -63,7 +63,7 @@ extern std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 struct Imogen
 {
-    Imogen(NodeGraphControler* nodeGraphControler);
+    Imogen(GraphControler* nodeGraphControler);
     ~Imogen();
 
     void Init();
@@ -82,7 +82,7 @@ struct Imogen
     void SetExistingMaterialActive(const char* materialName);
     void DecodeThumbnailAsync(Material* material);
 
-    static void RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControler, bool forceUI = false);
+    static void RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, bool forceUI = false);
     void HandleHotKeys();
 
     void NewMaterial(const std::string& materialName = "Name_Of_New_Material");
@@ -93,7 +93,7 @@ struct Imogen
     void RunDeferedCommands();
     static Imogen* instance;
 
-    NodeGraphControler* GetNodeGraphControler()
+    GraphControler* GetNodeGraphControler()
     {
         return mNodeGraphControler;
     }
@@ -127,7 +127,7 @@ protected:
     static void* ReadOpen(ImGuiContext* ctx, ImGuiSettingsHandler* handler, const char* name);
 
     MySequence* mSequence;
-    NodeGraphControler* mNodeGraphControler;
+    GraphControler* mNodeGraphControler;
     Builder* mBuilder;
     bool mbShowTimeline = false;
     bool mbShowLibrary = false;

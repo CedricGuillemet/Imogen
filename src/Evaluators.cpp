@@ -41,7 +41,7 @@
 #include "Camera.h"
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
-#include "NodeGraphControler.h"
+#include "GraphControler.h"
 
 Evaluators gEvaluators;
 extern enki::TaskScheduler g_TS;
@@ -125,7 +125,7 @@ extern std::vector<ImHotKey::HotKey> mHotkeys;
 
 
 void RenderImogenFrame();
-void NodeGraphUpdateScrolling(NodeGraphControlerBase* model);
+void GraphEditorUpdateScrolling(GraphEditorDelegate* model);
 
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
@@ -157,7 +157,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         //NodeGraphUpdateEvaluationOrder(&Imogen::instance->GetNodeGraphControler()->mModel,
         //                               Imogen::instance->GetNodeGraphControler());
         Imogen::instance->GetNodeGraphControler()->mModel.NodeGraphLayout();
-        NodeGraphUpdateScrolling(Imogen::instance->GetNodeGraphControler());
+        GraphEditorUpdateScrolling(Imogen::instance->GetNodeGraphControler());
     });
     m.def("DeleteGraph", []() { Imogen::instance->DeleteCurrentMaterial(); });
 

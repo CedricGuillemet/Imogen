@@ -31,7 +31,7 @@
 #include <vector>
 #include <float.h>
 #include <array>
-#include "NodeGraph.h"
+#include "GraphEditor.h"
 
 extern ImGui::MarkdownConfig mdConfig;
 
@@ -45,21 +45,21 @@ static inline float sign(float v)
     return (v >= 0.f) ? 1.f : -1.f;
 }
 
-ImVec2 GetInputSlotPos(const NodeGraphControlerBase::Node& node, int slot_no, float factor)
+ImVec2 GetInputSlotPos(const GraphEditorDelegate::Node& node, int slot_no, float factor)
 {
     ImVec2 Size = node.mRect.GetSize() * factor;
     size_t InputsCount = node.mInputs.size();
     return ImVec2(node.mRect.Min.x * factor,
                   node.mRect.Min.y * factor + Size.y * ((float)slot_no + 1) / ((float)InputsCount + 1) + 8.f);
 }
-ImVec2 GetOutputSlotPos(const NodeGraphControlerBase::Node& node, int slot_no, float factor)
+ImVec2 GetOutputSlotPos(const GraphEditorDelegate::Node& node, int slot_no, float factor)
 {
     ImVec2 Size = node.mRect.GetSize() * factor;
     size_t OutputsCount = node.mOutputs.size();
     return ImVec2(node.mRect.Min.x * factor + Size.x,
                   node.mRect.Min.y * factor + Size.y * ((float)slot_no + 1) / ((float)OutputsCount + 1) + 8.f);
 }
-ImRect GetNodeRect(const NodeGraphControlerBase::Node& node, float factor)
+ImRect GetNodeRect(const GraphEditorDelegate::Node& node, float factor)
 {
     ImVec2 Size = node.mRect.GetSize() * factor;
     return ImRect(node.mRect.Min * factor, node.mRect.Min * factor + Size);
@@ -113,7 +113,7 @@ void HandleZoomScroll(ImRect regionRect)
     }
 }
 
-void NodeGraphClear()
+void GraphEditorClear()
 {
     editRug = -1;
     nodeOperation = NO_None;
@@ -121,7 +121,7 @@ void NodeGraphClear()
     factorTarget = 1.0f;
 }
 
-int DisplayRugs(NodeGraphControlerBase* delegate, int editRug, ImDrawList* drawList, ImVec2 offset, float factor)
+int DisplayRugs(GraphEditorDelegate* delegate, int editRug, ImDrawList* drawList, ImVec2 offset, float factor)
 {
     ImGuiIO& io = ImGui::GetIO();
     int ret = editRug;
@@ -195,15 +195,15 @@ int DisplayRugs(NodeGraphControlerBase* delegate, int editRug, ImDrawList* drawL
     return ret;
 }
 
-bool EditRug(NodeGraphControlerBase *delegate, int rugIndex, ImDrawList* drawList, ImVec2 offset, float factor)
+bool EditRug(GraphEditorDelegate *delegate, int rugIndex, ImDrawList* drawList, ImVec2 offset, float factor)
 {
     ImGuiIO& io = ImGui::GetIO();
     const auto& rugs = delegate->GetRugs();
     ImVec2 commentSize = rugs[rugIndex].mRect.GetSize() * factor;
     static int movingSizingRug = -1;
-    NodeGraphControlerBase::Rug rug = rugs[rugIndex];
-    static NodeGraphControlerBase::Rug editingRug;
-    static NodeGraphControlerBase::Rug editingRugSource;
+    GraphEditorDelegate::Rug rug = rugs[rugIndex];
+    static GraphEditorDelegate::Rug editingRug;
+    static GraphEditorDelegate::Rug editingRugSource;
 
     bool dirtyRug = false;
     ImVec2 node_rect_min = offset + rug.mRect.Min * factor;
@@ -326,7 +326,7 @@ bool EditRug(NodeGraphControlerBase *delegate, int rugIndex, ImDrawList* drawLis
     return false;
 }
 
-void NodeGraphUpdateScrolling(NodeGraphControlerBase *delegate)
+void GraphEditorUpdateScrolling(GraphEditorDelegate *delegate)
 {
     const auto& nodes = delegate->GetNodes();
     const auto& rugs = delegate->GetRugs();
@@ -360,7 +360,7 @@ void NodeGraphUpdateScrolling(NodeGraphControlerBase *delegate)
     scrolling = ImVec2(40, 40) - scrolling;
 }
 
-static void DisplayLinks(NodeGraphControlerBase* delegate,
+static void DisplayLinks(GraphEditorDelegate* delegate,
                          ImDrawList* drawList,
                          const ImVec2 offset,
                          const float factor,
@@ -482,7 +482,7 @@ static void DisplayLinks(NodeGraphControlerBase* delegate,
 }
 
 static void HandleQuadSelection(
-    NodeGraphControlerBase* delegate, ImDrawList* drawList, const ImVec2 offset, const float factor, ImRect contentRect)
+    GraphEditorDelegate* delegate, ImDrawList* drawList, const ImVec2 offset, const float factor, ImRect contentRect)
 {
     ImGuiIO& io = ImGui::GetIO();
     static ImVec2 quadSelectPos;
@@ -555,7 +555,7 @@ bool HandleConnections(ImDrawList* drawList,
                        int nodeIndex,
                        const ImVec2 offset,
                        const float factor,
-                       NodeGraphControlerBase* delegate,
+                       GraphEditorDelegate* delegate,
                        bool bDrawOnly)
 {
     static int editingNodeIndex;
@@ -564,7 +564,7 @@ bool HandleConnections(ImDrawList* drawList,
     const auto& nodes = delegate->GetNodes();
 
     ImGuiIO& io = ImGui::GetIO();
-    const NodeGraphControlerBase::Node* node = &nodes[nodeIndex];
+    const GraphEditorDelegate::Node* node = &nodes[nodeIndex];
 
     size_t InputsCount = node->mInputs.size();
     size_t OutputsCount = node->mOutputs.size();
@@ -628,11 +628,11 @@ bool HandleConnections(ImDrawList* drawList,
                 if (inputToOutput)
                 {
                     // check loopback
-                    NodeGraphControlerBase::Link nl;
+                    GraphEditorDelegate::Link nl;
                     if (editingInput)
-                        nl = NodeGraphControlerBase::Link{nodeIndex, closestConn, editingNodeIndex, editingSlotIndex};
+                        nl = GraphEditorDelegate::Link{nodeIndex, closestConn, editingNodeIndex, editingSlotIndex};
                     else
-                        nl = NodeGraphControlerBase::Link{editingNodeIndex, editingSlotIndex, nodeIndex, closestConn};
+                        nl = GraphEditorDelegate::Link{editingNodeIndex, editingSlotIndex, nodeIndex, closestConn};
 
                     if (delegate->RecurseIsLinked(nl.mOutputNodeIndex, nl.mInputNodeIndex))
                     {
@@ -641,7 +641,7 @@ bool HandleConnections(ImDrawList* drawList,
                     bool alreadyExisting = false;
                     for (int linkIndex = 0; linkIndex < links.size(); linkIndex++)
                     {
-                        if (!memcmp(&links[linkIndex], &nl, sizeof(NodeGraphControlerBase::Link)))
+                        if (!memcmp(&links[linkIndex], &nl, sizeof(GraphEditorDelegate::Link)))
                         {
                             alreadyExisting = true;
                             break;
@@ -720,7 +720,7 @@ static bool DrawNode(ImDrawList* drawList,
                      int nodeIndex,
                      const ImVec2 offset,
                      const float factor,
-                     NodeGraphControlerBase* delegate,
+                     GraphEditorDelegate* delegate,
                      bool overInput)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -884,7 +884,7 @@ static bool DrawNode(ImDrawList* drawList,
 	return nodeHovered;
 }
 
-void ComputeDelegateSelection(NodeGraphControlerBase* delegate)
+void ComputeDelegateSelection(GraphEditorDelegate* delegate)
 {
     const auto& nodes = delegate->GetNodes();
     // only one selection allowed for delegate
@@ -906,7 +906,7 @@ void ComputeDelegateSelection(NodeGraphControlerBase* delegate)
     }
 }
 
-void NodeGraph(NodeGraphControlerBase* delegate, bool enabled)
+void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));

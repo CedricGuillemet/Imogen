@@ -30,7 +30,6 @@
 #include <algorithm>
 #include <map>
 
-
 EvaluationStages::EvaluationStages()
 {
 }
@@ -105,11 +104,6 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
     decoder->Open(filename);
     return decoder;
 }
-
-
-
-
-
 
 Image EvaluationStage::DecodeImage()
 {

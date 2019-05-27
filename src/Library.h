@@ -504,7 +504,7 @@ void DecodeThumbnailAsync(Material* material, NodeGraphControler* nodeGraphContr
 size_t ComputeNodeParametersSize(size_t nodeType);
 const char* GetParameterTypeName(ConTypes paramType);
 void InitDefaultParameters(size_t nodeType, Parameters& parameters);
-float GetParameterComponentValue(size_t nodeType, Parameters& parameters, int parameterIndex, int componentIndex);
+float GetParameterComponentValue(size_t nodeType, const Parameters& parameters, int parameterIndex, int componentIndex);
 const Camera* GetCameraParameter(size_t nodeType, const Parameters& parameters);
 int GetIntParameter(size_t nodeType, const Parameters& parameters, const char* parameterName, int defaultValue);
 

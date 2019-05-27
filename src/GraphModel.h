@@ -114,13 +114,15 @@ public:
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
     void SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd);
     void SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex);
+    void SetMultiplexInputs(const std::vector<MultiplexInput>& multiplexInputs);
 	void SetParameterPins(const std::vector<uint32_t>& pins);
     void SetIOPins(const std::vector<uint32_t>& pins);
-
+    void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
     // transaction is handled is the function
     void NodeGraphLayout();
 
     // getters
+    size_t GetNodeCount() const { return mNodes.size(); }
     int GetNodeType(size_t nodeIndex) const { return mNodes[nodeIndex].mType; }
     bool NodeHasUI(size_t nodeIndex) const;
     const std::vector<Rug>& GetRugs() const { return mRugs; }
@@ -144,7 +146,7 @@ public:
     bool GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const;
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
-    
+    void GetStartEndFrame(size_t nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
     // dirty
     const std::vector<DirtyList>& GetDirtyList() const { return mDirtyList; }
     void ClearDirtyList() { mDirtyList.clear(); }

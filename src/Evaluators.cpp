@@ -125,7 +125,7 @@ extern std::vector<ImHotKey::HotKey> mHotkeys;
 
 
 void RenderImogenFrame();
-void NodeGraphUpdateScrolling(GraphModel* model);
+void NodeGraphUpdateScrolling(NodeGraphControlerBase* model);
 
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
@@ -157,7 +157,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         //NodeGraphUpdateEvaluationOrder(&Imogen::instance->GetNodeGraphControler()->mModel,
         //                               Imogen::instance->GetNodeGraphControler());
         Imogen::instance->GetNodeGraphControler()->mModel.NodeGraphLayout();
-        NodeGraphUpdateScrolling(&Imogen::instance->GetNodeGraphControler()->mModel);
+        NodeGraphUpdateScrolling(Imogen::instance->GetNodeGraphControler());
     });
     m.def("DeleteGraph", []() { Imogen::instance->DeleteCurrentMaterial(); });
 
@@ -1129,7 +1129,7 @@ namespace EvaluationAPI
         GLSLPathTracer::Renderer* renderer = (GLSLPathTracer::Renderer*)eval.mStages[target].renderer;
         GLSLPathTracer::Scene* rdscene = (GLSLPathTracer::Scene*)eval.mStages[target].mScene;
 
-        Camera* camera = eval.GetCameraParameter(target);
+        const Camera* camera = GetCameraParameter(eval.mStages[target].mType, eval.mParameters[target]);
         if (camera)
         {
             Vec4 pos = camera->mPosition;

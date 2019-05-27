@@ -230,7 +230,6 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
 }
 
 void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
-                                     MultiplexInput& multiplexInput,
                                      unsigned int program,
                                      size_t nodeIndex,
                                      std::shared_ptr<RenderTarget> reusableTarget)
@@ -242,11 +241,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
         int targetIndex = input.mOverrideInputs[inputIndex];
         if (targetIndex < 0)
         {
-            targetIndex = multiplexInput.mInputs[inputIndex];
-            if (targetIndex < 0)
-            {
-                targetIndex = input.mInputs[inputIndex];
-            }
+            targetIndex = input.mInputs[inputIndex];
         }
         if (targetIndex < 0)
         {
@@ -276,7 +271,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
 
             if (tgt)
             {
-                const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[nodeIndex][inputIndex];
+                const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[inputIndex];
                 if (tgt->mImage->mNumFaces == 1)
                 {
                     glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
@@ -418,7 +413,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
 
-        BindTextures(evaluationStage, mEvaluationStages.mMultiplexInputs[nodeIndex], program, nodeIndex, std::shared_ptr<RenderTarget>());
+        BindTextures(evaluationStage, program, nodeIndex, std::shared_ptr<RenderTarget>());
         glEnable(GL_RASTERIZER_DISCARD);
         glBindVertexArray(feedbackVertexArray);
         glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
@@ -456,6 +451,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
     const int blendOps[] = {evaluation.mBlendingSrc, evaluation.mBlendingDst};
+    const auto& parameters = mEvaluationStages.GetParameters(nodeIndex);
+    const auto nodeType = mEvaluationStages.GetNodeType(nodeIndex);
+
     unsigned int blend[] = {GL_ONE, GL_ZERO};
 
     if (!program)
@@ -474,7 +472,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     // parameters
     glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
 
-    const Parameters& parameters = mEvaluationStages.mParameters[nodeIndex];
+
+
     glBufferData(
         GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
@@ -484,13 +483,16 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
     glUseProgram(program);
 
-    Camera* camera = mEvaluationStages.GetCameraParameter(nodeIndex);
+    
+    
+
+    const Camera* camera = GetCameraParameter(nodeType, parameters);
     if (camera)
     {
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
-    int passCount = mEvaluationStages.GetIntParameter(nodeIndex, "passCount", 1);
+    int passCount = GetIntParameter(nodeIndex, parameters, "passCount", 1);
     auto transientTarget = std::make_shared<RenderTarget>(RenderTarget());
     if (passCount > 1)
     {
@@ -539,7 +541,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
                 glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
-                BindTextures(evaluationStage, mEvaluationStages.mMultiplexInputs[nodeIndex], program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
+                BindTextures(evaluationStage, program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);
@@ -663,7 +665,20 @@ void EvaluationContext::AllocRenderTargetsForEditingPreview()
 void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate)
 {
     std::vector<std::shared_ptr<RenderTarget>> freeRenderTargets;
-    auto useCount = mEvaluationStages.mUseCountByOthers;
+    std::vector<uint8_t> useCount(nodesToEvaluate.size(), 0);
+    // compute use count
+    for (auto j = 0; j < nodesToEvaluate.size(); j++)
+    {
+        for (auto i = 0; i < 8; i++)
+        {
+            const auto input = mEvaluationStages.mInputs[j].mInputs[i];
+            if (input != -1)
+            {
+                useCount[input] ++;
+            }
+        }
+    }
+
     for (auto index : nodesToEvaluate)
     {
         if (!useCount[index])
@@ -696,7 +711,7 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
 
 void EvaluationContext::RunNode(size_t nodeIndex)
 {
-    auto& currentStage = mEvaluationStages.GetEvaluationStage(nodeIndex);
+    auto& currentStage = mEvaluationStages.mStages[nodeIndex];
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
     auto& evaluation = mEvaluations[nodeIndex];
 
@@ -962,35 +977,13 @@ void Builder::Add(const char* graphName, const EvaluationStages& stages)
     mMutex.unlock();
 }
 
-EvaluationStages BuildEvaluationFromMaterial(Material& material)
-{
-    EvaluationStages evaluationStages;
-    for (size_t i = 0; i < material.mMaterialNodes.size(); i++)
-    {
-        MaterialNode& node = material.mMaterialNodes[i];
-        evaluationStages.AddSingleEvaluation(node.mType);
-        auto& lastNode = evaluationStages.mStages.back();
-        evaluationStages.SetParameters(i, node.mParameters);
-        evaluationStages.SetSamplers(i, node.mInputSamplers);
-    }
-    for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
-    {
-        MaterialConnection& materialConnection = material.mMaterialConnections[i];
-        evaluationStages.SetEvaluationInput(
-            materialConnection.mOutputNodeIndex, materialConnection.mInputSlotIndex, materialConnection.mInputNodeIndex);
-    }
-
-    evaluationStages.SetAnimTrack(material.mAnimTrack);
-    evaluationStages.mFrameMin = material.mFrameMin;
-    evaluationStages.mFrameMax = material.mFrameMax;
-    return evaluationStages;
-}
-
 void Builder::Add(Material* material)
 {
     try
     {
-        Add(material->mName.c_str(), BuildEvaluationFromMaterial(*material));
+        EvaluationStages stages;
+        stages.BuildEvaluationFromMaterial(*material);
+        Add(material->mName.c_str(), stages);
     }
     catch (std::exception e)
     {

@@ -56,6 +56,19 @@ struct EvaluationInfo
     int mipmapCount;
 };
 
+struct UIInput
+{
+    float mRx;
+    float mRy;
+    float mDx;
+    float mDy;
+    float mWheel;
+    uint8_t mLButDown : 1;
+    uint8_t mRButDown : 1;
+    uint8_t mbCtrl : 1;
+    uint8_t mbAlt : 1;
+    uint8_t mbShift : 1;
+};
 
 
 struct EvaluationContext
@@ -184,7 +197,6 @@ protected:
     void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 
     void BindTextures(const EvaluationStage& evaluationStage,
-                      MultiplexInput& multiplexInput,
                       unsigned int program,
                       size_t nodeIndex,
                       std::shared_ptr<RenderTarget> reusableTarget);

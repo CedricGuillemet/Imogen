@@ -35,7 +35,7 @@
 void AddExtractedView(size_t nodeIndex);
 
 NodeGraphControler::NodeGraphControler()
-    : mbMouseDragging(false), mbUsingMouse(false), mEditingContext(mModel.mEvaluationStages, false, 1024, 1024)
+    : mbMouseDragging(false), mbUsingMouse(false), mEditingContext(mEvaluationStages, false, 1024, 1024)
 {
 }
 
@@ -320,7 +320,7 @@ void NodeGraphControler::PinnedEdit()
         unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
         unsigned int parameterIndex = pin & 0xFFFF;
 
-        size_t nodeType = mModel.mEvaluationStages.mStages[nodeIndex].mType;
+        size_t nodeType = mModel.GetNodeType(nodeIndex);
         const MetaNode& metaNode = gMetaNodes[nodeType];
         if (parameterIndex >= metaNode.mParams.size())
             continue;
@@ -352,8 +352,8 @@ void NodeGraphControler::EditNodeParameters()
     bool dirty = false;
     bool forceEval = false;
     bool samplerDirty = false;
-    const auto& stage = mModel.mEvaluationStages.mStages[nodeIndex];
-    const MetaNode& currentMeta = metaNodes[stage.mType];
+    const auto nodeType = mModel.GetNodeType(nodeIndex);
+    const MetaNode& currentMeta = metaNodes[nodeType];
 
     // edit samplers
     auto samplers = mModel.GetSamplers(nodeIndex);
@@ -411,7 +411,7 @@ void NodeGraphControler::EditNodeParameters()
     for (unsigned int slotIndex = 0; slotIndex < 8; slotIndex++)
     {
         std::vector<size_t> inputs;
-        if (mModel.mEvaluationStages.GetMultiplexedInputs(nodeIndex, slotIndex, inputs))
+        if (mModel.GetMultiplexedInputs(nodeIndex, slotIndex, inputs))
         {
             int currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
 
@@ -524,9 +524,8 @@ void NodeGraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput
         mbUsingMouse = false;
     }
 
-    const MetaNode* metaNodes = gMetaNodes.data();
     size_t res = 0;
-    const MetaNode& metaNode = metaNodes[mModel.mEvaluationStages.mStages[mSelectedNodeIndex].mType];
+    const MetaNode& metaNode = gMetaNodes[mModel.GetNodeType(mSelectedNodeIndex)];
 
     Parameters parameters = mModel.GetParameters(mSelectedNodeIndex);
     unsigned char* paramBuffer = parameters.data();
@@ -789,7 +788,7 @@ bool NodeGraphControler::NodeIs2D(size_t nodeIndex) const
 
 bool NodeGraphControler::NodeIsCompute(size_t nodeIndex) const
 {
-    return (gEvaluators.GetMask(mModel.mEvaluationStages.mStages[nodeIndex].mType) & EvaluationGLSLCompute) != 0;
+    return (gEvaluators.GetMask(mModel.GetNodeType(nodeIndex)) & EvaluationGLSLCompute) != 0;
 }
 
 bool NodeGraphControler::NodeIsCubemap(size_t nodeIndex) const
@@ -850,3 +849,24 @@ bool NodeGraphControler::RenderBackground()
     }
     return false;
 }
+
+void NodeGraphControler::ComputeGraphArrays()
+{
+}
+
+
+/*
+
+    // [experimental][hovered]
+    static const uint32_t nodeBGColors[2][2] = {{IM_COL32(60, 60, 60, 255), IM_COL32(85, 85, 85, 255)},
+                                                {IM_COL32(80, 50, 20, 255), IM_COL32(105, 75, 45, 255)}};
+                                                */
+
+
+                                                /*
+                                                
+                                                	unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
+	unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
+	unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
+                                                
+                                                */

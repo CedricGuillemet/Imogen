@@ -630,7 +630,7 @@ CurveType GetCurveTypeForParameterType(ConTypes paramType)
     return CurveNone;
 }
 
-void Camera::ComputeViewProjectionMatrix(float* viewProj, float* viewInverse)
+void Camera::ComputeViewProjectionMatrix(float* viewProj, float* viewInverse) const
 {
     Mat4x4& vp = *(Mat4x4*)viewProj;
     Mat4x4 view, proj;
@@ -857,6 +857,109 @@ void ParseStringToParameter(const std::string& str, uint32_t parameterType, void
             pi[0] = (str == "true") ? 1 : 0;
             break;
     }
+}
+
+void InitDefaultParameters(size_t nodeType, Parameters& parameters)
+{
+    const MetaNode* metaNodes = gMetaNodes.data();
+    const MetaNode& currentMeta = metaNodes[nodeType];
+    const size_t paramsSize = ComputeNodeParametersSize(nodeType);
+    parameters.resize(paramsSize);
+    unsigned char* paramBuffer = parameters.data();
+    memset(paramBuffer, 0, paramsSize);
+    int i = 0;
+    for (const MetaParameter& param : currentMeta.mParams)
+    {
+        if (!param.mDefaultValue.empty())
+        {
+            memcpy(paramBuffer, param.mDefaultValue.data(), param.mDefaultValue.size());
+        }
+
+        paramBuffer += GetParameterTypeSize(param.mType);
+    }
+}
+
+
+float GetParameterComponentValue(size_t nodeType, const Parameters& parameters, int parameterIndex, int componentIndex)
+{
+    size_t paramOffset = GetParameterOffset(uint32_t(nodeType), parameterIndex);
+    const unsigned char* ptr = &parameters.data()[paramOffset];
+    const MetaNode* metaNodes = gMetaNodes.data();
+    const MetaNode& currentMeta = metaNodes[nodeType];
+    switch (currentMeta.mParams[parameterIndex].mType)
+    {
+    case Con_Angle:
+    case Con_Float:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle2:
+    case Con_Float2:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle3:
+    case Con_Float3:
+        return ((float*)ptr)[componentIndex];
+    case Con_Angle4:
+    case Con_Color4:
+    case Con_Float4:
+        return ((float*)ptr)[componentIndex];
+    case Con_Ramp:
+        return 0;
+    case Con_Ramp4:
+        return 0;
+    case Con_Enum:
+    case Con_Int:
+        return float(((int*)ptr)[componentIndex]);
+    case Con_Int2:
+        return float(((int*)ptr)[componentIndex]);
+    case Con_FilenameRead:
+    case Con_FilenameWrite:
+        return 0;
+    case Con_ForceEvaluate:
+        return 0;
+    case Con_Bool:
+        return float(((bool*)ptr)[componentIndex]);
+    case Con_Camera:
+        return float((*(Camera*)ptr)[componentIndex]);
+    }
+    return 0.f;
+}
+
+// TODO : create parameter struct with templated accessors
+int GetIntParameter(size_t nodeType, const Parameters& parameters, const char* parameterName, int defaultValue)
+{
+    const MetaNode& currentMeta = gMetaNodes[nodeType];
+    const size_t paramsSize = ComputeNodeParametersSize(nodeType);
+    const unsigned char* paramBuffer = parameters.data();
+    for (const MetaParameter& param : currentMeta.mParams)
+    {
+        if (param.mType == Con_Int)
+        {
+            if (!strcmp(param.mName.c_str(), parameterName))
+            {
+                int* value = (int*)paramBuffer;
+                return *value;
+            }
+        }
+        paramBuffer += GetParameterTypeSize(param.mType);
+    }
+    return defaultValue;
+}
+
+const Camera* GetCameraParameter(size_t nodeType, const Parameters& parameters)
+{
+    const MetaNode& currentMeta = gMetaNodes[nodeType];
+    const size_t paramsSize = ComputeNodeParametersSize(nodeType);
+    unsigned char* paramBuffer = parameters.data();
+    for (const MetaParameter& param : currentMeta.mParams)
+    {
+        if (param.mType == Con_Camera)
+        {
+            Camera* cam = (Camera*)paramBuffer;
+            return cam;
+        }
+        paramBuffer += GetParameterTypeSize(param.mType);
+    }
+
+    return NULL;
 }
 
 std::vector<MetaNode> ReadMetaNodes(const char* filename)

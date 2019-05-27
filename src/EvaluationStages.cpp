@@ -31,7 +31,8 @@
 #include <algorithm>
 #include <map>
 
-EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
+
+EvaluationStages::EvaluationStages()
 {
 }
 
@@ -51,27 +52,15 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     if (!defaultScene)
     {
         defaultScene = std::make_shared<Scene>();
-        defaultScene->mMeshes.resize(1);
-        auto& mesh = defaultScene->mMeshes.back();
-        mesh.mPrimitives.resize(1);
-        auto& prim = mesh.mPrimitives.back();
-        static const float fsVts[] = {0.f, 0.f, 2.f, 0.f, 0.f, 2.f};
-        prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 3);
-        // add node and transform
-        defaultScene->mWorldTransforms.resize(1);
-        defaultScene->mWorldTransforms[0].Identity();
-        defaultScene->mMeshIndex.resize(1, 0);
+
     }
     evaluation.mScene = nullptr;
     evaluation.mGScene = defaultScene;
     evaluation.renderer = nullptr;
     evaluation.mRuntimeUniqueId = GetRuntimeId();
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
-    evaluation.mStartFrame = mFrameMin;
-    evaluation.mEndFrame = mFrameMax;
-
+    
     mParameters.push_back(Parameters());
-    InitDefaultParameters(evaluation, mParameters.back());
     mStages.push_back(evaluation);
     mInputSamplers.push_back(Samplers(inputCount));
     mMultiplexInputs.push_back(MultiplexInput());
@@ -133,7 +122,6 @@ void EvaluationStages::Clear()
     mParameters.clear();
 }
 
-
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {
     #if USE_FFMPEG
@@ -185,73 +173,10 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
 }
 #endif
 
-Camera* EvaluationStages::GetCameraParameter(size_t nodeIndex)
-{
-    if (nodeIndex >= mStages.size())
-        return NULL;
-    EvaluationStage& stage = mStages[nodeIndex];
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    mParameters[nodeIndex].resize(paramsSize);
-    unsigned char* paramBuffer = mParameters[nodeIndex].data();
-    for (const MetaParameter& param : currentMeta.mParams)
-    {
-        if (param.mType == Con_Camera)
-        {
-            Camera* cam = (Camera*)paramBuffer;
-            return cam;
-        }
-        paramBuffer += GetParameterTypeSize(param.mType);
-    }
 
-    return NULL;
-}
-// TODO : create parameter struct with templated accessors
-int EvaluationStages::GetIntParameter(size_t nodeIndex, const char* parameterName, int defaultValue)
-{
-    if (nodeIndex >= mStages.size())
-        return NULL;
-    EvaluationStage& stage = mStages[nodeIndex];
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    mParameters[nodeIndex].resize(paramsSize);
-    unsigned char* paramBuffer = mParameters[nodeIndex].data();
-    for (const MetaParameter& param : currentMeta.mParams)
-    {
-        if (param.mType == Con_Int)
-        {
-            if (!strcmp(param.mName.c_str(), parameterName))
-            {
-                int* value = (int*)paramBuffer;
-                return *value;
-            }
-        }
-        paramBuffer += GetParameterTypeSize(param.mType);
-    }
-    return defaultValue;
-}
 
-void EvaluationStages::InitDefaultParameters(const EvaluationStage& stage, Parameters& parameters)
-{
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    const size_t paramsSize = ComputeNodeParametersSize(stage.mType);
-    parameters.resize(paramsSize);
-    unsigned char* paramBuffer = parameters.data();
-    memset(paramBuffer, 0, paramsSize);
-    int i = 0;
-    for (const MetaParameter& param : currentMeta.mParams)
-    {
-        if (!param.mDefaultValue.empty())
-        {
-            memcpy(paramBuffer, param.mDefaultValue.data(), param.mDefaultValue.size());
-        }
 
-        paramBuffer += GetParameterTypeSize(param.mType);
-    }
-}
+
 
 #if USE_FFMPEG
 Image EvaluationStage::DecodeImage()
@@ -302,54 +227,8 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
     }
 }
 
-float EvaluationStages::GetParameterComponentValue(size_t nodeIndex, int parameterIndex, int componentIndex)
-{
-    EvaluationStage& stage = mStages[nodeIndex];
-    size_t paramOffset = GetParameterOffset(uint32_t(stage.mType), parameterIndex);
-    const unsigned char* ptr = &mParameters[nodeIndex].data()[paramOffset];
-    const MetaNode* metaNodes = gMetaNodes.data();
-    const MetaNode& currentMeta = metaNodes[stage.mType];
-    switch (currentMeta.mParams[parameterIndex].mType)
-    {
-        case Con_Angle:
-        case Con_Float:
-            return ((float*)ptr)[componentIndex];
-        case Con_Angle2:
-        case Con_Float2:
-            return ((float*)ptr)[componentIndex];
-        case Con_Angle3:
-        case Con_Float3:
-            return ((float*)ptr)[componentIndex];
-        case Con_Angle4:
-        case Con_Color4:
-        case Con_Float4:
-            return ((float*)ptr)[componentIndex];
-        case Con_Ramp:
-            return 0;
-        case Con_Ramp4:
-            return 0;
-        case Con_Enum:
-        case Con_Int:
-            return float(((int*)ptr)[componentIndex]);
-        case Con_Int2:
-            return float(((int*)ptr)[componentIndex]);
-        case Con_FilenameRead:
-        case Con_FilenameWrite:
-            return 0;
-        case Con_ForceEvaluate:
-            return 0;
-        case Con_Bool:
-            return float(((bool*)ptr)[componentIndex]);
-        case Con_Camera:
-            return float((*(Camera*)ptr)[componentIndex]);
-    }
-    return 0.f;
-}
 
-void EvaluationStages::SetAnimTrack(const std::vector<AnimTrack>& animTrack)
-{
-    mAnimTrack = animTrack;
-}
+
 
 void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder)
 {
@@ -365,219 +244,34 @@ void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, b
     }
 }
 
-
-
-size_t EvaluationStages::PickBestNode(const std::vector<EvaluationStages::NodeOrder>& orders) const
+void EvaluationStages::BuildEvaluationFromMaterial(Material& material)
 {
-    for (auto& order : orders)
-    {
-        if (order.mNodePriority == 0)
-            return order.mNodeIndex;
-    }
-    // issue!
-    assert(0);
-    return -1;
-}
+    mStages.clear();
+    mInputs.clear();
+    mInputSamplers.clear();
+    mParameters.clear();
 
-void EvaluationStages::RecurseSetPriority(std::vector<EvaluationStages::NodeOrder>& orders,
-    size_t currentIndex,
-    size_t currentPriority,
-    size_t& undeterminedNodeCount) const
-{
-    if (!orders[currentIndex].mNodePriority)
-        undeterminedNodeCount--;
+    auto nodeCount = material.mMaterialNodes.size();
+    mStages.reserve(nodeCount);
+    mInputs.reserve(nodeCount);
+    mInputSamplers.reserve(nodeCount);
+    mParameters.reserve(nodeCount);
 
-    orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
-    for (auto input : mInputs[currentIndex].mInputs)
-    {
-        if (input == -1)
-        {
-            continue;
-        }
-
-        RecurseSetPriority(orders, input, currentPriority + 1, undeterminedNodeCount);
-    }
-}
-
-std::vector<EvaluationStages::NodeOrder> EvaluationStages::ComputeEvaluationOrders()
-{
-    size_t nodeCount = mStages.size();
-
-    std::vector<NodeOrder> orders(nodeCount);
     for (size_t i = 0; i < nodeCount; i++)
     {
-        orders[i].mNodeIndex = i;
-        orders[i].mNodePriority = 0;
+        MaterialNode& node = material.mMaterialNodes[i];
+        AddSingleEvaluation(node.mType);
+        auto& lastNode = mStages.back();
+        mParameters[i] = node.mParameters;
+        //mInputSamplers[i] = node.mInputSamplers;
     }
-    size_t undeterminedNodeCount = nodeCount;
-    while (undeterminedNodeCount)
+    for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
     {
-        size_t currentIndex = PickBestNode(orders);
-        RecurseSetPriority(orders, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
-    };
-    //
-    return orders;
-}
-
-void EvaluationStages::ComputeEvaluationOrder()
-{
-    mEvaluationOrderList.clear();
-
-    auto orders = ComputeEvaluationOrders();
-    std::sort(orders.begin(), orders.end());
-    mEvaluationOrderList.resize(orders.size());
-    for (size_t i = 0; i < orders.size(); i++)
-    {
-        mEvaluationOrderList[i] = orders[i].mNodeIndex;
+        MaterialConnection& materialConnection = material.mMaterialConnections[i];
+        //SetEvaluationInput(
+        //    materialConnection.mOutputNodeIndex, materialConnection.mInputSlotIndex, materialConnection.mInputNodeIndex);
     }
-}
 
-bool NodeTypeHasMultiplexer(size_t nodeType)
-{
-    for(const auto& parameter : gMetaNodes[nodeType].mParams)
-    {
-        if (parameter.mType == Con_Multiplexer)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-void EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const
-{
-    for (auto& input: mInputs[nodeIndex].mInputs)
-    {
-        if (input == -1)
-        {
-            continue;
-        }
-        if (!NodeTypeHasMultiplexer(mStages[input].mType))
-        {
-            list.push_back(input);
-        }
-        else
-        {
-            GetMultiplexedInputs(input, list);
-        }
-    }
-}
-
-bool EvaluationStages::GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const
-{
-    int input = mInputs[nodeIndex].mInputs[slotIndex];
-    if (input == -1)
-    {
-        return false;
-    }
-    if (NodeTypeHasMultiplexer(mStages[input].mType))
-    {
-        GetMultiplexedInputs(input, list);
-        return true;
-    }
-    return false;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
-
-void Scene::Mesh::Primitive::Draw() const
-{
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    for (auto& buffer : mBuffers)
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, buffer.id);
-        switch (buffer.format)
-        {
-            case Format::UV:
-                glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 8, 0);
-                glEnableVertexAttribArray(SemUV0);
-                break;
-            case Format::COL:
-                glVertexAttribPointer(SemUV0 + 1, 4, GL_FLOAT, GL_FALSE, 16, 0);
-                glEnableVertexAttribArray(SemUV0 + 1);
-                break;
-            case Format::POS:
-                glVertexAttribPointer(SemUV0 + 2, 3, GL_FLOAT, GL_FALSE, 12, 0);
-                glEnableVertexAttribArray(SemUV0 + 2);
-                break;
-            case Format::NORM:
-                glVertexAttribPointer(SemUV0 + 3, 3, GL_FLOAT, GL_FALSE, 12, 0);
-                glEnableVertexAttribArray(SemUV0 + 3);
-                break;
-        }
-    }
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-    glBindVertexArray(vao);
-
-    if (!mIndexBuffer.id)
-    {
-        glDrawArrays(GL_TRIANGLES, 0, mBuffers[0].count);
-    }
-    else
-    {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer.id);
-        glDrawElements(GL_TRIANGLES,
-                       mIndexBuffer.count,
-                       (mIndexBuffer.stride == 4) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT,
-                       (void*)0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glDeleteVertexArrays(1, &vao);
-}
-void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count)
-{
-    unsigned int va;
-    glGenBuffers(1, &va);
-    glBindBuffer(GL_ARRAY_BUFFER, va);
-    glBufferData(GL_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    mBuffers.push_back({va, format, stride, count});
-}
-
-void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int stride, unsigned int count)
-{
-    unsigned int ia;
-    glGenBuffers(1, &ia);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ia);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    mIndexBuffer = {ia, stride, count};
-}
-void Scene::Mesh::Draw() const
-{
-    for (auto& prim : mPrimitives)
-    {
-        prim.Draw();
-    }
-}
-void Scene::Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const
-{
-    for (unsigned int i = 0; i < mMeshIndex.size(); i++)
-    {
-        int index = mMeshIndex[i];
-        if (index == -1)
-            continue;
-        glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
-        memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
-        FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-        mMeshes[index].Draw();
-    }
-}
-
-Scene::~Scene()
-{
-    // todo : clear ia/va
+    //SetAnimTrack(material.mAnimTrack);
 }
 

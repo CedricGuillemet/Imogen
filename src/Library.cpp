@@ -948,7 +948,7 @@ const Camera* GetCameraParameter(size_t nodeType, const Parameters& parameters)
 {
     const MetaNode& currentMeta = gMetaNodes[nodeType];
     const size_t paramsSize = ComputeNodeParametersSize(nodeType);
-    unsigned char* paramBuffer = parameters.data();
+    const unsigned char* paramBuffer = parameters.data();
     for (const MetaParameter& param : currentMeta.mParams)
     {
         if (param.mType == Con_Camera)

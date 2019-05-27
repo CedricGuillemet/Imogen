@@ -195,7 +195,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
 
                 Vec4 uva(0, 0), uvb(1, 1);
                 auto nodeType = nodeGraphControler.mModel.GetNodeType(selNode);
-                Mat4x4* viewMatrix = nodeGraphControler.mModel.mEvaluationStages.GetParameterViewMatrix(selNode);
+                /*Mat4x4* viewMatrix = nodeGraphControler.mModel.mEvaluationStages.GetParameterViewMatrix(selNode); todo
                 const Camera* nodeCamera = GetCameraParameter(nodeType, nodeGraphControler.mModel.GetParameters(selNode));
                 if (viewMatrix && !nodeCamera)
                 {
@@ -232,7 +232,7 @@ void Imogen::RenderPreviewNode(int selNode, NodeGraphControler& nodeGraphControl
                     uva.TransformPoint(res);
                     uvb.TransformPoint(res);
                 }
-
+                */
                 ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(uva.x, uvb.y), ImVec2(uvb.x, uva.y));
             }
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
@@ -366,7 +366,7 @@ struct PinnedTaskUploadImage : PinnedTask
         }
         else
         {
-            auto* node = mControler->Get(mIdentifier);
+            /*auto* node = mControler->Get(mIdentifier); todo
             size_t nodeIndex = node - mControler->mModel.mEvaluationStages.mStages.data();
             if (node)
             {
@@ -374,6 +374,7 @@ struct PinnedTaskUploadImage : PinnedTask
                 mControler->mModel.mEvaluationStages.SetEvaluationParameters(nodeIndex, mControler->mModel.GetParameters(nodeIndex));
                 mControler->mEditingContext.StageSetProcessing(nodeIndex, false);
             }
+            */
             Image::Free(mImage);
         }
     }
@@ -602,14 +603,15 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
     if (materialIndex == -1)
         return;
     Material& material = library.mMaterials[materialIndex];
-    auto nodeCount = nodeGraphControler.mModel.mEvaluationStages.mStages.size();
+    const auto& model = nodeGraphControler.mModel;
+    auto nodeCount = model.GetNodeCount();
     material.mMaterialNodes.resize(nodeCount);
-
+    
     for (size_t i = 0; i < nodeCount; i++)
     {
-        auto srcNode = nodeGraphControler.mModel.mEvaluationStages.mStages[i];
+        auto nodeType = model.GetNodeType(i);
         MaterialNode& dstNode = material.mMaterialNodes[i];
-        MetaNode& metaNode = gMetaNodes[srcNode.mType];
+        MetaNode& metaNode = gMetaNodes[nodeType];
         dstNode.mRuntimeUniqueId = GetRuntimeId();
         if (metaNode.mbSaveTexture)
         {
@@ -622,15 +624,17 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
             }
         }
 
-        dstNode.mType = uint32_t(srcNode.mType);
+        dstNode.mType = uint32_t(nodeType);
         dstNode.mTypeName = metaNode.mName;
-        dstNode.mParameters = nodeGraphControler.mModel.mEvaluationStages.mParameters[i];
-        dstNode.mInputSamplers = nodeGraphControler.mModel.mEvaluationStages.mInputSamplers[i];
-        ImVec2 nodePos = nodeGraphControler.mModel.GetNodePos(i);
+        dstNode.mParameters = model.GetParameters(i);
+        dstNode.mInputSamplers = model.GetSamplers(i);
+        ImVec2 nodePos = model.GetNodePos(i);
         dstNode.mPosX = int32_t(nodePos.x);
         dstNode.mPosY = int32_t(nodePos.y);
-        dstNode.mFrameStart = srcNode.mStartFrame;
-        dstNode.mFrameEnd = srcNode.mEndFrame;
+        int times[2];
+        model.GetStartEndFrame(i, times[0], times[1]);
+        dstNode.mFrameStart = uint32_t(times[0]); // todo serialize time as signed values
+        dstNode.mFrameEnd = uint32_t(times[0]);
     }
     auto links = nodeGraphControler.mModel.GetLinks();
     material.mMaterialConnections.resize(links.size());
@@ -697,13 +701,14 @@ void Imogen::UpdateNewlySelectedGraph()
             mNodeGraphControler->mModel.SetTimeSlot(nodeIndex, node.mFrameStart, node.mFrameEnd);
             mNodeGraphControler->mModel.SetSamplers(nodeIndex, node.mInputSamplers);
 
-            auto& lastNode = mNodeGraphControler->mModel.GetEvaluationStages().mStages.back();
+            /*auto& lastNode = mNodeGraphControler->mModel.GetEvaluationStages().mStages.back(); todo
             if (!node.mImage.empty())
             {
                 mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
                 g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
                     &node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
             }
+            */
         }
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
@@ -722,17 +727,16 @@ void Imogen::UpdateNewlySelectedGraph()
                                                rug.mComment});
         }
         mNodeGraphControler->mModel.EndTransaction();
-        NodeGraphUpdateScrolling(&mNodeGraphControler->mModel);
+        NodeGraphUpdateScrolling(mNodeGraphControler);
         mCurrentTime = 0;
         mbIsPlaying = false;
         mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
-        mNodeGraphControler->mModel.mEvaluationStages.SetAnimTrack(material.mAnimTrack);
+        mNodeGraphControler->mModel.SetAnimTrack(material.mAnimTrack);
         mNodeGraphControler->mModel.mFrameMin = material.mFrameMin;
         mNodeGraphControler->mModel.mFrameMax = material.mFrameMax;
         mNodeGraphControler->mModel.SetParameterPins(material.mPinnedParameters);
         mNodeGraphControler->mModel.SetIOPins(material.mPinnedIO);
-        mNodeGraphControler->mModel.mEvaluationStages.SetMultiplexInputs(material.mMultiplexInputs);
-        mNodeGraphControler->mModel.mEvaluationStages.mMultiplexInputs.resize(nodeCount);
+        mNodeGraphControler->mModel.SetMultiplexInputs(material.mMultiplexInputs);
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
@@ -866,7 +870,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
         , mNodeIndex(nodeIndex)
         , mCurrentTime(currentTime)
     {
-        size_t type = mNodeGraphControler.mModel.mEvaluationStages.mStages[nodeIndex].mType;
+        const auto& model = mNodeGraphControler.mModel;
+        size_t type = model.GetNodeType(nodeIndex);
         const MetaNode& metaNode = gMetaNodes[type];
         std::vector<bool> parameterAddressed(metaNode.mParams.size(), false);
 
@@ -883,11 +888,13 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 if (!animation || animation->mFrames.empty())
                 {
                     curvePts.resize(2);
-                    auto& node = mNodeGraphControler.mModel.mEvaluationStages.mStages[mNodeIndex];
+                    
+                    int times[2];
+                    model.GetStartEndFrame(mNodeIndex, times[0], times[1]);
                     float value = GetParameterComponentValue(
-                        nodeIndex, mNodeGraphControler.mModel.GetParameters(nodeIndex),parameterIndex, int(curveIndex));
-                    curvePts[0] = ImVec2(float(node.mStartFrame) + 0.5f, value);
-                    curvePts[1] = ImVec2(float(node.mEndFrame) + 0.5f, value);
+                        nodeIndex, model.GetParameters(nodeIndex),parameterIndex, int(curveIndex));
+                    curvePts[0] = ImVec2(float(times[0]) + 0.5f, value);
+                    curvePts[1] = ImVec2(float(times[1]) + 0.5f, value);
                 }
                 else
                 {
@@ -926,7 +933,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
     void BakeValuesToAnimationTrack()
     {
-        size_t type = mNodeGraphControler.mModel.mEvaluationStages.mStages[mNodeIndex].mType;
+        size_t type = mNodeGraphControler.mModel.GetNodeType(mNodeIndex);
         const MetaNode& metaNode = gMetaNodes[type];
 
         for (size_t curve = 0; curve < mPts.size();)
@@ -968,8 +975,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 curve++;
             } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
         }
-        mNodeGraphControler.mModel.mEvaluationStages.ApplyAnimationForNode(
-            &mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);
+        /*mNodeGraphControler.mModel.ApplyAnimationForNode( todo
+            &mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);*/
     }
 
     virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const
@@ -1201,12 +1208,13 @@ struct MySequence : public ImSequencer::SequenceInterface
     }
     virtual void EndEdit()
     {
-        mNodeGraphControler.mModel.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, mCurrentTime, false);
+        // todo
+        //mNodeGraphControler.mModel.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, mCurrentTime, false);
     }
 
     virtual int GetItemCount() const
     {
-        return (int)mNodeGraphControler.mModel.mEvaluationStages.GetStagesCount();
+        return (int)mNodeGraphControler.mModel.GetNodeCount();
     }
 
     virtual int GetItemTypeCount() const
@@ -1219,23 +1227,26 @@ struct MySequence : public ImSequencer::SequenceInterface
     }
     virtual const char* GetItemLabel(int index) const
     {
-        size_t nodeType = mNodeGraphControler.mModel.mEvaluationStages.GetStageType(index);
+        size_t nodeType = mNodeGraphControler.mModel.GetNodeType(index);
         return gMetaNodes[nodeType].mName.c_str();
     }
 
     virtual void Get(int index, int** start, int** end, int* type, unsigned int* color)
     {
-        size_t nodeType = mNodeGraphControler.mModel.mEvaluationStages.GetStageType(index);
-
+        const auto& model = mNodeGraphControler.mModel;
+        size_t nodeType = model.GetNodeType(index);
+        int times[2];
+        model.GetStartEndFrame(index, times[0], times[1]);
         if (color)
             *color = gMetaNodes[nodeType].mHeaderColor;
         if (start)
-            *start = &mNodeGraphControler.mModel.mEvaluationStages.mStages[index].mStartFrame;
+            *start = &times[0];
         if (end)
-            *end = &mNodeGraphControler.mModel.mEvaluationStages.mStages[index].mEndFrame;
+            *end = &times[1];
         if (type)
             *type = int(nodeType);
     }
+
     virtual void Add(int type){};
     virtual void Del(int index)
     {
@@ -1285,7 +1296,7 @@ struct MySequence : public ImSequencer::SequenceInterface
         AnimCurveEdit curveEdit(mNodeGraphControler,
                                 curveMin,
                                 curveMax,
-                                mNodeGraphControler.mModel.mEvaluationStages.mAnimTrack,
+                                const_cast<std::vector<AnimTrack>&>(mNodeGraphControler.mModel.GetAnimTrack()),
                                 mbVisible,
                                 index,
                                 mCurrentTime);
@@ -1562,7 +1573,7 @@ void Imogen::BuildCurrentMaterial(Builder* builder)
     if (mSelectedMaterial != -1)
     {
         Material& material = library.mMaterials[mSelectedMaterial];
-        builder->Add(material.mName.c_str(), mNodeGraphControler->mModel.mEvaluationStages);
+        builder->Add(material.mName.c_str(), mNodeGraphControler->mEvaluationStages);
     }
 }
 
@@ -1844,8 +1855,7 @@ void Imogen::ShowTimeLine()
     int timeMask[2] = {0, 0};
     if (selectedEntry != -1)
     {
-        timeMask[0] = mNodeGraphControler->mModel.mEvaluationStages.mStages[selectedEntry].mStartFrame;
-        timeMask[1] = mNodeGraphControler->mModel.mEvaluationStages.mStages[selectedEntry].mEndFrame;
+        mNodeGraphControler->mModel.GetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
     }
     ImGui::PushItemWidth(120);
     if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
@@ -1865,14 +1875,16 @@ void Imogen::ShowTimeLine()
               ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
     if (selectedEntry != -1)
     {
+        auto& model = mNodeGraphControler->mModel;
         mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
-        mNodeGraphControler->mModel.SelectNode(selectedEntry);
-        auto& imoNode = mNodeGraphControler->mModel.mEvaluationStages.mStages[selectedEntry];
-        mNodeGraphControler->mModel.mEvaluationStages.SetStageLocalTime(
+        model.SelectNode(selectedEntry, true);
+        int times[2];
+        model.GetStartEndFrame(selectedEntry, times[0], times[1]);
+        /*mNodeGraphControler->mModel.mEvaluationStages.SetStageLocalTime( todo
             &mNodeGraphControler->mEditingContext,
             selectedEntry,
-            ImClamp(mCurrentTime - imoNode.mStartFrame, 0, imoNode.mEndFrame - imoNode.mStartFrame),
-            true);
+            ImClamp(mCurrentTime - times[0], 0, times[1] - times[0]),
+            true);*/
     }
 }
 
@@ -1905,7 +1917,7 @@ void Imogen::ShowNodeGraph()
         }
         ImGui::PopItemWidth();
     }
-    NodeGraph(&mNodeGraphControler->mModel, mNodeGraphControler, mSelectedMaterial != -1);
+    NodeGraph(mNodeGraphControler, mSelectedMaterial != -1);
 }
 
 void Imogen::ExportMaterial()
@@ -2014,7 +2026,7 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
             sprintf(
                 tmps,
                 "%s_View_%03d",
-                gMetaNodes[mNodeGraphControler->mModel.mEvaluationStages.mStages[extraction.mNodeIndex].mType].mName.c_str(),
+                gMetaNodes[mNodeGraphControler->mModel.GetNodeType(extraction.mNodeIndex)].mName.c_str(),
                 index);
             bool open = true;
             if (extraction.mFirstFrame)
@@ -2070,8 +2082,9 @@ void Imogen::Playback(bool timeHasChanged)
 
     if (timeHasChanged || mbIsPlaying)
     {
-        mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
+        /*mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true); todo
         mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
+        */
     }
 }
 

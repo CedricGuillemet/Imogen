@@ -487,6 +487,21 @@ void GraphModel::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinn
 
 }
 
+void GraphModel::SetAnimTrack(const std::vector<AnimTrack>& animTrack)
+{
+    //assert(mbTransaction);
+    mAnimTrack = animTrack;
+}
+
+void GraphModel::SetMultiplexInputs(const std::vector<MultiplexInput>& multiplexInputs)
+{
+    assert(multiplexInputs.size() == mNodes.size());
+    for (auto i = 0; i < mNodes.size() ; i++)
+    {
+        mNodes[i].mMultiplexInput = multiplexInputs[i];
+    }
+}
+
 void GraphModel::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
 {
     assert(mbTransaction);

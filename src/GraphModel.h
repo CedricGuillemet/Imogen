@@ -118,6 +118,7 @@ public:
     void SetParameterPins(const std::vector<uint32_t>& pins);
     void SetIOPins(const std::vector<uint32_t>& pins);
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
+    void SetStartEndFrame(int startFrame, int endFrame);
 
     // transaction is handled is the function
     void NodeGraphLayout();
@@ -147,6 +148,7 @@ public:
     bool GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const;
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
+    void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }
     void GetStartEndFrame(size_t nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
 
     // dirty
@@ -159,10 +161,11 @@ public:
     void PasteNodes(ImVec2 viewOffsetPosition);
     bool IsClipboardEmpty() const;
 
-    int mFrameMin, mFrameMax;
+    
 private:
 
     // ser datas
+    int mStartFrame, mEndFrame;
     std::vector<Node> mNodes;
     std::vector<Link> mLinks;
     std::vector<Rug> mRugs;

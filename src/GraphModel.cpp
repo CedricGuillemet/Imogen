@@ -30,7 +30,7 @@
 
 extern UndoRedoHandler gUndoRedoHandler;
 
-GraphModel::GraphModel() : mbTransaction(false), mSelectedNodeIndex(-1), mUndoRedo(nullptr), mFrameMin(0), mFrameMax(1)
+GraphModel::GraphModel() : mbTransaction(false), mSelectedNodeIndex(-1), mUndoRedo(nullptr), mStartFrame(0), mEndFrame(1)
 {
 }
 
@@ -196,7 +196,7 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
 
     auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [&]() { return &mNodes; }, delNode, addNode) : nullptr;
     
-    mNodes.push_back(Node(int(type), position, mFrameMin, mFrameMax));
+    mNodes.push_back(Node(int(type), position, mStartFrame, mEndFrame));
     InitDefaultParameters(type, mNodes[nodeIndex].mParameters);
     AddNodeHelper(int(nodeIndex));
     return nodeIndex;
@@ -1003,4 +1003,11 @@ const std::vector<MultiplexInput> GraphModel::GetMultiplexInputs() const
         ret.push_back(node.mMultiplexInput);
     }
     return ret;
+}
+
+void GraphModel::SetStartEndFrame(int startFrame, int endFrame)
+{
+    assert(mbTransaction);
+    mStartFrame = startFrame; 
+    mEndFrame = endFrame; 
 }

@@ -6,18 +6,17 @@
 // If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
 // (Emscripten is a C++-to-javascript compiler, used to publish executables for the web. See https://emscripten.org/)
 
-#include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_opengl3.h"
-#include <stdio.h>
-
 #include "Platform.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
-#include "NodeGraph.h"
-#include "NodeGraphControler.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <io.h>
+#include <fcntl.h>
+#include "GraphEditor.h"
+#include "GraphControler.h"
 #include "EvaluationStages.h"
 #include "Imogen.h"
 #include "stb_image.h"
@@ -215,6 +214,7 @@ int main(int, char**)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
 

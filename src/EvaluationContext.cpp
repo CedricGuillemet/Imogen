@@ -27,7 +27,7 @@
 #include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
-#include "NodeGraphControler.h"
+#include "GraphControler.h"
 
 #ifdef GL_CLAMP_TO_BORDER
 static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};

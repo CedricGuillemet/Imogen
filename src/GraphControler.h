@@ -24,14 +24,14 @@
 //
 #pragma once
 
-#include "NodeGraph.h"
+#include "GraphEditor.h"
 #include "EvaluationStages.h"
 #include "EvaluationContext.h"
 #include "GraphModel.h"
 
-struct NodeGraphControler : public NodeGraphControlerBase
+struct GraphControler : public GraphEditorDelegate
 {
-    NodeGraphControler();
+    GraphControler();
 
     void Clear();
 

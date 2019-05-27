@@ -30,7 +30,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-struct NodeGraphControlerBase
+struct GraphEditorDelegate
 {
     int mSelectedNodeIndex = -1;
 
@@ -95,9 +95,8 @@ struct NodeGraphControlerBase
     virtual const std::vector<Link> GetLinks() = 0;
 };
 
-class GraphModel;
-void NodeGraph(NodeGraphControlerBase* delegate, bool enabled);
-void NodeGraphClear();
+void GraphEditor(GraphEditorDelegate* delegate, bool enabled);
+void GraphEditorClear();
 
-void NodeGraphUpdateScrolling(NodeGraphControlerBase* delegate);
+void GraphEditorUpdateScrolling(GraphEditorDelegate* delegate);
 

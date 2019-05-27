@@ -46,7 +46,7 @@ struct NodeGraphControler : public NodeGraphControlerBase
     virtual bool NodeIsCompute(size_t nodeIndex) const;
     virtual ImVec2 GetEvaluationSize(size_t nodeIndex) const;
     virtual bool RecurseIsLinked(int from, int to) const { return mModel.RecurseIsLinked(from, to); }
-    virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const { return IsIOPinned(nodeIndex, io, forOutput); }
+    virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const { return mModel.IsIOPinned(nodeIndex, io, forOutput); }
     virtual unsigned int GetBitmapInfo(size_t nodeIndex) const { return 0; }
 
     // operations

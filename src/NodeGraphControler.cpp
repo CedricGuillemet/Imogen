@@ -506,6 +506,8 @@ void NodeGraphControler::ApplyDirtyList()
         mEditingContext.SetTargetDirty(dirtyItem.mNodeIndex, dirtyItem.mFlags);
     }
     mModel.ClearDirtyList();
+
+    ComputeGraphArrays();
 }
 
 void NodeGraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
@@ -850,14 +852,58 @@ bool NodeGraphControler::RenderBackground()
 
 void NodeGraphControler::ComputeGraphArrays()
 {
+    const auto& nodes = mModel.GetNodes();
+    const auto& rugs = mModel.GetRugs();
+    const auto& links = mModel.GetLinks();
+
+    mNodes.resize(nodes.size());
+    mRugs.resize(rugs.size());
+    mLinks.resize(links.size());
+
+    for (auto i = 0; i < rugs.size(); i++)
+    {
+        const auto& r = rugs[i];
+        mRugs[i] = {ImRect(r.mPos, r.mPos + r.mSize), r.mText.c_str(), r.mColor};
+    }
+
+    for (auto i = 0; i < links.size(); i++)
+    {
+        const auto& l = links[i];
+        mLinks[i] = {l.mInputNodeIndex, l.mInputSlotIndex, l.mOutputNodeIndex, l.mOutputSlotIndex};
+    }
+
+    for (auto i = 0; i < nodes.size(); i++)
+    {
+        auto& n = nodes[i];
+        auto& meta = gMetaNodes[n.mType];
+
+        std::vector<const char*> inp(meta.mInputs.size(), nullptr);
+        std::vector<const char*> outp(meta.mOutputs.size(), nullptr);
+        for (auto in = 0; in < meta.mInputs.size(); in++)
+        {
+            inp[in] = meta.mInputs[in].mName.c_str();
+        }
+        for (auto ou = 0; ou < meta.mOutputs.size(); ou++)
+        {
+            outp[ou] = meta.mOutputs[ou].mName.c_str();
+        }
+
+        mNodes[i] = {meta.mName.c_str()
+            , ImRect(n.mPos, n.mPos + ImVec2(float(meta.mWidth), float(meta.mHeight)))
+            , meta.mHeaderColor
+            , meta.mbExperimental ? IM_COL32(80, 50, 20, 255) : IM_COL32(60, 60, 60, 255) 
+            , inp
+            , outp
+            , n.mbSelected};
+    }
 }
 
 
 /*
 
     // [experimental][hovered]
-    static const uint32_t nodeBGColors[2][2] = {{IM_COL32(60, 60, 60, 255), IM_COL32(85, 85, 85, 255)},
-                                                {IM_COL32(80, 50, 20, 255), IM_COL32(105, 75, 45, 255)}};
+    static const uint32_t nodeBGColors[2][2] = {{, IM_COL32(85, 85, 85, 255)},
+                                                {, IM_COL32(105, 75, 45, 255)}};
                                                 */
 
 

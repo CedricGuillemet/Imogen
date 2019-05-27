@@ -636,7 +636,7 @@ void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int 
         dstNode.mFrameStart = uint32_t(times[0]); // todo serialize time as signed values
         dstNode.mFrameEnd = uint32_t(times[0]);
     }
-    auto links = nodeGraphControler.mModel.GetLinks();
+    auto links = model.GetLinks();
     material.mMaterialConnections.resize(links.size());
     for (size_t i = 0; i < links.size(); i++)
     {
@@ -646,7 +646,7 @@ void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int 
         materialConnection.mOutputNodeIndex = links[i].mOutputNodeIndex;
         materialConnection.mOutputSlotIndex = links[i].mOutputSlotIndex;
     }
-    auto rugs = nodeGraphControler.mModel.GetRugs();
+    auto rugs = model.GetRugs();
     material.mMaterialRugs.resize(rugs.size());
     for (size_t i = 0; i < rugs.size(); i++)
     {
@@ -658,12 +658,12 @@ void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int 
         rug.mColor = rugs[i].mColor;
         rug.mComment = rugs[i].mText;
     }
-    material.mAnimTrack = nodeGraphControler.mModel.GetAnimTrack();
-    material.mFrameMin = nodeGraphControler.mModel.mFrameMin;
-    material.mFrameMax = nodeGraphControler.mModel.mFrameMax;
-    material.mPinnedParameters = nodeGraphControler.mModel.GetParameterPins();
-    material.mPinnedIO = nodeGraphControler.mModel.GetIOPins();
-    material.mMultiplexInputs = nodeGraphControler.mModel.GetMultiplexInputs();
+    material.mAnimTrack = model.GetAnimTrack();
+    material.mFrameMin = model.mFrameMin;
+    material.mFrameMax = model.mFrameMax;
+    material.mPinnedParameters = model.GetParameterPins();
+    material.mPinnedIO = model.GetIOPins();
+    material.mMultiplexInputs = model.GetMultiplexInputs();
     material.mBackgroundNode = *(uint32_t*)(&nodeGraphControler.mBackgroundNode);
 }
 

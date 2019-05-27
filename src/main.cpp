@@ -274,6 +274,7 @@ int main(int, char**)
     while (!done)
     {
         main_loop(&loopdata);
+
     }
     imogen.ValidateCurrentMaterial(library);
 

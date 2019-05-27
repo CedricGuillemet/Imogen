@@ -260,7 +260,7 @@ bool EditRug(GraphEditorDelegate *delegate, int rugIndex, ImDrawList* drawList, 
     bool commitUndo = false;
 
     if (insideSizingRect.Contains(io.MousePos))
-	{
+    {
         if (nodeOperation == NO_None && ImGui::IsMouseDragging(0, 1))
         {
             movingSizingRug = rugIndex;
@@ -268,7 +268,7 @@ bool EditRug(GraphEditorDelegate *delegate, int rugIndex, ImDrawList* drawList, 
             nodeOperation = NO_SizingRug;
             editingRugSource = editingRug = rug;
         }
-	}
+    }
 
     if (rugRect.Contains(io.MousePos) && !insideSizingRect.Contains(io.MousePos))
     {
@@ -279,7 +279,7 @@ bool EditRug(GraphEditorDelegate *delegate, int rugIndex, ImDrawList* drawList, 
             nodeOperation = NO_MovingRug;
             editingRugSource = editingRug = rug;
         }
-	}
+    }
 
     if (movingSizingRug != -1 && !io.MouseDown[0])
     {
@@ -290,12 +290,12 @@ bool EditRug(GraphEditorDelegate *delegate, int rugIndex, ImDrawList* drawList, 
     // undo/redo for sizing/moving
     if (commitUndo)
     {
-		// set back value 
+        // set back value 
         delegate->BeginTransaction(false);
         delegate->SetRug(movingSizingRug, editingRugSource.mRect, editingRugSource.mText, editingRugSource.mColor);
         delegate->EndTransaction();
 
-		// add undo
+        // add undo
         delegate->BeginTransaction(true);
         delegate->SetRug(movingSizingRug, editingRug.mRect, editingRug.mText, editingRug.mColor);
         delegate->EndTransaction();
@@ -312,8 +312,8 @@ bool EditRug(GraphEditorDelegate *delegate, int rugIndex, ImDrawList* drawList, 
     if (movingSizingRug != -1 && ImGui::IsMouseDragging(0))
     {
         if (nodeOperation == NO_MovingRug)
-		{
-			editingRug.mRect.Min += io.MouseDelta * factor;
+        {
+            editingRug.mRect.Min += io.MouseDelta * factor;
         }
         editingRug.mRect.Max += io.MouseDelta * factor;
 
@@ -335,18 +335,18 @@ void GraphEditorUpdateScrolling(GraphEditorDelegate *delegate)
     if (nodes.empty() && rugs.empty())
         return;
 
-	if (!nodes.empty())
-	{
-		scrolling = nodes[0].mRect.Min;
-	}
-	else if (!rugs.empty())
-	{
+    if (!nodes.empty())
+    {
+        scrolling = nodes[0].mRect.Min;
+    }
+    else if (!rugs.empty())
+    {
         scrolling = rugs[0].mRect.Min;
-	}
-	else
-	{
+    }
+    else
+    {
         scrolling = ImVec2(0, 0);
-	}
+    }
     for (auto& node : nodes)
     {
         scrolling.x = std::min(scrolling.x, node.mRect.Min.x);
@@ -804,85 +804,85 @@ static bool DrawNode(ImDrawList* drawList,
     bool currentSelectedNode = node->mbSelected;
 
 
-	ImU32 node_bg_color = node->mBackgroundColor + nodeHovered?0x191919:0;
+    ImU32 node_bg_color = node->mBackgroundColor + nodeHovered?0x191919:0;
 
-	drawList->AddRect(node_rect_min,
-					  node_rect_max,
-					  currentSelectedNode ? IM_COL32(255, 130, 30, 255) : IM_COL32(100, 100, 100, 0),
-					  2.0f,
-					  15,
-					  currentSelectedNode ? 6.f : 2.f);
+    drawList->AddRect(node_rect_min,
+                      node_rect_max,
+                      currentSelectedNode ? IM_COL32(255, 130, 30, 255) : IM_COL32(100, 100, 100, 0),
+                      2.0f,
+                      15,
+                      currentSelectedNode ? 6.f : 2.f);
 
-	ImVec2 imgPos = node_rect_min + ImVec2(14, 25);
-	ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
-	float imgSizeComp = std::min(imgSize.x, imgSize.y);
+    ImVec2 imgPos = node_rect_min + ImVec2(14, 25);
+    ImVec2 imgSize = node_rect_max + ImVec2(-5, -5) - imgPos;
+    float imgSizeComp = std::min(imgSize.x, imgSize.y);
 
-	drawList->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
-	float progress = delegate->NodeProgress(nodeIndex);
-	if (progress > FLT_EPSILON && progress < 1.f - FLT_EPSILON)
-	{
-		ImVec2 progressLineA = node_rect_max - ImVec2(nodeSize.x - 2.f, 3.f);
-		ImVec2 progressLineB = progressLineA + ImVec2(nodeSize.x * factor - 4.f, 0.f);
-		drawList->AddLine(progressLineA, progressLineB, 0xFF400000, 3.f);
-		drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
-	}
-	ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
+    drawList->AddRectFilled(node_rect_min, node_rect_max, node_bg_color, 2.0f);
+    float progress = delegate->NodeProgress(nodeIndex);
+    if (progress > FLT_EPSILON && progress < 1.f - FLT_EPSILON)
+    {
+        ImVec2 progressLineA = node_rect_max - ImVec2(nodeSize.x - 2.f, 3.f);
+        ImVec2 progressLineB = progressLineA + ImVec2(nodeSize.x * factor - 4.f, 0.f);
+        drawList->AddLine(progressLineA, progressLineB, 0xFF400000, 3.f);
+        drawList->AddLine(progressLineA, ImLerp(progressLineA, progressLineB, progress), 0xFFFF0000, 3.f);
+    }
+    ImVec2 imgPosMax = imgPos + ImVec2(imgSizeComp, imgSizeComp);
 
-	ImVec2 imageSize = delegate->GetEvaluationSize(nodeIndex);
-	float imageRatio = 1.f;
-	if (imageSize.x > 0.f && imageSize.y > 0.f)
-		imageRatio = imageSize.y / imageSize.x;
-	ImVec2 quadSize = imgPosMax - imgPos;
-	ImVec2 marge(0.f, 0.f);
-	if (imageRatio > 1.f)
-	{
-		marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
-	}
-	else
-	{
-		marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
-	}
+    ImVec2 imageSize = delegate->GetEvaluationSize(nodeIndex);
+    float imageRatio = 1.f;
+    if (imageSize.x > 0.f && imageSize.y > 0.f)
+        imageRatio = imageSize.y / imageSize.x;
+    ImVec2 quadSize = imgPosMax - imgPos;
+    ImVec2 marge(0.f, 0.f);
+    if (imageRatio > 1.f)
+    {
+        marge.x = (quadSize.x - quadSize.y / imageRatio) * 0.5f;
+    }
+    else
+    {
+        marge.y = (quadSize.y - quadSize.y * imageRatio) * 0.5f;
+    }
 
-	delegate->DrawNodeImage(drawList, ImRect(imgPos, imgPosMax), marge, nodeIndex);
+    delegate->DrawNodeImage(drawList, ImRect(imgPos, imgPosMax), marge, nodeIndex);
 
-	drawList->AddRectFilled(node_rect_min,
-							ImVec2(node_rect_max.x, node_rect_min.y + 20),
-							node->mHeaderColor,
-							2.0f);
-	drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), true);
-	drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), node->mName);
-	drawList->PopClipRect();
+    drawList->AddRectFilled(node_rect_min,
+                            ImVec2(node_rect_max.x, node_rect_min.y + 20),
+                            node->mHeaderColor,
+                            2.0f);
+    drawList->PushClipRect(node_rect_min, ImVec2(node_rect_max.x, node_rect_min.y + 20), true);
+    drawList->AddText(node_rect_min + ImVec2(2, 2), IM_COL32(0, 0, 0, 255), node->mName);
+    drawList->PopClipRect();
 
 
     const ImTextureID bmpInfo = (ImTextureID)(uint64_t)delegate->GetBitmapInfo(nodeIndex);
 
-	ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
-	ImVec2 bmpInfoSize(20, 20);
-	if (delegate->NodeIsCompute(nodeIndex))
-	{
-		drawList->AddImageQuad(bmpInfo,
-							   bmpInfoPos,
-							   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-							   bmpInfoPos + bmpInfoSize,
-							   bmpInfoPos + ImVec2(0., bmpInfoSize.y));
-	}
-	else if (delegate->NodeIs2D(nodeIndex))
-	{
-		drawList->AddImageQuad(bmpInfo,
-							   bmpInfoPos,
-							   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-							   bmpInfoPos + bmpInfoSize,
-							   bmpInfoPos + ImVec2(0., bmpInfoSize.y));
-	}
-	else if (delegate->NodeIsCubemap(nodeIndex))
-	{
-		drawList->AddImageQuad(bmpInfo,
-							   bmpInfoPos + ImVec2(0., bmpInfoSize.y),
-							   bmpInfoPos + bmpInfoSize,
-							   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-							   bmpInfoPos);
-	}
-	return nodeHovered;
+    ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
+    ImVec2 bmpInfoSize(20, 20);
+    if (delegate->NodeIsCompute(nodeIndex))
+    {
+        drawList->AddImageQuad(bmpInfo,
+                               bmpInfoPos,
+                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+                               bmpInfoPos + bmpInfoSize,
+                               bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+    }
+    else if (delegate->NodeIs2D(nodeIndex))
+    {
+        drawList->AddImageQuad(bmpInfo,
+                               bmpInfoPos,
+                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+                               bmpInfoPos + bmpInfoSize,
+                               bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+    }
+    else if (delegate->NodeIsCubemap(nodeIndex))
+    {
+        drawList->AddImageQuad(bmpInfo,
+                               bmpInfoPos + ImVec2(0., bmpInfoSize.y),
+                               bmpInfoPos + bmpInfoSize,
+                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+                               bmpInfoPos);
+    }
+    return nodeHovered;
 }
 
 void ComputeDelegateSelection(GraphEditorDelegate* delegate)
@@ -1038,9 +1038,9 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
     if (editRug != -1)
     {
         if (EditRug(delegate, editRug, drawList, offset, factor))
-		{
+        {
             editRug = -1;
-		}
+        }
     }
 
     // releasing mouse button means it's done in any operation

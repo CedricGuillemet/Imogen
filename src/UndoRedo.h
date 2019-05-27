@@ -153,29 +153,23 @@ struct URChange : public UndoRedo
 
         mPreDo = *GetElements(mIndex);
     }
+
     virtual ~URChange()
     {
         if (gUndoRedoHandler.mbProcessing)
             return;
 
-        //if (*GetElements(mIndex) != mPreDo)
-        {
-            mPostDo = *GetElements(mIndex);
-            gUndoRedoHandler.AddUndo(*this);
-        }
-        /*
-        else
-        {
-            // TODO: should not be here unless asking for too much useless undo
-        }
-		*/
+        mPostDo = *GetElements(mIndex);
+        gUndoRedoHandler.AddUndo(*this);
     }
+
     virtual void Undo()
     {
         *GetElements(mIndex) = mPreDo;
         Changed(mIndex);
         UndoRedo::Undo();
     }
+
     virtual void Redo()
     {
         UndoRedo::Redo();

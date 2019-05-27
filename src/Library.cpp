@@ -51,7 +51,7 @@ enum : uint32_t
     v_animation,
     v_pinnedParameters,
     v_backgroundNode,
-	v_pinnedIO,
+    v_pinnedIO,
     v_multiplexInput,
     v_lastVersion
 };
@@ -1019,7 +1019,7 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
         else
             curNode.mWidth = 100;
         
-		if (node.HasMember("experimental"))
+        if (node.HasMember("experimental"))
             curNode.mbExperimental = node["experimental"].GetBool();
         else
             curNode.mbExperimental = false;

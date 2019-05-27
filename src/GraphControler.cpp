@@ -331,10 +331,10 @@ void GraphControler::PinnedEdit()
         unsigned char* paramBuffer = parameters.data();
         paramBuffer += GetParameterOffset(uint32_t(nodeType), parameterIndex);
         if (EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam))
-		{
+        {
             dirtyNode = nodeIndex;
-			dirtyParameters = parameters;
-		}
+            dirtyParameters = parameters;
+        }
 
         ImGui::PopID();
     }
@@ -647,9 +647,9 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
             mbUsingMouse = true;
         }
         if (parametersDirty && mModel.InTransaction() && bValidInput)
-		{
+        {
             mModel.SetParameters(mSelectedNodeIndex, parameters);
-		}
+        }
         mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
     }
 }
@@ -718,7 +718,7 @@ void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
                         }
                     }
 
-					const auto& categories = MetaNode::mCategories;
+                    const auto& categories = MetaNode::mCategories;
                     for (unsigned int iCateg = 0; iCateg < categories.size(); iCateg++)
                     {
                         if (ImGui::BeginMenu(categories[iCateg].c_str()))
@@ -911,8 +911,8 @@ void GraphControler::ComputeGraphArrays()
 
                                                 /*
                                                 
-                                                	unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
-	unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
-	unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
+                                                    unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
+    unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
+    unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
                                                 
                                                 */

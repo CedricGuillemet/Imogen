@@ -97,8 +97,6 @@ void GraphModel::UpdateEvaluation()
         mInputs[link.mOutputNodeIndex].mInputs[link.mInputSlotIndex] = source;
     }
 
-    // inputs are fresh, can compute evaluation order
-    ComputeEvaluationOrder();
 }
 
 void GraphModel::Undo()
@@ -533,15 +531,6 @@ void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char
     SetDirty(nodeIndex, Dirty::Parameter);
 }
 
-void GraphModel::SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd)
-{
-    assert(mbTransaction);
-
-    auto& node = mNodes[nodeIndex];
-    node.mStartFrame = frameStart;
-    node.mEndFrame = frameEnd;
-}
-
 void GraphModel::CopySelectedNodes()
 {
     mNodesClipboard.clear();
@@ -649,9 +638,9 @@ ImRect GraphModel::GetNodesDisplayRect() const
     return DisplayRectMargin(rect);
 }
 
-ImRect GraphModel::GetFinalNodeDisplayRect() const
+ImRect GraphModel::GetFinalNodeDisplayRect(const std::vector<size_t>& orderList) const
 {
-    auto& evaluationOrder = mEvaluationOrderList;
+    auto& evaluationOrder = orderList;
     ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
     if (!evaluationOrder.empty() && !mNodes.empty())
     {
@@ -722,10 +711,8 @@ void GraphModel::RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
     }
 }
 
-void GraphModel::NodeGraphLayout()
+void GraphModel::NodeGraphLayout(const std::vector<size_t>& orderList)
 {
-    auto orderList = mEvaluationOrderList;
-
     // get stack/layer pos
     std::vector<NodePosition> nodePositions(mNodes.size(), { -1, -1, -1 });
     std::map<int, int> stacks;
@@ -929,71 +916,6 @@ const std::vector<uint32_t> GraphModel::GetIOPins() const
 
 }
 
-size_t GraphModel::PickBestNode(const std::vector<GraphModel::NodeOrder>& orders) const
-{
-    for (auto& order : orders)
-    {
-        if (order.mNodePriority == 0)
-            return order.mNodeIndex;
-    }
-    // issue!
-    assert(0);
-    return -1;
-}
-
-void GraphModel::RecurseSetPriority(std::vector<GraphModel::NodeOrder>& orders,
-    size_t currentIndex,
-    size_t currentPriority,
-    size_t& undeterminedNodeCount) const
-{
-    if (!orders[currentIndex].mNodePriority)
-        undeterminedNodeCount--;
-
-    orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
-    for (auto input : mInputs[currentIndex].mInputs)
-    {
-        if (input == -1)
-        {
-            continue;
-        }
-
-        RecurseSetPriority(orders, input, currentPriority + 1, undeterminedNodeCount);
-    }
-}
-
-std::vector<GraphModel::NodeOrder> GraphModel::ComputeEvaluationOrders()
-{
-    size_t nodeCount = mNodes.size();
-
-    std::vector<NodeOrder> orders(nodeCount);
-    for (size_t i = 0; i < nodeCount; i++)
-    {
-        orders[i].mNodeIndex = i;
-        orders[i].mNodePriority = 0;
-    }
-    size_t undeterminedNodeCount = nodeCount;
-    while (undeterminedNodeCount)
-    {
-        size_t currentIndex = PickBestNode(orders);
-        RecurseSetPriority(orders, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
-    };
-    //
-    return orders;
-}
-
-void GraphModel::ComputeEvaluationOrder()
-{
-    mEvaluationOrderList.clear();
-
-    auto orders = ComputeEvaluationOrders();
-    std::sort(orders.begin(), orders.end());
-    mEvaluationOrderList.resize(orders.size());
-    for (size_t i = 0; i < orders.size(); i++)
-    {
-        mEvaluationOrderList[i] = orders[i].mNodeIndex;
-    }
-}
-
 const std::vector<MultiplexInput> GraphModel::GetMultiplexInputs() const
 {
     std::vector<MultiplexInput> ret;
@@ -1011,3 +933,13 @@ void GraphModel::SetStartEndFrame(int startFrame, int endFrame)
     mStartFrame = startFrame; 
     mEndFrame = endFrame; 
 }
+
+void GraphModel::SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame)
+{
+    assert(mbTransaction);
+    Node& node = mNodes[nodeIndex];
+    node.mStartFrame = startFrame;
+    node.mEndFrame = endFrame;
+    SetDirty(nodeIndex, Dirty::StartEndTime);
+}
+

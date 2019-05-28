@@ -76,6 +76,10 @@ struct EvaluationContext
     EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
     ~EvaluationContext();
 
+    // iterative editing
+    void AddEvaluation(size_t nodeIndex);
+    void DelEvaluation(size_t nodeIndex);
+
     void RunAll();
     // return true if any node is in processing state
     bool RunBackward(size_t nodeIndex);
@@ -84,21 +88,11 @@ struct EvaluationContext
 
 
     void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
-    int GetCurrentTime() const
-    {
-        return mCurrentTime;
-    }
-    void SetCurrentTime(int currentTime)
-    {
-        mCurrentTime = currentTime;
-    }
+    int GetCurrentTime() const { return mCurrentTime; }
+    void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
-    unsigned int GetEvaluationTexture(size_t target);
-    std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
-    {
-        assert(target < mEvaluations.size());
-        return mEvaluations[target].mTarget;
-    }
+    unsigned int GetEvaluationTexture(size_t nodeIndex);
+    std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mTarget; }
 
     const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
     {
@@ -143,14 +137,8 @@ struct EvaluationContext
 
     void Clear();
 
-    unsigned int GetMaterialUniqueId() const
-    {
-        return mRuntimeUniqueId;
-    }
-    void SetMaterialUniqueId(unsigned int uniqueId)
-    {
-        mRuntimeUniqueId = uniqueId;
-    }
+    unsigned int GetMaterialUniqueId() const { return mRuntimeUniqueId; }
+    void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
 
     EvaluationStages& mEvaluationStages;
     FullScreenTriangle mFSQuad;
@@ -180,12 +168,16 @@ struct EvaluationContext
             };
         };
     };
+    
     std::vector<Evaluation> mEvaluations;
 
     UIInput mUIInputs;
     size_t mInputNodeIndex;
 
 protected:
+
+    
+
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);

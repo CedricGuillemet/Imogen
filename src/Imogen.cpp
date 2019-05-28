@@ -675,7 +675,7 @@ int Imogen::AddNode(const std::string& nodeType)
     }
     mNodeGraphControler->mModel.BeginTransaction(false);
     auto nodeIndex = mNodeGraphControler->mModel.AddNode(type, ImVec2(0, 0));
-    mNodeGraphControler->mModel.SetTimeSlot(nodeIndex, 0, 1);
+    mNodeGraphControler->mModel.SetStartEndFrame(nodeIndex, 0, 1);
     mNodeGraphControler->mModel.EndTransaction();
     return int(nodeIndex);
 }
@@ -698,7 +698,7 @@ void Imogen::UpdateNewlySelectedGraph()
 
             auto nodeIndex = model.AddNode(node.mType, ImVec2(float(node.mPosX), float(node.mPosY)));
             model.SetParameters(nodeIndex, node.mParameters);
-            model.SetTimeSlot(nodeIndex, node.mFrameStart, node.mFrameEnd);
+            model.SetStartEndFrame(nodeIndex, node.mFrameStart, node.mFrameEnd);
             model.SetSamplers(nodeIndex, node.mInputSamplers);
 
             /*auto& lastNode = mNodeGraphControler->mModel.GetEvaluationStages().mStages.back(); todo
@@ -1408,7 +1408,7 @@ void Imogen::Init()
         std::function<void()> function;
     };
     static const std::vector<HotKeyFunction> hotKeyFunctions = {
-        {"Layout", "Reorder nodes in a simpler layout", [&]() { GetNodeGraphControler()->mModel.NodeGraphLayout(); }},
+        {"Layout", "Reorder nodes in a simpler layout", [&]() { GetNodeGraphControler()->mModel.NodeGraphLayout(GetNodeGraphControler()->mEvaluationStages.GetForwardEvaluationOrder()); }},
         {"PlayPause", "Play or Stop current animation", [&]() { PlayPause(); }},
         {"AnimationFirstFrame",
          "Set current time to the first frame of animation",
@@ -1540,7 +1540,7 @@ void Imogen::ShowAppMainMenuBar()
     {
         if (Button("Layout", "Layout", buttonSize))
         {
-            GetNodeGraphControler()->mModel.NodeGraphLayout();
+            GetNodeGraphControler()->mModel.NodeGraphLayout(GetNodeGraphControler()->mEvaluationStages.GetForwardEvaluationOrder());
         }
         if (Button("MaterialExport", "Export Material", buttonSize))
         {
@@ -1888,7 +1888,7 @@ void Imogen::ShowTimeLine()
     {
         timeMask[1] = ImMax(timeMask[1], timeMask[0]);
         timeMask[0] = ImMin(timeMask[1], timeMask[0]);
-        mNodeGraphControler->mModel.SetTimeSlot(selectedEntry, timeMask[0], timeMask[1]);
+        mNodeGraphControler->mModel.SetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
     }
     ImGui::PopItemWidth();
     ImGui::PopItemWidth();
@@ -2082,7 +2082,7 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
 
     ImRect rc = mNodeGraphControler->mModel.GetNodesDisplayRect();
     interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
-    rc = mNodeGraphControler->mModel.GetFinalNodeDisplayRect();
+    rc = mNodeGraphControler->mModel.GetFinalNodeDisplayRect(mNodeGraphControler->mEvaluationStages.GetForwardEvaluationOrder());
     interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
 }
 

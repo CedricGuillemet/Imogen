@@ -129,6 +129,16 @@ EvaluationContext::~EvaluationContext()
     Clear();
 }
 
+void EvaluationContext::AddEvaluation(size_t nodeIndex)
+{
+    mEvaluations.insert(mEvaluations.begin() + nodeIndex, Evaluation());
+}
+
+void EvaluationContext::DelEvaluation(size_t nodeIndex)
+{
+    mEvaluations.erase(mEvaluations.begin() + nodeIndex);
+}
+
 void EvaluationContext::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
 {
     mUIInputs = input;
@@ -179,10 +189,10 @@ void EvaluationContext::Clear()
     mInputNodeIndex = -1;
 }
 
-unsigned int EvaluationContext::GetEvaluationTexture(size_t target)
+unsigned int EvaluationContext::GetEvaluationTexture(size_t nodeIndex)
 {
-    assert (target < mEvaluations.size());
-    const auto& tgt = mEvaluations[target].mTarget;
+    assert (nodeIndex < mEvaluations.size());
+    const auto& tgt = mEvaluations[nodeIndex].mTarget;
     if (!tgt)
         return 0;
     return tgt->mGLTexID;
@@ -883,19 +893,10 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
     return encoder;
 }
 #endif
-void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool onlyChild)
+void EvaluationContext::SetTargetDirty(size_t target, Dirty::Type dirtyFlag, bool onlyChild)
 {
-    if (dirtyFlag & (Dirty::AddedNode | Dirty::DeletedNode))
-    {
-        if (dirtyFlag & Dirty::AddedNode)
-        {
-            mEvaluations.insert(mEvaluations.begin() + target, Evaluation());
-        }
-        else
-        {
-            mEvaluations.erase(mEvaluations.begin() + target);
-        }
-    }
+    assert(dirtyFlag != Dirty::AddedNode);
+    assert(dirtyFlag != Dirty::DeletedNode);
 
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
     mEvaluations[target].mDirtyFlag = dirtyFlag;

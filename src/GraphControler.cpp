@@ -503,12 +503,51 @@ void GraphControler::ApplyDirtyList()
 {
     // apply dirty list
     const auto& dirtyList = mModel.GetDirtyList();
+    bool evaluationOrderChanged = false;
     for (const auto& dirtyItem : dirtyList)
     {
-        mEditingContext.SetTargetDirty(dirtyItem.mNodeIndex, dirtyItem.mFlags);
+        size_t nodeIndex = dirtyItem.mNodeIndex;
+        switch(dirtyItem.mFlags)
+        {
+        
+            case Dirty::Input: 
+                evaluationOrderChanged = true;
+                break;
+            case Dirty::Parameter:
+                mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
+                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                break;
+            case Dirty::Mouse:
+                break;
+            case Dirty::Camera:
+                break;
+            case Dirty::Time:
+                break;
+            case Dirty::Sampler:
+                break;
+            case Dirty::AddedNode:
+                mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));
+                mEditingContext.AddEvaluation(nodeIndex);
+                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                evaluationOrderChanged = true;
+                break;
+            case Dirty::DeletedNode:
+                evaluationOrderChanged = true;
+                break;
+            case Dirty::StartEndTime:
+                {
+                    int times[2];
+                    mModel.GetStartEndFrame(nodeIndex, times[0], times[1]);
+                    mEvaluationStages.SetStartEndFrame(nodeIndex, times[0], times[1]);
+                }
+                break;
+        }
     }
     mModel.ClearDirtyList();
-
+    if (evaluationOrderChanged)
+    {
+        mEvaluationStages.ComputeEvaluationOrder();
+    }
     ComputeGraphArrays();
 }
 
@@ -900,19 +939,25 @@ void GraphControler::ComputeGraphArrays()
     }
 }
 
-
-/*
-
-    // [experimental][hovered]
-    static const uint32_t nodeBGColors[2][2] = {{, IM_COL32(85, 85, 85, 255)},
-                                                {, IM_COL32(105, 75, 45, 255)}};
-                                                */
-
-
-                                                /*
-                                                
-                                                    unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
+unsigned int GraphControler::GetBitmapInfo(size_t nodeIndex) const
+{
+    unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
     unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
     unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
-                                                
-                                                */
+
+    if (NodeIsCompute(nodeIndex))
+    {
+        return stageCompute;
+    }
+    else if (NodeIs2D(nodeIndex))
+    {
+        return stage2D;
+    }
+    else if (NodeIsCubemap(nodeIndex))
+    {
+        return stagecubemap;
+    }
+    assert(0);
+    return 0;
+}
+

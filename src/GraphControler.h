@@ -38,7 +38,7 @@ struct GraphControler : public GraphEditorDelegate
     void SetKeyboardMouse(const UIInput& input, bool bValidInput);
 
     // accessors
-    virtual unsigned int GetNodeTexture(size_t index) { return mEditingContext.GetEvaluationTexture(index); }
+    virtual unsigned int GetNodeTexture(size_t nodeIndex) { return mEditingContext.GetEvaluationTexture(nodeIndex); }
     virtual int NodeIsProcesing(size_t nodeIndex) const { return mEditingContext.StageIsProcessing(nodeIndex); }
     virtual float NodeProgress(size_t nodeIndex) const { return mEditingContext.StageGetProgress(nodeIndex); }
     virtual bool NodeIsCubemap(size_t nodeIndex) const;
@@ -47,7 +47,7 @@ struct GraphControler : public GraphEditorDelegate
     virtual ImVec2 GetEvaluationSize(size_t nodeIndex) const;
     virtual bool RecurseIsLinked(int from, int to) const { return mModel.RecurseIsLinked(from, to); }
     virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const { return mModel.IsIOPinned(nodeIndex, io, forOutput); }
-    virtual unsigned int GetBitmapInfo(size_t nodeIndex) const { return 0; }
+    virtual unsigned int GetBitmapInfo(size_t nodeIndex) const;
 
     // operations
     virtual bool InTransaction() { return mModel.InTransaction(); }
@@ -64,9 +64,9 @@ struct GraphControler : public GraphEditorDelegate
     virtual void SetRug(size_t rugIndex, const ImRect& rect, const char *szText, uint32_t color) { mModel.SetRug(rugIndex, GraphModel::Rug{rect.Min, rect.GetSize(), color, std::string(szText)}); }
 
     // accessors
-    virtual const std::vector<Node>& GetNodes() { return mNodes; }
-    virtual const std::vector<Rug> GetRugs() { return mRugs; }
-    virtual const std::vector<Link> GetLinks() { return mLinks; }
+    virtual const std::vector<Node>& GetNodes() const { return mNodes; }
+    virtual const std::vector<Rug> GetRugs() const { return mRugs; }
+    virtual const std::vector<Link> GetLinks() const { return mLinks; }
 
 
 

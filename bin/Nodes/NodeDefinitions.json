@@ -462,6 +462,41 @@
             "description":"Interpolation factor between full color to distance-like color per cell."
 		}]
 	}, {
+		"name": "WorleyNoise",
+		"category": 5,
+        "description":"Generate Worley noise with optional Manhattan distance.",
+		"color": [0.5882353186607361, 0.9803922176361084, 0.5882353186607361, 1.0],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "Translation",
+			"type": "Float2",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false,
+            "description":"Translate the noise seeds so you can have virtualy infinite different noise."
+		},{
+			"name": "Scale",
+			"type": "Float",
+			"default":"10.0",
+            "description":""
+		},{
+			"name": "Jitter",
+			"type": "Float",
+			"default":"1.0",
+            "description":""
+		}, {
+			"name": "Manhattan",
+			"type": "Bool",
+			"default":"false",
+            "description":"Mahattan or linear distance."
+		}]
+	}, {
 		"name": "PerlinNoise",
 		"category": 5,
         "description":"",

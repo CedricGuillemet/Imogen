@@ -45,7 +45,7 @@ struct EvaluationInfo;
 
 struct Dirty
 {
-    enum
+    enum Type
     {
         Input = 1 << 0,
         Parameter = 1 << 1,
@@ -54,15 +54,15 @@ struct Dirty
         Time = 1 << 4,
         Sampler = 1 << 5,
         AddedNode = 1 << 6,
-        DeletedNode = 1 << 7
+        DeletedNode = 1 << 7,
+        StartEndTime = 1 << 8
     };
 };
-typedef unsigned char DirtyFlag;
 
 struct DirtyList
 {
     size_t mNodeIndex;
-    DirtyFlag mFlags;
+    Dirty::Type mFlags;
 };
 
 enum BlendOp
@@ -135,7 +135,8 @@ struct EvaluationStages
     EvaluationStages();
     void BuildEvaluationFromMaterial(Material& material);
 
-    void AddSingleEvaluation(size_t nodeType);
+    void AddEvaluation(size_t nodeIndex, size_t nodeType);
+    void DelEvaluation(size_t nodeIndex);
 
     size_t GetEvaluationImageDuration(size_t target);
 
@@ -149,7 +150,7 @@ struct EvaluationStages
         return &mStages[index].mParameterViewMatrix;
     }
     const Parameters& GetParameters(size_t nodeIndex) const { return mParameters[nodeIndex]; }
-    void SetEvaluationParameters(size_t nodeIndex, const Parameters& parameters) { mParameters[nodeIndex] = parameters; }
+    void SetParameters(size_t nodeIndex, const Parameters& parameters) { mParameters[nodeIndex] = parameters; }
     uint16_t GetNodeType(size_t nodeIndex) const { return mStages[nodeIndex].mType; }
     size_t GetStagesCount() const { return mStages.size(); }
 
@@ -163,7 +164,7 @@ struct EvaluationStages
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 
     // Data
-    const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
+    const std::vector<size_t>& GetForwardEvaluationOrder() const { return mOrderList; }
     std::vector<EvaluationStage> mStages;
     std::vector<Input> mInputs; // merged with multiplexed
     std::vector<InputSampler> mInputSamplers;
@@ -171,5 +172,24 @@ struct EvaluationStages
 
     std::vector<AnimTrack> mAnimTrack;
 
-    std::vector<size_t> mEvaluationOrderList;
+    void ComputeEvaluationOrder();
+    void SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame) { mStages[nodeIndex].mStartFrame = startFrame; mStages[nodeIndex].mEndFrame = endFrame; }
+protected:
+
+    std::vector<size_t> mOrderList;
+
+    // evaluation order
+    struct NodeOrder
+    {
+        size_t mNodeIndex;
+        size_t mNodePriority;
+        bool operator<(const NodeOrder& other) const
+        {
+            return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
+        }
+    };
+    
+    std::vector<NodeOrder> ComputeEvaluationOrders();
+    void RecurseSetPriority(std::vector<NodeOrder>& orders, size_t currentIndex, size_t currentPriority, size_t& undeterminedNodeCount) const;
+    size_t PickBestNode(const std::vector<NodeOrder>& orders) const;
 };

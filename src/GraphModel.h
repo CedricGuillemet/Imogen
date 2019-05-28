@@ -112,16 +112,16 @@ public:
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
     void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
-    void SetTimeSlot(size_t nodeIndex, int frameStart, int frameEnd);
     void SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex);
     void SetMultiplexInputs(const std::vector<MultiplexInput>& multiplexInputs);
     void SetParameterPins(const std::vector<uint32_t>& pins);
     void SetIOPins(const std::vector<uint32_t>& pins);
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
     void SetStartEndFrame(int startFrame, int endFrame);
+    void SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame);
 
     // transaction is handled is the function
-    void NodeGraphLayout();
+    void NodeGraphLayout(const std::vector<size_t>& orderList);
 
     // getters
     size_t GetNodeCount() const { return mNodes.size(); }
@@ -142,12 +142,11 @@ public:
     const Parameters& GetParameters(size_t nodeIndex) const;
     const Samplers& GetSamplers(size_t nodeIndex) const { return mNodes[nodeIndex].mSamplers; }
     ImRect GetNodesDisplayRect() const;
-    ImRect GetFinalNodeDisplayRect() const;
+    ImRect GetFinalNodeDisplayRect(const std::vector<size_t>& orderList) const;
     bool RecurseIsLinked(int from, int to) const;
     int GetMultiplexed(size_t nodeIndex, size_t slotIndex) const { return mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex]; }
     bool GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const;
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
-    const std::vector<size_t>& GetForwardEvaluationOrder() const { return mEvaluationOrderList; }
     void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }
     void GetStartEndFrame(size_t nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
 
@@ -174,7 +173,6 @@ private:
     // non ser data / runtime datas
     std::vector<Node> mNodesClipboard;
     std::vector<DirtyList> mDirtyList;
-    std::vector<size_t> mEvaluationOrderList;
     std::vector<Input> mInputs;
     int mSelectedNodeIndex;
 
@@ -182,7 +180,7 @@ private:
     bool mbTransaction;
     UndoRedo* mUndoRedo;
 
-    void SetDirty(size_t nodeIndex, DirtyFlag flags) { mDirtyList.push_back({nodeIndex, flags});}
+    void SetDirty(size_t nodeIndex, Dirty::Type flags) { mDirtyList.push_back({nodeIndex, flags});}
     void AddNodeHelper(int nodeIndex);
     void DeleteNodeHelper(int nodeIndex);
 
@@ -224,18 +222,5 @@ private:
         int currentLayer);
     bool HasSelectedNodes() const;
 
-    // evaluation order
-    struct NodeOrder
-    {
-        size_t mNodeIndex;
-        size_t mNodePriority;
-        bool operator<(const NodeOrder& other) const
-        {
-            return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
-        }
-    };
-    void ComputeEvaluationOrder();
-    std::vector<NodeOrder> ComputeEvaluationOrders();
-    void RecurseSetPriority(std::vector<NodeOrder>& orders, size_t currentIndex, size_t currentPriority, size_t& undeterminedNodeCount) const;
-    size_t PickBestNode(const std::vector<NodeOrder>& orders) const;
+
 };

@@ -76,6 +76,10 @@ struct EvaluationContext
     EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
     ~EvaluationContext();
 
+    // iterative editing
+    void AddEvaluation(size_t nodeIndex);
+    void DelEvaluation(size_t nodeIndex);
+
     void RunAll();
     // return true if any node is in processing state
     bool RunBackward(size_t nodeIndex);
@@ -84,50 +88,22 @@ struct EvaluationContext
 
 
     void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
-    int GetCurrentTime() const
-    {
-        return mCurrentTime;
-    }
-    void SetCurrentTime(int currentTime)
-    {
-        mCurrentTime = currentTime;
-    }
+    int GetCurrentTime() const { return mCurrentTime; }
+    void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
-    unsigned int GetEvaluationTexture(size_t target);
-    std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
-    {
-        assert(target < mEvaluations.size());
-        return mEvaluations[target].mTarget;
-    }
+    unsigned int GetEvaluationTexture(size_t nodeIndex);
+    std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mTarget; }
 
-    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
-    {
-        assert(target < mEvaluations.size());
-        return mEvaluations[target].mTarget;
-    }
+    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) const { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mTarget; }
 
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
-    bool IsSynchronous() const
-    {
-        return mbSynchronousEvaluation;
-    }
-    void SetSynchronous(bool synchronous)
-    {
-        mbSynchronousEvaluation = synchronous;
-    }
-    void SetTargetDirty(size_t target, DirtyFlag dirtyflag, bool onlyChild = false);
-    int StageIsProcessing(size_t target) const
-    {
-        assert (target < mEvaluations.size());
-        return mEvaluations[target].mProcessing;
-    }
-    float StageGetProgress(size_t target) const
-    {
-        assert(target < mEvaluations.size());
-        return mEvaluations[target].mProgress;
-    }
-    void StageSetProcessing(size_t target, int processing);
-    void StageSetProgress(size_t target, float progress);
+    bool IsSynchronous() const { return mbSynchronousEvaluation; }
+    void SetSynchronous(bool synchronous) { mbSynchronousEvaluation = synchronous; }
+    void SetTargetDirty(size_t nodeIndex, Dirty::Type dirtyflag, bool onlyChild = false);
+    int StageIsProcessing(size_t nodeIndex) const { assert (nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mProcessing; }
+    float StageGetProgress(size_t nodeIndex) const { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mProgress; }
+    void StageSetProcessing(size_t nodeIndex, int processing);
+    void StageSetProgress(size_t nodeIndex, float progress);
 
     void AllocRenderTargetsForEditingPreview();
 
@@ -142,14 +118,8 @@ struct EvaluationContext
 
     void Clear();
 
-    unsigned int GetMaterialUniqueId() const
-    {
-        return mRuntimeUniqueId;
-    }
-    void SetMaterialUniqueId(unsigned int uniqueId)
-    {
-        mRuntimeUniqueId = uniqueId;
-    }
+    unsigned int GetMaterialUniqueId() const { return mRuntimeUniqueId; }
+    void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
 
     EvaluationStages& mEvaluationStages;
     FullScreenTriangle mFSQuad;
@@ -179,12 +149,16 @@ struct EvaluationContext
             };
         };
     };
+    
     std::vector<Evaluation> mEvaluations;
 
     UIInput mUIInputs;
     size_t mInputNodeIndex;
 
 protected:
+
+    
+
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);

@@ -34,7 +34,7 @@ EvaluationStages::EvaluationStages()
 {
 }
 
-void EvaluationStages::AddSingleEvaluation(size_t nodeType)
+void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
 {
     EvaluationStage evaluation;
     //#ifdef _DEBUG needed for fur
@@ -55,11 +55,19 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     evaluation.mRuntimeUniqueId = GetRuntimeId();
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
     
-    mParameters.push_back(Parameters());
-    mStages.push_back(evaluation);
-    mInputSamplers.push_back(InputSampler());
+    mParameters.insert(mParameters.begin() + nodeIndex, Parameters());
+    mStages.insert(mStages.begin() + nodeIndex, evaluation);
+    mInputSamplers.insert(mInputSamplers.begin() + nodeIndex, InputSampler());
+    mInputs.insert(mInputs.begin() + nodeIndex, Input());
 }
 
+void EvaluationStages::DelEvaluation(size_t nodeIndex)
+{
+    mStages.erase(mStages.begin() + nodeIndex);
+    mInputs.erase(mInputs.begin() + nodeIndex);
+    mInputSamplers.erase(mInputSamplers.begin() + nodeIndex);
+    mParameters.erase(mParameters.begin() + nodeIndex);
+}
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {
@@ -127,7 +135,7 @@ void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, size_t 
     }
     if (animatedNodes)
     {
-        SetEvaluationParameters(nodeIndex, parameters);
+        SetParameters(nodeIndex, parameters);
         context->SetTargetDirty(nodeIndex, Dirty::Parameter);
     }
 }
@@ -148,7 +156,7 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
     {
         if (!animatedNodes[i])
             continue;
-        SetEvaluationParameters(i, mParameters[i]);
+        SetParameters(i, mParameters[i]);
         context->SetTargetDirty(i, Dirty::Parameter);
     }
 }
@@ -186,7 +194,7 @@ void EvaluationStages::BuildEvaluationFromMaterial(Material& material)
     for (size_t i = 0; i < nodeCount; i++)
     {
         MaterialNode& node = material.mMaterialNodes[i];
-        AddSingleEvaluation(node.mType);
+        AddEvaluation(i, node.mType);
         auto& lastNode = mStages.back();
         mParameters[i] = node.mParameters;
         //mInputSamplers[i] = node.mInputSamplers;
@@ -197,8 +205,71 @@ void EvaluationStages::BuildEvaluationFromMaterial(Material& material)
         //SetEvaluationInput(
         //    materialConnection.mOutputNodeIndex, materialConnection.mInputSlotIndex, materialConnection.mInputNodeIndex);
     }
-
+    ComputeEvaluationOrder();
     //SetAnimTrack(material.mAnimTrack);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
+size_t EvaluationStages::PickBestNode(const std::vector<EvaluationStages::NodeOrder>& orders) const
+{
+    for (auto& order : orders)
+    {
+        if (order.mNodePriority == 0)
+            return order.mNodeIndex;
+    }
+    // issue!
+    assert(0);
+    return -1;
+}
+
+void EvaluationStages::RecurseSetPriority(std::vector<EvaluationStages::NodeOrder>& orders,
+    size_t currentIndex,
+    size_t currentPriority,
+    size_t& undeterminedNodeCount) const
+{
+    if (!orders[currentIndex].mNodePriority)
+        undeterminedNodeCount--;
+
+    orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
+    for (auto input : mInputs[currentIndex].mInputs)
+    {
+        if (input == -1)
+        {
+            continue;
+        }
+
+        RecurseSetPriority(orders, input, currentPriority + 1, undeterminedNodeCount);
+    }
+}
+
+std::vector<EvaluationStages::NodeOrder> EvaluationStages::ComputeEvaluationOrders()
+{
+    size_t nodeCount = mStages.size();
+
+    std::vector<NodeOrder> orders(nodeCount);
+    for (size_t i = 0; i < nodeCount; i++)
+    {
+        orders[i].mNodeIndex = i;
+        orders[i].mNodePriority = 0;
+    }
+    size_t undeterminedNodeCount = nodeCount;
+    while (undeterminedNodeCount)
+    {
+        size_t currentIndex = PickBestNode(orders);
+        RecurseSetPriority(orders, currentIndex, orders[currentIndex].mNodePriority, undeterminedNodeCount);
+    };
+    //
+    return orders;
+}
+
+void EvaluationStages::ComputeEvaluationOrder()
+{
+    mOrderList.clear();
+
+    auto orders = ComputeEvaluationOrders();
+    std::sort(orders.begin(), orders.end());
+    mOrderList.resize(orders.size());
+    for (size_t i = 0; i < orders.size(); i++)
+    {
+        mOrderList[i] = orders[i].mNodeIndex;
+    }
+}

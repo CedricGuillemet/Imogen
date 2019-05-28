@@ -89,9 +89,9 @@ struct GraphEditorDelegate
     };
 
     // node/links/rugs retrieval
-    virtual const std::vector<Node>& GetNodes() = 0;
-    virtual const std::vector<Rug> GetRugs() = 0;
-    virtual const std::vector<Link> GetLinks() = 0;
+    virtual const std::vector<Node>& GetNodes() const = 0;
+    virtual const std::vector<Rug> GetRugs() const = 0;
+    virtual const std::vector<Link> GetLinks() const = 0;
 };
 
 void GraphEditor(GraphEditorDelegate* delegate, bool enabled);

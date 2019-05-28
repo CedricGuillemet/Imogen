@@ -156,7 +156,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("AutoLayout", []() {
         //NodeGraphUpdateEvaluationOrder(&Imogen::instance->GetNodeGraphControler()->mModel,
         //                               Imogen::instance->GetNodeGraphControler());
-        Imogen::instance->GetNodeGraphControler()->mModel.NodeGraphLayout();
+        Imogen::instance->GetNodeGraphControler()->mModel.NodeGraphLayout(Imogen::instance->GetNodeGraphControler()->mEvaluationStages.GetForwardEvaluationOrder());
         GraphEditorUpdateScrolling(Imogen::instance->GetNodeGraphControler());
     });
     m.def("DeleteGraph", []() { Imogen::instance->DeleteCurrentMaterial(); });
@@ -771,7 +771,7 @@ namespace EvaluationAPI
         tgt->InitCube(image->mWidth, image->mNumMips);
 
         Image::Upload(image, tgt->mGLTexID, cubeFace);
-        evaluationContext->SetTargetDirty(target, true);
+        evaluationContext->SetTargetDirty(target, Dirty::Parameter, true);
         return EVAL_OK;
     }
 

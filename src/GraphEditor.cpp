@@ -803,7 +803,7 @@ static bool DrawNode(ImDrawList* drawList,
     bool currentSelectedNode = node->mbSelected;
 
 
-    ImU32 node_bg_color = node->mBackgroundColor + nodeHovered?0x191919:0;
+    ImU32 node_bg_color = node->mBackgroundColor + (nodeHovered?0x191919:0);
 
     drawList->AddRect(node_rect_min,
                       node_rect_max,

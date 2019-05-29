@@ -69,6 +69,16 @@ void EvaluationStages::DelEvaluation(size_t nodeIndex)
     mParameters.erase(mParameters.begin() + nodeIndex);
 }
 
+void EvaluationStages::Clear()
+{
+    mStages.clear();
+    mInputs.clear();
+    mInputSamplers.clear();
+    mParameters.clear();
+    mAnimTrack.clear();
+    mOrderList.clear();
+}
+
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {
     auto& stage = mStages[target];

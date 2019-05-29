@@ -854,32 +854,34 @@ static bool DrawNode(ImDrawList* drawList,
 
 
     const ImTextureID bmpInfo = (ImTextureID)(uint64_t)delegate->GetBitmapInfo(nodeIndex);
-
-    ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
-    ImVec2 bmpInfoSize(20, 20);
-    if (delegate->NodeIsCompute(nodeIndex))
+    if (bmpInfo)
     {
-        drawList->AddImageQuad(bmpInfo,
-                               bmpInfoPos,
-                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-                               bmpInfoPos + bmpInfoSize,
-                               bmpInfoPos + ImVec2(0., bmpInfoSize.y));
-    }
-    else if (delegate->NodeIs2D(nodeIndex))
-    {
-        drawList->AddImageQuad(bmpInfo,
-                               bmpInfoPos,
-                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-                               bmpInfoPos + bmpInfoSize,
-                               bmpInfoPos + ImVec2(0., bmpInfoSize.y));
-    }
-    else if (delegate->NodeIsCubemap(nodeIndex))
-    {
-        drawList->AddImageQuad(bmpInfo,
-                               bmpInfoPos + ImVec2(0., bmpInfoSize.y),
-                               bmpInfoPos + bmpInfoSize,
-                               bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
-                               bmpInfoPos);
+        ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));
+        ImVec2 bmpInfoSize(20, 20);
+        if (delegate->NodeIsCompute(nodeIndex))
+        {
+            drawList->AddImageQuad(bmpInfo,
+                                   bmpInfoPos,
+                                   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+                                   bmpInfoPos + bmpInfoSize,
+                                   bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+        }
+        else if (delegate->NodeIs2D(nodeIndex))
+        {
+            drawList->AddImageQuad(bmpInfo,
+                                   bmpInfoPos,
+                                   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+                                   bmpInfoPos + bmpInfoSize,
+                                   bmpInfoPos + ImVec2(0., bmpInfoSize.y));
+        }
+        else if (delegate->NodeIsCubemap(nodeIndex))
+        {
+            drawList->AddImageQuad(bmpInfo,
+                                   bmpInfoPos + ImVec2(0., bmpInfoSize.y),
+                                   bmpInfoPos + bmpInfoSize,
+                                   bmpInfoPos + ImVec2(bmpInfoSize.x, 0.f),
+                                   bmpInfoPos);
+        }
     }
     return nodeHovered;
 }

@@ -44,6 +44,7 @@ void GraphControler::Clear()
     mSelectedNodeIndex = -1;
     mBackgroundNode = -1;
     mModel.Clear();
+    mEvaluationStages.Clear();
     mEditingContext.Clear();
 }
 
@@ -409,7 +410,7 @@ void GraphControler::EditNodeParameters()
     for (unsigned int slotIndex = 0; slotIndex < 8; slotIndex++)
     {
         std::vector<size_t> inputs;
-        if (mModel.GetMultiplexedInputs(nodeIndex, slotIndex, inputs))
+        if (mModel.GetMultiplexedInputs(mEvaluationStages.mInputs, nodeIndex, slotIndex, inputs))
         {
             int currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
 
@@ -542,8 +543,10 @@ void GraphControler::ApplyDirtyList()
         }
     }
     mModel.ClearDirtyList();
+
     if (evaluationOrderChanged)
     {
+        mEvaluationStages.mInputs = mModel.GetInputs();
         mEvaluationStages.ComputeEvaluationOrder();
     }
     ComputeGraphArrays();
@@ -955,7 +958,6 @@ unsigned int GraphControler::GetBitmapInfo(size_t nodeIndex) const
     {
         return stagecubemap;
     }
-    assert(0);
     return 0;
 }
 

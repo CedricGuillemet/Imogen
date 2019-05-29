@@ -206,8 +206,6 @@ int main(int, char**)
     GraphControler nodeGraphControler;
     Imogen imogen(&nodeGraphControler);
 
-    ImGuiIO& io = ImGui::GetIO();
-
     TagTime("Context");
     InitFonts();
 
@@ -261,7 +259,9 @@ int main(int, char**)
                 done = true;
         }
 
-        renderImogenFrame = [&](bool capturing) {
+        renderImogenFrame = [&nodeGraphControler, &imogen, &gl_context](bool capturing) {
+            ImGuiIO& io = ImGui::GetIO();
+
             // Start the Dear ImGui frame
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplSDL2_NewFrame(window);

@@ -145,10 +145,11 @@ public:
     ImRect GetFinalNodeDisplayRect(const std::vector<size_t>& orderList) const;
     bool RecurseIsLinked(int from, int to) const;
     int GetMultiplexed(size_t nodeIndex, size_t slotIndex) const { return mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex]; }
-    bool GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const;
+    bool GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const;
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }
     void GetStartEndFrame(size_t nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
+    std::vector<Input> GetInputs() const;
 
     // dirty
     const std::vector<DirtyList>& GetDirtyList() const { return mDirtyList; }
@@ -173,7 +174,6 @@ private:
     // non ser data / runtime datas
     std::vector<Node> mNodesClipboard;
     std::vector<DirtyList> mDirtyList;
-    std::vector<Input> mInputs;
     int mSelectedNodeIndex;
 
     // undo and transaction
@@ -187,9 +187,8 @@ private:
     void DelLinkInternal(size_t linkIndex);
     void AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
     void RemoveAnimation(size_t nodeIndex);
-    void UpdateEvaluation();
 
-    void GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const;
+    void GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, std::vector<size_t>& list) const;
 
     // layout
     struct NodePosition

@@ -113,12 +113,12 @@ void EvaluationStages::SetEvaluationOrder(const std::vector<size_t>& nodeOrderLi
 
 void EvaluationStages::Clear()
 {
-    mEvaluationOrderList.clear();
-
     mStages.clear();
-    mAnimTrack.clear();
+    mInputs.clear();
     mInputSamplers.clear();
     mParameters.clear();
+    mAnimTrack.clear();
+    mOrderList.clear();
 }
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)

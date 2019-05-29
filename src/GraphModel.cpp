@@ -78,39 +78,45 @@ void GraphModel::EndTransaction()
     }
     delete mUndoRedo;
     mUndoRedo = nullptr;
-    
-    UpdateEvaluation();
-    
 }
 
-void GraphModel::UpdateEvaluation()
+std::vector<Input> GraphModel::GetInputs() const
 {
-    // set inputs
-    mInputs.resize(mNodes.size());
-    for (size_t i = 0; i < mNodes.size(); i++)
-    {
-        mInputs[i] = Input();
-    }
+    std::vector<Input> inputs;
+    inputs.resize(mNodes.size());
+
     for(const auto& link: mLinks)
     {
         auto source = link.mInputNodeIndex;
-        mInputs[link.mOutputNodeIndex].mInputs[link.mInputSlotIndex] = source;
+        inputs[link.mOutputNodeIndex].mInputs[link.mInputSlotIndex] = source;
     }
 
+    // overide
+    for (auto i = 0; i < mNodes.size(); i++)
+    {
+        const auto& multiplexInput = mNodes[i].mMultiplexInput;
+        for (auto j = 0; j < 8; j++)
+        {
+            int m = multiplexInput.mInputs[j];
+            if (m != -1)
+            {
+                inputs[i].mInputs[j] = m;
+            }
+        }
+    }
+    return inputs;
 }
 
 void GraphModel::Undo()
 {
     assert(!mbTransaction);
     gUndoRedoHandler.Undo();
-    UpdateEvaluation();
 }
 
 void GraphModel::Redo()
 {
     assert(!mbTransaction);
     gUndoRedoHandler.Redo();
-    UpdateEvaluation();
 }
 
 void GraphModel::MoveSelectedNodes(const ImVec2 delta)
@@ -227,6 +233,7 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
                   : nullptr;
 
     AddLinkInternal(inputNodeIndex, inputSlotIndex, outputNodeIndex, outputSlotIndex);
+    SetDirty(outputNodeIndex, Dirty::Input);
 }
 
 void GraphModel::DelLinkInternal(size_t linkIndex)
@@ -844,9 +851,10 @@ static bool NodeTypeHasMultiplexer(size_t nodeType)
     return false;
 }
 
-void GraphModel::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& list) const
+void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, std::vector<size_t>& list) const
 {
-    for (auto& input : mInputs[nodeIndex].mInputs)
+
+    for (auto& input : inputs[nodeIndex].mInputs)
     {
         if (input == -1)
         {
@@ -858,21 +866,21 @@ void GraphModel::GetMultiplexedInputs(size_t nodeIndex, std::vector<size_t>& lis
         }
         else
         {
-            GetMultiplexedInputs(input, list);
+            GetMultiplexedInputs(inputs, input, list);
         }
     }
 }
 
-bool GraphModel::GetMultiplexedInputs(size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const
+bool GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const
 {
-    int input = mInputs[nodeIndex].mInputs[slotIndex];
+    int input = inputs[nodeIndex].mInputs[slotIndex];
     if (input == -1)
     {
         return false;
     }
     if (NodeTypeHasMultiplexer(mNodes[input].mType))
     {
-        GetMultiplexedInputs(input, list);
+        GetMultiplexedInputs(inputs, input, list);
         return true;
     }
     return false;

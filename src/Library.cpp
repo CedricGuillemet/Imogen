@@ -248,6 +248,13 @@ struct Serialize
         ADD(v_pinnedIO, material->mPinnedIO);
         ADD(v_backgroundNode, material->mBackgroundNode);
         ADD(v_multiplexInput, material->mMultiplexInputs)
+        if (!doWrite)
+        {
+            auto nodeCount = material->mMaterialNodes.size();
+            material->mMultiplexInputs.resize(nodeCount);
+            material->mPinnedParameters.resize(nodeCount);
+            material->mPinnedIO.resize(nodeCount);
+        }
     }
 
     bool Ser(Library* library)

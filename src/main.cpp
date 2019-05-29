@@ -215,6 +215,7 @@ int main(int, char**)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
+
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
 
@@ -274,7 +275,6 @@ int main(int, char**)
     while (!done)
     {
         main_loop(&loopdata);
-
     }
     imogen.ValidateCurrentMaterial(library);
 

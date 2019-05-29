@@ -138,6 +138,7 @@ struct EvaluationStages
     void AddEvaluation(size_t nodeIndex, size_t nodeType);
     void DelEvaluation(size_t nodeIndex);
 
+    void Clear();
     size_t GetEvaluationImageDuration(size_t target);
 
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);

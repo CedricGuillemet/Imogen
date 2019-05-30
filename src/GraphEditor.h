@@ -34,7 +34,6 @@ struct GraphEditorDelegate
     int mSelectedNodeIndex = -1;
 
     // getters
-    virtual unsigned int GetNodeTexture(size_t index) = 0;
     virtual ImVec2 GetEvaluationSize(size_t index) const = 0;
     virtual int NodeIsProcesing(size_t nodeIndex) const = 0;
     virtual float NodeProgress(size_t nodeIndex) const = 0;

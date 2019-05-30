@@ -135,6 +135,11 @@ void EvaluationThumbnails::GetThumb(const Thumb& thumb, unsigned int& textureId,
     textureId = mAtlases[thumb.mAtlasIndex].mTarget.mGLTexID;
 }
 
+RenderTarget& EvaluationThumbnails::GetThumbTarget(const Thumb& thumb)
+{
+    return mAtlases[thumb.mAtlasIndex].mTarget;
+}
+
 ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t index) const
 {
     const size_t thumbnailsPerSide = AtlasSize / ThumbnailSize;
@@ -145,6 +150,19 @@ ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t index) const
     const float v = float(indexY) / float(thumbnailsPerSide);
     const float suv = 1.f / float(thumbnailsPerSide);
     return ImRect(ImVec2(u, v), ImVec2(u, v) + ImVec2(suv, suv));
+}
+
+void EvaluationThumbnails::GetThumbCoordinates(const Thumb& thumb, int* coordinates) const
+{
+    const size_t index = thumb.mThumbIndex;
+    const size_t thumbnailsPerSide = AtlasSize / ThumbnailSize;
+    const size_t indexY = index / thumbnailsPerSide;
+    const size_t indexX = index % thumbnailsPerSide;
+
+    coordinates[0] = indexX * ThumbnailSize;
+    coordinates[1] = indexY * ThumbnailSize;
+    coordinates[2] = coordinates[0] + ThumbnailSize - 1;
+    coordinates[3] = coordinates[1] + ThumbnailSize - 1;
 }
 
 /*
@@ -268,7 +286,7 @@ void EvaluationContext::Clear()
     mInputNodeIndex = -1;
 }
 
-unsigned int EvaluationContext::GetEvaluationTexture(size_t nodeIndex)
+unsigned int EvaluationContext::GetEvaluationTexture(size_t nodeIndex) const
 {
     assert (nodeIndex < mEvaluations.size());
     const auto& tgt = mEvaluations[nodeIndex].mTarget;
@@ -714,6 +732,24 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         }
     } // passNumber
     glDisable(GL_BLEND);
+
+    // create thumbnail
+    //auto thumbail = 
+    const auto thumb = mEvaluations[nodeIndex].mThumb;
+    auto thumbTarget = mThumbnails.GetThumbTarget(thumb);
+
+    int sourceCoords[4];
+    mThumbnails.GetThumbCoordinates(thumb, sourceCoords);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, tgt->mFbo);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, thumbTarget.mFbo);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+    glBlitFramebuffer(0,0, tgt->mImage->mWidth, tgt->mImage->mHeight, sourceCoords[0], sourceCoords[1], sourceCoords[2], sourceCoords[3], GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
 }
 
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)

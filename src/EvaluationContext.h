@@ -70,6 +70,44 @@ struct UIInput
     uint8_t mbShift : 1;
 };
 
+struct EvaluationThumbnails
+{
+    struct Thumb
+    {
+        size_t mAtlasIndex;
+        size_t mThumbIndex;
+    };
+
+    void Clear();
+    Thumb AddThumb();
+    void DelThumb(const Thumb& thumb);
+    void GetThumb(const Thumb& thumb, unsigned int& textureId, ImRect& uvs) const;
+
+protected:
+
+    const size_t AtlasSize = 4096;
+    const size_t ThumbnailSize = 256;
+    const size_t ThumbnailsPerAtlas = (AtlasSize / ThumbnailSize) * (AtlasSize / ThumbnailSize);
+
+    ImRect ComputeUVFromIndexInAtlas(size_t index) const;
+    Thumb EvaluationThumbnails::AddThumbInAtlas(size_t atlasIndex);
+
+    struct ThumbAtlas
+    {
+        ThumbAtlas(size_t thumbnailsPerAtlas)
+        {
+            mbUsed.resize(thumbnailsPerAtlas, false);
+        }
+        RenderTarget mTarget;
+        std::vector<bool> mbUsed;
+        size_t mUsedCount = 0;
+    };
+
+    std::vector<ThumbAtlas> mAtlases;
+    std::vector<Thumb> mThumbs;
+
+
+};
 
 struct EvaluationContext
 {
@@ -131,6 +169,7 @@ struct EvaluationContext
         std::shared_ptr<RenderTarget> mTarget;
         
         ComputeBuffer mComputeBuffer;
+        EvaluationThumbnails::Thumb mThumb;
         float mProgress             = 0.f;
 
         uint8_t mDirtyFlag          = 0;
@@ -157,7 +196,7 @@ struct EvaluationContext
 
 protected:
 
-    
+    EvaluationThumbnails mThumbnails;
 
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);

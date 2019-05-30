@@ -78,6 +78,92 @@ static const float rotMatrices[6][16] = {
     //-z
     {-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
 
+
+
+void EvaluationThumbnails::Clear()
+{
+    for (auto& atlas : mAtlases)
+    {
+        atlas.mTarget.Destroy();
+    }
+    mAtlases.clear();
+}
+
+EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumbInAtlas(size_t atlasIndex)
+{
+    auto& atlas = mAtlases[atlasIndex];
+    for (size_t thumbIndex = 0; thumbIndex < ThumbnailsPerAtlas; thumbIndex++)
+    {
+        if (!atlas.mbUsed[thumbIndex])
+        {
+            atlas.mbUsed[thumbIndex] = true;
+            atlas.mUsedCount++;
+            return { atlasIndex, thumbIndex };
+        }
+    }
+    // mUsedCount not in sync with used map
+    assert(0);
+    return {};
+}
+
+EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumb()
+{
+    for (size_t atlasIndex = 0; atlasIndex < mAtlases.size(); atlasIndex++)
+    {
+        const auto& atlas = mAtlases[atlasIndex];
+        if (atlas.mUsedCount < ThumbnailsPerAtlas)
+        {
+            AddThumbInAtlas(atlasIndex);
+        }
+    }
+    // no atlas, create new one
+    mAtlases.push_back(ThumbAtlas(ThumbnailsPerAtlas));
+    mAtlases.back().mTarget.InitBuffer(AtlasSize, AtlasSize, false);
+    return AddThumbInAtlas(mAtlases.size() - 1);
+}
+
+void EvaluationThumbnails::DelThumb(const Thumb& thumb)
+{
+    auto& atlas = mAtlases[thumb.mAtlasIndex];
+    assert(atlas.mbUsed[thumb.mThumbIndex]);
+    atlas.mbUsed[thumb.mThumbIndex] = false;
+    atlas.mUsedCount --;
+}
+
+void EvaluationThumbnails::GetThumb(const Thumb& thumb, unsigned int& textureId, ImRect& uvs) const
+{
+    textureId = mAtlases[thumb.mAtlasIndex].mTarget.mGLTexID;
+}
+
+ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t index) const
+{
+    const size_t thumbnailsPerSide = AtlasSize / ThumbnailSize;
+    const size_t indexY = index / thumbnailsPerSide;
+    const size_t indexX = index % thumbnailsPerSide;
+
+    const float u = float(indexX) / float(thumbnailsPerSide);
+    const float v = float(indexY) / float(thumbnailsPerSide);
+    const float suv = 1.f / float(thumbnailsPerSide);
+    return ImRect(ImVec2(u, v), ImVec2(u, v) + ImVec2(suv, suv));
+}
+
+/*
+protected:
+
+    struct ThumbAtlas
+    {
+        RenderTarget mTarget;
+        std::vector<bool> mbUsed;
+        size_t mUsedCount = 0;
+    };
+
+
+    std::vector<ThumbAtlas> mAtlases;
+    std::vector<Thumb> mThumbs;
+};
+*/
+
+
 EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
                                      bool synchronousEvaluation,
                                      int defaultWidth,
@@ -122,10 +208,12 @@ EvaluationContext::~EvaluationContext()
 void EvaluationContext::AddEvaluation(size_t nodeIndex)
 {
     mEvaluations.insert(mEvaluations.begin() + nodeIndex, Evaluation());
+    mEvaluations[nodeIndex].mThumb = mThumbnails.AddThumb();
 }
 
 void EvaluationContext::DelEvaluation(size_t nodeIndex)
 {
+    mThumbnails.DelThumb(mEvaluations[nodeIndex].mThumb);
     mEvaluations.erase(mEvaluations.begin() + nodeIndex);
 }
 
@@ -176,6 +264,7 @@ void EvaluationContext::Clear()
             glDeleteBuffers(1, &eval.mComputeBuffer.mBuffer);
         }
     }
+    mThumbnails.Clear();
     mInputNodeIndex = -1;
 }
 

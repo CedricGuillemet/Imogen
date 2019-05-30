@@ -136,6 +136,7 @@ void EvaluationThumbnails::DelThumb(const Thumb thumb)
 void EvaluationThumbnails::GetThumb(const Thumb thumb, unsigned int& textureId, ImRect& uvs) const
 {
     textureId = mAtlases[thumb.mAtlasIndex].mTarget.mGLTexID;
+    uvs = ComputeUVFromIndexInAtlas(thumb.mThumbIndex);
 }
 
 RenderTarget& EvaluationThumbnails::GetThumbTarget(const Thumb thumb)
@@ -143,11 +144,11 @@ RenderTarget& EvaluationThumbnails::GetThumbTarget(const Thumb thumb)
     return mAtlases[thumb.mAtlasIndex].mTarget;
 }
 
-ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t index) const
+ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t thumbIndex) const
 {
     const size_t thumbnailsPerSide = AtlasSize / ThumbnailSize;
-    const size_t indexY = index / thumbnailsPerSide;
-    const size_t indexX = index % thumbnailsPerSide;
+    const size_t indexY = thumbIndex / thumbnailsPerSide;
+    const size_t indexX = thumbIndex % thumbnailsPerSide;
 
     const float u = float(indexX) / float(thumbnailsPerSide);
     const float v = float(indexY) / float(thumbnailsPerSide);

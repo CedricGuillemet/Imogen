@@ -878,7 +878,6 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
         mEditingContext.GetThumb(nodeIndex, textureId, uvs);
         if (textureId)
         {
-            
             drawList->AddRectFilled(rc.Min, rc.Max, 0xFF000000);
             drawList->AddImage((ImTextureID)(int64_t)textureId,
                            rc.Min + marge,

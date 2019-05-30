@@ -91,8 +91,8 @@ protected:
     const size_t ThumbnailSize = 256;
     const size_t ThumbnailsPerAtlas = (AtlasSize / ThumbnailSize) * (AtlasSize / ThumbnailSize);
 
-    ImRect ComputeUVFromIndexInAtlas(size_t index) const;
-    Thumb EvaluationThumbnails::AddThumbInAtlas(size_t atlasIndex);
+    ImRect ComputeUVFromIndexInAtlas(size_t thumbIndex) const;
+    Thumb AddThumbInAtlas(size_t atlasIndex);
 
     struct ThumbAtlas
     {

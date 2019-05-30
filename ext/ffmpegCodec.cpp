@@ -346,13 +346,13 @@ namespace FFMPEGCodec
                 finished = receive_frame(m_codec_context, m_frame, &pkt);
 
                 //int64_t pts = m_frame->pts;
-                
+
                 double pts = 0;
                 //if (static_cast<int64_t>(m_frame->pkt_pts) != int64_t(AV_NOPTS_VALUE))
                 {
                     pts = av_q2d(m_format_context->streams[m_video_stream]->time_base) *  (m_frame->pts - m_start_time);
                 }
-                
+
                 int current_frame = int((pts) * Fps() + 0.5f);
 
                 //Log("Current frame %d\n", current_frame2);
@@ -428,7 +428,7 @@ namespace FFMPEGCodec
 #define VIDEO_TMP_FILE "tmp.h264"
 
     using namespace std;
-    void Debug(const std::string& str, int err) 
+    void Debug(const std::string& str, int err)
     {
         Log(str.c_str());
     }
@@ -512,7 +512,7 @@ namespace FFMPEGCodec
         av_dump_format(ofctx, 0, VIDEO_TMP_FILE, 1);
     }
 
-    void Encoder::AddFrame(uint8_t *data, int width, int height) 
+    void Encoder::AddFrame(uint8_t *data, int width, int height)
     {
         int err;
         if (!videoFrame) {
@@ -620,10 +620,13 @@ namespace FFMPEGCodec
         }
     }
 
-    void Encoder::Remux() 
+    void Encoder::Remux()
     {
         AVFormatContext *ifmt_ctx = NULL, *ofmt_ctx = NULL;
+        int64_t ts = 0;
         int err;
+        AVStream *inVideoStream;
+        AVStream *outVideoStream;
 
         if ((err = avformat_open_input(&ifmt_ctx, VIDEO_TMP_FILE, 0, 0)) < 0) {
             Debug("Failed to open input file for remuxing", err);
@@ -638,8 +641,8 @@ namespace FFMPEGCodec
             goto end;
         }
 
-        AVStream *inVideoStream = ifmt_ctx->streams[0];
-        AVStream *outVideoStream = avformat_new_stream(ofmt_ctx, NULL);
+        inVideoStream = ifmt_ctx->streams[0];
+        outVideoStream = avformat_new_stream(ofmt_ctx, NULL);
         if (!outVideoStream) {
             Debug("Failed to allocate output video stream", 0);
             goto end;
@@ -661,7 +664,6 @@ namespace FFMPEGCodec
         }
 
         AVPacket videoPkt;
-        int64_t ts = 0;
         while (true) {
             if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
                 break;

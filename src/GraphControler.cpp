@@ -209,7 +209,7 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
             }
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::Text(param.mName.c_str());
+            ImGui::Text("%s", param.mName.c_str());
             break;
         case Con_Enum:
             {
@@ -251,6 +251,8 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
             }
             break;
         case Con_Multiplexer:
+            break;
+        default:
             break;
     }
     ImGui::PopID();
@@ -294,7 +296,7 @@ int GraphControler::ShowMultiplexed(const std::vector<size_t>& inputs, int curre
                 ImDrawList* drawList = ImGui::GetWindowDrawList();
                 drawList->AddRect(rc.Min, rc.Max, 0xFF0000FF, 2.f, 15, 2.f);
             }
-            
+
             ImGui::PopID();
             if (disp != (displayCount - 1) && buttonsToDraw)
             {
@@ -370,7 +372,7 @@ void GraphControler::EditNodeParameters()
             ImGui::PushID(int(99 + i));
             HandlePinIO(nodeIndex, i, false);
             ImGui::SameLine();
-            ImGui::Text("Sampler %d", i);
+            ImGui::Text("Sampler %zu", i);
             samplerDirty |= ImGui::Combo("U", (int*)&inputSampler.mWrapU, wrapModes);
             ImGui::SameLine();
             samplerDirty |= ImGui::Combo("V", (int*)&inputSampler.mWrapV, wrapModes);
@@ -402,7 +404,7 @@ void GraphControler::EditNodeParameters()
     {
         ImGui::PushID(667889 + i);
 
-        dirty |= EditSingleParameter(unsigned int(nodeIndex), i, paramBuffer, param);
+        dirty |= EditSingleParameter((unsigned int)(nodeIndex), i, paramBuffer, param);
 
         ImGui::PopID();
         paramBuffer += GetParameterTypeSize(param.mType);
@@ -511,8 +513,8 @@ void GraphControler::ApplyDirtyList()
         size_t nodeIndex = dirtyItem.mNodeIndex;
         switch(dirtyItem.mFlags)
         {
-        
-            case Dirty::Input: 
+
+            case Dirty::Input:
                 evaluationOrderChanged = true;
                 break;
             case Dirty::Parameter:
@@ -715,7 +717,7 @@ void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
         auto* node = nodeHovered != -1 ? &nodes[nodeHovered] : NULL;
         if (node)
         {
-            ImGui::Text(metaNodes[node->mType].mName.c_str());
+            ImGui::Text("%s", metaNodes[node->mType].mName.c_str());
             ImGui::Separator();
 
             if (ImGui::MenuItem("Extract view", NULL, false))

@@ -80,7 +80,7 @@ namespace ImCurveEdit
       {
          offsets[i] = pos * size + localOffsets[i]*4.5f + offset;
       }
-      
+
       const ImVec2 center = pos * size + offset;
       const ImRect anchor(center - ImVec2(5, 5), center + ImVec2(5, 5));
       draw_list->AddConvexPolyFilled(offsets, 4, 0xFF000000);
@@ -96,7 +96,7 @@ namespace ImCurveEdit
          draw_list->AddPolyline(offsets, 4, 0xFF80B0FF, true, 2.0f);
       else
          draw_list->AddPolyline(offsets, 4, 0xFF0080FF, true, 2.0f);
-      
+
       return ret;
    }
 
@@ -149,7 +149,7 @@ namespace ImCurveEdit
           }
       }
       ImVec2 range = max - min + ImVec2(1.f, 0.f);  // +1 because of inclusive last frame
-      
+
       const ImVec2 viewSize(size.x, -size.y);
       const ImVec2 sizeOfPixel = ImVec2(1.f, 1.f) / viewSize;
       const size_t curveCount = delegate.GetCurveCount();

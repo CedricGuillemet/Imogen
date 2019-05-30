@@ -77,11 +77,11 @@ static const EValuationFunction evaluationFunctions[] = {
     {"SetProcessing", (void*)EvaluationAPI::SetProcessing},
     {"Job", (void*)EvaluationAPI::Job},
     {"JobMain", (void*)EvaluationAPI::JobMain},
-    {"memmove", memmove},
-    {"strcpy", strcpy},
-    {"strlen", strlen},
-    {"fabsf", fabsf},
-    {"strcmp", strcmp},
+    {"memmove", (void*)memmove},
+    {"strcpy", (void*)strcpy},
+    {"strlen", (void*)strlen},
+    {"fabsf", (void*)fabsf},
+    {"strcmp", (void*)strcmp},
     {"LoadSVG", (void*)Image::LoadSVG},
     {"LoadScene", (void*)EvaluationAPI::LoadScene},
     {"SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
@@ -1300,7 +1300,8 @@ namespace EvaluationAPI
             *scene = iter->second.lock().get();
             return EVAL_OK;
         }
-        cgltf_options options = {0};
+        cgltf_options options;
+        memset(&options, 0, sizeof(options));
         cgltf_data* data = NULL;
         cgltf_result result = cgltf_parse_file(&options, filename, &data);
         if (result != cgltf_result_success)

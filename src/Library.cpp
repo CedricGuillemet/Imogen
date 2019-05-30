@@ -631,8 +631,9 @@ CurveType GetCurveTypeForParameterType(ConTypes paramType)
             return CurveSmooth;
         case Con_Multiplexer:
             return CurveLinear;
+        default:
+        return CurveNone;
     }
-    return CurveNone;
 }
 
 void Camera::ComputeViewProjectionMatrix(float* viewProj, float* viewInverse) const
@@ -923,8 +924,9 @@ float GetParameterComponentValue(size_t nodeType, const Parameters& parameters, 
         return float(((bool*)ptr)[componentIndex]);
     case Con_Camera:
         return float((*(Camera*)ptr)[componentIndex]);
+    default:
+        return 0.f;
     }
-    return 0.f;
 }
 
 // TODO : create parameter struct with templated accessors
@@ -1012,25 +1014,26 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
 
         if (node.HasMember("height"))
             curNode.mHeight = node["height"].GetInt();
-        else 
+        else
             curNode.mHeight = 100;
 
         if (node.HasMember("width"))
             curNode.mWidth = node["width"].GetInt();
         else
             curNode.mWidth = 100;
-        
+
         if (node.HasMember("experimental"))
             curNode.mbExperimental = node["experimental"].GetBool();
         else
             curNode.mbExperimental = false;
 
         if (node.HasMember("saveTexture"))
-
-        if (node.HasMember("hasUI"))
-            curNode.mbHasUI = node["hasUI"].GetBool();
-        else
-            curNode.mbHasUI = false;
+        {
+            if (node.HasMember("hasUI"))
+                curNode.mbHasUI = node["hasUI"].GetBool();
+            else
+                curNode.mbHasUI = false;
+        }
         if (node.HasMember("saveTexture"))
             curNode.mbSaveTexture = node["saveTexture"].GetBool();
         else

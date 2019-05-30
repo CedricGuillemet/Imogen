@@ -335,13 +335,13 @@ struct Animation : public AnimationBase
     }
 
 protected:
-    template<typename T>
-    float GetComponent(int componentIndex, T& v)
+    template<typename U>
+    float GetComponent(int componentIndex, U& v)
     {
         return float(v[componentIndex]);
     }
-    template<typename T>
-    void SetComponent(int componentIndex, T& v, float value)
+    template<typename U>
+    void SetComponent(int componentIndex, U& v, float value)
     {
         v[componentIndex] = decltype(v[componentIndex])(value);
     }
@@ -359,7 +359,7 @@ protected:
     }
     void SetComponent(int componentIndex, unsigned char& v, float value)
     {
-        v = unsigned char(value);
+        v = (unsigned char)(value);
     }
     void SetComponent(int componentIndex, int& v, float value)
     {

@@ -472,7 +472,7 @@ static void DisplayLinks(GraphEditorDelegate* delegate,
                 ptCount = 4;
             }
         }
-        float highLightFactor = factor * highlightCons ? 2.0f : 1.f;
+        float highLightFactor = factor * (highlightCons ? 2.0f : 1.f);
         for (int pass = 0; pass < 2; pass++)
         {
             drawList->AddPolyline(
@@ -919,6 +919,8 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
     const ImVec2 scrollRegionLocalPos(0, 50);
     const auto& nodes = delegate->GetNodes();
 
+    bool openContextMenu = false;
+
     static ImVec2 scenePos;
 
     ImRect regionRect(windowPos, windowPos + canvasSize);
@@ -1060,7 +1062,6 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
     }
 
     // Open context menu
-    bool openContextMenu = false;
     static int contextMenuHoverNode = -1;
     if (nodeOperation == NO_None && regionRect.Contains(io.MousePos) &&
         (ImGui::IsMouseClicked(1) || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Tab))))
@@ -1074,7 +1075,7 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
         scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
         ImGui::OpenPopup("context_menu");
     }
-    
+
     delegate->ContextMenu(scenePos, contextMenuHoverNode);
 
     // Scrolling

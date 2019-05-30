@@ -1091,7 +1091,7 @@ Builder::~Builder()
     mThread.join();
 }
 
-void Builder::Add(const char* graphName, EvaluationStages& stages)
+void Builder::Add(const char* graphName, const EvaluationStages& stages)
 {
     mMutex.lock();
     mEntries.push_back({graphName, 0.f, stages});

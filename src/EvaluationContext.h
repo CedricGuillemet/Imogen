@@ -74,16 +74,17 @@ struct EvaluationThumbnails
 {
     struct Thumb
     {
-        size_t mAtlasIndex;
-        size_t mThumbIndex;
+        unsigned short mAtlasIndex;
+        unsigned short mThumbIndex;
     };
 
     void Clear();
     Thumb AddThumb();
-    void DelThumb(const Thumb& thumb);
-    void GetThumb(const Thumb& thumb, unsigned int& textureId, ImRect& uvs) const;
-    RenderTarget& GetThumbTarget(const Thumb& thumb);
-    void GetThumbCoordinates(const Thumb& thumb, int* coordinates) const;
+    void DelThumb(const Thumb thumb);
+    void GetThumb(const Thumb thumb, unsigned int& textureId, ImRect& uvs) const;
+    RenderTarget& GetThumbTarget(const Thumb thumb);
+    void GetThumbCoordinates(const Thumb thumb, int* coordinates) const;
+    std::vector<RenderTarget> GetAtlasTextures() const;
 protected:
 
     const size_t AtlasSize = 4096;
@@ -164,7 +165,7 @@ struct EvaluationContext
     void StageSetProgress(size_t target, float progress);
 
     void AllocRenderTargetsForEditingPreview();
-
+    const EvaluationThumbnails& GetThumbnails() const { return mThumbnails; }
     void AllocateComputeBuffer(int target, int elementCount, int elementSize);
 
     struct ComputeBuffer

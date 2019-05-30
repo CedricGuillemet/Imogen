@@ -101,7 +101,7 @@ EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumbInAtlas(size_t atlasIn
         {
             atlas.mbUsed[thumbIndex] = true;
             atlas.mUsedCount++;
-            return { atlasIndex, thumbIndex };
+            return { (unsigned short)atlasIndex, (unsigned short)thumbIndex };
         }
     }
     // mUsedCount not in sync with used map
@@ -116,16 +116,16 @@ EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumb()
         const auto& atlas = mAtlases[atlasIndex];
         if (atlas.mUsedCount < ThumbnailsPerAtlas)
         {
-            AddThumbInAtlas(atlasIndex);
+            return AddThumbInAtlas(atlasIndex);
         }
     }
     // no atlas, create new one
     mAtlases.push_back(ThumbAtlas(ThumbnailsPerAtlas));
-    mAtlases.back().mTarget.InitBuffer(AtlasSize, AtlasSize, false);
+    mAtlases.back().mTarget.InitBuffer(int(AtlasSize), int(AtlasSize), false);
     return AddThumbInAtlas(mAtlases.size() - 1);
 }
 
-void EvaluationThumbnails::DelThumb(const Thumb& thumb)
+void EvaluationThumbnails::DelThumb(const Thumb thumb)
 {
     auto& atlas = mAtlases[thumb.mAtlasIndex];
     assert(atlas.mbUsed[thumb.mThumbIndex]);
@@ -133,12 +133,12 @@ void EvaluationThumbnails::DelThumb(const Thumb& thumb)
     atlas.mUsedCount --;
 }
 
-void EvaluationThumbnails::GetThumb(const Thumb& thumb, unsigned int& textureId, ImRect& uvs) const
+void EvaluationThumbnails::GetThumb(const Thumb thumb, unsigned int& textureId, ImRect& uvs) const
 {
     textureId = mAtlases[thumb.mAtlasIndex].mTarget.mGLTexID;
 }
 
-RenderTarget& EvaluationThumbnails::GetThumbTarget(const Thumb& thumb)
+RenderTarget& EvaluationThumbnails::GetThumbTarget(const Thumb thumb)
 {
     return mAtlases[thumb.mAtlasIndex].mTarget;
 }
@@ -155,35 +155,28 @@ ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t index) const
     return ImRect(ImVec2(u, v), ImVec2(u, v) + ImVec2(suv, suv));
 }
 
-void EvaluationThumbnails::GetThumbCoordinates(const Thumb& thumb, int* coordinates) const
+void EvaluationThumbnails::GetThumbCoordinates(const Thumb thumb, int* coordinates) const
 {
     const size_t index = thumb.mThumbIndex;
     const size_t thumbnailsPerSide = AtlasSize / ThumbnailSize;
     const size_t indexY = index / thumbnailsPerSide;
     const size_t indexX = index % thumbnailsPerSide;
 
-    coordinates[0] = indexX * ThumbnailSize;
-    coordinates[1] = indexY * ThumbnailSize;
-    coordinates[2] = coordinates[0] + ThumbnailSize - 1;
-    coordinates[3] = coordinates[1] + ThumbnailSize - 1;
+    coordinates[0] = int(indexX * ThumbnailSize);
+    coordinates[1] = int(indexY * ThumbnailSize);
+    coordinates[2] = int(coordinates[0] + ThumbnailSize - 1);
+    coordinates[3] = int(coordinates[1] + ThumbnailSize - 1);
 }
 
-/*
-protected:
-
-    struct ThumbAtlas
+std::vector<RenderTarget> EvaluationThumbnails::GetAtlasTextures() const
+{
+    std::vector<RenderTarget> ret;
+    for (auto& atlas : mAtlases)
     {
-        RenderTarget mTarget;
-        std::vector<bool> mbUsed;
-        size_t mUsedCount = 0;
-    };
-
-
-    std::vector<ThumbAtlas> mAtlases;
-    std::vector<Thumb> mThumbs;
-};
-*/
-
+        ret.push_back(atlas.mTarget);
+    }
+    return ret;
+}
 
 EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
                                      bool synchronousEvaluation,
@@ -732,7 +725,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     glDisable(GL_BLEND);
 
     // create thumbnail
-    //auto thumbail = 
+    glClearColor(1.f, 0.f, 1.f, 1.f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
     const auto thumb = mEvaluations[nodeIndex].mThumb;
     auto thumbTarget = mThumbnails.GetThumbTarget(thumb);
 

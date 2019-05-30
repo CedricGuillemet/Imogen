@@ -2069,6 +2069,15 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
 
         ImGui::End();
     }
+
+    ImGui::Begin("Debug");
+    auto atlases = this->GetNodeGraphControler()->mEditingContext.GetThumbnails().GetAtlasTextures();
+    for (auto& atlas : atlases)
+    {
+        ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID, ImVec2(1024, 1024));
+    }
+    ImGui::End();
+
     ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 
     Playback(currentTime != mCurrentTime);

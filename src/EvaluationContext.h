@@ -82,7 +82,8 @@ struct EvaluationThumbnails
     Thumb AddThumb();
     void DelThumb(const Thumb& thumb);
     void GetThumb(const Thumb& thumb, unsigned int& textureId, ImRect& uvs) const;
-
+    RenderTarget& GetThumbTarget(const Thumb& thumb);
+    void GetThumbCoordinates(const Thumb& thumb, int* coordinates) const;
 protected:
 
     const size_t AtlasSize = 4096;
@@ -105,8 +106,6 @@ protected:
 
     std::vector<ThumbAtlas> mAtlases;
     std::vector<Thumb> mThumbs;
-
-
 };
 
 struct EvaluationContext
@@ -129,7 +128,9 @@ struct EvaluationContext
     int GetCurrentTime() const { return mCurrentTime; }
     void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
-    unsigned int GetEvaluationTexture(size_t nodeIndex);
+    void GetThumb(size_t nodeIndex, unsigned int& textureId, ImRect& uvs) const { mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureId, uvs); }
+    unsigned int GetEvaluationTexture(size_t nodeIndex) const;
+
     std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mTarget; }
 
     const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const

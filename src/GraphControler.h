@@ -38,7 +38,6 @@ struct GraphControler : public GraphEditorDelegate
     void SetKeyboardMouse(const UIInput& input, bool bValidInput);
 
     // accessors
-    virtual unsigned int GetNodeTexture(size_t nodeIndex) { return mEditingContext.GetEvaluationTexture(nodeIndex); }
     virtual int NodeIsProcesing(size_t nodeIndex) const { return mEditingContext.StageIsProcessing(nodeIndex); }
     virtual float NodeProgress(size_t nodeIndex) const { return mEditingContext.StageGetProgress(nodeIndex); }
     virtual bool NodeIsCubemap(size_t nodeIndex) const;

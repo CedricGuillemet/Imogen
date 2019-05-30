@@ -281,8 +281,11 @@ int GraphControler::ShowMultiplexed(const std::vector<size_t>& inputs, int curre
                 continue;
             }
             ImGui::PushID(index);
-            auto texture = GetNodeTexture(inputs[index]);
-            if (ImGui::ImageButton((ImTextureID)(int64_t)texture, ImVec2(iconWidth, iconWidth), ImVec2(0, 1), ImVec2(1, 0), -1, ImVec4(0, 0, 0, 1)))
+
+            unsigned int textureId;
+            ImRect uvs;
+            mEditingContext.GetThumb(inputs[index], textureId, uvs);
+            if (ImGui::ImageButton((ImTextureID)(int64_t)textureId, ImVec2(iconWidth, iconWidth), uvs.Min, uvs.Max, -1, ImVec4(0, 0, 0, 1)))
             {
                 ret = index;
             }
@@ -870,16 +873,18 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
     }
     else
     {
-        auto textureID = GetNodeTexture(size_t(nodeIndex));
-        if (textureID)
+        unsigned int textureId;
+        ImRect uvs;
+        mEditingContext.GetThumb(nodeIndex, textureId, uvs);
+        if (textureId)
         {
             
             drawList->AddRectFilled(rc.Min, rc.Max, 0xFF000000);
-            drawList->AddImage((ImTextureID)(int64_t)textureID,
+            drawList->AddImage((ImTextureID)(int64_t)textureId,
                            rc.Min + marge,
                            rc.Max - marge,
-                           ImVec2(0, 1),
-                           ImVec2(1, 0));
+                           uvs.Min,
+                           uvs.Max);
         }
     }
 }

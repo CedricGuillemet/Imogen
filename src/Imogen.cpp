@@ -606,7 +606,7 @@ void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int 
     const auto& model = nodeGraphControler.mModel;
     auto nodeCount = model.GetNodeCount();
     material.mMaterialNodes.resize(nodeCount);
-    
+
     for (size_t i = 0; i < nodeCount; i++)
     {
         auto nodeType = model.GetNodeType(i);
@@ -889,7 +889,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 if (!animation || animation->mFrames.empty())
                 {
                     curvePts.resize(2);
-                    
+
                     int times[2];
                     model.GetStartEndFrame(mNodeIndex, times[0], times[1]);
                     float value = GetParameterComponentValue(
@@ -1275,7 +1275,6 @@ struct MySequence : public ImSequencer::SequenceInterface
             mbExpansions[index] = false;
             return;
         }
-        //for (auto& item : mbExpansions)
         for (auto i = 0;i<mbExpansions.size();i++)
         {
             mbExpansions[i] = false;
@@ -1717,7 +1716,7 @@ void Imogen::ShowTitleBar(Builder* builder)
         ImGui::BeginTooltip();
         for (auto& bi : buildInfos)
         {
-            ImGui::Text(bi.mName.c_str());
+            ImGui::Text("%s", bi.mName.c_str());
         }
         ImGui::EndTooltip();
     }

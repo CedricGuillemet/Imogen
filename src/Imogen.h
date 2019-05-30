@@ -140,7 +140,7 @@ protected:
     float mMainMenuDest = -440.f;
     float mMainMenuPos = -440.f;
 
-    char* mNewPopup = nullptr;
+    const char* mNewPopup = nullptr;
     int mSelectedMaterial = -1;
     int mCurrentShaderIndex = -1;
 

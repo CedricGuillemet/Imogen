@@ -39,6 +39,7 @@ freely, subject to the following restrictions:
 namespace GLSLPathTracer
 {
 
+    #undef M_PI
     static const float M_PI = 3.14159265358979323846f;
 
     static const int kMaxLineLength = 2048;
@@ -401,7 +402,7 @@ namespace GLSLPathTracer
                     Log("Loading Model: %s\n", meshPath.c_str());
                     if (!LoadModel(scene, meshPath, materialId))
                     {
-                        return false;
+                        return nullptr;
                     }
                 }
             }

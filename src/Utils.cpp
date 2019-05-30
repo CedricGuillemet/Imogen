@@ -499,16 +499,16 @@ void DiscoverFiles(const char* extension, const char* directory, std::vector<std
 
 void IMessageBox(const char* text, const char* title)
 {
-    #ifdef WIN32
+#ifdef WIN
     MessageBoxA(NULL, text, title, MB_OK);
-    #endif
+#endif
 }
 
 void OpenShellURL(const std::string& url)
 {
-    #ifdef WIN32
+#ifdef WIN
     ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
-    #endif
+#endif
 }
 
 void GetTextureDimension(unsigned int textureId, int* w, int* h)
@@ -545,14 +545,3 @@ std::string GetName(const std::string& name)
     return name;
 }
 
-/*
-std::string GetBasePath(const char* path)
-{
-    std::string res;
-    char drive[16];
-    char dir[MAX_PATH];
-    _splitpath(path, drive, dir, 0, 0);
-    res = std::string(drive) + dir;
-    return res;
-}
-*/

@@ -46,8 +46,7 @@ void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
     static std::shared_ptr<Scene> defaultScene;
     if (!defaultScene)
     {
-        defaultScene = std::make_shared<Scene>();
-
+        defaultScene = Scene::BuildDefaultScene();
     }
     evaluation.mScene = nullptr;
     evaluation.mGScene = defaultScene;

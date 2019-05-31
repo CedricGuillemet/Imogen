@@ -47,13 +47,8 @@ void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
     evaluation.mUseCountByOthers = 0;
     evaluation.mType = uint16_t(nodeType);
     evaluation.mLocalTime = 0;
-    static std::shared_ptr<Scene> defaultScene;
-    if (!defaultScene)
-    {
-        defaultScene = Scene::BuildDefaultScene();
-    }
     evaluation.mScene = nullptr;
-    evaluation.mGScene = defaultScene;
+    evaluation.mGScene = Scene::BuildDefaultScene();
     evaluation.renderer = nullptr;
     evaluation.mRuntimeUniqueId = GetRuntimeId();
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
@@ -220,9 +215,6 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
         context->SetTargetDirty(i, Dirty::Parameter);
     }
 }
-
-
-
 
 void EvaluationStages::SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder)
 {

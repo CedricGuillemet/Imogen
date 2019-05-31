@@ -589,13 +589,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
     glEnable(GL_BLEND);
     glBlendFunc(blend[0], blend[1]);
 
     glUseProgram(program);
-
-    
-    
 
     const Camera* camera = GetCameraParameter(nodeType, parameters);
     if (camera)
@@ -726,8 +724,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     glDisable(GL_BLEND);
 
     // create thumbnail
-    glClearColor(1.f, 0.f, 1.f, 1.f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    //glClearColor(1.f, 0.f, 1.f, 1.f);
+    //glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 

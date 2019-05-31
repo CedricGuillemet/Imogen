@@ -240,7 +240,7 @@ struct Builder
     Builder();
     ~Builder();
 
-    void Add(const char* graphName, EvaluationStages& stages);
+    void Add(const char* graphName, const EvaluationStages& stages);
     void Add(Material* material);
     struct BuildInfo
     {

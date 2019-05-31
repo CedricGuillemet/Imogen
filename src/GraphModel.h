@@ -174,7 +174,7 @@ private:
     // non ser data / runtime datas
     std::vector<Node> mNodesClipboard;
     std::vector<DirtyList> mDirtyList;
-    int mSelectedNodeIndex;
+    //int mSelectedNodeIndex;
 
     // undo and transaction
     bool mbTransaction;

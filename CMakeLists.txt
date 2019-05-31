@@ -48,19 +48,46 @@ ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
 set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES} libtcc.a)
 endif()
 
-set(FFMPEG_LIBS avcodec.lib avdevice.lib avfilter.lib avformat.lib avutil.lib swscale.lib swresample.lib postproc.lib)
-set(PYTHON37_LIBS python3.lib python37.lib)
+
+if(WIN32)
+
+set(FFMPEG_LIBRARIES avcodec.lib avdevice.lib avfilter.lib avformat.lib avutil.lib swscale.lib swresample.lib postproc.lib)
+set(FFMPEG_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/lib)
+set(FFMPEG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/include)
+
+set(PYTHON37_LIBRARIES python3.lib python37.lib)
+set(PYTHON37_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/include)
+set(PYTHON37_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/libs)
+
+
+set(SDL2_INCLUDE_DIRS  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/include)
+set(SDL2_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/lib/x64)
+
+set(TCC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/)
+set(TCC_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc)
+
+else()
+
+PKG_CHECK_MODULES(PYTHON37 REQUIRED python3)
+PKG_CHECK_MODULES(SDL2 REQUIRED sdl2)
+PKG_CHECK_MODULES(FFMPEG REQUIRED libavcodec libavdevice libavfilter libavformat libavutil libswscale libswresample libpostproc)
+
+#TODO: TCC
+set(TCC_INCLUDE_DIRS /usr/local/Cellar/tcc/0.9.27_1/)
+set(TCC_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc)
+
+endif()
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/include
+  ${SDL2_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/gl3w
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/
+  ${TCC_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/include
+  ${FFMPEG_INCLUDE_DIRS}
+  ${PYTHON37_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/glm/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/SOIL/include
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/Nvidia-SBVH
@@ -68,10 +95,10 @@ include_directories(
 )
 
 link_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/lib/x64
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/lib
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/libs
+  ${SDL2_LIBDIR}
+  ${FFMPEG_LIBRARY_DIRS}
+  ${PYTHON37_LIBRARY_DIRS}
+  ${TCC_LIBRARY_DIRS}
 )
 find_package(OpenGL)
 
@@ -112,7 +139,7 @@ set(ENABLE_HIDECONSOLE_BUILD TRUE CACHE BOOL "TRUE to hide console for Windows s
 
 if(WINDOWS)
   set(GUI_TYPE WIN32)
-elseif(MACOSX)
+elseif(APPLE)
   set(GUI_TYPE MACOSX_BUNDLE)
 endif()
 
@@ -126,7 +153,13 @@ SET(EXE_NAME "Imogen")
 
 ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES})
 
-TARGET_LINK_LIBRARIES(${EXE_NAME} ${SDL2_LIBS} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBS} ${PYTHON37_LIBS})
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${PYTHON37_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBRARIES})
+
+if(APPLE)
+  find_library(CORE_FOUNDATION CoreFoundation)
+  target_link_libraries(${EXE_NAME} ${CORE_FOUNDATION})
+endif()
+
 
 #--------------------------------------------------------------------
 # preproc

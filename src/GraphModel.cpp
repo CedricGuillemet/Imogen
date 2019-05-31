@@ -30,7 +30,7 @@
 
 extern UndoRedoHandler gUndoRedoHandler;
 
-GraphModel::GraphModel() : mbTransaction(false), mSelectedNodeIndex(-1), mUndoRedo(nullptr), mStartFrame(0), mEndFrame(1)
+GraphModel::GraphModel() : mbTransaction(false), mUndoRedo(nullptr), mStartFrame(0), mEndFrame(1)
 {
 }
 
@@ -47,7 +47,6 @@ void GraphModel::Clear()
     mLinks.clear();
     mRugs.clear();
     gUndoRedoHandler.Clear();
-    mSelectedNodeIndex = -1;
     mDirtyList.clear();
 }
 
@@ -307,7 +306,6 @@ void GraphModel::DeleteSelectedNodes()
         auto ur = mUndoRedo ? std::make_unique<URDel<Node>>(int(selection),
                                     [this]() { return &mNodes; },
                                     [this](int index) {
-                                        mSelectedNodeIndex = -1;
                                         DeleteNodeHelper(index);
                                     },
                                     [this](int index) {
@@ -323,7 +321,6 @@ void GraphModel::DeleteSelectedNodes()
                                                 mLinks[id].mOutputNodeIndex++;
                                             }
                                         }
-                                        mSelectedNodeIndex = -1;
                                         AddNodeHelper(index);
                                     }) : nullptr;
 

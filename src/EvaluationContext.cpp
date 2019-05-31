@@ -709,8 +709,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     glDisable(GL_BLEND);
 
     // create thumbnail
-    //glClearColor(1.f, 0.f, 1.f, 1.f);
-    //glClear(GL_COLOR_BUFFER_BIT);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 

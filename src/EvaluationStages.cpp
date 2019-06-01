@@ -51,7 +51,8 @@ void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
     
     mParameters.insert(mParameters.begin() + nodeIndex, Parameters());
     mStages.insert(mStages.begin() + nodeIndex, evaluation);
-    mInputSamplers.insert(mInputSamplers.begin() + nodeIndex, InputSampler());
+    mInputSamplers.insert(mInputSamplers.begin() + nodeIndex, InputSamplers());
+    mInputSamplers[nodeIndex].resize(gMetaNodes[nodeType].mInputs.size());
     mInputs.insert(mInputs.begin() + nodeIndex, Input());
 }
 

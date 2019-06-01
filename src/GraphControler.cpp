@@ -528,6 +528,8 @@ void GraphControler::ApplyDirtyList()
             case Dirty::Time:
                 break;
             case Dirty::Sampler:
+                mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
+                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
                 break;
             case Dirty::AddedNode:
                 mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));

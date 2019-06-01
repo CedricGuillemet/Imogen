@@ -131,6 +131,7 @@ struct InputSampler
                 mFilterMag == other.mFilterMag);
     }
 };
+typedef std::vector<InputSampler> InputSamplers;
 
 struct MaterialNode
 {

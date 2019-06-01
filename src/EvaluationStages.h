@@ -55,7 +55,7 @@ struct Dirty
         Sampler = 1 << 5,
         AddedNode = 1 << 6,
         DeletedNode = 1 << 7,
-        StartEndTime = 1 << 8
+        StartEndTime = 1 << 8,
     };
 };
 
@@ -142,14 +142,9 @@ struct EvaluationStages
     size_t GetEvaluationImageDuration(size_t target);
 
     void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
+    void SetSamplers(size_t nodeIndex, InputSamplers samplers) { mInputSamplers[nodeIndex] = samplers; }
 
-
-    Mat4x4* GetParameterViewMatrix(size_t index)
-    {
-        if (index >= mStages.size())
-            return NULL;
-        return &mStages[index].mParameterViewMatrix;
-    }
+    Mat4x4* GetParameterViewMatrix(size_t nodeIndex) { return &mStages[nodeIndex].mParameterViewMatrix; }
     const Parameters& GetParameters(size_t nodeIndex) const { return mParameters[nodeIndex]; }
     void SetParameters(size_t nodeIndex, const Parameters& parameters) { mParameters[nodeIndex] = parameters; }
     uint16_t GetNodeType(size_t nodeIndex) const { return mStages[nodeIndex].mType; }
@@ -168,7 +163,7 @@ struct EvaluationStages
     const std::vector<size_t>& GetForwardEvaluationOrder() const { return mOrderList; }
     std::vector<EvaluationStage> mStages;
     std::vector<Input> mInputs; // merged with multiplexed
-    std::vector<InputSampler> mInputSamplers;
+    std::vector<InputSamplers> mInputSamplers;
     std::vector<Parameters> mParameters;
 
     std::vector<AnimTrack> mAnimTrack;

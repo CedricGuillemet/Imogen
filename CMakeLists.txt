@@ -69,7 +69,7 @@ set(TCC_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc)
 else()
 
 PKG_CHECK_MODULES(PYTHON37 REQUIRED python3)
-PKG_CHECK_MODULES(SDL2 REQUIRED sdl2)
+PKG_CHECK_MODULES(SDL2_LIBRARIES REQUIRED sdl2)
 PKG_CHECK_MODULES(FFMPEG REQUIRED libavcodec libavdevice libavfilter libavformat libavutil libswscale libswresample libpostproc)
 
 #TODO: TCC
@@ -117,7 +117,7 @@ IF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
     ENDFOREACH(flag_var)
 ENDIF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 
-set(SDL2_LIBS "SDL2" "SDL2main")
+set(SDL2_LIBRARIES "SDL2" "SDL2main")
 
 #######################################################################################
 

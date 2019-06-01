@@ -54,7 +54,7 @@ struct GraphControler : public GraphEditorDelegate
     virtual void EndTransaction() { mModel.EndTransaction(); }
 
     virtual void DelRug(size_t rugIndex) { mModel.DelRug(rugIndex); }
-    virtual void SelectNode(size_t nodeIndex, bool selected = true) { mModel.SelectNode(nodeIndex); }
+    virtual void SelectNode(size_t nodeIndex, bool selected) { mModel.SelectNode(nodeIndex, selected); }
     virtual void MoveSelectedNodes(const ImVec2 delta) { mModel.MoveSelectedNodes(delta); }
 
     virtual void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex) { mModel.AddLink(inputNodeIndex, inputSlotIndex, outputNodeIndex, outputSlotIndex); }

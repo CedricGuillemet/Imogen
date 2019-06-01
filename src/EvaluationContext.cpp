@@ -382,7 +382,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
 
             if (tgt)
             {
-                const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[inputIndex];
+                const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[nodeIndex][inputIndex];
                 if (tgt->mImage->mNumFaces == 1)
                 {
                     glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);

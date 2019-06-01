@@ -399,6 +399,7 @@ void GraphModel::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& 
                               })
                         : nullptr;
     mNodes[nodeIndex].mSamplers = samplers;
+    SetDirty(nodeIndex, Dirty::Sampler);
 }
 
 bool GraphModel::NodeHasUI(size_t nodeIndex) const

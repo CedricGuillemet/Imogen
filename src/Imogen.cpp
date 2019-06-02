@@ -739,6 +739,7 @@ void Imogen::UpdateNewlySelectedGraph()
         model.SetIOPins(material.mPinnedIO);
         model.SetMultiplexInputs(material.mMultiplexInputs);
         model.EndTransaction();
+        mNodeGraphControler->ApplyDirtyList();
         GraphEditorUpdateScrolling(mNodeGraphControler);
 
         mCurrentTime = 0;
@@ -748,7 +749,6 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
-        mNodeGraphControler->ApplyDirtyList();
         mNodeGraphControler->mEditingContext.RunAll();
         //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         //mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);

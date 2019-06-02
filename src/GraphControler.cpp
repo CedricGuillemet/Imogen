@@ -536,8 +536,13 @@ void GraphControler::ApplyDirtyList()
             case Dirty::AddedNode:
                 mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));
                 mEditingContext.AddEvaluation(nodeIndex);
-                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
                 evaluationOrderChanged = true;
+                // params
+                mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
+                // samplers
+                mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
+                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
+                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
                 break;
             case Dirty::DeletedNode:
                 evaluationOrderChanged = true;

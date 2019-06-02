@@ -66,7 +66,7 @@ struct Imogen
     Imogen(GraphControler* nodeGraphControler);
     ~Imogen();
 
-    void Init();
+    void Init(bool bDebugWindow);
     void Finish();
 
     void Show(Builder* builder, Library& library, bool capturing);
@@ -112,6 +112,7 @@ protected:
     void ShowNodeGraph();
     void BuildCurrentMaterial(Builder* builder);
     void PlayPause();
+    void ShowDebugWindow();
 
     void ImportMaterial();
     void ExportMaterial();
@@ -135,6 +136,7 @@ protected:
     bool mbShowLog = false;
     bool mbShowParameters = false;
     bool mbShowMouseState = false;
+    bool mbDebugWindow = false;
     int mLibraryViewMode = 1;
 
     float mMainMenuDest = -440.f;

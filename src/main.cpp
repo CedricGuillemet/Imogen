@@ -128,7 +128,7 @@ void RenderImogenFrame()
     renderImogenFrame(true);
 }
 
-int main(int, char**)
+int main(int argc, char** argv)
 {
 #ifdef WIN32
     // locale for sscanf
@@ -252,11 +252,21 @@ int main(int, char**)
     static const char* libraryFilename = "library.dat";
     LoadLib(&library, libraryFilename);
 
+
     NodeGraphControler nodeGraphControler;
     Imogen imogen(&nodeGraphControler);
 
     Builder builder;
-    imogen.Init();
+
+    bool bDebugWindow = false;
+    for (int i = 1;i<argc;i++)
+    {
+        if (!strcmp(argv[i], "-debug"))
+        {
+            bDebugWindow = true;
+        }
+    }
+    imogen.Init(bDebugWindow);
     gDefaultShader.Init();
 
     gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);

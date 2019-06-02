@@ -726,6 +726,11 @@ void Imogen::UpdateNewlySelectedGraph()
                                                rug.mColor,
                                                rug.mComment});
         }
+        material.mPinnedParameters.resize(model.GetNodeCount());
+        material.mPinnedIO.resize(model.GetNodeCount());
+        material.mMultiplexInputs.resize(model.GetNodeCount());
+
+
         model.SetStartEndFrame(material.mFrameMin, material.mFrameMax);
         model.SetAnimTrack(material.mAnimTrack);
         model.SetParameterPins(material.mPinnedParameters);
@@ -1389,8 +1394,9 @@ struct MySequence : public ImSequencer::SequenceInterface
 
 std::vector<ImHotKey::HotKey> mHotkeys;
 
-void Imogen::Init()
+void Imogen::Init(bool bDebugWindow)
 {
+    mbDebugWindow = bDebugWindow;
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
@@ -1962,6 +1968,20 @@ void Imogen::ExportMaterial()
     }
     #endif
 }
+void Imogen::ShowDebugWindow()
+{
+    ImGui::Begin("Debug");
+    if (ImGui::CollapsingHeader("Thumbnails Atlas"))
+    {
+        auto atlases = this->GetNodeGraphControler()->mEditingContext.GetThumbnails().GetAtlasTextures();
+        for (auto& atlas : atlases)
+        {
+            ImGui::Text("Atlas %d", int(&atlas - atlases.data()));
+            ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID, ImVec2(1024, 1024));
+        }
+    }
+    ImGui::End();
+}
 
 ImRect GetNodesDisplayRect(GraphModel* model);
 ImRect GetFinalNodeDisplayRect(GraphModel* model);
@@ -2076,13 +2096,10 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
         ImGui::End();
     }
 
-    ImGui::Begin("Debug");
-    auto atlases = this->GetNodeGraphControler()->mEditingContext.GetThumbnails().GetAtlasTextures();
-    for (auto& atlas : atlases)
+    if (mbDebugWindow)
     {
-        ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID, ImVec2(1024, 1024));
+        ShowDebugWindow();
     }
-    ImGui::End();
 
     ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 

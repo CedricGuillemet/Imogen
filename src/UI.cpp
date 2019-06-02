@@ -23,11 +23,11 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include "imgui.h"
 #include "UI.h"
 #include "Utils.h"
 #include "imgui_internal.h"
-#include <GL/gl3w.h>
 
 static inline ImVec4 operator*(const ImVec4& lhs, const float t)
 {
@@ -226,8 +226,10 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 #endif
     GLint last_array_buffer;
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
+#ifdef GL_VERTEX_ARRAY_BINDING
     GLint last_vertex_array;
     glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+#endif
 #ifdef GL_POLYGON_MODE
     GLint last_polygon_mode[2];
     glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
@@ -280,7 +282,9 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
     glBindSampler(0, last_sampler);
 #endif
     glActiveTexture(last_active_texture);
+#ifdef GL_VERTEX_ARRAY_BINDING
     glBindVertexArray(last_vertex_array);
+#endif
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
     glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);

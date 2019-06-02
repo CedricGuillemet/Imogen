@@ -28,11 +28,9 @@
 #include <vector>
 #include <map>
 #include "Library.h"
-#include "libtcc/libtcc.h"
 #include "Imogen.h"
 #include <string.h>
 #include <stdio.h>
-#include "ffmpegCodec.h"
 #include <memory>
 #include "Utils.h"
 #include "Bitmap.h"
@@ -129,7 +127,9 @@ struct EvaluationStage
     //#ifdef _DEBUG needed for fur rendering
     std::string mTypename;
     //#endif
+#if USE_FFMPEG    
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
+    #endif
     size_t mType;
     unsigned int mRuntimeUniqueId;
     std::vector<unsigned char> mParameters;
@@ -256,8 +256,9 @@ struct EvaluationStages
     void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
 
     // ffmpeg encoders
+    #if USE_FFMPEG
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
-
+#endif
     // Data
     std::vector<AnimTrack> mAnimTrack;
     std::vector<EvaluationStage> mStages;

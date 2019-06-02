@@ -1,11 +1,4 @@
-
-layout (std140) uniform CircleBlock
-{
-	float radius;
-	float t;
-};
-
 vec4 Circle()
 {
-    return vec4(Circle(vUV, radius, t));
+    return vec4(1.0,0.0,1.0,1.0);
 }

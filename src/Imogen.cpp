@@ -23,7 +23,7 @@
 // SOFTWARE.
 //
 
-#include <SDL.h>
+#include "Platform.h"
 #include "imgui.h"
 #include "Imogen.h"
 #include <fstream>
@@ -31,14 +31,12 @@
 #include "EvaluationStages.h"
 #include "NodeGraphControler.h"
 #include "Library.h"
-#include "TaskScheduler.h"
 #include "stb_image.h"
 #include "tinydir.h"
 #include "stb_image.h"
 #include "imgui_stdlib.h"
 #include "ImSequencer.h"
 #include "Evaluators.h"
-#include "nfd.h"
 #include "UI.h"
 #include "imgui_markdown/imgui_markdown.h"
 #include "imHotKey.h"
@@ -46,9 +44,9 @@
 
 Imogen* Imogen::instance = nullptr;
 unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
-
+#if USE_ENKITS
 extern enki::TaskScheduler g_TS;
-
+#endif
 std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
@@ -332,6 +330,7 @@ struct SortedResource
     }
 };
 
+#if USE_ENKITS
 struct PinnedTaskUploadImage : enki::IPinnedTask
 {
     PinnedTaskUploadImage(Image* image, ASyncId identifier, bool isThumbnail, NodeGraphControler* controler)
@@ -467,17 +466,19 @@ struct DecodeImageTaskSet : enki::ITaskSet
     std::vector<uint8_t>* mSrc;
     NodeGraphControler* mNodeGraphControler;
 };
-
+#endif
 void Imogen::DecodeThumbnailAsync(Material* material)
 {
     static unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
     if (!material->mThumbnailTextureId)
     {
         material->mThumbnailTextureId = defaultTextureId;
+        #if USE_ENKITS
         g_TS.AddTaskSetToPipe(
             new DecodeThumbnailTaskSet(&material->mThumbnail,
                                        std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId),
                                        mNodeGraphControler));
+                                       #endif
     }
 }
 
@@ -603,9 +604,11 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
             Image image;
             if (EvaluationAPI::GetEvaluationImage(&nodeGraphControler.mEditingContext, int(i), &image) == EVAL_OK)
             {
+                #if USE_ENKITS
                 g_TS.AddTaskSetToPipe(new EncodeImageTaskSet(image,
                                                              std::make_pair(materialIndex, material.mRuntimeUniqueId),
                                                              std::make_pair(i, dstNode.mRuntimeUniqueId)));
+                                                             #endif
             }
         }
 
@@ -684,8 +687,10 @@ void Imogen::UpdateNewlySelectedGraph()
             if (!node.mImage.empty())
             {
                 mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
+                #if USE_ENKITS
                 g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
                     &node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
+                    #endif
             }
             lastNode.mInputSamplers = node.mInputSamplers;
             mNodeGraphControler->mEvaluationStages.SetEvaluationSampler(i, node.mInputSamplers);
@@ -742,6 +747,7 @@ void Imogen::NewMaterial(const std::string& materialName)
 
 void Imogen::ImportMaterial()
 {
+    #ifdef NFD_OpenDialog
     nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
 
@@ -756,6 +762,7 @@ void Imogen::ImportMaterial()
         }
         free(outPath);
     }
+    #endif
 }
 
 void Imogen::LibraryEdit(Library& library)
@@ -1252,8 +1259,11 @@ struct MySequence : public ImSequencer::SequenceInterface
             mbExpansions[index] = false;
             return;
         }
-        for (auto& item : mbExpansions)
-            item = false;
+        //for (auto& item : mbExpansions)
+        for (auto i = 0;i<mbExpansions.size();i++)
+        {
+            mbExpansions[i] = false;
+        }
         mbExpansions[index] = !mbExpansions[index];
     }
 
@@ -1367,11 +1377,11 @@ void Imogen::Init()
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
-    DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
-    DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
-    DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-    DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+    DiscoverNodes("glsl", "bin/Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+    //DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
+    //DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
+    //DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+    //DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
 
     struct HotKeyFunction
     {
@@ -1460,6 +1470,7 @@ void Imogen::RunDeferedCommands()
         return;
     std::string tmpCommand = mRunCommand;
     mRunCommand = "";
+    #if USE_PYTHON
     try
     {
         pybind11::exec(tmpCommand);
@@ -1468,6 +1479,7 @@ void Imogen::RunDeferedCommands()
     {
         Log(ex.what());
     }
+    #endif
 }
 
 void Imogen::ShowAppMainMenuBar()
@@ -1901,6 +1913,7 @@ void Imogen::ShowNodeGraph()
 
 void Imogen::ExportMaterial()
 {
+    #ifdef NFD_SaveDialog
     nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
 
@@ -1913,6 +1926,7 @@ void Imogen::ExportMaterial()
         Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
         free(outPath);
     }
+    #endif
 }
 
 ImRect GetNodesDisplayRect();

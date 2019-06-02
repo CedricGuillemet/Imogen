@@ -26,7 +26,6 @@
 #include "NodeGraphControler.h"
 #include "EvaluationStages.h"
 #include "Library.h"
-#include "nfd.h"
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "UI.h"
@@ -258,6 +257,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
             ImGui::SameLine();
             if (ImGui::Button("..."))
             {
+                #ifdef NFD_OpenDialog
                 nfdchar_t* outPath = NULL;
                 nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath)
                                                                        : NFD_SaveDialog(NULL, NULL, &outPath);
@@ -268,6 +268,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
                     free(outPath);
                     dirty = true;
                 }
+                #endif
             }
             ImGui::PopID();
             ImGui::SameLine();
@@ -420,7 +421,7 @@ void NodeGraphControler::EditNodeParameters()
     {
         ImGui::PushID(667889 + i);
 
-        dirty |= EditSingleParameter(unsigned int(index), i, paramBuffer, param);
+        dirty |= EditSingleParameter((unsigned int)(index), i, paramBuffer, param);
 
         ImGui::PopID();
         paramBuffer += GetParameterTypeSize(param.mType);

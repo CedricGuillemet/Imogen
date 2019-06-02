@@ -22,17 +22,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-#include <GL/gl3w.h> // Initialize with gl3wInit()
-#include <SDL.h>
+#include "Platform.h"
 #include <vector>
 #include "Utils.h"
 #include "EvaluationStages.h"
 #include "tinydir.h"
-
-#ifdef WIN32
-#include <Windows.h>
-#include <shellapi.h>
-#endif
 
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
@@ -61,27 +55,37 @@ void FullScreenTriangle::Init()
     glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(float) * 2, fsVts, GL_STATIC_DRAW);
 
+#ifdef glGenVertexArrays
     glGenVertexArrays(1, &mGLFullScreenVertexArrayName);
     glBindVertexArray(mGLFullScreenVertexArrayName);
+    #endif
     glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(SemUV0);
+    #ifdef glGenVertexArrays
     glBindVertexArray(0);
+    #endif
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void FullScreenTriangle::Render()
 {
+#ifdef glGenVertexArrays    
     glBindVertexArray(mGLFullScreenVertexArrayName);
+    #endif
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    #ifdef glGenVertexArrays
     glBindVertexArray(0);
+    #endif
 }
 
 void FullScreenTriangle::Finish()
 {
     glDeleteBuffers(1, &mFsVA);
+    #ifdef glGenVertexArrays
     glDeleteVertexArrays(1, &mGLFullScreenVertexArrayName);
+    #endif
 }
 
 unsigned int LoadShader(const std::string& shaderString, const char* fileName)
@@ -91,8 +95,8 @@ unsigned int LoadShader(const std::string& shaderString, const char* fileName)
         return 0;
 
     GLint compiled;
-    const char* shaderTypeStrings[] = {"\n#version 430 core\n#define VERTEX_SHADER\n",
-                                       "\n#version 430 core\n#define FRAGMENT_SHADER\n"};
+    const char* shaderTypeStrings[] = {"\n#version 100\nprecision mediump float;\n#define VERTEX_SHADER\n",
+                                       "\n#version 100\nprecision mediump float;\n#define FRAGMENT_SHADER\n"};
     TextureID shaderTypes[] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER};
     TextureID compiledShader[2];
 
@@ -216,9 +220,10 @@ unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const 
         "outCompute4", "outCompute5", "outCompute6", "outCompute7", 
         "outCompute8", "outCompute9", "outCompute10", "outCompute11", 
         "outCompute12", "outCompute13", "outCompute14" };
+        #ifdef GL_INTERLEAVED_ATTRIBS
     glTransformFeedbackVaryings(
         programHandle, sizeof(varyings) / sizeof(const char*), varyings, GL_INTERLEAVED_ATTRIBS);
-
+#endif
 
     glLinkProgram(programHandle);
 
@@ -501,20 +506,26 @@ void DiscoverFiles(const char* extension, const char* directory, std::vector<std
 
 void IMessageBox(const char* text, const char* title)
 {
+    #ifdef WIN32
     MessageBoxA(NULL, text, title, MB_OK);
+    #endif
 }
 
 void OpenShellURL(const std::string& url)
 {
+    #ifdef WIN32
     ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    #endif
 }
 
 void GetTextureDimension(unsigned int textureId, int* w, int* h)
 {
     int miplevel = 0;
     glBindTexture(GL_TEXTURE_2D, textureId);
+    #ifdef GL_TEXTURE_WIDTH
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, w);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, h);
+    #endif
 }
 
 std::string GetGroup(const std::string& name)
@@ -541,7 +552,7 @@ std::string GetName(const std::string& name)
     return name;
 }
 
-
+/*
 std::string GetBasePath(const char* path)
 {
     std::string res;
@@ -551,3 +562,4 @@ std::string GetBasePath(const char* path)
     res = std::string(drive) + dir;
     return res;
 }
+*/

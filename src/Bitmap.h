@@ -32,11 +32,12 @@
 #include <memory>
 #include <stdlib.h>
 
+#if USE_FFMPEG
 namespace FFMPEGCodec
 {
     class Decoder;
 };
-
+#endif
 struct TextureFormat
 {
     enum Enum
@@ -124,8 +125,9 @@ struct Image
     static void VFlip(Image* image);
     static int Write(const char* filename, Image* image, int format, int quality);
     static int EncodePng(Image* image, std::vector<unsigned char>& pngImage);
+    #if USE_FFMPEG
     static Image DecodeImage(FFMPEGCodec::Decoder* decoder, int frame);
-
+#endif
 protected:
     unsigned char* mBits;
 };

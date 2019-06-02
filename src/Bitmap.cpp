@@ -23,7 +23,7 @@
 // SOFTWARE.
 //
 
-#include <GL/gl3w.h> // Initialize with gl3wInit()
+#include "Platform.h"
 #include <fstream>
 #include "Bitmap.h"
 #include "Utils.h"
@@ -39,11 +39,12 @@
 #include "nanosvgrast.h"
 
 #include "cmft/image.h"
+#if USE_FFMPEG
 #include "ffmpegCodec.h"
-
+#endif
 ImageCache gImageCache;
 DefaultShaders gDefaultShader;
-
+#ifdef GL_BGR
 const unsigned int glInputFormats[] = {
     GL_BGR,
     GL_RGB,
@@ -76,6 +77,41 @@ const unsigned int glInternalFormats[] = {
 
     GL_RGBA, // RGBM
 };
+#else
+const unsigned int glInputFormats[] = {
+    GL_RGB,
+    GL_RGB,
+    GL_RGB,
+    GL_RGB,
+    GL_RGB,
+    GL_RGBA, // RGBE
+
+    GL_RGBA,
+    GL_RGBA,
+    GL_RGBA,
+    GL_RGBA,
+    GL_RGBA,
+
+    GL_RGBA, // RGBM
+};
+const unsigned int glInternalFormats[] = {
+    GL_RGB,
+    GL_RGB,
+    GL_RGB,
+    GL_RGB,
+    GL_RGB,
+    GL_RGBA, // RGBE
+
+    GL_RGBA,
+    GL_RGBA,
+    GL_RGBA,
+    GL_RGBA,
+    GL_RGBA,
+
+    GL_RGBA, // RGBM
+};
+
+#endif
 const unsigned int glCubeFace[] = {
     GL_TEXTURE_CUBE_MAP_POSITIVE_X,
     GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -103,6 +139,7 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
     delete[] imgBits;
 }
 
+#if USE_FFMPEG
 Image Image::DecodeImage(FFMPEGCodec::Decoder* decoder, int frame)
 {
     decoder->ReadFrame(frame);
@@ -131,7 +168,7 @@ Image Image::DecodeImage(FFMPEGCodec::Decoder* decoder, int frame)
     }
     return image;
 }
-
+#endif
 int Image::LoadSVG(const char* filename, Image* image, float dpi)
 {
     NSVGimage* svgImage;
@@ -353,9 +390,9 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 
 void DefaultShaders::Init()
 {
-    std::ifstream prgStr("Stock/ProgressingNode.glsl");
-    std::ifstream cubStr("Stock/DisplayCubemap.glsl");
-    std::ifstream nodeErrStr("Stock/NodeError.glsl");
+    std::ifstream prgStr("bin/Stock/ProgressingNode.glsl");
+    std::ifstream cubStr("bin/Stock/DisplayCubemap.glsl");
+    std::ifstream nodeErrStr("bin/Stock/NodeError.glsl");
 
     mProgressShader =
         prgStr.good()
@@ -496,7 +533,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     // diffuse
     glGenTextures(1, &mGLTexID);
     glBindTexture(GL_TEXTURE_2D, mGLTexID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mGLTexID, 0);
 
@@ -505,13 +542,19 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
         // Z
         glGenTextures(1, &mGLTexDepth);
         glBindTexture(GL_TEXTURE_2D, mGLTexDepth);
+        #ifdef GL_DEPTH_COMPONENT24
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        #else
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        #endif
         TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mGLTexDepth, 0);
     }
 
-    static const GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(sizeof(DrawBuffers) / sizeof(GLenum), DrawBuffers);
+#ifdef glDrawBuffers
+    static const GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(sizeof(drawBuffers) / sizeof(GLenum), drawBuffers);
+#endif
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     CheckFBO();
@@ -555,7 +598,7 @@ void RenderTarget::InitCube(int width, int mipmapCount)
         {
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
                          mip,
-                         GL_RGBA8,
+                         GL_RGBA,
                          width >> mip,
                          width >> mip,
                          0,
@@ -599,14 +642,16 @@ void RenderTarget::CheckFBO()
             Log("[ERROR] Framebuffer incomplete: Color attached images have different internal formats.");
             break;
             */
+            #ifdef GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
         case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
             Log("[ERROR] Framebuffer incomplete: Draw buffer.\n");
             break;
-
+#endif
+#ifdef GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER
         case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
             Log("[ERROR] Framebuffer incomplete: Read buffer.\n");
             break;
-
+#endif
         case GL_FRAMEBUFFER_UNSUPPORTED:
             Log("[ERROR] Unsupported by FBO implementation.\n");
             break;

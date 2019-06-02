@@ -23,14 +23,17 @@
 // SOFTWARE.
 //
 
-#include <SDL.h>
-#include <GL/gl3w.h> // Initialize with gl3wInit()
+#include "Platform.h"
 #include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "NodeGraphControler.h"
 
+#ifdef GL_CLAMP_TO_BORDER
 static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};
+#else
+static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT};
+#endif
 static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
 static const char* sampler2DName[] = {
     "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7"};
@@ -89,6 +92,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
     , mDefaultHeight(defaultHeight)
     , mRuntimeUniqueId(-1)
 {
+    #ifdef GL_UNIFORM_BUFFER
     mFSQuad.Init();
 
     // evaluation statedes
@@ -101,16 +105,20 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
 
     // parameters
     glGenBuffers(1, &mParametersGLSLBuffer);
+    #endif
 }
 
 EvaluationContext::~EvaluationContext()
 {
+    #ifdef USE_FFMPEG
     for (auto& stream : mWriteStreams)
     {
         stream.second->Finish();
         delete stream.second;
     }
+    
     mWriteStreams.clear();
+    #endif
     mFSQuad.Finish();
 
     glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
@@ -187,6 +195,7 @@ static const int tess = 10;
 static unsigned int bladeIA = -1;
 void drawBlades(int indexCount, int instanceCount, int elementCount)
 {
+    #ifdef glVertexAttribDivisor
     // instances
     for (int i = 0; i < elementCount; i++)
         glVertexAttribDivisor(1 + i, 1);
@@ -201,6 +210,7 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+    #endif
 }
 
 void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
@@ -260,6 +270,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                              wrap[inputSampler.mWrapU],
                              wrap[inputSampler.mWrapV],
                              GL_TEXTURE_CUBE_MAP);
+                             #ifdef GL_TEXTURE_MAX_LEVEL
                     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
                     // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
                     if (tgt->mImage->mNumMips > 1)
@@ -267,6 +278,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage->mNumMips - 1);
                         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                     }
+                    #endif
                 }
             }
         }
@@ -292,6 +304,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
                                             size_t index,
                                             EvaluationInfo& evaluationInfo)
 {
+    #ifdef GL_RASTERIZER_DISCARD
     if (bladeIA == -1)
     {
         float bladeVertices[4 * tess];
@@ -409,6 +422,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     {
         glDeleteBuffers(1, &tempBuffer.mBuffer);
     }
+    #endif
 }
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
@@ -438,29 +452,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     }
 
     // parameters
+    #ifdef GL_UNIFORM_BUFFER
     glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
 
     glBufferData(
         GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    /*
-    if (!stage.mParametersBuffer)
-    {
-        glGenBuffers(1, &stage.mParametersBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-
-        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
-    else
-    {
-        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
-    */
+    #endif
     glEnable(GL_BLEND);
     glBlendFunc(blend[0], blend[1]);
 
@@ -511,7 +510,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 evaluationInfo.passNumber = passNumber;
                 evaluationInfo.mipmapNumber = mip;
                 evaluationInfo.mipmapCount = mipmapCount;
-
+#ifdef GL_UNIFORM_BUFFER
                 glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
                 evaluationInfo.mVertexSpace = evaluationStage.mVertexSpace;
                 glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
@@ -520,12 +519,16 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
                 glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-
+#endif
                 BindTextures(evaluationStage, program, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);
+                #ifdef glClearDepthf
+                glClearDepthf(1.f);
+                else
                 glClearDepth(1.f);
+                #endif
                 if (evaluationStage.mbClearBuffer)
                 {
                     glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
@@ -536,6 +539,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                     glEnable(GL_DEPTH_TEST);
                 }
                 //
+                #ifdef glGenVertexArrays
                 if (evaluationStage.mTypename == "FurDisplay")
                 {
                     /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
@@ -575,6 +579,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                     }
                 }
                 else
+                #endif
                 {
                     evaluationStage.mGScene->Draw(this, evaluationInfo);
                 }
@@ -609,6 +614,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
     }
 }
 
+#if USE_PYTHON
 void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
                                        size_t index,
                                        EvaluationInfo& evaluationInfo)
@@ -622,7 +628,7 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
     {
     }
 }
-
+#endif
 
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
@@ -715,12 +721,14 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetKeyboardMouseInfos(mEvaluationInfo, currentStage);
 
+#if USE_LIBTCC
     if (currentStage.gEvaluationMask & EvaluationC)
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
-
+#endif
+#if USE_PYTHON
     if (currentStage.gEvaluationMask & EvaluationPython)
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
-
+#endif
     if (currentStage.gEvaluationMask & EvaluationGLSLCompute)
     {
         EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);
@@ -843,7 +851,7 @@ bool EvaluationContext::RunBackward(size_t nodeIndex)
     AllocRenderTargetsForBaking(nodesToEvaluate);
     return RunNodeList(nodesToEvaluate);
 }
-
+#if USE_FFMPEG
 FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename, int width, int height)
 {
     FFMPEGCodec::Encoder* encoder;
@@ -860,7 +868,7 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
     }
     return encoder;
 }
-
+#endif
 void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool onlyChild)
 {
     mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
@@ -974,7 +982,7 @@ void EvaluationContext::StageSetProgress(size_t target, float progress)
 
 Builder::Builder() : mbRunning(true)
 {
-    mThread = std::thread([&]() { BuildEntries(); });
+    //mThread = std::thread([&]() { BuildEntries(); });
 }
 
 Builder::~Builder()
@@ -983,7 +991,7 @@ Builder::~Builder()
     mThread.join();
 }
 
-void Builder::Add(const char* graphName, EvaluationStages& stages)
+void Builder::Add(const char* graphName, const EvaluationStages& stages)
 {
     mMutex.lock();
     mEntries.push_back({graphName, 0.f, stages});
@@ -1105,7 +1113,9 @@ void Builder::BuildEntries()
             }
             mMutex.unlock();
         }
+        #ifdef Sleep
         Sleep(100);
+        #endif
     }
 }
 
@@ -1131,6 +1141,7 @@ namespace DrawUICallbacks
 
     void DrawUICubemap(EvaluationContext* context, size_t nodeIndex)
     {
+        #ifdef GL_TEXTURE_BASE_LEVEL
         glUseProgram(gDefaultShader.mDisplayCubemapShader);
         int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
         glUniform1i(tgt, 0);
@@ -1139,5 +1150,6 @@ namespace DrawUICallbacks
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
         context->mFSQuad.Render();
+        #endif
     }
 } // namespace DrawUICallbacks

@@ -150,7 +150,7 @@ ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t thumbIndex) const
     const float u = float(indexX) / float(thumbnailsPerSide);
     const float v = float(indexY) / float(thumbnailsPerSide);
     const float suv = 1.f / float(thumbnailsPerSide);
-    return ImRect(ImVec2(u, v), ImVec2(u, v) + ImVec2(suv, suv));
+    return ImRect(ImVec2(u, v + suv), ImVec2(u + suv, v));
 }
 
 void EvaluationThumbnails::GetThumbCoordinates(const Thumb thumb, int* coordinates) const
@@ -163,7 +163,7 @@ void EvaluationThumbnails::GetThumbCoordinates(const Thumb thumb, int* coordinat
     coordinates[0] = int(indexX * ThumbnailSize);
     coordinates[1] = int(indexY * ThumbnailSize);
     coordinates[2] = int(coordinates[0] + ThumbnailSize - 1);
-    coordinates[3] = int(coordinates[1] + ThumbnailSize - 1);
+    coordinates[3] = int(coordinates[1] + ThumbnailSize - 1); 
 }
 
 std::vector<RenderTarget> EvaluationThumbnails::GetAtlasTextures() const
@@ -409,8 +409,12 @@ int EvaluationContext::GetBindedComputeBuffer(size_t nodeIndex) const
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
         const int targetIndex = input.mInputs[inputIndex];
+        if (targetIndex == -1)
+        {
+            continue;
+        }
         const auto& evaluation = mEvaluations[targetIndex];
-        if (targetIndex != -1 && evaluation.mComputeBuffer.mBuffer && evaluation.mbActive)
+        if (evaluation.mComputeBuffer.mBuffer && evaluation.mbActive)
         {
             return targetIndex;
         }

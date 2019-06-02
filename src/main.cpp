@@ -118,7 +118,7 @@ void RenderImogenFrame()
     renderImogenFrame(true);
 }
 
-int main(int, char**)
+int main(int argc, char** argv)
 {
     // locale for sscanf
     setlocale(LC_ALL, "C");
@@ -230,7 +230,15 @@ int main(int, char**)
     LoadLib(&library, libraryFilename);
     TagTime("Library loaded");
 
-    imogen.Init();
+    bool bDebugWindow = false;
+    for (int i = 1;i<argc;i++)
+    {
+        if (!strcmp(argv[i], "-debug"))
+        {
+            bDebugWindow = true;
+        }
+    }
+    imogen.Init(bDebugWindow);
     gDefaultShader.Init();
     TagTime("Imogen Init");
 
@@ -253,10 +261,14 @@ int main(int, char**)
         {
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
+            {
                 done = true;
+            }
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE &&
                 event.window.windowID == SDL_GetWindowID(window))
+            {
                 done = true;
+            }
         }
 
         renderImogenFrame = [&nodeGraphControler, &imogen, &gl_context](bool capturing) {

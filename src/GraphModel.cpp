@@ -201,6 +201,8 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
     
     mNodes.push_back(Node(int(type), position, mStartFrame, mEndFrame));
     InitDefaultParameters(type, mNodes[nodeIndex].mParameters);
+    mNodes.back().mSamplers.resize(gMetaNodes[type].mInputs.size());
+
     AddNodeHelper(int(nodeIndex));
     return nodeIndex;
 }

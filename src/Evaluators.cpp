@@ -154,8 +154,8 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
     });
     m.def("AutoLayout", []() {
-        //NodeGraphUpdateEvaluationOrder(&Imogen::instance->GetNodeGraphControler()->mModel,
-        //                               Imogen::instance->GetNodeGraphControler());
+
+        Imogen::instance->GetNodeGraphControler()->ApplyDirtyList();
         Imogen::instance->GetNodeGraphControler()->mModel.NodeGraphLayout(Imogen::instance->GetNodeGraphControler()->mEvaluationStages.GetForwardEvaluationOrder());
         GraphEditorUpdateScrolling(Imogen::instance->GetNodeGraphControler());
     });

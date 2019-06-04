@@ -673,7 +673,7 @@ void LoadMetaNodes(const std::vector<std::string>& metaNodeFilenames)
 void LoadMetaNodes()
 {
     std::vector<std::string> metaNodeFilenames;
-    DiscoverFiles("json", "bin/Nodes/", metaNodeFilenames);
+    DiscoverFiles("json", "Nodes/", metaNodeFilenames);
     LoadMetaNodes(metaNodeFilenames);
 }
 

@@ -46,8 +46,15 @@ struct LoopData
     NodeGraphControler *nodeGraphControler;
     Builder *builder;
 };
+
+void ImWebConsoleOutput(const char* szText)
+{
+    printf(szText);
+}
+
 int main(int, char**)
 {
+    AddLogOutput(ImWebConsoleOutput);
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
     {
@@ -90,7 +97,7 @@ int main(int, char**)
 
     // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
     // You may manually call LoadIniSettingsFromMemory() to load settings from your own storage.
-    io.IniFilename = NULL;
+    io.IniFilename = "imgui.ini";
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -120,7 +127,7 @@ int main(int, char**)
     stbi_set_flip_vertically_on_load(1);
     stbi_flip_vertically_on_write(1);
     ImGui::StyleColorsDark();
-    static const char* libraryFilename = "bin/library.dat";
+    static const char* libraryFilename = "library.dat";
     LoadLib(&library, libraryFilename);
 
     NodeGraphControler nodeGraphControler;
@@ -156,6 +163,7 @@ LoopData loopdata;
 loopdata.imogen = &imogen;
 loopdata.nodeGraphControler = &nodeGraphControler;
 loopdata.builder = &builder;
+InitFonts();
 
     // This function call won't return, and will engage in an infinite loop, processing events from the browser, and dispatching them.
     emscripten_set_main_loop_arg(main_loop, &loopdata, 0, true);

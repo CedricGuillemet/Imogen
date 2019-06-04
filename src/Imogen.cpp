@@ -1377,7 +1377,7 @@ void Imogen::Init()
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    DiscoverNodes("glsl", "bin/Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+    DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
     //DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
     //DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
     //DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);

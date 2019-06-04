@@ -390,9 +390,9 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 
 void DefaultShaders::Init()
 {
-    std::ifstream prgStr("bin/Stock/ProgressingNode.glsl");
-    std::ifstream cubStr("bin/Stock/DisplayCubemap.glsl");
-    std::ifstream nodeErrStr("bin/Stock/NodeError.glsl");
+    std::ifstream prgStr("Stock/ProgressingNode.glsl");
+    std::ifstream cubStr("Stock/DisplayCubemap.glsl");
+    std::ifstream nodeErrStr("Stock/NodeError.glsl");
 
     mProgressShader =
         prgStr.good()

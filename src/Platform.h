@@ -32,6 +32,10 @@
 #include <SDL.h>
 #include <SDL_opengles2.h>
 
+#define glGenVertexArrays glGenVertexArraysOES
+#define glBindVertexArray glBindVertexArrayOES
+#define glDeleteVertexArrays glDeleteVertexArraysOES
+
 #elif WIN32
 
 #include <SDL.h>

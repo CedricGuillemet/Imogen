@@ -506,7 +506,6 @@ void EvaluationStages::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, boo
 
 void Scene::Mesh::Primitive::Draw() const
 {
-    #ifdef glGenVertexArrays
     unsigned int vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -558,7 +557,6 @@ void Scene::Mesh::Primitive::Draw() const
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     glDeleteVertexArrays(1, &vao);
-    #endif
 }
 void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count)
 {

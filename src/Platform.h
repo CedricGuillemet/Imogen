@@ -25,7 +25,6 @@
 
 #pragma once
 
-
 #ifdef EMSCRIPTEN
 
 #include <emscripten.h>
@@ -57,6 +56,9 @@
 #define USE_GLDEBUG 1
 #define USE_ENKITS 1
 #define USE_LIBTCC 1
+
 #else
+    
 #error unknown platform
+
 #endif

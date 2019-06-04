@@ -180,10 +180,8 @@ void LoopFunction(void *arg)
 
 int main(int, char**)
 {
-    // locale for sscanf
-#ifdef WIN32
-    setlocale(LC_ALL, "C");
-#endif
+    
+
 
     TagTime("App start");
     // log
@@ -286,8 +284,9 @@ int main(int, char**)
     ImGui_ImplOpenGL3_Init(glsl_version);
     TagTime("Imgui Init");
 
-    // opengl debug
+    
 #if USE_GLDEBUG
+    // opengl debug
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback((GLDEBUGPROCARB)openglCallbackFunction, NULL);
     GLuint unusedIds = 0;

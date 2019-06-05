@@ -95,8 +95,10 @@ unsigned int LoadShader(const std::string& shaderString, const char* fileName)
         return 0;
 
     GLint compiled;
-    const char* shaderTypeStrings[] = {"\n#version 100\nprecision mediump float;\n#define VERTEX_SHADER\n",
-                                       "\n#version 100\nprecision mediump float;\n#define FRAGMENT_SHADER\n"};
+    const char* shaderTypeStrings[] = {"#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\nprecision highp samplerCube;\n#define VERTEX_SHADER\n",
+                                       "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\nprecision highp samplerCube;\n#define FRAGMENT_SHADER\n"};
+
+                                       
     TextureID shaderTypes[] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER};
     TextureID compiledShader[2];
 

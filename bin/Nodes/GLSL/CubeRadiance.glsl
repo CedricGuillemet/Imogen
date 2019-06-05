@@ -66,7 +66,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 {
 	vec3 N = R;
 	vec3 V = R;
-	uint numSamples = CubeRadianceParam.sampleCount;
+	uint numSamples = uint(CubeRadianceParam.sampleCount);
 	vec3 color = vec3(0.0);
 	float totalWeight = float(numSamples);
 	float envMapDim = float(textureSize(CubeSampler0, EvaluationParam.mipmapNumber).s);
@@ -75,7 +75,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 		vec3 H = importanceSample_GGX(Xi, roughness, N);
 		vec3 L = 2.0 * dot(V, H) * H - V;
 		
-		color += textureLod(CubeSampler0, L, 0).rgb;// * dotNL;
+		color += textureLod(CubeSampler0, L, 0.).rgb;// * dotNL;
 		/*
 		float dotNL = clamp(dot(N, L), 0.0, 1.0);
 		if(dotNL > 0.0) 

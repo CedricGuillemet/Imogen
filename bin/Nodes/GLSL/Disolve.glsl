@@ -26,8 +26,8 @@ vec4 taylorInvSqrt(vec4 r){
 }
 
 float simplex(vec3 v){
-  const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
-  const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+  vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+  vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
 
   vec3 i  = floor(v + dot(v, C.yyy) );
   vec3 x0 =   v - i + dot(i, C.xxx) ;
@@ -106,7 +106,7 @@ vec3 snoiseVec3( vec3 x ){
 
 vec3 curlNoise(vec3 p)
 {
-    const float e = .1;
+  float e = .1;
   vec3 dx = vec3( e   , 0.0 , 0.0 );
   vec3 dy = vec3( 0.0 , e   , 0.0 );
   vec3 dz = vec3( 0.0 , 0.0 , e   );
@@ -135,7 +135,7 @@ vec4 Disolve()
     
     // noise seed
     vec3 v = vec3(uv, float(EvaluationParam.passNumber)*0.05);
-    const float disp_freq = Frequency; // param
+    float disp_freq = Frequency; // param
     v.xy *= disp_freq;
     // get first some density variation
     vec4 disp = 0.5*mix(vec4(0), pow(0.5+0.5*vec4(fbm3(-2.0*v+11.2)), vec4(2)), 0.05);

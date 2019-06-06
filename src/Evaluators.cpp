@@ -508,7 +508,6 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
 
         unsigned int program = LoadShader(shaderText, filename.c_str());
-#ifdef glGetUniformBlockIndex
         int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 1);
@@ -516,7 +515,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
-            #endif
+
         shader.mProgram = program;
         if (shader.mType != -1)
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
@@ -548,7 +547,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         {
             program = LoadShaderTransformFeedback(shader.mText, filename.c_str());
         }
-#ifdef glGetUniformBlockIndex
+
         int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 1);
@@ -556,7 +555,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
-            #endif
+
         shader.mProgram = program;
         if (shader.mType != -1)
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
@@ -990,7 +989,7 @@ namespace EvaluationAPI
                 }
             }
         }
-        #endif
+#endif
         return EVAL_OK;
     }
 

@@ -55,37 +55,28 @@ void FullScreenTriangle::Init()
     glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(float) * 2, fsVts, GL_STATIC_DRAW);
 
-#ifdef glGenVertexArrays
+
     glGenVertexArrays(1, &mGLFullScreenVertexArrayName);
     glBindVertexArray(mGLFullScreenVertexArrayName);
-    #endif
     glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(SemUV0);
-    #ifdef glGenVertexArrays
     glBindVertexArray(0);
-    #endif
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void FullScreenTriangle::Render()
 {
-#ifdef glGenVertexArrays    
     glBindVertexArray(mGLFullScreenVertexArrayName);
-    #endif
     glDrawArrays(GL_TRIANGLES, 0, 3);
-    #ifdef glGenVertexArrays
     glBindVertexArray(0);
-    #endif
 }
 
 void FullScreenTriangle::Finish()
 {
     glDeleteBuffers(1, &mFsVA);
-    #ifdef glGenVertexArrays
     glDeleteVertexArrays(1, &mGLFullScreenVertexArrayName);
-    #endif
 }
 
 unsigned int LoadShader(const std::string& shaderString, const char* fileName)
@@ -222,10 +213,9 @@ unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const 
         "outCompute4", "outCompute5", "outCompute6", "outCompute7", 
         "outCompute8", "outCompute9", "outCompute10", "outCompute11", 
         "outCompute12", "outCompute13", "outCompute14" };
-        #ifdef GL_INTERLEAVED_ATTRIBS
+
     glTransformFeedbackVaryings(
         programHandle, sizeof(varyings) / sizeof(const char*), varyings, GL_INTERLEAVED_ATTRIBS);
-#endif
 
     glLinkProgram(programHandle);
 

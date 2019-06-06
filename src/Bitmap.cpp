@@ -533,7 +533,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     // diffuse
     glGenTextures(1, &mGLTexID);
     glBindTexture(GL_TEXTURE_2D, mGLTexID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mGLTexID, 0);
 
@@ -542,19 +542,14 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
         // Z
         glGenTextures(1, &mGLTexDepth);
         glBindTexture(GL_TEXTURE_2D, mGLTexDepth);
-        #ifdef GL_DEPTH_COMPONENT24
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        #else
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        #endif
         TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mGLTexDepth, 0);
     }
 
-#ifdef glDrawBuffers
     static const GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
     glDrawBuffers(sizeof(drawBuffers) / sizeof(GLenum), drawBuffers);
-#endif
+
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     CheckFBO();
@@ -642,7 +637,7 @@ void RenderTarget::CheckFBO()
             Log("[ERROR] Framebuffer incomplete: Color attached images have different internal formats.");
             break;
             */
-            #ifdef GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
+#ifdef GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
         case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
             Log("[ERROR] Framebuffer incomplete: Draw buffer.\n");
             break;

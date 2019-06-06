@@ -591,13 +591,11 @@ void Scene::Draw(EvaluationContext *context, EvaluationInfo& evaluationInfo) con
         int index = mMeshIndex[i];
         if (index == -1)
             continue;
-#ifdef GL_UNIFORM_BUFFER
         glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
         memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
         FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
-#endif
         mMeshes[index].Draw();
     }
 }

@@ -29,11 +29,7 @@
 
 #include <emscripten.h>
 #include <SDL.h>
-#include <SDL_opengles2.h>
-
-#define glGenVertexArrays glGenVertexArraysOES
-#define glBindVertexArray glBindVertexArrayOES
-#define glDeleteVertexArrays glDeleteVertexArraysOES
+#include <GLES3/gl3.h>
 
 #elif WIN32
 

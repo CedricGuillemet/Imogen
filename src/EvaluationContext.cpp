@@ -514,11 +514,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);
-                #ifdef glClearDepthf
+#ifdef __EMSCRIPTEN__
                 glClearDepthf(1.f);
-                else
+#else
                 glClearDepth(1.f);
-                #endif
+#endif
                 if (evaluationStage.mbClearBuffer)
                 {
                     glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
@@ -1104,9 +1104,9 @@ void Builder::BuildEntries()
             }
             mMutex.unlock();
         }
-        #ifdef Sleep
+#ifdef Sleep
         Sleep(100);
-        #endif
+#endif
     }
 }
 

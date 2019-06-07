@@ -141,7 +141,7 @@ void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<
 #if USE_FFMPEG
     if (stage.mDecoder)
         stage.mDecoder = NULL;
-        #endif
+#endif
 }
 
 void EvaluationStages::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)

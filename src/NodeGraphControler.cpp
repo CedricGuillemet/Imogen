@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include "NodeGraphControler.h"
 #include "EvaluationStages.h"
 #include "Library.h"

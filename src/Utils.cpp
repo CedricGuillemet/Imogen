@@ -22,12 +22,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+#include "Platform.h"
 #include "Platform.h"
 #include <vector>
 #include "Utils.h"
 #include "EvaluationStages.h"
 #include "tinydir.h"
-
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {

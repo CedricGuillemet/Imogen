@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include <algorithm>
 #include <iostream>
 #include <fstream>

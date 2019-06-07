@@ -129,7 +129,7 @@ struct EvaluationStage
     //#endif
 #if USE_FFMPEG    
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
-    #endif
+#endif
     size_t mType;
     unsigned int mRuntimeUniqueId;
     std::vector<unsigned char> mParameters;

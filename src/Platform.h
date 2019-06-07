@@ -31,6 +31,36 @@
 #include <SDL.h>
 #include <GLES3/gl3.h>
 
+typedef int TaskSetPartition;
+struct PinnedTask
+{
+    PinnedTask(int) {}
+    virtual void Execute() = 0;
+};
+
+struct TaskSet
+{
+    virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum) = 0;
+};
+
+struct TaskScheduler
+{
+    void Initialize() {}
+    void WaitforAllAndShutdown() {}
+    void RunPinnedTasks() {}
+
+    void AddPinnedTask(PinnedTask *task)
+    {
+        task->Execute();
+    }
+    void WaitforTask(PinnedTask *task) { }
+    void AddTaskSetToPipe(TaskSet* taskSet)
+    {
+        taskSet->ExecuteRange(0, 0);
+    }
+};
+
+
 #elif WIN32
 
 #include <SDL.h>
@@ -50,8 +80,12 @@
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
 #define USE_GLDEBUG 1
-#define USE_ENKITS 1
 #define USE_LIBTCC 1
+
+typedef enki::IPinnedTask PinnedTask;
+typedef enki::ITaskSet TaskSet;
+typedef enki::TaskSetPartition TaskSetPartition;
+typedef enki::TaskScheduler TaskScheduler;
 
 #else
     

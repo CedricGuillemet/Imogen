@@ -44,9 +44,9 @@
 
 Imogen* Imogen::instance = nullptr;
 unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
-#if USE_ENKITS
-extern enki::TaskScheduler g_TS;
-#endif
+
+extern TaskScheduler g_TS;
+
 std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
@@ -330,11 +330,10 @@ struct SortedResource
     }
 };
 
-#if USE_ENKITS
-struct PinnedTaskUploadImage : enki::IPinnedTask
+struct PinnedTaskUploadImage : PinnedTask
 {
     PinnedTaskUploadImage(Image* image, ASyncId identifier, bool isThumbnail, NodeGraphControler* controler)
-        : enki::IPinnedTask(0) // set pinned thread to 0
+        : PinnedTask(0) // set pinned thread to 0
         , mImage(image)
         , mIdentifier(identifier)
         , mbIsThumbnail(isThumbnail)
@@ -370,13 +369,13 @@ struct PinnedTaskUploadImage : enki::IPinnedTask
     bool mbIsThumbnail;
 };
 
-struct DecodeThumbnailTaskSet : enki::ITaskSet
+struct DecodeThumbnailTaskSet : TaskSet
 {
     DecodeThumbnailTaskSet(std::vector<uint8_t>* src, ASyncId identifier, NodeGraphControler* nodeGraphControler)
-        : enki::ITaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
+        : TaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
     {
     }
-    virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+    virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
         Image image;
         int components;
@@ -401,13 +400,13 @@ struct DecodeThumbnailTaskSet : enki::ITaskSet
     NodeGraphControler* mNodeGraphControler;
 };
 
-struct EncodeImageTaskSet : enki::ITaskSet
+struct EncodeImageTaskSet : TaskSet
 {
     EncodeImageTaskSet(Image image, ASyncId materialIdentifier, ASyncId nodeIdentifier)
-        : enki::ITaskSet(), mMaterialIdentifier(materialIdentifier), mNodeIdentifier(nodeIdentifier), mImage(image)
+        : TaskSet(), mMaterialIdentifier(materialIdentifier), mNodeIdentifier(nodeIdentifier), mImage(image)
     {
     }
-    virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+    virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
         int outlen;
         int components = 4;
@@ -437,13 +436,13 @@ struct EncodeImageTaskSet : enki::ITaskSet
     Image mImage;
 };
 
-struct DecodeImageTaskSet : enki::ITaskSet
+struct DecodeImageTaskSet : TaskSet
 {
     DecodeImageTaskSet(std::vector<uint8_t>* src, ASyncId identifier, NodeGraphControler* nodeGraphControler)
-        : enki::ITaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
+        : TaskSet(), mIdentifier(identifier), mSrc(src), mNodeGraphControler(nodeGraphControler)
     {
     }
-    virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+    virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
         Image image;
         int components;
@@ -466,19 +465,17 @@ struct DecodeImageTaskSet : enki::ITaskSet
     std::vector<uint8_t>* mSrc;
     NodeGraphControler* mNodeGraphControler;
 };
-#endif
+
 void Imogen::DecodeThumbnailAsync(Material* material)
 {
     static unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
     if (!material->mThumbnailTextureId)
     {
         material->mThumbnailTextureId = defaultTextureId;
-        #if USE_ENKITS
         g_TS.AddTaskSetToPipe(
             new DecodeThumbnailTaskSet(&material->mThumbnail,
                                        std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId),
                                        mNodeGraphControler));
-                                       #endif
     }
 }
 
@@ -604,11 +601,9 @@ void ValidateMaterial(Library& library, NodeGraphControler& nodeGraphControler, 
             Image image;
             if (EvaluationAPI::GetEvaluationImage(&nodeGraphControler.mEditingContext, int(i), &image) == EVAL_OK)
             {
-                #if USE_ENKITS
                 g_TS.AddTaskSetToPipe(new EncodeImageTaskSet(image,
                                                              std::make_pair(materialIndex, material.mRuntimeUniqueId),
                                                              std::make_pair(i, dstNode.mRuntimeUniqueId)));
-                                                             #endif
             }
         }
 
@@ -687,10 +682,8 @@ void Imogen::UpdateNewlySelectedGraph()
             if (!node.mImage.empty())
             {
                 mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
-                #if USE_ENKITS
                 g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
                     &node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
-                    #endif
             }
             lastNode.mInputSamplers = node.mInputSamplers;
             mNodeGraphControler->mEvaluationStages.SetEvaluationSampler(i, node.mInputSamplers);

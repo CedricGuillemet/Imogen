@@ -46,9 +46,8 @@ void main_loop(void*);
 
 Library library;
 UndoRedoHandler gUndoRedoHandler;
-#if USE_ENKITS
-enki::TaskScheduler g_TS;
-#endif
+
+TaskScheduler g_TS;
 
 #if USE_GLDEBUG
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
@@ -233,9 +232,7 @@ int main(int, char**)
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, &unusedIds, true);
 #endif
 
-#if USE_ENKITS
     g_TS.Initialize();
-#endif
 
 #if USE_PYTHON    
     Evaluators::InitPython();
@@ -282,9 +279,8 @@ int main(int, char**)
     }
     imogen.ValidateCurrentMaterial(library);
 
-#if USE_ENKITS
     g_TS.WaitforAllAndShutdown();
-#endif
+
     // save lib after all TS thread done in case a job adds something to the library (ie, thumbnail, paint 2D/3D)
     SaveLib(&library, libraryFilename);
 
@@ -354,9 +350,7 @@ void main_loop(void* arg)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDisable(GL_DEPTH_TEST);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-#if USE_ENKITS
         g_TS.RunPinnedTasks();
-#endif
     };
 
     renderImogenFrame(false);

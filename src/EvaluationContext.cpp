@@ -87,7 +87,11 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
                                      int defaultWidth,
                                      int defaultHeight)
     : mEvaluationStages(evaluation)
+#ifdef __EMSCRIPTEN
+    , mbSynchronousEvaluation(true)
+#else
     , mbSynchronousEvaluation(synchronousEvaluation)
+#endif
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
     , mRuntimeUniqueId(-1)

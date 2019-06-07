@@ -42,9 +42,8 @@
 #include "NodeGraphControler.h"
 
 Evaluators gEvaluators;
-#if USE_ENKITS
-extern enki::TaskScheduler g_TS;
-#endif
+
+extern TaskScheduler g_TS;
 
 struct EValuationFunction
 {
@@ -1188,15 +1187,15 @@ namespace EvaluationAPI
     }
 
     typedef int (*jobFunction)(void*);
-#if USE_ENKITS
-    struct CFunctionTaskSet : enki::ITaskSet
+
+    struct CFunctionTaskSet : TaskSet
     {
         CFunctionTaskSet(jobFunction function, void* ptr, unsigned int size)
-            : enki::ITaskSet(), mFunction(function), mBuffer(malloc(size))
+            : TaskSet(), mFunction(function), mBuffer(malloc(size))
         {
             memcpy(mBuffer, ptr, size);
         }
-        virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+        virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
         {
             mFunction(mBuffer);
             free(mBuffer);
@@ -1206,10 +1205,10 @@ namespace EvaluationAPI
         void* mBuffer;
     };
 
-    struct CFunctionMainTask : enki::IPinnedTask
+    struct CFunctionMainTask : PinnedTask
     {
         CFunctionMainTask(jobFunction function, void* ptr, unsigned int size)
-            : enki::IPinnedTask(0) // set pinned thread to 0
+            : PinnedTask(0) // set pinned thread to 0
             , mFunction(function)
             , mBuffer(malloc(size))
         {
@@ -1224,7 +1223,7 @@ namespace EvaluationAPI
         jobFunction mFunction;
         void* mBuffer;
     };
-#endif
+
     int Job(EvaluationContext* evaluationContext, int (*jobFunction)(void*), void* ptr, unsigned int size)
     {
         if (evaluationContext->IsSynchronous())
@@ -1233,9 +1232,7 @@ namespace EvaluationAPI
         }
         else
         {
-            #if USE_ENKITS
             g_TS.AddTaskSetToPipe(new CFunctionTaskSet(jobFunction, ptr, size));
-            #endif
         }
         return EVAL_OK;
     }
@@ -1248,9 +1245,7 @@ namespace EvaluationAPI
         }
         else
         {
-            #if USE_ENKITS
             g_TS.AddPinnedTask(new CFunctionMainTask(jobMainFunction, ptr, size));
-            #endif
         }
         return EVAL_OK;
     }

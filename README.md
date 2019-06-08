@@ -1,15 +1,23 @@
 # Imogen
 GPU/CPU Texture Generator
 
-GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.
+GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code. This is an hybrid project that can run natively or on the web (thanks to emscripten).
 Basically, add GPU and CPU nodes in a graph to manipulate and generate images.
+A web build is available here : http://skaven.fr/imogen/
+![Image of Imogen 0.13 Web Edition](https://i.imgur.com/ahkqR7v.png)
 Currently nodes can be written in GLSL or C or Python.
 
 
 ![Image of Imogen 0.9](https://i.imgur.com/sQfO5Br.png)
 ![Image of Imogen 0.9](https://i.imgur.com/jQbx2Yu.png)
 
-Use CMake and VisualStudio to build it. Only Windows system supported for now.
+Use CMake and VisualStudio to build it. Windows and web builds are available.
+
+Web Edition limitations:
+- no threaded jobs
+- no C/Python nodes
+- no Python plugins
+- no file load/save
 
 Features:
 - Node based texture editing

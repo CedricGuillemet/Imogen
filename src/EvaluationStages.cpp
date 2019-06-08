@@ -23,13 +23,14 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include "EvaluationStages.h"
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include <vector>
 #include <algorithm>
 #include <map>
-#include <GL/gl3w.h>
+
 
 EvaluationStages::EvaluationStages() : mFrameMin(0), mFrameMax(1)
 {
@@ -41,7 +42,9 @@ void EvaluationStages::AddSingleEvaluation(size_t nodeType)
     //#ifdef _DEBUG needed for fur
     evaluation.mTypename = gMetaNodes[nodeType].mName;
     //#endif
+    #if USE_FFMPEG
     evaluation.mDecoder = NULL;
+    #endif
     evaluation.mUseCountByOthers = 0;
     evaluation.mType = nodeType;
     evaluation.mBlendingSrc = ONE;
@@ -135,9 +138,10 @@ void EvaluationStages::SetEvaluationParameters(size_t target, const std::vector<
 {
     EvaluationStage& stage = mStages[target];
     stage.mParameters = parameters;
-
+#if USE_FFMPEG
     if (stage.mDecoder)
         stage.mDecoder = NULL;
+#endif
 }
 
 void EvaluationStages::SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers)
@@ -196,6 +200,7 @@ void EvaluationStages::SetKeyboardMouse(
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {
+    #if USE_FFMPEG
     auto& stage = mStages[target];
     if (!stage.mDecoder)
         return 1;
@@ -204,6 +209,9 @@ size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
         int a = 1;
     }
     return stage.mDecoder->mFrameCount;
+    #else
+    return 1;
+    #endif
 }
 
 void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
@@ -213,6 +221,7 @@ void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
 {
     auto& stage = mStages[target];
     int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
+    #if USE_FFMPEG
     if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
     {
         stage.mLocalTime = newLocalTime;
@@ -221,11 +230,12 @@ void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
         Image::Free(&image);
     }
     else
+    #endif
     {
         stage.mLocalTime = newLocalTime;
     }
 }
-
+#if USE_FFMPEG
 FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
 {
     for (auto& evaluation : mStages)
@@ -237,7 +247,7 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
     decoder->Open(filename);
     return decoder;
 }
-
+#endif
 Camera* EvaluationStages::GetCameraParameter(size_t index)
 {
     if (index >= mStages.size())
@@ -306,11 +316,12 @@ void EvaluationStages::InitDefaultParameters(EvaluationStage& stage)
     }
 }
 
+#if USE_FFMPEG
 Image EvaluationStage::DecodeImage()
 {
     return Image::DecodeImage(mDecoder.get(), mLocalTime);
 }
-
+#endif
 void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame)
 {
     bool animatedNodes = false;
@@ -580,13 +591,11 @@ void Scene::Draw(EvaluationContext *context, EvaluationInfo& evaluationInfo) con
         int index = mMeshIndex[i];
         if (index == -1)
             continue;
-
         glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
         memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
         FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
         mMeshes[index].Draw();
     }
 }

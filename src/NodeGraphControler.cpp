@@ -23,10 +23,10 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include "NodeGraphControler.h"
 #include "EvaluationStages.h"
 #include "Library.h"
-#include "nfd.h"
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "UI.h"
@@ -258,6 +258,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
             ImGui::SameLine();
             if (ImGui::Button("..."))
             {
+                #ifdef NFD_OpenDialog
                 nfdchar_t* outPath = NULL;
                 nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath)
                                                                        : NFD_SaveDialog(NULL, NULL, &outPath);
@@ -268,6 +269,7 @@ bool NodeGraphControler::EditSingleParameter(unsigned int nodeIndex,
                     free(outPath);
                     dirty = true;
                 }
+                #endif
             }
             ImGui::PopID();
             ImGui::SameLine();
@@ -420,7 +422,7 @@ void NodeGraphControler::EditNodeParameters()
     {
         ImGui::PushID(667889 + i);
 
-        dirty |= EditSingleParameter(unsigned int(index), i, paramBuffer, param);
+        dirty |= EditSingleParameter((unsigned int)(index), i, paramBuffer, param);
 
         ImGui::PopID();
         paramBuffer += GetParameterTypeSize(param.mType);
@@ -439,11 +441,11 @@ void NodeGraphControler::EditNodeParameters()
 
 void NodeGraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput)
 {
-    if (IsIOUsed(nodeIndex, slotIndex, forOutput))
+    if (IsIOUsed(int(nodeIndex), int(slotIndex), forOutput))
 	{
             return;
 	}
-        ImGui::PushID(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0));
+        ImGui::PushID(int(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0)));
         bool pinned = IsIOPinned(nodeIndex, slotIndex, forOutput);
     ImGui::Checkbox("", &pinned);
         mEvaluationStages.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
@@ -479,11 +481,11 @@ void NodeGraphControler::NodeEdit()
                             {
                 continue;
 				}
-        ImGui::PushID(1717171 + nodeIndex);
+        ImGui::PushID(int(1717171 + nodeIndex));
         uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
         HandlePinIO(nodeIndex, 0, true);
         ImGui::SameLine();
-        Imogen::RenderPreviewNode(nodeIndex, *this);
+        Imogen::RenderPreviewNode(int(nodeIndex), *this);
         ImGui::PopID();
 		}
         PinnedEdit();
@@ -842,13 +844,13 @@ void NodeGraphControler::SetParameter(int nodeIndex,
         return;
     }
     size_t nodeType = mEvaluationStages.mStages[nodeIndex].mType;
-    int parameterIndex = GetParameterIndex(nodeType, parameterName.c_str());
+    int parameterIndex = GetParameterIndex(uint32_t(nodeType), parameterName.c_str());
     if (parameterIndex == -1)
     {
         return;
     }
-    ConTypes parameterType = GetParameterType(nodeType, parameterIndex);
-    size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
+    ConTypes parameterType = GetParameterType(uint32_t(nodeType), parameterIndex);
+    size_t paramOffset = GetParameterOffset(uint32_t(nodeType), parameterIndex);
     ParseStringToParameter(parameterValue, parameterType, &mEvaluationStages.mStages[nodeIndex].mParameters[paramOffset]);
     mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
 }

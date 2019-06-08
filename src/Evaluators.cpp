@@ -22,14 +22,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-#include <SDL.h>
-#include <GL/gl3w.h> // Initialize with gl3wInit()
+#include "Platform.h"
 #include "Evaluators.h"
 #include "EvaluationStages.h"
-#include "nfd.h"
 #include "Bitmap.h"
 #include "EvaluationContext.h"
-#include "TaskScheduler.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -39,13 +36,14 @@
 #include "ProgressiveRenderer.h"
 #include "GPUBVH.h"
 #include "Camera.h"
+#include <fstream>
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "NodeGraphControler.h"
 
 Evaluators gEvaluators;
-extern enki::TaskScheduler g_TS;
 
+extern TaskScheduler g_TS;
 
 struct EValuationFunction
 {
@@ -77,11 +75,11 @@ static const EValuationFunction evaluationFunctions[] = {
     {"SetProcessing", (void*)EvaluationAPI::SetProcessing},
     {"Job", (void*)EvaluationAPI::Job},
     {"JobMain", (void*)EvaluationAPI::JobMain},
-    {"memmove", memmove},
-    {"strcpy", strcpy},
-    {"strlen", strlen},
-    {"fabsf", fabsf},
-    {"strcmp", strcmp},
+    {"memmove", (void*)memmove},
+    {"strcpy", (void*)strcpy},
+    {"strlen", (void*)strlen},
+    {"fabsf", (void*)fabsf},
+    {"strcmp", (void*)strcmp},
     {"LoadSVG", (void*)Image::LoadSVG},
     {"LoadScene", (void*)EvaluationAPI::LoadScene},
     {"SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
@@ -107,6 +105,7 @@ void LogPython(const std::string& str)
     Log(str.c_str());
 }
 
+#if USE_PYTHON
 PYBIND11_MAKE_OPAQUE(Image);
 
 struct PyGraph
@@ -233,9 +232,12 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return d;
     });
     graph.def("Build", [](PyGraph& pyGraph) {
-        extern Builder* builder;
-        Material* material = pyGraph.mGraph;
-        builder->Add(material);
+        extern Builder* gBuilder;
+        if (gBuilder)
+        {
+            Material* material = pyGraph.mGraph;
+            gBuilder->Add(material);
+        }
     });
     auto node = pybind11::class_<PyNode>(m, "Node");
     node.def("GetType", [](PyNode& node) {
@@ -459,6 +461,8 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     });
     */
 }
+#endif
+
 std::string Evaluators::GetEvaluator(const std::string& filename)
 {
     return mEvaluatorScripts[filename].mText;
@@ -506,7 +510,6 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
 
         unsigned int program = LoadShader(shaderText, filename.c_str());
-
         int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 1);
@@ -514,6 +517,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
+
         shader.mProgram = program;
         if (shader.mType != -1)
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
@@ -553,11 +557,13 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
+
         shader.mProgram = program;
         if (shader.mType != -1)
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
     }
     TagTime("GLSL compute init");
+    #if USE_LIBTCC
     // C
     for (auto& file : evaluatorfilenames)
     {
@@ -626,7 +632,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
     }
     TagTime("C init");
-
+    #endif
+#if USE_PYTHON
     for (auto& file : evaluatorfilenames)
     {
         if (file.mEvaluatorType != EVALUATOR_PYTHON)
@@ -647,6 +654,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
     }
 
     TagTime("Python init");
+    #endif
 }
 
 void Evaluators::ClearEvaluators()
@@ -690,6 +698,7 @@ int Evaluators::GetMask(size_t nodeType)
         mEvaluatorPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
         mEvaluatorPerNodeType[nodeType].mMem = iter->second.mMem;
     }
+    #if USE_PYTHON
     iter = mEvaluatorScripts.find(nodeName + ".py");
     if (iter != mEvaluatorScripts.end())
     {
@@ -697,9 +706,11 @@ int Evaluators::GetMask(size_t nodeType)
         iter->second.mType = int(nodeType);
         mEvaluatorPerNodeType[nodeType].mPyModule = iter->second.mPyModule;
     }
+    #endif
     return mask;
 }
 
+#if USE_PYTHON
 void Evaluators::InitPythonModules()
 {
     mImogenModule = pybind11::module::import("Imogen");
@@ -731,9 +742,10 @@ void Evaluators::InitPython()
         Log("InitPython Exception : %s\n", e.what());
     }
 }
-
+#endif
 void Evaluators::ReloadPlugins()
 {
+    #if USE_PYTHON
     try
     {
         mRegisteredPlugins.clear();
@@ -746,13 +758,14 @@ void Evaluators::ReloadPlugins()
     {
         Log("Error at reloading Python modules. Exception : %s\n", e.what());
     }
+    #endif
 }
-
+#if USE_PYTHON
 void Evaluator::RunPython() const
 {
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
 }
-
+#endif
 namespace EvaluationAPI
 {
     int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, Image* image, int cubeFace)
@@ -955,7 +968,7 @@ namespace EvaluationAPI
         image->mNumMips = img->mNumMips;
         image->mFormat = img->mFormat;
         image->mNumFaces = img->mNumFaces;
-
+#ifdef glGetTexImage
         unsigned char* ptr = image->GetBits();
         if (img->mNumFaces == 1)
         {
@@ -978,6 +991,7 @@ namespace EvaluationAPI
                 }
             }
         }
+#endif
         return EVAL_OK;
     }
 
@@ -1043,8 +1057,10 @@ namespace EvaluationAPI
             else
                 TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
         }
+        #if USE_FFMPEG
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
             stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
+            #endif
         evaluationContext->SetTargetDirty(target, Dirty::Input, true);
         return EVAL_OK;
     }
@@ -1172,14 +1188,14 @@ namespace EvaluationAPI
 
     typedef int (*jobFunction)(void*);
 
-    struct CFunctionTaskSet : enki::ITaskSet
+    struct CFunctionTaskSet : TaskSet
     {
         CFunctionTaskSet(jobFunction function, void* ptr, unsigned int size)
-            : enki::ITaskSet(), mFunction(function), mBuffer(malloc(size))
+            : TaskSet(), mFunction(function), mBuffer(malloc(size))
         {
             memcpy(mBuffer, ptr, size);
         }
-        virtual void ExecuteRange(enki::TaskSetPartition range, uint32_t threadnum)
+        virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
         {
             mFunction(mBuffer);
             free(mBuffer);
@@ -1189,10 +1205,10 @@ namespace EvaluationAPI
         void* mBuffer;
     };
 
-    struct CFunctionMainTask : enki::IPinnedTask
+    struct CFunctionMainTask : PinnedTask
     {
         CFunctionMainTask(jobFunction function, void* ptr, unsigned int size)
-            : enki::IPinnedTask(0) // set pinned thread to 0
+            : PinnedTask(0) // set pinned thread to 0
             , mFunction(function)
             , mBuffer(malloc(size))
         {
@@ -1238,11 +1254,13 @@ namespace EvaluationAPI
     {
         if (Image::Read(filename, image) == EVAL_OK)
             return EVAL_OK;
+            #if USE_FFMPEG
         // try to load movie
         auto decoder = evaluationContext->mEvaluationStages.FindDecoder(filename);
         *image = Image::DecodeImage(decoder, evaluationContext->GetCurrentTime());
         if (!image->mWidth || !image->mHeight)
             return EVAL_ERR;
+            #endif
         return EVAL_OK;
     }
 
@@ -1250,10 +1268,12 @@ namespace EvaluationAPI
     {
         if (format == 7)
         {
+            #if USE_FFMPEG
             FFMPEGCodec::Encoder* encoder =
                 evaluationContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
             std::string fn(filename);
             encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);
+            #endif
             return EVAL_OK;
         }
 
@@ -1299,7 +1319,8 @@ namespace EvaluationAPI
             *scene = iter->second.lock().get();
             return EVAL_OK;
         }
-        cgltf_options options = {0};
+        cgltf_options options;
+        memset(&options, 0, sizeof(options));
         cgltf_data* data = NULL;
         cgltf_result result = cgltf_parse_file(&options, filename, &data);
         if (result != cgltf_result_success)

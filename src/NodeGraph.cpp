@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include <math.h>
@@ -1310,6 +1311,8 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
         DrawGrid(drawList, windowPos, canvasSize, factor);
     }
 
+    bool openContextMenu = false;
+    
     if (!enabled)
         goto nodeGraphExit;
 
@@ -1401,7 +1404,7 @@ void NodeGraph(NodeGraphControlerBase* controler, bool enabled)
     }
 
     // Open context menu
-    bool openContextMenu = false;
+    
     static int contextMenuHoverNode = -1;
     if (nodeOperation == NO_None && regionRect.Contains(io.MousePos) &&
         (ImGui::IsMouseClicked(1) || (ImGui::IsWindowFocused() && ImGui::IsKeyPressedMap(ImGuiKey_Tab))))

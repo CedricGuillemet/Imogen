@@ -104,8 +104,9 @@ struct EvaluationContext
             return NULL;
         return mStageTarget[target];
     }
-
+#if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
+#endif
     bool IsSynchronous() const
     {
         return mbSynchronousEvaluation;
@@ -184,7 +185,9 @@ protected:
 
     std::vector<std::shared_ptr<RenderTarget>> mStageTarget; // 1 per stage
     std::vector<ComputeBuffer> mComputeBuffers;
+#if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
+#endif
     std::vector<DirtyFlag> mDirtyFlags;
     std::vector<int> mbProcessing;
     std::vector<float> mProgress;
@@ -206,7 +209,7 @@ struct Builder
     Builder();
     ~Builder();
 
-    void Add(const char* graphName, EvaluationStages& stages);
+    void Add(const char* graphName, const EvaluationStages& stages);
     void Add(Material* material);
     struct BuildInfo
     {

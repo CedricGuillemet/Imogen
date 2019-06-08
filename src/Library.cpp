@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -31,6 +32,7 @@
 #include "rapidjson/rapidjson.h"
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
+#include <string.h>
 
 int Log(const char* szFormat, ...);
 
@@ -292,7 +294,7 @@ int GetParameterIndex(uint32_t nodeType, const char* parameterName)
     int i = 0;
     for (const MetaParameter& param : currentMeta.mParams)
     {
-        if (!stricmp(param.mName.c_str(), parameterName))
+        if (!strcmp(param.mName.c_str(), parameterName))
             return i;
         i++;
     }
@@ -355,7 +357,7 @@ ConTypes GetParameterType(const char* parameterName)
 {
     for (size_t i = 0; i < Con_Any; i++)
     {
-        if (!_stricmp(parameterNames[i], parameterName))
+        if (!strcmp(parameterNames[i], parameterName))
             return ConTypes(i);
     }
     return Con_Any;
@@ -656,7 +658,8 @@ void LoadMetaNodes(const std::vector<std::string>& metaNodeFilenames)
         if (metaNodes.empty())
         {
             IMessageBox("Errors while parsing nodes definitions.\nCheck logs.", "Node Parsing Error!");
-            exit(-1);
+            //exit(-1);
+            continue;
         }
         gMetaNodes.insert(gMetaNodes.end(), metaNodes.begin(), metaNodes.end());
     }
@@ -834,6 +837,7 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
 {
     // read it back
     std::vector<MetaNode> serNodes;
+
     std::ifstream t(filename);
     if (!t.good())
     {
@@ -842,6 +846,7 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
     }
     std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 
+
     rapidjson::Document doc;
     doc.Parse(str.c_str());
     if (doc.HasParseError())
@@ -849,6 +854,7 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
         Log("Parsing error in %s\n", filename);
         return serNodes;
     }
+
     rapidjson::Value& nodesValue = doc["nodes"];
     for (rapidjson::SizeType i = 0; i < nodesValue.Size(); i++)
     {

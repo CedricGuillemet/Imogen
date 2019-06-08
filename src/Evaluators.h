@@ -28,8 +28,9 @@
 #include <map>
 #include <string>
 #include "Imogen.h"
+#if USE_PYTHON
 #include "pybind11/embed.h"
-
+#endif
 
 enum EvaluationMask
 {
@@ -47,10 +48,11 @@ struct Evaluator
     unsigned int mGLSLProgram;
     int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
     void* mMem;
+#if USE_PYTHON    
     pybind11::module mPyModule;
 
     void RunPython() const;
-
+#endif
 
 #ifdef _DEBUG
     std::string mName;
@@ -74,8 +76,9 @@ struct Evaluators
     }
 
     void InitPythonModules();
+#if USE_PYTHON    
     pybind11::module mImogenModule;
-
+#endif
     static void ReloadPlugins();
     protected:
         struct EvaluatorScript
@@ -91,7 +94,9 @@ struct Evaluators
         int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
         void* mMem;
         int mType;
+#if USE_PYTHON        
         pybind11::module mPyModule;
+#endif
     };
 
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;

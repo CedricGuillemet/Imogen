@@ -5,8 +5,8 @@
 float castRay( vec3 ro, vec3 rd )
 {
     float delt = 0.01f;
-    const float mint = 0.001f;
-    const float maxt = 10.0f;
+    float mint = 0.001f;
+    float maxt = 10.0f;
     float lh = 0.0f;
     float ly = 0.0f;
     for( float t = mint; t < maxt; t += delt )
@@ -24,7 +24,7 @@ float castRay( vec3 ro, vec3 rd )
         lh = h;
         ly = p.y;
     }
-    return 999;
+    return 999.;
 }
 
 layout (std140) uniform LambertMaterialBlock

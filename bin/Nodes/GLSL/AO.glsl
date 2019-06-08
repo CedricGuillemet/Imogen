@@ -17,8 +17,8 @@ float hash(vec2 p)  // replace this by something better
 
 vec3 normal_from_depth(float depth, vec2 texcoords) {
   
-  const vec2 offset1 = dFdy(vUV);
-  const vec2 offset2 = dFdx(vUV);
+  vec2 offset1 = dFdy(vUV);
+  vec2 offset2 = dFdx(vUV);
   
   float depth1 = texture(Sampler0, texcoords + offset1).x;
   float depth2 = texture(Sampler0, texcoords + offset2).x;
@@ -36,9 +36,9 @@ float AO()
 {
 	// constants
 
-	const int samples = 48;
+	int samples = 48;
   
-	const vec3 sample_sphere[48]=vec3[48](
+	vec3 sample_sphere[48]=vec3[48](
 	vec3( 0.5381, 0.1856,-0.4319), vec3( 0.1379, 0.2486, 0.4430),
 	vec3( 0.3371, 0.5679,-0.0057), vec3(-0.6999,-0.0451,-0.0019),
 	vec3( 0.0689,-0.1598,-0.8547), vec3( 0.0560, 0.0069,-0.1843),
@@ -89,7 +89,7 @@ float AO()
 	}
   
   
-	float ao = 1.0 - AOParam.total_strength * occlusion * (1.0 / samples);
+	float ao = 1.0 - AOParam.total_strength * occlusion * (1.0 / float(samples));
 	
 	//return vec4(clipSpaceNormal*0.5+0.5, 1.0);
 	return ao;

@@ -23,14 +23,17 @@
 // SOFTWARE.
 //
 
-#include <SDL.h>
-#include <GL/gl3w.h> // Initialize with gl3wInit()
+#include "Platform.h"
 #include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "NodeGraphControler.h"
 
+#ifdef GL_CLAMP_TO_BORDER
 static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};
+#else
+static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT};
+#endif
 static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
 static const char* sampler2DName[] = {
     "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7"};
@@ -84,7 +87,11 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
                                      int defaultWidth,
                                      int defaultHeight)
     : mEvaluationStages(evaluation)
+#ifdef __EMSCRIPTEN
+    , mbSynchronousEvaluation(true)
+#else
     , mbSynchronousEvaluation(synchronousEvaluation)
+#endif
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
     , mRuntimeUniqueId(-1)
@@ -105,12 +112,15 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
 
 EvaluationContext::~EvaluationContext()
 {
+#ifdef USE_FFMPEG
     for (auto& stream : mWriteStreams)
     {
         stream.second->Finish();
         delete stream.second;
     }
+    
     mWriteStreams.clear();
+#endif
     mFSQuad.Finish();
 
     glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
@@ -444,23 +454,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         GL_UNIFORM_BUFFER, evaluationStage.mParameters.size(), evaluationStage.mParameters.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    /*
-    if (!stage.mParametersBuffer)
-    {
-        glGenBuffers(1, &stage.mParametersBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-
-        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, stage.mParametersBuffer);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
-    else
-    {
-        glBindBuffer(GL_UNIFORM_BUFFER, stage.mParametersBuffer);
-        glBufferData(GL_UNIFORM_BUFFER, stage.mParameters.size(), stage.mParameters.data(), GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-    }
-    */
     glEnable(GL_BLEND);
     glBlendFunc(blend[0], blend[1]);
 
@@ -525,7 +518,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);
+#ifdef __EMSCRIPTEN__
+                glClearDepthf(1.f);
+#else
                 glClearDepth(1.f);
+#endif
                 if (evaluationStage.mbClearBuffer)
                 {
                     glClear(GL_COLOR_BUFFER_BIT | (evaluationStage.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
@@ -536,6 +533,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                     glEnable(GL_DEPTH_TEST);
                 }
                 //
+
                 if (evaluationStage.mTypename == "FurDisplay")
                 {
                     /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(evaluationStage);
@@ -609,6 +607,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
     }
 }
 
+#if USE_PYTHON
 void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
                                        size_t index,
                                        EvaluationInfo& evaluationInfo)
@@ -622,7 +621,7 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
     {
     }
 }
-
+#endif
 
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
@@ -715,12 +714,14 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetKeyboardMouseInfos(mEvaluationInfo, currentStage);
 
+#if USE_LIBTCC
     if (currentStage.gEvaluationMask & EvaluationC)
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
-
+#endif
+#if USE_PYTHON
     if (currentStage.gEvaluationMask & EvaluationPython)
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
-
+#endif
     if (currentStage.gEvaluationMask & EvaluationGLSLCompute)
     {
         EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);
@@ -843,7 +844,7 @@ bool EvaluationContext::RunBackward(size_t nodeIndex)
     AllocRenderTargetsForBaking(nodesToEvaluate);
     return RunNodeList(nodesToEvaluate);
 }
-
+#if USE_FFMPEG
 FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename, int width, int height)
 {
     FFMPEGCodec::Encoder* encoder;
@@ -860,7 +861,7 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
     }
     return encoder;
 }
-
+#endif
 void EvaluationContext::SetTargetDirty(size_t target, DirtyFlag dirtyFlag, bool onlyChild)
 {
     mDirtyFlags.resize(mEvaluationStages.GetStagesCount(), 0);
@@ -974,7 +975,9 @@ void EvaluationContext::StageSetProgress(size_t target, float progress)
 
 Builder::Builder() : mbRunning(true)
 {
+#ifndef __EMSCRIPTEN__
     mThread = std::thread([&]() { BuildEntries(); });
+#endif    
 }
 
 Builder::~Builder()
@@ -983,7 +986,7 @@ Builder::~Builder()
     mThread.join();
 }
 
-void Builder::Add(const char* graphName, EvaluationStages& stages)
+void Builder::Add(const char* graphName, const EvaluationStages& stages)
 {
     mMutex.lock();
     mEntries.push_back({graphName, 0.f, stages});
@@ -1105,7 +1108,9 @@ void Builder::BuildEntries()
             }
             mMutex.unlock();
         }
+#ifdef Sleep
         Sleep(100);
+#endif
     }
 }
 

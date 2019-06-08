@@ -965,9 +965,10 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
         DrawGrid(drawList, windowPos, canvasSize, factor);
     }
 
-   
     if (!enabled)
+    {
         goto nodeGraphExit;
+    }
 
     static int hoveredNode = -1;
     // Display links

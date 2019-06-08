@@ -214,12 +214,18 @@ int main(int argc, char** argv)
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
 
     // Setup Platform/Renderer bindings
     ImGui_ImplSDL2_InitForOpenGL(loopdata.mWindow, loopdata.mGLContext);
+
+    TagTime("Context");
+    InitFonts();
+
+    TagTime("Fonts");
+    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+
     ImGui_ImplOpenGL3_Init(glsl_version);
 
 #if USE_GLDEBUG

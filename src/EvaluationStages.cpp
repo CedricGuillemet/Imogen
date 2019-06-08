@@ -139,13 +139,13 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
 }
 #endif
 
-
 #if USE_FFMPEG
 Image EvaluationStage::DecodeImage()
 {
     return Image::DecodeImage(mDecoder.get(), mLocalTime);
 }
 #endif
+
 void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame)
 {
     bool animatedNodes = false;

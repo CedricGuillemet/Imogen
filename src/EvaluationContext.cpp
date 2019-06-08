@@ -871,18 +871,16 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     SetKeyboardMouseInfos(mEvaluationInfo);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 
-#if USE_LIBTCC
     if (evaluationMask & EvaluationC)
-	{
+    {
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
-	}
-#endif
-#if USE_PYTHON
+    }
+
     if (evaluationMask & EvaluationPython)
-	{
+    {
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
-	}
-#endif
+    }
+
     if (evaluationMask & EvaluationGLSLCompute)
     {
         EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);
@@ -1018,6 +1016,7 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
     return encoder;
 }
 #endif
+
 void EvaluationContext::SetTargetDirty(size_t target, Dirty::Type dirtyFlag, bool onlyChild)
 {
     assert(dirtyFlag != Dirty::AddedNode);

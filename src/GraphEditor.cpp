@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_stdlib.h"
@@ -965,7 +966,9 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
     }
 
     if (!enabled)
+    {
         goto nodeGraphExit;
+    }
 
     static int hoveredNode = -1;
     // Display links

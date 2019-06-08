@@ -28,11 +28,9 @@
 #include <vector>
 #include <map>
 #include "Library.h"
-#include "libtcc/libtcc.h"
 #include "Imogen.h"
 #include <string.h>
 #include <stdio.h>
-#include "ffmpegCodec.h"
 #include <memory>
 #include "Utils.h"
 #include "Bitmap.h"
@@ -107,7 +105,9 @@ struct EvaluationStage
     //#ifdef _DEBUG needed for fur rendering
     std::string mTypename;
     //#endif
+#if USE_FFMPEG    
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
+#endif
     uint16_t mType;
     unsigned int mRuntimeUniqueId;
 
@@ -146,7 +146,7 @@ struct EvaluationStages
 
     Mat4x4* GetParameterViewMatrix(size_t nodeIndex) { return &mStages[nodeIndex].mParameterViewMatrix; }
     const Parameters& GetParameters(size_t nodeIndex) const { return mParameters[nodeIndex]; }
-    void SetParameters(size_t nodeIndex, const Parameters& parameters) { mParameters[nodeIndex] = parameters; }
+    void SetParameters(size_t nodeIndex, const Parameters& parameters);
     uint16_t GetNodeType(size_t nodeIndex) const { return mStages[nodeIndex].mType; }
     size_t GetStagesCount() const { return mStages.size(); }
 
@@ -157,8 +157,9 @@ struct EvaluationStages
     void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
 
     // ffmpeg encoders
+    #if USE_FFMPEG
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
-
+#endif
     // Data
     const std::vector<size_t>& GetForwardEvaluationOrder() const { return mOrderList; }
     std::vector<EvaluationStage> mStages;

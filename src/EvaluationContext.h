@@ -134,16 +134,35 @@ struct EvaluationContext
 
     std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mTarget; }
 
-    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) const { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mTarget; }
-
+    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
+    {
+        assert(target < mEvaluations.size());
+        return mEvaluations[target].mTarget;
+    }
+#if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
-    bool IsSynchronous() const { return mbSynchronousEvaluation; }
-    void SetSynchronous(bool synchronous) { mbSynchronousEvaluation = synchronous; }
-    void SetTargetDirty(size_t nodeIndex, Dirty::Type dirtyflag, bool onlyChild = false);
-    int StageIsProcessing(size_t nodeIndex) const { assert (nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mProcessing; }
-    float StageGetProgress(size_t nodeIndex) const { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mProgress; }
-    void StageSetProcessing(size_t nodeIndex, int processing);
-    void StageSetProgress(size_t nodeIndex, float progress);
+#endif
+    bool IsSynchronous() const
+    {
+        return mbSynchronousEvaluation;
+    }
+    void SetSynchronous(bool synchronous)
+    {
+        mbSynchronousEvaluation = synchronous;
+    }
+    void SetTargetDirty(size_t target, Dirty::Type dirtyflag, bool onlyChild = false);
+    int StageIsProcessing(size_t target) const
+    {
+        assert (target < mEvaluations.size());
+        return mEvaluations[target].mProcessing;
+    }
+    float StageGetProgress(size_t target) const
+    {
+        assert(target < mEvaluations.size());
+        return mEvaluations[target].mProgress;
+    }
+    void StageSetProcessing(size_t target, int processing);
+    void StageSetProgress(size_t target, float progress);
 
     void AllocRenderTargetsForEditingPreview();
     const EvaluationThumbnails& GetThumbnails() const { return mThumbnails; }
@@ -219,7 +238,10 @@ protected:
 
     int GetBindedComputeBuffer(size_t nodeIndex) const;
 
+    std::vector<ComputeBuffer> mComputeBuffers;
+#if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
+#endif
 
     EvaluationInfo mEvaluationInfo;
 

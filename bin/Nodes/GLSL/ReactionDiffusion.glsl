@@ -25,18 +25,18 @@ float f(float i)
 
 #define F(i) (f(i))
 
-#define GH(i) T(i, 0)*F(float(i))
-#define GV(i) T(0, i)*F(float(i))
+#define GH(i) T(float(i), 0.)*F(float(i))
+#define GV(i) T(0., float(i))*F(float(i))
 #define BLURH (GH(-4) + GH(-3) + GH(-2) + GH(-1) + GH(0) + GH(1) + GH(2) + GH(3) + GH(4))
 #define BLURV (GV(-4) + GV(-3) + GV(-2) + GV(-1) + GV(0) + GV(1) + GV(2) + GV(3) + GV(4))
 
 vec4 pass(vec2 uv)
 {
-	vec4 col = T(-1, -1)*0.05 + T( 0, -1)*0.20 + T( 1, -1)*0.05 +
-               T(-1,  0)*0.20 - T( 0,  0)*1.00 + T( 1,  0)*0.20 +
-               T(-1,  1)*0.05 + T( 0,  1)*0.20 + T( 1,  1)*0.05;
+	vec4 col = T(-1., -1.)*0.05 + T( 0., -1.)*0.20 + T( 1., -1.)*0.05 +
+               T(-1.,  0.)*0.20 - T( 0.,  0.)*1.00 + T( 1.,  0.)*0.20 +
+               T(-1.,  1.)*0.05 + T( 0.,  1.)*0.20 + T( 1.,  1.)*0.05;
     col /= 8.0;
-    col = T(0, 0) - col*50.0;
+    col = T(0., 0.) - col*50.0;
     col -= 0.5;
     col = col*boost;
     col = smoothstep(vec4(-0.5), vec4(0.5), col);

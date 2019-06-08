@@ -23,6 +23,7 @@
 // SOFTWARE.
 //
 
+#include "Platform.h"
 #include "EvaluationStages.h"
 #include "EvaluationContext.h"
 #include "Evaluators.h"
@@ -40,7 +41,9 @@ void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
     //#ifdef _DEBUG needed for fur
     evaluation.mTypename = gMetaNodes[nodeType].mName;
     //#endif
+#if USE_FFMPEG
     evaluation.mDecoder = NULL;
+#endif
     evaluation.mType = uint16_t(nodeType);
     evaluation.mLocalTime = 0;
     evaluation.mScene = nullptr;
@@ -64,6 +67,17 @@ void EvaluationStages::DelEvaluation(size_t nodeIndex)
     mParameters.erase(mParameters.begin() + nodeIndex);
 }
 
+void EvaluationStages::SetParameters(size_t nodeIndex, const Parameters& parameters)
+{
+#if USE_FFMPEG
+    EvaluationStage& stage = mStages[nodeIndex];
+    mParameters[nodeIndex] = parameters;
+
+    if (stage.mDecoder)
+        stage.mDecoder = NULL;
+#endif
+}
+
 void EvaluationStages::Clear()
 {
     mStages.clear();
@@ -76,6 +90,7 @@ void EvaluationStages::Clear()
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {
+#if USE_FFMPEG
     auto& stage = mStages[target];
     if (!stage.mDecoder)
         return 1;
@@ -84,6 +99,9 @@ size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
         int a = 1;
     }
     return stage.mDecoder->mFrameCount;
+#else
+    return 1;
+#endif
 }
 
 void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
@@ -93,6 +111,7 @@ void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
 {
     auto& stage = mStages[target];
     int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
+    #if USE_FFMPEG
     if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
     {
         stage.mLocalTime = newLocalTime;
@@ -101,11 +120,12 @@ void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
         Image::Free(&image);
     }
     else
+    #endif
     {
         stage.mLocalTime = newLocalTime;
     }
 }
-
+#if USE_FFMPEG
 FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
 {
     for (auto& evaluation : mStages)
@@ -117,11 +137,14 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
     decoder->Open(filename);
     return decoder;
 }
+#endif
 
+#if USE_FFMPEG
 Image EvaluationStage::DecodeImage()
 {
     return Image::DecodeImage(mDecoder.get(), mLocalTime);
 }
+#endif
 
 void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame)
 {

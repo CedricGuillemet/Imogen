@@ -1,7 +1,7 @@
 #define PI 3.14159265359
 #define SQRT2 1.414213562373095
 
-#define TwoPI (PI*2)
+#define TwoPI (PI*2.0)
 
 
 layout (std140) uniform EvaluationBlock
@@ -245,10 +245,10 @@ float GetHeight(sampler2D heightSampler, vec2 texCoords)
 //Parallax Occlusion Mapping from: https://learnopengl.com/Advanced-Lighting/Parallax-Mapping
 vec2 ParallaxMapping(sampler2D heightSampler, vec2 texCoords, vec3 viewDir, float depthFactor)
 { 
-    const float height_scale = depthFactor;
+    float height_scale = depthFactor;
     // number of depth layers
-    const float minLayers = 8.0;
-    const float maxLayers = 32.0;
+    float minLayers = 8.0;
+    float maxLayers = 32.0;
     float numLayers = mix(maxLayers, minLayers, min(abs(viewDir.z), 1.0));  
     // calculate the size of each layer
     float layerDepth = 1.0 / numLayers;

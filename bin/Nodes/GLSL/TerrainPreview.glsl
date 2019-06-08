@@ -1,5 +1,5 @@
 
-const float maxd = 5.0;
+float maxd = 5.0;
 
 float scene(vec3 p)
 {
@@ -36,14 +36,14 @@ float castRay(vec3 ro, vec3 rd)
 	float resT;
 	
     float delt = 0.01f;
-    const float mint = 0.001f;
-    const float maxt = 4.0f;
+    float mint = 0.001f;
+    float maxt = 4.0f;
     float lh = 0.0f;
     float ly = 0.0f;
     for( float t = mint; t < maxt; t += delt )
     {
-        const vec3  p = ro + rd*t;
-        const float h = terrain( p.xz );
+        vec3  p = ro + rd*t;
+        float h = terrain( p.xz );
         if( p.y < h )
         {
             // interpolate the intersection distance
@@ -86,7 +86,7 @@ vec4 TerrainPreview()
 	if (d<maxd)
 	{
 		vec3 pos = ro + rd * d;
-		if (pos.x>=0 && pos.z>=0 && pos.x<=1.0 && pos.z <= 1.0)
+		if (pos.x>=0. && pos.z>=0. && pos.x<=1.0 && pos.z <= 1.0)
 			col = texture(Sampler1, pos.xz).xyz;
 	}
 	

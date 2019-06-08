@@ -8,13 +8,13 @@ layout (std140) uniform DistanceBlock
 
 vec4 Pack(vec4 coord)
 {
-    float s = textureSize(Sampler0, 0).x;
+    float s = float(textureSize(Sampler0, 0).x);
     return coord / s;
 }
 
 vec4 Unpack(vec4 v)
 {
-    float s = textureSize(Sampler0, 0).x;
+    float s = float(textureSize(Sampler0, 0).x);
     return v * s;
 }
 
@@ -31,7 +31,7 @@ vec4 StepJFA (in vec2 fragCoord, in float level, float c_maxSteps)
         for (int x = -1; x <= 1; ++x) {
             vec2 sampleCoord = fragCoord + vec2(x,y) * stepwidth;
             
-            vec4 data = texture(Sampler0, sampleCoord / textureSize(Sampler0, 0).xy);
+            vec4 data = texture(Sampler0, sampleCoord / vec2(textureSize(Sampler0, 0).xy));
             vec4 seedCoord = Unpack(data);
             
             float dist = length(seedCoord.xy - fragCoord);

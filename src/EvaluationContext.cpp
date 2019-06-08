@@ -23,14 +23,17 @@
 // SOFTWARE.
 //
 
-#include <SDL.h>
-#include <GL/gl3w.h> // Initialize with gl3wInit()
+#include "Platform.h"
 #include <memory>
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "GraphControler.h"
 
+#ifdef GL_CLAMP_TO_BORDER
 static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};
+#else
+static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT};
+#endif
 static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
 static const char* sampler2DName[] = {
     "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7"};
@@ -181,7 +184,11 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
                                      int defaultWidth,
                                      int defaultHeight)
     : mEvaluationStages(evaluation)
+#ifdef __EMSCRIPTEN
+    , mbSynchronousEvaluation(true)
+#else
     , mbSynchronousEvaluation(synchronousEvaluation)
+#endif
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
     , mRuntimeUniqueId(-1)
@@ -203,12 +210,15 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
 
 EvaluationContext::~EvaluationContext()
 {
+#ifdef USE_FFMPEG
     for (auto& stream : mWriteStreams)
     {
         stream.second->Finish();
         delete stream.second;
     }
+    
     mWriteStreams.clear();
+#endif
     mFSQuad.Finish();
 
     glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
@@ -648,7 +658,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 glDisable(GL_CULL_FACE);
                 // glCullFace(GL_BACK);
+#ifdef __EMSCRIPTEN__
+                glClearDepthf(1.f);
+#else
                 glClearDepth(1.f);
+#endif
                 if (evaluation.mbClearBuffer)
                 {
                     glClear(GL_COLOR_BUFFER_BIT | (evaluation.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
@@ -659,6 +673,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                     glEnable(GL_DEPTH_TEST);
                 }
                 //
+
                 if (evaluationStage.mTypename == "FurDisplay")
                 {
                     /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(nodeIndex);
@@ -722,7 +737,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     int sourceCoords[4];
     mThumbnails.GetThumbCoordinates(thumb, sourceCoords);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, tgt->mFbo);
+#ifdef glDrawBuffer
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
+#endif	
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, thumbTarget.mFbo);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -752,6 +769,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
     }
 }
 
+#if USE_PYTHON
 void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
                                        size_t index,
                                        EvaluationInfo& evaluationInfo)
@@ -765,7 +783,7 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
     {
     }
 }
-
+#endif
 
 void EvaluationContext::AllocRenderTargetsForEditingPreview()
 {
@@ -980,7 +998,7 @@ bool EvaluationContext::RunBackward(size_t nodeIndex)
     AllocRenderTargetsForBaking(nodesToEvaluate);
     return RunNodeList(nodesToEvaluate);
 }
-
+#if USE_FFMPEG
 FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename, int width, int height)
 {
     FFMPEGCodec::Encoder* encoder;
@@ -997,6 +1015,7 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
     }
     return encoder;
 }
+#endif
 
 void EvaluationContext::SetTargetDirty(size_t target, Dirty::Type dirtyFlag, bool onlyChild)
 {
@@ -1065,7 +1084,9 @@ void EvaluationContext::StageSetProgress(size_t target, float progress)
 
 Builder::Builder() : mbRunning(true)
 {
+#ifndef __EMSCRIPTEN__
     mThread = std::thread([&]() { BuildEntries(); });
+#endif    
 }
 
 Builder::~Builder()
@@ -1171,7 +1192,9 @@ void Builder::BuildEntries()
             }
             mMutex.unlock();
         }
+#ifdef Sleep
         Sleep(100);
+#endif
     }
 }
 

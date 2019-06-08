@@ -5,6 +5,10 @@
 #include <set>
 #include <vector>
 
+#if !defined(MSC_VER)
+#define _malloca(x) alloca(x)
+#endif
+
 namespace ImCurveEdit
 {
 
@@ -277,7 +281,7 @@ namespace ImCurveEdit
       static std::vector<ImVec2> originalPoints;
       if (overSelectedPoint && io.MouseDown[0])
       {
-          if (fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f && !selection.empty())
+          if ((fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f) && !selection.empty())
           {
               if (!pointsMoved)
               {

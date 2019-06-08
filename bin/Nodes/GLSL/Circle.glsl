@@ -1,8 +1,7 @@
-
-layout (std140) uniform CircleBlock
-{
-	float radius;
-	float t;
+layout (std140) uniform CircleBlock 
+{ 
+	float radius; 
+	float t; 
 };
 
 vec4 Circle()

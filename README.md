@@ -4,7 +4,7 @@ GPU/CPU Texture Generator
 GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.
 Basically, add GPU and CPU nodes in a graph to manipulate and generate images.
 A web build is available here : http://skaven.fr/imogen/
-![Image of Imogen 0.13 Web Edition](https://imgur.com/ahkqR7v)
+![Image of Imogen 0.13 Web Edition](https://i.imgur.com/ahkqR7v.png)
 Currently nodes can be written in GLSL or C or Python.
 
 

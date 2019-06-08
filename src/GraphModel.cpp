@@ -900,8 +900,8 @@ void GraphModel::SetParameterPins(const std::vector<uint32_t>& pins)
     {
         mNodes[i].mPinnedParameters = pins[i];
     }
-
 }
+
 void GraphModel::SetIOPins(const std::vector<uint32_t>& pins)
 {
     for (auto i = 0; i < pins.size(); i++)
@@ -920,6 +920,7 @@ const std::vector<uint32_t> GraphModel::GetParameterPins() const
     }
     return ret;
 }
+
 const std::vector<uint32_t> GraphModel::GetIOPins() const
 {
     std::vector<uint32_t> ret;
@@ -929,7 +930,6 @@ const std::vector<uint32_t> GraphModel::GetIOPins() const
         ret.push_back(node.mPinnedIO);
     }
     return ret;
-
 }
 
 const std::vector<MultiplexInput> GraphModel::GetMultiplexInputs() const

@@ -460,22 +460,6 @@ void Mat4x4::OrthoOffCenterLH(const float l, float r, float b, const float t, fl
     m[3][3] = 1.0f;
 }
 
-void TagTime(const char* tagInfo)
-{
-    static uint64_t lastTime = -1;
-    if (lastTime == -1)
-    {
-        lastTime = SDL_GetPerformanceCounter();
-        Log("%s\n", tagInfo);
-        return;
-    }
-    uint64_t t = SDL_GetPerformanceCounter();
-
-    double v = double(t - lastTime) / double(SDL_GetPerformanceFrequency());
-    Log("%s : %5.3f s\n", tagInfo, float(v));
-    lastTime = t;
-}
-
 void DiscoverFiles(const char* extension, const char* directory, std::vector<std::string>& files)
 {
     tinydir_dir dir;

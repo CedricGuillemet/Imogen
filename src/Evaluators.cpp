@@ -524,9 +524,6 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
     }
 
-
-    TagTime("GLSL init");
-
     // GLSL compute
     for (auto& file : evaluatorfilenames)
     {
@@ -563,8 +560,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         if (shader.mType != -1)
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
     }
-    TagTime("GLSL compute init");
-    #if USE_LIBTCC
+
+#if USE_LIBTCC
     // C
     for (auto& file : evaluatorfilenames)
     {
@@ -632,8 +629,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             Log("Error at compiling %s", filename.c_str());
         }
     }
-    TagTime("C init");
-    #endif
+#endif
+
 #if USE_PYTHON
     for (auto& file : evaluatorfilenames)
     {
@@ -653,9 +650,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             Log("Python exception\n");
         }
     }
-
-    TagTime("Python init");
-    #endif
+#endif
 }
 
 void Evaluators::ClearEvaluators()

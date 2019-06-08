@@ -1,10 +1,27 @@
-// dear imgui: standalone example application for Emscripten, using SDL2 + OpenGL3
-// This is mostly the same code as the SDL2 + OpenGL3 example, simply with the modifications needed to run on Emscripten.
-// It is possible to combine both code into a single source file that will compile properly on Desktop and using Emscripten.
-// See https://github.com/ocornut/imgui/pull/2492 as an example on how to do just that.
+// https://github.com/CedricGuillemet/Imogen
 //
-// If you are new to dear imgui, see examples/README.txt and documentation at the top of imgui.cpp.
-// (Emscripten is a C++-to-javascript compiler, used to publish executables for the web. See https://emscripten.org/)
+// The MIT License(MIT)
+//
+// Copyright(c) 2019 Cedric Guillemet
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files(the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and / or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions :
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
 
 #include "Platform.h"
 #include "imgui.h"
@@ -41,7 +58,7 @@ struct LoopData
 Builder*                gBuilder = nullptr;
 bool done = false;
 // For clarity, our main loop code is declared at the end.
-void main_loop(void*);
+void MainLoop(void*);
 
 Library library;
 UndoRedoHandler gUndoRedoHandler;
@@ -110,7 +127,9 @@ void ImWebConsoleOutput(const char* szText)
 EM_JS(void, HideLoader, (), {
     document.getElementById("loader").style.display = "none";
 });
+
 #else
+
 SDL_Window* glThreadWindow;
 SDL_GLContext glThreadContext;
 
@@ -137,6 +156,7 @@ int main(int argc, char** argv)
 #ifdef __EMSCRIPTEN__
     AddLogOutput(ImWebConsoleOutput);
 #endif
+    AddLogOutput(ImConsoleOutput);
 
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)
@@ -146,7 +166,8 @@ int main(int argc, char** argv)
     }
 
     LoopData loopdata;
-    // For the browser using Emscripten, we are going to use WebGL1 with GL ES2. See the Makefile. for requirement details.
+
+    // For the browser using Emscripten, we are going to use WebGL2 with GL ES3. See the Makefile. for requirement details.
     // It is very likely the generated file won't work in many browsers. 
     
 #ifdef __EMSCRIPTEN__
@@ -177,8 +198,8 @@ int main(int argc, char** argv)
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-    loopdata.mWindow = SDL_CreateWindow("Imogen 0.13 Web Edition", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_MAXIMIZED);
+    loopdata.mWindow = SDL_CreateWindow(IMOGENCOMPLETETITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
 #ifndef __EMSCRIPTEN__
     SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
     glThreadContext = SDL_GL_CreateContext(loopdata.mWindow);
@@ -220,10 +241,8 @@ int main(int argc, char** argv)
     // Setup Platform/Renderer bindings
     ImGui_ImplSDL2_InitForOpenGL(loopdata.mWindow, loopdata.mGLContext);
 
-    TagTime("Context");
     InitFonts();
 
-    TagTime("Fonts");
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
     ImGui_ImplOpenGL3_Init(glsl_version);
@@ -240,7 +259,6 @@ int main(int argc, char** argv)
 
 #if USE_PYTHON    
     Evaluators::InitPython();
-    TagTime("Python interpreter Init");
 #endif
 
     LoadMetaNodes();
@@ -248,7 +266,6 @@ int main(int argc, char** argv)
 #if USE_FFMPEG
     FFMPEGCodec::RegisterAll();
     FFMPEGCodec::Log = Log;
-    TagTime("FFMPEG Init");
 #endif
     stbi_set_flip_vertically_on_load(1);
     stbi_flip_vertically_on_write(1);
@@ -285,11 +302,11 @@ int main(int argc, char** argv)
 #ifdef __EMSCRIPTEN__
     HideLoader();
     // This function call won't return, and will engage in an infinite loop, processing events from the browser, and dispatching them.
-    emscripten_set_main_loop_arg(main_loop, &loopdata, 0, true);
+    emscripten_set_MainLoop_arg(MainLoop, &loopdata, 0, true);
 #else   
     while (!done)
     {
-        main_loop(&loopdata);
+        MainLoop(&loopdata);
     }
     imogen.ValidateCurrentMaterial(library);
 
@@ -316,7 +333,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void main_loop(void* arg)
+void MainLoop(void* arg)
 {
     LoopData *loopdata = (LoopData*)arg;
     ImGuiIO& io = ImGui::GetIO();

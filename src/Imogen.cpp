@@ -773,7 +773,7 @@ void Imogen::NewMaterial(const std::string& materialName)
 
 void Imogen::ImportMaterial()
 {
-    #ifdef NFD_OpenDialog
+#ifdef NFD_OpenDialog
     nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
 
@@ -788,7 +788,7 @@ void Imogen::ImportMaterial()
         }
         free(outPath);
     }
-    #endif
+#endif
 }
 
 void Imogen::LibraryEdit(Library& library)
@@ -1401,10 +1401,13 @@ void Imogen::Init(bool bDebugWindow)
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
-    //DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
-    //DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
-    //DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-    //DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+
+#ifndef __EMSCRIPTEN__
+    DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);
+    DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
+    DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+    DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
+#endif
 
     struct HotKeyFunction
     {
@@ -1497,7 +1500,7 @@ void Imogen::RunDeferedCommands()
         return;
     std::string tmpCommand = mRunCommand;
     mRunCommand = "";
-    #if USE_PYTHON
+#if USE_PYTHON
     try
     {
         pybind11::exec(tmpCommand);
@@ -1506,7 +1509,7 @@ void Imogen::RunDeferedCommands()
     {
         Log(ex.what());
     }
-    #endif
+#endif
 }
 
 void Imogen::ShowAppMainMenuBar()
@@ -1690,7 +1693,7 @@ void Imogen::ShowTitleBar(Builder* builder)
     ImGui::SameLine();
     // imogen info strings
     ImGui::BeginChildFrame(152, ImVec2(io.DisplaySize.x - butSize.x * 4.f - 300, 32.f));
-    ImGui::Text("Imogen 0.14");
+    ImGui::Text(IMOGENTITLE);
     if (mSelectedMaterial != -1)
     {
         Material& material = library.mMaterials[mSelectedMaterial];
@@ -1953,7 +1956,7 @@ void Imogen::ShowNodeGraph()
 
 void Imogen::ExportMaterial()
 {
-    #ifdef NFD_SaveDialog
+#ifdef NFD_SaveDialog
     nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
 
@@ -1966,8 +1969,9 @@ void Imogen::ExportMaterial()
         Log("Graph %s saved at path %s\n", material.mName.c_str(), outPath);
         free(outPath);
     }
-    #endif
+#endif
 }
+
 void Imogen::ShowDebugWindow()
 {
     ImGui::Begin("Debug");

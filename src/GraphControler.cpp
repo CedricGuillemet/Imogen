@@ -736,13 +736,16 @@ void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
         }
         else
         {
+            static char inputText[64] = { 0 };
+
             auto AddNode = [&](int nodeType) {
                 mModel.BeginTransaction(true);
                 mModel.AddNode(nodeType, scenePos);
                 mModel.EndTransaction();
+                inputText[0] = 0;
             };
 
-            static char inputText[64] = {0};
+            
             if (ImGui::IsWindowAppearing())
                 ImGui::SetKeyboardFocusHere();
             ImGui::InputText("", inputText, sizeof(inputText));

@@ -25,7 +25,16 @@
 
 #pragma once
 
-#ifdef EMSCRIPTEN
+
+#ifdef __EMSCRIPTEN__
+#define BUILDTYPE  " Web Edition"
+#else
+#define BUILDTYPE  " Desktop Edition"
+#endif
+#define IMOGENTITLE "Imogen 0.14 "
+#define IMOGENCOMPLETETITLE IMOGENTITLE BUILDTYPE
+
+#ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>
 #include <SDL.h>

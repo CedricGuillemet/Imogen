@@ -1,7 +1,7 @@
 # Imogen
 GPU/CPU Texture Generator
 
-GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code.
+GPU Texture generator using dear imgui for UI. Not production ready and a bit messy but really fun to code. This is an hybrid project that can run natively or on the web (thanks to emscripten).
 Basically, add GPU and CPU nodes in a graph to manipulate and generate images.
 A web build is available here : http://skaven.fr/imogen/
 ![Image of Imogen 0.13 Web Edition](https://i.imgur.com/ahkqR7v.png)

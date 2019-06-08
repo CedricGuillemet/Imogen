@@ -74,8 +74,8 @@ struct EvaluationThumbnails
 {
     struct Thumb
     {
-        unsigned short mAtlasIndex;
-        unsigned short mThumbIndex;
+        unsigned short mAtlasIndex = 0xFFFF;
+        unsigned short mThumbIndex = 0xFFFF;
     };
 
     void Clear();
@@ -226,6 +226,7 @@ protected:
     // return true if any node is still in processing state
     bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
     void RunNode(size_t nodeIndex);
+    void GenerateThumbnail(size_t nodeIndex);
 
     void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 

@@ -167,8 +167,7 @@ int main(int argc, char** argv)
 
     LoopData loopdata;
 
-    // For the browser using Emscripten, we are going to use WebGL2 with GL ES3. See the Makefile. for requirement details.
-    // It is very likely the generated file won't work in many browsers. 
+    // For the browser using Emscripten, we are going to use WebGL2 with GL ES3.
     
 #ifdef __EMSCRIPTEN__
     const char* glsl_version = "#version 100";

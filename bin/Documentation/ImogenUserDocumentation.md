@@ -20,8 +20,8 @@
 [Transform](#Transform)|[Pixelize](#Pixelize)|[Tile](#Tile)|[PolarCoords](#PolarCoords)|[Swirl](#Swirl)|[Crop](#Crop)
 ![node picture](Pictures/Warp.png)|![node picture](Pictures/EdgeDetect.png)|![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|![node picture](Pictures/Lens.png)
 [Warp](#Warp)|[EdgeDetect](#EdgeDetect)|[Kaleidoscope](#Kaleidoscope)|[Palette](#Palette)|[ChannelPacker](#ChannelPacker)|[Lens](#Lens)
-![node picture](Pictures/Distance.png)|![node picture](Pictures/Multiplex.png)||||
-[Distance](#Distance)|[Multiplex](#Multiplex)||||
+![node picture](Pictures/Distance.png)|||||
+[Distance](#Distance)|||||
 
 
 ## Filter
@@ -51,9 +51,9 @@
 
 
 ## Noise
-![node picture](Pictures/iqnoise.png)|![node picture](Pictures/PerlinNoise.png)|![node picture](Pictures/Voronoi.png)
--|-|-
-[iqnoise](#iqnoise)|[PerlinNoise](#PerlinNoise)|[Voronoi](#Voronoi)
+![node picture](Pictures/iqnoise.png)|![node picture](Pictures/WorleyNoise.png)|![node picture](Pictures/PerlinNoise.png)|![node picture](Pictures/Voronoi.png)
+-|-|-|-
+[iqnoise](#iqnoise)|[WorleyNoise](#WorleyNoise)|[PerlinNoise](#PerlinNoise)|[Voronoi](#Voronoi)
 
 
 ## File
@@ -78,6 +78,12 @@
 ![node picture](Pictures/FurGenerator.png)|![node picture](Pictures/FurDisplay.png)|![node picture](Pictures/FurIntegrator.png)
 -|-|-
 [FurGenerator](#FurGenerator)|[FurDisplay](#FurDisplay)|[FurIntegrator](#FurIntegrator)
+
+
+## Tools
+![node picture](Pictures/Multiplex.png)
+-
+[Multiplex](#Multiplex)
 
 
 ## Circle
@@ -365,6 +371,25 @@ Interpolation factor between full color to distance-like color per cell.
 
 ### Example
 ![node example](Examples/Example_iqnoise.png)
+
+## WorleyNoise
+![node picture](Pictures/WorleyNoise.png)
+
+Category : Noise
+### Description
+Generate Worley noise with optional Manhattan distance.
+### Parameters
+1. Translation
+Translate the noise seeds so you can have virtualy infinite different noise.
+1. Scale
+
+1. Jitter
+
+1. Manhattan
+Mahattan or linear distance.
+
+### Example
+![node example](Examples/Example_WorleyNoise.png)
 
 ## PerlinNoise
 ![node picture](Pictures/PerlinNoise.png)
@@ -993,7 +1018,7 @@ Generate a signed distance field from a black and white source image.
 ## Multiplex
 ![node picture](Pictures/Multiplex.png)
 
-Category : Transform
+Category : Tools
 ### Description
 Route one input into the output. This choice can be propagated to further nodes.
 ### Parameters

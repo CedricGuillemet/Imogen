@@ -197,6 +197,7 @@ int Image::LoadSVG(const char* filename, Image* image, float dpi)
     image->mFormat = TextureFormat::RGBA8;
     image->mDecoder = NULL;
 
+    free(img);
     Image::VFlip(image);
     nsvgDelete(svgImage);
     nsvgDeleteRasterizer(rast);

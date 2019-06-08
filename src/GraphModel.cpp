@@ -195,6 +195,7 @@ void GraphModel::RemoveAnimation(size_t nodeIndex)
         mAnimTrack.erase(mAnimTrack.begin() + index);
     }
 }
+
 size_t GraphModel::AddNode(size_t type, ImVec2 position)
 {
     assert(mbTransaction);
@@ -449,7 +450,6 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
     {
         return;
     }
-    // URDummy urDummy;
 
     AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
     if (!animTrack)
@@ -496,7 +496,6 @@ void GraphModel::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinn
     }
     mNodes[nodeIndex].mPinnedIO &= ~mask;
     mNodes[nodeIndex].mPinnedIO += pinned ? mask : 0;
-
 }
 
 void GraphModel::SetAnimTrack(const std::vector<AnimTrack>& animTrack)

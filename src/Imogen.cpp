@@ -773,7 +773,7 @@ void Imogen::NewMaterial(const std::string& materialName)
 
 void Imogen::ImportMaterial()
 {
-#ifdef NFD_OpenDialog
+#if defined(_NFD_H)
     nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
 
@@ -1956,7 +1956,7 @@ void Imogen::ShowNodeGraph()
 
 void Imogen::ExportMaterial()
 {
-#ifdef NFD_SaveDialog
+#if defined(_NFD_H)
     nfdchar_t* outPath = NULL;
     nfdresult_t result = NFD_SaveDialog("imogen", NULL, &outPath);
 

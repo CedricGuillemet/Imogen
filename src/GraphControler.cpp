@@ -196,7 +196,7 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
             ImGui::SameLine();
             if (ImGui::Button("..."))
             {
-#ifdef NFD_OpenDialog
+#if defined(_NFD_H)
                 nfdchar_t* outPath = NULL;
                 nfdresult_t result = (param.mType == Con_FilenameRead) ? NFD_OpenDialog(NULL, NULL, &outPath)
                                                                        : NFD_SaveDialog(NULL, NULL, &outPath);
@@ -534,6 +534,9 @@ void GraphControler::ApplyDirtyList()
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
                 break;
             case Dirty::AddedNode:
+            {
+                int startFrame, endFrame;
+                mModel.GetStartEndFrame(nodeIndex, startFrame, endFrame);
                 mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));
                 mEditingContext.AddEvaluation(nodeIndex);
                 evaluationOrderChanged = true;
@@ -541,8 +544,12 @@ void GraphControler::ApplyDirtyList()
                 mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
                 // samplers
                 mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
+                // time
+                mEvaluationStages.SetStartEndFrame(nodeIndex, startFrame, endFrame);
+                //dirty
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                }
                 break;
             case Dirty::DeletedNode:
                 evaluationOrderChanged = true;
@@ -747,7 +754,9 @@ void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
 
             
             if (ImGui::IsWindowAppearing())
+            {
                 ImGui::SetKeyboardFocusHere();
+            }
             ImGui::InputText("", inputText, sizeof(inputText));
             {
                 if (strlen(inputText))

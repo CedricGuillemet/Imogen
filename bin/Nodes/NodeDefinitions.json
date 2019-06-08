@@ -1124,7 +1124,8 @@
 		}, {
 			"name": "DPI",
 			"type": "Float",
-            "description":"Resolution used for rendering the SVG. The higher value, the bigger the image will be."
+            "description":"Resolution used for rendering the SVG. The higher value, the bigger the image will be.",
+            "default":"96"
 		}]
 	}, {
 		"name": "SceneLoader",

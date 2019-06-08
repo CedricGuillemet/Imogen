@@ -726,6 +726,20 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         }
     } // passNumber
     glDisable(GL_BLEND);
+}
+
+void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
+{
+    const auto& evaluation = mEvaluations[nodeIndex];
+    const auto tgt = evaluation.mTarget;
+
+    const int width = tgt->mImage->mWidth;
+    const int height = tgt->mImage->mHeight;
+
+    if (!width || !height)
+    {
+        return;
+    }
 
     // create thumbnail
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -737,17 +751,17 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     int sourceCoords[4];
     mThumbnails.GetThumbCoordinates(thumb, sourceCoords);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, tgt->mFbo);
-#ifdef glDrawBuffer
+/*#ifdef glDrawBuffer
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
-#endif	
+#endif	*/
+
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, thumbTarget.mFbo);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
 
-    glBlitFramebuffer(0,0, tgt->mImage->mWidth, tgt->mImage->mHeight, sourceCoords[0], sourceCoords[1], sourceCoords[2], sourceCoords[3], GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBlitFramebuffer(0, 0, width, height, sourceCoords[0], sourceCoords[1], sourceCoords[2], sourceCoords[3], GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
 }
 
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
@@ -894,6 +908,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
         EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
     }
 
+    GenerateThumbnail(nodeIndex);
     evaluation.mDirtyFlag = 0;
 }
 

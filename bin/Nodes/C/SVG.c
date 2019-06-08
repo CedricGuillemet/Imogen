@@ -13,11 +13,16 @@ int main(SVG *param, Evaluation *evaluation, void *context)
 	if (param->dpi <= 1.f)
 		param->dpi = 96.f;
 
+	if (!(evaluation->dirtyFlag & DirtyParameter))
+    {
+		return EVAL_OK;
+    }
 	if (strlen(param->filename))
 	{
 		if (LoadSVG(param->filename, &image, param->dpi) == EVAL_OK)
 		{
 			SetEvaluationImage(context, evaluation->targetIndex, &image);
+            FreeImage(&image);
 		}
 	}
 	return EVAL_OK;

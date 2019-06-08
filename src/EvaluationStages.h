@@ -146,7 +146,7 @@ struct EvaluationStages
 
     Mat4x4* GetParameterViewMatrix(size_t nodeIndex) { return &mStages[nodeIndex].mParameterViewMatrix; }
     const Parameters& GetParameters(size_t nodeIndex) const { return mParameters[nodeIndex]; }
-    void SetParameters(size_t nodeIndex, const Parameters& parameters) { mParameters[nodeIndex] = parameters; }
+    void SetParameters(size_t nodeIndex, const Parameters& parameters);
     uint16_t GetNodeType(size_t nodeIndex) const { return mStages[nodeIndex].mType; }
     size_t GetStagesCount() const { return mStages.size(); }
 

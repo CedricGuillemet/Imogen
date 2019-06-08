@@ -44,7 +44,6 @@ void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
 #if USE_FFMPEG
     evaluation.mDecoder = NULL;
 #endif
-    evaluation.mUseCountByOthers = 0;
     evaluation.mType = uint16_t(nodeType);
     evaluation.mLocalTime = 0;
     evaluation.mScene = nullptr;
@@ -68,7 +67,7 @@ void EvaluationStages::DelEvaluation(size_t nodeIndex)
     mParameters.erase(mParameters.begin() + nodeIndex);
 }
 
-void EvaluationStages::SetEvaluationParameters(size_t nodeIndex, const Parameters& parameters)
+void EvaluationStages::SetParameters(size_t nodeIndex, const Parameters& parameters)
 {
 #if USE_FFMPEG
     EvaluationStage& stage = mStages[nodeIndex];
@@ -77,33 +76,6 @@ void EvaluationStages::SetEvaluationParameters(size_t nodeIndex, const Parameter
     if (stage.mDecoder)
         stage.mDecoder = NULL;
 #endif
-}
-
-void EvaluationStages::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& inputSamplers)
-{
-    mInputSamplers[nodeIndex] = inputSamplers;
-}
-
-void EvaluationStages::ClearInputs()
-{
-    mInputs.resize(mStages.size());
-    mUseCountByOthers.resize(mStages.size());
-    for (size_t i = 0;i<mStages.size();i++)
-    {
-        mInputs[i] = Input();
-        mUseCountByOthers[i] = 0;
-    }
-}
-
-void EvaluationStages::SetEvaluationInput(size_t nodeIndex, int slot, int source)
-{
-    mInputs[nodeIndex].mInputs[slot] = source;
-    mUseCountByOthers[source]++;
-}
-
-void EvaluationStages::SetEvaluationOrder(const std::vector<size_t>& nodeOrderList)
-{
-    mEvaluationOrderList = nodeOrderList;
 }
 
 void EvaluationStages::Clear()
@@ -118,7 +90,7 @@ void EvaluationStages::Clear()
 
 size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 {
-    #if USE_FFMPEG
+#if USE_FFMPEG
     auto& stage = mStages[target];
     if (!stage.mDecoder)
         return 1;
@@ -127,9 +99,9 @@ size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
         int a = 1;
     }
     return stage.mDecoder->mFrameCount;
-    #else
+#else
     return 1;
-    #endif
+#endif
 }
 
 void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,

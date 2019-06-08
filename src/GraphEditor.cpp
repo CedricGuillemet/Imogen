@@ -965,8 +965,7 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
         DrawGrid(drawList, windowPos, canvasSize, factor);
     }
 
-    bool openContextMenu = false;
-    
+   
     if (!enabled)
         goto nodeGraphExit;
 

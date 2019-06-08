@@ -13,7 +13,6 @@
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <io.h>
 #include <fcntl.h>
 #include "GraphEditor.h"
 #include "GraphControler.h"
@@ -33,7 +32,7 @@
 struct LoopData
 {
     Imogen*                 mImogen             = nullptr;
-    NodeGraphControler*     mNodeGraphControler = nullptr;
+    GraphControler*     	mNodeGraphControler = nullptr;
     Builder*                mBuilder            = nullptr;
     SDL_Window*             mWindow             = nullptr;
     SDL_GLContext           mGLContext          = nullptr;
@@ -105,7 +104,7 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
 #ifdef __EMSCRIPTEN__
 void ImWebConsoleOutput(const char* szText)
 {
-    printf(szText);
+    printf("%s", szText);
 }
    
 EM_JS(void, HideLoader, (), {
@@ -253,7 +252,7 @@ int main(int argc, char** argv)
     LoadLib(&library, libraryFilename);
 
 
-    NodeGraphControler nodeGraphControler;
+    GraphControler nodeGraphControler;
     Imogen imogen(&nodeGraphControler);
 
     Builder builder;

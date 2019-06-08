@@ -150,7 +150,7 @@ struct EvaluationContext
     {
         mbSynchronousEvaluation = synchronous;
     }
-    void SetTargetDirty(size_t target, DirtyFlag dirtyflag, bool onlyChild = false);
+    void SetTargetDirty(size_t target, Dirty::Type dirtyflag, bool onlyChild = false);
     int StageIsProcessing(size_t target) const
     {
         assert (target < mEvaluations.size());
@@ -242,23 +242,6 @@ protected:
 #if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 #endif
-
-    struct Evaluation
-    {
-        std::shared_ptr<RenderTarget> mTarget;
-        float mProgress;
-        ComputeBuffer mComputeBuffer;
-
-        uint8_t mDirtyFlag;
-        uint8_t mProcessing;
-        uint8_t mBlendingSrc;
-        uint8_t mBlendingDst;
-        uint8_t mVertexSpace; // UV, worldspace
-        uint8_t mbDepthBuffer : 1;
-        uint8_t mbClearBuffer : 1;
-        uint8_t mbActive : 1;
-    };
-    std::vector<Evaluation> mEvaluations;
 
     EvaluationInfo mEvaluationInfo;
 

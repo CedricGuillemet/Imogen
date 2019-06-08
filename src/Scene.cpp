@@ -23,7 +23,7 @@
 // SOFTWARE.
 //
 
-#include <GL/gl3w.h>
+#include "Platform.h"
 #include "Scene.h"
 #include "EvaluationContext.h"
 

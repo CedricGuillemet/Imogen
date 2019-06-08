@@ -663,7 +663,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 #else
                 glClearDepth(1.f);
 #endif
-                if (evaluationStage.mbClearBuffer)
+                if (evaluation.mbClearBuffer)
                 {
                     glClear(GL_COLOR_BUFFER_BIT | (evaluation.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
                 }
@@ -737,7 +737,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     int sourceCoords[4];
     mThumbnails.GetThumbCoordinates(thumb, sourceCoords);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, tgt->mFbo);
+#ifdef glDrawBuffer
     glDrawBuffer(GL_COLOR_ATTACHMENT0);
+#endif	
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, thumbTarget.mFbo);
     glReadBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -870,18 +872,18 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 
 #if USE_LIBTCC
-    if (currentStage.gEvaluationMask & EvaluationC)
+    if (evaluationMask & EvaluationC)
 	{
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
 	}
 #endif
 #if USE_PYTHON
-    if (currentStage.gEvaluationMask & EvaluationPython)
+    if (evaluationMask & EvaluationPython)
 	{
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
 	}
 #endif
-    if (currentStage.gEvaluationMask & EvaluationGLSLCompute)
+    if (evaluationMask & EvaluationGLSLCompute)
     {
         EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);
     }

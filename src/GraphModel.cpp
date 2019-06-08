@@ -30,6 +30,13 @@
 
 extern UndoRedoHandler gUndoRedoHandler;
 
+ImRect GraphModel::Node::GetDisplayRect() const
+{
+    int width = gMetaNodes[mType].mWidth;
+    int height = gMetaNodes[mType].mHeight;
+    return ImRect(mPos, mPos + ImVec2(float(width), float(height)));
+}
+
 GraphModel::GraphModel() : mbTransaction(false), mUndoRedo(nullptr), mStartFrame(0), mEndFrame(1)
 {
 }
@@ -634,12 +641,15 @@ static ImRect DisplayRectMargin(ImRect rect)
 
 ImRect GraphModel::GetNodesDisplayRect() const
 {
-    ImRect rect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
+    ImRect rect;
+    if (mNodes.empty())
+    {
+        return ImRect(ImVec2(0.f, 0.f), ImVec2(0.f, 0.f));
+    }
+    rect = mNodes[0].GetDisplayRect();
     for (auto& node : mNodes)
     {
-        int width = gMetaNodes[node.mType].mWidth;
-        int height = gMetaNodes[node.mType].mHeight;
-        rect.Add(ImRect(node.mPos, node.mPos + ImVec2(float(width), float(height))));
+        rect.Add(node.GetDisplayRect());
     }
 
     return DisplayRectMargin(rect);
@@ -652,9 +662,7 @@ ImRect GraphModel::GetFinalNodeDisplayRect(const std::vector<size_t>& orderList)
     if (!evaluationOrder.empty() && !mNodes.empty())
     {
         auto& node = mNodes[evaluationOrder.back()];
-        int width = gMetaNodes[node.mType].mWidth;
-        int height = gMetaNodes[node.mType].mHeight;
-        rect = ImRect(node.mPos, node.mPos + ImVec2(float(width), float(height)));
+        rect = node.GetDisplayRect();
     }
     return DisplayRectMargin(rect);
 }

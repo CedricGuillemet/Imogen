@@ -56,7 +56,7 @@ float worley(vec2 P, float jitter, bool manhattanDistance)
   	d1.yz = min(d1.yz, d2.yz); // F2 is now not in d2.yz
   	d1.y = min(d1.y, d1.z); // nor in  d1.z
   	d1.y = min(d1.y, d2.x); // F2 is in d1.y, we're done.
-  	return sqrt(d1.xy);
+  	return sqrt(d1.x);
 }
 
 float WorleyNoise()

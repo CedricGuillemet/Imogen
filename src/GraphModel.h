@@ -73,6 +73,9 @@ public:
         MultiplexInput mMultiplexInput;
         Samplers mSamplers;
         bool mbSelected;
+
+        // Helpers
+        ImRect GetDisplayRect() const;
     };
 
     struct Link

@@ -26,6 +26,10 @@ int main(ImageWrite *param, Evaluation *evaluation, void *context)
 		}
 	}
 
+    if (evaluation->inputIndices[0] == -1)
+    {
+        return EVAL_OK;
+    }
 	if (param->mode && GetEvaluationSize(context, evaluation->inputIndices[0], &imageWidth, &imageHeight) == EVAL_OK)
 	{
 		float ratio = (float)imageWidth / (float)imageHeight;

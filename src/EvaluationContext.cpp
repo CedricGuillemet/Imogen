@@ -559,10 +559,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                                      EvaluationInfo& evaluationInfo)
 {
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
-
     const auto& evaluation = mEvaluations[nodeIndex];
     const auto tgt = evaluation.mTarget;
-
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const unsigned int program = evaluator.mGLSLProgram;
     const int blendOps[] = {evaluation.mBlendingSrc, evaluation.mBlendingDst};
@@ -581,16 +579,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     for (int i = 0; i < 2; i++)
     {
         if (blendOps[i] < BLEND_LAST)
+        {
             blend[i] = GLBlends[blendOps[i]];
+        }
     }
 
     // parameters
     glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
-
-
-
-    glBufferData(
-        GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -605,7 +601,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
-    int passCount = GetIntParameter(nodeIndex, parameters, "passCount", 1);
+    
+    int passCount = GetIntParameter(evaluationStage.mType, parameters, "passCount", 1);
     auto transientTarget = std::make_shared<RenderTarget>(RenderTarget());
     if (passCount > 1)
     {
@@ -634,8 +631,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
             for (size_t face = 0; face < faceCount; face++)
             {
                 if (tgt->mImage->mNumFaces == 6)
+                {
                     tgt->BindCubeFace(face, mip, tgt->mImage->mWidth);
-
+                }
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
                 memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
                 float sizeDiv = float(mip + 1);

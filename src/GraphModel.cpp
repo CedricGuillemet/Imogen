@@ -538,18 +538,15 @@ void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char
 {
     assert(mbTransaction);
 
+    auto dirtyParameters = [this](int index) { SetDirty(index, Dirty::Parameter); };
     auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
                               int(nodeIndex),
-                              [&](int index) { return &mNodes[index]; },
-                              [&](int index) {
-                                  // auto& stage = mEvaluationStages.mStages[index];
-                                  // mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
-                                  // mEditingContext.SetTargetDirty(index, Dirty::Sampler);
-                              })
+                              [this](int index) { return &mNodes[index]; },
+                              dirtyParameters)
                         : nullptr;
 
     mNodes[nodeIndex].mParameters = parameters;
-    SetDirty(nodeIndex, Dirty::Parameter);
+    dirtyParameters(nodeIndex);
 }
 
 void GraphModel::CopySelectedNodes()

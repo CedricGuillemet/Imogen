@@ -173,7 +173,7 @@ int DisplayRugs(GraphEditorDelegate* delegate, int editRug, ImDrawList* drawList
                     ImVec2 node_rect_max = node_rect_min + node.mRect.GetSize() * factor;
                     if (rugRect.Overlaps(ImRect(node_rect_min, node_rect_max)))
                     {
-                        delegate->SelectNode(i);
+                        delegate->SelectNode(i, true);
                     }
                 }
             }
@@ -699,7 +699,7 @@ bool HandleConnections(ImDrawList* drawList,
             }
         }
     }
-    if (delegate->InTransaction())
+    if (nodeOperation == NO_EditingLink && delegate->InTransaction())
     {
         delegate->EndTransaction();
     }
@@ -789,7 +789,7 @@ static bool DrawNode(ImDrawList* drawList,
                         delegate->SelectNode(i, false);
                     }
                 }
-                delegate->SelectNode(nodeIndex);
+                delegate->SelectNode(nodeIndex, true);
             }
         }
     }

@@ -54,6 +54,8 @@ struct Dirty
         AddedNode = 1 << 6,
         DeletedNode = 1 << 7,
         StartEndTime = 1 << 8,
+        RugChanged = 1 << 9,
+        VisualGraph = 1 << 10, // node selection, node position
     };
 };
 

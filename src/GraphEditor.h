@@ -54,7 +54,7 @@ struct GraphEditorDelegate
     virtual void EndTransaction() = 0;
 
     virtual void DelRug(size_t rugIndex) = 0;
-    virtual void SelectNode(size_t nodeIndex, bool selected = true) = 0;
+    virtual void SelectNode(size_t nodeIndex, bool selected) = 0;
     virtual void MoveSelectedNodes(const ImVec2 delta) = 0;
     
     virtual void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex) = 0;
@@ -90,8 +90,8 @@ struct GraphEditorDelegate
 
     // node/links/rugs retrieval
     virtual const std::vector<Node>& GetNodes() const = 0;
-    virtual const std::vector<Rug> GetRugs() const = 0;
-    virtual const std::vector<Link> GetLinks() const = 0;
+    virtual const std::vector<Rug>& GetRugs() const = 0;
+    virtual const std::vector<Link>& GetLinks() const = 0;
 };
 
 void GraphEditor(GraphEditorDelegate* delegate, bool enabled);

@@ -63,9 +63,9 @@ struct GraphControler : public GraphEditorDelegate
     virtual void SetRug(size_t rugIndex, const ImRect& rect, const char *szText, uint32_t color) { mModel.SetRug(rugIndex, GraphModel::Rug{rect.Min, rect.GetSize(), color, std::string(szText)}); }
 
     // accessors
-    virtual const std::vector<Node>& GetNodes() const { return mNodes; }
-    virtual const std::vector<Rug> GetRugs() const { return mRugs; }
-    virtual const std::vector<Link> GetLinks() const { return mLinks; }
+    virtual const std::vector<Node>& GetNodes() const override  { return mNodes; }
+    virtual const std::vector<Rug>& GetRugs()   const override  { return mRugs;  }
+    virtual const std::vector<Link>& GetLinks() const override  { return mLinks; }
 
 
 

@@ -2003,6 +2003,9 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
     ImGui::SetNextWindowSize(io.DisplaySize - deltaHeight);
     ImVec2 nodesWindowPos;
 
+    // be sure that everything is in sync before rendering them
+    mNodeGraphControler->ApplyDirtyList();
+
     if (ImGui::Begin("Imogen",
                      0,
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |

@@ -136,9 +136,10 @@ void GraphModel::MoveSelectedNodes(const ImVec2 delta)
             continue;
         }
         auto ur = mUndoRedo
-                ? std::make_unique<URChange<Node>>(int(i), [&](int index) { return &mNodes[index]; }, [](int) {})
+                ? std::make_unique<URChange<Node>>(int(i), [this](int index) { return &mNodes[index]; }, [this](int index) {SetDirty(index, Dirty::VisualGraph);})
                 : nullptr;
         node.mPos += delta;
+        SetDirty(i, Dirty::VisualGraph);
     }
 }
 
@@ -202,16 +203,16 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
 
     size_t nodeIndex = mNodes.size();
 
-    auto delNode = [&](int index) { DeleteNodeHelper(index); };
-    auto addNode = [&](int index) { AddNodeHelper(index); };
+    auto delNode = [this](int index) { SetDirty(index, Dirty::DeletedNode); };
+    auto addNode = [this](int index) { SetDirty(index, Dirty::AddedNode); };
 
-    auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [&]() { return &mNodes; }, delNode, addNode) : nullptr;
+    auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [this]() { return &mNodes; }, delNode, addNode) : nullptr;
     
     mNodes.push_back(Node(int(type), position, mStartFrame, mEndFrame));
     InitDefaultParameters(type, mNodes[nodeIndex].mParameters);
     mNodes.back().mSamplers.resize(gMetaNodes[type].mInputs.size());
 
-    AddNodeHelper(int(nodeIndex));
+    addNode(int(nodeIndex));
     return nodeIndex;
 }
 
@@ -263,32 +264,38 @@ void GraphModel::AddRug(const Rug& rug)
 {
     assert(mbTransaction);
 
+    auto rugDirty = [&](int index) {SetDirty(-1, Dirty::RugChanged); };
     auto ur = mUndoRedo
-                  ? std::make_unique<URAdd<Rug>>(int(mRugs.size()), [&]() { return &mRugs; })
+                  ? std::make_unique<URAdd<Rug>>(int(mRugs.size()), [&]() { return &mRugs; }, rugDirty, rugDirty)
                   : nullptr;
 
     mRugs.push_back(rug);
+    rugDirty(-1);
 }
 
 void GraphModel::DelRug(size_t rugIndex)
 {
     assert(mbTransaction);
 
-    auto ur = mUndoRedo ? std::make_unique<URDel<Rug>>(int(rugIndex), [&]() { return &mRugs; })
+    auto rugDirty = [&](int index) {SetDirty(-1, Dirty::RugChanged); };
+    auto ur = mUndoRedo ? std::make_unique<URDel<Rug>>(int(rugIndex), [&]() { return &mRugs; }, rugDirty, rugDirty)
                         : nullptr;
 
     mRugs.erase(mRugs.begin() + rugIndex);
+    rugDirty(-1);
 }
 
 void GraphModel::SetRug(size_t rugIndex, const Rug& rug)
 {
     assert(mbTransaction);
 
+    auto rugDirty = [&](int index) {SetDirty(-1, Dirty::RugChanged); };
     auto ur = mUndoRedo
-                  ? std::make_unique<URChange<Rug>>(int(rugIndex), [&](int index) { return &mRugs[index]; }, [](int) {})
+                  ? std::make_unique<URChange<Rug>>(int(rugIndex), [&](int index) { return &mRugs[index]; }, rugDirty)
                   : nullptr;
 
     mRugs[rugIndex] = rug;
+    rugDirty(-1);
 }
 
 bool GraphModel::HasSelectedNodes() const
@@ -388,6 +395,7 @@ void GraphModel::SelectNode(size_t nodeIndex, bool selected)
 {
     // assert(mbTransaction);
     mNodes[nodeIndex].mbSelected = selected;
+    SetDirty(nodeIndex, Dirty::VisualGraph);
 }
 
 ImVec2 GraphModel::GetNodePos(size_t nodeIndex) const
@@ -860,7 +868,6 @@ static bool NodeTypeHasMultiplexer(size_t nodeType)
 
 void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, std::vector<size_t>& list) const
 {
-
     for (auto& input : inputs[nodeIndex].mInputs)
     {
         if (input == -1)

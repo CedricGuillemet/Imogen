@@ -46,6 +46,7 @@ void GraphControler::Clear()
     mModel.Clear();
     mEvaluationStages.Clear();
     mEditingContext.Clear();
+    ComputeGraphArrays();
 }
 
 void GraphControler::HandlePin(size_t nodeIndex, size_t parameterIndex)
@@ -502,7 +503,6 @@ void GraphControler::NodeEdit()
 
         EditNodeParameters();
     }
-    ApplyDirtyList();
 }
 
 void GraphControler::ApplyDirtyList()
@@ -510,24 +510,31 @@ void GraphControler::ApplyDirtyList()
     // apply dirty list
     const auto& dirtyList = mModel.GetDirtyList();
     bool evaluationOrderChanged = false;
+    bool graphArrayChanged = false;
     for (const auto& dirtyItem : dirtyList)
     {
         size_t nodeIndex = dirtyItem.mNodeIndex;
         switch(dirtyItem.mFlags)
         {
-
             case Dirty::Input:
                 evaluationOrderChanged = true;
+                graphArrayChanged = true;
                 break;
             case Dirty::Parameter:
                 mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                break;
+            case Dirty::VisualGraph:
+                graphArrayChanged = true;
                 break;
             case Dirty::Mouse:
                 break;
             case Dirty::Camera:
                 break;
             case Dirty::Time:
+                break;
+            case Dirty::RugChanged:
+                graphArrayChanged = true;
                 break;
             case Dirty::Sampler:
                 mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
@@ -540,6 +547,7 @@ void GraphControler::ApplyDirtyList()
                 mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));
                 mEditingContext.AddEvaluation(nodeIndex);
                 evaluationOrderChanged = true;
+                graphArrayChanged = true;
                 // params
                 mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
                 // samplers
@@ -552,7 +560,10 @@ void GraphControler::ApplyDirtyList()
                 }
                 break;
             case Dirty::DeletedNode:
+                mEvaluationStages.DelEvaluation(nodeIndex);
+                mEditingContext.DelEvaluation(nodeIndex);
                 evaluationOrderChanged = true;
+                graphArrayChanged = true;
                 break;
             case Dirty::StartEndTime:
                 {
@@ -570,7 +581,10 @@ void GraphControler::ApplyDirtyList()
         mEvaluationStages.mInputs = mModel.GetInputs();
         mEvaluationStages.ComputeEvaluationOrder();
     }
-    ComputeGraphArrays();
+    if (graphArrayChanged)
+    {
+        ComputeGraphArrays();
+    }
 }
 
 void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)

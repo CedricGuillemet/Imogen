@@ -2006,6 +2006,13 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
     // be sure that everything is in sync before rendering them
     mNodeGraphControler->ApplyDirtyList();
 
+    // getting node graph AABB here as everything is in sync. Might not be the case after the UI tick as things 
+    // can change and not be updated via the dirtylist (nodegraph evaluation list with fewer or more elements than nodes in model)
+    ImRect rc = mNodeGraphControler->mModel.GetNodesDisplayRect();
+    interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
+    rc = mNodeGraphControler->mModel.GetFinalNodeDisplayRect(mNodeGraphControler->mEvaluationStages.GetForwardEvaluationOrder());
+    interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
+
     if (ImGui::Begin("Imogen",
                      0,
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -2111,11 +2118,6 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
     ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 
     Playback(currentTime != mCurrentTime);
-
-    ImRect rc = mNodeGraphControler->mModel.GetNodesDisplayRect();
-    interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
-    rc = mNodeGraphControler->mModel.GetFinalNodeDisplayRect(mNodeGraphControler->mEvaluationStages.GetForwardEvaluationOrder());
-    interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
 }
 
 void Imogen::Playback(bool timeHasChanged)

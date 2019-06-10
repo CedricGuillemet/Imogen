@@ -1023,11 +1023,15 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
     {
         if (ImGui::IsMouseDragging(0, 1))
         {
-            if (!delegate->InTransaction())
+            ImVec2 delta = io.MouseDelta / factor;
+            if (fabsf(delta.x) >= 1.f || fabsf(delta.y) >= 1.f)
             {
-                delegate->BeginTransaction(true);
+                if (!delegate->InTransaction())
+                {
+                    delegate->BeginTransaction(true);
+                }
+                delegate->MoveSelectedNodes(delta);
             }
-            delegate->MoveSelectedNodes(io.MouseDelta / factor);
         }
     }
 

@@ -185,7 +185,6 @@ private:
 
     void SetDirty(size_t nodeIndex, Dirty::Type flags) { mDirtyList.push_back({nodeIndex, flags});}
     void AddNodeHelper(int nodeIndex);
-    void DeleteNodeHelper(int nodeIndex);
 
     void DelLinkInternal(size_t linkIndex);
     void AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);

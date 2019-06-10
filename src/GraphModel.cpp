@@ -158,23 +158,6 @@ void GraphModel::AddNodeHelper(int nodeIndex)
     SetDirty(nodeIndex, Dirty::AddedNode);
 }
 
-void GraphModel::DeleteNodeHelper(int nodeIndex)
-{
-    for (int id = 0; id < mLinks.size(); id++)
-    {
-        if (mLinks[id].mInputNodeIndex > nodeIndex)
-        {
-            mLinks[id].mInputNodeIndex--;
-        }
-        if (mLinks[id].mOutputNodeIndex > nodeIndex)
-        {
-            mLinks[id].mOutputNodeIndex--;
-        }
-    }
-    RemoveAnimation(nodeIndex);
-    SetDirty(nodeIndex, Dirty::DeletedNode);
-}
-
 void GraphModel::RemoveAnimation(size_t nodeIndex)
 {
     if (mAnimTrack.empty())
@@ -322,54 +305,23 @@ void GraphModel::DeleteSelectedNodes()
     for (int selection = int(mNodes.size()) - 1; selection >= 0; selection--)
     {
         if (!mNodes[selection].mbSelected)
+        {
             continue;
+        }
         
+        auto delNode = [this](int index) { SetDirty(index, Dirty::DeletedNode); };
+        auto addNode = [this](int index) { SetDirty(index, Dirty::AddedNode); };
+
         auto ur = mUndoRedo ? std::make_unique<URDel<Node>>(int(selection),
                                     [this]() { return &mNodes; },
-                                    [this](int index) {
-                                        DeleteNodeHelper(index);
-                                    },
-                                    [this](int index) {
-                                        // recompute link indices
-                                        for (int id = 0; id < mLinks.size(); id++)
-                                        {
-                                            if (mLinks[id].mInputNodeIndex >= index)
-                                            {
-                                                mLinks[id].mInputNodeIndex++;
-                                            }
-                                            if (mLinks[id].mOutputNodeIndex >= index)
-                                            {
-                                                mLinks[id].mOutputNodeIndex++;
-                                            }
-                                        }
-                                        AddNodeHelper(index);
-                                    }) : nullptr;
-
-        for (int id = 0; id < mLinks.size(); id++)
-        {
-            if (mLinks[id].mInputNodeIndex == selection || mLinks[id].mOutputNodeIndex == selection)
-            {
-                DelLink(id);
-            }
-        }
+                                    delNode, addNode) : nullptr;
 
         for (size_t i = 0; i < mLinks.size();)
         {
             auto& link = mLinks[i];
             if (link.mInputNodeIndex == selection || link.mOutputNodeIndex == selection)
             {
-                auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(
-                    int(i),
-                    [this]() { return &mLinks; },
-                    [this](int index) {
-                        DelLinkInternal(index);
-                    },
-                    [this](int index) {
-                        Link& link = mLinks[index];
-                        AddLinkInternal(link.mInputNodeIndex, link.mInputSlotIndex, link.mOutputNodeIndex, link.mOutputSlotIndex);
-                    }) : nullptr;
-
-                mLinks.erase(mLinks.begin() + i);
+                DelLink(i);
             }
             else
             {
@@ -378,7 +330,25 @@ void GraphModel::DeleteSelectedNodes()
         }
 
         mNodes.erase(mNodes.begin() + selection);
-        DeleteNodeHelper(selection);
+        for (int id = 0; id < mLinks.size(); id++)
+        {
+            if (mLinks[id].mInputNodeIndex > selection)
+            {
+                auto ur = mUndoRedo ? std::make_unique<URChange<Link>>(id,
+                    [this](int index) { return &mLinks[index]; }) : nullptr;
+
+                mLinks[id].mInputNodeIndex--;
+            }
+            if (mLinks[id].mOutputNodeIndex > selection)
+            {
+                auto ur = mUndoRedo ? std::make_unique<URChange<Link>>(id,
+                    [this](int index) { return &mLinks[index]; }) : nullptr;
+
+                mLinks[id].mOutputNodeIndex--;
+            }
+        }
+        RemoveAnimation(selection);
+        SetDirty(selection, Dirty::DeletedNode);
     }
 }
 
@@ -832,7 +802,7 @@ void GraphModel::SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiple
 {
     assert(mbTransaction);
     auto ur = mUndoRedo
-        ? std::make_unique<URChange<Node>>(int(nodeIndex), [&](int index) { return &mNodes[index]; }, [&](int nodeIndex) { SetDirty(nodeIndex, Dirty::Input); })
+        ? std::make_unique<URChange<Node>>(int(nodeIndex), [this](int index) { return &mNodes[index]; }, [this](int index) { SetDirty(index, Dirty::Input); })
         : nullptr;
 
     mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex] = multiplex;

@@ -383,12 +383,8 @@ void GraphModel::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& 
 
     auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
                               int(nodeIndex),
-                              [&](int index) { return &mNodes[index]; },
-                              [&](int index) {
-                                  // auto& stage = mEvaluationStages.mStages[index];
-                                  // mEvaluationStages.SetSamplers(index, stage.mInputSamplers);
-                                  // mEditingContext.SetTargetDirty(index, Dirty::Sampler);
-                              })
+                              [this](int index) { return &mNodes[index]; },
+                              [this](int index) { SetDirty(index, Dirty::Sampler); })
                         : nullptr;
     mNodes[nodeIndex].mSamplers = samplers;
     SetDirty(nodeIndex, Dirty::Sampler);

@@ -237,13 +237,14 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
         return;
     }
 
+    auto inputChanged = [this](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input); };
     size_t linkIndex = mLinks.size();
 
-    auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; })
+    auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; }, inputChanged, inputChanged)
                   : nullptr;
 
     AddLinkInternal(inputNodeIndex, inputSlotIndex, outputNodeIndex, outputSlotIndex);
-    SetDirty(outputNodeIndex, Dirty::Input);
+    inputChanged(int(mLinks.size() - 1));
 }
 
 void GraphModel::DelLinkInternal(size_t linkIndex)
@@ -255,8 +256,11 @@ void GraphModel::DelLink(size_t linkIndex)
 {
     assert(mbTransaction);
 
-    auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; })
+    auto inputChanged = [this](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input); };
+    auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, inputChanged, inputChanged)
                   : nullptr;
+
+    inputChanged(int(linkIndex));
     DelLinkInternal(linkIndex);
 }
 
@@ -546,7 +550,7 @@ void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char
                         : nullptr;
 
     mNodes[nodeIndex].mParameters = parameters;
-    dirtyParameters(nodeIndex);
+    dirtyParameters(int(nodeIndex));
 }
 
 void GraphModel::CopySelectedNodes()
@@ -806,6 +810,10 @@ void GraphModel::NodeGraphLayout(const std::vector<size_t>& orderList)
 
 bool GraphModel::RecurseIsLinked(int from, int to) const
 {
+    if (from == to)
+    {
+        return true;
+    }
     for (auto& link : mLinks)
     {
         if (link.mInputNodeIndex == from)

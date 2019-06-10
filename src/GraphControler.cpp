@@ -519,6 +519,7 @@ void GraphControler::ApplyDirtyList()
             case Dirty::Input:
                 evaluationOrderChanged = true;
                 graphArrayChanged = true;
+                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Input);
                 break;
             case Dirty::Parameter:
                 mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));

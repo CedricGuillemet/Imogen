@@ -220,8 +220,12 @@ protected:
     EvaluationThumbnails mThumbnails;
 
     void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+#ifdef USE_LIBTCC
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+#endif
+#ifdef USE_PYTHON
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+#endif
     void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     // return true if any node is still in processing state
     bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);

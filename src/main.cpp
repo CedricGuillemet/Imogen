@@ -301,7 +301,7 @@ int main(int argc, char** argv)
 #ifdef __EMSCRIPTEN__
     HideLoader();
     // This function call won't return, and will engage in an infinite loop, processing events from the browser, and dispatching them.
-    emscripten_set_MainLoop_arg(MainLoop, &loopdata, 0, true);
+    emscripten_set_main_loop_arg(MainLoop, &loopdata, 0, true);
 #else   
     while (!done)
     {

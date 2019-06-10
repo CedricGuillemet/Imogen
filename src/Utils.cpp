@@ -241,7 +241,7 @@ int Log(const char* szFormat, ...)
     static FILE* fp = fopen("log.txt", "wt");
     if (fp)
     {
-        fprintf(fp, buf);
+        fprintf(fp, "%s", buf);
         fflush(fp);
     }
     for (auto output : outputs)

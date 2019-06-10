@@ -762,6 +762,7 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
+#ifdef USE_LIBTCC
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
     try // todo: find a better solution than a try catch
@@ -780,7 +781,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
     {
     }
 }
-
+#endif
 #if USE_PYTHON
 void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
                                        size_t index,
@@ -883,16 +884,18 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     SetKeyboardMouseInfos(mEvaluationInfo);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 
+#ifdef USE_LIBTCC
     if (evaluationMask & EvaluationC)
     {
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
     }
-
+#endif
+#ifdef USE_PYTHON
     if (evaluationMask & EvaluationPython)
     {
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
     }
-
+#endif
     if (evaluationMask & EvaluationGLSLCompute)
     {
         EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);

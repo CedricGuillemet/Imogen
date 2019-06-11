@@ -73,7 +73,7 @@ struct GraphControler : public GraphEditorDelegate
     void NodeEdit();
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) override;
     virtual bool RenderBackground() override;
-    virtual void ContextMenu(ImVec2 offset, int nodeHovered) override;
+    virtual void ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int nodeHovered) override;
 
     EvaluationContext mEditingContext;
     EvaluationStages mEvaluationStages;

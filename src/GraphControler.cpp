@@ -730,7 +730,7 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
     }
 }
 
-void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
+void GraphControler::ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int nodeHovered)
 {
     ImGuiIO& io = ImGui::GetIO();
     size_t metaNodeCount = gMetaNodes.size();
@@ -762,7 +762,7 @@ void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
 
             auto AddNode = [&](int nodeType) {
                 mModel.BeginTransaction(true);
-                mModel.AddNode(nodeType, scenePos);
+                mModel.AddNode(nodeType, rightclickPos);
                 mModel.EndTransaction();
                 inputText[0] = 0;
             };
@@ -823,7 +823,7 @@ void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
         if (ImGui::MenuItem("Add rug", NULL, false))
         {
             GraphModel::Rug rug = {
-                scenePos, ImVec2(400, 200), 0xFFA0A0A0, "Description\nEdit me with a double click."};
+                rightclickPos, ImVec2(400, 200), 0xFFA0A0A0, "Description\nEdit me with a double click."};
             mModel.BeginTransaction(true);
             mModel.AddRug(rug);
             mModel.EndTransaction();
@@ -858,9 +858,10 @@ void GraphControler::ContextMenu(ImVec2 scenePos, int nodeHovered)
 
     if (pasteSelection || (ImGui::IsWindowFocused() && io.KeyCtrl && ImGui::IsKeyPressedMap(ImGuiKey_V)))
     {
-        mModel.PasteNodes(scenePos);
+        mModel.PasteNodes(worldMousePos);
     }
 }
+
 bool GraphControler::NodeIs2D(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);

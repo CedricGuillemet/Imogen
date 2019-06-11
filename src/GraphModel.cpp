@@ -556,43 +556,35 @@ void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
         return;
     }
     BeginTransaction(true);
-    for (size_t i = 0; i < mNodesClipboard.size(); i++)
-    {
-        const Node& node = mNodes[i];
-        //mEditingContext.UserAddStage();
-        //size_t target = mEvaluationStages.mStages.size();
-        //AddSingleNode(sourceNode.mType); todo
-        auto nodeIndex = AddNode(node.mType, node.mPos);
-        //mEvaluationStages.AddSingleEvaluation(sourceNode.mType);
-        //auto& stage = mEvaluationStages.mStages[nodeIndex];
-        //stage.mParameters = sourceNode.mParameters;
-        //stage.mInputSamplers = sourceNode.mInputSamplers;
-        //stage.mStartFrame = sourceNode.mStartFrame;
-        //stage.mEndFrame = sourceNode.mEndFrame;
+    auto firstNodeIndex = mNodes.size();
 
-        //mEvaluationStages.SetEvaluationParameters(nodeIndex, stage.mParameters);
-        //mEvaluationStages.SetSamplers(nodeIndex, stage.mInputSamplers);
-        //mEvaluationStages.SetIOPin(nodeIndex, )
-        //mEvaluationStages.SetTime(&mEditingContext, mEditingContext.GetCurrentTime(), true);
-        //mEditingContext.SetTargetDirty(target, Dirty::All);
-    }
     ImVec2 min(FLT_MAX, FLT_MAX);
     for (auto& clipboardNode : mNodesClipboard)
     {
         min.x = ImMin(clipboardNode.mPos.x, min.x);
         min.y = ImMin(clipboardNode.mPos.y, min.y);
     }
+    const ImVec2 offset = viewOffsetPosition - min;
     for (auto& selnode : mNodes)
     {
         selnode.mbSelected = false;
     }
-    for (auto& clipboardNode : mNodesClipboard)
+
+    for (size_t i = 0; i < mNodesClipboard.size(); i++)
     {
-        auto ur = mUndoRedo ? std::make_unique<URAdd<Node>>(int(mNodes.size()), [&]() { return &mNodes; }) : nullptr;
-        mNodes.push_back(clipboardNode);
-        mNodes.back().mPos += viewOffsetPosition;//(io.MousePos - offset) / factor - min;
+        size_t nodeIndex = mNodes.size();
+
+        auto delNode = [this](int index) { SetDirty(index, Dirty::DeletedNode); };
+        auto addNode = [this](int index) { SetDirty(index, Dirty::AddedNode); };
+
+        auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [this]() { return &mNodes; }, delNode, addNode) : nullptr;
+
+        mNodes.push_back(mNodesClipboard[i]);
+        mNodes.back().mPos += offset;
         mNodes.back().mbSelected = true;
+        addNode(int(nodeIndex));
     }
+
     EndTransaction();
 }
 

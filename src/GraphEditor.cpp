@@ -1082,8 +1082,9 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
         scenePos = (ImGui::GetMousePosOnOpeningCurrentPopup() - offset) / factor;
         ImGui::OpenPopup("context_menu");
     }
+    ;
 
-    delegate->ContextMenu(scenePos, contextMenuHoverNode);
+    delegate->ContextMenu(scenePos, (io.MousePos - offset) / factor, contextMenuHoverNode);
 
     // Scrolling
     if (ImGui::IsWindowHovered() && !ImGui::IsAnyItemActive() && io.MouseClicked[2] && nodeOperation == NO_None)

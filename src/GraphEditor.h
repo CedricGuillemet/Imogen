@@ -46,7 +46,7 @@ struct GraphEditorDelegate
     virtual unsigned int GetBitmapInfo(size_t nodeIndex) const = 0;
 
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) = 0;
-    virtual void ContextMenu(ImVec2 offset, int nodeHovered) = 0;
+    virtual void ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int nodeHovered) = 0;
 
     // operations
     virtual bool InTransaction() = 0;

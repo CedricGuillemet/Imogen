@@ -42,6 +42,7 @@
 #include "UI.h"
 #include "imMouseState.h"
 #include "UndoRedo.h"
+#include "Mem.h"
 
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.
@@ -151,6 +152,7 @@ int main(int argc, char** argv)
 #ifdef WIN32
     // locale for sscanf
     setlocale(LC_ALL, "C");
+    ImGui::SetAllocatorFunctions(imguiMalloc, imguiFree);
 #endif
 
 #ifdef __EMSCRIPTEN__

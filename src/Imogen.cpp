@@ -42,6 +42,7 @@
 #include "imHotKey.h"
 #include "imgInspect.h"
 #include "IconsFontAwesome4.h"
+#include "Mem.h"
 
 Imogen* Imogen::instance = nullptr;
 unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
@@ -1972,6 +1973,12 @@ void Imogen::ExportMaterial()
 #endif
 }
 
+float MemoryGetter(void *data, int idx)
+{
+    MemoryProfileHistory_t::MemHistory* hist = (MemoryProfileHistory_t::MemHistory*)data;
+    return (float)hist->mValues[idx];
+}
+
 void Imogen::ShowDebugWindow()
 {
     ImGui::Begin("Debug");
@@ -1983,6 +1990,92 @@ void Imogen::ShowDebugWindow()
             ImGui::Text("Atlas %d", int(&atlas - atlases.data()));
             ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID, ImVec2(1024, 1024));
         }
+    }
+    if (ImGui::CollapsingHeader("Memory"))
+    {
+        ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1.f, 0.5f, 0.1f, 1.f));
+        static const char *moduleLabels[MODULE_COUNT] = {
+            "IMGUI",
+            "Default",
+            "VRAM Textures"
+        };
+        static const char *labels[] = { "Active Allocated", "Active Allocation Count", "Total Allocated", "Total Freed" }; // , "Allocation Count", "Deallocation Count"
+
+        for (size_t imodule = 0; imodule < MODULE_COUNT; imodule++)
+        {
+            ImGui::Indent();
+
+            auto& nd = gMemoryHistory.mMemory[imodule];
+            MemoryProfileHistory_t::MemHistory* histories[] = {
+                &nd.mActiveAllocated,
+                &nd.mActiveAllocationCount,
+                &nd.mTotalAllocated,
+                &nd.mTotalFreed };
+            static const bool displayMax[] = { false, false, true, true};
+            static const bool isByteQuantity[] = { true, false, true, true };
+            size_t countInfos[] = {0, 0, nd.mAllocationCount.getValue() , nd.mDeallocationCount.getValue() };
+            static const char* countInfoTexts[] = {"", "", "Allocations", "Deallocations"};
+            if (ImGui::CollapsingHeader(moduleLabels[imodule]))
+            {
+                for (size_t iHist = 0; iHist < sizeof(histories) / sizeof(MemoryProfileHistory_t::MemHistory*); iHist++)
+                {
+                    const auto& hist = *histories[iHist];
+
+                    ImGui::PlotLines("", MemoryGetter, (void*)&hist, 64, int(hist.mOffset), labels[iHist], 0.f, (float)hist.getMax(), ImVec2(0, 100));
+                    ImGui::SameLine();
+                    ImGui::BeginGroup();
+                    if (isByteQuantity[iHist])
+                    {
+                        size_t mx = std::max(hist.getValue(), hist.getMax());
+                        const char *unit = "bytes";
+                        size_t dv = 1;
+                        if (mx > 1024 * 50)
+                        {
+                            dv = 1024;
+                            unit = "Kb";
+                            if (mx > 1024 * 1024 * 10)
+                            {
+                                dv = 1024 * 1024;
+                                unit = "Mb";
+                            }
+                        }
+                        if (dv > 1)
+                        {
+                            ImGui::Text("%.2f %s", float(hist.getValue()) / float(dv), unit);
+                            if (displayMax[iHist])
+                            {
+                                ImGui::Text("Max %.2f %s", float(hist.getMax()) / float(dv), unit);
+                            }
+                        }
+                        else
+                        {
+                            ImGui::Text("%d %s", hist.getValue(), unit);
+                            if (displayMax[iHist])
+                            {
+                                ImGui::Text("Max %d %s", hist.getMax(), unit);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ImGui::Text("%d", hist.getValue());
+                        if (displayMax[iHist])
+                        {
+                            ImGui::Text("Max %d", hist.getMax());
+                        }
+                    }
+
+                    if (countInfos[iHist])
+                    {
+                        ImGui::Text("%d %s", int(countInfos[iHist]), countInfoTexts[iHist]);
+                    }
+
+                    ImGui::EndGroup();
+                }
+            }
+            ImGui::Unindent();
+        }
+        ImGui::PopStyleColor();
     }
     ImGui::End();
 }

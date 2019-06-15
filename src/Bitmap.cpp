@@ -27,6 +27,7 @@
 #include <fstream>
 #include "Bitmap.h"
 #include "Utils.h"
+#include "Mem.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -257,9 +258,11 @@ int Image::Free(Image* image)
 
 unsigned int Image::Upload(Image* image, unsigned int textureId, int cubeFace)
 {
+    bool allocTexture = false;
     if (!textureId)
+    {
         glGenTextures(1, &textureId);
-
+    }
     unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
     glBindTexture(targetType, textureId);
 
@@ -275,7 +278,10 @@ unsigned int Image::Upload(Image* image, unsigned int textureId, int cubeFace)
                  GL_UNSIGNED_BYTE,
                  image->GetBits());
     TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
-
+    if (allocTexture)
+    {
+        vramTextureAlloc(image->mWidth * image->mHeight * textureFormatSize[image->mFormat]);
+    }
     glBindTexture(targetType, 0);
     return textureId;
 }
@@ -476,9 +482,15 @@ void RenderTarget::BindCubeFace(size_t face, int mipmap, int faceWidth)
 void RenderTarget::Destroy()
 {
     if (mGLTexID)
+    {
         glDeleteTextures(1, &mGLTexID);
+        vramTextureFree(mImage->mWidth * mImage->mHeight * 4);
+    }
     if (mGLTexDepth)
+    {
         glDeleteTextures(1, &mGLTexDepth);
+        vramTextureFree(mImage->mWidth * mImage->mHeight * 3);
+    }
     if (mFbo)
     {
         if (glIsFramebuffer(mFbo))
@@ -491,7 +503,9 @@ void RenderTarget::Destroy()
         }
     }
     if (mDepthBuffer)
+    {
         glDeleteRenderbuffers(1, &mDepthBuffer);
+    }
     mFbo = 0;
     mImage->mWidth = mImage->mHeight = 0;
     mGLTexID = 0;
@@ -537,7 +551,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mGLTexID, 0);
-
+    vramTextureAlloc(mImage->mWidth * mImage->mHeight * 4);
     if (depthBuffer)
     {
         // Z
@@ -546,6 +560,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
         TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mGLTexDepth, 0);
+        vramTextureAlloc(mImage->mWidth * mImage->mHeight * 3);
     }
 
     static const GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
@@ -601,6 +616,7 @@ void RenderTarget::InitCube(int width, int mipmapCount)
                          GL_RGBA,
                          GL_UNSIGNED_BYTE,
                          NULL);
+            vramTextureAlloc((width >> mip) * (width >> mip) * 4);
         }
     }
 

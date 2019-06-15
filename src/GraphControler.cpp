@@ -558,6 +558,7 @@ void GraphControler::ApplyDirtyList()
                 //dirty
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                ExtractedViewNodeInserted(nodeIndex);
                 }
                 break;
             case Dirty::DeletedNode:
@@ -565,6 +566,7 @@ void GraphControler::ApplyDirtyList()
                 mEditingContext.DelEvaluation(nodeIndex);
                 evaluationOrderChanged = true;
                 graphArrayChanged = true;
+                ExtractedViewNodeDeleted(nodeIndex);
                 break;
             case Dirty::StartEndTime:
                 {

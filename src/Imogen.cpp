@@ -116,15 +116,47 @@ struct ExtractedView
     size_t mNodeIndex;
     bool mFirstFrame;
 };
+
 std::vector<ExtractedView> mExtratedViews;
 void AddExtractedView(size_t nodeIndex)
 {
     mExtratedViews.push_back({nodeIndex, true});
 }
+
 void ClearExtractedViews()
 {
     mExtratedViews.clear();
 }
+
+void ExtractedViewNodeDeleted(size_t nodeIndex)
+{
+    auto iter = mExtratedViews.begin();
+    for (;iter != mExtratedViews.end(); )
+    {
+        if (iter->mNodeIndex == nodeIndex)
+        {
+            iter = mExtratedViews.erase(iter);
+            continue;
+        }
+        if (iter->mNodeIndex > nodeIndex)
+        {
+            iter->mNodeIndex --;
+        }
+        ++iter;
+    }
+}
+
+void ExtractedViewNodeInserted(size_t nodeIndex)
+{
+    for (auto& extract : mExtratedViews)
+    {
+        if (extract.mNodeIndex >= nodeIndex)
+        {
+            extract.mNodeIndex ++;
+        }
+    }
+}
+
 
 void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, bool forceUI)
 {
@@ -2029,7 +2061,7 @@ void Imogen::ShowDebugWindow()
                         size_t mx = std::max(hist.getValue(), hist.getMax());
                         const char *unit = "bytes";
                         size_t dv = 1;
-                        if (mx > 1024 * 50)
+                        if (mx > 1024 * 10)
                         {
                             dv = 1024;
                             unit = "Kb";
@@ -2083,6 +2115,42 @@ void Imogen::ShowDebugWindow()
 ImRect GetNodesDisplayRect(GraphModel* model);
 ImRect GetFinalNodeDisplayRect(GraphModel* model);
 std::map<std::string, ImRect> interfacesRect;
+
+void Imogen::ShowExtractedViews()
+{
+    int index = 0;
+    int removeExtractedView = -1;
+    for (auto& extraction : mExtratedViews)
+    {
+        char tmps[512];
+        sprintf(
+            tmps,
+            "%s_View_%03d",
+            gMetaNodes[mNodeGraphControler->mModel.GetNodeType(extraction.mNodeIndex)].mName.c_str(),
+            index);
+        bool open = true;
+        if (extraction.mFirstFrame)
+        {
+            extraction.mFirstFrame = false;
+            ImGui::SetNextWindowSize(ImVec2(256, 256));
+        }
+        if (ImGui::Begin(tmps, &open))
+        {
+            RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, true);
+        }
+        ImGui::End();
+        if (!open)
+        {
+            removeExtractedView = index;
+        }
+        index++;
+    }
+    if (removeExtractedView != -1)
+    {
+        mExtratedViews.erase(mExtratedViews.begin() + removeExtractedView);
+    }
+}
+
 void Imogen::Show(Builder* builder, Library& library, bool capturing)
 {
     int currentTime = mCurrentTime;
@@ -2116,6 +2184,11 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
         static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
         ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), opt_flags);
+
+
+        // view extraction, just aftper applydirtylist and before node editing in case a node 
+        // has been deleted and the extracted views are not aware of
+        ShowExtractedViews();
 
         if (mbShowNodes)
         {
@@ -2168,37 +2241,6 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
             interfacesRect["Timeline"] = ImRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize());
             ImGui::End();
         }
-
-        // view extraction
-        int index = 0;
-        int removeExtractedView = -1;
-        for (auto& extraction : mExtratedViews)
-        {
-            char tmps[512];
-            sprintf(
-                tmps,
-                "%s_View_%03d",
-                gMetaNodes[mNodeGraphControler->mModel.GetNodeType(extraction.mNodeIndex)].mName.c_str(),
-                index);
-            bool open = true;
-            if (extraction.mFirstFrame)
-            {
-                extraction.mFirstFrame = false;
-                ImGui::SetNextWindowSize(ImVec2(256, 256));
-            }
-            if (ImGui::Begin(tmps, &open))
-            {
-                RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, true);
-            }
-            ImGui::End();
-            if (!open)
-            {
-                removeExtractedView = index;
-            }
-            index++;
-        }
-        if (removeExtractedView != -1)
-            mExtratedViews.erase(mExtratedViews.begin() + removeExtractedView);
 
         ImGui::End();
     }

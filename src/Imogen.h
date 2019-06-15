@@ -113,6 +113,7 @@ protected:
     void BuildCurrentMaterial(Builder* builder);
     void PlayPause();
     void ShowDebugWindow();
+    void ShowExtractedViews();
 
     void ImportMaterial();
     void ExportMaterial();
@@ -154,3 +155,8 @@ protected:
 
     std::vector<std::function<void()>> mHotkeyFunctions;
 };
+
+void AddExtractedView(size_t nodeIndex);
+void ClearExtractedViews();
+void ExtractedViewNodeDeleted(size_t nodeIndex);
+void ExtractedViewNodeInserted(size_t nodeIndex);

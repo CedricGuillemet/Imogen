@@ -228,11 +228,11 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
 
                 Vec4 uva(0, 0), uvb(1, 1);
                 auto nodeType = nodeGraphControler.mModel.GetNodeType(selNode);
-                /*Mat4x4* viewMatrix = nodeGraphControler.mModel.mEvaluationStages.GetParameterViewMatrix(selNode); todo
+                Mat4x4* viewMatrix = nodeGraphControler.mEvaluationStages.GetParameterViewMatrix(selNode);
                 const Camera* nodeCamera = GetCameraParameter(nodeType, nodeGraphControler.mModel.GetParameters(selNode));
                 if (viewMatrix && !nodeCamera)
                 {
-                    Mat4x4& res = *viewMatrix;
+                    Mat4x4 res = *viewMatrix;
                     Mat4x4 tr, trp, sc;
                     static float scale = 1.f;
                     scale = ImLerp(scale, 1.f, 0.15f);
@@ -264,8 +264,9 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
 
                     uva.TransformPoint(res);
                     uvb.TransformPoint(res);
+                    *viewMatrix = res;
                 }
-                */
+                
                 ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(uva.x, uvb.y), ImVec2(uvb.x, uva.y));
             }
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());

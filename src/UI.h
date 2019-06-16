@@ -185,3 +185,5 @@ void AddUICustomDraw(
     ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext* context);
 void InitCallbackRects();
 
+void UICallbackNodeDeleted(size_t nodeIndex);
+void UICallbackNodeInserted(size_t nodeIndex);

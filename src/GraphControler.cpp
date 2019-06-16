@@ -544,23 +544,24 @@ void GraphControler::ApplyDirtyList()
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
                 break;
             case Dirty::AddedNode:
-            {
-                int startFrame, endFrame;
-                mModel.GetStartEndFrame(nodeIndex, startFrame, endFrame);
-                mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));
-                mEditingContext.AddEvaluation(nodeIndex);
-                evaluationOrderChanged = true;
-                graphArrayChanged = true;
-                // params
-                mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
-                // samplers
-                mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
-                // time
-                mEvaluationStages.SetStartEndFrame(nodeIndex, startFrame, endFrame);
-                //dirty
-                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
-                mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
-                ExtractedViewNodeInserted(nodeIndex);
+                {
+                    int startFrame, endFrame;
+                    mModel.GetStartEndFrame(nodeIndex, startFrame, endFrame);
+                    mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));
+                    mEditingContext.AddEvaluation(nodeIndex);
+                    evaluationOrderChanged = true;
+                    graphArrayChanged = true;
+                    // params
+                    mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
+                    // samplers
+                    mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
+                    // time
+                    mEvaluationStages.SetStartEndFrame(nodeIndex, startFrame, endFrame);
+                    //dirty
+                    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
+                    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                    ExtractedViewNodeInserted(nodeIndex);
+                    UICallbackNodeInserted(nodeIndex);
                 }
                 break;
             case Dirty::DeletedNode:
@@ -569,6 +570,7 @@ void GraphControler::ApplyDirtyList()
                 evaluationOrderChanged = true;
                 graphArrayChanged = true;
                 ExtractedViewNodeDeleted(nodeIndex);
+                UICallbackNodeDeleted(nodeIndex);
                 if (mSelectedNodeIndex == nodeIndex)
                 {
                     mSelectedNodeIndex = -1;
@@ -576,6 +578,14 @@ void GraphControler::ApplyDirtyList()
                 else if (mSelectedNodeIndex > nodeIndex)
                 {
                    mSelectedNodeIndex --;
+                }
+                if (mBackgroundNode == nodeIndex)
+                {
+                    mBackgroundNode = -1;
+                }
+                else if (mBackgroundNode > nodeIndex)
+                {
+                    mBackgroundNode--;
                 }
                 break;
             case Dirty::StartEndTime:
@@ -630,7 +640,7 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
             Camera* cam = (Camera*)paramBuffer;
             if (fabsf(input.mWheel)>0.f)
             {
-               cam->mPosition += cam->mDirection * input.mWheel;
+                cam->mPosition += cam->mDirection * input.mWheel;
                 parametersDirty = true;
             }
             Vec4 right = Cross(cam->mUp, cam->mDirection);

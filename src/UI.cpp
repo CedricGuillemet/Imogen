@@ -219,6 +219,36 @@ struct ImogenDrawCallback
 
 std::vector<ImogenDrawCallback> mCallbackRects;
 
+
+void UICallbackNodeDeleted(size_t nodeIndex)
+{
+    auto iter = mCallbackRects.begin();
+    for (; iter != mCallbackRects.end(); )
+    {
+        if (iter->mNodeIndex == nodeIndex)
+        {
+            iter = mCallbackRects.erase(iter);
+            continue;
+        }
+        if (iter->mNodeIndex > nodeIndex)
+        {
+            iter->mNodeIndex--;
+        }
+        ++iter;
+    }
+}
+
+void UICallbackNodeInserted(size_t nodeIndex)
+{
+    for (auto& extract : mCallbackRects)
+    {
+        if (extract.mNodeIndex >= nodeIndex)
+        {
+            extract.mNodeIndex++;
+        }
+    }
+}
+
 static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 {
     // Backup GL state

@@ -91,7 +91,7 @@ void GraphModel::EndTransaction()
     mUndoRedo = nullptr;
 }
 
-std::vector<Input> GraphModel::GetInputs() const
+void GraphModel::GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<Input>& directInputs) const
 {
     std::vector<Input> inputs;
     inputs.resize(mNodes.size());
@@ -101,6 +101,8 @@ std::vector<Input> GraphModel::GetInputs() const
         auto source = link.mInputNodeIndex;
         inputs[link.mOutputNodeIndex].mInputs[link.mOutputSlotIndex] = source;
     }
+
+    directInputs = inputs;
 
     // overide
     for (auto i = 0; i < mNodes.size(); i++)
@@ -115,7 +117,7 @@ std::vector<Input> GraphModel::GetInputs() const
             }
         }
     }
-    return inputs;
+    multiplexedInPuts = inputs;
 }
 
 void GraphModel::Undo()

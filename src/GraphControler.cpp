@@ -418,7 +418,7 @@ void GraphControler::EditNodeParameters()
     for (unsigned int slotIndex = 0; slotIndex < 8; slotIndex++)
     {
         std::vector<size_t> inputs;
-        if (mModel.GetMultiplexedInputs(mEvaluationStages.mInputs, nodeIndex, slotIndex, inputs))
+        if (mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, slotIndex, inputs))
         {
             int currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
 
@@ -601,7 +601,7 @@ void GraphControler::ApplyDirtyList()
 
     if (evaluationOrderChanged)
     {
-        mEvaluationStages.mInputs = mModel.GetInputs();
+        mModel.GetInputs(mEvaluationStages.mInputs, mEvaluationStages.mDirectInputs);
         mEvaluationStages.ComputeEvaluationOrder();
     }
     if (graphArrayChanged)

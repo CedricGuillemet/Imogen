@@ -166,6 +166,8 @@ struct EvaluationStages
     const std::vector<size_t>& GetForwardEvaluationOrder() const { return mOrderList; }
     std::vector<EvaluationStage> mStages;
     std::vector<Input> mInputs; // merged with multiplexed
+    std::vector<Input> mDirectInputs; // without multiplexed
+
     std::vector<InputSamplers> mInputSamplers;
     std::vector<Parameters> mParameters;
 

@@ -152,7 +152,7 @@ public:
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }
     void GetStartEndFrame(size_t nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
-    std::vector<Input> GetInputs() const;
+    void GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<Input>& directInputs) const;
 
     // dirty
     const std::vector<DirtyList>& GetDirtyList() const { return mDirtyList; }

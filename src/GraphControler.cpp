@@ -460,6 +460,8 @@ void GraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOut
 
 void GraphControler::NodeEdit()
 {
+    ApplyDirtyList();
+
     ImGuiIO& io = ImGui::GetIO();
 
     if (mSelectedNodeIndex == -1)
@@ -567,6 +569,14 @@ void GraphControler::ApplyDirtyList()
                 evaluationOrderChanged = true;
                 graphArrayChanged = true;
                 ExtractedViewNodeDeleted(nodeIndex);
+                if (mSelectedNodeIndex == nodeIndex)
+                {
+                    mSelectedNodeIndex = -1;
+                }
+                else if (mSelectedNodeIndex > nodeIndex)
+                {
+                   mSelectedNodeIndex --;
+                }
                 break;
             case Dirty::StartEndTime:
                 {

@@ -11,6 +11,11 @@ typedef struct ReactionDiffusion_t
 
 int main(ReactionDiffusion *param, Evaluation *evaluation, void *context)
 {
+    if (!(evaluation->dirtyFlag & DirtyParameter))
+    {
+		return EVAL_OK;
+    }
+    
 	SetEvaluationSize(context, evaluation->targetIndex, 256<<param->size, 256<<param->size);
 	return EVAL_OK;
 }

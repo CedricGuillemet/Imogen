@@ -147,10 +147,10 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
     });
     m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
-        Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
-        Imogen::instance->GetNodeGraphControler()
-            ->mModel.AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
-        Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
+        auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
+        model.BeginTransaction(false);
+        model.AddLink(nodeSource, slotSource, nodeDestination, slotDestination);
+        model.EndTransaction();
     });
     m.def("AutoLayout", []() {
         auto controler = Imogen::instance->GetNodeGraphControler();

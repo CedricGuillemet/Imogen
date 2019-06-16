@@ -507,6 +507,7 @@ void RenderTarget::Destroy()
         glDeleteRenderbuffers(1, &mDepthBuffer);
     }
     mFbo = 0;
+    mGLTexDepth = 0;
     mImage->mWidth = mImage->mHeight = 0;
     mGLTexID = 0;
 }

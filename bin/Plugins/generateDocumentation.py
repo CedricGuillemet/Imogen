@@ -132,11 +132,11 @@ def generateExample(nodeName, baseDir, f, node):
         
     elif nodeName == "ChannelPacker":
         circle = Imogen.AddNode("Circle")
-        square = Imogen.AddNode("Square")
+        ngon = Imogen.AddNode("NGon")
         checker = Imogen.AddNode("Checker")
         color = Imogen.AddNode("Color")
         Imogen.Connect(circle, 0, node, 0)
-        Imogen.Connect(square, 0, node, 1)
+        Imogen.Connect(ngon, 0, node, 1)
         Imogen.Connect(checker, 0, node, 2)
         Imogen.Connect(color, 0, node, 3)
         

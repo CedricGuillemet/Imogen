@@ -2010,7 +2010,7 @@ float MemoryGetter(void *data, int idx)
     MemoryProfileHistory_t::MemHistory* hist = (MemoryProfileHistory_t::MemHistory*)data;
     return (float)hist->mValues[idx];
 }
-
+size_t GetUndoRedoMemoryFootPrint();
 void Imogen::ShowDebugWindow()
 {
     ImGui::Begin("Debug");
@@ -2025,6 +2025,7 @@ void Imogen::ShowDebugWindow()
     }
     if (ImGui::CollapsingHeader("Memory"))
     {
+        ImGui::Text("Undo/Redo footprint %d bytes", int(GetUndoRedoMemoryFootPrint()));
         ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1.f, 0.5f, 0.1f, 1.f));
         static const char *moduleLabels[MODULE_COUNT] = {
             "IMGUI",
@@ -2167,13 +2168,6 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
     // be sure that everything is in sync before rendering them
     mNodeGraphControler->ApplyDirtyList();
 
-    // getting node graph AABB here as everything is in sync. Might not be the case after the UI tick as things 
-    // can change and not be updated via the dirtylist (nodegraph evaluation list with fewer or more elements than nodes in model)
-    ImRect rc = mNodeGraphControler->mModel.GetNodesDisplayRect();
-    interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
-    rc = mNodeGraphControler->mModel.GetFinalNodeDisplayRect(mNodeGraphControler->mEvaluationStages.GetForwardEvaluationOrder());
-    interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
-
     if (ImGui::Begin("Imogen",
                      0,
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -2249,6 +2243,13 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
     {
         ShowDebugWindow();
     }
+
+    // getting node graph AABB here as everything is in sync. Might not be the case after the UI tick as things 
+    // can change and not be updated via the dirtylist (nodegraph evaluation list with fewer or more elements than nodes in model)
+    ImRect rc = mNodeGraphControler->mModel.GetNodesDisplayRect();
+    interfacesRect["Graph"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
+    rc = mNodeGraphControler->mModel.GetFinalNodeDisplayRect(mNodeGraphControler->mEvaluationStages.GetForwardEvaluationOrder());
+    interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
 
     ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
 

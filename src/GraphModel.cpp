@@ -29,6 +29,11 @@
 #include "UndoRedo.h"
 
 extern UndoRedoHandler gUndoRedoHandler;
+size_t GetUndoRedoMemoryFootPrint()
+{
+    return gUndoRedoHandler.GetMemUsed();
+}
+
 
 ImRect GraphModel::Node::GetDisplayRect() const
 {
@@ -94,7 +99,7 @@ std::vector<Input> GraphModel::GetInputs() const
     for(const auto& link: mLinks)
     {
         auto source = link.mInputNodeIndex;
-        inputs[link.mOutputNodeIndex].mInputs[link.mInputSlotIndex] = source;
+        inputs[link.mOutputNodeIndex].mInputs[link.mOutputSlotIndex] = source;
     }
 
     // overide
@@ -147,9 +152,10 @@ void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
 {
     assert(mbTransaction);
     auto ur = mUndoRedo
-        ? std::make_unique<URChange<Node>>(int(nodeIndex), [&](int index) { return &mNodes[index]; }, [](int) {})
+        ? std::make_unique<URChange<Node>>(int(nodeIndex), [this](int index) { return &mNodes[index]; }, [this](int index) {SetDirty(index, Dirty::VisualGraph); })
         : nullptr;
     mNodes[nodeIndex].mPos = position;
+    SetDirty(nodeIndex, Dirty::VisualGraph);
 }
 
 // called when a node is added by user, or with undo/redo

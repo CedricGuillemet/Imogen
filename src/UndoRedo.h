@@ -58,6 +58,17 @@ struct UndoRedo
         return !mSubUndoRedo.empty();
     }
 
+    virtual size_t GetMemSize() const = 0;
+    virtual size_t GetMemUsed() const
+    {
+        size_t ret = 0;
+        for (const auto& sub : mSubUndoRedo)
+        {
+            ret += sub->GetMemSize();
+        }
+        return ret;
+    }
+
 protected:
     std::vector<std::shared_ptr<UndoRedo>> mSubUndoRedo;
 };
@@ -112,6 +123,21 @@ struct UndoRedoHandler
         mUndos.clear();
         mRedos.clear();
         mbProcessing = false;
+    }
+
+    size_t GetMemUsed() const
+    {
+        size_t ret = 0;
+        for (const auto& undo : mUndos)
+        {
+            ret += undo->GetMemUsed();
+        }
+        for (const auto& redo : mRedos)
+        {
+            ret += redo->GetMemUsed();
+        }
+        return ret;
+
     }
 
     bool mbProcessing;
@@ -177,6 +203,11 @@ struct URChange : public UndoRedo
         Changed(mIndex);
     }
 
+    size_t GetMemSize() const override
+    {
+        return sizeof(URChange<T>);
+    }
+
     T mPreDo;
     T mPostDo;
     int mIndex;
@@ -193,6 +224,7 @@ struct URDummy : public UndoRedo
         if (gUndoRedoHandler.mbProcessing)
             return;
     }
+
     virtual ~URDummy()
     {
         if (gUndoRedoHandler.mbProcessing)
@@ -200,13 +232,20 @@ struct URDummy : public UndoRedo
 
         gUndoRedoHandler.AddUndo(*this);
     }
-    virtual void Undo()
+
+    void Undo() override
     {
         UndoRedo::Undo();
     }
-    virtual void Redo()
+
+    void Redo() override
     {
         UndoRedo::Redo();
+    }
+
+    size_t GetMemSize() const override
+    {
+        return sizeof(URDummy);
     }
 };
 
@@ -225,6 +264,7 @@ struct URDel : public UndoRedo
 
         mDeletedElement = (*GetElements())[mIndex];
     }
+
     virtual ~URDel()
     {
         if (gUndoRedoHandler.mbProcessing)
@@ -232,17 +272,24 @@ struct URDel : public UndoRedo
         // add to handler
         gUndoRedoHandler.AddUndo(*this);
     }
-    virtual void Undo()
+
+    void Undo() override
     {
         GetElements()->insert(GetElements()->begin() + mIndex, mDeletedElement);
         OnNew(mIndex);
         UndoRedo::Undo();
     }
-    virtual void Redo()
+
+    void Redo() override
     {
         UndoRedo::Redo();
         OnDelete(mIndex);
         GetElements()->erase(GetElements()->begin() + mIndex);
+    }
+
+    size_t GetMemSize() const override
+    {
+        return sizeof(URDummy);
     }
 
     T mDeletedElement;
@@ -263,6 +310,7 @@ struct URAdd : public UndoRedo
         : GetElements(GetElements), mIndex(index), OnDelete(OnDelete), OnNew(OnNew)
     {
     }
+
     virtual ~URAdd()
     {
         if (gUndoRedoHandler.mbProcessing)
@@ -272,17 +320,24 @@ struct URAdd : public UndoRedo
         // add to handler
         gUndoRedoHandler.AddUndo(*this);
     }
-    virtual void Undo()
+
+    void Undo() override
     {
         OnDelete(mIndex);
         GetElements()->erase(GetElements()->begin() + mIndex);
         UndoRedo::Undo();
     }
-    virtual void Redo()
+
+    void Redo() override
     {
         UndoRedo::Redo();
         GetElements()->insert(GetElements()->begin() + mIndex, mAddedElement);
         OnNew(mIndex);
+    }
+
+    size_t GetMemSize() const override
+    {
+        return sizeof(URAdd<T>);
     }
 
     T mAddedElement;

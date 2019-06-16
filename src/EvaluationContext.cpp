@@ -723,6 +723,10 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
             transientTarget->Swap(*tgt);
         }
     } // passNumber
+    if (transientTarget)
+    {
+        transientTarget->Destroy();
+    }
     glDisable(GL_BLEND);
 }
 

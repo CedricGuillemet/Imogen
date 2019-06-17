@@ -18,6 +18,21 @@ file(GLOB_RECURSE SRC_FILES
 file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/picoc/*.c
+    #${CMAKE_SOURCE_DIR}/ext/picoc/platform/library_msvc.c
+    #${CMAKE_SOURCE_DIR}/ext/picoc/platform/library_srv1.c
+    #library_surveyor
+    ${CMAKE_SOURCE_DIR}/ext/picoc/platform/platform_unix.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/platform/library_unix.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/stdio.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/stdstring.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/string.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/ctype.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/errno.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/math.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/stdbool.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/stdlib.c
+    ${CMAKE_SOURCE_DIR}/ext/picoc/cstdlib/time.c
     ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
@@ -81,6 +96,7 @@ endif()
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/picoc
   ${SDL2_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/gl3w
   ${TCC_INCLUDE_DIRS}

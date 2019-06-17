@@ -155,10 +155,14 @@ int main(int argc, char** argv)
     ImGui::SetAllocatorFunctions(imguiMalloc, imguiFree);
 #endif
 
+
 #ifdef __EMSCRIPTEN__
     AddLogOutput(ImWebConsoleOutput);
 #endif
     AddLogOutput(ImConsoleOutput);
+
+
+
 
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)

@@ -43,6 +43,8 @@
 #include "imMouseState.h"
 #include "UndoRedo.h"
 #include "Mem.h"
+#include "picoc.h"
+#include "interpreter.h"
 
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.
@@ -65,6 +67,9 @@ Library library;
 UndoRedoHandler gUndoRedoHandler;
 
 TaskScheduler g_TS;
+
+
+
 
 #if USE_GLDEBUG
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
@@ -147,6 +152,14 @@ void RenderImogenFrame()
     renderImogenFrame(true);
 }
 
+void MyCLogFunc(struct ParseState *Parser,
+    struct Value *ReturnValue,
+    struct Value **Param,
+    int NumArgs)
+{
+    Log("Helloc from picoc\n");
+}
+
 int main(int argc, char** argv)
 {
 #ifdef WIN32
@@ -161,6 +174,12 @@ int main(int argc, char** argv)
 #endif
     AddLogOutput(ImConsoleOutput);
 
+
+    struct LibraryFunction PlatformLibrary[] =
+    {
+         {MyCLogFunc,  "void MyLog()"},
+         {NULL,         NULL}
+    };
 
 
 

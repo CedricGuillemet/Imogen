@@ -624,6 +624,10 @@ namespace FFMPEGCodec
     {
         AVFormatContext *ifmt_ctx = NULL, *ofmt_ctx = NULL;
         int err;
+        AVPacket videoPkt;
+        int64_t ts = 0;
+	AVStream *inVideoStream;
+	AVStream *outVideoStream;
 
         if ((err = avformat_open_input(&ifmt_ctx, VIDEO_TMP_FILE, 0, 0)) < 0) {
             Debug("Failed to open input file for remuxing", err);
@@ -638,8 +642,8 @@ namespace FFMPEGCodec
             goto end;
         }
 
-        AVStream *inVideoStream = ifmt_ctx->streams[0];
-        AVStream *outVideoStream = avformat_new_stream(ofmt_ctx, NULL);
+        inVideoStream = ifmt_ctx->streams[0];
+        outVideoStream = avformat_new_stream(ofmt_ctx, NULL);
         if (!outVideoStream) {
             Debug("Failed to allocate output video stream", 0);
             goto end;
@@ -660,8 +664,6 @@ namespace FFMPEGCodec
             goto end;
         }
 
-        AVPacket videoPkt;
-        int64_t ts = 0;
         while (true) {
             if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
                 break;

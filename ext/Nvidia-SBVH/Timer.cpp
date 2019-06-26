@@ -27,7 +27,6 @@
 
 #include "Timer.h"
 #include <iostream>
-#include <windows.h>
 
 using namespace FW;
 
@@ -38,6 +37,7 @@ S64 Timer::s_prevTicks          = 0;
 
 //------------------------------------------------------------------------
 #define max(x,y) ((x>y)?x:y)
+#ifdef WIN32
 void Timer::staticInit(void)
 {
     LARGE_INTEGER freq;
@@ -57,5 +57,14 @@ S64 Timer::queryTicks(void)
 	s_prevTicks = ticks.QuadPart; // increasing little endian => thread-safe
 	return ticks.QuadPart;
 }
+#else
+void Timer::staticInit(void)
+{
+ }
 
+S64 Timer::queryTicks(void)
+{
+	return 0;
+}
+#endif
 //------------------------------------------------------------------------

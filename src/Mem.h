@@ -26,6 +26,7 @@
 #pragma once
 #include <assert.h>
 #include <memory.h>
+#include <malloc.h>
 
 enum MODULES
 {
@@ -37,37 +38,37 @@ enum MODULES
 
 template <size_t historyLength, size_t maxModuleCount> struct MemoryProfileHistory
 {
-    template <size_t historyLength> struct MemoryHistory
+    template <size_t historyLength2> struct MemoryHistory
     {
         //MemoryHistory() : mOffset(0) { memset(mValues, 0, sizeof(size_t) * historyLength); }
-        size_t mValues[historyLength];
+        size_t mValues[historyLength2];
         size_t mOffset;
         void addValue(size_t value)
         {
             mValues[mOffset] = value;
-            ++mOffset %= historyLength;
+            ++mOffset %= historyLength2;
         }
         size_t getValue() const
         {
-            return mValues[(mOffset + historyLength - 1) % historyLength];
+            return mValues[(mOffset + historyLength2 - 1) % historyLength2];
         }
         size_t getMin() const
         {
             size_t v = mValues[0];
-            for (int i = 1; i < historyLength; i++)
+            for (int i = 1; i < historyLength2; i++)
                 v = (v < mValues[i]) ? v : mValues[i];
             return v;
         }
         size_t getMax() const
         {
             size_t v = mValues[0];
-            for (int i = 1; i < historyLength; i++)
+            for (int i = 1; i < historyLength2; i++)
                 v = (v > mValues[i]) ? v : mValues[i];
             return v;
         }
         void clear()
         {
-            memset(mValues, 0, historyLength * sizeof(size_t));
+            memset(mValues, 0, historyLength2 * sizeof(size_t));
             mOffset = 0;
         }
     };
@@ -153,6 +154,12 @@ struct MemoryProfileHistoryNULL
 void InitMemProf();
 void MemoryFrameInit();
 
+#ifdef RETAIL
+extern MemoryProfileHistoryNULL gMemoryHistory;
+#else
+typedef MemoryProfileHistory<64, MODULE_COUNT> MemoryProfileHistory_t;
+extern MemoryProfileHistory_t gMemoryHistory;
+#endif
 
 template <class T, size_t module> struct HeapAllocatorBase
 {
@@ -162,7 +169,7 @@ template <class T, size_t module> struct HeapAllocatorBase
     {
         size_t sz = sizeof(T) * n;
         gMemoryHistory.logAllocation(module, sz);
-        return (T*)malloc(sz);
+        return static_cast<T*>(malloc(sz));
     }
     void deallocate(T* p, size_t n)
     {
@@ -175,12 +182,6 @@ template <class T, size_t module> struct HeapAllocatorBase
     }
 };
 
-#ifdef RETAIL
-extern MemoryProfileHistoryNULL gMemoryHistory;
-#else
-typedef MemoryProfileHistory<64, MODULE_COUNT> MemoryProfileHistory_t;
-extern MemoryProfileHistory_t gMemoryHistory;
-#endif
 
 
 void *imguiMalloc(size_t n, void* user_data);

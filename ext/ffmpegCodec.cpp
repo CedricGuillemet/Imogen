@@ -627,6 +627,7 @@ namespace FFMPEGCodec
         int err;
         AVStream *inVideoStream;
         AVStream *outVideoStream;
+        AVPacket videoPkt;
 
         if ((err = avformat_open_input(&ifmt_ctx, VIDEO_TMP_FILE, 0, 0)) < 0) {
             Debug("Failed to open input file for remuxing", err);
@@ -663,7 +664,6 @@ namespace FFMPEGCodec
             goto end;
         }
 
-        AVPacket videoPkt;
         while (true) {
             if ((err = av_read_frame(ifmt_ctx, &videoPkt)) < 0) {
                 break;

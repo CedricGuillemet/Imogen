@@ -31,7 +31,7 @@ MemoryProfileHistoryNULL gMemoryHistory;
 MemoryProfileHistory_t gMemoryHistory;
 #endif
 
-bool MemoryProfileHistory<64, MODULE_COUNT>::inited = false;
+template<> bool MemoryProfileHistory<64, MODULE_COUNT>::inited = false;
 
 void *imguiMalloc(size_t n, void* user_data)
 {
@@ -42,7 +42,12 @@ void imguiFree(void *ptr, void* user_data)
 {
     if (!ptr)
         return;
-    return HeapAllocatorBase<unsigned char, MODULE_IMGUI>().deallocate((unsigned char*)ptr, _msize(ptr));
+#ifdef WIN32
+    auto ptrSize = _msize(ptr);
+#else
+    auto ptrSize = malloc_usable_size(ptr);
+#endif
+    return HeapAllocatorBase<unsigned char, MODULE_IMGUI>().deallocate((unsigned char*)ptr, ptrSize);
 }
 
 void vramTextureAlloc(size_t n)

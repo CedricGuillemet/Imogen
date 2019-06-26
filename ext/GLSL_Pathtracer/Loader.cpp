@@ -134,7 +134,7 @@ namespace GLSLPathTracer
     Scene* LoadScene(const std::string &filename)
     {
         FILE* file;
-        fopen_s(&file, filename.c_str(), "r");
+        file = fopen(filename.c_str(), "r");
 
         if (!file)
         {

@@ -96,6 +96,30 @@ typedef enki::ITaskSet TaskSet;
 typedef enki::TaskSetPartition TaskSetPartition;
 typedef enki::TaskScheduler TaskScheduler;
 
+#elif __linux__
+
+#include <SDL.h>
+#include <GL/gl3w.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include "TaskScheduler.h"
+#include "nfd.h"
+#include <algorithm>
+#include <string.h>
+#include "ffmpegCodec.h"
+#include "libtcc.h"
+
+#define USE_FFMPEG 1
+#define USE_PYTHON 1
+#define USE_GLDEBUG 1
+#define USE_LIBTCC 1
+
+typedef enki::IPinnedTask PinnedTask;
+typedef enki::ITaskSet TaskSet;
+typedef enki::TaskSetPartition TaskSetPartition;
+typedef enki::TaskScheduler TaskScheduler;
+
 #else
     
 #error unknown platform

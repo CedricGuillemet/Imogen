@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.6)
 project (Imogen)
 # Add project's cmake modules to path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/.)
-
+message(${CMAKE_MODULE_PATH})
 SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON) 
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Configuration types" FORCE)
@@ -38,6 +38,18 @@ set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_gtk.c
 FIND_PACKAGE(PkgConfig REQUIRED)
 PKG_CHECK_MODULES(GTK3 REQUIRED gtk+-3.0)
 
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS})
+
+#find_package(FFmpeg REQUIRED)
+
+find_library(AVCODEC_LIBRARY avcodec)
+find_library(AVFORMAT_LIBRARY avformat)
+find_library(AVUTIL_LIBRARY avutil)
+find_library(AVDEVICE_LIBRARY avdevice)
+find_library(SWSCALE_LIBRARY swscale)
+find_package(PythonLibs REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
 # Setup CMake to use GTK+, tell the compiler where to look for headers
 # and to the linker where to look for libraries
 INCLUDE_DIRECTORIES(${GTK3_INCLUDE_DIRS})
@@ -71,7 +83,7 @@ else()
 PKG_CHECK_MODULES(PYTHON37 REQUIRED python3)
 PKG_CHECK_MODULES(SDL2_LIBRARIES REQUIRED sdl2)
 PKG_CHECK_MODULES(FFMPEG REQUIRED libavcodec libavdevice libavfilter libavformat libavutil libswscale libswresample libpostproc)
-
+#${AVCODEC_LIBRARY} ${AVUTIL_LIBRARY} ${AVDEVICE_LIBRARY} ${AVFORMAT_LIBRARY} ${SWSCALE_LIBRARY} ${PYTHON_LIBRARIES}
 #TODO: TCC
 set(TCC_INCLUDE_DIRS /usr/local/Cellar/tcc/0.9.27_1/)
 set(TCC_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc)
@@ -160,7 +172,6 @@ if(APPLE)
   target_link_libraries(${EXE_NAME} ${CORE_FOUNDATION})
 endif()
 
-
 #--------------------------------------------------------------------
 # preproc
 #--------------------------------------------------------------------
@@ -187,6 +198,8 @@ set_target_properties("Imogen" PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINF
 set_target_properties("Imogen" PROPERTIES DEBUG_POSTFIX "_d")
 set_target_properties("Imogen" PROPERTIES RELWITHDEBINFO_POSTFIX "RelWithDebInfo")
 set_target_properties("Imogen" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+
+target_link_libraries("Imogen" ${SDL2_LIBRARIES})
 
 #--------------------------------------------------------------------
 # Hide the console window in visual studio projects

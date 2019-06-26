@@ -27,7 +27,8 @@
 
 #include "Timer.h"
 #include <iostream>
-#ifdef WIN
+
+#ifdef WIN32
 #include <windows.h>
 #endif
 
@@ -40,6 +41,7 @@ S64 Timer::s_prevTicks          = 0;
 
 //------------------------------------------------------------------------
 #define max(x,y) ((x>y)?x:y)
+#ifdef WIN32
 void Timer::staticInit(void)
 {
 	#ifdef WIN
@@ -66,5 +68,14 @@ S64 Timer::queryTicks(void)
 	throw "";
 	#endif
 }
+#else
+void Timer::staticInit(void)
+{
+ }
 
+S64 Timer::queryTicks(void)
+{
+	return 0;
+}
+#endif
 //------------------------------------------------------------------------

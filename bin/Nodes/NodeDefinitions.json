@@ -9,7 +9,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Radius",
+			"name": "radius",
 			"type": "Float",
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
@@ -36,7 +36,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Translate",
+			"name": "translate",
 			"type": "Float2",
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
@@ -46,12 +46,12 @@
 			"loop": false,
             "description":"2D vector translation."
 		}, {
-			"name": "Scale",
+			"name": "scale",
 			"type": "Float2",
 			"default": "1.0,1.0",
             "description":"2D vector scale."
 		}, {
-			"name": "Rotation",
+			"name": "rotation",
 			"type": "Angle",
             "description":"Angle in degrees. Center of rotation is the center of the source."
 		}]
@@ -82,7 +82,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Translation",
+			"name": "translation",
 			"type": "Float2",
 			"default": "0.0,0.0",
 			"rangeMinX": 1.0,
@@ -93,12 +93,12 @@
 			"loop": false,
             "description":"Translate the sine to adjust its start and end."
 		},{
-			"name": "Frequency",
+			"name": "frequency",
 			"type": "Float",
 			"default":"4.0",
             "description":"Basically, the number of bars."
 		}, {
-			"name": "Angle",
+			"name": "angle",
 			"type": "Angle",
 			"default":"45.0",
             "description":"Angle in degrees of the so called bars."
@@ -117,12 +117,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Low",
+			"name": "low",
 			"type": "Float",
             "default":"0.9",
             "description":"Lower value for the Hermite interpolation."
 		}, {
-			"name": "High",
+			"name": "high",
 			"type": "Float",
             "default":"1.0",
             "description":"Higher value for the Hermite interpolation. Result is undertimined when high value < low value."
@@ -199,7 +199,7 @@
             "description":"The bigger, the stronger the resulting normal will be."
 		},
 		{
-			"name": "Invert",
+			"name": "invert",
 			"type": "Bool",
 			"default":"false",
             "description":"Change the direction of the XY components of the normal."
@@ -244,12 +244,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Mul Color",
+			"name": "mulColor",
 			"type": "Color4",
             "default":"0.5,0.5,0.5,1.0",
             "description":"The color to multiply the source with."
 		}, {
-			"name": "Add Color",
+			"name": "addColor",
 			"type": "Color4",
             "default":"0.5,0.5,0.5,1.0",
             "description":"The color to add to the source."
@@ -281,7 +281,7 @@
 			"default":"1.0,1.0,1.0,1.0",
             "description":"Color/mask to multiply A source with."
 		}, {
-			"name": "Operation",
+			"name": "operation",
 			"type": "Enum",
 			"enum": "Add|Multiply|Darken|Lighten|Average|Screen|Color Burn|Color Dodge|Soft Light|Subtract|Difference|Inverse Difference|Exclusion|",
             "description":"Built-ins operation used for blending. Check the examples below."
@@ -313,22 +313,22 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Distance",
+			"name": "distance",
 			"type": "Float2",
 			"default":"0.0,0.45",
             "description":"First and Last value to interpolate between for the distance to the center of the viewport."
 		}, {
-			"name": "Radius",
+			"name": "radius",
 			"type": "Float2",
 			"default":"0.0,0.14",
             "description":"First and Last value for the interpolated circle radius."
 		}, {
-			"name": "Angle",
+			"name": "angle",
 			"type": "Angle2",
 			"default":"0.0,720.0",
             "description":"First and Last value for the Angle. The circle position is computed using the angle and the distance."
 		}, {
-			"name": "Count",
+			"name": "count",
 			"type": "Float",
 			"default":"20.0",
             "description":"The total number of circles to render."
@@ -350,7 +350,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Ramp",
+			"name": "ramp",
 			"type": "Ramp",
 			"default": "",
             "description":"Graph that can be edited."
@@ -372,19 +372,19 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Offset 0",
+			"name": "offset0",
 			"type": "Float2",
             "description":"X,Y offset applied to even tiles. Offset in clipspace."
 		}, {
-			"name": "Offset 1",
+			"name": "offset1",
 			"type": "Float2",
             "description":"X,Y offset applied to odd tiles. Offset in clipspace."
 		}, {
-			"name": "Overlap",
+			"name": "overlap",
 			"type": "Float2",
             "description":"Amount of overlap between odd and even tiles."
 		}, {
-			"name": "Scale",
+			"name": "scale",
 			"type": "Float",
 			"default": "1.0",
             "description":"The number of tiles in X and Y in the output."
@@ -399,7 +399,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Color",
+			"name": "color",
 			"type": "Color4",
 			"default":"0.8,0.8,0.8,1.0",
             "description":"Single plain color."
@@ -421,7 +421,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Technique",
+			"name": "technique",
 			"type": "Enum",
 			"enum": "RNM|Partial Derivatives|Whiteout|UDN|Unity|Linear|Overlay|",
             "description":"Different techniques for blending. Check the examples below to see the differences."
@@ -436,7 +436,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Translation",
+			"name": "translation",
 			"type": "Float2",
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
@@ -446,7 +446,7 @@
 			"loop": false,
             "description":"Translate the noise seeds so you can have virtualy infinite different noise."
 		},{
-			"name": "Size",
+			"name": "size",
 			"type": "Float",
 			"default":"10.0",
             "description":""
@@ -471,7 +471,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Translation",
+			"name": "translation",
 			"type": "Float2",
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
@@ -481,17 +481,17 @@
 			"loop": false,
             "description":"Translate the noise seeds so you can have virtualy infinite different noise."
 		},{
-			"name": "Scale",
+			"name": "scale",
 			"type": "Float",
 			"default":"10.0",
             "description":""
 		},{
-			"name": "Jitter",
+			"name": "jitter",
 			"type": "Float",
 			"default":"1.0",
             "description":""
 		}, {
-			"name": "Manhattan",
+			"name": "manhattan",
 			"type": "Bool",
 			"default":"false",
             "description":"Mahattan or linear distance."
@@ -506,7 +506,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Translation",
+			"name": "translation",
 			"type": "Float2",
 			"default": "0.0,0.0",
 			"rangeMinX": 1.0,
@@ -517,7 +517,7 @@
 			"loop": false,
             "description":"Translate the noise seeds so you can have virtualy infinite different noise."
 		},{
-			"name": "Octaves",
+			"name": "octaves",
 			"type": "Int",
 			"default": "6",
             "description":"The number of noise with different scale for each."
@@ -559,7 +559,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "View",
+			"name": "view",
 			"type": "Float2",
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
@@ -567,11 +567,11 @@
 			"rangeMaxY": 1.0,
 			"relative": true
 		}, {
-			"name": "Displacement Factor",
+			"name": "displacementFactor",
 			"type": "Float",
             "description":""
 		}, {
-			"name": "Geometry",
+			"name": "geometry",
 			"type": "Enum",
 			"enum": "Door knob|Sphere|Cube|Plane|Cylinder|",
             "description":""
@@ -590,7 +590,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Type",
+			"name": "type",
 			"type": "Enum",
 			"enum": "Linear to polar|Polar to linear|",
             "description":"Change to direction of the transformation."
@@ -609,12 +609,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Min",
+			"name": "min",
 			"type": "Float4",
             "default":"0.5,0.5,0.5,1.0",
             "description":"The minimal value for each source component."
 		}, {
-			"name": "Max",
+			"name": "max",
 			"type": "Float4",
             "default":"0.6,0.6,0.6,1.0",
             "description":"The maximal value for each source component."
@@ -629,31 +629,31 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "File name",
+			"name": "filename",
 			"type": "FilenameRead",
             "description":"Single image frame or DDS/KTX cubemap."
 		}, {
-			"name": "+X File name",
+			"name": "XPosFilename",
 			"type": "FilenameRead",
             "description":"Cubemap image face for +X direction."
 		}, {
-			"name": "-X File name",
+			"name": "XNegFilename",
 			"type": "FilenameRead",
             "description":"Cubemap image face for -X direction."
 		}, {
-			"name": "+Y File name",
+			"name": "YPosFilename",
 			"type": "FilenameRead",
             "description":"Cubemap image face for +Y direction (Top)."
 		}, {
-			"name": "-Y File name",
+			"name": "YNegFilename",
 			"type": "FilenameRead",
             "description":"Cubemap image face for -Y direction (Bottom)."
 		}, {
-			"name": "+Z File name",
+			"name": "ZPosFilename",
 			"type": "FilenameRead",
             "description":"Cubemap image face for +Z direction."
 		}, {
-			"name": "-Z File name",
+			"name": "ZNegFilename",
 			"type": "FilenameRead",
             "description":"Cubemap image face for -Z direction."
 		}]
@@ -667,34 +667,34 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "File name",
+			"name": "filename",
 			"type": "FilenameWrite",
             "description":""
 		}, {
-			"name": "Format",
+			"name": "format",
 			"type": "Enum",
 			"enum": "JPEG|PNG|TGA|BMP|HDR|DDS|KTX|MP4|",
             "description":""
 		}, {
-			"name": "Quality",
+			"name": "quality",
 			"type": "Enum",
 			"enum": " 0 .. Best| 1| 2| 3| 4| 5 .. Medium| 6| 7| 8| 9 .. Lowest|",
             "description":""
 		}, {
-			"name": "Width",
+			"name": "width",
 			"type": "Int",
             "description":""
 		}, {
-			"name": "Height",
+			"name": "height",
 			"type": "Int",
             "description":""
 		}, {
-			"name": "Mode",
+			"name": "mode",
 			"type": "Enum",
 			"enum": "Free|Keep ratio on Y|Keep ratio on X|",
             "description":""
 		}, {
-			"name": "Export",
+			"name": "export",
 			"type": "ForceEvaluate",
             "description":""
 		}]
@@ -708,7 +708,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Make",
+			"name": "make",
 			"type": "ForceEvaluate",
             "description":"Force the evaluation without building the graph."
 		}]
@@ -726,7 +726,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
             "description":"Size of the output in pixels."
@@ -747,7 +747,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Angles",
+			"name": "angles",
 			"type": "Angle2",
             "default":"0.0,10.0",
             "description":"Rotation for the inner pixels (closer to the center) and the outter pixels. Angles in degrees."
@@ -766,7 +766,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Quad",
+			"name": "quad",
 			"type": "Float4",
 			"rangeMinX": 0.0,
 			"rangeMaxX": 1.0,
@@ -802,52 +802,52 @@
 			"default": "0.5880,0.6880,0.7830,0.0000",
             "description":"Kr component value."
 		}, {
-			"name": "rayleigh brightness",
+			"name": "rayleighBrightness",
 			"type": "Float",
 			"default": "4.3",
             "description":"Rayleigh brightness"
 		}, {
-			"name": "mie brightness",
+			"name": "mieBrightness",
 			"type": "Float",
 			"default": "0.2",
             "description":"Mie brightness factor."
 		}, {
-			"name": "spot brightness",
+			"name": "spotBrightness",
 			"type": "Float",
 			"default": "1800.0",
             "description":"Spot/sun brightness."
 		}, {
-			"name": "scatter strength",
+			"name": "scatterStrength",
 			"type": "Float",
 			"default": "0.018",
             "description":"Scatter strength."
 		}, {
-			"name": "rayleigh strength",
+			"name": "rayleighStrength",
 			"type": "Float",
 			"default": "0.25",
             "description":"Rayleigh strength."
 		}, {
-			"name": "mie strength",
+			"name": "mieStrength",
 			"type": "Float",
 			"default": "0.026",
             "description":"Mie strength."
 		}, {
-			"name": "rayleigh collection power",
+			"name": "rayleighCollectionPower",
 			"type": "Float",
 			"default": "0.81",
             "description":"Rayleigh collection power."
 		}, {
-			"name": "mie collection power",
+			"name": "mieCollectionPower",
 			"type": "Float",
 			"default": "0.89",
             "description":"Mie collection power."
 		}, {
-			"name": "mie distribution",
+			"name": "mieDistribution",
 			"type": "Float",
 			"default": "0.53",
             "description":"Mie distribution."
 		}, {
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
             "description":"Size of the cubemap face width in pixels."
@@ -875,7 +875,7 @@
 			"relative": true,
             "description":"Used by the Camera technique to rotate the eye direction."
 		}, {
-			"name": "Mode",
+			"name": "mode",
 			"type": "Enum",
 			"enum": "Projection|Isometric|Cross|Camera|",
             "description":"Techniques for display. See below for examples."
@@ -899,12 +899,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Mode",
+			"name": "mode",
 			"type": "Enum",
 			"enum": "Equirect To Cubemap|Cubemap To Equirect|",
             "description":"Select to operation to perform."
 		}, {
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
             "description":"Size fo the ouput in pixels."
@@ -919,12 +919,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Sides",
+			"name": "sides",
 			"type": "Int",
 			"default":"5",
             "description":"Number of uniformly distributed plans."
 		}, {
-			"name": "Radius",
+			"name": "radius",
 			"type": "Float",
 			"rangeMinX": -0.5,
 			"rangeMaxX": 0.5,
@@ -938,7 +938,7 @@
 			"default":"0.25",
             "description":"Interpolation factor between full white color and distance to the nearest plan."
 		},{
-			"name": "Start Angle",
+			"name": "startAngle",
 			"type": "Angle",
             "description":"Angle in degrees of the first vertex."
 		}]
@@ -952,7 +952,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Gradient",
+			"name": "gradient",
 			"type": "Ramp4",
 			"default": "",
             "description":"Double click to add a click. Click and drag a key to move it position. Modify the color for the selected key."
@@ -974,12 +974,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Strength",
+			"name": "strength",
 			"type": "Float",
             "default":"0.1",
             "description":"How strong is the displacement. Clip-space value."
 		}, {
-			"name": "Mode",
+			"name": "mode",
 			"type": "Enum",
 			"enum": "XY Offset|Rotation-Distance|",
             "description":"One of 2 modes. XY offset : R and G channels are used for X and Y displacement. Rotation-Distance: R is used as an angle (0..1 -> 0..2pi) and G is the length of the displacement."
@@ -1008,7 +1008,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Camera",
+			"name": "camera",
 			"type": "Camera",
 			"default":"",
             "description":""
@@ -1065,11 +1065,11 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Hair count",
+			"name": "hairCount",
 			"type": "Int",
             "description":""
 		}, {
-			"name": "Length factor",
+			"name": "lengthFactor",
 			"type": "Float",
             "description":""
 		}]
@@ -1088,7 +1088,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Camera",
+			"name": "camera",
 			"type": "Camera",
 			"default": "",
             "description":""
@@ -1118,11 +1118,11 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "File name",
+			"name": "filename",
 			"type": "FilenameRead",
             "description":"Relative or absolute filepath of the SVG file."
 		}, {
-			"name": "DPI",
+			"name": "dpi",
 			"type": "Float",
             "description":"Resolution used for rendering the SVG. The higher value, the bigger the image will be.",
             "default":"96"
@@ -1138,7 +1138,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "File name",
+			"name": "filename",
 			"type": "FilenameRead",
             "description":""
 		}]
@@ -1157,12 +1157,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Mode",
+			"name": "mode",
 			"type":  "Enum",
 			"enum": "Tiled|Progressive|",
             "description":""
 			}, {
-			"name" : "Camera",
+			"name" : "camera",
 			"type": "Camera",
 			"default": "",
             "description":""
@@ -1181,7 +1181,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Radius",
+			"name": "radius",
 			"type": "Float",
             "default":"0.01",
             "description":"The radius size in clipspace used for detection. The higher value, the broader the search is."
@@ -1196,21 +1196,21 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Point Count",
+			"name": "pointCount",
 			"type": "Int",
 			"default":"20",
             "description":"The number of seeds."
 		},{
-			"name": "Seed",
+			"name": "seed",
 			"type": "Float",
 			"default":"13.37",
             "description":"The seeds random position base value."
 		}, {
-			"name": "Distance Blend",
+			"name": "distanceBlend",
 			"type": "Float",
             "description":"Distance computation type interpolate between Euclydean distance (0.) and Manhattan Distance (1.)"
 		}, {
-			"name": "Square Width",
+			"name": "squareWidth",
 			"type": "Float",
             "description":"Size of each seed in clipspace size."
 		}]
@@ -1233,16 +1233,16 @@
 			"default":"0.5,0.5",
             "description":"Center of the operation in clipspace coordinates [0..1]"
 		},{
-			"name": "Start Angle",
+			"name": "startAngle",
 			"type": "Angle",
             "description":"Angle in degrees of the first plan. Total sum of plan angle is 360 deg."
 		},{
-			"name": "Splits",
+			"name": "splits",
 			"type": "Int",
             "default": "6",
             "description":"How many split plans to use."
 		},{
-			"name": "Symetry",
+			"name": "symetry",
 			"type": "Int",
             "description":"Enable symetry for even plans."
 		}]
@@ -1260,13 +1260,13 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Palette",
+			"name": "palette",
 			"type": "Enum",
 			"enum": "CGA0|CGA1|CGA2|CGA3|CGA4|CGA5|EGA|Gameboy(mono)|PICO-8|C64|",
             "description":"Predefined palette. Check examples below for results."
 		},
 		{
-			"name": "Dither Strength",
+			"name": "ditherStrength",
 			"type": "Float",
             "description":"Bayer dithering strength (0 = none, 1 = full dither)."
 		}]
@@ -1306,7 +1306,7 @@
 			"default":"1002",
             "description":"Multiple passes are supported by this node."
 		},{
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
             "description":"Size of the output in pixels"
@@ -1332,22 +1332,22 @@
 			"default":"10",
             "description":"Multiple passes are supported by this node."
 		},{
-			"name": "Frequency",
+			"name": "frequency",
 			"type": "Float",
 			"default":"1.6",
             "description":"Noise frequency. The higher, the more noise you'll get."
 		},{
-			"name": "Strength",
+			"name": "strength",
 			"type": "Float",
 			"default":"0.25",
             "description":"Noise strength."
 		},{
-			"name": "Randomization",
+			"name": "randomization",
 			"type": "Float",
 			"default":"40.0",
             "description":"How much randomization is applied."
 		},{
-			"name": "VerticalShift",
+			"name": "verticalShift",
 			"type": "Float",
 			"default":"0.05",
             "description":"How much in clip-space is moved to the top. Somekind of force applied to texels."

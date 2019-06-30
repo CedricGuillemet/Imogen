@@ -44,6 +44,7 @@ enum EVALUATOR_TYPE
     EVALUATOR_C,
     EVALUATOR_PYTHON,
     EVALUATOR_GLSLCOMPUTE,
+    EVALUATOR_JS,
 };
 
 struct EvaluatorFile

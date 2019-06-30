@@ -43,8 +43,6 @@
 #include "imMouseState.h"
 #include "UndoRedo.h"
 #include "Mem.h"
-#include "picoc.h"
-#include "interpreter.h"
 
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.
@@ -173,15 +171,6 @@ int main(int argc, char** argv)
     AddLogOutput(ImWebConsoleOutput);
 #endif
     AddLogOutput(ImConsoleOutput);
-
-
-    struct LibraryFunction PlatformLibrary[] =
-    {
-         {MyCLogFunc,  "void MyLog()"},
-         {NULL,         NULL}
-    };
-
-
 
     // Setup SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0)

@@ -31,6 +31,9 @@
 #if USE_PYTHON
 #include "pybind11/embed.h"
 #endif
+#include "duktape/duktape.h"
+
+struct EvaluationContext;
 
 enum EvaluationMask
 {
@@ -38,6 +41,33 @@ enum EvaluationMask
     EvaluationGLSL = 1 << 1,
     EvaluationPython = 1 << 2,
     EvaluationGLSLCompute = 1 << 3,
+    EvaluationJS = 1 << 4,
+};
+
+struct EvaluationInfo
+{
+    float viewRot[16];
+    float viewProjection[16];
+    float viewInverse[16];
+    float model[16];
+    float modelViewProjection[16];
+    float viewport[4];
+
+    int targetIndex;
+    int forcedDirty;
+    int uiPass;
+    int passNumber;
+    float mouse[4];
+    int keyModifier[4];
+    int inputIndices[8];
+
+    int frame;
+    int localFrame;
+    int vertexSpace;
+    int dirtyFlag;
+
+    int mipmapNumber;
+    int mipmapCount;
 };
 
 struct Evaluator
@@ -54,16 +84,17 @@ struct Evaluator
     void RunPython() const;
 #endif
 
-#ifdef _DEBUG
     std::string mName;
-#endif
+    int RunJS(unsigned char* parametersBuffer, const EvaluationInfo *evaluationInfo, EvaluationContext *context) const;
+    duk_context* m_ctx;
+    size_t mNodeType;
 };
 
 struct Evaluators
 {
-    Evaluators()
-    {
-    }
+    Evaluators();
+    ~Evaluators();
+
     void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
     std::string GetEvaluator(const std::string& filename);
     static void InitPython();
@@ -101,6 +132,7 @@ struct Evaluators
 
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<Evaluator> mEvaluatorPerNodeType;
+    duk_context* m_ctx;
 };
 
 extern Evaluators gEvaluators;

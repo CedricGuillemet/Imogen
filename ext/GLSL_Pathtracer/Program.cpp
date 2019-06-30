@@ -1,4 +1,5 @@
 #include "Program.h"
+#include <stdexcept>
 
 namespace GLSLPathTracer
 {

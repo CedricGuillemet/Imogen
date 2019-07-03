@@ -489,21 +489,34 @@ static duk_ret_t js_print(duk_context* ctx)
     return 0;
 }
 
-duk_ret_t saveImage(duk_context* ctx) 
+static void pushJSIntArray(duk_context* ctx, const int* vals, size_t count)
 {
-    duk_idx_t nargs = duk_get_top(ctx);
-    if (nargs == 2)
+    auto arr_idx = duk_push_array(ctx);
+    for (size_t i = 0; i < count; i++)
     {
-        const char* str = duk_get_string(ctx, -1);
-        void* ptr = duk_get_pointer(ctx, -2);
-        printf("saving %s - %d", str, *(int*)ptr);
-        duk_pop_n(ctx, 2);
+        duk_push_int(ctx, vals[i]);
+        duk_put_prop_index(ctx, arr_idx, int(i));
     }
-    return 0;
+}
+
+static void pushJSFloatArray(duk_context* ctx, const float* vals, size_t count)
+{
+    auto arr_idx = duk_push_array(ctx);
+    for (size_t i = 0; i < count; i++)
+    {
+        duk_push_number(ctx, vals[i]);
+        duk_put_prop_index(ctx, arr_idx, int(i));
+    }
+}
+
+static void pushJSIntProperty(duk_context* ctx, const int val, const char* name, int object)
+{
+    duk_push_int(ctx, val);
+    duk_put_prop_string(ctx, object, name);
 }
 
 /*
-* This is the point destructor
+* This is the image destructor
 */
 template<typename T> duk_ret_t js_dtor(duk_context* ctx)
 {
@@ -527,7 +540,7 @@ template<typename T> duk_ret_t js_dtor(duk_context* ctx)
 }
 
 /*
-* This is Point function, constructor. Note that it can be called
+* This is image function, constructor. Note that it can be called
 * as a standard function call, you may need to check for
 * duk_is_constructor_call to be sure that it is constructed
 * as a "new" statement.
@@ -625,6 +638,287 @@ duk_ret_t js_SetEvaluationImage(duk_context* ctx)
     return 1;
 }
 
+duk_ret_t js_GetEvaluationSize(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    int width = 0, height = 0;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 2)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -2));
+        int target = duk_get_int(ctx, -1);
+
+        if (context && target > -1)
+        {
+            ret = EvaluationAPI::GetEvaluationSize(context, target, &width, &height);
+        }
+
+        duk_pop_n(ctx, 2);
+    }
+    const int v[] = { width, height, ret };
+    pushJSIntArray(ctx, v, 3);
+    return 1;
+}
+
+duk_ret_t js_SetEvaluationSize(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int width = duk_get_int(ctx, -2);
+        int height = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && width > 0 && height > 0)
+        {
+            ret = EvaluationAPI::SetEvaluationSize(context, target, width, height);
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_SetEvaluationCubeSize(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int size = duk_get_int(ctx, -2);
+        int mipCount = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && size > 0 && mipCount > 0)
+        {
+            ret = EvaluationAPI::SetEvaluationCubeSize(context, target, size, mipCount);
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_EnableFrameClear(duk_context* ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 3)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
+        int target = duk_get_int(ctx, -2);
+        bool enable = duk_get_boolean(ctx, -1);
+
+        if (context && target > -1)
+        {
+            EvaluationAPI::EnableFrameClear(context, target, enable);
+        }
+
+        duk_pop_n(ctx, 3);
+    }
+    duk_push_int(ctx, EVAL_OK);
+    return 1;
+}
+
+duk_ret_t js_EnableDepthBuffer(duk_context* ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 3)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
+        int target = duk_get_int(ctx, -2);
+        bool enable = duk_get_boolean(ctx, -1);
+
+        if (context && target > -1)
+        {
+            EvaluationAPI::EnableDepthBuffer(context, target, enable);
+        }
+
+        duk_pop_n(ctx, 3);
+    }
+    duk_push_int(ctx, EVAL_OK);
+    return 1;
+}
+
+duk_ret_t js_AllocateComputeBuffer(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int elementCount = duk_get_int(ctx, -2);
+        int elementSize = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && elementCount > 0 && elementSize > 0)
+        {
+            ret = EvaluationAPI::AllocateComputeBuffer(context, target, elementCount, elementSize);
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_SetBlendingMode(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int blendSrc = duk_get_int(ctx, -2);
+        int blendDst = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && blendSrc >= 0 && blendSrc < BLEND_LAST && blendDst >= 0 && blendDst < BLEND_LAST)
+        {
+            EvaluationAPI::SetBlendingMode(context, target, blendSrc, blendDst);
+            ret = EVAL_OK;
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_OverrideInput(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int slot = duk_get_int(ctx, -2);
+        int node = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && slot >= 0)
+        {
+            ret = EvaluationAPI::OverrideInput(context, target, slot, node);
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_SetVertexSpace(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
+        int target = duk_get_int(ctx, -2);
+        int space = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && space >= 0 && space <= 1)
+        {
+            EvaluationAPI::SetVertexSpace(context, target, space);
+            ret = EVAL_OK;
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_GetEvaluationScene(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int elementCount = duk_get_int(ctx, -2);
+        int elementSize = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && elementCount > 0 && elementSize > 0)
+        {
+            ret = EvaluationAPI::AllocateComputeBuffer(context, target, elementCount, elementSize);
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_SetEvaluationScene(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int elementCount = duk_get_int(ctx, -2);
+        int elementSize = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && elementCount > 0 && elementSize > 0)
+        {
+            ret = EvaluationAPI::AllocateComputeBuffer(context, target, elementCount, elementSize);
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_GetEvaluationSceneName(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        int elementCount = duk_get_int(ctx, -2);
+        int elementSize = duk_get_int(ctx, -1);
+
+        if (context && target > -1 && elementCount > 0 && elementSize > 0)
+        {
+            ret = EvaluationAPI::AllocateComputeBuffer(context, target, elementCount, elementSize);
+        }
+
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_SetProcessing(duk_context* ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 3)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
+        int target = duk_get_int(ctx, -2);
+        int processing = duk_get_int(ctx, -1);
+
+        if (context && target > -1)
+        {
+            EvaluationAPI::SetProcessing(context, target, processing);
+        }
+
+        duk_pop_n(ctx, 3);
+    }
+    duk_push_int(ctx, EVAL_OK);
+    return 1;
+}
+
 void js_RegisterFunction(duk_context* ctx, const char* functionName, duk_ret_t(*function)(duk_context* ctx), int parameterCount)
 {
     duk_push_global_object(ctx);
@@ -644,6 +938,36 @@ Evaluators::Evaluators()
     js_RegisterFunction(m_ctx, "print", js_print, DUK_VARARGS);
     js_RegisterFunction(m_ctx, "LoadSVG", js_LoadSVG, 3);
     js_RegisterFunction(m_ctx, "SetEvaluationImage", js_SetEvaluationImage, 3);
+    js_RegisterFunction(m_ctx, "GetEvaluationSize", js_GetEvaluationSize, 2);
+    js_RegisterFunction(m_ctx, "SetEvaluationSize", js_SetEvaluationSize, 4);
+    js_RegisterFunction(m_ctx, "SetEvaluationCubeSize", js_SetEvaluationCubeSize, 4);
+    js_RegisterFunction(m_ctx, "EnableFrameClear", js_EnableFrameClear, 4);
+    js_RegisterFunction(m_ctx, "EnableDepthBuffer", js_EnableDepthBuffer, 4);
+    js_RegisterFunction(m_ctx, "AllocateComputeBuffer", js_AllocateComputeBuffer, 4);
+
+
+    js_RegisterFunction(m_ctx, "SetBlendingMode", js_SetBlendingMode, 4);
+    js_RegisterFunction(m_ctx, "OverrideInput", js_OverrideInput, 4);
+    js_RegisterFunction(m_ctx, "SetVertexSpace", js_SetVertexSpace, 3);
+
+    js_RegisterFunction(m_ctx, "GetEvaluationScene", js_GetEvaluationScene, 3);
+    js_RegisterFunction(m_ctx, "SetEvaluationScene", js_SetEvaluationScene, 3);
+
+    js_RegisterFunction(m_ctx, "GetEvaluationSceneName", js_GetEvaluationSceneName, 2);
+
+    js_RegisterFunction(m_ctx, "SetProcessing", js_SetProcessing, 3);
+
+    
+    //GetEvaluationSceneName(context, target)
+
+    /*
+    SetBlendingMode(context, evaluation.targetIndex, ONE, ONE_MINUS_SRC_ALPHA);
+    OverrideInput(context, evaluation.targetIndex, 0, -1); 
+    SetVertexSpace(context, evaluation.targetIndex, VertexSpace_UV);
+    
+    GetEvaluationScene(context, evaluation.inputIndices[0], &scene)
+    SetEvaluationScene(context, evaluation.targetIndex, scene);
+    */
 
     // Image class
     duk_push_c_function(m_ctx, js_ctor<Image>, 2);
@@ -662,6 +986,23 @@ Evaluators::Evaluators()
 				const EVAL_OK = 0;
 				const EVAL_ERR = 1;
 				const EVAL_DIRTY = 2;
+                const VertexSpace_UV = 0;
+                const VertexSpace_World = 1;
+                const ZERO = 0;
+	            const ONE = 1;
+	            const SRC_COLOR = 2;
+	            const ONE_MINUS_SRC_COLOR = 3;
+	            const DST_COLOR = 4;
+	            const ONE_MINUS_DST_COLOR = 5;
+	            const SRC_ALPHA = 6;
+	            const ONE_MINUS_SRC_ALPHA = 7;
+	            const DST_ALPHA = 8;
+	            const ONE_MINUS_DST_ALPHA = 9;
+	            const CONSTANT_COLOR = 10;
+	            const ONE_MINUS_CONSTANT_COLOR = 11;
+	            const CONSTANT_ALPHA = 12;
+	            const ONE_MINUS_CONSTANT_ALPHA = 13;
+	            const SRC_ALPHA_SATURATE = 14;
 			    )");
 }
 
@@ -1000,32 +1341,6 @@ void Evaluator::RunPython() const
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
 }
 #endif
-
-static void pushJSIntArray(duk_context* ctx, const int* vals, size_t count)
-{
-    auto arr_idx = duk_push_array(ctx);
-    for (size_t i = 0; i < count; i++)
-    {
-        duk_push_int(ctx, vals[i]);
-        duk_put_prop_index(ctx, arr_idx, int(i));
-    }
-}
-
-static void pushJSFloatArray(duk_context* ctx, const float* vals, size_t count)
-{
-    auto arr_idx = duk_push_array(ctx);
-    for (size_t i = 0; i < count; i++)
-    {
-        duk_push_number(ctx, vals[i]);
-        duk_put_prop_index(ctx, arr_idx, int(i));
-    }
-}
-
-static void pushJSIntProperty(duk_context* ctx, const int val, const char* name, int object)
-{
-    duk_push_int(ctx, val);
-    duk_put_prop_string(ctx, object, name);
-}
 
 int Evaluator::RunJS(unsigned char* parametersBuffer, const EvaluationInfo* evaluationInfo, EvaluationContext* context) const
 {

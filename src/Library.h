@@ -478,6 +478,12 @@ enum ConTypes
     Con_Any,
 };
 
+enum ControlTypes
+{
+    Control_NumericEdit,
+    Control_Slider,
+};
+
 enum CurveType
 {
     CurveNone,
@@ -527,8 +533,10 @@ struct MetaParameter
 {
     std::string mName;
     ConTypes mType;
+    ControlTypes mControlType;
     float mRangeMinX, mRangeMaxX;
     float mRangeMinY, mRangeMaxY;
+    float mSliderMinX, mSliderMaxX;
     bool mbRelative;
     bool mbQuadSelect;
     bool mbLoop;

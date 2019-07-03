@@ -1,5 +1,5 @@
 #include "Program.h"
-
+#include <stdexcept>
 namespace GLSLPathTracer
 {
     Program::Program(const std::vector<Shader> shaders)

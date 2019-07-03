@@ -261,6 +261,53 @@
             "default": "-1",
             "description":"Input selection passed thru the output."
 		}]
+	}, {
+		"name": "Splatter",
+		"category": 1,
+        "description":"Randomly put sprites into the surface",
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+		"inputs": [{
+			"name": "Sprite",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "translation",
+			"type": "Float2",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false,
+            "description":"Translate the noise seeds so you can have virtualy infinite different noise."
+		},{
+			"name": "noiseFactor",
+			"type": "Float",
+			"default": "1.0",
+			"description":"position noise factor. A value of 0 means the grid cells are more tightly packed and with less size variation.",
+			"control":"Slider",
+			"sliderMinX": 0.0,
+			"sliderMaxX": 1.0
+			},{
+			"name": "rotationFactor",
+			"type": "Float",
+			"default": "1.0",
+			"description":"Rotate sprite randomly. This factor limits the rotation amount.",
+			"control":"Slider",
+			"sliderMinX": 0.0,
+			"sliderMaxX": 1.0
+			},{
+			"name": "scale",
+			"type": "Float",
+			"default": "5.0",
+			"description":"How many cells used per dimension."
+			}
+			
+		]
 	}
 ]
 }

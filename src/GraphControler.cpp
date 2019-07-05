@@ -522,7 +522,7 @@ void GraphControler::ApplyDirtyList()
     bool graphArrayChanged = false;
     for (const auto& dirtyItem : dirtyList)
     {
-        size_t nodeIndex = dirtyItem.mNodeIndex;
+        int nodeIndex = int(dirtyItem.mNodeIndex);
         switch(dirtyItem.mFlags)
         {
             case Dirty::Input:

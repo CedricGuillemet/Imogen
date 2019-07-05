@@ -305,7 +305,16 @@
 			"type": "Float",
 			"default": "5.0",
 			"description":"How many cells used per dimension."
+			},{
+			"name": "innerScale",
+			"type": "Float",
+			"default": "0.5",
+			"description":"Sprite uniform scale.",
+			"control":"Slider",
+			"sliderMinX": 0.0,
+			"sliderMaxX": 10.0
 			}
+			
 			
 		]
 	}

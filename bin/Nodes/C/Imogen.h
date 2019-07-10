@@ -110,6 +110,8 @@ int ReadImage(void* context, char *filename, Image *image);
 int WriteImage(void* context, char *filename, Image *image, int format, int quality);
 // call FreeImage when done
 int GetEvaluationImage(void* context, int target, Image *image);
+
+int ReadImageAsync(void* context, char *filename, int target, int face);
 // 
 int SetEvaluationImage(void* context, int target, Image *image);
 int SetEvaluationImageCube(void* context, int target, Image *image, int cubeFace);
@@ -140,8 +142,6 @@ int SetEvaluationCubeSize(void *context, int target, int faceWidth, int mipmapCo
 int OverrideInput(void *context, int target, int inputIndex, int newInputTarget);
 int CubemapFilter(Image *image, int faceSize, int lightingModel, int excludeBase, int glossScale, int glossBias);
 
-int Job(void *context, int(*jobFunction)(void*), void *ptr, unsigned int size);
-int JobMain(void *context, int(*jobMainFunction)(void*), void *ptr, unsigned int size);
 // processing values:
 // 0 : no more processing, display node as normal
 // 1 : processing with an animation for node display
@@ -164,7 +164,7 @@ int InitRenderer(void *context, int target, int mode, void *scene);
 int UpdateRenderer(void *context, int target);
 
 int ReadGLTF(void *evaluationContext, char *filename, void **scene);
-
+int GLTFReadAsync(void* context, char* filename, int target);
 	
 #define EVAL_OK 0
 #define EVAL_ERR 1

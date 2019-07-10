@@ -256,7 +256,7 @@ int Image::Free(Image* image)
     return EVAL_OK;
 }
 
-unsigned int Image::Upload(Image* image, unsigned int textureId, int cubeFace)
+unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeFace)
 {
     bool allocTexture = false;
     if (!textureId)

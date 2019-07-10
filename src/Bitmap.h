@@ -119,7 +119,7 @@ struct Image
 
     static int Read(const char* filename, Image* image);
     static int Free(Image* image);
-    static unsigned int Upload(Image* image, unsigned int textureId, int cubeFace = -1);
+    static unsigned int Upload(const Image* image, unsigned int textureId, int cubeFace = -1);
     static int LoadSVG(const char* filename, Image* image, float dpi);
     static int ReadMem(unsigned char* data, size_t dataSize, Image* image);
     static void VFlip(Image* image);

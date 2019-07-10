@@ -12,43 +12,6 @@ typedef struct ImageRead_t
 	char negzfile[1024];
 } ImageRead;
 
-typedef struct JobData_t
-{
-	char filename[1024];
-	int targetIndex;
-	int face;
-	int isCube;
-	void *context;
-	Image image;
-} JobData;
-
-int UploadImageJob(JobData *data)
-{
-	if (data->isCube)
-	{
-		SetEvaluationImageCube(data->context, data->targetIndex, &data->image, data->face);
-	}
-	else
-	{
-		SetEvaluationImage(data->context, data->targetIndex, &data->image);
-	}
-	FreeImage(&data->image);
-	SetProcessing(data->context, data->targetIndex, 0);
-	return EVAL_OK;
-}
-
-int ReadJob(JobData *data)
-{
-	if (ReadImage(data->context, data->filename, &data->image) == EVAL_OK)
-	{
-		JobData dataUp = *data;
-		JobMain(data->context, UploadImageJob, &dataUp, sizeof(JobData));
-	}
-	else
-		SetProcessing(data->context, data->targetIndex, 0);
-	return EVAL_OK;
-}
-
 int main(ImageRead *param, Evaluation *evaluation, void *context)
 {
 	int i;
@@ -61,14 +24,7 @@ int main(ImageRead *param, Evaluation *evaluation, void *context)
 	if (strlen(param->filename))
 	{
 		SetProcessing(context, evaluation->targetIndex, 1);
-		JobData data;
-		strcpy(data.filename, param->filename);
-		data.targetIndex = evaluation->targetIndex;
-		data.face = 0;
-		data.isCube = 0;
-		data.image.bits = 0;
-		data.context = context;
-		Job(context, ReadJob, &data, sizeof(JobData));
+        ReadImageAsync(context, param->filename, evaluation->targetIndex, 0);
 	}
 	else
 	{
@@ -80,14 +36,7 @@ int main(ImageRead *param, Evaluation *evaluation, void *context)
 		SetProcessing(context, evaluation->targetIndex, 1);
 		for (i = 0;i<6;i++)
 		{
-			JobData data;
-			strcpy(data.filename, files[i]);
-			data.targetIndex = evaluation->targetIndex;
-			data.face = CUBEMAP_POSX + i;
-			data.isCube = 1;
-			data.image.bits = 0;
-			data.context = context;
-			Job(context, ReadJob, &data, sizeof(JobData));
+            ReadImageAsync(context, param->filename, evaluation->targetIndex, CUBEMAP_POSX + i);
 		}		
 	}
 

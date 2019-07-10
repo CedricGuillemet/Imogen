@@ -40,6 +40,7 @@
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 #include "GraphControler.h"
+#include <functional>
 
 Evaluators gEvaluators;
 
@@ -73,8 +74,6 @@ static const EValuationFunction evaluationFunctions[] = {
     {"SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize},
     {"AllocateComputeBuffer", (void*)EvaluationAPI::AllocateComputeBuffer},
     {"SetProcessing", (void*)EvaluationAPI::SetProcessing},
-    {"Job", (void*)EvaluationAPI::Job},
-    {"JobMain", (void*)EvaluationAPI::JobMain},
     {"memmove", (void*)memmove},
     {"strcpy", (void*)strcpy},
     {"strlen", (void*)strlen},
@@ -92,6 +91,9 @@ static const EValuationFunction evaluationFunctions[] = {
     {"InitRenderer", (void*)EvaluationAPI::InitRenderer},
     {"UpdateRenderer", (void*)EvaluationAPI::UpdateRenderer},
     {"ReadGLTF", (void*)EvaluationAPI::ReadGLTF},
+    {"GLTFReadAsync", (void*)EvaluationAPI::GLTFReadAsync},
+    {"ReadImageAsync", (void*)EvaluationAPI::ReadImageAsync},
+    
 };
 
 static void libtccErrorFunc(void* opaque, const char* msg)
@@ -765,7 +767,7 @@ void Evaluator::RunPython() const
 #endif
 namespace EvaluationAPI
 {
-    int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, Image* image, int cubeFace)
+    int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, const Image* image, int cubeFace)
     {
         if (image->mNumFaces != 1)
         {
@@ -992,7 +994,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int SetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image)
+    int SetEvaluationImage(EvaluationContext* evaluationContext, int target, const Image* image)
     {
         EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
         auto tgt = evaluationContext->GetRenderTarget(target);
@@ -1202,6 +1204,20 @@ namespace EvaluationAPI
         void* mBuffer;
     };
 
+    struct FunctionTaskSet : TaskSet
+    {
+        FunctionTaskSet(std::function<int()> function)
+            : TaskSet(), mFunction(function)
+        {
+        }
+        virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
+        {
+            mFunction();
+            delete this;
+        }
+        std::function<int()> mFunction;
+    };
+
     struct CFunctionMainTask : PinnedTask
     {
         CFunctionMainTask(jobFunction function, void* ptr, unsigned int size)
@@ -1220,6 +1236,48 @@ namespace EvaluationAPI
         jobFunction mFunction;
         void* mBuffer;
     };
+
+
+    struct FunctionMainTask : PinnedTask
+    {
+        FunctionMainTask(std::function<int()> function)
+            : PinnedTask(0) // set pinned thread to 0
+            , mFunction(function)
+        {
+        }
+        virtual void Execute()
+        {
+            mFunction();
+            delete this;
+        }
+        std::function<int()> mFunction;
+    };
+
+    int Job(EvaluationContext* evaluationContext, std::function<int()> function)
+    {
+        if (evaluationContext->IsSynchronous())
+        {
+            return function();
+        }
+        else
+        {
+            g_TS.AddTaskSetToPipe(new FunctionTaskSet(function));
+        }
+        return EVAL_OK;
+    }
+
+    int JobMain(EvaluationContext* evaluationContext, std::function<int()> function)
+    {
+        if (evaluationContext->IsSynchronous())
+        {
+            return function();
+        }
+        else
+        {
+            g_TS.AddPinnedTask(new FunctionMainTask(function));
+        }
+        return EVAL_OK;
+    }
 
     int Job(EvaluationContext* evaluationContext, int (*jobFunction)(void*), void* ptr, unsigned int size)
     {
@@ -1329,73 +1387,127 @@ namespace EvaluationAPI
 
         Scene* sc = new Scene;
         sc->mName = strFilename;
-        // gSceneCache.insert(std::make_pair(strFilename, sc));
-        // gScenePointerCache.insert(std::make_pair(sc.get(), sc));
-
-        sc->mMeshes.resize(data->meshes_count);
-        for (unsigned int i = 0; i < data->meshes_count; i++)
-        {
-            auto& gltfMesh = data->meshes[i];
-            auto& mesh = sc->mMeshes[i];
-            mesh.mPrimitives.resize(gltfMesh.primitives_count);
-            // attributes
-            for (unsigned int j = 0; j < gltfMesh.primitives_count; j++)
-            {
-                auto& gltfPrim = gltfMesh.primitives[j];
-                auto& prim = mesh.mPrimitives[j];
-
-                for (unsigned int k = 0; k < gltfPrim.attributes_count; k++)
-                {
-                    unsigned int format = 0;
-                    auto attr = gltfPrim.attributes[k];
-                    switch (attr.type)
-                    {
-                        case cgltf_attribute_type_position:
-                            format = Scene::Mesh::Format::POS;
-                            break;
-                        case cgltf_attribute_type_normal:
-                            format = Scene::Mesh::Format::NORM;
-                            break;
-                        case cgltf_attribute_type_texcoord:
-                            format = Scene::Mesh::Format::UV;
-                            break;
-                        case cgltf_attribute_type_color:
-                            format = Scene::Mesh::Format::COL;
-                            break;
-                    }
-                    const char* buffer = ((char*)attr.data->buffer_view->buffer->data) +
-                                         attr.data->buffer_view->offset + attr.data->offset;
-                    prim.AddBuffer(buffer, format, (unsigned int)attr.data->stride, (unsigned int)attr.data->count);
-                }
-
-                // indices
-                const char* buffer = ((char*)gltfPrim.indices->buffer_view->buffer->data) +
-                                     gltfPrim.indices->buffer_view->offset + gltfPrim.indices->offset;
-                prim.AddIndexBuffer(
-                    buffer, (unsigned int)gltfPrim.indices->stride, (unsigned int)gltfPrim.indices->count);
-            }
-        }
-
-        sc->mWorldTransforms.resize(data->nodes_count);
-        sc->mMeshIndex.resize(data->nodes_count, -1);
-
-        // transforms
-        for (unsigned int i = 0; i < data->nodes_count; i++)
-        {
-            cgltf_node_transform_world(&data->nodes[i], sc->mWorldTransforms[i]);
-        }
-
-        for (unsigned int i = 0; i < data->nodes_count; i++)
-        {
-            if (!data->nodes[i].mesh)
-                continue;
-            sc->mMeshIndex[i] = int(data->nodes[i].mesh - data->meshes);
-        }
-
-
-        cgltf_free(data);
         *scene = sc;
+
+        JobMain(evaluationContext, [evaluationContext, sc, data]() {
+            sc->mMeshes.resize(data->meshes_count);
+            for (unsigned int i = 0; i < data->meshes_count; i++)
+            {
+                auto& gltfMesh = data->meshes[i];
+                auto& mesh = sc->mMeshes[i];
+                mesh.mPrimitives.resize(gltfMesh.primitives_count);
+                // attributes
+                for (unsigned int j = 0; j < gltfMesh.primitives_count; j++)
+                {
+                    auto& gltfPrim = gltfMesh.primitives[j];
+                    auto& prim = mesh.mPrimitives[j];
+
+                    for (unsigned int k = 0; k < gltfPrim.attributes_count; k++)
+                    {
+                        unsigned int format = 0;
+                        auto attr = gltfPrim.attributes[k];
+                        switch (attr.type)
+                        {
+                            case cgltf_attribute_type_position:
+                                format = Scene::Mesh::Format::POS;
+                                break;
+                            case cgltf_attribute_type_normal:
+                                format = Scene::Mesh::Format::NORM;
+                                break;
+                            case cgltf_attribute_type_texcoord:
+                                format = Scene::Mesh::Format::UV;
+                                break;
+                            case cgltf_attribute_type_color:
+                                format = Scene::Mesh::Format::COL;
+                                break;
+                        }
+                        const char* buffer = ((char*)attr.data->buffer_view->buffer->data) +
+                                             attr.data->buffer_view->offset + attr.data->offset;
+                        prim.AddBuffer(buffer, format, (unsigned int)attr.data->stride, (unsigned int)attr.data->count);
+                    }
+
+                    // indices
+                    const char* buffer = ((char*)gltfPrim.indices->buffer_view->buffer->data) +
+                                         gltfPrim.indices->buffer_view->offset + gltfPrim.indices->offset;
+                    prim.AddIndexBuffer(
+                        buffer, (unsigned int)gltfPrim.indices->stride, (unsigned int)gltfPrim.indices->count);
+                }
+            }
+
+            sc->mWorldTransforms.resize(data->nodes_count);
+            sc->mMeshIndex.resize(data->nodes_count, -1);
+
+            // transforms
+            for (unsigned int i = 0; i < data->nodes_count; i++)
+            {
+                cgltf_node_transform_world(&data->nodes[i], sc->mWorldTransforms[i]);
+            }
+
+            for (unsigned int i = 0; i < data->nodes_count; i++)
+            {
+                if (!data->nodes[i].mesh)
+                    continue;
+                sc->mMeshIndex[i] = int(data->nodes[i].mesh - data->meshes);
+            }
+
+
+            cgltf_free(data);
+            return EVAL_OK;
+        });
         return EVAL_OK;
     }
 
+    int GLTFReadAsync(EvaluationContext* context, const char* filename, int target)
+    {
+        SetProcessing(context, target, 1);
+        std::string strFilename = filename;
+        Job(context, [context, target, strFilename](){
+            Scene *scene;
+            if (ReadGLTF(context, strFilename.c_str(), &scene) == EVAL_OK)
+            {
+                JobMain(context, [context, scene, target](){
+                    SetEvaluationScene(context, target, scene);
+                    SetProcessing(context, target, 0);
+                    return EVAL_OK;
+                });
+            }
+            else
+            {
+                SetProcessing(context, target, 0);
+            }
+            return EVAL_OK;
+        });
+        return EVAL_OK;
+    }
+
+    int ReadImageAsync(EvaluationContext* context, char *filename, int target, int face)
+    {
+        std::string strFilename = filename;
+        Job(context, [context, target, strFilename, face]() {
+            Image image;
+            if (Image::Read(strFilename.c_str(), &image) == EVAL_OK)
+            {
+                JobMain(context, [image, face, context, target](){
+                    if (face)
+                    {
+                        SetEvaluationImageCube(context, target, &image, face);
+                    }
+                    else
+                    {
+                        SetEvaluationImage(context, target, &image);
+                    }
+                    //FreeImage(&data->image);
+                    SetProcessing(context, target, 0);
+                    context->SetTargetDirty(target, Dirty::Input, true);
+                    return EVAL_OK;
+                });
+            }
+            else
+            {
+                SetProcessing(context, target, 0);
+            }
+            return EVAL_OK;
+        });
+        return EVAL_OK;
+    }
 } // namespace EvaluationAPI

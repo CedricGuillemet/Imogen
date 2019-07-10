@@ -98,7 +98,7 @@ typedef enki::TaskScheduler TaskScheduler;
 
 #elif __linux__
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <GL/gl3w.h>
 #include <stdio.h>
 #include <stdlib.h>

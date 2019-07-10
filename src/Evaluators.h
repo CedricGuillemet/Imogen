@@ -113,8 +113,8 @@ namespace EvaluationAPI
 {
     // API
     int GetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image);
-    int SetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image);
-    int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, Image* image, int cubeFace);
+    int SetEvaluationImage(EvaluationContext* evaluationContext, int target, const Image* image);
+    int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, const Image* image, int cubeFace);
     int SetThumbnailImage(EvaluationContext* evaluationContext, Image* image);
     int AllocateImage(Image* image);
 
@@ -150,4 +150,6 @@ namespace EvaluationAPI
     int Evaluate(EvaluationContext* evaluationContext, int target, int width, int height, Image* image);
 
     int ReadGLTF(EvaluationContext* evaluationContext, const char* filename, Scene** scene);
+    int GLTFReadAsync(EvaluationContext* context, const char* filename, int target);
+    int ReadImageAsync(EvaluationContext* context, char *filename, int target, int face);
 } // namespace EvaluationAPI

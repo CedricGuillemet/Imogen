@@ -766,26 +766,6 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-#ifdef USE_LIBTCC
-void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
-{
-    try // todo: find a better solution than a try catch
-    {
-        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
-        if (evaluator.mCFunction)
-        {
-            int res = evaluator.mCFunction((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
-            if (res == EVAL_DIRTY)
-            {
-                mStillDirty.push_back(uint32_t(nodeIndex));
-            }
-        }
-    }
-    catch (...)
-    {
-    }
-}
-#endif
 void EvaluationContext::EvaluateJS(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
     try
@@ -914,12 +894,6 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     SetKeyboardMouseInfos(mEvaluationInfo);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 
-#ifdef USE_LIBTCC
-    if (evaluationMask & EvaluationC)
-    {
-        EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
-    }
-#endif
     if (evaluationMask & EvaluationJS)
     {
         EvaluateJS(currentStage, nodeIndex, mEvaluationInfo);

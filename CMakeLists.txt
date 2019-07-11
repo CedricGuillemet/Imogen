@@ -31,7 +31,6 @@ file(GLOB EXT_FILES
 
 if(WIN32)
 set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_win.cpp)
-set(PLATFORM_LIBS "libtcc")
 else()
 set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_gtk.c
 )
@@ -58,7 +57,7 @@ LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
 
 # Add other flags to the compiler
 ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
-set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES} libtcc.a)
+set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES})
 endif()
 
 
@@ -73,11 +72,8 @@ set(PYTHON37_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/include)
 set(PYTHON37_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/libs)
 
 
-set(SDL2_INCLUDE_DIRS  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/include)
-set(SDL2_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2-2.0.8/lib/x64)
-
-set(TCC_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/)
-set(TCC_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc)
+set(SDL2_INCLUDE_DIRS  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2/include)
+set(SDL2_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2/lib/x64)
 
 else()
 
@@ -85,9 +81,6 @@ PKG_CHECK_MODULES(PYTHON37 REQUIRED python3)
 PKG_CHECK_MODULES(SDL2_LIBRARIES REQUIRED sdl2)
 PKG_CHECK_MODULES(FFMPEG REQUIRED libavcodec libavdevice libavfilter libavformat libavutil libswscale libswresample libpostproc)
 #${AVCODEC_LIBRARY} ${AVUTIL_LIBRARY} ${AVDEVICE_LIBRARY} ${AVFORMAT_LIBRARY} ${SWSCALE_LIBRARY} ${PYTHON_LIBRARIES}
-#TODO: TCC
-set(TCC_INCLUDE_DIRS /usr/local/Cellar/tcc/0.9.27_1/)
-set(TCC_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/tcc-0.9.27/libtcc)
 
 endif()
 
@@ -96,7 +89,6 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
   ${SDL2_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/gl3w
-  ${TCC_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
   ${FFMPEG_INCLUDE_DIRS}
@@ -111,7 +103,6 @@ link_directories(
   ${SDL2_LIBDIR}
   ${FFMPEG_LIBRARY_DIRS}
   ${PYTHON37_LIBRARY_DIRS}
-  ${TCC_LIBRARY_DIRS}
 )
 find_package(OpenGL)
 

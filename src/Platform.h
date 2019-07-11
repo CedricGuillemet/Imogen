@@ -37,7 +37,7 @@
 #ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <GLES3/gl3.h>
 
 typedef int TaskSetPartition;
@@ -72,7 +72,7 @@ struct TaskScheduler
 
 #elif WIN32
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include <GL/gl3w.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,7 +81,6 @@ struct TaskScheduler
 #include <Windows.h>
 #include <shellapi.h>
 #include "ffmpegCodec.h"
-#include "libtcc/libtcc.h"
 #include "ffmpegCodec.h"
 #include "TaskScheduler.h"
 #include "nfd.h"
@@ -89,7 +88,6 @@ struct TaskScheduler
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
 #define USE_GLDEBUG 1
-#define USE_LIBTCC 1
 
 typedef enki::IPinnedTask PinnedTask;
 typedef enki::ITaskSet TaskSet;
@@ -113,7 +111,6 @@ typedef enki::TaskScheduler TaskScheduler;
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
 #define USE_GLDEBUG 1
-#define USE_LIBTCC 1
 
 typedef enki::IPinnedTask PinnedTask;
 typedef enki::ITaskSet TaskSet;

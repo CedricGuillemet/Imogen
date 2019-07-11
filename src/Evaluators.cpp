@@ -52,56 +52,6 @@ struct EValuationFunction
     void* function;
 };
 
-static const EValuationFunction evaluationFunctions[] = {
-    {"Log", (void*)Log},
-    {"log2", (void*)static_cast<float (*)(float)>(log2)},
-    {"ReadImage", (void*)EvaluationAPI::Read},
-    {"WriteImage", (void*)EvaluationAPI::Write},
-    {"GetEvaluationImage", (void*)EvaluationAPI::GetEvaluationImage},
-    {"SetEvaluationImage", (void*)EvaluationAPI::SetEvaluationImage},
-    {"SetEvaluationImageCube", (void*)EvaluationAPI::SetEvaluationImageCube},
-    {"AllocateImage", (void*)EvaluationAPI::AllocateImage},
-    {"FreeImage", (void*)Image::Free},
-    {"SetThumbnailImage", (void*)EvaluationAPI::SetThumbnailImage},
-    {"Evaluate", (void*)EvaluationAPI::Evaluate},
-    {"SetBlendingMode", (void*)EvaluationAPI::SetBlendingMode},
-    {"EnableDepthBuffer", (void*)EvaluationAPI::EnableDepthBuffer},
-    {"EnableFrameClear", (void*)EvaluationAPI::EnableFrameClear},
-    {"SetVertexSpace", (void*)EvaluationAPI::SetVertexSpace},
-
-    {"GetEvaluationSize", (void*)EvaluationAPI::GetEvaluationSize},
-    {"SetEvaluationSize", (void*)EvaluationAPI::SetEvaluationSize},
-    {"SetEvaluationCubeSize", (void*)EvaluationAPI::SetEvaluationCubeSize},
-    {"AllocateComputeBuffer", (void*)EvaluationAPI::AllocateComputeBuffer},
-    {"SetProcessing", (void*)EvaluationAPI::SetProcessing},
-    {"memmove", (void*)memmove},
-    {"strcpy", (void*)strcpy},
-    {"strlen", (void*)strlen},
-    {"fabsf", (void*)fabsf},
-    {"strcmp", (void*)strcmp},
-    {"LoadSVG", (void*)Image::LoadSVG},
-    {"LoadScene", (void*)EvaluationAPI::LoadScene},
-    {"SetEvaluationScene", (void*)EvaluationAPI::SetEvaluationScene},
-    {"GetEvaluationScene", (void*)EvaluationAPI::GetEvaluationScene},
-    {"SetEvaluationRTScene", (void*)EvaluationAPI::SetEvaluationRTScene},
-    {"GetEvaluationRTScene", (void*)EvaluationAPI::GetEvaluationRTScene},
-    {"GetEvaluationSceneName", (void*)EvaluationAPI::GetEvaluationSceneName},
-    {"GetEvaluationRenderer", (void*)EvaluationAPI::GetEvaluationRenderer},
-    {"OverrideInput", (void*)EvaluationAPI::OverrideInput},
-    {"InitRenderer", (void*)EvaluationAPI::InitRenderer},
-    {"UpdateRenderer", (void*)EvaluationAPI::UpdateRenderer},
-    {"ReadGLTF", (void*)EvaluationAPI::ReadGLTF},
-    {"GLTFReadAsync", (void*)EvaluationAPI::GLTFReadAsync},
-    {"ReadImageAsync", (void*)EvaluationAPI::ReadImageAsync},
-    
-};
-
-static void libtccErrorFunc(void* opaque, const char* msg)
-{
-    Log(msg);
-    Log("\n");
-}
-
 void LogPython(const std::string& str)
 {
     Log(str.c_str());

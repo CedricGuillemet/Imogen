@@ -106,7 +106,6 @@ typedef enki::TaskScheduler TaskScheduler;
 #include <algorithm>
 #include <string.h>
 #include "ffmpegCodec.h"
-#include "libtcc.h"
 
 #define USE_FFMPEG 1
 #define USE_PYTHON 1

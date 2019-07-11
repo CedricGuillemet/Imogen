@@ -10,12 +10,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "File name",
+			"name": "filename",
 			"type": "FilenameRead",
             "description":""
 		},
 		{
-			"name": "Camera",
+			"name": "camera",
 			"type": "Camera",
 			"default":"",
             "description":""
@@ -38,13 +38,13 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
             "description":""
 		},
 		{
-			"name": "Camera",
+			"name": "camera",
 			"type": "Camera",
 			"default":"",
             "description":""
@@ -66,19 +66,19 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Mode",
+			"name": "mode",
 			"type": "Enum",
 			"enum": "Radiance|Irradiance|",
 			"default": "0",
             "description":"Radiance or Irradiance."
 		},{
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "Source|   256|   512|  1024|  2048|  4096|",
 			"default":"0",
             "description":"Size of the output cubemap face width in pixels."
 		},{
-			"name": "Sample Count",
+			"name": "sampleCount",
 			"type": "Int",
 			"default":"100",
             "description":"The samples count used for the blur. The more samplem the higher quality."
@@ -111,7 +111,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "View",
+			"name": "view",
 			"type": "Float2",
 			"rangeMinX": 1.0,
 			"rangeMaxX": 0.0,
@@ -120,7 +120,7 @@
 			"relative": true,
             "description":""
 		},{
-			"name": "Depth factor",
+			"name": "depthFactor",
 			"type": "Float",
 			"default":"0.0",
             "description":""
@@ -190,12 +190,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Factor",
+			"name": "factor",
 			"type": "Float",
 			"default":"0.32",
             "description":"Lens factor strength."
 		},{
-			"name": "Vignette",
+			"name": "vignette",
 			"type": "Float",
 			"default":"1.0",
             "description":"Vignette shading: Corners get darker. 0 to disable vignette."
@@ -256,7 +256,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Multiplexer",
+			"name": "multiplexer",
 			"type": "Multiplexer",
             "default": "-1",
             "description":"Input selection passed thru the output."

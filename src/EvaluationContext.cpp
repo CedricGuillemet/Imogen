@@ -514,7 +514,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         glUseProgram(program);
 
         glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-        evaluationInfo.mVertexSpace = evaluation.mVertexSpace;
+        evaluationInfo.vertexSpace = evaluation.mVertexSpace;
         glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -644,7 +644,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 evaluationInfo.mipmapCount = mipmapCount;
 
                 glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-                evaluationInfo.mVertexSpace = evaluation.mVertexSpace;
+                evaluationInfo.vertexSpace = evaluation.mVertexSpace;
                 glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
                 glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -786,6 +786,32 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
     }
 }
 #endif
+void EvaluationContext::EvaluateJS(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
+{
+    try
+    {
+        const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
+        int res = evaluator.RunJS((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
+        if (res == EVAL_DIRTY)
+        {
+            mStillDirty.push_back(uint32_t(nodeIndex));
+        }
+        /*
+        if (evaluator.mCFunction)
+        {
+            int res = evaluator.mCFunction((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
+            if (res == EVAL_DIRTY)
+            {
+                mStillDirty.push_back(uint32_t(nodeIndex));
+            }
+        }
+        */
+    }
+    catch (std::exception e)
+    {
+        printf("Duktape exception %s\n", e.what());
+    }
+}
 #if USE_PYTHON
 void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
                                        size_t index,
@@ -882,8 +908,8 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     evaluation.mProcessing = 0;
 
     mEvaluationInfo.targetIndex = int(nodeIndex);
-    mEvaluationInfo.mFrame = mCurrentTime;
-    mEvaluationInfo.mDirtyFlag = evaluation.mDirtyFlag;
+    mEvaluationInfo.frame = mCurrentTime;
+    mEvaluationInfo.dirtyFlag = evaluation.mDirtyFlag;
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetKeyboardMouseInfos(mEvaluationInfo);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
@@ -894,6 +920,10 @@ void EvaluationContext::RunNode(size_t nodeIndex)
         EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
     }
 #endif
+    if (evaluationMask & EvaluationJS)
+    {
+        EvaluateJS(currentStage, nodeIndex, mEvaluationInfo);
+    }
 #ifdef USE_PYTHON
     if (evaluationMask & EvaluationPython)
     {

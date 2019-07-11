@@ -1435,6 +1435,7 @@ void Imogen::Init(bool bDebugWindow)
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
+    DiscoverNodes("js", "Nodes/JS/", EVALUATOR_JS, mEvaluatorFiles);
 
 #ifndef __EMSCRIPTEN__
     DiscoverNodes("c", "Nodes/C/", EVALUATOR_C, mEvaluatorFiles);

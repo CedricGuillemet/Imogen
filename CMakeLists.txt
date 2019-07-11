@@ -18,6 +18,7 @@ file(GLOB_RECURSE SRC_FILES
 file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
+	${CMAKE_SOURCE_DIR}/ext/duktape/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
@@ -181,6 +182,7 @@ add_definitions(-DBX_CONFIG_ENABLE_MSVC_LEVEL4_WARNINGS=1)
 add_definitions(-D__STDC_LIMIT_MACROS)
 add_definitions(-D__STDC_CONSTANT_MACROS)
 add_definitions(-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+add_definitions(-DDUK_USE_CPP_EXCEPTIONS)
 if(MSVC)
 add_definitions(-DWIN32)
 add_definitions(-D_WIN32)

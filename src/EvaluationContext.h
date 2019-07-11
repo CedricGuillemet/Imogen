@@ -29,32 +29,7 @@
 #include <thread>
 #include <atomic>
 #include "EvaluationStages.h"
-
-struct EvaluationInfo
-{
-    float viewRot[16];
-    float viewProjection[16];
-    float viewInverse[16];
-    float model[16];
-    float modelViewProjection[16];
-    float viewport[4];
-
-    int targetIndex;
-    int forcedDirty;
-    int uiPass;
-    int passNumber;
-    float mouse[4];
-    int keyModifier[4];
-    int inputIndices[8];
-
-    int mFrame;
-    int mLocalFrame;
-    int mVertexSpace;
-    int mDirtyFlag;
-
-    int mipmapNumber;
-    int mipmapCount;
-};
+#include "Evaluators.h"
 
 struct UIInput
 {
@@ -223,6 +198,7 @@ protected:
 #ifdef USE_LIBTCC
     void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 #endif
+    void EvaluateJS(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo);
 #ifdef USE_PYTHON
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 #endif

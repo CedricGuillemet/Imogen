@@ -1,4 +1,4 @@
-function GradientBuilder(parameters, evaluation, context)
+function Thumbnail(parameters, evaluation, context)
 {
 	image = new Image;
 	if (ReadImage(context, "Stock/thumbnail-icon.png", image) == EVAL_OK)

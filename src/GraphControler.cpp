@@ -571,19 +571,19 @@ void GraphControler::ApplyDirtyList()
                 graphArrayChanged = true;
                 ExtractedViewNodeDeleted(nodeIndex);
                 UICallbackNodeDeleted(nodeIndex);
-                if (mSelectedNodeIndex == nodeIndex)
+                if (mSelectedNodeIndex == int(nodeIndex))
                 {
                     mSelectedNodeIndex = -1;
                 }
-                else if (mSelectedNodeIndex > nodeIndex)
+                else if (mSelectedNodeIndex > int(nodeIndex))
                 {
                    mSelectedNodeIndex --;
                 }
-                if (mBackgroundNode == nodeIndex)
+                if (mBackgroundNode == int(nodeIndex))
                 {
                     mBackgroundNode = -1;
                 }
-                else if (mBackgroundNode > nodeIndex)
+                else if (mBackgroundNode > int(nodeIndex))
                 {
                     mBackgroundNode--;
                 }

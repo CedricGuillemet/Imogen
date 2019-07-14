@@ -73,12 +73,12 @@ def appendTable(tab, lineSize, f, makeLink = False):
     f.write("\n\n")
 
 def setDefaultCubemap(node):
-    Imogen.SetParameter(node, "+X File name", "Media/EnvMaps/Fjaderholmarna/posx.jpg")
-    Imogen.SetParameter(node, "-X File name", "Media/EnvMaps/Fjaderholmarna/negx.jpg")
-    Imogen.SetParameter(node, "+Y File name", "Media/EnvMaps/Fjaderholmarna/posy.jpg")
-    Imogen.SetParameter(node, "-Y File name", "Media/EnvMaps/Fjaderholmarna/negy.jpg")
-    Imogen.SetParameter(node, "+Z File name", "Media/EnvMaps/Fjaderholmarna/posz.jpg")
-    Imogen.SetParameter(node, "-Z File name", "Media/EnvMaps/Fjaderholmarna/negz.jpg")
+    Imogen.SetParameter(node, "XPosFilename", "Media/EnvMaps/Fjaderholmarna/posx.jpg")
+    Imogen.SetParameter(node, "XNegFilename", "Media/EnvMaps/Fjaderholmarna/negx.jpg")
+    Imogen.SetParameter(node, "YPosFilename", "Media/EnvMaps/Fjaderholmarna/posy.jpg")
+    Imogen.SetParameter(node, "YNegFilename", "Media/EnvMaps/Fjaderholmarna/negy.jpg")
+    Imogen.SetParameter(node, "ZPosFilename", "Media/EnvMaps/Fjaderholmarna/posz.jpg")
+    Imogen.SetParameter(node, "ZNegFilename", "Media/EnvMaps/Fjaderholmarna/negz.jpg")
     
 def generateExample(nodeName, baseDir, f, node):
     exampleWithCatImage = ["Pixelize", "PolarCoords", "Swirl", "Crop", "Kaleidoscope", "Palette", "Blur", "Invert", "Lens", "MADD", "SmoothStep", "Clamp"]

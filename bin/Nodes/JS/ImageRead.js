@@ -1,8 +1,8 @@
 function ImageRead(parameters, evaluation, context)
 {
 	var i;
-	const files = [parameters.posxfile, parameters.negxfile, parameters.negyfile, parameters.posyfile, parameters.poszfile, parameters.negzfile];
-	
+	const files = [parameters.XPosFilename, parameters.XNegFilename, parameters.YNegFilename, parameters.YPosFilename, parameters.ZPosFilename, parameters.ZNegFilename];
+    
 	if (!(evaluation.dirtyFlag & DirtyParameter))
     {
 		return EVAL_OK;
@@ -17,7 +17,9 @@ function ImageRead(parameters, evaluation, context)
 		for (i = 0; i < 6; i++)
 		{
 			if (!files[i].length)
+            {
 				return EVAL_OK;
+            }
 		}
 		SetProcessing(context, evaluation.targetIndex, 1);
 		for (i = 0;i<6;i++)

@@ -920,7 +920,7 @@ duk_ret_t js_GLTFReadAsync(duk_context* ctx)
 duk_ret_t js_ReadImageAsync(duk_context* ctx)
 {
     duk_idx_t nargs = duk_get_top(ctx);
-    if (nargs == 3)
+    if (nargs == 4)
     {
         EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
         const char* filename = duk_get_string(ctx, -3);
@@ -932,7 +932,7 @@ duk_ret_t js_ReadImageAsync(duk_context* ctx)
             EvaluationAPI::ReadImageAsync(context, filename, target, face);
         }
 
-        duk_pop_n(ctx, 3);
+        duk_pop_n(ctx, 4);
     }
     duk_push_int(ctx, EVAL_OK);
     return 1;
@@ -1077,7 +1077,7 @@ Evaluators::Evaluators()
     js_RegisterFunction(m_ctx, "SetProcessing", js_SetProcessing, 3);
 
     js_RegisterFunction(m_ctx, "GLTFReadAsync", js_GLTFReadAsync, 3);
-    js_RegisterFunction(m_ctx, "ReadImageAsync", js_ReadImageAsync, 3);
+    js_RegisterFunction(m_ctx, "ReadImageAsync", js_ReadImageAsync, 4);
     js_RegisterFunction(m_ctx, "ReadImage", js_ReadImage, 3);
     js_RegisterFunction(m_ctx, "SetThumbnailImage", js_SetThumbnailImage, 2);
     js_RegisterFunction(m_ctx, "Evaluate", js_Evaluate, 5);
@@ -1278,7 +1278,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
         catch (std::exception e)
         {
-            Log("Duktape exception: %s\n", e.what());
+            Log("[ERROR]%s\n", e.what());
         }
     }
 }
@@ -1489,10 +1489,16 @@ int Evaluator::RunJS(unsigned char* parametersBuffer, const EvaluationInfo* eval
 
 
         duk_push_pointer(m_ctx, context);
-
-        if (duk_pcall(m_ctx, 3) != DUK_EXEC_SUCCESS)
+        try
         {
-            Log(duk_safe_to_string(m_ctx, -1));
+            if (duk_pcall(m_ctx, 3) != DUK_EXEC_SUCCESS)
+            {
+                Log("[ERROR][%s]%s\n", this->mName.c_str(), duk_safe_to_string(m_ctx, -1));
+            }
+        }
+        catch (std::exception e)
+        {
+            Log("[ERROR]%s\n", e.what());
         }
         
     }
@@ -2222,7 +2228,7 @@ namespace EvaluationAPI
             if (Image::Read(strFilename.c_str(), &image) == EVAL_OK)
             {
                 JobMain(context, [image, face, context, target](){
-                    if (face)
+                    if (face != -1)
                     {
                         SetEvaluationImageCube(context, target, &image, face);
                     }

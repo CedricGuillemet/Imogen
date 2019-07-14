@@ -37,7 +37,7 @@
 #ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <GLES3/gl3.h>
 
 typedef int TaskSetPartition;

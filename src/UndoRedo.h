@@ -189,14 +189,14 @@ struct URChange : public UndoRedo
         gUndoRedoHandler.AddUndo(*this);
     }
 
-    virtual void Undo()
+    void Undo() override
     {
         *GetElements(mIndex) = mPreDo;
         Changed(mIndex);
         UndoRedo::Undo();
     }
 
-    virtual void Redo()
+    void Redo() override
     {
         UndoRedo::Redo();
         *GetElements(mIndex) = mPostDo;

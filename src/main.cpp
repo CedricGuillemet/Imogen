@@ -120,14 +120,8 @@ void APIENTRY openglCallbackFunction(GLenum /*source*/,
 #endif
 
 #ifdef __EMSCRIPTEN__
-void ImWebConsoleOutput(const char* szText)
-{
-    printf("%s", szText);
-}
-   
-EM_JS(void, HideLoader, (), {
-    document.getElementById("loader").style.display = "none";
-});
+
+#include "JSGlue.h"
 
 #else
 

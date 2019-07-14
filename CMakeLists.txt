@@ -19,18 +19,26 @@ file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/duktape/*.cpp
-    ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
+)
+
+if (NOT EMSCRIPTEN)
+file(GLOB EXT_FILES_DESKTOP
+    ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
     ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/SOIL/src/*.c
     ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/ffmpegCodec/*.cpp
 )
+set(SDL2_LIBRARIES "SDL2" "SDL2main")
+endif()
 
 if(WIN32)
 set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_win.cpp)
+elseif (EMSCRIPTEN)
 else()
 set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_gtk.c
 )
@@ -75,6 +83,7 @@ set(PYTHON37_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/libs)
 set(SDL2_INCLUDE_DIRS  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2/include)
 set(SDL2_LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/SDL2/lib/x64)
 
+elseif (EMSCRIPTEN)
 else()
 
 PKG_CHECK_MODULES(PYTHON37 REQUIRED python3)
@@ -97,6 +106,7 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/SOIL/include
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/Nvidia-SBVH
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/GLSL_Pathtracer/
+  ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpegCodec/
 )
 
 link_directories(
@@ -121,8 +131,6 @@ IF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
     ENDFOREACH(flag_var)
 ENDIF (NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
 
-set(SDL2_LIBRARIES "SDL2" "SDL2main")
-
 #######################################################################################
 
 foreach(f ${SRC_FILES})
@@ -143,6 +151,7 @@ set(ENABLE_HIDECONSOLE_BUILD TRUE CACHE BOOL "TRUE to hide console for Windows s
 
 if(WINDOWS)
   set(GUI_TYPE WIN32)
+elseif (EMSCRIPTEN)
 elseif(APPLE)
   set(GUI_TYPE MACOSX_BUNDLE)
 endif()
@@ -155,7 +164,7 @@ endif()
 SET(LINK_OPTIONS " ")
 SET(EXE_NAME "Imogen")
 
-ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES})
+ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DESKTOP})
 
 TARGET_LINK_LIBRARIES(${EXE_NAME} ${PYTHON37_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBRARIES})
 
@@ -181,18 +190,47 @@ add_definitions(-DNOMINMAX)
 endif()
 add_definitions(-DUSE_DL_PREFIX)
 
+if (EMSCRIPTEN)
+add_definitions(-DEMSCRIPTEN)
+add_definitions(-D_X86_)
+set(EMS_OPTS "-s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy -g4 --source-map-base http://localhost:8000/")
+add_definitions(${EMS_OPTS})
+set(EMS_PRELOAD " --preload-file library.dat --preload-file imgui.ini --preload-file Nodes --preload-file Stock")
+set(EMS_LINK "${EMS_OPTS} ${EMS_PRELOAD}")
+set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS ${EMS_LINK})
+
+add_custom_command(TARGET ${EXE_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/index.html ${CMAKE_CURRENT_BINARY_DIR}/index.html
+)
+
+# copy files and directories because packer doesn't know where to place then
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/library.dat ${CMAKE_CURRENT_BINARY_DIR}/
+)
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/imgui.ini ${CMAKE_CURRENT_BINARY_DIR}/
+)
+
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/Nodes ${CMAKE_CURRENT_BINARY_DIR}/Nodes
+)
+
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/Stock ${CMAKE_CURRENT_BINARY_DIR}/Stock
+)
+
+endif()
+
 #--------------------------------------------------------------------
 # output dirs
 #--------------------------------------------------------------------
 
-set_target_properties("Imogen" PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/bin )
-set_target_properties("Imogen" PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/bin )
-set_target_properties("Imogen" PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_SOURCE_DIR}/bin )
-set_target_properties("Imogen" PROPERTIES DEBUG_POSTFIX "_d")
-set_target_properties("Imogen" PROPERTIES RELWITHDEBINFO_POSTFIX "RelWithDebInfo")
-set_target_properties("Imogen" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
-
-target_link_libraries("Imogen" ${SDL2_LIBRARIES})
+set_target_properties(${EXE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/bin )
+set_target_properties(${EXE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/bin )
+set_target_properties(${EXE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_SOURCE_DIR}/bin )
+set_target_properties(${EXE_NAME} PROPERTIES DEBUG_POSTFIX "_d")
+set_target_properties(${EXE_NAME} PROPERTIES RELWITHDEBINFO_POSTFIX "RelWithDebInfo")
+set_target_properties(${EXE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
 #--------------------------------------------------------------------
 # Hide the console window in visual studio projects
@@ -205,8 +243,8 @@ endif()
 endif()
 
 if(WINDOWS)
-set_target_properties("Imogen" PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:WINDOWS")
-set_target_properties("Imogen" PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
+set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:WINDOWS")
+set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
 endif()
 
 if(ENABLE_HIDECONSOLE_BUILD)

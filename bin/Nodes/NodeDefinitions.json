@@ -1128,46 +1128,6 @@
             "default":"96"
 		}]
 	}, {
-		"name": "SceneLoader",
-		"category": 6,
-        "description":"Experimental node.",
-        "experimental":true,
-		"color": [1.0, 1.0, 1.0, 1.0],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "filename",
-			"type": "FilenameRead",
-            "description":""
-		}]
-	}, {
-		"name": "PathTracer",
-		"category": 2,
-        "description":"Experimental node.",
-        "experimental":true,
-		"color": [1.0, 1.0, 1.0, 1.0],
-		"inputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "mode",
-			"type":  "Enum",
-			"enum": "Tiled|Progressive|",
-            "description":""
-			}, {
-			"name" : "camera",
-			"type": "Camera",
-			"default": "",
-            "description":""
-		}]
-	}, {
 		"name": "EdgeDetect",
 		"category": 0,
         "description":"Performs an edge detection on the source. Texels that are close in intensity with the neighbours will be white. Black if the difference is strong.",

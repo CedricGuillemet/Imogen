@@ -1,24 +1,23 @@
 function GradientBuilder(parameters, evaluation, context)
 {
-	Image image;
-	image.bits = 0;
-	if (ReadImage(context, "Stock/thumbnail-icon.png", &image) == EVAL_OK)
+	image = new Image;
+	if (ReadImage(context, "Stock/thumbnail-icon.png", image) == EVAL_OK)
 	{
-		if (SetEvaluationImage(context, evaluation->targetIndex, &image) == EVAL_OK)
+		if (SetEvaluationImage(context, evaluation.targetIndex, image) == EVAL_OK)
 		{
-			FreeImage(&image);
+			return EVAL_OK;
 		}
 	}
 	
-	if (!evaluation->forcedDirty)
+	if (!evaluation.forcedDirty)
+    {
 		return EVAL_OK;
-
-	image.bits = 0;
-	if (Evaluate(context, evaluation->inputIndices[0], 256, 256, &image) == EVAL_OK)
+    }
+    
+	if (Evaluate(context, evaluation.inputIndices[0], 256, 256, image) == EVAL_OK)
 	{
-		if (SetThumbnailImage(context, &image) == EVAL_OK)
+		if (SetThumbnailImage(context, image) == EVAL_OK)
 		{	
-			FreeImage(&image);
 			return EVAL_OK;
 		}
 	}

@@ -1,7 +1,7 @@
 function CubeRadiance(parameters, evaluation, context)
 {
 	size = 128 << parameters.size;
-	source = evaluation->inputIndices[0];
+	source = evaluation.inputIndices[0];
 	const res = GetEvaluationSize(context, source);
 	if (parameters.size == 0 && source != -1 && res[2] == EVAL_OK)
 	{

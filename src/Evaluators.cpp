@@ -522,7 +522,7 @@ template<typename T> duk_ret_t js_ctor(duk_context* ctx)
 }
 
 /*
-* Basic toString method
+* Image methods
 */
 
 duk_ret_t js_Image_toString(duk_context* ctx)
@@ -541,6 +541,25 @@ const duk_function_list_entry methods_Image[] = {
     { "toString",   js_Image_toString,  0 },
     { nullptr,  nullptr,        0 }
 };
+
+duk_ret_t js_Scene_toString(duk_context* ctx)
+{
+    duk_push_this(ctx);
+    duk_get_prop_string(ctx, -1, "\xff""\xff""data");
+    Scene* img = static_cast<Scene*>(duk_to_pointer(ctx, -1));
+    duk_pop(ctx);
+    duk_push_sprintf(ctx, "Scene");
+
+    return 1;
+}
+
+// methods, add more here
+const duk_function_list_entry methods_Scene[] = {
+    { "toString",   js_Scene_toString,  0 },
+    { nullptr,  nullptr,        0 }
+};
+
+
 
 duk_ret_t js_LoadSVG(duk_context* ctx)
 {
@@ -789,19 +808,23 @@ duk_ret_t js_GetEvaluationScene(duk_context* ctx)
 {
     int ret = EVAL_ERR;
     duk_idx_t nargs = duk_get_top(ctx);
-    if (nargs == 4)
+    if (nargs == 3)
     {
-        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
-        int target = duk_get_int(ctx, -3);
-        int elementCount = duk_get_int(ctx, -2);
-        int elementSize = duk_get_int(ctx, -1);
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
 
-        if (context && target > -1 && elementCount > 0 && elementSize > 0)
+        int target = duk_get_int(ctx, -2);
+
+        duk_get_prop_string(ctx, -1, "\xff""\xff""data");
+        Scene* scene = static_cast<Scene*>(duk_to_pointer(ctx, -1));
+        duk_pop(ctx);
+
+        if (context && target > -1 && target > 0)
         {
-            ret = EvaluationAPI::AllocateComputeBuffer(context, target, elementCount, elementSize);
+            void *scenevoid;
+            ret = EvaluationAPI::GetEvaluationScene(context, target, &scenevoid);
         }
 
-        duk_pop_n(ctx, 4);
+        duk_pop_n(ctx, 3);
     }
     duk_push_int(ctx, ret);
     return 1;
@@ -811,19 +834,22 @@ duk_ret_t js_SetEvaluationScene(duk_context* ctx)
 {
     int ret = EVAL_ERR;
     duk_idx_t nargs = duk_get_top(ctx);
-    if (nargs == 4)
+    if (nargs == 3)
     {
-        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
-        int target = duk_get_int(ctx, -3);
-        int elementCount = duk_get_int(ctx, -2);
-        int elementSize = duk_get_int(ctx, -1);
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
 
-        if (context && target > -1 && elementCount > 0 && elementSize > 0)
+        int target = duk_get_int(ctx, -2);
+
+        duk_get_prop_string(ctx, -1, "\xff""\xff""data");
+        Scene* scene = static_cast<Scene*>(duk_to_pointer(ctx, -1));
+        duk_pop(ctx);
+
+        if (context && target > -1 && target > 0 && scene)
         {
-            ret = EvaluationAPI::AllocateComputeBuffer(context, target, elementCount, elementSize);
+            ret = EvaluationAPI::SetEvaluationScene(context, target, scene);
         }
 
-        duk_pop_n(ctx, 4);
+        duk_pop_n(ctx, 3);
     }
     duk_push_int(ctx, ret);
     return 1;
@@ -871,6 +897,148 @@ duk_ret_t js_SetProcessing(duk_context* ctx)
     return 1;
 }
 
+duk_ret_t js_GLTFReadAsync(duk_context* ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 3)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
+        const char* filename = duk_get_string(ctx, -2);
+        int target = duk_get_int(ctx, -1);
+        
+        if (context && target > -1)
+        {
+            EvaluationAPI::GLTFReadAsync(context, filename, target);
+        }
+
+        duk_pop_n(ctx, 3);
+    }
+    duk_push_int(ctx, EVAL_OK);
+    return 1;
+}
+
+duk_ret_t js_ReadImageAsync(duk_context* ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 3)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        const char* filename = duk_get_string(ctx, -3);
+        int target = duk_get_int(ctx, -2);
+        int face = duk_get_int(ctx, -1);
+
+        if (context && target > -1)
+        {
+            EvaluationAPI::ReadImageAsync(context, filename, target, face);
+        }
+
+        duk_pop_n(ctx, 3);
+    }
+    duk_push_int(ctx, EVAL_OK);
+    return 1;
+}
+
+duk_ret_t js_SetThumbnailImage(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 2)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -2));
+        duk_get_prop_string(ctx, -1, "\xff""\xff""data");
+        Image* image = static_cast<Image*>(duk_to_pointer(ctx, -1));
+        duk_pop(ctx);
+
+        if (context && image)
+        {
+            ret = EvaluationAPI::SetThumbnailImage(context, image);
+        }
+
+        duk_pop_n(ctx, 2);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_Evaluate(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 5)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -5));
+
+        int target = duk_get_int(ctx, -4);
+        int width = duk_get_int(ctx, -3);
+        int height = duk_get_int(ctx, -2);
+
+        duk_get_prop_string(ctx, -1, "\xff""\xff""data");
+        Image* image = static_cast<Image*>(duk_to_pointer(ctx, -1));
+        duk_pop(ctx);
+
+        if (context && image)
+        {
+            ret = EvaluationAPI::Evaluate(context, target, width, height, image);
+        }
+
+        duk_pop_n(ctx, 5);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+
+duk_ret_t js_WriteImage(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 5)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -5));
+
+        const char* filename = duk_get_string(ctx, -3);
+        int format = duk_get_int(ctx, -3);
+        int quality = duk_get_int(ctx, -2);
+
+        duk_get_prop_string(ctx, -1, "\xff""\xff""data");
+        Image* image = static_cast<Image*>(duk_to_pointer(ctx, -1));
+        duk_pop(ctx);
+
+        if (context && image)
+        {
+            ret = Image::Write(filename, image, format, quality);
+        }
+
+        duk_pop_n(ctx, 5);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
+duk_ret_t js_ReadImage(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 3)
+    {
+        duk_get_prop_string(ctx, -1, "\xff""\xff""data");
+        Image* image = static_cast<Image*>(duk_to_pointer(ctx, -1));
+        duk_pop(ctx);
+
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -3));
+        const char* filename = duk_get_string(ctx, -2);
+
+        if (context && image && filename)
+        {
+            ret = Image::Read(filename, image);
+        }
+
+        duk_pop_n(ctx, 3);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
 void js_RegisterFunction(duk_context* ctx, const char* functionName, duk_ret_t(*function)(duk_context* ctx), int parameterCount)
 {
     duk_push_global_object(ctx);
@@ -879,7 +1047,6 @@ void js_RegisterFunction(duk_context* ctx, const char* functionName, duk_ret_t(*
     duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_SET_WRITABLE | DUK_DEFPROP_SET_CONFIGURABLE);
     duk_pop(ctx);
 }
-
 
 Evaluators::Evaluators()
 {
@@ -909,24 +1076,26 @@ Evaluators::Evaluators()
 
     js_RegisterFunction(m_ctx, "SetProcessing", js_SetProcessing, 3);
 
+    js_RegisterFunction(m_ctx, "GLTFReadAsync", js_GLTFReadAsync, 3);
+    js_RegisterFunction(m_ctx, "ReadImageAsync", js_ReadImageAsync, 3);
+    js_RegisterFunction(m_ctx, "ReadImage", js_ReadImage, 3);
+    js_RegisterFunction(m_ctx, "SetThumbnailImage", js_SetThumbnailImage, 2);
+    js_RegisterFunction(m_ctx, "Evaluate", js_Evaluate, 5);
+    js_RegisterFunction(m_ctx, "WriteImage", js_WriteImage, 5);
     
-    //GetEvaluationSceneName(context, target)
-
-    /*
-    SetBlendingMode(context, evaluation.targetIndex, ONE, ONE_MINUS_SRC_ALPHA);
-    OverrideInput(context, evaluation.targetIndex, 0, -1); 
-    SetVertexSpace(context, evaluation.targetIndex, VertexSpace_UV);
-    
-    GetEvaluationScene(context, evaluation.inputIndices[0], &scene)
-    SetEvaluationScene(context, evaluation.targetIndex, scene);
-    */
-
     // Image class
     duk_push_c_function(m_ctx, js_ctor<Image>, 2);
     duk_push_object(m_ctx);
     duk_put_function_list(m_ctx, -1, methods_Image);
     duk_put_prop_string(m_ctx, -2, "prototype");
     duk_put_global_string(m_ctx, "Image");
+
+    // Scene class
+    duk_push_c_function(m_ctx, js_ctor<Scene>, 2);
+    duk_push_object(m_ctx);
+    duk_put_function_list(m_ctx, -1, methods_Scene);
+    duk_put_prop_string(m_ctx, -2, "prototype");
+    duk_put_global_string(m_ctx, "Scene");
 
     duk_eval_string(m_ctx, R"(
 				const DirtyInput = (1 << 0);
@@ -955,6 +1124,12 @@ Evaluators::Evaluators()
 	            const CONSTANT_ALPHA = 12;
 	            const ONE_MINUS_CONSTANT_ALPHA = 13;
 	            const SRC_ALPHA_SATURATE = 14;
+                const CUBEMAP_POSX = 0;
+	            const CUBEMAP_NEGX = 1;
+	            const CUBEMAP_POSY = 2;
+	            const CUBEMAP_NEGY = 3;
+	            const CUBEMAP_POSZ = 4;
+	            const CUBEMAP_NEGZ = 5;
 			    )");
 }
 
@@ -1103,7 +1278,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
         catch (std::exception e)
         {
-            printf("Duktape exception: %s\n", e.what());
+            Log("Duktape exception: %s\n", e.what());
         }
     }
 }
@@ -2039,7 +2214,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int ReadImageAsync(EvaluationContext* context, char *filename, int target, int face)
+    int ReadImageAsync(EvaluationContext* context, const char *filename, int target, int face)
     {
         std::string strFilename = filename;
         Job(context, [context, target, strFilename, face]() {

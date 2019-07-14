@@ -183,5 +183,5 @@ namespace EvaluationAPI
 
     int ReadGLTF(EvaluationContext* evaluationContext, const char* filename, Scene** scene);
     int GLTFReadAsync(EvaluationContext* context, const char* filename, int target);
-    int ReadImageAsync(EvaluationContext* context, char *filename, int target, int face);
+    int ReadImageAsync(EvaluationContext* context, const char *filename, int target, int face);
 } // namespace EvaluationAPI

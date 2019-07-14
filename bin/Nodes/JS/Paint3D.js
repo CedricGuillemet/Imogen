@@ -18,8 +18,8 @@ function Paint3D(parameters, evaluation, context)
 	}
 	
 	// use scene from input node
-	void *scene;
-	if (GetEvaluationScene(context, evaluation.inputIndices[0], &scene) == EVAL_OK)
+	var scene = new Scene;
+	if (GetEvaluationScene(context, evaluation.inputIndices[0], scene) == EVAL_OK)
 	{
 		SetEvaluationScene(context, evaluation.targetIndex, scene);
 	}

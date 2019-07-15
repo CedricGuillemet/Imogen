@@ -1,5 +1,5 @@
-// starting point : https://www.shadertoy.com/view/4d2Xzh
-layout (std140) uniform TileBlock
+// edited version from https://www.shadertoy.com/view/4d2Xzh
+layout (std140) uniform SplatterBlock
 {
 	vec2 translation;
     vec2 quincunx;
@@ -7,7 +7,7 @@ layout (std140) uniform TileBlock
 	float rotationFactor;
 	float scale;
 	float innerScale;
-} TileParam;
+} SplatterParam;
 
 float hash(float n)
 {
@@ -33,14 +33,13 @@ float smoothNoise2(vec2 p)
 vec2 cellPoint(vec2 cell)
 {
     float cellsize = 0.5;
-	vec2 noise = vec2(noise(cell) + cos(cell.y) * cellsize,
-		noise(cell*cellsize) + sin(cell.x) * cellsize) * TileParam.noiseFactor;
-	float quincunxX = float(int(floor(cell.y))&1) * cellsize * TileParam.quincunx.x;
-    float quincunxY = float(int(floor(cell.x))&1) * cellsize * TileParam.quincunx.y;
-	return noise + vec2(quincunxX, quincunxY);
+	//return vec2(noise(cell) * SplatterParam.noiseFactor + cos(cell.y) * cellsize,
+	//	noise(cell*cellsize) * SplatterParam.noiseFactor + sin(cell.x) * cellsize);
+	float quincunxY = float(int(floor(cell.y))&1) * cellsize;
+	return vec2(quincunxY, 0.);
 }
 
-vec4 getCell(vec2 t, out float rad, out float idx, out vec2 uvAtCellCenter)
+vec4 circles(vec2 t, out float rad, out float idx)
 {
     vec2 p = floor(t);
     float nd = 1e10;
@@ -62,12 +61,11 @@ vec4 getCell(vec2 t, out float rad, out float idx, out vec2 uvAtCellCenter)
                 nd = d;
                 nc = c;
                 nq = q;
-                uvAtCellCenter = c / TileParam.scale - TileParam.translation;
             }
         }
 
     rad = 1.0;
-    idx = nq.x + nq.y;
+    idx = nq.x + nq.y;// * 119.0;
 
     for(int y = -1; y < 2; y += 1)
         for(int x = -1; x < 2; x += 1)
@@ -89,7 +87,7 @@ vec4 getSprite(vec2 uv, float ng)
 {
 	mat2 rot = mat2(vec2(cos(ng), -sin(ng)), vec2(sin(ng), cos(ng)));
 	uv = rot * uv;
-    uv /= TileParam.innerScale;
+    uv /= SplatterParam.innerScale;
     uv += 0.5;
     uv = max(min(uv, vec2(1.0)), vec2(0.0));
     return texture(Sampler0, uv);
@@ -98,14 +96,8 @@ vec4 getSprite(vec2 uv, float ng)
 vec4 Tile()
 {
 	float rad, idx;
-    vec2 uvAtCellCenter;
-	vec2 tt = (vUV + TileParam.translation) * TileParam.scale;
-    vec4 c = getCell(tt, rad, idx, uvAtCellCenter);
-    vec4 multiplier = vec4(1.0);
-    if (EvaluationParam.inputIndices[0].y > -1)
-    {
-        multiplier = texture(Sampler1, uvAtCellCenter);
-    }
-	vec4 spr = getSprite(c.xy, idx * TileParam.rotationFactor) * multiplier;
+	vec2 tt = (vUV + SplatterParam.translation) * SplatterParam.scale;
+    vec4 c = circles(tt, rad, idx);
+	vec4 spr = getSprite(c.xy, idx * SplatterParam.rotationFactor);
 	return vec4(spr.xyz, 1.0);
 }

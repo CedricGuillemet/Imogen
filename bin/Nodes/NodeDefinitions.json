@@ -372,23 +372,52 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "offset0",
+			"name": "translation",
 			"type": "Float2",
-            "description":"X,Y offset applied to even tiles. Offset in clipspace."
-		}, {
-			"name": "offset1",
+			"rangeMinX": 1.0,
+			"rangeMaxX": 0.0,
+			"rangeMinY": 0.0,
+			"rangeMaxY": 1.0,
+			"relative": true,
+			"loop": false,
+            "description":"Translate the noise seeds so you can have virtualy infinite different noise."
+            },{
+			"name": "Quincunx",
 			"type": "Float2",
-            "description":"X,Y offset applied to odd tiles. Offset in clipspace."
-		}, {
-			"name": "overlap",
-			"type": "Float2",
-            "description":"Amount of overlap between odd and even tiles."
-		}, {
-			"name": "scale",
+			"default": "0.0,0.0",
+			"description":"Offset line and/or column."
+			},{
+			"name": "noiseFactor",
 			"type": "Float",
 			"default": "1.0",
-            "description":"The number of tiles in X and Y in the output."
-		}]
+			"description":"position noise factor. A value of 0 means the grid cells are more tightly packed and with less size variation.",
+			"control":"Slider",
+			"sliderMinX": 0.0,
+			"sliderMaxX": 1.0
+			},{
+			"name": "rotationFactor",
+			"type": "Float",
+			"default": "1.0",
+			"description":"Rotate sprite randomly. This factor limits the rotation amount.",
+			"control":"Slider",
+			"sliderMinX": 0.0,
+			"sliderMaxX": 1.0
+			},{
+			"name": "scale",
+			"type": "Float",
+			"default": "5.0",
+			"description":"How many cells used per dimension."
+			},{
+			"name": "innerScale",
+			"type": "Float",
+			"default": "0.5",
+			"description":"Sprite uniform scale.",
+			"control":"Slider",
+			"sliderMinX": 0.0,
+			"sliderMaxX": 10.0
+			}
+			
+			]
 	}, {
 		"name": "Color",
 		"category": -1,

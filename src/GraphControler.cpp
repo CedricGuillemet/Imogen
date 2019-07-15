@@ -73,7 +73,14 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
     switch (param.mType)
     {
         case Con_Float:
-            dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
+            if (param.mControlType == Control_Slider)
+            {
+                dirty |= ImGui::SliderFloat(param.mName.c_str(), (float*)paramBuffer, param.mSliderMinX, param.mSliderMaxX);
+            }
+            else
+            {
+                dirty |= ImGui::InputFloat(param.mName.c_str(), (float*)paramBuffer);
+            }
             break;
         case Con_Float2:
             dirty |= ImGui::InputFloat2(param.mName.c_str(), (float*)paramBuffer);
@@ -515,7 +522,7 @@ void GraphControler::ApplyDirtyList()
     bool graphArrayChanged = false;
     for (const auto& dirtyItem : dirtyList)
     {
-        size_t nodeIndex = dirtyItem.mNodeIndex;
+        int nodeIndex = int(dirtyItem.mNodeIndex);
         switch(dirtyItem.mFlags)
         {
             case Dirty::Input:

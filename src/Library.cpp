@@ -1143,6 +1143,7 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
                 }
                 metaParam.mName = param["name"].GetString();
                 metaParam.mType = GetParameterType(param["type"].GetString());
+                metaParam.mControlType = Control_NumericEdit;
                 if (metaParam.mType == Con_Any)
                 {
                     // error
@@ -1168,6 +1169,24 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
                 if (param.HasMember("description"))
                 {
                     metaParam.mDescription = param["description"].GetString();
+                }
+                if (param.HasMember("control"))
+                {
+                    const char *control = param["control"].GetString();
+                    if (!strcmp(control, "Slider"))
+                    {
+                        metaParam.mControlType = Control_Slider;
+                        metaParam.mSliderMinX = 0.f;
+                        metaParam.mSliderMaxX = 1.f;
+                        if (param.HasMember("sliderMinX"))
+                        {
+                            metaParam.mSliderMinX = param["sliderMinX"].GetFloat();
+                        }
+                        if (param.HasMember("sliderMaxX"))
+                        {
+                            metaParam.mSliderMaxX = param["sliderMaxX"].GetFloat();
+                        }
+                    }
                 }
 
                 if (param.HasMember("loop"))

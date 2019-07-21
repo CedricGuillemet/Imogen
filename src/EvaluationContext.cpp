@@ -776,16 +776,6 @@ void EvaluationContext::EvaluateJS(const EvaluationStage& evaluationStage, size_
         {
             mStillDirty.push_back(uint32_t(nodeIndex));
         }
-        /*
-        if (evaluator.mCFunction)
-        {
-            int res = evaluator.mCFunction((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
-            if (res == EVAL_DIRTY)
-            {
-                mStillDirty.push_back(uint32_t(nodeIndex));
-            }
-        }
-        */
     }
     catch (std::exception e)
     {

@@ -31,6 +31,7 @@
 #include "Evaluators.h"
 #include "UI.h"
 #include "Utils.h"
+#include "JSGlue.h"
 
 void AddExtractedView(size_t nodeIndex);
 
@@ -215,7 +216,24 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
                     free(outPath);
                     dirty = true;
                 }
+#else
+#ifdef __EMSCRIPTEN__
+            UploadDialog([nodeIndex, parameterIndex](const std::string& filename){
+                GraphModel& model = Imogen::instance->GetNodeGraphControler()->mModel;
+                auto& parameters = model.GetParameters(nodeIndex);
+                char* paramBuffer = ((char*)parameters.data()) + GetParameterOffset(model.GetNodeType(nodeIndex), parameterIndex);
+                Log("File Parameter updated async %s\n", filename.c_str());
+                memcpy(paramBuffer, filename.c_str(), filename.size());
+                ((char*)paramBuffer)[filename.size()] = 0;
+                //Imogen::instance->GetNodeGraphControler()->mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                
+                model.BeginTransaction(true);
+                model.SetParameters(nodeIndex, parameters);
+                model.EndTransaction();
+            });
 #endif
+#endif
+
             }
             ImGui::PopID();
             ImGui::SameLine();

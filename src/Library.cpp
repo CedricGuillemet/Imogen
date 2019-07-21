@@ -872,9 +872,8 @@ void InitDefaultParameters(size_t nodeType, Parameters& parameters)
     const MetaNode* metaNodes = gMetaNodes.data();
     const MetaNode& currentMeta = metaNodes[nodeType];
     const size_t paramsSize = ComputeNodeParametersSize(nodeType);
-    parameters.resize(paramsSize);
+    parameters.resize(paramsSize, 0);
     unsigned char* paramBuffer = parameters.data();
-    memset(paramBuffer, 0, paramsSize);
     int i = 0;
     for (const MetaParameter& param : currentMeta.mParams)
     {

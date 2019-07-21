@@ -69,10 +69,9 @@ void EvaluationStages::DelEvaluation(size_t nodeIndex)
 
 void EvaluationStages::SetParameters(size_t nodeIndex, const Parameters& parameters)
 {
-#if USE_FFMPEG
     EvaluationStage& stage = mStages[nodeIndex];
     mParameters[nodeIndex] = parameters;
-
+#if USE_FFMPEG
     if (stage.mDecoder)
         stage.mDecoder = NULL;
 #endif

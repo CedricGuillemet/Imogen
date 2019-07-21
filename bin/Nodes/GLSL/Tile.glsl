@@ -91,7 +91,7 @@ vec4 getSprite(vec2 uv, float ng)
 	uv = rot * uv;
     uv /= TileParam.innerScale;
     uv += 0.5;
-    uv = max(min(uv, vec2(1.0)), vec2(0.0));
+    //uv = max(min(uv, vec2(1.0)), vec2(0.0));
     return texture(Sampler0, uv);
 }
 

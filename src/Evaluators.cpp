@@ -559,8 +559,6 @@ const duk_function_list_entry methods_Scene[] = {
     { nullptr,  nullptr,        0 }
 };
 
-
-
 duk_ret_t js_LoadSVG(duk_context* ctx)
 {
     int ret = EVAL_ERR;
@@ -1075,7 +1073,7 @@ Evaluators::Evaluators()
     js_RegisterFunction(m_ctx, "GetEvaluationSceneName", js_GetEvaluationSceneName, 2);
 
     js_RegisterFunction(m_ctx, "SetProcessing", js_SetProcessing, 3);
-
+    
     js_RegisterFunction(m_ctx, "GLTFReadAsync", js_GLTFReadAsync, 3);
     js_RegisterFunction(m_ctx, "ReadImageAsync", js_ReadImageAsync, 4);
     js_RegisterFunction(m_ctx, "ReadImage", js_ReadImage, 3);
@@ -1096,7 +1094,7 @@ Evaluators::Evaluators()
     duk_put_function_list(m_ctx, -1, methods_Scene);
     duk_put_prop_string(m_ctx, -2, "prototype");
     duk_put_global_string(m_ctx, "Scene");
-
+    
     duk_eval_string(m_ctx, R"(
 				const DirtyInput = (1 << 0);
 				const DirtyParameter = (1 << 1);
@@ -2238,7 +2236,8 @@ namespace EvaluationAPI
                     }
                     //FreeImage(&data->image);
                     SetProcessing(context, target, 0);
-                    context->SetTargetDirty(target, Dirty::Input, true);
+                    // don't set childOnly or the node will not be evaluated and we wont get the thumbnail
+                    context->SetTargetDirty(target, Dirty::Input, false);
                     return EVAL_OK;
                 });
             }

@@ -266,12 +266,12 @@ int main(int argc, char** argv)
     stbi_flip_vertically_on_write(1);
     
     ImGui::StyleColorsDark();
-    static const char* libraryFilename = "library.dat";
-    LoadLib(&library, libraryFilename);
+    RecentLibraries recentLibraries;
 
+    LoadLib(&library, recentLibraries.GetMostRecentLibraryPath());
 
     GraphControler nodeGraphControler;
-    Imogen imogen(&nodeGraphControler);
+    Imogen imogen(&nodeGraphControler, recentLibraries);
 
     Builder builder;
 
@@ -308,7 +308,7 @@ int main(int argc, char** argv)
     g_TS.WaitforAllAndShutdown();
 
     // save lib after all TS thread done in case a job adds something to the library (ie, thumbnail, paint 2D/3D)
-    SaveLib(&library, libraryFilename);
+    SaveLib(&library, library.mFilename);
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();

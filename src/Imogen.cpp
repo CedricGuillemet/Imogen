@@ -41,7 +41,7 @@
 #include "imgui_markdown/imgui_markdown.h"
 #include "imHotKey.h"
 #include "imgInspect.h"
-#include "IconsFontAwesome4.h"
+#include "IconsFontAwesome5.h"
 #include "Mem.h"
 
 Imogen* Imogen::instance = nullptr;
@@ -1562,6 +1562,13 @@ void Imogen::ShowAppMainMenuBar()
         mMainMenuPos = -440;
         return;
     }
+    if (ImGui::CollapsingHeader("Library", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::Button("Close Library", buttonSize))
+        {
+            mRecentLibraries.SetMostRecentLibraryIndex(-1);
+        }
+    }
 
     if (ImGui::CollapsingHeader("Plugins", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -1679,6 +1686,234 @@ bool Imogen::Button(const char* functionName, const char* label, ImVec2 size)
         }
     }
     return res;
+}
+
+// return -1 if nothing happens, index of recent library if one is chosen
+int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    int ret = -1;
+    static std::string tempName;
+    static std::string tempDir;
+    static std::string tempCompletePath;
+    static bool addDefMat = false;
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    ImGui::SetNextWindowSize(io.DisplaySize);
+
+    ImGui::Begin("RecentLibrary", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+
+    // CREATE NEW LIBRARY
+    ImGui::PushFont(bigAF);
+    ImGui::Text(ICON_FA_FILE " Create New Library");
+    ImGui::PopFont();
+
+    ImGui::Indent();
+
+    ImGui::PushFont(mediumAF);
+    ImGui::Text(ICON_FA_PENCIL_ALT " Name");
+    ImGui::PopFont();
+    ImGui::PushID(1106);
+    ImGui::InputText("", &tempName);
+    ImVec2 editSize = ImGui::GetItemRectSize();
+    if (recentLibraries.IsNamedUsed(tempName))
+    {
+        ImGui::SameLine();
+        ImGui::Text(ICON_FA_EXCLAMATION_TRIANGLE" Name used");
+    }
+    ImGui::PopID();
+
+#ifndef __EMSCRIPTEN__
+    ImGui::PushFont(mediumAF);
+    ImGui::Text(ICON_FA_FOLDER_OPEN " Directory");
+    ImGui::PopFont();
+    ImGui::PushID(1107);
+    ImGui::InputText("", &tempDir);
+    ImGui::PopID();
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_FOLDER " Browse ..."))
+    {
+        nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_PickFolder(NULL, &outPath);
+        if (result == NFD_OKAY)
+        {
+            tempDir = outPath;
+            tempDir = ReplaceAll(tempDir, "\\", "/");
+            if (tempDir[tempDir.size() - 1] != '/')
+            {
+                tempDir += "/";
+            }
+            free(outPath);
+        }
+    }
+
+    ImGui::PushFont(mediumAF);
+    ImGui::Text(ICON_FA_ANGLE_DOUBLE_RIGHT" Full path");
+    ImGui::PopFont();
+    ImGui::Indent();
+    std::string completePath;
+    if (tempDir.length() && tempName.length())
+    {
+        completePath = tempDir + tempName + ".imogen";
+    }
+    ImGui::Text(completePath.c_str());
+    ImGui::Unindent();
+#endif // __EMSCRIPTEN__
+
+    ImGui::PushFont(mediumAF);
+    ImGui::Text(ICON_FA_COG" Options");
+    ImGui::PopFont();
+    ImGui::Indent();
+    ImGui::Checkbox("Add default material", &addDefMat);
+    ImGui::Unindent();
+
+    bool createLibValid = recentLibraries.IsValidForCreatingRecent(tempDir, tempName);
+    if (!createLibValid)
+    {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    }
+    ImGui::PushFont(bigAF);
+    if (ImGui::Button(ICON_FA_PLUS " Create Library", ImVec2(editSize.x, 40.f)))
+    {
+        ret = int(recentLibraries.AddRecent(tempDir, tempName));
+        // create lib
+        Library newLib;
+        if (addDefMat)
+        {
+            MaterialNode defNode;
+            defNode.mPosX = 40;
+            defNode.mPosY = 40;
+            defNode.mTypeName = "Color";
+            auto nodeType = GetMetaNodeIndex(defNode.mTypeName.c_str());
+            defNode.mType = nodeType;
+            defNode.mParameters.resize(ComputeNodeParametersSize(nodeType), 0);
+            InitDefaultParameters(nodeType, defNode.mParameters);
+
+            MaterialNodeRug defRug;
+            defRug.mPosX = 0;
+            defRug.mPosY = 0;
+            defRug.mColor = 0xFF7799CC;
+            defRug.mComment = "Imogen default material";
+            defRug.mSizeX = 400;
+            defRug.mSizeY = 300;
+
+            Material defMat;
+            defMat.mName = ".default";
+            defMat.mMaterialRugs.push_back(defRug);
+            defMat.mMaterialNodes.push_back(defNode);
+            defMat.mBackgroundNode = -1;
+
+            newLib.mMaterials.push_back(defMat);
+        }
+        SaveLib(&newLib, recentLibraries.GetRecentLibraries()[ret].ComputeFullPath().c_str());
+        tempDir = tempName = "";
+    }
+    ImGui::PopFont();
+
+    if (!createLibValid)
+    {
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+    }
+
+    ImGui::Unindent();
+
+    ImGui::InvisibleButton("", ImVec2(1, 30.f));
+    
+#ifdef __EMSCRIPTEN__
+    ImGui::PushFont(mediumAF);
+    ImGui::Text(ICON_FA_EXCLAMATION_TRIANGLE" Web edition will not allow to save modification to default library.");
+    ImGui::Text(" In order to save changes, user will have to create a library that will be");
+    ImGui::Text(" saved using local storage.");
+    ImGui::PopFont();
+#endif
+
+#ifndef __EMSCRIPTEN__
+
+    // ADD EXISTING
+    ImGui::PushFont(bigAF);
+    ImGui::Text(ICON_FA_FILE_MEDICAL " Add Existing Library");
+    ImGui::PopFont();
+
+    ImGui::Indent();
+    ImGui::PushID(1108);
+    ImGui::InputText("", &tempCompletePath);
+    ImGui::PopID();
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_FILE " Browse ..."))
+    {
+        nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog("imogen", NULL, &outPath);
+        if (result == NFD_OKAY)
+        {
+            tempCompletePath = outPath;
+            free(outPath);
+        }
+    }
+    bool addLibraryValid = recentLibraries.IsValidForAddingRecent(tempCompletePath);
+    if (!addLibraryValid)
+    {
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+    }
+    ImGui::PushFont(bigAF);
+    if (ImGui::Button(ICON_FA_PLUS " Add Library", ImVec2(editSize.x, 40.f)))
+    {
+        recentLibraries.AddRecent(tempCompletePath);
+        tempCompletePath.clear();
+    }
+
+    if (!addLibraryValid)
+    {
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+    }
+    ImGui::PopFont();
+    ImGui::Unindent();
+#endif // __EMSCRIPTEN__
+    float d = std::max(ImGui::GetContentRegionAvail().y - 240.f, 30.f);
+    if (d > 0.f)
+    {
+        ImGui::InvisibleButton("", ImVec2(1, d));
+    }
+
+    // BROWSE RECENT
+    ImGui::PushFont(bigAF);
+    ImGui::Text(ICON_FA_COPY " Open Recently Used Library");
+    ImGui::PopFont();
+    const auto& libs = recentLibraries.GetRecentLibraries();
+    ImGui::BeginChild(147, ImVec2(0, 200), false, ImGuiWindowFlags_HorizontalScrollbar);
+    for (size_t i = 0; i < libs.size(); i++)
+    {
+        if (i)
+        {
+            ImGui::SameLine();
+        }
+        ImGui::PushID(200 + int(i));
+        ImGui::BeginGroup();
+        if (ImGui::Button("...", ImVec2(160, 160)))
+        {
+            ret = int(i);
+        }
+        if (ImGui::IsItemHovered())
+        {
+            ImGui::SetTooltip(libs[i].ComputeFullPath().c_str());
+        }
+        ImGui::Text("%s", libs[i].mName.c_str());
+        ImGui::EndGroup();
+        ImGui::PopID();
+    }
+    ImGui::EndChild();
+
+    ImGui::End();
+
+    if (ret != -1)
+    {
+        recentLibraries.SetMostRecentLibraryIndex(ret);
+    }
+
+    return ret;
 }
 
 void Imogen::ShowTitleBar(Builder* builder)
@@ -2156,6 +2391,22 @@ void Imogen::ShowExtractedViews()
 
 void Imogen::Show(Builder* builder, Library& library, bool capturing)
 {
+    if (mRecentLibraries.GetMostRecentLibraryIndex() == -1)
+    {
+        if (EditRecentLibraries(mRecentLibraries) != -1)
+        {
+            std::string selectedLibraryFilePath = mRecentLibraries.GetMostRecentLibraryPath();
+            if (library.mFilename != selectedLibraryFilePath)
+            {
+                SaveLib(&library, library.mFilename);
+                LoadLib(&library, selectedLibraryFilePath);
+                mNodeGraphControler->Clear();
+                SetExistingMaterialActive(".default");
+            }
+        }
+        return;
+    }
+
     int currentTime = mCurrentTime;
     ImGuiIO& io = ImGui::GetIO();
     mBuilder = builder;
@@ -2404,7 +2655,7 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
     }
 }
 
-Imogen::Imogen(GraphControler* nodeGraphControler) : mNodeGraphControler(nodeGraphControler)
+Imogen::Imogen(GraphControler* nodeGraphControler, RecentLibraries& recentLibraries) : mNodeGraphControler(nodeGraphControler), mRecentLibraries(recentLibraries)
 {
     mSequence = new MySequence(*nodeGraphControler);
     mdConfig.userData = this;

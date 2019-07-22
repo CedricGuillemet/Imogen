@@ -431,6 +431,7 @@ struct Material
 
 struct Library
 {
+    std::string mFilename; // set when loading
     std::vector<Material> mMaterials;
     Material* Get(ASyncId id)
     {
@@ -449,8 +450,8 @@ struct Library
     }
 };
 
-void LoadLib(Library* library, const char* szFilename);
-void SaveLib(Library* library, const char* szFilename);
+void LoadLib(Library* library, const std::string& filename);
+void SaveLib(Library* library, const std::string& filename);
 
 enum ConTypes
 {
@@ -614,3 +615,171 @@ void LoadMetaNodes();
 std::vector<MetaNode> ReadMetaNodes(const char* filename);
 unsigned int GetRuntimeId();
 extern Library library;
+
+struct RecentLibraries;
+void LoadRecent(RecentLibraries* recent, const char* szFilename);
+void SaveRecent(RecentLibraries* recent, const char* szFilename);
+
+
+struct RecentLibraries
+{
+    const char* RecentFilename = "ImogenRecent";
+
+    RecentLibraries()
+    {
+        ReadRecentLibraries();
+    }
+
+    struct RecentLibrary
+    {
+        std::string mName;
+        std::string mPath;
+        std::string ComputeFullPath() const
+        {
+            return mPath + mName + ".imogen";
+        }
+    };
+
+    const std::vector<RecentLibrary>& GetRecentLibraries() const
+    {
+        return mRecentLibraries;
+    }
+
+    void ReadRecentLibraries()
+    {
+        LoadRecent(this, RecentFilename);
+        if (mRecentLibraries.empty())
+        {
+            // add default
+#ifdef __EMSCRIPTEN__
+            mRecentLibraries.push_back({ "DefaultLibrary", "" });
+#else
+            mRecentLibraries.push_back({ "DefaultLibrary", "./" });
+#endif
+        }
+        else
+        {
+            auto iter = mRecentLibraries.begin();
+            for (;iter != mRecentLibraries.end();)
+            {
+                FILE* fp = fopen(iter->ComputeFullPath().c_str(), "rb");
+                if (!fp)
+                {
+                    mMostRecentLibrary = -1; // something happened (deleted libs) -> display all libraries
+                    iter = mRecentLibraries.erase(iter);
+                    continue;
+                }
+                fclose(fp);
+                ++iter;
+            }
+        }
+    }
+
+    void WriteRecentLibraries()
+    {
+        SaveRecent(this, RecentFilename);
+    }
+
+    bool IsNamedUsed(const std::string& name) const
+    {
+        for (const auto& recent : mRecentLibraries)
+        {
+            if (recent.mName == name)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    size_t AddRecent(const std::string& path, const std::string& name)
+    {
+        mRecentLibraries.push_back({ name, path });
+        WriteRecentLibraries();
+        return mRecentLibraries.size() - 1;
+    }
+
+    size_t AddRecent(const std::string& completePath)
+    {
+        char drive[256];
+        char dir[256];
+        char filename[256];
+        char ext[256];
+        Splitpath(completePath.c_str(), drive, dir, filename, ext);
+        return AddRecent(std::string(drive) + std::string(dir), std::string(filename));
+    }
+
+    bool IsValidForAddingRecent(const std::string& completePath) const
+    {
+        if (!completePath.length())
+        {
+            return false;
+        }
+        for (const auto& recent : mRecentLibraries)
+        {
+            if (recent.ComputeFullPath() == completePath)
+            {
+                return false;
+            }
+        }
+
+        FILE* fp = fopen(completePath.c_str(), "rb");
+        if (!fp)
+        {
+            return false;
+        }
+        fclose(fp);
+
+        return true;
+    }
+
+    bool IsValidForCreatingRecent(const std::string& path, const std::string& name) const
+    {
+#ifdef __EMSCRIPTEN__
+        if (!name.size() || IsNamedUsed(name))
+        {
+            return false;
+        }
+#else
+        if (!path.size() || !name.size())
+        {
+            return false;
+        }
+        if (IsNamedUsed(name))
+        {
+            return false;
+        }
+        FILE* fp = fopen(RecentLibrary{name, path}.ComputeFullPath().c_str(), "rb");
+        if (fp)
+        {
+            fclose(fp);
+            return false;
+        }
+#endif
+        return true;
+    }
+
+    std::string GetMostRecentLibraryPath() const
+    {
+        if (mMostRecentLibrary == -1)
+        {
+            return {};
+        }
+        const auto& recentLibrary = mRecentLibraries[mMostRecentLibrary];
+        return recentLibrary.ComputeFullPath();
+    }
+
+    void SetMostRecentLibraryIndex(int index)
+    {
+        mMostRecentLibrary = index;
+        WriteRecentLibraries();
+    }
+
+    int GetMostRecentLibraryIndex() const
+    {
+        return mMostRecentLibrary;
+    }
+
+    int mMostRecentLibrary = -1;
+    std::vector<RecentLibrary> mRecentLibraries;
+};

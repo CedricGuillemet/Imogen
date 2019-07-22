@@ -64,7 +64,7 @@ extern std::vector<RegisteredPlugin> mRegisteredPlugins;
 
 struct Imogen
 {
-    Imogen(GraphControler* nodeGraphControler);
+    Imogen(GraphControler* nodeGraphControler, RecentLibraries& recentLibraries);
     ~Imogen();
 
     void Init(bool bDebugWindow);
@@ -115,6 +115,7 @@ protected:
     void PlayPause();
     void ShowDebugWindow();
     void ShowExtractedViews();
+    int EditRecentLibraries(RecentLibraries& recentLibraries);
 
     void ImportMaterial();
     void ExportMaterial();
@@ -155,6 +156,8 @@ protected:
     std::string mRunCommand;
 
     std::vector<std::function<void()>> mHotkeyFunctions;
+
+    RecentLibraries& mRecentLibraries;
 };
 
 void AddExtractedView(size_t nodeIndex);

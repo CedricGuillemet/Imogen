@@ -121,7 +121,9 @@ struct Serialize
         Ser(count);
         data.resize(count);
         for (auto& item : data)
+        {
             Ser(&item);
+        }
     }
 
     template<typename T>
@@ -257,6 +259,12 @@ struct Serialize
         }
     }
 
+    void Ser(RecentLibraries::RecentLibrary* recentLibrary)
+    {
+        ADD(v_initial, recentLibrary->mName);
+        ADD(v_initial, recentLibrary->mPath);
+    }
+
     bool Ser(Library* library)
     {
         if (!fp)
@@ -270,6 +278,21 @@ struct Serialize
         return true;
     }
 
+    bool Ser(RecentLibraries* recent)
+    {
+        if (!fp)
+            return false;
+        if (doWrite)
+            dataVersion = v_lastVersion - 1;
+        Ser(dataVersion);
+        if (dataVersion > v_lastVersion)
+            return false; // no forward compatibility
+        ADD(v_initial, recent->mRecentLibraries);
+        ADD(v_initial, recent->mMostRecentLibrary);
+        return true;
+    }
+
+
     FILE* fp;
     uint32_t dataVersion;
 };
@@ -277,9 +300,14 @@ struct Serialize
 typedef Serialize<true> SerializeWrite;
 typedef Serialize<false> SerializeRead;
 
-void LoadLib(Library* library, const char* szFilename)
+void LoadLib(Library* library, const std::string& filename)
 {
-    SerializeRead loadSer(szFilename);
+    if (!filename.size())
+    {
+        return;
+    }
+    SerializeRead loadSer(filename.c_str());
+    library->mFilename = filename;
     loadSer.Ser(library);
 
     for (auto& material : library->mMaterials)
@@ -297,9 +325,20 @@ void LoadLib(Library* library, const char* szFilename)
     }
 }
 
-void SaveLib(Library* library, const char* szFilename)
+void SaveLib(Library* library, const std::string& filename)
 {
-    SerializeWrite(szFilename).Ser(library);
+    SerializeWrite(filename.c_str()).Ser(library);
+}
+
+void LoadRecent(RecentLibraries* recent, const char* szFilename)
+{
+    SerializeRead loadSer(szFilename);
+    loadSer.Ser(recent);
+}
+
+void SaveRecent(RecentLibraries* recent, const char* szFilename)
+{
+    SerializeWrite(szFilename).Ser(recent);
 }
 
 unsigned int GetRuntimeId()

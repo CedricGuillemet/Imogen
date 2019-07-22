@@ -24,7 +24,6 @@
 //
 
 #include "Platform.h"
-#include "Platform.h"
 #include <vector>
 #include "Utils.h"
 #include "EvaluationStages.h"
@@ -460,7 +459,7 @@ void Mat4x4::OrthoOffCenterLH(const float l, float r, float b, const float t, fl
     m[3][3] = 1.0f;
 }
 
-void DiscoverFiles(const char* extension, const char* directory, std::vector<std::string>& files)
+void DiscoverFiles(const char* ext, const char* directory, std::vector<std::string>& files)
 {
     tinydir_dir dir;
     tinydir_open(&dir, directory);
@@ -470,7 +469,7 @@ void DiscoverFiles(const char* extension, const char* directory, std::vector<std
         tinydir_file file;
         tinydir_readfile(&dir, &file);
 
-        if (!file.is_dir && !strcmp(file.extension, extension))
+        if (!file.is_dir && !strcmp(file.extension, ext))
         {
             files.push_back(std::string(directory) + file.name);
         }
@@ -529,3 +528,68 @@ std::string GetName(const std::string& name)
     return name;
 }
 
+void Splitpath(const char* completePath, char* drive, char* dir, char* filename, char* ext)
+{
+#ifdef WIN32
+    _splitpath(completePath, drive, dir, filename, ext);
+#endif
+#ifdef __linux__
+    char* pathCopy = (char*)completePath;
+    int Counter = 0;
+    int Last = 0;
+    int Rest = 0;
+
+    // no drives available in linux .
+    // exts are not common in linux
+    // but considered anyway
+    strcpy(drive, "");
+
+    while (*pathCopy != '\0')
+    {
+        // search for the last slash
+        while (*pathCopy != '/' && *pathCopy != '\0')
+        {
+            pathCopy++;
+            Counter++;
+        }
+        if (*pathCopy == '/')
+        {
+            pathCopy++;
+            Counter++;
+            Last = Counter;
+        }
+        else
+            Rest = Counter - Last;
+    }
+    // directory is the first part of the path until the
+    // last slash appears
+    strncpy(dir, Path, Last);
+    // strncpy doesnt add a '\0'
+    dir[Last] = '\0';
+    // filename is the part behind the last slahs
+    strcpy(filename, pathCopy -= Rest);
+    // get ext if there is any
+    while (*filename != '\0')
+    {
+        // the part behind the point is called ext in windows systems
+        // at least that is what i thought apperantly the '.' is used as part
+        // of the ext too .
+        if (*filename == '.')
+        {
+            while (*filename != '\0')
+            {
+                *ext = *filename;
+                ext++;
+                filename++;
+            }
+        }
+        if (*filename != '\0')
+        {
+            filename++;
+        }
+    }
+    *ext = '\0';
+    return;
+}
+#endif
+}

@@ -187,3 +187,5 @@ void InitCallbackRects();
 
 void UICallbackNodeDeleted(size_t nodeIndex);
 void UICallbackNodeInserted(size_t nodeIndex);
+
+extern ImFont *smallAF, *bigAF, *mediumAF;

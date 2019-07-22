@@ -195,7 +195,7 @@ add_definitions(-DEMSCRIPTEN)
 add_definitions(-D_X86_)
 set(EMS_OPTS "-s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy -g4 --source-map-base http://localhost:8000/")
 add_definitions(${EMS_OPTS})
-set(EMS_PRELOAD " --preload-file library.dat --preload-file imgui.ini --preload-file Nodes --preload-file Stock")
+set(EMS_PRELOAD " --preload-file DefaultLibrary.imogen --preload-file imgui.ini --preload-file Nodes --preload-file Stock")
 set(EMS_LINK "${EMS_OPTS} ${EMS_PRELOAD}")
 set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS ${EMS_LINK})
 
@@ -205,7 +205,7 @@ add_custom_command(TARGET ${EXE_NAME} POST_BUILD
 
 # copy files and directories because packer doesn't know where to place then
 add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/library.dat ${CMAKE_CURRENT_BINARY_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/DefaultLibrary.imogen ${CMAKE_CURRENT_BINARY_DIR}/
 )
 add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/imgui.ini ${CMAKE_CURRENT_BINARY_DIR}/

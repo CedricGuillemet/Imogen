@@ -28,7 +28,7 @@
 #include "UI.h"
 #include "Utils.h"
 #include "imgui_internal.h"
-#include "IconsFontAwesome4.h"
+#include "IconsFontAwesome5.h"
 
 static inline ImVec4 operator*(const ImVec4& lhs, const float t)
 {
@@ -184,20 +184,30 @@ void SetStyle()
 }
 
 extern ImGui::MarkdownConfig mdConfig;
+ImFont *smallAF, *bigAF, *mediumAF;
 
 void InitFonts()
 {
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Clear();
-    // Base font
-    float fontSize_ = 16.f;
-    io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-SemiBold.ttf", fontSize_);
-    // merge in icons from Font Awesome
     static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+
     ImFontConfig icons_config;
     icons_config.MergeMode = true;
     icons_config.PixelSnapH = true;
-    io.Fonts->AddFontFromFileTTF("Stock/Fonts/" FONT_ICON_FILE_NAME_FA, 16.0f, &icons_config, icons_ranges);
+
+    float fontSize_ = 16.f;
+
+    static const char* defaultFontPath = "Stock/Fonts/OpenSans-SemiBold.ttf";
+    io.Fonts->AddFontFromFileTTF(defaultFontPath, fontSize_);
+    smallAF = io.Fonts->AddFontFromFileTTF("Stock/Fonts/" FONT_ICON_FILE_NAME_FAS, fontSize_, &icons_config, icons_ranges);
+
+    mediumAF = io.Fonts->AddFontFromFileTTF(defaultFontPath, 20.f);
+    io.Fonts->AddFontFromFileTTF("Stock/Fonts/" FONT_ICON_FILE_NAME_FAS, 20.f, &icons_config, icons_ranges);
+
+    bigAF = io.Fonts->AddFontFromFileTTF(defaultFontPath, 24.f);
+    io.Fonts->AddFontFromFileTTF("Stock/Fonts/" FONT_ICON_FILE_NAME_FAS, 24.f, &icons_config, icons_ranges);
+
 
     // Bold headings H2 and H3
     mdConfig.headingFormats[1].font = io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-ExtraBold.ttf", fontSize_);
@@ -205,7 +215,6 @@ void InitFonts()
     // bold heading H1
     float fontSizeH1 = fontSize_ * 1.2f;
     mdConfig.headingFormats[0].font = io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-ExtraBold.ttf", fontSizeH1);
-
 }
 
 struct ImogenDrawCallback

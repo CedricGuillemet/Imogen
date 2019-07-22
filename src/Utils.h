@@ -859,3 +859,5 @@ inline float DegToRad(float a)
 {
     return a / 180.f * PI;
 }
+
+void Splitpath(const char* completePath, char* drive, char* dir, char* filename, char* ext);

@@ -36,8 +36,12 @@
 void AddExtractedView(size_t nodeIndex);
 
 GraphControler::GraphControler()
-    : mbMouseDragging(false), mbUsingMouse(false), mEditingContext(mEvaluationStages, false, 1024, 1024)
+    : mbMouseDragging(false)
+    , mbUsingMouse(false)
+    , mEditingContext(mEvaluationStages, false, 1024, 1024)
 {
+    mSelectedNodeIndex = -1;
+    mBackgroundNode = -1;
 }
 
 void GraphControler::Clear()

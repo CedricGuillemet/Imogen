@@ -346,7 +346,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         return std::string();
     });
     m.def("Log", LogPython);
-    m.def("log2", static_cast<float (*)(float)>(log2));
+    m.def("log2", static_cast<float (*)(float)>(log2f));
     m.def("ReadImage", Image::Read);
     m.def("WriteImage", Image::Write);
     m.def("GetEvaluationImage", EvaluationAPI::GetEvaluationImage);

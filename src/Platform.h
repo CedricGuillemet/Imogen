@@ -40,6 +40,8 @@
 #include <SDL.h>
 #include <GLES3/gl3.h>
 
+#define USE_SDL 1
+
 typedef int TaskSetPartition;
 struct PinnedTask
 {
@@ -88,6 +90,7 @@ struct TaskScheduler
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
 #define USE_GLDEBUG 1
+#define USE_SDL 1
 
 typedef enki::IPinnedTask PinnedTask;
 typedef enki::ITaskSet TaskSet;
@@ -111,6 +114,7 @@ typedef enki::TaskScheduler TaskScheduler;
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
 #define USE_GLDEBUG 1
+#define USE_SDL 1
 
 typedef enki::IPinnedTask PinnedTask;
 typedef enki::ITaskSet TaskSet;

@@ -1488,6 +1488,7 @@ void Imogen::Init(bool bDebugWindow)
         {"Cut", "Cut the selected nodes", []() {}},
         {"Paste", "Paste previously copy/cut nodes", []() {}},
         {"BuildMaterial", "Build current material", [&]() { BuildCurrentMaterial(mBuilder); }},
+        {"CloseLibrary", "Close current library", [&]() { CloseLibrary(); }},
         {"MouseState", "Show Mouse State as a tooltip", [&]() { mbShowMouseState = !mbShowMouseState; }}};
 
     mHotkeys.reserve(hotKeyFunctions.size());
@@ -1552,6 +1553,13 @@ void Imogen::RunDeferedCommands()
 #endif
 }
 
+void Imogen::CloseLibrary()
+{
+    mRecentLibraries.SetMostRecentLibraryIndex(-1);
+    SaveLib(&library, library.mFilename);
+    mSelectedMaterial = -1;
+}
+
 void Imogen::ShowAppMainMenuBar()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -1569,10 +1577,9 @@ void Imogen::ShowAppMainMenuBar()
     }
     if (ImGui::CollapsingHeader("Library", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        if (ImGui::Button("Close Library", buttonSize))
+        if (Button("CloseLibrary", "Close Library", buttonSize))
         {
-            mRecentLibraries.SetMostRecentLibraryIndex(-1);
-            SaveLib(&library, library.mFilename);
+            CloseLibrary();
         }
     }
 

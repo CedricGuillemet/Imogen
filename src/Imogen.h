@@ -128,7 +128,7 @@ protected:
     void ShowDebugWindow();
     void ShowExtractedViews();
     int EditRecentLibraries(RecentLibraries& recentLibraries);
-
+    void CloseLibrary();
     void ImportMaterial();
     void ExportMaterial();
 

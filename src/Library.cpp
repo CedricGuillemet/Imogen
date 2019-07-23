@@ -33,6 +33,7 @@
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include <string.h>
+#include "JSGlue.h"
 
 int Log(const char* szFormat, ...);
 
@@ -79,12 +80,21 @@ struct Serialize
     Serialize(const char* szFilename)
     {
         fp = fopen(szFilename, doWrite ? "wb" : "rb");
+        if (!fp)
+        {
+            Log("Unable to open file %s for %s\n", szFilename, doWrite?"writing":"reading");
+        }
+        else
+        {
+            Log("Open file %s for %s\n", szFilename, doWrite ? "writing" : "readin");
+        }
     }
 
     ~Serialize()
     {
         if (fp)
             fclose(fp);
+        SyncJSDirectory();
     }
 
     template<typename T>

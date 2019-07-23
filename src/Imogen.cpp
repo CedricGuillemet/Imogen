@@ -1567,6 +1567,7 @@ void Imogen::ShowAppMainMenuBar()
         if (ImGui::Button("Close Library", buttonSize))
         {
             mRecentLibraries.SetMostRecentLibraryIndex(-1);
+            SaveLib(&library, library.mFilename);
         }
     }
 
@@ -1776,7 +1777,11 @@ int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
     ImGui::PushFont(bigAF);
     if (ImGui::Button(ICON_FA_PLUS " Create Library", ImVec2(editSize.x, 40.f)))
     {
+#ifdef __EMSCRIPTEN__
+        ret = int(recentLibraries.AddRecent("/offline/", tempName));
+#else
         ret = int(recentLibraries.AddRecent(tempDir, tempName));
+#endif
         // create lib
         Library newLib;
         if (addDefMat)
@@ -1825,7 +1830,7 @@ int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
     ImGui::PushFont(mediumAF);
     ImGui::Text(ICON_FA_EXCLAMATION_TRIANGLE" Web edition will not allow to save modification to default library.");
     ImGui::Text(" In order to save changes, user will have to create a library that will be");
-    ImGui::Text(" saved using local storage.");
+    ImGui::Text(" saved using local storage. Datas will stay local to this machine.");
     ImGui::PopFont();
 #endif
 

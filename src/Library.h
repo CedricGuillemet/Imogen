@@ -623,8 +623,11 @@ void SaveRecent(RecentLibraries* recent, const char* szFilename);
 
 struct RecentLibraries
 {
+#ifdef __EMSCRIPTEN__
+    const char* RecentFilename = "/offline/ImogenRecent";
+#else
     const char* RecentFilename = "ImogenRecent";
-
+#endif
     RecentLibraries()
     {
         ReadRecentLibraries();
@@ -665,6 +668,7 @@ struct RecentLibraries
                 FILE* fp = fopen(iter->ComputeFullPath().c_str(), "rb");
                 if (!fp)
                 {
+                    Log("Library %s removed from recent because note found in FS\n", iter->ComputeFullPath().c_str());
                     mMostRecentLibrary = -1; // something happened (deleted libs) -> display all libraries
                     iter = mRecentLibraries.erase(iter);
                     continue;

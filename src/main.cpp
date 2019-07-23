@@ -141,7 +141,16 @@ void RenderImogenFrame()
     renderImogenFrame(true);
 }
 
+// because of asynchornous local storage DB mount
+#ifndef __EMSCRIPTEN__
 int main(int argc, char** argv)
+#else
+int main(int argc, char** argv)
+{
+    MountJSDirectory();
+}
+int main_Async(int argc, char** argv)
+#endif
 {
 #ifdef WIN32
     // locale for sscanf
@@ -151,6 +160,7 @@ int main(int argc, char** argv)
 
 #ifdef __EMSCRIPTEN__
     AddLogOutput(ImWebConsoleOutput);
+    
 #endif
     AddLogOutput(ImConsoleOutput);
 

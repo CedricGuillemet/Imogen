@@ -24,6 +24,8 @@
 //
 #pragma once
 
+void MountJSDirectory();
+void SyncJSDirectory();
 void ImWebConsoleOutput(const char* szText);
 void HideLoader();
 void DownloadImage(const char *filename, int filenameLen, const char* text, int textLen);

@@ -80,6 +80,53 @@ void UploadDialog(std::function<void(const std::string& filename)> completeUploa
     _UploadDialog(); 
 }
 
+int main_Async(int argc, char** argv);
+extern "C"
+{
+    void EMSCRIPTEN_KEEPALIVE MountJSDirectoryDone()
+    {
+        main_Async(0, 0);
+    }
+}
+
+void MountJSDirectory()
+{
+    // EM_ASM is a macro to call in-line JavaScript code.
+    EM_ASM(
+        // Make a directory other than '/'
+        FS.mkdir('/offline');
+        // Then mount with IDBFS type
+        FS.mount(IDBFS, {}, '/offline');
+
+        // Then sync
+        Module.syncdone = 0;
+        FS.syncfs(true, function(err) {
+            if (err) {
+                console.log("Error at mounting IDFS directory : " + err);
+            }
+            Module.syncdone = 1;
+            ccall('MountJSDirectoryDone');
+        });
+    );
+    emscripten_exit_with_live_runtime();
+}
+
+void SyncJSDirectory()
+{
+    EM_ASM(
+        // Then sync
+        if (Module.syncdone == 1) {
+            Module.syncdone = 0;
+            FS.syncfs(false, function(err) {
+                if (err) {
+                    console.log("Error at mounting IDFS directory : " + err);
+                }
+                Module.syncdone = 1;
+            });
+        }
+    );
+}
+
 extern "C" 
 {
     void EMSCRIPTEN_KEEPALIVE OpenFileAsync(const uint8_t *buf, int length, const uint8_t* filename, int filenameLength, int posx, int posy)
@@ -104,5 +151,10 @@ extern "C"
         free(currentUpload);
     }
 }
+#else
+void SyncJSDirectory()
+{
 
+}
 #endif
+

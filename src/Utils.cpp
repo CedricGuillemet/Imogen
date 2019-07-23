@@ -590,6 +590,5 @@ void Splitpath(const char* completePath, char* drive, char* dir, char* filename,
     }
     *ext = '\0';
     return;
-}
 #endif
 }

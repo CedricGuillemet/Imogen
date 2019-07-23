@@ -563,7 +563,7 @@ void Splitpath(const char* completePath, char* drive, char* dir, char* filename,
     }
     // directory is the first part of the path until the
     // last slash appears
-    strncpy(dir, Path, Last);
+    strncpy(dir, completePath, Last);
     // strncpy doesnt add a '\0'
     dir[Last] = '\0';
     // filename is the part behind the last slahs

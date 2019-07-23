@@ -102,6 +102,18 @@ struct Imogen
     {
         return mbShowMouseState;
     }
+    void RunCommandAsync(const std::string& command, bool quitAfterRunCommand)
+    {
+        for (auto& plugin : mRegisteredPlugins)
+        {
+            if (plugin.mName == command)
+            {
+                mRunCommand = plugin.mPythonCommand;
+                mbQuitAfterRunCommand = quitAfterRunCommand;
+                break;
+            }
+        }
+    }
 
 protected:
     void ShowAppMainMenuBar();
@@ -154,7 +166,7 @@ protected:
     int mCurrentTime = 0;
 
     std::string mRunCommand;
-
+    bool mbQuitAfterRunCommand = false;
     std::vector<std::function<void()>> mHotkeyFunctions;
 
     RecentLibraries& mRecentLibraries;

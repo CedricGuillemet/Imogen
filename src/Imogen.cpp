@@ -1544,6 +1544,11 @@ void Imogen::RunDeferedCommands()
     {
         Log(ex.what());
     }
+    if (mbQuitAfterRunCommand)
+    {
+        extern bool done;
+        done = true;
+    }
 #endif
 }
 
@@ -1831,6 +1836,7 @@ int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
     ImGui::Text(ICON_FA_EXCLAMATION_TRIANGLE" Web edition will not allow to save modification to default library.");
     ImGui::Text(" In order to save changes, user will have to create a library that will be");
     ImGui::Text(" saved using local storage. Datas will stay local to this machine.");
+    ImGui::Text(ICON_FA_EXCLAMATION_TRIANGLE" The changes you've made to your library won't be save until library is closed.");
     ImGui::PopFont();
 #endif
 

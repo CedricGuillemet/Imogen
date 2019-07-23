@@ -292,6 +292,10 @@ int main_Async(int argc, char** argv)
         {
             bDebugWindow = true;
         }
+        if (!strcmp(argv[i], "-runplugin") && i < (argc-1))
+        {
+            imogen.RunCommandAsync(argv[i+1], true);
+        }
     }
     imogen.Init(bDebugWindow);
     gDefaultShader.Init();

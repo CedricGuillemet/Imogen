@@ -97,13 +97,14 @@ namespace ImHotKey
             int x = 0;
             while (Keys[y][x].lib)
             {
-#ifdef USE_SDL
+//#ifdef USE_SDL
                 if (Keys[y][x].scanCodePage7 == scancode)
-#elif WIN32
+/*#elif WIN32
                 if (Keys[y][x].scanCodePage1 == scancode)
 #else
 #error
 #endif
+*/
                     return Keys[y][x];
                 x++;
             }

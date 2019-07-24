@@ -86,7 +86,7 @@ struct Imogen
     static void RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, bool forceUI = false);
     void HandleHotKeys();
 
-    void NewMaterial(const std::string& materialName = "Name_Of_New_Material");
+    Material& NewMaterial(const std::string& materialName = "Name_Of_New_Material");
     // helper for python scripting
     int AddNode(const std::string& nodeType);
     void DeleteCurrentMaterial();

@@ -900,12 +900,13 @@ void ParseStringToParameter(const std::string& str, uint32_t parameterType, void
             iv4[0] = ImVec4(0, 0, 0, 0);
             iv4[1] = ImVec4(1, 1, 1, 1);
             break;
+        case Con_FilenameWrite:
         case Con_FilenameRead:
             strcpy((char*)parameterPtr, str.c_str());
             break;
         case Con_Structure:
-        case Con_FilenameWrite:
         case Con_ForceEvaluate:
+            break;
         case Con_Camera:
             cam->mDirection = Vec4(0.f, 0.f, 1.f, 0.f);
             cam->mUp = Vec4(0.f, 1.f, 0.f, 0.f);

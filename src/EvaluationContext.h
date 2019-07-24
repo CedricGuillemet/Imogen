@@ -51,6 +51,10 @@ struct EvaluationThumbnails
     {
         unsigned short mAtlasIndex = 0xFFFF;
         unsigned short mThumbIndex = 0xFFFF;
+        bool Valid() const
+        {
+            return mAtlasIndex != 0xFFFF && mThumbIndex != 0xFFFF;
+        }
     };
 
     void Clear();

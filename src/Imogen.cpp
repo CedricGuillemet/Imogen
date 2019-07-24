@@ -788,7 +788,7 @@ void Imogen::UpdateNewlySelectedGraph()
     }
 }
 
-void Imogen::NewMaterial(const std::string& materialName)
+Material& Imogen::NewMaterial(const std::string& materialName)
 {
     int previousSelection = mSelectedMaterial;
     library.mMaterials.push_back(Material());
@@ -803,6 +803,7 @@ void Imogen::NewMaterial(const std::string& materialName)
     }
     mSelectedMaterial = int(library.mMaterials.size()) - 1;
     ClearAll();
+    return library.mMaterials.back();
 }
 
 void Imogen::ImportMaterial()

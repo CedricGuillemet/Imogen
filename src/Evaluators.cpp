@@ -91,7 +91,11 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("SetSynchronousEvaluation", [](bool synchronous) {
         Imogen::instance->GetNodeGraphControler()->mEditingContext.SetSynchronous(synchronous);
     });
-    m.def("NewGraph", [](const std::string& graphName) { Imogen::instance->NewMaterial(graphName); });
+    m.def("NewGraph", [](const std::string& graphName) 
+    { 
+        auto& graph = Imogen::instance->NewMaterial(graphName);
+        return new PyGraph{ &graph };
+    });
     m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
         Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
@@ -994,7 +998,7 @@ duk_ret_t js_WriteImage(duk_context* ctx)
     {
         EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -5));
 
-        const char* filename = duk_get_string(ctx, -3);
+        const char* filename = duk_get_string(ctx, -4);
         int format = duk_get_int(ctx, -3);
         int quality = duk_get_int(ctx, -2);
 

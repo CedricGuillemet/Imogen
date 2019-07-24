@@ -206,6 +206,8 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
 
     // parameters
     glGenBuffers(1, &mParametersGLSLBuffer);
+
+    mEvaluations.resize(evaluation.mStages.size());
 }
 
 EvaluationContext::~EvaluationContext()
@@ -733,6 +735,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
 {
     const auto& evaluation = mEvaluations[nodeIndex];
+    const auto thumb = evaluation.mThumb;
+    if (!thumb.Valid())
+    {
+        return;
+    }
     const auto tgt = evaluation.mTarget;
 
     const int width = tgt->mImage->mWidth;
@@ -747,7 +754,7 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    const auto thumb = mEvaluations[nodeIndex].mThumb;
+    
     auto thumbTarget = mThumbnails.GetThumbTarget(thumb);
 
     int sourceCoords[4];

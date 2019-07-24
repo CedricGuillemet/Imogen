@@ -93,8 +93,14 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     });
     m.def("NewGraph", [](const std::string& graphName) 
     { 
-        auto& graph = Imogen::instance->NewMaterial(graphName);
-        return new PyGraph{ &graph };
+        Imogen::instance->NewMaterial(graphName);
+    });
+    m.def("Build", []()
+    {
+        extern Builder* gBuilder;
+        auto controler = Imogen::instance->GetNodeGraphControler();
+        controler->ApplyDirtyList();
+        gBuilder->Add("Graph", controler->mEvaluationStages);
     });
     m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
@@ -188,14 +194,6 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
             d.append(new PyNode{pyGraph.mGraph, &node, index});
         }
         return d;
-    });
-    graph.def("Build", [](PyGraph& pyGraph) {
-        extern Builder* gBuilder;
-        if (gBuilder)
-        {
-            Material* material = pyGraph.mGraph;
-            gBuilder->Add(material);
-        }
     });
     auto node = pybind11::class_<PyNode>(m, "Node");
     node.def("GetType", [](PyNode& node) {
@@ -1741,7 +1739,9 @@ namespace EvaluationAPI
         EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
-            return EVAL_ERR;
+        {
+            tgt = evaluationContext->CreateRenderTarget(target);
+        }
         unsigned int texelSize = textureFormatSize[image->mFormat];
         unsigned int inputFormat = glInputFormats[image->mFormat];
         unsigned int internalFormat = glInternalFormats[image->mFormat];

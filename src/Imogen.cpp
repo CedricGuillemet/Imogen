@@ -32,6 +32,7 @@
 #include "GraphControler.h"
 #include "Library.h"
 #include "stb_image.h"
+#include "stb_image_write.h"
 #include "tinydir.h"
 #include "stb_image.h"
 #include "imgui_stdlib.h"
@@ -45,7 +46,7 @@
 #include "Mem.h"
 
 Imogen* Imogen::instance = nullptr;
-unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
+//unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
 
 extern TaskScheduler g_TS;
 
@@ -449,6 +450,28 @@ struct DecodeThumbnailTaskSet : TaskSet
     GraphControler* mNodeGraphControler;
 };
 
+struct stbi_context
+{
+    stbi_context() : mDest(0), mOffset(0)
+    {}
+    ~stbi_context() { free(mDest); }
+    unsigned char *mDest;
+    size_t mOffset;
+    size_t mAllocated;
+};
+static void stbi_write_func_mem(void *context, void *data, int size)
+{
+    stbi_context* ctx = (stbi_context*)context;
+    if (ctx->mOffset + size > ctx->mAllocated)
+    {
+        ctx->mAllocated = ctx->mOffset + size + 10240;
+        ctx->mDest = (unsigned char*)realloc(ctx->mDest, ctx->mAllocated);
+    }
+    
+    memcpy(&ctx->mDest[ctx->mOffset], data, size);
+    ctx->mOffset += size;
+}
+
 struct EncodeImageTaskSet : TaskSet
 {
     EncodeImageTaskSet(Image image, ASyncId materialIdentifier, ASyncId nodeIdentifier)
@@ -457,14 +480,16 @@ struct EncodeImageTaskSet : TaskSet
     }
     virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
-        int outlen;
         int components = 4;
-        unsigned char* bits = stbi_write_png_to_mem((unsigned char*)mImage.GetBits(),
+        /*unsigned char* bits = stbi_write_png_to_func((unsigned char*)mImage.GetBits(),
                                                     mImage.mWidth * components,
                                                     mImage.mWidth,
                                                     mImage.mHeight,
                                                     components,
                                                     &outlen);
+                                                    */
+        stbi_context context;
+        int bits = stbi_write_png_to_func(stbi_write_func_mem, &context, mImage.mWidth, mImage.mHeight, components, mImage.GetBits(), mImage.mWidth * components);
         if (bits)
         {
             Material* material = library.Get(mMaterialIdentifier);
@@ -473,8 +498,8 @@ struct EncodeImageTaskSet : TaskSet
                 MaterialNode* node = material->Get(mNodeIdentifier);
                 if (node)
                 {
-                    node->mImage.resize(outlen);
-                    memcpy(node->mImage.data(), bits, outlen);
+                    node->mImage.resize(context.mOffset);
+                    memcpy(node->mImage.data(), context.mDest, context.mOffset);
                 }
             }
         }

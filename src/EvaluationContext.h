@@ -111,12 +111,16 @@ struct EvaluationContext
     void GetThumb(size_t nodeIndex, unsigned int& textureId, ImRect& uvs) const { mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureId, uvs); }
     unsigned int GetEvaluationTexture(size_t nodeIndex) const;
 
-    std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) { assert(nodeIndex < mEvaluations.size()); return mEvaluations[nodeIndex].mTarget; }
+    std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) 
+    { 
+        assert(nodeIndex < mEvaluations.size());
+        return mEvaluations[nodeIndex].mTarget; 
+    }
 
-    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
+    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) const
     {
-        assert(target < mEvaluations.size());
-        return mEvaluations[target].mTarget;
+        assert(nodeIndex < mEvaluations.size());
+        return mEvaluations[nodeIndex].mTarget;
     }
 #if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
@@ -144,6 +148,12 @@ struct EvaluationContext
     void StageSetProgress(size_t target, float progress);
 
     void AllocRenderTargetsForEditingPreview();
+    std::shared_ptr<RenderTarget> CreateRenderTarget(size_t nodeIndex)
+    {
+        assert(nodeIndex < mEvaluations.size());
+        mEvaluations[nodeIndex].mTarget = std::make_shared<RenderTarget>();
+        return mEvaluations[nodeIndex].mTarget;
+    }
     const EvaluationThumbnails& GetThumbnails() const { return mThumbnails; }
     void AllocateComputeBuffer(int target, int elementCount, int elementSize);
 

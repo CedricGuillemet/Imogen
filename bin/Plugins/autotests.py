@@ -12,7 +12,7 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "ZNegFilename", "Media/EnvMaps/Fjaderholmarna/negz.jpg")
     
 def imageTests():
-    graph = Imogen.NewGraph("ImageRead01")
+    Imogen.NewGraph("ImageRead01")
     
     imageRead = Imogen.AddNode("ImageRead")
     Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/Vancouver.jpg")
@@ -21,7 +21,7 @@ def imageTests():
     Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Vancouver01.jpg")
     
     Imogen.Connect(imageRead, 0, imageWrite, 0)
-    #graph.Build()
+    Imogen.Build()
     #Imogen.DeleteGraph()
 
     

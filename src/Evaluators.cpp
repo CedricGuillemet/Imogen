@@ -1516,7 +1516,7 @@ namespace EvaluationAPI
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
         {
-            return EVAL_ERR;
+            tgt = evaluationContext->CreateRenderTarget(target);
         }
 
         tgt->InitCube(image->mWidth, image->mNumMips);
@@ -1535,8 +1535,9 @@ namespace EvaluationAPI
     {
         std::vector<unsigned char> pngImage;
         if (Image::EncodePng(image, pngImage) == EVAL_ERR)
+        {
             return EVAL_ERR;
-
+        }
         Material* material = library.Get(std::make_pair(0, context->GetMaterialUniqueId()));
         if (material)
         {
@@ -1590,7 +1591,9 @@ namespace EvaluationAPI
             return EVAL_ERR;
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
-            return EVAL_ERR;
+        {
+            renderTarget = evaluationContext->CreateRenderTarget(target);
+        }
         // if (gCurrentContext->GetEvaluationInfo().uiPass)
         //    return EVAL_OK;
         renderTarget->InitBuffer(
@@ -1605,7 +1608,9 @@ namespace EvaluationAPI
 
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
-            return EVAL_ERR;
+        {
+            renderTarget = evaluationContext->CreateRenderTarget(target);
+        }
         renderTarget->InitCube(faceWidth, mipmapCount);
         return EVAL_OK;
     }

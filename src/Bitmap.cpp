@@ -216,7 +216,10 @@ int Image::Read(const char* filename, Image* image)
     }
     FILE* fp = fopen(filename, "rb");
     if (!fp)
+    {
+        Log("Unable to open image %s\n", filename);
         return EVAL_ERR;
+    }
     fclose(fp);
 
     int components;
@@ -314,25 +317,38 @@ void Image::VFlip(Image* image)
 
 int Image::Write(const char* filename, Image* image, int format, int quality)
 {
+    if (!image->mWidth || !image->mHeight)
+    {
+        return EVAL_ERR;
+    }
+
     int components = textureComponentCount[image->mFormat];
     switch (format)
     {
         case 0:
             if (!stbi_write_jpg(filename, image->mWidth, image->mHeight, components, image->GetBits(), quality))
+            {
                 return EVAL_ERR;
+            }
             break;
         case 1:
             if (!stbi_write_png(
                     filename, image->mWidth, image->mHeight, components, image->GetBits(), image->mWidth * components))
+            {
                 return EVAL_ERR;
+            }
             break;
         case 2:
             if (!stbi_write_tga(filename, image->mWidth, image->mHeight, components, image->GetBits()))
+            {
                 return EVAL_ERR;
+            }
             break;
         case 3:
             if (!stbi_write_bmp(filename, image->mWidth, image->mHeight, components, image->GetBits()))
+            {
                 return EVAL_ERR;
+            }
             break;
         case 4:
             // if (stbi_write_hdr(filename, image->width, image->height, image->components, image->bits))
@@ -348,13 +364,20 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             img.m_numMips = image->mNumMips;
             img.m_data = image->GetBits();
             img.m_dataSize = image->mDataSize;
+
             if (img.m_format == cmft::TextureFormat::RGBA8)
+            {
                 cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
+            }
             else if (img.m_format == cmft::TextureFormat::RGB8)
+            {
                 cmft::imageConvert(img, cmft::TextureFormat::BGR8);
+            }
             image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
             if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
+            {
                 return EVAL_ERR;
+            }
         }
         break;
         case 6:
@@ -368,7 +391,9 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             img.m_data = image->GetBits();
             img.m_dataSize = image->mDataSize;
             if (!cmft::imageSave(img, filename, cmft::ImageFileType::KTX))
+            {
                 return EVAL_ERR;
+            }
         }
         break;
         case 7:

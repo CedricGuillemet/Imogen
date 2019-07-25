@@ -908,8 +908,14 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
     if (evaluationMask & EvaluationGLSL)
     {
+        if (!evaluation.mTarget)
+        {
+            evaluation.mTarget = CreateRenderTarget(nodeIndex);
+        }
         if (!evaluation.mTarget->mGLTexID)
+        {
             evaluation.mTarget->InitBuffer(mDefaultWidth, mDefaultHeight, evaluation.mbDepthBuffer);
+        }
 
         EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
     }

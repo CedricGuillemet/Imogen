@@ -50,6 +50,24 @@ void imguiFree(void *ptr, void* user_data)
     return HeapAllocatorBase<unsigned char, MODULE_IMGUI>().deallocate((unsigned char*)ptr, ptrSize);
 }
 
+
+void *imageMalloc(size_t n)
+{
+    return HeapAllocatorBase<unsigned char, MODULE_IMAGE>().allocate(n);
+}
+
+void imageFree(void *ptr)
+{
+    if (!ptr)
+        return;
+#ifdef WIN32
+    auto ptrSize = _msize(ptr);
+#else
+    auto ptrSize = malloc_usable_size(ptr);
+#endif
+    return HeapAllocatorBase<unsigned char, MODULE_IMAGE>().deallocate((unsigned char*)ptr, ptrSize);
+}
+
 void vramTextureAlloc(size_t n)
 {
     gMemoryHistory.logAllocation(MODULE_TEXTURE, n);

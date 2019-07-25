@@ -33,6 +33,7 @@ enum MODULES
     MODULE_IMGUI,
     MODULE_DEFAULT,
     MODULE_TEXTURE,
+    MODULE_IMAGE,
     MODULE_COUNT
 };
 
@@ -186,6 +187,9 @@ template <class T, size_t module> struct HeapAllocatorBase
 
 void *imguiMalloc(size_t n, void* user_data);
 void imguiFree(void *ptr, void* user_data);
+
+void *imageMalloc(size_t n);
+void imageFree(void *ptr);
 
 void vramTextureAlloc(size_t n);
 void vramTextureFree(size_t n);

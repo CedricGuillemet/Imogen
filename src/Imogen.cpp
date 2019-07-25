@@ -2311,7 +2311,8 @@ void Imogen::ShowDebugWindow()
         static const char *moduleLabels[MODULE_COUNT] = {
             "IMGUI",
             "Default",
-            "VRAM Textures"
+            "VRAM Textures",
+            "Images"
         };
         static const char *labels[] = { "Active Allocated", "Active Allocation Count", "Total Allocated", "Total Freed" }; // , "Allocation Count", "Deallocation Count"
 

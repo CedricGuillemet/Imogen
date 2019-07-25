@@ -31,6 +31,7 @@
 #include <mutex>
 #include <memory>
 #include <stdlib.h>
+#include "Mem.h"
 
 #if USE_FFMPEG
 namespace FFMPEGCodec
@@ -67,6 +68,27 @@ struct Image
     Image() : mDecoder(NULL), mWidth(0), mHeight(0), mNumMips(0), mNumFaces(0), mBits(NULL), mDataSize(0)
     {
     }
+    Image(Image&& other)
+    {
+        mDecoder = other.mDecoder;
+        mWidth = other.mWidth;
+        mHeight = other.mHeight;
+        mDataSize = other.mDataSize;
+        mNumMips = other.mNumMips;
+        mNumFaces = other.mNumFaces;
+        mFormat = other.mFormat;
+        mBits = other.mBits;
+
+        other.mDecoder = 0;
+        other.mWidth = 0;
+        other.mHeight = 0;
+        other.mDataSize = 0;
+        other.mNumMips = 0;
+        other.mNumFaces = 0;
+        other.mFormat = 0;
+        other.mBits = 0;
+    }
+
     Image(const Image& other) : mBits(NULL), mDataSize(0)
     {
         *this = other;
@@ -105,14 +127,18 @@ struct Image
     void Allocate(size_t size)
     {
         if (mBits && mDataSize != size)
-            free(mBits);
+        {
+            imageFree(mBits);
+        }
         if (size)
-            mBits = (unsigned char*)malloc(size);
+        {
+            mBits = (unsigned char*)imageMalloc(size);
+        }
         mDataSize = uint32_t(size);
     }
     void DoFree()
     {
-        free(mBits);
+        imageFree(mBits);
         mBits = NULL;
         mDataSize = 0;
     }

@@ -139,8 +139,8 @@ namespace ImageInspect
         static int zoomSize = 4;
         const float quadWidth = zoomRectangleWidth / float(zoomSize * 2 + 1);
         const ImVec2 quadSize(quadWidth, quadWidth);
-        const int basex = ImClamp(int(mouseUVCoord.x * width), zoomSize, width - zoomSize);
-        const int basey = ImClamp(int(mouseUVCoord.y * height), zoomSize, height - zoomSize);
+        const int basex = ImClamp(int(mouseUVCoord.x * width), zoomSize, width - zoomSize - 1);
+        const int basey = ImClamp(int(mouseUVCoord.y * height), zoomSize, height - zoomSize - 1);
         for (int y = -zoomSize; y <= zoomSize; y++)
         {
             for (int x = -zoomSize; x <= zoomSize; x++)

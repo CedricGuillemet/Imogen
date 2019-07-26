@@ -861,3 +861,20 @@ inline float DegToRad(float a)
 }
 
 void Splitpath(const char* completePath, char* drive, char* dir, char* filename, char* ext);
+
+inline std::vector<char> ReadFile(const char* szFileName)
+{
+    FILE* fp = fopen(szFileName, "rb");
+    if (fp)
+    {
+        fseek(fp, 0, SEEK_END);
+        auto bufSize = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+        //char* buf = new char[bufSize];
+        std::vector<char> buf(bufSize);
+        fread(buf.data(), bufSize, 1, fp);
+        fclose(fp);
+        return buf;
+    }
+    return {};
+}

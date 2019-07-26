@@ -31,9 +31,7 @@
 #include "EvaluationStages.h"
 #include "GraphControler.h"
 #include "Library.h"
-#include "stb_image.h"
 #include "tinydir.h"
-#include "stb_image.h"
 #include "imgui_stdlib.h"
 #include "ImSequencer.h"
 #include "Evaluators.h"
@@ -45,7 +43,6 @@
 #include "Mem.h"
 
 Imogen* Imogen::instance = nullptr;
-unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
 
 extern TaskScheduler g_TS;
 
@@ -428,18 +425,11 @@ struct DecodeThumbnailTaskSet : TaskSet
     {
         Image image;
         int components;
-        unsigned char* data =
-            stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
-        if (data)
+        if (!mSrc->empty() && Image::ReadMem(mSrc->data(), mSrc->size(), &image) == EVAL_OK)
         {
-            image.SetBits(data, image.mWidth * image.mHeight * components);
-            image.mNumFaces = 1;
-            image.mNumMips = 1;
-            image.mFormat = (components == 4) ? TextureFormat::RGBA8 : TextureFormat::RGB8;
             PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
-            stbi_image_free(data);
             Image::Free(&image);
         }
         delete this;
@@ -459,12 +449,12 @@ struct EncodeImageTaskSet : TaskSet
     {
         int outlen;
         int components = 4;
-        unsigned char* bits = stbi_write_png_to_mem((unsigned char*)mImage.GetBits(),
+        unsigned char* bits = 0;/*stbi_write_png_to_mem((unsigned char*)mImage.GetBits(),
                                                     mImage.mWidth * components,
                                                     mImage.mWidth,
                                                     mImage.mHeight,
                                                     components,
-                                                    &outlen);
+                                                    &outlen);*/
         if (bits)
         {
             Material* material = library.Get(mMaterialIdentifier);
@@ -494,19 +484,12 @@ struct DecodeImageTaskSet : TaskSet
     virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
         Image image;
-        int components;
-        unsigned char* data =
-            stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
-        if (data)
+        if (!mSrc->empty() && Image::ReadMem(mSrc->data(), mSrc->size(), &image) == EVAL_OK)
         {
-            image.SetBits(data, image.mWidth * image.mHeight * components);
-            image.mNumFaces = 1;
-            image.mNumMips = 1;
-            image.mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false, mNodeGraphControler);
+            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
-            stbi_image_free(data);
+            Image::Free(&image);
         }
         delete this;
     }
@@ -1786,7 +1769,7 @@ int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
             defNode.mPosY = 40;
             defNode.mTypeName = "Color";
             auto nodeType = GetMetaNodeIndex(defNode.mTypeName.c_str());
-            defNode.mType = nodeType;
+            defNode.mType = uint32_t(nodeType);
             defNode.mParameters.resize(ComputeNodeParametersSize(nodeType), 0);
             InitDefaultParameters(nodeType, defNode.mParameters);
 

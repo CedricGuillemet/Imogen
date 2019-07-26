@@ -31,6 +31,7 @@
 #include <mutex>
 #include <memory>
 #include <stdlib.h>
+#include <bimg/encode.h>
 
 #if USE_FFMPEG
 namespace FFMPEGCodec
@@ -61,6 +62,9 @@ struct TextureFormat
         Null = -1,
     };
 };
+
+bimg::TextureFormat::Enum GetBIMGFormat(TextureFormat::Enum format);
+bimg::Quality::Enum GetQuality(int quality);
 
 struct Image
 {
@@ -121,7 +125,7 @@ struct Image
     static int Free(Image* image);
     static unsigned int Upload(const Image* image, unsigned int textureId, int cubeFace = -1);
     static int LoadSVG(const char* filename, Image* image, float dpi);
-    static int ReadMem(unsigned char* data, size_t dataSize, Image* image);
+    static int ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename = nullptr);
     static void VFlip(Image* image);
     static int Write(const char* filename, Image* image, int format, int quality);
     static int EncodePng(Image* image, std::vector<unsigned char>& pngImage);

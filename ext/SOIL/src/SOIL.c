@@ -31,13 +31,12 @@
 #endif
 
 #include "SOIL.h"
-#include "stb_image.h"
 #include "image_helper.h"
 #include "image_DXT.h"
 
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdio.h>
 /*	error reporting	*/
 char *result_string_pointer = "SOIL initialized";
 
@@ -142,7 +141,7 @@ unsigned int
 	if( NULL == img )
 	{
 		/*	image loading failed	*/
-		result_string_pointer = stbi_failure_reason();
+		//result_string_pointer = stbi_failure_reason();
 		return 0;
 	}
 	/*	OK, make it a texture!	*/
@@ -1484,6 +1483,7 @@ int
 	{
 		return 0;
 	}
+    /*
 	if( image_type == SOIL_SAVE_TYPE_BMP )
 	{
 		save_result = stbi_write_bmp( filename,
@@ -1498,7 +1498,7 @@ int
 	{
 		save_result = save_image_as_DDS( filename,
 				width, height, channels, (const unsigned char *const)data );
-	} else
+	} else*/
 	{
 		save_result = 0;
 	}

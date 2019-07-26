@@ -35,8 +35,6 @@
 #include "GraphControler.h"
 #include "EvaluationStages.h"
 #include "Imogen.h"
-#include "stb_image.h"
-#include "stb_image_write.h"
 #include "Evaluators.h"
 #include "Loader.h"
 #include "UI.h"
@@ -262,8 +260,9 @@ int main(int argc, char** argv)
     FFMPEGCodec::RegisterAll();
     FFMPEGCodec::Log = Log;
 #endif
-    stbi_set_flip_vertically_on_load(1);
-    stbi_flip_vertically_on_write(1);
+    // todo
+    //stbi_set_flip_vertically_on_load(1);
+    //stbi_flip_vertically_on_write(1);
     
     ImGui::StyleColorsDark();
     RecentLibraries recentLibraries;

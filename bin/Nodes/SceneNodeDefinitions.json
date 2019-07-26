@@ -217,7 +217,8 @@
 			"name": "passCount",
 			"type": "Int",
             "default": "1",
-            "description":""
+            "description":"",
+            "hidden": true
 		}]
 	}, {
 		"name": "Multiplex",

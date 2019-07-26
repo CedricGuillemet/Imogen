@@ -541,6 +541,7 @@ struct MetaParameter
     bool mbRelative;
     bool mbQuadSelect;
     bool mbLoop;
+    bool mbHidden;
     std::string mEnumList;
     std::vector<unsigned char> mDefaultValue;
     std::string mDescription;

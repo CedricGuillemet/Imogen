@@ -1239,9 +1239,20 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
                 }
 
                 if (param.HasMember("loop"))
+                {
                     metaParam.mbLoop = param["loop"].GetBool();
+                }
                 else
+                {
                     metaParam.mbLoop = true;
+                }
+
+                metaParam.mbHidden = false;
+                if (param.HasMember("hidden"))
+                {
+                    metaParam.mbHidden = param["hidden"].GetBool();
+                }
+
                 if (param.HasMember("relative"))
                     metaParam.mbRelative = param["relative"].GetBool();
                 else

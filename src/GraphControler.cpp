@@ -70,6 +70,10 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
                                              void* paramBuffer,
                                              const MetaParameter& param)
 {
+    if (param.mbHidden)
+    {
+        return false;
+    }
     bool dirty = false;
     uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
     ImGui::PushID(parameterPair * 4);

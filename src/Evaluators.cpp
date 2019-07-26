@@ -1039,6 +1039,45 @@ duk_ret_t js_ReadImage(duk_context* ctx)
     return 1;
 }
 
+duk_ret_t js_SetParameter(duk_context* ctx)
+{
+    int ret = EVAL_ERR;
+    duk_idx_t nargs = duk_get_top(ctx);
+    if (nargs == 4)
+    {
+        EvaluationContext* context = static_cast<EvaluationContext*>(duk_get_pointer(ctx, -4));
+        int target = duk_get_int(ctx, -3);
+        if (target >= 0)
+        {
+            const char* parameterName = duk_get_string(ctx, -2);
+
+            int nodeType = context->mEvaluationStages.mStages[target].mType;
+            int parameterIndex = GetParameterIndex(nodeType, parameterName);
+            size_t parameterOffset = GetParameterOffset(nodeType, parameterIndex);
+            unsigned char* ptr = context->mEvaluationStages.mParameters[target].data();
+            if (duk_is_number(ctx, -1))
+            {
+                auto number = duk_get_number(ctx, -1);
+                
+                switch (GetParameterType(nodeType, parameterIndex))
+                {
+                    case Con_Int:
+                    {
+                        *(int*)(ptr + parameterOffset) = int(number);
+                        ret = EVAL_OK;
+                    }
+                    default:
+                        break;
+                }
+            }
+            
+        }
+        duk_pop_n(ctx, 4);
+    }
+    duk_push_int(ctx, ret);
+    return 1;
+}
+
 void js_RegisterFunction(duk_context* ctx, const char* functionName, duk_ret_t(*function)(duk_context* ctx), int parameterCount)
 {
     duk_push_global_object(ctx);
@@ -1078,6 +1117,8 @@ Evaluators::Evaluators()
     
     js_RegisterFunction(m_ctx, "GLTFReadAsync", js_GLTFReadAsync, 3);
     js_RegisterFunction(m_ctx, "ReadImageAsync", js_ReadImageAsync, 4);
+    js_RegisterFunction(m_ctx, "SetParameter", js_SetParameter, 4);
+    
     js_RegisterFunction(m_ctx, "ReadImage", js_ReadImage, 3);
     js_RegisterFunction(m_ctx, "SetThumbnailImage", js_SetThumbnailImage, 2);
     js_RegisterFunction(m_ctx, "Evaluate", js_Evaluate, 5);

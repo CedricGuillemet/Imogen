@@ -98,7 +98,6 @@
         reader.fileName  = filename;
         reader.clientPosition = pos;
         reader.onload = function(evt) {
-          console.log(this.result);
           var array = new Uint8Array(this.result);
           heapArray = _arrayToHeap(array);
           pos = evt.target.clientPosition;

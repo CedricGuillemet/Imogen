@@ -41,7 +41,7 @@ EM_JS(void, _HideLoader, (), {
 void HideLoader() { _HideLoader(); }
 
 // https://stackoverflow.com/questions/25354313/saving-a-uint8array-to-a-binary-file
-EM_JS(void, DownloadImage, (const char *filename, int filenameLen, const char* text, int textLen), {
+EM_JS(void, _DownloadImage, (const char *filename, int filenameLen, const char* data, int dataLen), {
     var filenamejs = String.fromCharCode.apply(null, new Uint8Array(HEAPU8.subarray(filename, filename + filenameLen)));
     var downloadBlob, downloadURL;
 
@@ -67,7 +67,7 @@ EM_JS(void, DownloadImage, (const char *filename, int filenameLen, const char* t
         a.click();
         a.remove();
         };
-    downloadBlob(new Uint8Array(HEAPU8.subarray(text, text + textLen)), filenamejs, 'application/octet-stream');
+    downloadBlob(new Uint8Array(HEAPU8.subarray(data, data + dataLen)), filenamejs, 'application/octet-stream');
     });
 
 std::function<void(const std::string& filename)> _completeUploadCB;
@@ -78,6 +78,11 @@ void UploadDialog(std::function<void(const std::string& filename)> completeUploa
 { 
     _completeUploadCB = completeUploadCB;
     _UploadDialog(); 
+}
+
+void DownloadImage(const char *filename, int filenameLen, const char* data, int dataLen)
+{
+    _DownloadImage(filename, filenameLen, data, dataLen);
 }
 
 int main_Async(int argc, char** argv);

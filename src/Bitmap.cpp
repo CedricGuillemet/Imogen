@@ -32,6 +32,7 @@
 #include <bimg/encode.h>
 #include <bx/allocator.h>
 #include <bx/file.h>
+#include "JSGlue.h"
 
 #define NANOSVG_ALL_COLOR_KEYWORDS // Include full list of color keywords.
 #define NANOSVG_IMPLEMENTATION     // Expands implementation
@@ -368,10 +369,16 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
     }
 
     const int components = textureComponentCount[image->mFormat];
-    bx::FileWriter writer;
+    
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
     bx::Error err;
-
+#ifdef __EMSCRIPTEN__
+    bx::MemoryBlock mb(g_allocator);
+    bx::MemoryWriter writer(&mb);
+#else
+    bx::FileWriter writer;
     if (bx::open(&writer, filename, false, &err))
+#endif
     {
         auto texformat = GetBIMGFormat((TextureFormat::Enum)image->mFormat);
 
@@ -390,7 +397,6 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             break;
         case 5: // dds
             {
-                bx::AllocatorI* g_allocator = getDefaultAllocator();
                 bimg::ImageContainer* imageContainer = bimg::imageAlloc(
                     g_allocator
                     , texformat
@@ -434,7 +440,11 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             bimg::imageWriteExr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
             break;
         }
+#ifdef __EMSCRIPTEN__
+        DownloadImage(filename, strlen(filename), (const char*)mb.more(0), mb.getSize());
+#else
         bx::close(&writer);
+#endif
         return EVAL_OK;
     }
     return EVAL_ERR;

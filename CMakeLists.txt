@@ -19,8 +19,7 @@ file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/duktape/*.cpp
-    ${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
-    ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
 )
 
 if (NOT EMSCRIPTEN)
@@ -28,10 +27,9 @@ file(GLOB EXT_FILES_DESKTOP
     ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
-    ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/SOIL/src/*.c
-    ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/ffmpegCodec/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
 )
 set(SDL2_LIBRARIES "SDL2" "SDL2main")
 endif()

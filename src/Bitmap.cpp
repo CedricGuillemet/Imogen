@@ -83,15 +83,12 @@ bimg::Quality::Enum GetQuality(int quality)
     case 1:
     case 2:
         return bimg::Quality::Highest;
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-        return bimg::Quality::Default;
     case 7:
     case 8:
     case 9:
         return bimg::Quality::Fastest;
+    default:
+        return bimg::Quality::Default;
     }
 }
 
@@ -358,14 +355,16 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
 {
     bx::FileWriter writer;
     bx::Error err;
+    const int components = textureComponentCount[image->mFormat];
+
     if (bx::open(&writer, filename, false, &err))
     {
         auto texformat = GetBIMGFormat((TextureFormat::Enum)image->mFormat);
-        int components = textureComponentCount[image->mFormat];
 
         switch (format)
         {
         case 0: // jpeg
+            bimg::imageWriteJpg(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, quality, &err);
         case 1: // png
             bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
             break;
@@ -422,6 +421,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             break;
         }
         bx::close(&writer);
+        return EVAL_OK;
     }
     return EVAL_ERR;
 

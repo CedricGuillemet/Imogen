@@ -19,8 +19,7 @@ file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
 	${CMAKE_SOURCE_DIR}/ext/duktape/*.cpp
-    ${CMAKE_SOURCE_DIR}/ext/cmft/*.cpp
-    ${CMAKE_SOURCE_DIR}/ext/cmft/common/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
 )
 
 if (NOT EMSCRIPTEN)
@@ -28,10 +27,9 @@ file(GLOB EXT_FILES_DESKTOP
     ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
-    ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/SOIL/src/*.c
-    ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/ffmpegCodec/*.cpp
+    ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
 )
 set(SDL2_LIBRARIES "SDL2" "SDL2main")
 endif()
@@ -68,6 +66,7 @@ ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
 set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES})
 endif()
 
+set(IMOGEN_BGFX_DIR ${CMAKE_SOURCE_DIR}/ext/bgfx)
 
 if(WIN32)
 
@@ -93,6 +92,11 @@ PKG_CHECK_MODULES(FFMPEG REQUIRED libavcodec libavdevice libavfilter libavformat
 
 endif()
 
+set(BGFX_INCLUDE_DIRS "${IMOGEN_BGFX_DIR}/bgfx/include" "${IMOGEN_BGFX_DIR}/bimg/include" "${IMOGEN_BGFX_DIR}/bx/include")
+if(WIN32)
+set(BGFX_INCLUDE_DIRS "${BGFX_INCLUDE_DIRS}" "${IMOGEN_BGFX_DIR}/bx/include/compat/msvc")
+endif()
+
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
@@ -107,12 +111,14 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/Nvidia-SBVH
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/GLSL_Pathtracer/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpegCodec/
+  ${BGFX_INCLUDE_DIRS}
 )
 
 link_directories(
   ${SDL2_LIBDIR}
   ${FFMPEG_LIBRARY_DIRS}
   ${PYTHON37_LIBRARY_DIRS}
+  bx bimg bgfx
 )
 find_package(OpenGL)
 
@@ -166,7 +172,24 @@ SET(EXE_NAME "Imogen")
 
 ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DESKTOP})
 
-TARGET_LINK_LIBRARIES(${EXE_NAME} ${PYTHON37_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBRARIES})
+set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build the BGFX examples.")
+set(BGFX_BUILD_TOOLS OFF CACHE BOOL "Build the BGFX tools.")
+add_subdirectory(${IMOGEN_BGFX_DIR}/)
+set_property(TARGET astc PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET astc-codec PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET edtaa3 PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET etc1 PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET etc2 PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET iqa PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET nvtt PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET pvrtc PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET squish PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
+set_property(TARGET bgfx PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx)
+set_property(TARGET bimg PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx)
+set_property(TARGET bx PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx)
+
+
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${PYTHON37_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBRARIES} bx bimg bgfx)
 
 if(APPLE)
   find_library(CORE_FOUNDATION CoreFoundation)

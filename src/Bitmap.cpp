@@ -28,23 +28,70 @@
 #include "Bitmap.h"
 #include "Utils.h"
 #include "Mem.h"
+#include <bimg/decode.h>
+#include <bimg/encode.h>
+#include <bx/allocator.h>
+#include <bx/file.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
 #define NANOSVG_ALL_COLOR_KEYWORDS // Include full list of color keywords.
 #define NANOSVG_IMPLEMENTATION     // Expands implementation
 #include "nanosvg.h"
 #define NANOSVGRAST_IMPLEMENTATION
 #include "nanosvgrast.h"
 
-#include "cmft/image.h"
 #if USE_FFMPEG
 #include "ffmpegCodec.h"
 #endif
 ImageCache gImageCache;
 DefaultShaders gDefaultShader;
+
+bx::AllocatorI* getDefaultAllocator()
+{
+    static bx::DefaultAllocator s_allocator;
+    return &s_allocator;
+}
+
+bimg::TextureFormat::Enum GetBIMGFormat(TextureFormat::Enum format)
+{
+    switch (format)
+    {
+    case TextureFormat::BGR8: return bimg::TextureFormat::RGB8;
+    case TextureFormat::RGB8: return bimg::TextureFormat::RGB8;
+    case TextureFormat::RGB16: assert(0);
+    case TextureFormat::RGB16F: assert(0);
+    case TextureFormat::RGB32F: assert(0);
+    case TextureFormat::RGBE: return bimg::TextureFormat::RGB8;
+
+    case TextureFormat::BGRA8: return bimg::TextureFormat::BGRA8;
+    case TextureFormat::RGBA8: return bimg::TextureFormat::RGBA8;
+    case TextureFormat::RGBA16: return bimg::TextureFormat::RGBA16;
+    case TextureFormat::RGBA16F: assert(0);
+    case TextureFormat::RGBA32F: return bimg::TextureFormat::RGBA32F;
+
+    case TextureFormat::RGBM: return bimg::TextureFormat::RGB8;
+    default:
+        break;
+    }
+    return bimg::TextureFormat::Unknown;
+}
+
+bimg::Quality::Enum GetQuality(int quality)
+{
+    switch (quality)
+    {
+    case 0:
+    case 1:
+    case 2:
+        return bimg::Quality::Highest;
+    case 7:
+    case 8:
+    case 9:
+        return bimg::Quality::Fastest;
+    default:
+        return bimg::Quality::Default;
+    }
+}
+
 #ifdef GL_BGR
 const unsigned int glInputFormats[] = {
     GL_BGR,
@@ -136,7 +183,14 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
 
     glReadPixels(x, viewport[3] - y - h, w, h, GL_RGB, GL_UNSIGNED_BYTE, imgBits);
 
-    stbi_write_png(filemane.c_str(), w, h, 3, imgBits, w * 3);
+    bx::FileWriter writer;
+    bx::Error err;
+
+    if (bx::open(&writer, filemane.c_str(), false, &err))
+    {
+        bimg::imageWritePng(&writer, w, h, w * 3, imgBits, bimg::TextureFormat::RGB8, false/*_yflip*/, &err);
+    }
+
     delete[] imgBits;
 }
 
@@ -222,35 +276,13 @@ int Image::Read(const char* filename, Image* image)
     }
     fclose(fp);
 
-    int components;
-    unsigned char* bits = stbi_load(filename, &image->mWidth, &image->mHeight, &components, 0);
-    if (!bits)
-    {
-        cmft::Image img;
-        if (!cmft::imageLoad(img, filename))
-        {
-            return EVAL_ERR;
-        }
-        cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
-        image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-        image->mWidth = img.m_width;
-        image->mHeight = img.m_height;
-        image->mNumMips = img.m_numMips;
-        image->mNumFaces = img.m_numFaces;
-        image->mFormat = img.m_format;
-        image->mDecoder = NULL;
-        gImageCache.AddImage(filenameStr, image);
-        return EVAL_OK;
-    }
+    auto buffer = ReadFile(filename);
 
-    image->SetBits(bits, image->mWidth * image->mHeight * components);
-    image->mNumMips = 1;
-    image->mNumFaces = 1;
-    image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-    image->mDecoder = NULL;
-    stbi_image_free(bits);
-    gImageCache.AddImage(filenameStr, image);
-    return EVAL_OK;
+    if (buffer.size())
+    {
+        return ReadMem((unsigned char*)buffer.data(), buffer.size(), image, filename);
+    }
+    return EVAL_ERR;
 }
 
 int Image::Free(Image* image)
@@ -289,15 +321,28 @@ unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeF
     return textureId;
 }
 
-int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image)
+int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename)
 {
-    int components;
-    unsigned char* bits = stbi_load_from_memory(data, int(dataSize), &image->mWidth, &image->mHeight, &components, 0);
-    if (!bits)
-        return EVAL_ERR;
-    image->SetBits(bits, image->mWidth * image->mHeight * components);
-    stbi_image_free(bits);
-    return EVAL_OK;
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
+    bimg::ImageContainer* imageContainer = bimg::imageParse(g_allocator, data, (uint32_t)dataSize);
+    if (imageContainer)
+    {
+        image->SetBits((unsigned char*)imageContainer->m_data, imageContainer->m_size);
+        image->mWidth = imageContainer->m_width;
+        image->mHeight = imageContainer->m_height;
+        image->mNumMips = imageContainer->m_numMips;
+        image->mNumFaces = imageContainer->m_cubeMap ? 6 : 1;
+        image->mFormat = (imageContainer->m_format == bimg::TextureFormat::RGB8) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
+        image->mDecoder = NULL;
+        if (filename)
+        {
+            gImageCache.AddImage(filename, image);
+        }
+        bimg::imageFree(imageContainer);
+        return EVAL_OK;
+    }
+
+    return EVAL_ERR;
 }
 
 void Image::VFlip(Image* image)
@@ -322,101 +367,87 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         return EVAL_ERR;
     }
 
-    int components = textureComponentCount[image->mFormat];
-    switch (format)
-    {
-        case 0:
-            if (!stbi_write_jpg(filename, image->mWidth, image->mHeight, components, image->GetBits(), quality))
-            {
-                return EVAL_ERR;
-            }
-            break;
-        case 1:
-            if (!stbi_write_png(
-                    filename, image->mWidth, image->mHeight, components, image->GetBits(), image->mWidth * components))
-            {
-                return EVAL_ERR;
-            }
-            break;
-        case 2:
-            if (!stbi_write_tga(filename, image->mWidth, image->mHeight, components, image->GetBits()))
-            {
-                return EVAL_ERR;
-            }
-            break;
-        case 3:
-            if (!stbi_write_bmp(filename, image->mWidth, image->mHeight, components, image->GetBits()))
-            {
-                return EVAL_ERR;
-            }
-            break;
-        case 4:
-            // if (stbi_write_hdr(filename, image->width, image->height, image->components, image->bits))
-            return EVAL_ERR;
-            break;
-        case 5:
-        {
-            cmft::Image img;
-            img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
-            img.m_width = image->mWidth;
-            img.m_height = image->mHeight;
-            img.m_numFaces = image->mNumFaces;
-            img.m_numMips = image->mNumMips;
-            img.m_data = image->GetBits();
-            img.m_dataSize = image->mDataSize;
+    const int components = textureComponentCount[image->mFormat];
+    bx::FileWriter writer;
+    bx::Error err;
 
-            if (img.m_format == cmft::TextureFormat::RGBA8)
-            {
-                cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
-            }
-            else if (img.m_format == cmft::TextureFormat::RGB8)
-            {
-                cmft::imageConvert(img, cmft::TextureFormat::BGR8);
-            }
-            image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-            if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
-            {
-                return EVAL_ERR;
-            }
-        }
-        break;
-        case 6:
+    if (bx::open(&writer, filename, false, &err))
+    {
+        auto texformat = GetBIMGFormat((TextureFormat::Enum)image->mFormat);
+
+        switch (format)
         {
-            cmft::Image img;
-            img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
-            img.m_width = image->mWidth;
-            img.m_height = image->mHeight;
-            img.m_numFaces = image->mNumFaces;
-            img.m_numMips = image->mNumMips;
-            img.m_data = image->GetBits();
-            img.m_dataSize = image->mDataSize;
-            if (!cmft::imageSave(img, filename, cmft::ImageFileType::KTX))
+        case 0: // jpeg
+            bimg::imageWriteJpg(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, quality, &err);
+        case 1: // png
+            bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            break;
+        case 2: // tga
+            bimg::imageWriteTga(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            break;
+        case 4: // hdr
+            bimg::imageWriteHdr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            break;
+        case 5: // dds
             {
-                return EVAL_ERR;
+                bx::AllocatorI* g_allocator = getDefaultAllocator();
+                bimg::ImageContainer* imageContainer = bimg::imageAlloc(
+                    g_allocator
+                    , texformat
+                    , image->mWidth
+                    , image->mHeight
+                    , 1
+                    , 1
+                    , (image->mNumFaces == 6) ? true : false
+                    , image->mNumMips
+                    , image->GetBits()
+                );
+
+                if (imageContainer)
+                {
+                    bimg::imageWriteDds(
+                        &writer
+                        , *imageContainer
+                        , image->GetBits()
+                        , image->mDataSize
+                        , &err
+                    );
+                    bimg::imageFree(imageContainer);
+                }
             }
+            break;
+        case 6: // ktx
+            bimg::imageWriteKtx(
+                &writer
+                , texformat
+                , (image->mNumFaces == 6)
+                , image->mWidth
+                , image->mHeight
+                , 1
+                , image->mNumMips
+                , 1
+                , image->GetBits()
+                , &err
+            );
+            break;
+        case 7: // exr
+            bimg::imageWriteExr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            break;
         }
-        break;
-        case 7:
-        {
-            assert(0);
-        }
-        break;
+        bx::close(&writer);
+        return EVAL_OK;
     }
-    return EVAL_OK;
+    return EVAL_ERR;
 }
 
 int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 {
-    int outlen;
-    int components = 4; // TODO
-    unsigned char* bits = stbi_write_png_to_mem(
-        image->GetBits(), image->mWidth * components, image->mWidth, image->mHeight, components, &outlen);
-    if (!bits)
-        return EVAL_ERR;
-    pngImage.resize(outlen);
-    memcpy(pngImage.data(), bits, outlen);
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
+    bx::MemoryBlock mb(g_allocator);
+    bx::MemoryWriter writer(&mb);
+    bx::Error err;
 
-    free(bits);
+    bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * 4, image->GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
     return EVAL_OK;
 }
 

@@ -31,10 +31,7 @@
 #include "EvaluationStages.h"
 #include "GraphControler.h"
 #include "Library.h"
-#include "stb_image.h"
-#include "stb_image_write.h"
 #include "tinydir.h"
-#include "stb_image.h"
 #include "imgui_stdlib.h"
 #include "ImSequencer.h"
 #include "Evaluators.h"
@@ -44,9 +41,10 @@
 #include "imgInspect.h"
 #include "IconsFontAwesome5.h"
 #include "Mem.h"
+#include <bx/allocator.h>
+#include <bx/readerwriter.h>
 
 Imogen* Imogen::instance = nullptr;
-//unsigned char* stbi_write_png_to_mem(unsigned char* pixels, int stride_bytes, int x, int y, int n, int* out_len);
 
 extern TaskScheduler g_TS;
 
@@ -428,19 +426,11 @@ struct DecodeThumbnailTaskSet : TaskSet
     virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
         Image image;
-        int components;
-        unsigned char* data =
-            stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
-        if (data)
+        if (!mSrc->empty() && Image::ReadMem(mSrc->data(), mSrc->size(), &image) == EVAL_OK)
         {
-            image.SetBits(data, image.mWidth * image.mHeight * components);
-            image.mNumFaces = 1;
-            image.mNumMips = 1;
-            image.mFormat = (components == 4) ? TextureFormat::RGBA8 : TextureFormat::RGB8;
             PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
-            stbi_image_free(data);
             Image::Free(&image);
         }
         delete this;
@@ -471,6 +461,7 @@ static void stbi_write_func_mem(void *context, void *data, int size)
     memcpy(&ctx->mDest[ctx->mOffset], data, size);
     ctx->mOffset += size;
 }
+bx::AllocatorI* getDefaultAllocator();
 
 struct EncodeImageTaskSet : TaskSet
 {
@@ -481,16 +472,13 @@ struct EncodeImageTaskSet : TaskSet
     virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
         int components = 4;
-        /*unsigned char* bits = stbi_write_png_to_func((unsigned char*)mImage.GetBits(),
-                                                    mImage.mWidth * components,
-                                                    mImage.mWidth,
-                                                    mImage.mHeight,
-                                                    components,
-                                                    &outlen);
-                                                    */
-        stbi_context context;
-        int bits = stbi_write_png_to_func(stbi_write_func_mem, &context, mImage.mWidth, mImage.mHeight, components, mImage.GetBits(), mImage.mWidth * components);
-        if (bits)
+        bx::AllocatorI* g_allocator = getDefaultAllocator();
+        bx::MemoryBlock mb(g_allocator);
+        bx::MemoryWriter writer(&mb);
+        bx::Error err;
+
+        bimg::imageWritePng(&writer, mImage.mWidth, mImage.mHeight, mImage.mWidth * 3, mImage.GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
+        if (mb.more(0))
         {
             Material* material = library.Get(mMaterialIdentifier);
             if (material)
@@ -498,8 +486,8 @@ struct EncodeImageTaskSet : TaskSet
                 MaterialNode* node = material->Get(mNodeIdentifier);
                 if (node)
                 {
-                    node->mImage.resize(context.mOffset);
-                    memcpy(node->mImage.data(), context.mDest, context.mOffset);
+                    node->mImage.resize(mb.getSize());
+                    memcpy(node->mImage.data(), mb.more(0), mb.getSize());
                 }
             }
         }
@@ -519,19 +507,12 @@ struct DecodeImageTaskSet : TaskSet
     virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
         Image image;
-        int components;
-        unsigned char* data =
-            stbi_load_from_memory(mSrc->data(), int(mSrc->size()), &image.mWidth, &image.mHeight, &components, 0);
-        if (data)
+        if (!mSrc->empty() && Image::ReadMem(mSrc->data(), mSrc->size(), &image) == EVAL_OK)
         {
-            image.SetBits(data, image.mWidth * image.mHeight * components);
-            image.mNumFaces = 1;
-            image.mNumMips = 1;
-            image.mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false, mNodeGraphControler);
+            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
-            stbi_image_free(data);
+            Image::Free(&image);
         }
         delete this;
     }
@@ -1829,7 +1810,7 @@ int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
             defNode.mPosY = 40;
             defNode.mTypeName = "Color";
             auto nodeType = GetMetaNodeIndex(defNode.mTypeName.c_str());
-            defNode.mType = nodeType;
+            defNode.mType = uint32_t(nodeType);
             defNode.mParameters.resize(ComputeNodeParametersSize(nodeType), 0);
             InitDefaultParameters(nodeType, defNode.mParameters);
 

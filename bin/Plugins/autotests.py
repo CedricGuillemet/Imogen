@@ -50,7 +50,7 @@ def imageTests():
     #read a cubemap dds, convert to equirect, save jpg
     Imogen.NewGraph("ImageRead04")
     imageRead = Imogen.AddNode("ImageRead")
-    Imogen.SetParameter(imageRead, "filename", "Autotests/Run/Cubemap01.dds.dds")
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Run/Cubemap01.dds")
     equirect = Imogen.AddNode("EquirectConverter")
     Imogen.SetParameter(equirect, "mode", "1")
     imageWrite = Imogen.AddNode("ImageWrite")

@@ -324,7 +324,7 @@ unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeF
 int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename)
 {
     bx::AllocatorI* g_allocator = getDefaultAllocator();
-    bimg::ImageContainer* imageContainer = bimg::imageParse(g_allocator, data, (uint32_t)dataSize);
+    bimg::ImageContainer* imageContainer = bimg::imageParse(g_allocator, data, (uint32_t)dataSize, bimg::TextureFormat::RGBA8); // todo handle HDR float
     if (imageContainer)
     {
         image->SetBits((unsigned char*)imageContainer->m_data, imageContainer->m_size);
@@ -399,7 +399,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
                     , 1
                     , 1
                     , (image->mNumFaces == 6) ? true : false
-                    , image->mNumMips
+                    , (image->mNumMips>1)
                     , image->GetBits()
                 );
 

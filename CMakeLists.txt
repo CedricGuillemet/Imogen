@@ -27,7 +27,6 @@ file(GLOB EXT_FILES_DESKTOP
     ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
-    ${CMAKE_SOURCE_DIR}/ext/SOIL/src/*.c
     ${CMAKE_SOURCE_DIR}/ext/ffmpegCodec/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
 )
@@ -107,7 +106,6 @@ include_directories(
   ${FFMPEG_INCLUDE_DIRS}
   ${PYTHON37_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/glm/
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/SOIL/include
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/Nvidia-SBVH
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/GLSL_Pathtracer/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpegCodec/

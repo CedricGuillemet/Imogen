@@ -5,7 +5,6 @@
 #include "Program.h"
 #include "GPUBVH.h"
 #include "Loader.h"
-#include "SOIL.h"
 
 namespace GLSLPathTracer
 {

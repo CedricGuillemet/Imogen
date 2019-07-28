@@ -31,13 +31,45 @@ freely, subject to the following restrictions:
 #include <iostream>
 #include <iterator>
 #include <algorithm>
-#include <SOIL.h>
 #include "linear_math.h"
 #include "Scene.h"
 #include "Camera.h"
-
+//#include "bgfx/stb_image_aug.h"
+unsigned char* stbi_load(char              const* filename, int* x, int* y, int* channels_in_file, int desired_channels)
+{
+	return 0;
+}
 namespace GLSLPathTracer
 {
+	enum
+	{
+		SOIL_LOAD_AUTO = 0,
+		SOIL_LOAD_L = 1,
+		SOIL_LOAD_LA = 2,
+		SOIL_LOAD_RGB = 3,
+		SOIL_LOAD_RGBA = 4
+	};
+
+	unsigned char*
+		SOIL_load_image
+		(
+			const char* filename,
+			int* width, int* height, int* channels,
+			int force_channels
+		)
+	{
+		unsigned char* result = stbi_load(filename,
+			width, height, channels, force_channels);
+		if (result == NULL)
+		{
+			//result_string_pointer = stbi_failure_reason();
+		}
+		else
+		{
+			//result_string_pointer = "Image loaded";
+		}
+		return result;
+	}
 
     #undef M_PI
     static const float M_PI = 3.14159265358979323846f;

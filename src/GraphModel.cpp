@@ -25,6 +25,7 @@
 
 #include <assert.h>
 #include <algorithm>
+#include <memory>
 #include "GraphModel.h"
 #include "UndoRedo.h"
 

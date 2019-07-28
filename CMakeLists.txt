@@ -7,7 +7,7 @@ SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Configuration types" FORCE)
 
-SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -172,6 +172,39 @@ SET(EXE_NAME "Imogen")
 
 ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DESKTOP})
 
+if (EMSCRIPTEN)
+add_definitions(-DEMSCRIPTEN)
+add_definitions(-D_X86_)
+set(EMS_OPTS "-s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy -g4 --source-map-base http://localhost:8000/")
+add_definitions(${EMS_OPTS})
+set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+set(EMS_PRELOAD " --preload-file DefaultLibrary.imogen --preload-file imgui.ini --preload-file Nodes --preload-file Stock")
+set(EMS_LINK "${EMS_OPTS} ${EMS_PRELOAD}")
+set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS ${EMS_LINK})
+#set_target_properties(${EXE_NAME} PROPERTIES COMPILE_FLAGS ${EMS_OPTS})
+
+add_custom_command(TARGET ${EXE_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/index.html ${CMAKE_CURRENT_BINARY_DIR}/index.html
+)
+
+# copy files and directories because packer doesn't know where to place then
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/DefaultLibrary.imogen ${CMAKE_CURRENT_BINARY_DIR}/
+)
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/imgui.ini ${CMAKE_CURRENT_BINARY_DIR}/
+)
+
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/Nodes ${CMAKE_CURRENT_BINARY_DIR}/Nodes
+)
+
+add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/Stock ${CMAKE_CURRENT_BINARY_DIR}/Stock
+)
+
+endif()
+
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build the BGFX examples.")
 set(BGFX_BUILD_TOOLS OFF CACHE BOOL "Build the BGFX tools.")
 add_subdirectory(${IMOGEN_BGFX_DIR}/)
@@ -212,37 +245,6 @@ add_definitions(-D_WIN32)
 add_definitions(-DNOMINMAX)
 endif()
 add_definitions(-DUSE_DL_PREFIX)
-
-if (EMSCRIPTEN)
-add_definitions(-DEMSCRIPTEN)
-add_definitions(-D_X86_)
-set(EMS_OPTS "-s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy -g4 --source-map-base http://localhost:8000/")
-add_definitions(${EMS_OPTS})
-set(EMS_PRELOAD " --preload-file DefaultLibrary.imogen --preload-file imgui.ini --preload-file Nodes --preload-file Stock")
-set(EMS_LINK "${EMS_OPTS} ${EMS_PRELOAD}")
-set_target_properties(${EXE_NAME} PROPERTIES LINK_FLAGS ${EMS_LINK})
-
-add_custom_command(TARGET ${EXE_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/index.html ${CMAKE_CURRENT_BINARY_DIR}/index.html
-)
-
-# copy files and directories because packer doesn't know where to place then
-add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/DefaultLibrary.imogen ${CMAKE_CURRENT_BINARY_DIR}/
-)
-add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/bin/imgui.ini ${CMAKE_CURRENT_BINARY_DIR}/
-)
-
-add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/Nodes ${CMAKE_CURRENT_BINARY_DIR}/Nodes
-)
-
-add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/bin/Stock ${CMAKE_CURRENT_BINARY_DIR}/Stock
-)
-
-endif()
 
 #--------------------------------------------------------------------
 # output dirs

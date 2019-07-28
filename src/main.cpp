@@ -133,16 +133,8 @@ void MakeThreadContext()
 {
     SDL_GL_MakeCurrent(glThreadWindow, glThreadContext);
 }
-#endif
 
-std::function<void(bool capturing)> renderImogenFrame;
-
-void RenderImogenFrame()
-{
-    renderImogenFrame(true);
-}
-
-inline bool sdlSetWindow(SDL_Window* _window)
+static bool sdlSetWindow(SDL_Window* _window)
 {
 	SDL_SysWMinfo wmi;
 	SDL_VERSION(&wmi.version);
@@ -170,6 +162,15 @@ inline bool sdlSetWindow(SDL_Window* _window)
 	bgfx::setPlatformData(pd);
 
 	return true;
+}
+
+#endif
+
+std::function<void(bool capturing)> renderImogenFrame;
+
+void RenderImogenFrame()
+{
+    renderImogenFrame(true);
 }
 
 // because of asynchornous local storage DB mount
@@ -209,13 +210,18 @@ int main_Async(int argc, char** argv)
     SDL_GetCurrentDisplayMode(0, &current);
     SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_MAXIMIZED);
     loopdata.mWindow = SDL_CreateWindow(IMOGENCOMPLETETITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+#ifndef __EMSCRIPTEN__
 	sdlSetWindow(loopdata.mWindow);
+#endif
 	bgfx::renderFrame();
 
+#ifndef __EMSCRIPTEN__
 	bgfx::Init init;
 	init.type = bgfx::RendererType::OpenGL;
 	bgfx::init(init);
-	
+#else
+	bgfx::init();
+#endif
 
 	// Enable debug text.
 	bgfx::setDebug(BGFX_DEBUG_TEXT /*| BGFX_DEBUG_STATS*/);

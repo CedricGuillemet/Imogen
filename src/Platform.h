@@ -75,6 +75,7 @@ struct TaskScheduler
 #elif WIN32
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
 #include <GL/gl3w.h>
 #include <stdio.h>
 #include <stdlib.h>

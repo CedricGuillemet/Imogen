@@ -27,7 +27,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_sdl.h"
-#include "imgui_impl_opengl3.h"
+#include "imgui_impl_bgfx.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -41,7 +41,10 @@
 #include "imMouseState.h"
 #include "UndoRedo.h"
 #include "Mem.h"
+#include <bgfx/bgfx.h>
+#include <bgfx/platform.h>
 
+bx::AllocatorI* getDefaultAllocator();
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.
 
@@ -139,6 +142,36 @@ void RenderImogenFrame()
     renderImogenFrame(true);
 }
 
+inline bool sdlSetWindow(SDL_Window* _window)
+{
+	SDL_SysWMinfo wmi;
+	SDL_VERSION(&wmi.version);
+	if (!SDL_GetWindowWMInfo(_window, &wmi)) {
+		return false;
+	}
+
+	bgfx::PlatformData pd;
+#if BX_PLATFORM_LINUX || BX_PLATFORM_BSD
+	pd.ndt = wmi.info.x11.display;
+	pd.nwh = (void*)(uintptr_t)wmi.info.x11.window;
+#elif BX_PLATFORM_OSX
+	pd.ndt = NULL;
+	pd.nwh = wmi.info.cocoa.window;
+#elif BX_PLATFORM_WINDOWS
+	pd.ndt = NULL;
+	pd.nwh = wmi.info.win.window;
+#elif BX_PLATFORM_STEAMLINK
+	pd.ndt = wmi.info.vivante.display;
+	pd.nwh = wmi.info.vivante.window;
+#endif // BX_PLATFORM_
+	pd.context = NULL;
+	pd.backBuffer = NULL;
+	pd.backBufferDS = NULL;
+	bgfx::setPlatformData(pd);
+
+	return true;
+}
+
 // because of asynchornous local storage DB mount
 #ifndef __EMSCRIPTEN__
 int main(int argc, char** argv)
@@ -172,51 +205,40 @@ int main_Async(int argc, char** argv)
     LoopData loopdata;
 
     // For the browser using Emscripten, we are going to use WebGL2 with GL ES3.
-    
-#ifdef __EMSCRIPTEN__
-    const char* glsl_version = "#version 100";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#elif __APPLE__
-    // GL 3.2 Core + GLSL 150
-    const char* glsl_version = "#version 150";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG); // Always required on Mac
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-#else
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-#endif
-
-    // Create window with graphics context
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
     SDL_DisplayMode current;
     SDL_GetCurrentDisplayMode(0, &current);
-    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_MAXIMIZED);
+    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_MAXIMIZED);
     loopdata.mWindow = SDL_CreateWindow(IMOGENCOMPLETETITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+	sdlSetWindow(loopdata.mWindow);
+	bgfx::renderFrame();
+
+	bgfx::Init init;
+	init.type = bgfx::RendererType::OpenGL;
+	bgfx::init(init);
+	
+
+	// Enable debug text.
+	bgfx::setDebug(BGFX_DEBUG_TEXT /*| BGFX_DEBUG_STATS*/);
+
+	// Set view 0 clear state.
+	bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+
+	bgfx::frame();
 #ifndef __EMSCRIPTEN__
     SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
     glThreadContext = SDL_GL_CreateContext(loopdata.mWindow);
     glThreadWindow = loopdata.mWindow;
 #endif
-    loopdata.mGLContext = SDL_GL_CreateContext(loopdata.mWindow);
+    /*loopdata.mGLContext = SDL_GL_CreateContext(loopdata.mWindow);
     if (!loopdata.mGLContext)
     {
         fprintf(stderr, "Failed to initialize GL context!\n");
         return 1;
-    }
-    SDL_GL_SetSwapInterval(1); // Enable vsync
+    }*/
+    //SDL_GL_SetSwapInterval(1); // Enable vsync
 
     // Initialize OpenGL loader
+	
 #ifndef __EMSCRIPTEN__
 #if GL_VERSION_3_2
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
@@ -237,6 +259,8 @@ int main_Async(int argc, char** argv)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+	//bx::AllocatorI* g_allocator = getDefaultAllocator();
+	//imguiCreate(16.f, g_allocator);
 
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";
@@ -248,7 +272,7 @@ int main_Async(int argc, char** argv)
 
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGui_Implbgfx_Init();
 
 #if USE_GLDEBUG
     // opengl debug
@@ -323,11 +347,15 @@ int main_Async(int argc, char** argv)
     SaveLib(&library, library.mFilename);
 
     // Cleanup
-    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_Implbgfx_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
+	//imguiDestroy();
 
     imogen.Finish(); // keep dock being saved
+
+	// Shutdown bgfx.
+	bgfx::shutdown();
 
     SDL_GL_DeleteContext(loopdata.mGLContext);
     SDL_DestroyWindow(loopdata.mWindow);
@@ -359,10 +387,20 @@ void MainLoop(void* arg)
             done = true;
         }
     }
-    
+	
+
     renderImogenFrame = [&](bool capturing) {
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
+		int width;
+		int height;
+		SDL_GetWindowSize(loopdata->mWindow, &width, &height);
+		auto stats = bgfx::getStats();
+		if (stats->width != width || stats->height != height)
+		{
+			bgfx::reset(width, height, BGFX_RESET_VSYNC);
+		}
+		io.DisplaySize = ImVec2(width, height);
+        
+		ImGui_Implbgfx_NewFrame();
         ImGui_ImplSDL2_NewFrame(loopdata->mWindow);
         ImGui::NewFrame();
 
@@ -376,23 +414,44 @@ void MainLoop(void* arg)
             ImMouseState();
         }
 
+
+		
+		
         // Rendering
         ImGui::Render();
-        SDL_GL_MakeCurrent(loopdata->mWindow, loopdata->mGLContext);
+        //SDL_GL_MakeCurrent(loopdata->mWindow, loopdata->mGLContext);
         // render everything
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(0);
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        //glUseProgram(0);
+		
+        //glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        //glClearColor(0., 0., 0., 0.);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glDisable(GL_DEPTH_TEST);
+        
+        
+		
+		
+		bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+		bgfx::touch(0);
+//		
+		ImGui::Render();
+		ImGui_Implbgfx_RenderDrawData(ImGui::GetDrawData());
+		//ImGuiBGFXRender(ImGui::GetDrawData());
 
-        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glClearColor(0., 0., 0., 0.);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glDisable(GL_DEPTH_TEST);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        g_TS.RunPinnedTasks();
+		/*bgfx::dbgTextClear();
+		
+		static int counter = 0;
+		bgfx::dbgTextPrintf(0, 1, 0x4f, "Counter:%d", counter++);
+		*/
+		bgfx::frame();
+		g_TS.RunPinnedTasks();
     };
 
+	
     renderImogenFrame(false);
-    SDL_GL_SwapWindow(loopdata->mWindow);
+	
+	
 #ifndef __EMSCRIPTEN__
     loopdata->mImogen->RunDeferedCommands();
 #endif

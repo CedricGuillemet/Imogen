@@ -425,7 +425,7 @@ struct Material
     uint32_t mBackgroundNode;
 
     // run time
-    unsigned int mThumbnailTextureId;
+	TextureHandle mThumbnailTextureHandle;
     unsigned int mRuntimeUniqueId;
 };
 

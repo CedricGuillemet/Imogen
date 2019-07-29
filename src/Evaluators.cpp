@@ -1586,7 +1586,7 @@ namespace EvaluationAPI
         if (material)
         {
             material->mThumbnail = pngImage;
-            material->mThumbnailTextureId = 0;
+			material->mThumbnailTextureHandle = {0};
         }
         return EVAL_OK;
     }
@@ -1756,6 +1756,7 @@ namespace EvaluationAPI
         image->mNumMips = img->mNumMips;
         image->mFormat = img->mFormat;
         image->mNumFaces = img->mNumFaces;
+		/* todogl
 #ifdef glGetTexImage
         unsigned char* ptr = image->GetBits();
         if (img->mNumFaces == 1)
@@ -1780,6 +1781,7 @@ namespace EvaluationAPI
             }
         }
 #endif
+*/
         return EVAL_OK;
     }
 

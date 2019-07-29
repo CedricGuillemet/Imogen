@@ -508,8 +508,10 @@ void OpenShellURL(const std::string& url)
 #endif
 }
 
-void GetTextureDimension(unsigned int textureId, int* w, int* h)
+void GetTextureDimension(TextureHandle textureId, int* w, int* h)
 {
+	*w = 256;
+	*h = 256;
     /* todogl
 	int miplevel = 0;
     glBindTexture(GL_TEXTURE_2D, textureId);

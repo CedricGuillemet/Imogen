@@ -76,7 +76,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             ((Imogen*)data_.userData)->DecodeThumbnailAsync(libraryMaterial);
             return {true,
                     true,
-                    (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId,
+                    (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureHandle.idx,
                     ImVec2(100, 100)};
         }
     }
@@ -89,14 +89,14 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             sscanf(url.c_str() + sz + 1, "%d%%", &percent);
             url = url.substr(0, sz);
         }
-        unsigned int textureId = gImageCache.GetTexture(url);
-        if (textureId)
+		TextureHandle textureHandle = gImageCache.GetTexture(url);
+        if (textureHandle.idx)
         {
             int w, h;
-            GetTextureDimension(textureId, &w, &h);
+            GetTextureDimension(textureHandle, &w, &h);
             return {true,
                     false,
-                    (ImTextureID)(uint64_t)textureId,
+                    (ImTextureID)(uint64_t)textureHandle.idx,
                     ImVec2(float(w * percent / 100), float(h * percent / 100)),
                     ImVec2(0.f, 1.f),
                     ImVec2(1.f, 0.f)};
@@ -212,7 +212,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
             else
             {
                 displayedTexture = (ImTextureID)(int64_t)(
-                    (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode) : 0);
+                    (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode).idx : 0);
                 if (displayedTexture)
                 {
                     auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
@@ -388,12 +388,12 @@ struct PinnedTaskUploadImage : PinnedTask
 
     virtual void Execute()
     {
-        unsigned int textureId = Image::Upload(mImage, 0);
+		TextureHandle textureHandle = Image::Upload(mImage, {0});
         if (mbIsThumbnail)
         {
             Material* material = library.Get(mIdentifier);
             if (material)
-                material->mThumbnailTextureId = textureId;
+                material->mThumbnailTextureHandle = textureHandle;
         }
         else
         {
@@ -521,10 +521,10 @@ struct DecodeImageTaskSet : TaskSet
 
 void Imogen::DecodeThumbnailAsync(Material* material)
 {
-    static unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
-    if (!material->mThumbnailTextureId)
+    static TextureHandle defaultTextureHandle = gImageCache.GetTexture("Stock/thumbnail-icon.png");
+    if (!material->mThumbnailTextureHandle.idx)
     {
-        material->mThumbnailTextureId = defaultTextureId;
+        material->mThumbnailTextureHandle = defaultTextureHandle;
         g_TS.AddTaskSetToPipe(
             new DecodeThumbnailTaskSet(&material->mThumbnail,
                                        std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId),
@@ -603,7 +603,7 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
                 break;
             case 1:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureHandle.idx), ImVec2(64, 64));
                 clicked = ImGui::IsItemClicked();
                 ImGui::SameLine();
                 ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
@@ -611,12 +611,12 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
                 break;
             case 2:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureHandle.idx), ImVec2(64, 64));
                 clicked = ImGui::IsItemClicked();
                 break;
             case 3:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(128, 128));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureHandle.idx), ImVec2(128, 128));
                 clicked = ImGui::IsItemClicked();
                 break;
         }
@@ -798,7 +798,7 @@ Material& Imogen::NewMaterial(const std::string& materialName)
     library.mMaterials.push_back(Material());
     Material& back = library.mMaterials.back();
     back.mName = materialName;
-    back.mThumbnailTextureId = 0;
+	back.mThumbnailTextureHandle = {0};
     back.mRuntimeUniqueId = GetRuntimeId();
 
     if (previousSelection != -1)
@@ -846,14 +846,14 @@ void Imogen::LibraryEdit(Library& library)
     }
     ImGui::SameLine();
 
-    unsigned int libraryViewTextureId = gImageCache.GetTexture("Stock/library-view.png");
+	TextureHandle libraryViewTextureHandle = gImageCache.GetTexture("Stock/library-view.png");
     static const ImVec2 iconSize(16.f, 16.f);
     for (int i = 0; i < 4; i++)
     {
         if (i)
             ImGui::SameLine();
         ImGui::PushID(99 + i);
-        if (ImGui::ImageButton((ImTextureID)(int64_t)libraryViewTextureId,
+        if (ImGui::ImageButton((ImTextureID)(int64_t)libraryViewTextureHandle.idx,
                                iconSize,
                                ImVec2(float(i) * 0.25f, 0.f),
                                ImVec2(float(i + 1) * 0.25f, 1.f),
@@ -1668,9 +1668,9 @@ int Imogen::GetFunctionByName(const char* functionName) const
     return -1;
 }
 
-bool Imogen::ImageButton(const char* functionName, unsigned int icon, ImVec2 size)
+bool Imogen::ImageButton(const char* functionName, TextureHandle icon, ImVec2 size)
 {
-    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon, size);
+    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon.idx, size);
     if (ImGui::IsItemHovered())
     {
         int functionIndex = GetFunctionByName(functionName);
@@ -1996,7 +1996,7 @@ void Imogen::ShowTitleBar(Builder* builder)
     ImGui::SameLine();
 
     // exporting frame / build
-    unsigned int buildIcon = gImageCache.GetTexture("Stock/Build.png");
+	TextureHandle buildIcon = gImageCache.GetTexture("Stock/Build.png");
     if (ImageButton("BuildMaterial", buildIcon, ImVec2(30, 30)))
     {
         BuildCurrentMaterial(builder);
@@ -2135,11 +2135,11 @@ void Imogen::ShowTimeLine()
         PlayPause();
     }
 
-    unsigned int playNoLoopTextureId = gImageCache.GetTexture("Stock/PlayNoLoop.png");
-    unsigned int playLoopTextureId = gImageCache.GetTexture("Stock/PlayLoop.png");
+	TextureHandle playNoLoopTextureHandle = gImageCache.GetTexture("Stock/PlayNoLoop.png");
+	TextureHandle playLoopTextureHandle = gImageCache.GetTexture("Stock/PlayLoop.png");
 
     ImGui::SameLine();
-    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureId : playNoLoopTextureId),
+    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureHandle.idx : playNoLoopTextureHandle.idx),
                            ImVec2(16.f, 16.f)))
     {
         mbPlayLoop = !mbPlayLoop;
@@ -2280,7 +2280,7 @@ void Imogen::ShowDebugWindow()
         for (auto& atlas : atlases)
         {
             ImGui::Text("Atlas %d", int(&atlas - atlases.data()));
-            ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID, ImVec2(1024, 1024));
+            ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID.idx, ImVec2(1024, 1024));
         }
     }
     if (ImGui::CollapsingHeader("Memory"))

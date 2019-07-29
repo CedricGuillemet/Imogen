@@ -322,7 +322,7 @@ void LoadLib(Library* library, const std::string& filename)
 
     for (auto& material : library->mMaterials)
     {
-        material.mThumbnailTextureId = 0;
+		material.mThumbnailTextureHandle = {0};
         material.mRuntimeUniqueId = GetRuntimeId();
         for (auto& node : material.mMaterialNodes)
         {

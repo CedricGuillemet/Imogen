@@ -299,21 +299,19 @@ int Image::Free(Image* image)
     return EVAL_OK;
 }
 
-unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeFace, int mipmap)
+TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int cubeFace, int mipmap)
 {
-	/* todogl
     bool allocTexture = false;
-    if (!textureId)
+    if (!textureHandle.idx)
     {
-        glGenTextures(1, &textureId);
+        //glGenTextures(1, &textureId);
+		
     }
-    unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
-    glBindTexture(targetType, textureId);
+	assert(!textureHandle.idx);
+	assert(cubeFace == -1);
 
-    unsigned int inputFormat = glInputFormats[image->mFormat];
-    unsigned int internalFormat = glInternalFormats[image->mFormat];
 	unsigned int texelSize = textureFormatSize[image->mFormat];
-
+	assert(texelSize == 4);
 	unsigned int offset = 0;
 	if (image->mNumFaces > 1)
 	{
@@ -330,6 +328,35 @@ unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeF
 		offset += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
 	}
 
+	uint16_t w = uint16_t(image->mWidth >> mipmap);
+	uint16_t h = uint16_t(image->mHeight >> mipmap);
+	
+	TextureHandle texture = bgfx::createTexture2D(
+		w
+		, h
+		, (image->mNumMips > 1)
+		, image->mNumMips
+		, bgfx::TextureFormat::RGBA8
+		, mipmap
+		, bgfx::copy(image->GetBits() + offset, w * h * texelSize)
+	);
+
+	if (allocTexture)
+	{
+		vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * textureFormatSize[image->mFormat]);
+	}
+
+	return texture;
+	/*
+    unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
+    glBindTexture(targetType, textureId);
+
+    unsigned int inputFormat = glInputFormats[image->mFormat];
+    unsigned int internalFormat = glInternalFormats[image->mFormat];
+	
+
+	
+
     glTexImage2D((cubeFace == -1) ? GL_TEXTURE_2D : glCubeFace[cubeFace],
 				 mipmap,
                  internalFormat,
@@ -340,13 +367,11 @@ unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeF
                  GL_UNSIGNED_BYTE,
                  image->GetBits() + offset);
     TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
-    if (allocTexture)
-    {
-        vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * textureFormatSize[image->mFormat]);
-    }
+
     glBindTexture(targetType, 0);
-	*/
+	
     return textureId;
+	*/
 }
 
 int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename)
@@ -511,22 +536,22 @@ void DefaultShaders::Init()
             : 0;
 }
 
-unsigned int ImageCache::GetTexture(const std::string& filename)
+TextureHandle ImageCache::GetTexture(const std::string& filename)
 {
     auto iter = mSynchronousTextureCache.find(filename);
     if (iter != mSynchronousTextureCache.end())
         return iter->second;
 
     Image image;
-    unsigned int textureId = 0;
+	TextureHandle textureHandle;
     if (Image::Read(filename.c_str(), &image) == EVAL_OK)
     {
-        textureId = Image::Upload(&image, 0);
+		textureHandle = Image::Upload(&image, {0});
         Image::Free(&image);
     }
 
-    mSynchronousTextureCache[filename] = textureId;
-    return textureId;
+    mSynchronousTextureCache[filename] = textureHandle;
+    return textureHandle;
 }
 
 Image* ImageCache::GetImage(const std::string& filepath)
@@ -610,9 +635,9 @@ void RenderTarget::Destroy()
     }
 	*/
     mFbo = 0;
-    mGLTexDepth = 0;
+	mGLTexDepth = {0};
     mImage->mWidth = mImage->mHeight = 0;
-    mGLTexID = 0;
+	mGLTexID = {0};
 }
 
 void RenderTarget::Clone(const RenderTarget& other)

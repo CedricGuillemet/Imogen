@@ -34,6 +34,10 @@
 #define IMOGENTITLE "Imogen 0.14 "
 #define IMOGENCOMPLETETITLE IMOGENTITLE BUILDTYPE
 
+#include <bgfx/bgfx.h>
+
+typedef bgfx::TextureHandle TextureHandle;
+
 #ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>

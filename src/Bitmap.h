@@ -149,7 +149,7 @@ struct Image
 
     static int Read(const char* filename, Image* image);
     static int Free(Image* image);
-    static unsigned int Upload(const Image* image, unsigned int textureId, int cubeFace = -1, int mipmap = 0);
+    static TextureHandle Upload(const Image* image, TextureHandle textureHandle, int cubeFace = -1, int mipmap = 0);
     static int LoadSVG(const char* filename, Image* image, float dpi);
     static int ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename = nullptr);
     static void VFlip(Image* image);
@@ -170,12 +170,12 @@ struct ImageCache
 {
     // synchronous texture cache
     // use for simple textures(stock) or to replace with a more efficient one
-    unsigned int GetTexture(const std::string& filename);
+	TextureHandle GetTexture(const std::string& filename);
     Image* GetImage(const std::string& filepath);
     void AddImage(const std::string& filepath, Image* image);
 
 protected:
-    std::map<std::string, unsigned int> mSynchronousTextureCache;
+    std::map<std::string, TextureHandle> mSynchronousTextureCache;
     std::map<std::string, Image> mImageCache;
     std::mutex mCacheAccess;
 };
@@ -198,7 +198,7 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 class RenderTarget
 {
 public:
-    RenderTarget() : mGLTexID(0), mGLTexDepth(0), mFbo(0), mDepthBuffer(0)
+    RenderTarget() : /*mGLTexID(0), mGLTexDepth(0),*/ mFbo(0), mDepthBuffer(0)
     {
         mImage = std::make_shared<Image>();
     }
@@ -215,8 +215,8 @@ public:
 
 
     std::shared_ptr<Image> mImage;
-    unsigned int mGLTexID;
-    unsigned int mGLTexDepth;
+	TextureHandle mGLTexID = {0};
+	TextureHandle mGLTexDepth = {0};
     unsigned int mDepthBuffer;
     unsigned int mFbo;
 };

@@ -28,6 +28,7 @@
 #include <float.h>
 #include <vector>
 #include <math.h>
+#include "Platform.h"
 
 typedef unsigned int TextureID;
 static const int SemUV0 = 0;
@@ -821,7 +822,7 @@ void IMessageBox(const char* text, const char* title);
 void DiscoverFiles(const char* extension, const char* directory, std::vector<std::string>& files);
 
 void OpenShellURL(const std::string& url);
-void GetTextureDimension(unsigned int textureId, int* w, int* h);
+void GetTextureDimension(TextureHandle textureId, int* w, int* h);
 
 std::string GetName(const std::string& name);
 std::string GetGroup(const std::string& name);

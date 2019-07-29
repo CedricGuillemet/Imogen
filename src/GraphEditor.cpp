@@ -854,7 +854,7 @@ static bool DrawNode(ImDrawList* drawList,
     drawList->PopClipRect();
 
 
-    const ImTextureID bmpInfo = (ImTextureID)(uint64_t)delegate->GetBitmapInfo(nodeIndex);
+    const ImTextureID bmpInfo = (ImTextureID)(uint64_t)delegate->GetBitmapInfo(nodeIndex).idx;
     if (bmpInfo)
     {
         ImVec2 bmpInfoPos(node_rect_max - ImVec2(26, 12));

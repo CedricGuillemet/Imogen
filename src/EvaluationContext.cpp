@@ -137,9 +137,9 @@ void EvaluationThumbnails::DelThumb(const Thumb thumb)
     atlas.mUsedCount --;
 }
 
-void EvaluationThumbnails::GetThumb(const Thumb thumb, unsigned int& textureId, ImRect& uvs) const
+void EvaluationThumbnails::GetThumb(const Thumb thumb, TextureHandle& textureHandle, ImRect& uvs) const
 {
-    textureId = mAtlases[thumb.mAtlasIndex].mTarget.mGLTexID;
+    textureHandle = mAtlases[thumb.mAtlasIndex].mTarget.mGLTexID;
     uvs = ComputeUVFromIndexInAtlas(thumb.mThumbIndex);
 }
 
@@ -300,12 +300,12 @@ void EvaluationContext::Clear()
     mInputNodeIndex = -1;
 }
 
-unsigned int EvaluationContext::GetEvaluationTexture(size_t nodeIndex) const
+TextureHandle EvaluationContext::GetEvaluationTexture(size_t nodeIndex) const
 {
     assert (nodeIndex < mEvaluations.size());
     const auto& tgt = mEvaluations[nodeIndex].mTarget;
     if (!tgt)
-        return 0;
+		return {0};
     return tgt->mGLTexID;
 }
 
@@ -949,7 +949,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
         {
             evaluation.mTarget = CreateRenderTarget(nodeIndex);
         }
-        if (!evaluation.mTarget->mGLTexID)
+        if (!evaluation.mTarget->mGLTexID.idx)
         {
             evaluation.mTarget->InitBuffer(mDefaultWidth, mDefaultHeight, evaluation.mbDepthBuffer);
         }

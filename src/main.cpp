@@ -217,7 +217,7 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
 	bgfx::Init init;
-	init.type = bgfx::RendererType::OpenGL;
+	init.type = bgfx::RendererType::Count;//OpenGL;
 	bgfx::init(init);
 #else
 	bgfx::init();
@@ -242,25 +242,6 @@ int main_Async(int argc, char** argv)
         return 1;
     }*/
     //SDL_GL_SetSwapInterval(1); // Enable vsync
-
-    // Initialize OpenGL loader
-	
-#ifndef __EMSCRIPTEN__
-#if GL_VERSION_3_2
-#if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-    bool err = gl3wInit() != 0;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-    bool err = glewInit() != GLEW_OK;
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-    bool err = gladLoadGL() == 0;
-#endif
-    if (err)
-    {
-        fprintf(stderr, "Failed to initialize OpenGL loader!\n");
-        return 1;
-    }
-#endif
-#endif // __EMSCRIPTEN__
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -336,6 +317,53 @@ int main_Async(int argc, char** argv)
     gBuilder = loopdata.mBuilder = &builder;
     InitFonts();
     imogen.SetExistingMaterialActive(".default");
+
+	std::string infoTitle = IMOGENCOMPLETETITLE;
+	switch (bgfx::getCaps()->vendorId)
+	{
+		case BGFX_PCI_ID_NVIDIA:
+			infoTitle += " - NVIDIA";
+			break;
+		case BGFX_PCI_ID_AMD:
+			infoTitle += " - AMD";
+			break;
+		case BGFX_PCI_ID_INTEL:
+			infoTitle += " - Intel";
+			break;
+		default:
+			break;
+	}
+	switch (bgfx::getCaps()->rendererType)
+	{
+	case bgfx::RendererType::Direct3D9:    //!< Direct3D 9.0
+		infoTitle += " - Direct3D 9";
+		break;
+	case bgfx::RendererType::Direct3D11:   //!< Direct3D 11.0
+		infoTitle += " - Direct3D 11";
+		break;
+	case bgfx::RendererType::Direct3D12:   //!< Direct3D 12.0
+		infoTitle += " - Direct3D 12";
+		break;
+	case bgfx::RendererType::Gnm:          //!< GNM
+		infoTitle += " - GNM";
+		break;
+	case bgfx::RendererType::Metal:        //!< Metal
+		infoTitle += " - Metal";
+		break;
+	case bgfx::RendererType::Nvn:          //!< NVN
+		infoTitle += " - NVM";
+		break;
+	case bgfx::RendererType::OpenGLES:     //!< OpenGL ES 2.0+
+		infoTitle += " - OpenGL ES";
+		break;
+	case bgfx::RendererType::OpenGL:       //!< OpenGL 2.1+
+		infoTitle += " - OpenGL";
+		break;
+	case bgfx::RendererType::Vulkan:       //!< Vulkan
+		infoTitle += " - Vulkan";
+		break;
+	}
+	SDL_SetWindowTitle(loopdata.mWindow, infoTitle.c_str());
 
 #ifdef __EMSCRIPTEN__
     HideLoader();

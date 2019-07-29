@@ -481,7 +481,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     }
 
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
-    const unsigned int program = evaluator.mGLSLProgram;
+    const ProgramHandle program = evaluator.mShaderProgram;
     const auto& evaluation = mEvaluations[nodeIndex];
 
     // allocate buffer
@@ -593,7 +593,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     const auto& evaluation = mEvaluations[nodeIndex];
     const auto tgt = evaluation.mTarget;
     const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
-    const unsigned int program = evaluator.mGLSLProgram;
+    const ProgramHandle program = evaluator.mShaderProgram;
     const int blendOps[] = {evaluation.mBlendingSrc, evaluation.mBlendingDst};
     const auto& parameters = mEvaluationStages.GetParameters(nodeIndex);
     const auto nodeType = mEvaluationStages.GetNodeType(nodeIndex);
@@ -601,7 +601,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     // todogl
 	//unsigned int blend[] = {GL_ONE, GL_ZERO};
 
-    if (!program)
+    if (!program.idx)
     {
 		// todogl
         //glUseProgram(gDefaultShader.mNodeErrorShader);

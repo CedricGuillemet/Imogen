@@ -523,17 +523,17 @@ void DefaultShaders::Init()
         prgStr.good()
             ? LoadShader(std::string(std::istreambuf_iterator<char>(prgStr), std::istreambuf_iterator<char>()),
                          "progressShader")
-            : 0;
+		: ProgramHandle{0};
     mDisplayCubemapShader =
         cubStr.good()
             ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()),
                          "cubeDisplay")
-            : 0;
+		: ProgramHandle{0};
     mNodeErrorShader =
         nodeErrStr.good()
             ? LoadShader(std::string(std::istreambuf_iterator<char>(nodeErrStr), std::istreambuf_iterator<char>()),
                          "nodeError")
-            : 0;
+		: ProgramHandle{0};
 }
 
 TextureHandle ImageCache::GetTexture(const std::string& filename)

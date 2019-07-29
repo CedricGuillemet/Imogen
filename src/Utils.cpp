@@ -87,8 +87,22 @@ void FullScreenTriangle::Finish()
 	*/
 }
 
-unsigned int LoadShader(const std::string& shaderString, const char* fileName)
+ProgramHandle LoadShader(const std::string& shaderString, const char* fileName)
 {
+	std::string vs = /*"#define VERTEX_SHADER\n" +*/ shaderString;
+	std::string fs = "#define FRAGMENT_SHADER\n" + shaderString;
+	bgfx::ShaderHandle vsh = bgfx::createShader(bgfx::copy(vs.c_str(), uint32_t(vs.size())));
+	bgfx::ShaderHandle fsh = bgfx::createShader(bgfx::copy(fs.c_str(), uint32_t(fs.size())));
+	if (isValid(vsh))
+	{
+		bgfx::setName(vsh, fileName);
+	}
+	if (isValid(fsh))
+	{
+		bgfx::setName(fsh, fileName);
+	}
+	return bgfx::createProgram(vsh, fsh, true /* destroy shaders when program is destroyed */);
+
     /* todogl
 	TextureID programObject = glCreateProgram();
     if (programObject == 0)
@@ -184,11 +198,10 @@ unsigned int LoadShader(const std::string& shaderString, const char* fileName)
     // attributes
     return programObject;
 	*/
-	return 0;
 }
 
 
-unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const char* filename)
+ProgramHandle LoadShaderTransformFeedback(const std::string& shaderString, const char* filename)
 {
 	/*todogl
     GLuint programHandle = glCreateProgram();
@@ -233,7 +246,7 @@ unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const 
 
     return programHandle;
 	*/
-	return 0;
+	return {0};
 }
 
 

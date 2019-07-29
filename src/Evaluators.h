@@ -72,10 +72,10 @@ struct EvaluationInfo
 
 struct Evaluator
 {
-    Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0)
+	Evaluator() : mShaderProgram({0}), mCFunction(0), mMem(0)
     {
     }
-    unsigned int mGLSLProgram;
+	ProgramHandle mShaderProgram;
     int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
     void* mMem;
 #if USE_PYTHON    
@@ -114,14 +114,14 @@ struct Evaluators
     protected:
         struct EvaluatorScript
     {
-        EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mType(-1)
+			EvaluatorScript() : mProgram({0}), mCFunction(0), mMem(0), mType(-1)
         {
         }
-        EvaluatorScript(const std::string& text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mType(-1)
+		EvaluatorScript(const std::string& text) : mText(text), mProgram({0}), mCFunction(0), mMem(0), mType(-1)
         {
         }
         std::string mText;
-        unsigned int mProgram;
+		ProgramHandle mProgram;
         int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
         void* mMem;
         int mType;

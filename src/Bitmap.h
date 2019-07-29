@@ -184,10 +184,10 @@ extern ImageCache gImageCache;
 struct DefaultShaders
 {
     // ui callback shaders
-    unsigned int mProgressShader;
-    unsigned int mDisplayCubemapShader;
+	ProgramHandle mProgressShader;
+	ProgramHandle mDisplayCubemapShader;
     // error shader
-    unsigned int mNodeErrorShader;
+	ProgramHandle mNodeErrorShader;
 
     void Init();
 };

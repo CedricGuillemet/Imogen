@@ -56,8 +56,8 @@ void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, Texture
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
 
-unsigned int LoadShader(const std::string& shaderString, const char* fileName);
-unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const char* fileName);
+ProgramHandle LoadShader(const std::string& shaderString, const char* fileName);
+ProgramHandle LoadShaderTransformFeedback(const std::string& shaderString, const char* fileName);
 
 
 typedef void (*LogOutput)(const char* szText);

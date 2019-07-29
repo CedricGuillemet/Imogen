@@ -37,6 +37,8 @@
 #include <bgfx/bgfx.h>
 
 typedef bgfx::TextureHandle TextureHandle;
+typedef bgfx::ShaderHandle ShaderHandle;
+typedef bgfx::ProgramHandle ProgramHandle;
 
 #ifdef __EMSCRIPTEN__
 

@@ -1,21 +1,21 @@
-#ifdef VERTEX_SHADER
+#include "Stock/Shaders/bgfx_shader.sh"
+//#ifdef VERTEX_SHADER
 
-layout(location = 0)in vec2 inUV;
-out vec2 vUV;
+$input inUV;
+$output vUV;
 
 void main()
 { 
 	gl_Position = vec4(inUV.xy*2.0 - 1.0,0.5,1.0); vUV = inUV; 
 }
-
+/*
 #endif
 
 #ifdef FRAGMENT_SHADER
 
 uniform float time;
 #define PI 3.1415926
-layout(location = 0) out vec4 outPixDiffuse;
-in vec2 vUV;
+$input vUV;
 
 void main() 
 {
@@ -50,7 +50,8 @@ void main()
 	col = mix(vec4(colorbg, 1.0), col, smoothstep(c1size, c1size+th, length(c1pos)));
 	col = mix(vec4(colorbg, 1.0), col, smoothstep(c2size, c2size+th, length(c2pos)));
 	
-	outPixDiffuse = vec4(col.rgb, 1.0); 
+	gl_FragColor = vec4(col.rgb, 1.0); 
 }
 
 #endif
+*/

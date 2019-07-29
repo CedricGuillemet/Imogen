@@ -31,10 +31,12 @@
 
 void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode)
 {
-    glTexParameteri(texMode, GL_TEXTURE_MIN_FILTER, MinFilter);
+    /* todogl
+	glTexParameteri(texMode, GL_TEXTURE_MIN_FILTER, MinFilter);
     glTexParameteri(texMode, GL_TEXTURE_MAG_FILTER, MagFilter);
     glTexParameteri(texMode, GL_TEXTURE_WRAP_S, WrapS);
     glTexParameteri(texMode, GL_TEXTURE_WRAP_T, WrapT);
+	*/
 }
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to)
@@ -50,7 +52,8 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 
 void FullScreenTriangle::Init()
 {
-    float fsVts[] = {0.f, 0.f, 2.f, 0.f, 0.f, 2.f};
+    /* todogl
+	float fsVts[] = {0.f, 0.f, 2.f, 0.f, 0.f, 2.f};
     glGenBuffers(1, &mFsVA);
     glBindBuffer(GL_ARRAY_BUFFER, mFsVA);
     glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(float) * 2, fsVts, GL_STATIC_DRAW);
@@ -64,24 +67,30 @@ void FullScreenTriangle::Init()
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	*/
 }
 
 void FullScreenTriangle::Render()
 {
-    glBindVertexArray(mGLFullScreenVertexArrayName);
+    /* todogl
+	glBindVertexArray(mGLFullScreenVertexArrayName);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glBindVertexArray(0);
+	*/
 }
 
 void FullScreenTriangle::Finish()
 {
-    glDeleteBuffers(1, &mFsVA);
+    /* todogl
+	glDeleteBuffers(1, &mFsVA);
     glDeleteVertexArrays(1, &mGLFullScreenVertexArrayName);
+	*/
 }
 
 unsigned int LoadShader(const std::string& shaderString, const char* fileName)
 {
-    TextureID programObject = glCreateProgram();
+    /* todogl
+	TextureID programObject = glCreateProgram();
     if (programObject == 0)
         return 0;
 
@@ -174,11 +183,14 @@ unsigned int LoadShader(const std::string& shaderString, const char* fileName)
 
     // attributes
     return programObject;
+	*/
+	return 0;
 }
 
 
 unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const char* filename)
 {
+	/*todogl
     GLuint programHandle = glCreateProgram();
     GLuint vsHandle = glCreateShader(GL_VERTEX_SHADER);
 
@@ -220,6 +232,8 @@ unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const 
     glLinkProgram(programHandle);
 
     return programHandle;
+	*/
+	return 0;
 }
 
 
@@ -496,12 +510,14 @@ void OpenShellURL(const std::string& url)
 
 void GetTextureDimension(unsigned int textureId, int* w, int* h)
 {
-    int miplevel = 0;
+    /* todogl
+	int miplevel = 0;
     glBindTexture(GL_TEXTURE_2D, textureId);
     #ifdef GL_TEXTURE_WIDTH
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, w);
     glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, h);
     #endif
+	*/
 }
 
 std::string GetGroup(const std::string& name)

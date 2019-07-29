@@ -38,7 +38,6 @@
 
 #include <emscripten.h>
 #include <SDL.h>
-#include <GLES3/gl3.h>
 
 #define USE_SDL 1
 
@@ -76,7 +75,6 @@ struct TaskScheduler
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_syswm.h>
-#include <GL/gl3w.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <io.h>
@@ -90,7 +88,6 @@ struct TaskScheduler
 
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
-#define USE_GLDEBUG 1
 #define USE_SDL 1
 
 typedef enki::IPinnedTask PinnedTask;
@@ -101,7 +98,6 @@ typedef enki::TaskScheduler TaskScheduler;
 #elif __linux__
 
 #include <SDL2/SDL.h>
-#include <GL/gl3w.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -114,7 +110,6 @@ typedef enki::TaskScheduler TaskScheduler;
 
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
-#define USE_GLDEBUG 1
 #define USE_SDL 1
 
 typedef enki::IPinnedTask PinnedTask;

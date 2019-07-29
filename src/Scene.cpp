@@ -29,7 +29,9 @@
 
 void Scene::Mesh::Primitive::Draw() const
 {
-    unsigned int vao;
+    /*
+	todogl
+	unsigned int vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
@@ -80,25 +82,31 @@ void Scene::Mesh::Primitive::Draw() const
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     glDeleteVertexArrays(1, &vao);
+	*/
 }
+
 void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count)
 {
-    unsigned int va;
+    /* todogl
+	unsigned int va;
     glGenBuffers(1, &va);
     glBindBuffer(GL_ARRAY_BUFFER, va);
     glBufferData(GL_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     mBuffers.push_back({ va, format, stride, count });
+	*/
 }
 
 void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int stride, unsigned int count)
 {
-    unsigned int ia;
+    /* todogl
+	unsigned int ia;
     glGenBuffers(1, &ia);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ia);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     mIndexBuffer = { ia, stride, count };
+	*/
 }
 void Scene::Mesh::Draw() const
 {
@@ -115,12 +123,13 @@ void Scene::Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) con
         if (index == -1)
             continue;
 
-        glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
+        /*todogl
+		glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
         memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
         FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
+		*/
         mMeshes[index].Draw();
     }
 }

@@ -261,7 +261,8 @@ void UICallbackNodeInserted(size_t nodeIndex)
 static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 {
     // Backup GL state
-    GLenum last_active_texture;
+    /* todogl
+	GLenum last_active_texture;
     glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
     glActiveTexture(GL_TEXTURE0);
     GLint last_program;
@@ -355,6 +356,7 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	*/
 }
 
 void InitCallbackRects()

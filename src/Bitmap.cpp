@@ -32,6 +32,7 @@
 #include <bimg/encode.h>
 #include <bx/allocator.h>
 #include <bx/file.h>
+#include <bgfx/bgfx.h>
 #include "JSGlue.h"
 
 #define NANOSVG_ALL_COLOR_KEYWORDS // Include full list of color keywords.
@@ -127,6 +128,7 @@ const unsigned int glInternalFormats[] = {
     GL_RGBA, // RGBM
 };
 #else
+/* todogl
 const unsigned int glInputFormats[] = {
     GL_RGB,
     GL_RGB,
@@ -159,8 +161,11 @@ const unsigned int glInternalFormats[] = {
 
     GL_RGBA, // RGBM
 };
-
+*/
+const unsigned int glInputFormats[12] = { 0 };
+const unsigned int glInternalFormats[12] = { 0 };
 #endif
+/* todogl
 const unsigned int glCubeFace[] = {
     GL_TEXTURE_CUBE_MAP_POSITIVE_X,
     GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -169,6 +174,7 @@ const unsigned int glCubeFace[] = {
     GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
     GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
 };
+*/
 const unsigned int textureFormatSize[] = {3, 3, 6, 6, 12, 4, 4, 4, 8, 8, 16, 4};
 const unsigned int textureComponentCount[] = {3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4};
 
@@ -176,14 +182,15 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
 {
     w &= 0xFFFFFFFC;
     h &= 0xFFFFFFFC;
-
+	
+	/* todogl
     int viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
-
+	*/
     unsigned char* imgBits = new unsigned char[w * h * 4];
-
+	/*todogl
     glReadPixels(x, viewport[3] - y - h, w, h, GL_RGB, GL_UNSIGNED_BYTE, imgBits);
-
+	*/
     bx::FileWriter writer;
     bx::Error err;
 
@@ -294,6 +301,7 @@ int Image::Free(Image* image)
 
 unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeFace, int mipmap)
 {
+	/* todogl
     bool allocTexture = false;
     if (!textureId)
     {
@@ -337,6 +345,7 @@ unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeF
         vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * textureFormatSize[image->mFormat]);
     }
     glBindTexture(targetType, 0);
+	*/
     return textureId;
 }
 
@@ -546,26 +555,35 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
 
 void RenderTarget::BindAsTarget() const
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
+    /* todogl
+	glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
     glViewport(0, 0, mImage->mWidth, mImage->mHeight);
+	*/
 }
 
 void RenderTarget::BindAsCubeTarget() const
 {
-    glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
+    /* todogl
+	
+	glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
+	*/
 }
 
 void RenderTarget::BindCubeFace(size_t face, int mipmap, int faceWidth)
 {
-    glFramebufferTexture2D(
+    /* todogl
+	glFramebufferTexture2D(
         GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face), mGLTexID, mipmap);
     glViewport(0, 0, faceWidth >> mipmap, faceWidth >> mipmap);
+	*/
 }
 
 void RenderTarget::Destroy()
 {
-    if (mGLTexID)
+    /*
+	todogl
+	if (mGLTexID)
     {
         glDeleteTextures(1, &mGLTexID);
         vramTextureFree(mImage->mWidth * mImage->mHeight * 4);
@@ -590,6 +608,7 @@ void RenderTarget::Destroy()
     {
         glDeleteRenderbuffers(1, &mDepthBuffer);
     }
+	*/
     mFbo = 0;
     mGLTexDepth = 0;
     mImage->mWidth = mImage->mHeight = 0;
@@ -626,7 +645,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     mImage->mNumMips = 1;
     mImage->mNumFaces = 1;
     mImage->mFormat = TextureFormat::RGBA8;
-
+	/* todogl
     glGenFramebuffers(1, &mFbo);
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
 
@@ -662,6 +681,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     glClear(GL_COLOR_BUFFER_BIT | (depthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+	*/
 }
 
 void RenderTarget::InitCube(int width, int mipmapCount)
@@ -682,6 +702,8 @@ void RenderTarget::InitCube(int width, int mipmapCount)
     mImage->mNumFaces = 6;
     mImage->mFormat = TextureFormat::RGBA8;
 
+	/*
+	todogl
     glGenFramebuffers(1, &mFbo);
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
 
@@ -710,10 +732,12 @@ void RenderTarget::InitCube(int width, int mipmapCount)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, mGLTexID, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     CheckFBO();
+	*/
 }
 
 void RenderTarget::CheckFBO()
 {
+	/* todogl
     glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
 
     int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -730,15 +754,7 @@ void RenderTarget::CheckFBO()
         case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
             Log("[ERROR] Framebuffer incomplete: No image is attached to FBO.");
             break;
-            /*
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            Log("[ERROR] Framebuffer incomplete: Attached images have different dimensions.");
-            break;
 
-            case GL_FRAMEBUFFER_INCOMPLETE_FORMATS:
-            Log("[ERROR] Framebuffer incomplete: Color attached images have different internal formats.");
-            break;
-            */
 #ifdef GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
         case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
             Log("[ERROR] Framebuffer incomplete: Draw buffer.\n");
@@ -759,4 +775,5 @@ void RenderTarget::CheckFBO()
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	*/
 }

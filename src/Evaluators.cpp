@@ -1226,6 +1226,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
 
         unsigned int program = LoadShader(shaderText, filename.c_str());
+		/*todogl
         int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 1);
@@ -1233,7 +1234,7 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
-
+			*/
         shader.mProgram = program;
         if (shader.mType != -1)
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
@@ -1263,14 +1264,15 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
             program = LoadShaderTransformFeedback(shader.mText, filename.c_str());
         }
 
-        int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
+        /* todogl
+		int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 1);
 
         parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
         if (parameterBlockIndex != -1)
             glUniformBlockBinding(program, parameterBlockIndex, 2);
-
+			*/
         shader.mProgram = program;
         if (shader.mType != -1)
             mEvaluatorPerNodeType[shader.mType].mGLSLProgram = program;
@@ -1329,8 +1331,9 @@ void Evaluators::ClearEvaluators()
     // clear
     for (auto& program : mEvaluatorPerNodeType)
     {
-        if (program.mGLSLProgram)
+        /* todogl if (program.mGLSLProgram)
             glDeleteProgram(program.mGLSLProgram);
+			*/
         if (program.mMem)
             free(program.mMem);
     }
@@ -1793,7 +1796,7 @@ namespace EvaluationAPI
         unsigned int internalFormat = glInternalFormats[image->mFormat];
         unsigned char* ptr = image->GetBits();
         
-		TextureID texType = GL_TEXTURE_2D;
+		TextureID texType = 0;// todogl GL_TEXTURE_2D;
 		if (image->mNumFaces == 1)
 		{
 			tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
@@ -1801,7 +1804,7 @@ namespace EvaluationAPI
 		else
 		{
 			tgt->InitCube(image->mWidth, image->mNumMips);
-			texType = GL_TEXTURE_CUBE_MAP;
+			texType = 0;// todogl GL_TEXTURE_CUBE_MAP;
 		}
 		for (int face = 0; face < image->mNumFaces; face++)
 		{
@@ -1811,7 +1814,7 @@ namespace EvaluationAPI
 				Image::Upload(image, tgt->mGLTexID, cubeFace, i);
 			}
 		}
-
+		/* todogl
 		if (image->mNumMips > 1)
 		{
 			TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, texType);
@@ -1820,7 +1823,7 @@ namespace EvaluationAPI
 		{
 			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, texType);
 		}
-
+		*/
 #if USE_FFMPEG
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
 		{
@@ -1878,7 +1881,7 @@ namespace EvaluationAPI
                                        scene->texData.metallicRoughnessTexCount * 3 +
                                    scene->texData.normalTextureSize.x * scene->texData.normalTextureSize.y *
                                        scene->texData.normalTexCount * 3 +
-                                   scene->hdrLoaderRes.width * scene->hdrLoaderRes.height * sizeof(GL_FLOAT) * 3;
+                                   scene->hdrLoaderRes.width * scene->hdrLoaderRes.height * sizeof(float) * 3;
 
         Log("GPU Memory used for Textures: %d MB\n", tex_data_bytes / 1048576);
 
@@ -1930,9 +1933,10 @@ namespace EvaluationAPI
         float progress = renderer->getProgress();
         evaluationContext->StageSetProgress(target, progress);
         bool renderDone = progress >= 1.f - FLT_EPSILON;
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        /* todogl
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glUseProgram(0);
-
+		*/
         if (renderDone)
         {
             evaluationContext->StageSetProcessing(target, false);

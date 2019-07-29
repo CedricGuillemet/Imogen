@@ -292,7 +292,7 @@ int Image::Free(Image* image)
     return EVAL_OK;
 }
 
-unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeFace)
+unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeFace, int mipmap)
 {
     bool allocTexture = false;
     if (!textureId)
@@ -304,19 +304,37 @@ unsigned int Image::Upload(const Image* image, unsigned int textureId, int cubeF
 
     unsigned int inputFormat = glInputFormats[image->mFormat];
     unsigned int internalFormat = glInternalFormats[image->mFormat];
+	unsigned int texelSize = textureFormatSize[image->mFormat];
+
+	unsigned int offset = 0;
+	if (image->mNumFaces > 1)
+	{
+		for (int face = 0; face < cubeFace; face++)
+		{
+			for (int i = 0; i < image->mNumMips; i++)
+			{
+				offset += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
+			}
+		}
+	}
+	for (int i = 0; i < mipmap; i++)
+	{
+		offset += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
+	}
+
     glTexImage2D((cubeFace == -1) ? GL_TEXTURE_2D : glCubeFace[cubeFace],
-                 0,
+				 mipmap,
                  internalFormat,
-                 image->mWidth,
-                 image->mHeight,
+                 image->mWidth >> mipmap,
+                 image->mHeight >> mipmap,
                  0,
                  inputFormat,
                  GL_UNSIGNED_BYTE,
-                 image->GetBits());
+                 image->GetBits() + offset);
     TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
     if (allocTexture)
     {
-        vramTextureAlloc(image->mWidth * image->mHeight * textureFormatSize[image->mFormat]);
+        vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * textureFormatSize[image->mFormat]);
     }
     glBindTexture(targetType, 0);
     return textureId;

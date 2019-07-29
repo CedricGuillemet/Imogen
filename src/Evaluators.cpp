@@ -1792,62 +1792,41 @@ namespace EvaluationAPI
         unsigned int inputFormat = glInputFormats[image->mFormat];
         unsigned int internalFormat = glInternalFormats[image->mFormat];
         unsigned char* ptr = image->GetBits();
-        if (image->mNumFaces == 1)
-        {
-            tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
+        
+		TextureID texType = GL_TEXTURE_2D;
+		if (image->mNumFaces == 1)
+		{
+			tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
+		}
+		else
+		{
+			tgt->InitCube(image->mWidth, image->mNumMips);
+			texType = GL_TEXTURE_CUBE_MAP;
+		}
+		for (int face = 0; face < image->mNumFaces; face++)
+		{
+			int cubeFace = (image->mNumFaces == 1)?-1:face;
+			for (int i = 0; i < image->mNumMips; i++)
+			{
+				Image::Upload(image, tgt->mGLTexID, cubeFace, i);
+			}
+		}
 
-            glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
+		if (image->mNumMips > 1)
+		{
+			TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, texType);
+		}
+		else
+		{
+			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, texType);
+		}
 
-            for (int i = 0; i < image->mNumMips; i++)
-            {
-                glTexImage2D(GL_TEXTURE_2D,
-                             i,
-                             internalFormat,
-                             image->mWidth >> i,
-                             image->mHeight >> i,
-                             0,
-                             inputFormat,
-                             GL_UNSIGNED_BYTE,
-                             ptr);
-                ptr += (image->mWidth >> i) * (image->mHeight >> i) * texelSize;
-            }
-
-            if (image->mNumMips > 1)
-                TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
-            else
-                TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
-        }
-        else
-        {
-            tgt->InitCube(image->mWidth, image->mNumMips);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
-
-            for (int face = 0; face < image->mNumFaces; face++)
-            {
-                for (int i = 0; i < image->mNumMips; i++)
-                {
-                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                                 i,
-                                 internalFormat,
-                                 image->mWidth >> i,
-                                 image->mWidth >> i,
-                                 0,
-                                 inputFormat,
-                                 GL_UNSIGNED_BYTE,
-                                 ptr);
-                    ptr += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
-                }
-            }
-
-            if (image->mNumMips > 1)
-                TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
-            else
-                TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
-        }
-        #if USE_FFMPEG
+#if USE_FFMPEG
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
+		{
             stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
-            #endif
+		}
+#endif
         evaluationContext->SetTargetDirty(target, Dirty::Input, true);
         return EVAL_OK;
     }

@@ -77,9 +77,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             return {true,
                     true,
                     (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId,
-                    ImVec2(100, 100),
-                    ImVec2(0.f, 1.f),
-                    ImVec2(1.f, 0.f)};
+                    ImVec2(100, 100)};
         }
     }
     else
@@ -605,7 +603,7 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
                 break;
             case 1:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64));
                 clicked = ImGui::IsItemClicked();
                 ImGui::SameLine();
                 ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
@@ -613,12 +611,12 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
                 break;
             case 2:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64), ImVec2(0, 1), ImVec2(1, 0));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64));
                 clicked = ImGui::IsItemClicked();
                 break;
             case 3:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(128, 128), ImVec2(0, 1), ImVec2(1, 0));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(128, 128));
                 clicked = ImGui::IsItemClicked();
                 break;
         }
@@ -1672,7 +1670,7 @@ int Imogen::GetFunctionByName(const char* functionName) const
 
 bool Imogen::ImageButton(const char* functionName, unsigned int icon, ImVec2 size)
 {
-    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon, size, ImVec2(0, 1), ImVec2(1, 0));
+    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon, size);
     if (ImGui::IsItemHovered())
     {
         int functionIndex = GetFunctionByName(functionName);

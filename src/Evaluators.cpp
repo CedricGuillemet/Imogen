@@ -546,9 +546,9 @@ void Evaluators::ClearEvaluators()
     for (auto& program : mEvaluatorPerNodeType)
     {
         if (program.mGLSLProgram)
+		{
             glDeleteProgram(program.mGLSLProgram);
-        if (program.mMem)
-            free(program.mMem);
+		}
     }
 }
 

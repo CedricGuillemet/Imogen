@@ -70,12 +70,11 @@ struct EvaluationInfo
 
 struct Evaluator
 {
-    Evaluator() : mGLSLProgram(0), mCFunction(0), mMem(0)
+    Evaluator() : mGLSLProgram(0), mCFunction(0)
     {
     }
     unsigned int mGLSLProgram;
     int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
-    void* mMem;
 #if USE_PYTHON    
     pybind11::module mPyModule;
 
@@ -112,16 +111,15 @@ struct Evaluators
     protected:
     struct EvaluatorScript
     {
-        EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mType(-1)
+        EvaluatorScript() : mProgram(0), mCFunction(0), mType(-1)
         {
         }
-        EvaluatorScript(const std::string& text) : mText(text), mProgram(0), mCFunction(0), mMem(0), mType(-1)
+        EvaluatorScript(const std::string& text) : mText(text), mProgram(0), mCFunction(0), mType(-1)
         {
         }
         std::string mText;
         unsigned int mProgram;
         int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
-        void* mMem;
         int mType;
 #if USE_PYTHON        
         pybind11::module mPyModule;

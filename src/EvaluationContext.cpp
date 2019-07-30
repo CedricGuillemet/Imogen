@@ -773,12 +773,12 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-void EvaluationContext::EvaluateJS(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
+void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
     try
     {
         const Evaluator& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
-        int res = evaluator.RunJS((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
+        int res = evaluator.mCFunction((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
         if (res == EVAL_DIRTY)
         {
             mStillDirty.push_back(uint32_t(nodeIndex));
@@ -789,6 +789,7 @@ void EvaluationContext::EvaluateJS(const EvaluationStage& evaluationStage, size_
         printf("Duktape exception %s\n", e.what());
     }
 }
+
 #if USE_PYTHON
 void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
                                        size_t index,
@@ -891,9 +892,9 @@ void EvaluationContext::RunNode(size_t nodeIndex)
     SetKeyboardMouseInfos(mEvaluationInfo);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 
-    if (evaluationMask & EvaluationJS)
+    if (evaluationMask & EvaluationC)
     {
-        EvaluateJS(currentStage, nodeIndex, mEvaluationInfo);
+        EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
     }
 #ifdef USE_PYTHON
     if (evaluationMask & EvaluationPython)

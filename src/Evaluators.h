@@ -31,7 +31,6 @@
 #if USE_PYTHON
 #include "pybind11/embed.h"
 #endif
-#include "duktape/duktape.h"
 
 struct EvaluationContext;
 
@@ -40,8 +39,7 @@ enum EvaluationMask
     EvaluationC = 1 << 0,
     EvaluationGLSL = 1 << 1,
     EvaluationPython = 1 << 2,
-    EvaluationGLSLCompute = 1 << 3,
-    EvaluationJS = 1 << 4,
+    EvaluationGLSLCompute = 1 << 3
 };
 
 struct EvaluationInfo
@@ -85,10 +83,10 @@ struct Evaluator
 #endif
 
     std::string mName;
-    int RunJS(unsigned char* parametersBuffer, const EvaluationInfo *evaluationInfo, EvaluationContext *context) const;
-    duk_context* m_ctx;
     size_t mNodeType;
 };
+
+typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
 
 struct Evaluators
 {
@@ -112,7 +110,7 @@ struct Evaluators
 #endif
     static void ReloadPlugins();
     protected:
-        struct EvaluatorScript
+    struct EvaluatorScript
     {
         EvaluatorScript() : mProgram(0), mCFunction(0), mMem(0), mType(-1)
         {
@@ -132,7 +130,6 @@ struct Evaluators
 
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<Evaluator> mEvaluatorPerNodeType;
-    duk_context* m_ctx;
 };
 
 extern Evaluators gEvaluators;

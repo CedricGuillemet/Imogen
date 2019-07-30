@@ -68,13 +68,15 @@ struct EvaluationInfo
     int mipmapCount;
 };
 
+typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
+
 struct Evaluator
 {
     Evaluator() : mGLSLProgram(0), mCFunction(0)
     {
     }
     unsigned int mGLSLProgram;
-    int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
+	NodeFunction mCFunction;
 #if USE_PYTHON    
     pybind11::module mPyModule;
 
@@ -84,8 +86,6 @@ struct Evaluator
     std::string mName;
     size_t mNodeType;
 };
-
-typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
 
 struct Evaluators
 {
@@ -119,7 +119,7 @@ struct Evaluators
         }
         std::string mText;
         unsigned int mProgram;
-        int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
+		NodeFunction mCFunction;
         int mType;
 #if USE_PYTHON        
         pybind11::module mPyModule;

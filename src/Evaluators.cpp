@@ -538,6 +538,13 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
     }
 #endif
+
+	extern std::map<std::string, NodeFunction> nodeFunctions;
+	for (auto& func : nodeFunctions)
+	{
+		EvaluatorScript& shader = mEvaluatorScripts[func.first];
+		shader.mCFunction = func.second;
+	}
 }
 
 void Evaluators::ClearEvaluators()

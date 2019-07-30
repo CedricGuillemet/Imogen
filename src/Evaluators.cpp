@@ -562,29 +562,34 @@ void Evaluators::ClearEvaluators()
 int Evaluators::GetMask(size_t nodeType)
 {
     const std::string& nodeName = gMetaNodes[nodeType].mName;
-    mEvaluatorPerNodeType[nodeType].mName = nodeName;
-    mEvaluatorPerNodeType[nodeType].mNodeType = nodeType;
+	auto& evalNode = mEvaluatorPerNodeType[nodeType];
+	if (evalNode.mMask > -1)
+	{
+		return evalNode.mMask;
+	}
+	evalNode.mName = nodeName;
+	evalNode.mNodeType = nodeType;
     int mask = 0;
     auto iter = mEvaluatorScripts.find(nodeName + ".glsl");
     if (iter != mEvaluatorScripts.end())
     {
         mask |= EvaluationGLSL;
         iter->second.mType = int(nodeType);
-        mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
+		evalNode.mGLSLProgram = iter->second.mProgram;
     }
     iter = mEvaluatorScripts.find(nodeName + ".glslc");
     if (iter != mEvaluatorScripts.end())
     {
         mask |= EvaluationGLSLCompute;
         iter->second.mType = int(nodeType);
-        mEvaluatorPerNodeType[nodeType].mGLSLProgram = iter->second.mProgram;
+		evalNode.mGLSLProgram = iter->second.mProgram;
     }
     iter = mEvaluatorScripts.find(nodeName);
     if (iter != mEvaluatorScripts.end())
     {
         mask |= EvaluationC;
         iter->second.mType = int(nodeType);
-		mEvaluatorPerNodeType[nodeType].mCFunction = iter->second.mCFunction;
+		evalNode.mCFunction = iter->second.mCFunction;
     }
 #if USE_PYTHON
     iter = mEvaluatorScripts.find(nodeName + ".py");
@@ -592,9 +597,10 @@ int Evaluators::GetMask(size_t nodeType)
     {
         mask |= EvaluationPython;
         iter->second.mType = int(nodeType);
-        mEvaluatorPerNodeType[nodeType].mPyModule = iter->second.mPyModule;
+		evalNode.mPyModule = iter->second.mPyModule;
     }
 #endif
+	evalNode.mMask = mask;
     return mask;
 }
 

@@ -72,7 +72,7 @@ typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, Evaluat
 
 struct Evaluator
 {
-    Evaluator() : mGLSLProgram(0), mCFunction(0)
+    Evaluator() : mGLSLProgram(0), mCFunction(0), mMask(-1)
     {
     }
     unsigned int mGLSLProgram;
@@ -85,6 +85,7 @@ struct Evaluator
 
     std::string mName;
     size_t mNodeType;
+	int mMask;
 };
 
 struct Evaluators

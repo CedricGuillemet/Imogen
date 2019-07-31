@@ -11,15 +11,19 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-file(GLOB_RECURSE SRC_FILES
+file(GLOB SRC_FILES
     ${CMAKE_SOURCE_DIR}/src/*.h
     ${CMAKE_SOURCE_DIR}/src/*.cpp
 )
 file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
-	${CMAKE_SOURCE_DIR}/ext/duktape/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
+)
+
+file(GLOB NODE_FILES
+    ${CMAKE_SOURCE_DIR}/src/Nodes/*.h
+    ${CMAKE_SOURCE_DIR}/src/Nodes/*.cpp
 )
 
 if (NOT EMSCRIPTEN)
@@ -32,6 +36,8 @@ file(GLOB EXT_FILES_DESKTOP
 )
 set(SDL2_LIBRARIES "SDL2" "SDL2main")
 endif()
+
+source_group("Nodes"            FILES ${NODE_FILES})
 
 if(WIN32)
 set(NFD_FILES ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_win.cpp)
@@ -98,6 +104,7 @@ endif()
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Nodes
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
   ${SDL2_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/gl3w
@@ -168,7 +175,7 @@ endif()
 SET(LINK_OPTIONS " ")
 SET(EXE_NAME "Imogen")
 
-ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DESKTOP})
+ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DESKTOP} ${NODE_FILES})
 
 if (EMSCRIPTEN)
 add_definitions(-DEMSCRIPTEN)

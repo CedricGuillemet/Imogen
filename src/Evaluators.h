@@ -31,7 +31,6 @@
 #if USE_PYTHON
 #include "pybind11/embed.h"
 #endif
-#include "duktape/duktape.h"
 
 struct EvaluationContext;
 
@@ -40,8 +39,7 @@ enum EvaluationMask
     EvaluationC = 1 << 0,
     EvaluationGLSL = 1 << 1,
     EvaluationPython = 1 << 2,
-    EvaluationGLSLCompute = 1 << 3,
-    EvaluationJS = 1 << 4,
+    EvaluationGLSLCompute = 1 << 3
 };
 
 struct EvaluationInfo
@@ -70,14 +68,16 @@ struct EvaluationInfo
     int mipmapCount;
 };
 
+typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
+
 struct Evaluator
 {
-	Evaluator() : mShaderProgram({0}), mCFunction(0), mMem(0)
+	Evaluator() : mShaderProgram({0}), mCFunction(0), mMask(-1)
     {
     }
 	ProgramHandle mShaderProgram;
-    int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
-    void* mMem;
+	NodeFunction mCFunction;
+
 #if USE_PYTHON    
     pybind11::module mPyModule;
 
@@ -85,9 +85,8 @@ struct Evaluator
 #endif
 
     std::string mName;
-    int RunJS(unsigned char* parametersBuffer, const EvaluationInfo *evaluationInfo, EvaluationContext *context) const;
-    duk_context* m_ctx;
     size_t mNodeType;
+	int mMask;
 };
 
 struct Evaluators
@@ -112,19 +111,19 @@ struct Evaluators
 #endif
     static void ReloadPlugins();
     protected:
-        struct EvaluatorScript
+    struct EvaluatorScript
     {
-			EvaluatorScript() : mProgram({0}), mCFunction(0), mMem(0), mType(-1)
+		EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1)
         {
         }
-		EvaluatorScript(const std::string& text) : mText(text), mProgram({0}), mCFunction(0), mMem(0), mType(-1)
+		EvaluatorScript(const std::string& text) : mText(text), mProgram({0}), mCFunction(0), mType(-1)
         {
         }
         std::string mText;
 		ProgramHandle mProgram;
-        int (*mCFunction)(void* parameters, void* evaluationInfo, void* context);
-        void* mMem;
+		NodeFunction mCFunction;
         int mType;
+
 #if USE_PYTHON        
         pybind11::module mPyModule;
 #endif
@@ -132,7 +131,6 @@ struct Evaluators
 
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<Evaluator> mEvaluatorPerNodeType;
-    duk_context* m_ctx;
 };
 
 extern Evaluators gEvaluators;

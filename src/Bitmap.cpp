@@ -437,7 +437,8 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         switch (format)
         {
         case 0: // jpeg
-            bimg::imageWriteJpg(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, quality, &err);
+            //bimg::imageWriteJpg(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, quality, &err);
+            break;
         case 1: // png
             bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
             break;

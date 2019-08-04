@@ -170,7 +170,6 @@ struct EvaluationContext
     void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
 
     EvaluationStages& mEvaluationStages;
-    FullScreenTriangle mFSQuad;
     unsigned int mEvaluationStateGLSLBuffer;
     void DirtyAll();
 

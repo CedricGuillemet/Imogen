@@ -41,6 +41,8 @@
 #include "cgltf.h"
 #include "GraphControler.h"
 #include <functional>
+#include <bgfx/embedded_shader.h>
+#include "EmbeddedShaders.cpp"
 
 Evaluators gEvaluators;
 

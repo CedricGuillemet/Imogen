@@ -1,26 +1,16 @@
-#include "Stock/Shaders/bgfx_shader.sh"
-//#ifdef VERTEX_SHADER
+$input v_texcoord0, v_color0, v_positionWorld, v_normal
 
-$input inUV;
-$output vUV;
+#include "bgfx_shader.sh"
+#include "CommonFS.shader"
+#include "Common.shader"
+
+uniform float u_time;
+
 
 void main()
-{ 
-	gl_Position = vec4(inUV.xy*2.0 - 1.0,0.5,1.0); vUV = inUV; 
-}
-/*
-#endif
-
-#ifdef FRAGMENT_SHADER
-
-uniform float time;
-#define PI 3.1415926
-$input vUV;
-
-void main() 
 {
-	vec2 npos = vUV-0.5;
-	float mixcontrol = sin(time);
+	vec2 npos = v_texcoord0-vec2(0.5, 0.5);
+	float mixcontrol = sin(u_time);
 	if (mixcontrol < 0.0) 
 	{ 
 		mixcontrol = pow(1.0 - abs(mixcontrol), 3.0) - 1.0; 
@@ -31,18 +21,20 @@ void main()
 	}
 
 	mixcontrol = mixcontrol * 0.5 + 0.5;
-	float c1time = time * 2.0;
+	float c1time = u_time * 2.0;
 	vec2 c1pos = npos + vec2(sin(c1time), cos(c1time)) * 0.24;
 	float c1size = 0.05;
-	float c2time = time * 2.0 + PI;
+	float c2time = u_time * 2.0 + PI;
 	vec2 c2pos = npos + vec2(sin(c2time), cos(c2time)) * 0.24;
 	float c2size = 0.05;
 	c1pos = mix(npos, c1pos, mixcontrol);
 	c1size = mix(0.25, c1size, mixcontrol);
 	c2pos = mix(npos, c2pos, 1.0 - mixcontrol);
 	c2size = mix(0.25, c2size, 1.0 - mixcontrol);
-	vec3 colorbg = vec3(60.0 / 255.0);
-	vec3 colorfg = vec3(250.0 / 255.0);
+	float c1 = 60.0 / 255.0;
+	float c2 = 250.0 / 255.0;
+	vec3 colorbg = vec3(c1, c1, c1);
+	vec3 colorfg = vec3(c2, c2, c2);
 	vec4 col = vec4(colorbg, 1.0);
 	
 	float th = 0.01;
@@ -52,6 +44,3 @@ void main()
 	
 	gl_FragColor = vec4(col.rgb, 1.0); 
 }
-
-#endif
-*/

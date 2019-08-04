@@ -85,6 +85,12 @@ void Scene::Mesh::Primitive::Draw() const
 	*/
 }
 
+
+Scene::Mesh::Primitive::~Primitive()
+{
+	bgfx::destroy(mVbh);
+	bgfx::destroy(mIbh);
+}
 void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count)
 {
     /* todogl
@@ -95,6 +101,26 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     mBuffers.push_back({ va, format, stride, count });
 	*/
+	mDecl.begin();
+	switch (format)
+	{
+	case Format::UV:
+		mDecl.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
+		break;
+	case Format::COL:
+		mDecl.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float);
+		break;
+	case Format::POS:
+		mDecl.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
+		break;
+	case Format::NORM:
+		mDecl.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
+		break;
+	}
+	mDecl.end();
+
+	mVbh = bgfx::createVertexBuffer(bgfx::copy(data, stride * count), mDecl);
+	mVertexCount = count;
 }
 
 void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int stride, unsigned int count)
@@ -107,7 +133,11 @@ void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int strid
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     mIndexBuffer = { ia, stride, count };
 	*/
+
+	mIbh = bgfx::createIndexBuffer(bgfx::copy(data, stride* count), (stride == 4)?BGFX_BUFFER_INDEX32:0);
+	mIndexCount = count;
 }
+
 void Scene::Mesh::Draw() const
 {
     for (auto& prim : mPrimitives)
@@ -146,8 +176,11 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     auto& mesh = defaultScene->mMeshes.back();
     mesh.mPrimitives.resize(1);
     auto& prim = mesh.mPrimitives.back();
-    static const float fsVts[] = { 0.f, 0.f, 2.f, 0.f, 0.f, 2.f };
+    //static const float fsVts[] = { 0.f, 0.f, 0.f, 2.f, 0.f, 0.f, 0.f, 2.f, 0.f };
+	static const float fsVts[] = { 0.f, 0.f, 2.f, 0.f, 0.f, 2.f};
+	static const uint16_t fsIdx[] = { 0, 1, 2 };
     prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 3);
+	prim.AddIndexBuffer(fsIdx, 2, 3);
     // add node and transform
     defaultScene->mWorldTransforms.resize(1);
     defaultScene->mWorldTransforms[0].Identity();

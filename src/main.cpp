@@ -43,6 +43,30 @@
 #include "Mem.h"
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
+#include <bgfx/embedded_shader.h>
+#include "Scene.h"
+
+#include "C:\Users\cedri\Dev\test\Color.dx11.h"
+#include "C:\Users\cedri\Dev\test\Color.dx9.h"
+#include "C:\Users\cedri\Dev\test\Color.esl.h"
+#include "C:\Users\cedri\Dev\test\Color.glsl.h"
+#include "C:\Users\cedri\Dev\test\Color.mtl.h"
+#include "C:\Users\cedri\Dev\test\Color.spv.h"
+#include "C:\Users\cedri\Dev\test\NodeVS.dx11.h"
+#include "C:\Users\cedri\Dev\test\NodeVS.dx9.h"
+#include "C:\Users\cedri\Dev\test\NodeVS.esl.h"
+#include "C:\Users\cedri\Dev\test\NodeVS.glsl.h"
+#include "C:\Users\cedri\Dev\test\NodeVS.mtl.h"
+#include "C:\Users\cedri\Dev\test\NodeVS.spv.h"
+
+
+static const bgfx::EmbeddedShader s_embeddedShaders[] =
+{
+	BGFX_EMBEDDED_SHADER(ColorFS),
+	BGFX_EMBEDDED_SHADER(NodeVS),
+
+	BGFX_EMBEDDED_SHADER_END()
+};
 
 bx::AllocatorI* getDefaultAllocator();
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
@@ -66,6 +90,10 @@ Library library;
 UndoRedoHandler gUndoRedoHandler;
 
 TaskScheduler g_TS;
+
+std::shared_ptr<Scene> scene;
+bgfx::ProgramHandle m_programT;
+
 
 #if USE_GLDEBUG
 void APIENTRY openglCallbackFunction(GLenum /*source*/,
@@ -217,7 +245,7 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
 	bgfx::Init init;
-	init.type = bgfx::RendererType::Count;//OpenGL;
+	init.type = bgfx::RendererType::Vulkan;//:OpenGL;
 	bgfx::init(init);
 #else
 	bgfx::init();
@@ -365,6 +393,16 @@ int main_Async(int argc, char** argv)
 	}
 	SDL_SetWindowTitle(loopdata.mWindow, infoTitle.c_str());
 
+
+	bgfx::RendererType::Enum type = bgfx::getRendererType();
+	m_programT = bgfx::createProgram(
+		bgfx::createEmbeddedShader(s_embeddedShaders, type, "NodeVS")
+		, bgfx::createEmbeddedShader(s_embeddedShaders, type, "ColorFS")
+		, true
+	);
+
+	scene = Scene::BuildDefaultScene();
+
 #ifdef __EMSCRIPTEN__
     HideLoader();
     // This function call won't return, and will engage in an infinite loop, processing events from the browser, and dispatching them.
@@ -478,6 +516,23 @@ void MainLoop(void* arg)
 		static int counter = 0;
 		bgfx::dbgTextPrintf(0, 1, 0x4f, "Counter:%d", counter++);
 		*/
+		bgfx::ViewId m_viewId = 255;
+
+		uint64_t state = 0
+			| BGFX_STATE_WRITE_RGB
+			| BGFX_STATE_WRITE_A
+			//| BGFX_STATE_MSAA
+			| BGFX_STATE_DEPTH_TEST_ALWAYS
+			//BGFX_STATE_PT_TRISTRIP*/
+			;
+
+		bgfx::setState(state);
+		auto& prim = scene->mMeshes[0].mPrimitives[0];
+		bgfx::setVertexBuffer(0, prim.mVbh);
+		bgfx::setIndexBuffer(prim.mIbh);
+		bgfx::submit(255, m_programT);
+
+
 		bgfx::frame();
 		g_TS.RunPinnedTasks();
     };

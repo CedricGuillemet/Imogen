@@ -516,7 +516,7 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 
 void DefaultShaders::Init()
 {
-    std::ifstream prgStr("Stock/ProgressingNode.glsl");
+    /*std::ifstream prgStr("Stock/ProgressingNode.glsl");
     std::ifstream cubStr("Stock/DisplayCubemap.glsl");
     std::ifstream nodeErrStr("Stock/NodeError.glsl");
 
@@ -535,6 +535,7 @@ void DefaultShaders::Init()
             ? LoadShader(std::string(std::istreambuf_iterator<char>(nodeErrStr), std::istreambuf_iterator<char>()),
                          "nodeError")
 		: ProgramHandle{0};
+		*/
 }
 
 TextureHandle ImageCache::GetTexture(const std::string& filename)

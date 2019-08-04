@@ -198,8 +198,6 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
     , mRuntimeUniqueId(-1)
     , mInputNodeIndex(-1)
 {
-    mFSQuad.Init();
-
     // evaluation statedes
     /* todogl
 	glGenBuffers(1, &mEvaluationStateGLSLBuffer);
@@ -226,8 +224,6 @@ EvaluationContext::~EvaluationContext()
     
     mWriteStreams.clear();
 #endif
-    mFSQuad.Finish();
-
 
 	/* todogl
     glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
@@ -604,9 +600,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     if (!program.idx)
     {
 		// todogl
-        //glUseProgram(gDefaultShader.mNodeErrorShader);
-        // mFSQuad.Render();
-        evaluationStage.mGScene->Draw(this, evaluationInfo);
+        //evaluationStage.mGScene->Draw(this, evaluationInfo);
         return;
     }
     for (int i = 0; i < 2; i++)

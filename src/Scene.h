@@ -49,6 +49,7 @@ struct Scene
                 UV = 1 << 3,
             };
         };
+		/*
         struct Buffer
         {
             unsigned int id;
@@ -62,10 +63,18 @@ struct Scene
             unsigned int stride;
             unsigned int count;
         };
+		*/
         struct Primitive
         {
-            std::vector<Buffer> mBuffers;
-            IndexBuffer mIndexBuffer = { 0, 0, 0 };
+			~Primitive();
+            //std::vector<Buffer> mBuffers;
+            //IndexBuffer mIndexBuffer = { 0, 0, 0 };
+			bgfx::VertexBufferHandle mVbh;
+			bgfx::IndexBufferHandle mIbh;
+			bgfx::VertexDecl mDecl;
+
+			uint32_t mVertexCount;
+			uint32_t mIndexCount;
             void AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count);
             void AddIndexBuffer(const void* data, unsigned int stride, unsigned int count);
             void Draw() const;

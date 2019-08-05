@@ -35,12 +35,14 @@
 #define IMOGENCOMPLETETITLE IMOGENTITLE BUILDTYPE
 
 #include <bgfx/bgfx.h>
+#include <bimg/bimg.h>
 
 typedef bgfx::TextureHandle TextureHandle;
 typedef bgfx::ShaderHandle ShaderHandle;
 typedef bgfx::ProgramHandle ProgramHandle;
 typedef bgfx::FrameBufferHandle FrameBufferHandle;
 typedef bgfx::UniformHandle UniformHandle;
+typedef bimg::TextureFormat::Enum TextureFormat;
 
 #ifdef __EMSCRIPTEN__
 

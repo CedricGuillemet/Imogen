@@ -78,7 +78,7 @@ struct Evaluators
     void SetEvaluators();
     static void InitPython();
     int GetMask(size_t nodeType) const;
-    void ClearEvaluators();
+    void Clear();
 
     void InitPythonModules();
 #if USE_PYTHON    
@@ -91,6 +91,7 @@ struct Evaluators
 		EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1), mMask(0)
         {
         }
+		void Clear();
 
 		ProgramHandle mProgram;
 		NodeFunction mCFunction;
@@ -111,8 +112,11 @@ struct Evaluators
 protected:
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
+	std::vector<ShaderHandle> mShaderHandles;
 public:
 	ProgramHandle mBlitProgram;
+	std::vector<UniformHandle> mSamplers2D;
+	std::vector<UniformHandle> mSamplersCube;
 };
 
 extern Evaluators gEvaluators;
@@ -131,7 +135,7 @@ namespace EvaluationAPI
     int AllocateImage(Image* image);
 
     // static int Evaluate(int target, int width, int height, Image *image);
-    void SetBlendingMode(EvaluationContext* evaluationContext, int target, int blendSrc, int blendDst);
+    void SetBlendingMode(EvaluationContext* evaluationContext, int target, uint64_t blendSrc, uint64_t blendDst);
     void EnableDepthBuffer(EvaluationContext* evaluationContext, int target, int enable);
     void EnableFrameClear(EvaluationContext* evaluationContext, int target, int enable);
     void SetVertexSpace(EvaluationContext* evaluationContext, int target, int vertexSpace);

@@ -52,30 +52,6 @@ bx::AllocatorI* getDefaultAllocator()
     return &s_allocator;
 }
 
-bimg::TextureFormat::Enum GetBIMGFormat(TextureFormat::Enum format)
-{
-    switch (format)
-    {
-    case TextureFormat::BGR8: return bimg::TextureFormat::RGB8;
-    case TextureFormat::RGB8: return bimg::TextureFormat::RGB8;
-    case TextureFormat::RGB16: assert(0);
-    case TextureFormat::RGB16F: assert(0);
-    case TextureFormat::RGB32F: assert(0);
-    case TextureFormat::RGBE: return bimg::TextureFormat::RGB8;
-
-    case TextureFormat::BGRA8: return bimg::TextureFormat::BGRA8;
-    case TextureFormat::RGBA8: return bimg::TextureFormat::RGBA8;
-    case TextureFormat::RGBA16: return bimg::TextureFormat::RGBA16;
-    case TextureFormat::RGBA16F: assert(0);
-    case TextureFormat::RGBA32F: return bimg::TextureFormat::RGBA32F;
-
-    case TextureFormat::RGBM: return bimg::TextureFormat::RGB8;
-    default:
-        break;
-    }
-    return bimg::TextureFormat::Unknown;
-}
-
 bimg::Quality::Enum GetQuality(int quality)
 {
     switch (quality)
@@ -92,90 +68,6 @@ bimg::Quality::Enum GetQuality(int quality)
         return bimg::Quality::Default;
     }
 }
-
-#ifdef GL_BGR
-const unsigned int glInputFormats[] = {
-    GL_BGR,
-    GL_RGB,
-    GL_RGB16,
-    GL_RGB16F,
-    GL_RGB32F,
-    GL_RGBA, // RGBE
-
-    GL_BGRA,
-    GL_RGBA,
-    GL_RGBA16,
-    GL_RGBA16F,
-    GL_RGBA32F,
-
-    GL_RGBA, // RGBM
-};
-const unsigned int glInternalFormats[] = {
-    GL_RGB,
-    GL_RGB,
-    GL_RGB16,
-    GL_RGB16F,
-    GL_RGB32F,
-    GL_RGBA, // RGBE
-
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA16,
-    GL_RGBA16F,
-    GL_RGBA32F,
-
-    GL_RGBA, // RGBM
-};
-#else
-/* todogl
-const unsigned int glInputFormats[] = {
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGBA, // RGBE
-
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-
-    GL_RGBA, // RGBM
-};
-const unsigned int glInternalFormats[] = {
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGBA, // RGBE
-
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-
-    GL_RGBA, // RGBM
-};
-*/
-const unsigned int glInputFormats[12] = { 0 };
-const unsigned int glInternalFormats[12] = { 0 };
-#endif
-/* todogl
-const unsigned int glCubeFace[] = {
-    GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-};
-*/
-const unsigned int textureFormatSize[] = {3, 3, 6, 6, 12, 4, 4, 4, 8, 8, 16, 4};
-const unsigned int textureComponentCount[] = {3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4};
 
 void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
 {
@@ -210,7 +102,7 @@ Image Image::DecodeImage(FFMPEGCodec::Decoder* decoder, int frame)
     image.mDecoder = decoder;
     image.mNumMips = 1;
     image.mNumFaces = 1;
-    image.mFormat = TextureFormat::BGR8;
+    image.mFormat = TextureFormat::RGB8; // todo:shoud be bgr8
     image.mWidth = int(decoder->mWidth);
     image.mHeight = int(decoder->mHeight);
     size_t lineSize = image.mWidth * 3;
@@ -310,7 +202,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
 	assert(!textureHandle.idx);
 	assert(cubeFace == -1);
 
-	unsigned int texelSize = textureFormatSize[image->mFormat];
+	unsigned int texelSize = bimg::getBitsPerPixel(image->mFormat)/8;
 	assert(texelSize == 4);
 	unsigned int offset = 0;
 	if (image->mNumFaces > 1)
@@ -343,7 +235,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
 
 	if (allocTexture)
 	{
-		vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * textureFormatSize[image->mFormat]);
+		vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * (bimg::getBitsPerPixel(image->mFormat)/8));
 	}
 
 	return texture;
@@ -420,7 +312,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         return EVAL_ERR;
     }
 
-    const int components = textureComponentCount[image->mFormat];
+    const int components = bimg::getBitsPerPixel(image->mFormat)/8;
     
     bx::AllocatorI* g_allocator = getDefaultAllocator();
     bx::Error err;
@@ -432,7 +324,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
     if (bx::open(&writer, filename, false, &err))
 #endif
     {
-        auto texformat = GetBIMGFormat((TextureFormat::Enum)image->mFormat);
+        //auto texformat = image->mFormat;//GetBIMGFormat((TextureFormat::Enum)image->mFormat);
 
         switch (format)
         {
@@ -440,19 +332,19 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             //bimg::imageWriteJpg(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, quality, &err);
             break;
         case 1: // png
-            bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
             break;
         case 2: // tga
-            bimg::imageWriteTga(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            bimg::imageWriteTga(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
             break;
         case 4: // hdr
-            bimg::imageWriteHdr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            bimg::imageWriteHdr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
             break;
         case 5: // dds
             {
                 bimg::ImageContainer* imageContainer = bimg::imageAlloc(
                     g_allocator
-                    , texformat
+                    , image->mFormat
                     , image->mWidth
                     , image->mHeight
                     , 1
@@ -478,7 +370,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         case 6: // ktx
             bimg::imageWriteKtx(
                 &writer
-                , texformat
+                , image->mFormat
                 , (image->mNumFaces == 6)
                 , image->mWidth
                 , image->mHeight
@@ -490,7 +382,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             );
             break;
         case 7: // exr
-            bimg::imageWriteExr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, &err);
+            bimg::imageWriteExr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
             break;
         }
 #ifdef __EMSCRIPTEN__
@@ -518,18 +410,31 @@ TextureHandle ImageCache::GetTexture(const std::string& filename)
 {
     auto iter = mSynchronousTextureCache.find(filename);
     if (iter != mSynchronousTextureCache.end())
+	{
         return iter->second;
+	}
 
     Image image;
-	TextureHandle textureHandle;
+	TextureHandle textureHandle{0};
     if (Image::Read(filename.c_str(), &image) == EVAL_OK)
     {
+		mImageSizes[filename] = std::make_pair<uint16_t, uint16_t>(uint16_t(image.mWidth), uint16_t(image.mHeight));
 		textureHandle = Image::Upload(&image, {0});
         Image::Free(&image);
     }
 
     mSynchronousTextureCache[filename] = textureHandle;
     return textureHandle;
+}
+
+const std::pair<uint16_t, uint16_t> ImageCache::GetImageSize(const std::string& filename)
+{
+	auto iter = mImageSizes.find(filename);
+	if (iter != mImageSizes.end())
+	{
+		return iter->second;
+	}
+	return std::make_pair<uint16_t, uint16_t>(0, 0);
 }
 
 Image* ImageCache::GetImage(const std::string& filepath)
@@ -551,6 +456,7 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
     auto iter = mImageCache.find(filepath);
     if (iter == mImageCache.end())
     {
+		mImageSizes[filepath] = std::make_pair<uint16_t, uint16_t>(uint16_t(image->mWidth), uint16_t(image->mHeight));
         mImageCache.insert(std::make_pair(filepath, *image));
     }
     mCacheAccess.unlock();

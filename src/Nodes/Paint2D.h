@@ -32,6 +32,6 @@ DECLARE_NODE(Paint2D)
 {
 	Paint2DBlock* param = (Paint2DBlock*)parameters;
 	SetEvaluationSize(context, evaluation->targetIndex, 256<< param->size, 256<< param->size);
-	SetBlendingMode(context, evaluation->targetIndex, ONE, ONE_MINUS_SRC_ALPHA);
+	SetBlendingMode(context, evaluation->targetIndex, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA);
 	return EVAL_OK;
 }

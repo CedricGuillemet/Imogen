@@ -89,17 +89,15 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             sscanf(url.c_str() + sz + 1, "%d%%", &percent);
             url = url.substr(0, sz);
         }
+
 		TextureHandle textureHandle = gImageCache.GetTexture(url);
         if (textureHandle.idx)
         {
-            int w, h;
-            GetTextureDimension(textureHandle, &w, &h);
+			auto size = gImageCache.GetImageSize(url);
             return {true,
                     false,
                     (ImTextureID)(uint64_t)textureHandle.idx,
-                    ImVec2(float(w * percent / 100), float(h * percent / 100)),
-                    ImVec2(0.f, 1.f),
-                    ImVec2(1.f, 0.f)};
+                    ImVec2(float(size.first * percent / 100), float(size.second * percent / 100))};
         }
     }
 

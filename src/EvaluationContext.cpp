@@ -37,7 +37,7 @@ static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BOR
 #endif
 // todogl
 //static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
-static const char* sampler2DName[] = {
+/*static const char* sampler2DName[] = {
     "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7"};
 static const char* samplerCubeName[] = {"CubeSampler0",
                                         "CubeSampler1",
@@ -47,25 +47,8 @@ static const char* samplerCubeName[] = {"CubeSampler0",
                                         "CubeSampler5",
                                         "CubeSampler6",
                                         "CubeSampler7"};
-/*
-todogl
+										*/
 
-static const unsigned int GLBlends[] = {GL_ZERO,
-                                        GL_ONE,
-                                        GL_SRC_COLOR,
-                                        GL_ONE_MINUS_SRC_COLOR,
-                                        GL_DST_COLOR,
-                                        GL_ONE_MINUS_DST_COLOR,
-                                        GL_SRC_ALPHA,
-                                        GL_ONE_MINUS_SRC_ALPHA,
-                                        GL_DST_ALPHA,
-                                        GL_ONE_MINUS_DST_ALPHA,
-                                        GL_CONSTANT_COLOR,
-                                        GL_ONE_MINUS_CONSTANT_COLOR,
-                                        GL_CONSTANT_ALPHA,
-                                        GL_ONE_MINUS_CONSTANT_ALPHA,
-                                        GL_SRC_ALPHA_SATURATE};
-*/
 static const float rotMatrices[6][16] = {
     // toward +x
     {0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
@@ -84,7 +67,6 @@ static const float rotMatrices[6][16] = {
 
     //-z
     {-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
-
 
 
 void EvaluationThumbnails::Clear()
@@ -590,40 +572,16 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     const auto tgt = evaluation.mTarget;
     const auto& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const ProgramHandle program = evaluator.mProgram;
-    const int blendOps[] = {evaluation.mBlendingSrc, evaluation.mBlendingDst};
     const auto& parameters = mEvaluationStages.GetParameters(nodeIndex);
     const auto nodeType = mEvaluationStages.GetNodeType(nodeIndex);
 
 	bgfx::touch(1);
-    // todogl
-	//unsigned int blend[] = {GL_ONE, GL_ZERO};
 
     if (!program.idx)
     {
-		// todogl
-        //evaluationStage.mGScene->Draw(this, evaluationInfo);
         return;
     }
-    for (int i = 0; i < 2; i++)
-    {
-        if (blendOps[i] < BLEND_LAST)
-        {
-            //blend[i] = GLBlends[blendOps[i]];
-        }
-    }
 
-    // parameters
-    /* todogl
-	glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
-    glBufferData(GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(blend[0], blend[1]);
-
-    glUseProgram(program);
-	*/
     const Camera* camera = GetCameraParameter(nodeType, parameters);
     if (camera)
     {
@@ -673,20 +631,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 evaluationInfo.mipmapNumber = mip;
                 evaluationInfo.mipmapCount = mipmapCount;
 
-                /* todogl
-				glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-                evaluationInfo.vertexSpace = evaluation.mVertexSpace;
-                glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-                glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-                glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
-                glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-
-                BindTextures(evaluationStage, program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
-
-                glDisable(GL_CULL_FACE);
-				*/
+                //BindTextures(evaluationStage, program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
 				if (evaluation.mbClearBuffer)
 				{
@@ -752,6 +697,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 					uint64_t state = 0
 						| BGFX_STATE_WRITE_RGB
 						| BGFX_STATE_WRITE_A
+						| BGFX_STATE_BLEND_FUNC(evaluation.mBlendingSrc, evaluation.mBlendingDst)
 						//| BGFX_STATE_MSAA
 						| (evaluation.mbDepthBuffer ? BGFX_STATE_DEPTH_TEST_LEQUAL : BGFX_STATE_DEPTH_TEST_ALWAYS)
 						//BGFX_STATE_PT_TRISTRIP*/
@@ -810,8 +756,6 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
 	bgfx::setViewFrameBuffer(2, thumbTarget.mFrameBuffer);
 	bgfx::setViewRect(2, sourceCoords[0], sourceCoords[1], sourceCoords[2] - sourceCoords[0], sourceCoords[3] - sourceCoords[1]);
 
-	static bgfx::UniformHandle s_tex = bgfx::createUniform("Sampler0", bgfx::UniformType::Sampler);
-
 	uint64_t state = 0
 		| BGFX_STATE_WRITE_RGB
 		| BGFX_STATE_WRITE_A
@@ -819,7 +763,7 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
 		;
 
 	bgfx::setState(state);
-	bgfx::setTexture(0, s_tex, tgt->mGLTexID);
+	bgfx::setTexture(0, gEvaluators.mSamplers2D[0], tgt->mGLTexID);
 	auto& prim = def->mMeshes[0].mPrimitives[0];
 	bgfx::setVertexBuffer(0, prim.mVbh);
 	bgfx::setIndexBuffer(prim.mIbh);

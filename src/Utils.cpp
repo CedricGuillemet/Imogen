@@ -311,20 +311,6 @@ void OpenShellURL(const std::string& url)
 #endif
 }
 
-void GetTextureDimension(TextureHandle textureId, int* w, int* h)
-{
-	*w = 256;
-	*h = 256;
-    /* todogl
-	int miplevel = 0;
-    glBindTexture(GL_TEXTURE_2D, textureId);
-    #ifdef GL_TEXTURE_WIDTH
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, w);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, h);
-    #endif
-	*/
-}
-
 std::string GetGroup(const std::string& name)
 {
     for (int i = int(name.length()) - 1; i >= 0; i--)

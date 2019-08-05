@@ -27,7 +27,7 @@ DECLARE_NODE(Paint3D)
 {
 	if (evaluation->uiPass == 1)
 	{
-		SetBlendingMode(context, evaluation->targetIndex, ONE, ZERO);
+		SetBlendingMode(context, evaluation->targetIndex, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO);
 		OverrideInput(context, evaluation->targetIndex, 0, evaluation->targetIndex);
 		SetVertexSpace(context, evaluation->targetIndex, 1/*VertexSpace_World*/);
 		EnableDepthBuffer(context, evaluation->targetIndex, 1);
@@ -35,7 +35,7 @@ DECLARE_NODE(Paint3D)
 	}
 	else
 	{
-		SetBlendingMode(context, evaluation->targetIndex, ONE, ONE_MINUS_SRC_ALPHA);
+		SetBlendingMode(context, evaluation->targetIndex, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA);
 		OverrideInput(context, evaluation->targetIndex, 0, -1); // remove override
 		SetVertexSpace(context, evaluation->targetIndex, 0/*VertexSpace_UV*/);
 		EnableDepthBuffer(context, evaluation->targetIndex, 0);

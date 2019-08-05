@@ -431,14 +431,26 @@ Evaluators::~Evaluators()
 
 void Evaluators::SetEvaluators()
 {
-    ClearEvaluators();
+    Clear();
 
 	const bgfx::RendererType::Enum type = bgfx::getRendererType();
 	ShaderHandle nodeVSShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, "Node_vs");
+	mShaderHandles.push_back(nodeVSShader);
 
 	// default shaders
 	mBlitProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "Blit_fs"), false);
 
+	// default samplers
+	for (int i = 0;i<8;i++)
+	{
+		char tmps[512];
+		sprintf(tmps,"Sampler%d", i);
+		bgfx::UniformHandle sampler2D = bgfx::createUniform(tmps, bgfx::UniformType::Sampler, 1);
+		sprintf(tmps, "CubeSampler%d", i);
+		bgfx::UniformHandle samplerCube = bgfx::createUniform(tmps, bgfx::UniformType::Sampler, 1);
+		mSamplers2D.push_back(sampler2D);
+		mSamplersCube.push_back(samplerCube);
+	}
 
     mEvaluatorPerNodeType.clear();
     mEvaluatorPerNodeType.resize(gMetaNodes.size(), nullptr);
@@ -461,6 +473,8 @@ void Evaluators::SetEvaluators()
 			// valid VS/FS
 			program = bgfx::createProgram(vsShader, fsShader, false);
 			mask |= EvaluationGLSL;
+			mShaderHandles.push_back(vsShader);
+			mShaderHandles.push_back(fsShader);
 			assert(program.idx);
 		}
 		else if (fsShader.idx != bgfx::kInvalidHandle)
@@ -468,12 +482,14 @@ void Evaluators::SetEvaluators()
 			// valid FS -> use nodeVS
 			program = bgfx::createProgram(nodeVSShader, fsShader, false);
 			mask |= EvaluationGLSL;
+			mShaderHandles.push_back(fsShader);
 			assert(program.idx);
 		}
-		else if (vsShader.idx != bgfx::kInvalidHandle)
+		else if (csShader.idx != bgfx::kInvalidHandle)
 		{
 			// valid CS
 			mask |= EvaluationGLSLCompute;
+			mShaderHandles.push_back(csShader);
 		}
 
 		EvaluatorScript& script = mEvaluatorScripts[nodeName];
@@ -529,16 +545,39 @@ void Evaluators::SetEvaluators()
 	
 }
 
-void Evaluators::ClearEvaluators()
+void Evaluators::EvaluatorScript::Clear()
 {
-    // clear
-    for (auto& program : mEvaluatorPerNodeType)
-    {
-        /* todogl if (program.mGLSLProgram)
-            glDeleteProgram(program.mGLSLProgram);
-			*/
+	for (auto& sampler : mUniformHandles)
+	{
+		bgfx::destroy(sampler);
+	}
+	if (mProgram.idx)
+	{
+		bgfx::destroy(mProgram);
+	}
+}
 
+void Evaluators::Clear()
+{
+	for (auto& sampler : mSamplers2D)
+	{
+		bgfx::destroy(sampler);
+	}
+	for (auto& sampler : mSamplersCube)
+	{
+		bgfx::destroy(sampler);
+	}
+    for (auto& script : mEvaluatorScripts)
+    {
+		script.second.Clear();
     }
+	for (auto& shader : mShaderHandles)
+	{
+		bgfx::destroy(shader);
+	}
+	mEvaluatorScripts.clear();
+	mEvaluatorPerNodeType.clear();
+	mShaderHandles.clear();
 }
 
 int Evaluators::GetMask(size_t nodeType) const
@@ -646,7 +685,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    void SetBlendingMode(EvaluationContext* evaluationContext, int target, int blendSrc, int blendDst)
+    void SetBlendingMode(EvaluationContext* evaluationContext, int target, uint64_t blendSrc, uint64_t blendDst)
     {
         EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
 
@@ -799,8 +838,8 @@ namespace EvaluationAPI
 
         // compute total size
         auto img = tgt->mImage;
-        unsigned int texelSize = textureFormatSize[img->mFormat];
-        unsigned int texelFormat = glInternalFormats[img->mFormat];
+        unsigned int texelSize = bimg::getBitsPerPixel(img->mFormat)/8;
+        //unsigned int texelFormat = glInternalFormats[img->mFormat];
         uint32_t size = 0; // img.mNumFaces * img.mWidth * img.mHeight * texelSize;
         for (int i = 0; i < img->mNumMips; i++)
             size += img->mNumFaces * (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
@@ -848,10 +887,10 @@ namespace EvaluationAPI
         {
             tgt = evaluationContext->CreateRenderTarget(target);
         }
-        unsigned int texelSize = textureFormatSize[image->mFormat];
-        unsigned int inputFormat = glInputFormats[image->mFormat];
-        unsigned int internalFormat = glInternalFormats[image->mFormat];
-        unsigned char* ptr = image->GetBits();
+        //unsigned int texelSize = textureFormatSize[image->mFormat];
+        //unsigned int inputFormat = glInputFormats[image->mFormat];
+        //unsigned int internalFormat = glInternalFormats[image->mFormat];
+        //unsigned char* ptr = image->GetBits();
         
 		//TextureID texType = 0;// todogl GL_TEXTURE_2D;
 		if (image->mNumFaces == 1)

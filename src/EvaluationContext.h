@@ -181,10 +181,10 @@ struct EvaluationContext
         EvaluationThumbnails::Thumb mThumb;
         float mProgress             = 0.f;
 
-        uint8_t mDirtyFlag          = 0;
-        uint8_t mProcessing         = false;
-        uint8_t mBlendingSrc        = ONE;
-        uint8_t mBlendingDst        = ZERO;
+        uint64_t mBlendingSrc        = BGFX_STATE_BLEND_ONE;
+        uint64_t mBlendingDst        = BGFX_STATE_BLEND_ZERO;
+		uint8_t mDirtyFlag = 0;
+		uint8_t mProcessing = false;
         uint8_t mVertexSpace        = 0; // UV, worldspace
         union
         {

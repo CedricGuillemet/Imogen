@@ -40,31 +40,7 @@ namespace FFMPEGCodec
     class Decoder;
 };
 #endif
-struct TextureFormat
-{
-    enum Enum
-    {
-        BGR8,
-        RGB8,
-        RGB16,
-        RGB16F,
-        RGB32F,
-        RGBE,
 
-        BGRA8,
-        RGBA8,
-        RGBA16,
-        RGBA16F,
-        RGBA32F,
-
-        RGBM,
-
-        Count,
-        Null = -1,
-    };
-};
-
-bimg::TextureFormat::Enum GetBIMGFormat(TextureFormat::Enum format);
 bimg::Quality::Enum GetQuality(int quality);
 
 struct Image
@@ -89,7 +65,7 @@ struct Image
         other.mDataSize = 0;
         other.mNumMips = 0;
         other.mNumFaces = 0;
-        other.mFormat = 0;
+        other.mFormat = TextureFormat::Unknown;
         other.mBits = 0;
     }
 
@@ -107,7 +83,7 @@ struct Image
     uint32_t mDataSize;
     uint8_t mNumMips;
     uint8_t mNumFaces;
-    uint8_t mFormat;
+    TextureFormat mFormat;
     Image& operator=(const Image& other)
     {
         mDecoder = other.mDecoder;
@@ -161,11 +137,11 @@ struct Image
 protected:
     unsigned char* mBits;
 };
-
+/*
 extern const unsigned int glInternalFormats[];
 extern const unsigned int glInputFormats[];
 extern const unsigned int textureFormatSize[];
-
+*/
 struct ImageCache
 {
     // synchronous texture cache
@@ -173,10 +149,11 @@ struct ImageCache
 	TextureHandle GetTexture(const std::string& filename);
     Image* GetImage(const std::string& filepath);
     void AddImage(const std::string& filepath, Image* image);
-
+	const std::pair<uint16_t, uint16_t> GetImageSize(const std::string& filename);
 protected:
     std::map<std::string, TextureHandle> mSynchronousTextureCache;
     std::map<std::string, Image> mImageCache;
+	std::map < std::string, std::pair<uint16_t, uint16_t> > mImageSizes;
     std::mutex mCacheAccess;
 };
 extern ImageCache gImageCache;

@@ -345,6 +345,9 @@ int main_Async(int argc, char** argv)
 
     imogen.Finish(); // keep dock being saved
 
+	// evaluators
+	gEvaluators.Clear();
+
 	// Shutdown bgfx.
 	bgfx::shutdown();
 

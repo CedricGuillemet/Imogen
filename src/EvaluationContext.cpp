@@ -594,6 +594,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     const auto& parameters = mEvaluationStages.GetParameters(nodeIndex);
     const auto nodeType = mEvaluationStages.GetNodeType(nodeIndex);
 
+	bgfx::touch(1);
     // todogl
 	//unsigned int blend[] = {GL_ONE, GL_ZERO};
 
@@ -685,32 +686,26 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 BindTextures(evaluationStage, program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
                 glDisable(GL_CULL_FACE);
-                // glCullFace(GL_BACK);
-#ifdef __EMSCRIPTEN__
-                glClearDepthf(1.f);
-#else
-                glClearDepth(1.f);
-#endif
-                if (evaluation.mbClearBuffer)
-                {
-                    glClear(GL_COLOR_BUFFER_BIT | (evaluation.mbDepthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
-                }
-                if (evaluation.mbDepthBuffer)
-                {
-                    glDepthFunc(GL_LEQUAL);
-                    glEnable(GL_DEPTH_TEST);
-                }
 				*/
 
-				//if (evaluation.mbClearBuffer)
+				if (evaluation.mbClearBuffer)
 				{
 					bgfx::setViewClear(1, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
 				}
 				bgfx::setViewRect(1, 0, 0, tgt->mImage->mWidth, tgt->mImage->mHeight);
 
-				Vec4 tempColor(1.f, 0.f, 1.f, 1.f);
-				bgfx::setUniform(evaluator.mUniforms[0], &tempColor.x, 1);
-                //
+				float tempUniforms[16];
+				const Parameters & parameters = mEvaluationStages.mParameters[nodeIndex];
+				const unsigned char* ptr = parameters.data();
+				int paramIndex = 0;
+				for (const auto& uniform : evaluator.mUniformHandles)
+				{
+					auto paramSize = GetParameterTypeSize(gMetaNodes[nodeType].mParams[paramIndex].mType);
+					memcpy(tempUniforms, ptr, paramSize);
+					bgfx::setUniform(uniform, tempUniforms, 1);
+					paramIndex++;
+					ptr += paramSize;
+				}
 
                 if (evaluationStage.mTypename == "FurDisplay")
                 {
@@ -758,7 +753,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 						| BGFX_STATE_WRITE_RGB
 						| BGFX_STATE_WRITE_A
 						//| BGFX_STATE_MSAA
-						| BGFX_STATE_DEPTH_TEST_ALWAYS
+						| (evaluation.mbDepthBuffer ? BGFX_STATE_DEPTH_TEST_LEQUAL : BGFX_STATE_DEPTH_TEST_ALWAYS)
 						//BGFX_STATE_PT_TRISTRIP*/
 						;
 
@@ -813,7 +808,7 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
     mThumbnails.GetThumbCoordinates(thumb, sourceCoords);
 	bgfx::touch(2);
 	bgfx::setViewFrameBuffer(2, thumbTarget.mFrameBuffer);
-	bgfx::setViewRect(2, sourceCoords[0], sourceCoords[1], sourceCoords[2], sourceCoords[3]);
+	bgfx::setViewRect(2, sourceCoords[0], sourceCoords[1], sourceCoords[2] - sourceCoords[0], sourceCoords[3] - sourceCoords[1]);
 
 	static bgfx::UniformHandle s_tex = bgfx::createUniform("Sampler0", bgfx::UniformType::Sampler);
 

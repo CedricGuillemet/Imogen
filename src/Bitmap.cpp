@@ -45,7 +45,6 @@
 #include "ffmpegCodec.h"
 #endif
 ImageCache gImageCache;
-DefaultShaders gDefaultShader;
 
 bx::AllocatorI* getDefaultAllocator()
 {
@@ -183,6 +182,7 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
     w &= 0xFFFFFFFC;
     h &= 0xFFFFFFFC;
 	
+	//bgfx::readTexture(
 	/* todogl
     int viewport[4];
     glGetIntegerv(GL_VIEWPORT, viewport);
@@ -512,30 +512,6 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 
     bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * 4, image->GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
     return EVAL_OK;
-}
-
-void DefaultShaders::Init()
-{
-    /*std::ifstream prgStr("Stock/ProgressingNode.glsl");
-    std::ifstream cubStr("Stock/DisplayCubemap.glsl");
-    std::ifstream nodeErrStr("Stock/NodeError.glsl");
-
-    mProgressShader =
-        prgStr.good()
-            ? LoadShader(std::string(std::istreambuf_iterator<char>(prgStr), std::istreambuf_iterator<char>()),
-                         "progressShader")
-		: ProgramHandle{0};
-    mDisplayCubemapShader =
-        cubStr.good()
-            ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()),
-                         "cubeDisplay")
-		: ProgramHandle{0};
-    mNodeErrorShader =
-        nodeErrStr.good()
-            ? LoadShader(std::string(std::istreambuf_iterator<char>(nodeErrStr), std::istreambuf_iterator<char>()),
-                         "nodeError")
-		: ProgramHandle{0};
-		*/
 }
 
 TextureHandle ImageCache::GetTexture(const std::string& filename)

@@ -4,11 +4,11 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-float u_radius; 
-float u_t; 
+vec4 radius; 
+vec4 T; 
 
 void main()
 {
-	float c = Circle(v_texcoord0, u_radius, u_t);
+	float c = Circle(v_texcoord0, radius.x, T.x);
     gl_FragColor = vec4(c, c, c, c);
 }

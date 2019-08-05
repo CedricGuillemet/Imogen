@@ -181,18 +181,6 @@ protected:
 };
 extern ImageCache gImageCache;
 
-struct DefaultShaders
-{
-    // ui callback shaders
-	ProgramHandle mProgressShader;
-	ProgramHandle mDisplayCubemapShader;
-    // error shader
-	ProgramHandle mNodeErrorShader;
-
-    void Init();
-};
-
-extern DefaultShaders gDefaultShader;
 void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 
 class RenderTarget

@@ -69,22 +69,7 @@ struct EvaluationInfo
 };
 
 typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
-/*
-struct Evaluator
-{
-	Evaluator() : mShaderProgram({0}), mCFunction(0), mMask(-1)
-    {
-    }
-	ProgramHandle mShaderProgram;
-	NodeFunction mCFunction;
-	std::vector<bgfx::UniformHandle> mUniforms;
 
-
-    std::string mName;
-    size_t mNodeType;
-	int mMask;
-};
-*/
 struct Evaluators
 {
     Evaluators();
@@ -94,8 +79,6 @@ struct Evaluators
     static void InitPython();
     int GetMask(size_t nodeType) const;
     void ClearEvaluators();
-
-
 
     void InitPythonModules();
 #if USE_PYTHON    
@@ -108,15 +91,12 @@ struct Evaluators
 		EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1), mMask(0)
         {
         }
-		EvaluatorScript(const std::string& text) : /*mText(text), */mProgram({0}), mCFunction(0), mType(-1)
-        {
-        }
-        //std::string mText;
+
 		ProgramHandle mProgram;
 		NodeFunction mCFunction;
-		std::vector<bgfx::UniformHandle> mUniforms;
         int mType;
 		int mMask;
+		std::vector<UniformHandle> mUniformHandles;
 #if USE_PYTHON    
 		pybind11::module mPyModule;
 

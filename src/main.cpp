@@ -91,62 +91,6 @@ UndoRedoHandler gUndoRedoHandler;
 
 TaskScheduler g_TS;
 
-//std::shared_ptr<Scene> scene;
-//bgfx::ProgramHandle m_programT;
-
-
-#if USE_GLDEBUG
-void APIENTRY openglCallbackFunction(GLenum /*source*/,
-                                     GLenum type,
-                                     GLuint id,
-                                     GLenum severity,
-                                     GLsizei /*length*/,
-                                     const GLchar* message,
-                                     const void* /*userParam*/)
-{
-    const char* typeStr = "";
-    const char* severityStr = "";
-
-    switch (type)
-    {
-        case GL_DEBUG_TYPE_ERROR:
-            typeStr = "ERROR";
-            break;
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-            typeStr = "DEPRECATED_BEHAVIOR";
-            break;
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-            typeStr = "UNDEFINED_BEHAVIOR";
-            break;
-        case GL_DEBUG_TYPE_PORTABILITY:
-            typeStr = "PORTABILITY";
-            break;
-        case GL_DEBUG_TYPE_PERFORMANCE:
-            typeStr = "PERFORMANCE";
-            break;
-        case GL_DEBUG_TYPE_OTHER:
-            typeStr = "OTHER";
-            // skip
-            return;
-            break;
-    }
-
-    switch (severity)
-    {
-        case GL_DEBUG_SEVERITY_LOW:
-            severityStr = "LOW";
-            return;
-            break;
-        case GL_DEBUG_SEVERITY_MEDIUM:
-            severityStr = "MEDIUM";
-            break;
-        case GL_DEBUG_SEVERITY_HIGH:
-            severityStr = "HIGH";
-            break;
-    }
-    Log("GL Debug (%s - %s) %s \n", typeStr, severityStr, message);
-}
-#endif
 
 #ifdef __EMSCRIPTEN__
 
@@ -269,7 +213,6 @@ int main_Async(int argc, char** argv)
         fprintf(stderr, "Failed to initialize GL context!\n");
         return 1;
     }*/
-    //SDL_GL_SetSwapInterval(1); // Enable vsync
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -289,14 +232,6 @@ int main_Async(int argc, char** argv)
 
     ImGui_Implbgfx_Init();
 
-#if USE_GLDEBUG
-    // opengl debug
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageCallback((GLDEBUGPROCARB)openglCallbackFunction, NULL);
-    GLuint unusedIds = 0;
-    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, &unusedIds, true);
-#endif
-
     g_TS.Initialize();
 
 #if USE_PYTHON    
@@ -309,9 +244,6 @@ int main_Async(int argc, char** argv)
     FFMPEGCodec::RegisterAll();
     FFMPEGCodec::Log = Log;
 #endif
-    // todo
-    //stbi_set_flip_vertically_on_load(1);
-    //stbi_flip_vertically_on_write(1);
     
     ImGui::StyleColorsDark();
     RecentLibraries recentLibraries;
@@ -336,14 +268,12 @@ int main_Async(int argc, char** argv)
         }
     }
     imogen.Init(bDebugWindow);
-    gDefaultShader.Init();
 
     gEvaluators.SetEvaluators();
 
     loopdata.mImogen = &imogen;
     loopdata.mNodeGraphControler = &nodeGraphControler;
     gBuilder = loopdata.mBuilder = &builder;
-    //InitFonts();
     imogen.SetExistingMaterialActive(".default");
 
 	std::string infoTitle = IMOGENCOMPLETETITLE;
@@ -393,16 +323,6 @@ int main_Async(int argc, char** argv)
 	}
 	SDL_SetWindowTitle(loopdata.mWindow, infoTitle.c_str());
 
-
-	/*bgfx::RendererType::Enum type = bgfx::getRendererType();
-	m_programT = bgfx::createProgram(
-		bgfx::createEmbeddedShader(s_embeddedShaders, type, "NodeVS")
-		, bgfx::createEmbeddedShader(s_embeddedShaders, type, "ColorFS")
-		, true
-	);
-	*/
-	//scene = Scene::BuildDefaultScene();
-
 #ifdef __EMSCRIPTEN__
     HideLoader();
     // This function call won't return, and will engage in an infinite loop, processing events from the browser, and dispatching them.
@@ -422,7 +342,6 @@ int main_Async(int argc, char** argv)
     ImGui_Implbgfx_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
-	//imguiDestroy();
 
     imogen.Finish(); // keep dock being saved
 
@@ -460,7 +379,6 @@ void MainLoop(void* arg)
         }
     }
 	
-
     renderImogenFrame = [&](bool capturing) {
 		int width;
 		int height;
@@ -486,61 +404,18 @@ void MainLoop(void* arg)
             ImMouseState();
         }
 
-
-		
-		
         // Rendering
         ImGui::Render();
-        //SDL_GL_MakeCurrent(loopdata->mWindow, loopdata->mGLContext);
-        // render everything
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        //glUseProgram(0);
-		
-        //glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        //glClearColor(0., 0., 0., 0.);
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //glDisable(GL_DEPTH_TEST);
-        
-        
-		
-		
 		bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
 		bgfx::touch(0);
-//		
-		//ImGui::Render();
+
 		ImGui_Implbgfx_RenderDrawData(ImGui::GetDrawData());
-		//ImGuiBGFXRender(ImGui::GetDrawData());
-
-		/*bgfx::dbgTextClear();
-		
-		static int counter = 0;
-		bgfx::dbgTextPrintf(0, 1, 0x4f, "Counter:%d", counter++);
-		*/
-		#if 0
-		bgfx::ViewId m_viewId = 255;
-
-		uint64_t state = 0
-			| BGFX_STATE_WRITE_RGB
-			| BGFX_STATE_WRITE_A
-			//| BGFX_STATE_MSAA
-			| BGFX_STATE_DEPTH_TEST_ALWAYS
-			//BGFX_STATE_PT_TRISTRIP*/
-			;
-
-		bgfx::setState(state);
-		auto& prim = scene->mMeshes[0].mPrimitives[0];
-		bgfx::setVertexBuffer(0, prim.mVbh);
-		bgfx::setIndexBuffer(prim.mIbh);
-		bgfx::submit(255, m_programT);
-#endif
 
 		bgfx::frame();
 		g_TS.RunPinnedTasks();
     };
-
 	
     renderImogenFrame(false);
-	
 	
 #ifndef __EMSCRIPTEN__
     loopdata->mImogen->RunDeferedCommands();

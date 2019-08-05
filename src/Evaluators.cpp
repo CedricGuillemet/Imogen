@@ -428,12 +428,7 @@ Evaluators::Evaluators()
 Evaluators::~Evaluators()
 {
 }
-/*
-std::string Evaluators::GetEvaluator(const std::string& filename)
-{
-    return mEvaluatorScripts[filename].mText;
-}
-*/
+
 void Evaluators::SetEvaluators()
 {
     ClearEvaluators();
@@ -481,24 +476,29 @@ void Evaluators::SetEvaluators()
 			mask |= EvaluationGLSLCompute;
 		}
 
-		EvaluatorScript& shader = mEvaluatorScripts[nodeName];
+		EvaluatorScript& script = mEvaluatorScripts[nodeName];
 
 		if (program.idx)
 		{
-			bgfx::UniformHandle handle = bgfx::createUniform("u_color", bgfx::UniformType::Vec4, 1);
-			shader.mUniforms.push_back(handle);
-			shader.mProgram = program;
+			script.mProgram = program;
+
+			// uniforms
+			for (const auto& parameter : gMetaNodes[i].mParams)
+			{
+				bgfx::UniformHandle handle = bgfx::createUniform(parameter.mName.c_str(), bgfx::UniformType::Vec4, 1);
+				script.mUniformHandles.push_back(handle);
+			}
 		}
 		// C++ functions
 		auto iter = nodeFunctions.find(nodeName);
 		if (iter != nodeFunctions.end())
 		{
-			shader.mCFunction = iter->second;
+			script.mCFunction = iter->second;
 			mask |= EvaluationC;
 		}
-		shader.mMask = mask;
-		shader.mType = i;
-		mEvaluatorPerNodeType[i] = &shader;
+		script.mMask = mask;
+		script.mType = i;
+		mEvaluatorPerNodeType[i] = &script;
 		auto& evalNode = mEvaluatorPerNodeType[i];
 		//assert(mask); enable when compute shaders are back
 	}

@@ -27,6 +27,8 @@
 #include "Scene.h"
 #include "EvaluationContext.h"
 
+std::weak_ptr<Scene> Scene::mDefaultScene;
+
 void Scene::Mesh::Primitive::Draw() const
 {
     /*
@@ -88,9 +90,16 @@ void Scene::Mesh::Primitive::Draw() const
 
 Scene::Mesh::Primitive::~Primitive()
 {
-	bgfx::destroy(mVbh);
-	bgfx::destroy(mIbh);
+	if (mVbh.idx)
+	{
+		bgfx::destroy(mVbh);
+	}
+	if (mIbh.idx)
+	{
+		bgfx::destroy(mIbh);
+	}
 }
+
 void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count)
 {
     /* todogl
@@ -125,15 +134,10 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
 
 void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int stride, unsigned int count)
 {
-    /* todogl
-	unsigned int ia;
-    glGenBuffers(1, &ia);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ia);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    mIndexBuffer = { ia, stride, count };
-	*/
-
+	if (mIbh.idx)
+	{
+		bgfx::destroy(mIbh);
+	}
 	mIbh = bgfx::createIndexBuffer(bgfx::copy(data, stride* count), (stride == 4)?BGFX_BUFFER_INDEX32:0);
 	mIndexCount = count;
 }
@@ -145,6 +149,7 @@ void Scene::Mesh::Draw() const
         prim.Draw();
     }
 }
+
 void Scene::Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const
 {
     for (unsigned int i = 0; i < mMeshIndex.size(); i++)
@@ -160,7 +165,7 @@ void Scene::Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) con
         glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		*/
-        mMeshes[index].Draw();
+        //mMeshes[index].Draw();
     }
 }
 
@@ -171,6 +176,10 @@ Scene::~Scene()
 
 std::shared_ptr<Scene> Scene::BuildDefaultScene()
 {
+	if (!mDefaultScene.expired())
+	{
+		return mDefaultScene.lock();
+	}
     auto defaultScene = std::make_shared<Scene>();
     defaultScene->mMeshes.resize(1);
     auto& mesh = defaultScene->mMeshes.back();
@@ -185,5 +194,6 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     defaultScene->mWorldTransforms.resize(1);
     defaultScene->mWorldTransforms[0].Identity();
     defaultScene->mMeshIndex.resize(1, 0);
+	mDefaultScene = defaultScene;
     return defaultScene;
 }

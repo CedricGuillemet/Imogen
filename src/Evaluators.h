@@ -69,7 +69,7 @@ struct EvaluationInfo
 };
 
 typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
-
+/*
 struct Evaluator
 {
 	Evaluator() : mShaderProgram({0}), mCFunction(0), mMask(-1)
@@ -77,60 +77,62 @@ struct Evaluator
     }
 	ProgramHandle mShaderProgram;
 	NodeFunction mCFunction;
+	std::vector<bgfx::UniformHandle> mUniforms;
 
-#if USE_PYTHON    
-    pybind11::module mPyModule;
-
-    void RunPython() const;
-#endif
 
     std::string mName;
     size_t mNodeType;
 	int mMask;
 };
-
+*/
 struct Evaluators
 {
     Evaluators();
     ~Evaluators();
 
-    void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
-    std::string GetEvaluator(const std::string& filename);
+    void SetEvaluators();
     static void InitPython();
-    int GetMask(size_t nodeType);
+    int GetMask(size_t nodeType) const;
     void ClearEvaluators();
 
-    const Evaluator& GetEvaluator(size_t nodeType) const
-    {
-        return mEvaluatorPerNodeType[nodeType];
-    }
+
 
     void InitPythonModules();
 #if USE_PYTHON    
     pybind11::module mImogenModule;
 #endif
     static void ReloadPlugins();
-    protected:
+
     struct EvaluatorScript
     {
-		EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1)
+		EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1), mMask(0)
         {
         }
-		EvaluatorScript(const std::string& text) : mText(text), mProgram({0}), mCFunction(0), mType(-1)
+		EvaluatorScript(const std::string& text) : /*mText(text), */mProgram({0}), mCFunction(0), mType(-1)
         {
         }
-        std::string mText;
+        //std::string mText;
 		ProgramHandle mProgram;
 		NodeFunction mCFunction;
+		std::vector<bgfx::UniformHandle> mUniforms;
         int mType;
+		int mMask;
+#if USE_PYTHON    
+		pybind11::module mPyModule;
 
-#if USE_PYTHON        
-        pybind11::module mPyModule;
+		void RunPython() const;
 #endif
     };
 
+	const EvaluatorScript& GetEvaluator(size_t nodeType) const
+	{
+		return *mEvaluatorPerNodeType[nodeType];
+	}
+protected:
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
-    std::vector<Evaluator> mEvaluatorPerNodeType;
+    std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
+public:
+	ProgramHandle mBlitProgram;
 };
 
 extern Evaluators gEvaluators;

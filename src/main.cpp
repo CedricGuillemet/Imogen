@@ -59,7 +59,7 @@
 #include "C:\Users\cedri\Dev\test\NodeVS.mtl.h"
 #include "C:\Users\cedri\Dev\test\NodeVS.spv.h"
 
-
+/*
 static const bgfx::EmbeddedShader s_embeddedShaders[] =
 {
 	BGFX_EMBEDDED_SHADER(ColorFS),
@@ -67,7 +67,7 @@ static const bgfx::EmbeddedShader s_embeddedShaders[] =
 
 	BGFX_EMBEDDED_SHADER_END()
 };
-
+*/
 bx::AllocatorI* getDefaultAllocator();
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.
@@ -91,8 +91,8 @@ UndoRedoHandler gUndoRedoHandler;
 
 TaskScheduler g_TS;
 
-std::shared_ptr<Scene> scene;
-bgfx::ProgramHandle m_programT;
+//std::shared_ptr<Scene> scene;
+//bgfx::ProgramHandle m_programT;
 
 
 #if USE_GLDEBUG
@@ -245,14 +245,14 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
 	bgfx::Init init;
-	init.type = bgfx::RendererType::Vulkan;//:OpenGL;
+	init.type = bgfx::RendererType::Count;//:Direct3D9;//:OpenGL;
 	bgfx::init(init);
 #else
 	bgfx::init();
 #endif
 
 	// Enable debug text.
-	bgfx::setDebug(BGFX_DEBUG_TEXT /*| BGFX_DEBUG_STATS*/);
+	//bgfx::setDebug(BGFX_DEBUG_TEXT /*| BGFX_DEBUG_STATS*/);
 
 	// Set view 0 clear state.
 	bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
@@ -338,12 +338,12 @@ int main_Async(int argc, char** argv)
     imogen.Init(bDebugWindow);
     gDefaultShader.Init();
 
-    gEvaluators.SetEvaluators(imogen.mEvaluatorFiles);
+    gEvaluators.SetEvaluators();
 
     loopdata.mImogen = &imogen;
     loopdata.mNodeGraphControler = &nodeGraphControler;
     gBuilder = loopdata.mBuilder = &builder;
-    InitFonts();
+    //InitFonts();
     imogen.SetExistingMaterialActive(".default");
 
 	std::string infoTitle = IMOGENCOMPLETETITLE;
@@ -394,14 +394,14 @@ int main_Async(int argc, char** argv)
 	SDL_SetWindowTitle(loopdata.mWindow, infoTitle.c_str());
 
 
-	bgfx::RendererType::Enum type = bgfx::getRendererType();
+	/*bgfx::RendererType::Enum type = bgfx::getRendererType();
 	m_programT = bgfx::createProgram(
 		bgfx::createEmbeddedShader(s_embeddedShaders, type, "NodeVS")
 		, bgfx::createEmbeddedShader(s_embeddedShaders, type, "ColorFS")
 		, true
 	);
-
-	scene = Scene::BuildDefaultScene();
+	*/
+	//scene = Scene::BuildDefaultScene();
 
 #ifdef __EMSCRIPTEN__
     HideLoader();
@@ -468,7 +468,7 @@ void MainLoop(void* arg)
 		auto stats = bgfx::getStats();
 		if (stats->width != width || stats->height != height)
 		{
-			bgfx::reset(width, height, BGFX_RESET_VSYNC);
+			bgfx::reset(width, height, BGFX_RESET_VSYNC | BGFX_RESET_FLIP_AFTER_RENDER);
 		}
 		io.DisplaySize = ImVec2(width, height);
         
@@ -507,7 +507,7 @@ void MainLoop(void* arg)
 		bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
 		bgfx::touch(0);
 //		
-		ImGui::Render();
+		//ImGui::Render();
 		ImGui_Implbgfx_RenderDrawData(ImGui::GetDrawData());
 		//ImGuiBGFXRender(ImGui::GetDrawData());
 
@@ -516,6 +516,7 @@ void MainLoop(void* arg)
 		static int counter = 0;
 		bgfx::dbgTextPrintf(0, 1, 0x4f, "Counter:%d", counter++);
 		*/
+		#if 0
 		bgfx::ViewId m_viewId = 255;
 
 		uint64_t state = 0
@@ -531,7 +532,7 @@ void MainLoop(void* arg)
 		bgfx::setVertexBuffer(0, prim.mVbh);
 		bgfx::setIndexBuffer(prim.mIbh);
 		bgfx::submit(255, m_programT);
-
+#endif
 
 		bgfx::frame();
 		g_TS.RunPinnedTasks();

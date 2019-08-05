@@ -72,11 +72,11 @@ struct Imogen
 
     void Show(Builder* builder, Library& library, bool capturing);
     void ValidateCurrentMaterial(Library& library);
-    void DiscoverNodes(const char* extension,
+    /*void DiscoverNodes(const char* extension,
                        const char* directory,
                        EVALUATOR_TYPE evaluatorType,
                        std::vector<EvaluatorFile>& files);
-
+					   */
     std::vector<EvaluatorFile> mEvaluatorFiles;
 
     void SetExistingMaterialActive(int materialIndex);

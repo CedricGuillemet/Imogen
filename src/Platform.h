@@ -39,6 +39,7 @@
 typedef bgfx::TextureHandle TextureHandle;
 typedef bgfx::ShaderHandle ShaderHandle;
 typedef bgfx::ProgramHandle ProgramHandle;
+typedef bgfx::FrameBufferHandle FrameBufferHandle;
 
 #ifdef __EMSCRIPTEN__
 

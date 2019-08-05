@@ -87,4 +87,6 @@ struct Scene
     std::vector<int> mMeshIndex;
     std::string mName;
     void Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const;
+protected:
+	static std::weak_ptr<Scene> mDefaultScene;
 };

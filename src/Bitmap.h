@@ -198,7 +198,7 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 class RenderTarget
 {
 public:
-    RenderTarget() : /*mGLTexID(0), mGLTexDepth(0),*/ mFbo(0), mDepthBuffer(0)
+    RenderTarget()
     {
         mImage = std::make_shared<Image>();
     }
@@ -209,7 +209,6 @@ public:
     void BindAsCubeTarget() const;
     void BindCubeFace(size_t face, int mipmap, int faceWidth);
     void Destroy();
-    void CheckFBO();
     void Clone(const RenderTarget& other);
     void Swap(RenderTarget& other);
 
@@ -217,6 +216,5 @@ public:
     std::shared_ptr<Image> mImage;
 	TextureHandle mGLTexID = {0};
 	TextureHandle mGLTexDepth = {0};
-    unsigned int mDepthBuffer;
-    unsigned int mFbo;
+	FrameBufferHandle mFrameBuffer = { 0 };
 };

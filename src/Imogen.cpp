@@ -1438,7 +1438,7 @@ void Imogen::Init(bool bDebugWindow)
     mbDebugWindow = bDebugWindow;
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
+	/*
     DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
 
 #ifndef __EMSCRIPTEN__
@@ -1446,7 +1446,7 @@ void Imogen::Init(bool bDebugWindow)
     DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
     DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
 #endif
-
+*/
     struct HotKeyFunction
     {
         const char* name;
@@ -1473,12 +1473,12 @@ void Imogen::Init(bool bDebugWindow)
         {"ToggleSequencer", "Show or hide Sequencer window", [&]() { mbShowTimeline = !mbShowTimeline; }},
         {"ToggleParameters", "Show or hide Parameters window", [&]() { mbShowParameters = !mbShowParameters; }},
         {"MaterialNew", "Create a new graph", [&]() { NewMaterial(); }},
-        {"ReloadShaders",
+        /*{"ReloadShaders",
          "Reload them",
          [&]() {
              gEvaluators.SetEvaluators(mEvaluatorFiles);
              mNodeGraphControler->mEditingContext.RunAll();
-         }},
+         }},*/
         {"DeleteSelectedNodes", "Delete selected nodes in the current graph", []() {}},
         {"AnimationSetKey",
          "Make a new animation key with the current parameters values at the current time",
@@ -2565,7 +2565,7 @@ void Imogen::ValidateCurrentMaterial(Library& library)
 {
     ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
 }
-
+/*
 void Imogen::DiscoverNodes(const char* extension,
                            const char* directory,
                            EVALUATOR_TYPE evaluatorType,
@@ -2589,7 +2589,7 @@ void Imogen::DiscoverNodes(const char* extension,
 
     tinydir_close(&dir);
 }
-
+*/
 struct readHelper
 {
     Imogen* imogen;

@@ -428,102 +428,85 @@ Evaluators::Evaluators()
 Evaluators::~Evaluators()
 {
 }
-
+/*
 std::string Evaluators::GetEvaluator(const std::string& filename)
 {
     return mEvaluatorScripts[filename].mText;
 }
-
-void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames)
+*/
+void Evaluators::SetEvaluators()
 {
     ClearEvaluators();
 
+	const bgfx::RendererType::Enum type = bgfx::getRendererType();
+	ShaderHandle nodeVSShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, "Node_vs");
+
+	// default shaders
+	mBlitProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "Blit_fs"), false);
+
+
     mEvaluatorPerNodeType.clear();
-    mEvaluatorPerNodeType.resize(evaluatorfilenames.size(), Evaluator());
+    mEvaluatorPerNodeType.resize(gMetaNodes.size(), nullptr);
 
-    // GLSL
-    for (auto& file : evaluatorfilenames)
-    {
-        if (file.mEvaluatorType != EVALUATOR_GLSL && file.mEvaluatorType != EVALUATOR_GLSLCOMPUTE)
-            continue;
-        const std::string filename = file.mFilename;
+	extern std::map<std::string, NodeFunction> nodeFunctions;
 
-        std::ifstream t(file.mDirectory + filename);
-        if (t.good())
-        {
-            std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-            if (mEvaluatorScripts.find(filename) == mEvaluatorScripts.end())
-                mEvaluatorScripts[filename] = EvaluatorScript(str);
-            else
-                mEvaluatorScripts[filename].mText = str;
-        }
-    }
-
-    // GLSL
-    std::string baseShader = mEvaluatorScripts["Shader.glsl"].mText;
-    for (auto& file : evaluatorfilenames)
-    {
-        if (file.mEvaluatorType != EVALUATOR_GLSL)
-            continue;
-        const std::string filename = file.mFilename;
-
-        if (filename == "Shader.glsl")
-            continue;
-
-        EvaluatorScript& shader = mEvaluatorScripts[filename];
-        std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mText);
-        std::string nodeName = ReplaceAll(filename, ".glsl", "");
-        shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
-
-		ProgramHandle program = LoadShader(shaderText, filename.c_str());
-		/*todogl
-        int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
-        if (parameterBlockIndex != -1)
-            glUniformBlockBinding(program, parameterBlockIndex, 1);
-
-        parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
-        if (parameterBlockIndex != -1)
-            glUniformBlockBinding(program, parameterBlockIndex, 2);
-			*/
-        shader.mProgram = program;
-    }
-
-    // GLSL compute
-    for (auto& file : evaluatorfilenames)
-    {
-        if (file.mEvaluatorType != EVALUATOR_GLSLCOMPUTE)
-            continue;
-        const std::string filename = file.mFilename;
-
-        EvaluatorScript& shader = mEvaluatorScripts[filename];
-        // std::string shaderText = ReplaceAll(baseShader, "__NODE__", shader.mText);
-        std::string nodeName = ReplaceAll(filename, ".glslc", "");
-        // shaderText = ReplaceAll(shaderText, "__FUNCTION__", nodeName + "()");
-
+	for (int i = 0; i < gMetaNodes.size(); i++)
+	{
+		const std::string& nodeName = gMetaNodes[i].mName;
+		std::string vsShaderName = nodeName + "_vs";
+		std::string fsShaderName = nodeName + "_fs";
+		std::string csShaderName = nodeName + "_cs";
+		ShaderHandle vsShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, vsShaderName.c_str());
+		ShaderHandle fsShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, fsShaderName.c_str());
+		ShaderHandle csShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, csShaderName.c_str());
 		ProgramHandle program{0};
-        if (nodeName == filename)
-        {
-            // glsl in compute directory
-            nodeName = ReplaceAll(filename, ".glsl", "");
-            program = LoadShader(shader.mText, filename.c_str());
-        }
-        else
-        {
-            program = LoadShaderTransformFeedback(shader.mText, filename.c_str());
-        }
+		int mask = 0;
+		if (vsShader.idx != bgfx::kInvalidHandle && fsShader.idx != bgfx::kInvalidHandle)
+		{
+			// valid VS/FS
+			program = bgfx::createProgram(vsShader, fsShader, false);
+			mask |= EvaluationGLSL;
+			assert(program.idx);
+		}
+		else if (fsShader.idx != bgfx::kInvalidHandle)
+		{
+			// valid FS -> use nodeVS
+			program = bgfx::createProgram(nodeVSShader, fsShader, false);
+			mask |= EvaluationGLSL;
+			assert(program.idx);
+		}
+		else if (vsShader.idx != bgfx::kInvalidHandle)
+		{
+			// valid CS
+			mask |= EvaluationGLSLCompute;
+		}
 
-        /* todogl
-		int parameterBlockIndex = glGetUniformBlockIndex(program, (nodeName + "Block").c_str());
-        if (parameterBlockIndex != -1)
-            glUniformBlockBinding(program, parameterBlockIndex, 1);
+		EvaluatorScript& shader = mEvaluatorScripts[nodeName];
 
-        parameterBlockIndex = glGetUniformBlockIndex(program, "EvaluationBlock");
-        if (parameterBlockIndex != -1)
-            glUniformBlockBinding(program, parameterBlockIndex, 2);
-			*/
-        shader.mProgram = program;
-    }
+		if (program.idx)
+		{
+			bgfx::UniformHandle handle = bgfx::createUniform("u_color", bgfx::UniformType::Vec4, 1);
+			shader.mUniforms.push_back(handle);
+			shader.mProgram = program;
+		}
+		// C++ functions
+		auto iter = nodeFunctions.find(nodeName);
+		if (iter != nodeFunctions.end())
+		{
+			shader.mCFunction = iter->second;
+			mask |= EvaluationC;
+		}
+		shader.mMask = mask;
+		shader.mType = i;
+		mEvaluatorPerNodeType[i] = &shader;
+		auto& evalNode = mEvaluatorPerNodeType[i];
+		//assert(mask); enable when compute shaders are back
+	}
 
+	
+
+
+	/*
 #if USE_PYTHON
     for (auto& file : evaluatorfilenames)
     {
@@ -542,13 +525,8 @@ void Evaluators::SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilena
         }
     }
 #endif
-
-	extern std::map<std::string, NodeFunction> nodeFunctions;
-	for (auto& func : nodeFunctions)
-	{
-		EvaluatorScript& shader = mEvaluatorScripts[func.first];
-		shader.mCFunction = func.second;
-	}
+*/
+	
 }
 
 void Evaluators::ClearEvaluators()
@@ -563,49 +541,10 @@ void Evaluators::ClearEvaluators()
     }
 }
 
-int Evaluators::GetMask(size_t nodeType)
+int Evaluators::GetMask(size_t nodeType) const
 {
-    const std::string& nodeName = gMetaNodes[nodeType].mName;
 	auto& evalNode = mEvaluatorPerNodeType[nodeType];
-	if (evalNode.mMask > -1)
-	{
-		return evalNode.mMask;
-	}
-	evalNode.mName = nodeName;
-	evalNode.mNodeType = nodeType;
-    int mask = 0;
-    auto iter = mEvaluatorScripts.find(nodeName + ".glsl");
-    if (iter != mEvaluatorScripts.end())
-    {
-        mask |= EvaluationGLSL;
-        iter->second.mType = int(nodeType);
-		//evalNode.mGLSLProgram = iter->second.mProgram; todo gl
-    }
-    iter = mEvaluatorScripts.find(nodeName + ".glslc");
-    if (iter != mEvaluatorScripts.end())
-    {
-        mask |= EvaluationGLSLCompute;
-        iter->second.mType = int(nodeType);
-		//evalNode.mGLSLProgram = iter->second.mProgram; todo gl
-    }
-    iter = mEvaluatorScripts.find(nodeName);
-    if (iter != mEvaluatorScripts.end())
-    {
-        mask |= EvaluationC;
-        iter->second.mType = int(nodeType);
-		evalNode.mCFunction = iter->second.mCFunction;
-    }
-#if USE_PYTHON
-    iter = mEvaluatorScripts.find(nodeName + ".py");
-    if (iter != mEvaluatorScripts.end())
-    {
-        mask |= EvaluationPython;
-        iter->second.mType = int(nodeType);
-		evalNode.mPyModule = iter->second.mPyModule;
-    }
-#endif
-	evalNode.mMask = mask;
-    return mask;
+	return evalNode->mMask;
 }
 
 #if USE_PYTHON
@@ -659,7 +598,7 @@ void Evaluators::ReloadPlugins()
     #endif
 }
 #if USE_PYTHON
-void Evaluator::RunPython() const
+void Evaluators::EvaluatorScript::RunPython() const
 {
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
 }
@@ -914,7 +853,7 @@ namespace EvaluationAPI
         unsigned int internalFormat = glInternalFormats[image->mFormat];
         unsigned char* ptr = image->GetBits();
         
-		TextureID texType = 0;// todogl GL_TEXTURE_2D;
+		//TextureID texType = 0;// todogl GL_TEXTURE_2D;
 		if (image->mNumFaces == 1)
 		{
 			tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
@@ -922,7 +861,7 @@ namespace EvaluationAPI
 		else
 		{
 			tgt->InitCube(image->mWidth, image->mNumMips);
-			texType = 0;// todogl GL_TEXTURE_CUBE_MAP;
+			//texType = 0;// todogl GL_TEXTURE_CUBE_MAP;
 		}
 		for (int face = 0; face < image->mNumFaces; face++)
 		{

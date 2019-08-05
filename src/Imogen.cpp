@@ -214,7 +214,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
                 if (displayedTexture)
                 {
                     auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
-                    displayedTextureSize = ImVec2(float(tgt->mImage->mWidth), float(tgt->mImage->mHeight));
+                    displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
                 }
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
                 mouseUVPos.y = 1.f - mouseUVPos.y;
@@ -1503,6 +1503,7 @@ void Imogen::Init(bool bDebugWindow)
 
 void Imogen::Finish()
 {
+	mNodeGraphControler->Clear();
 }
 
 const char* GetShortCutLib(const char* functionName)

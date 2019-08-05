@@ -45,7 +45,7 @@ bimg::Quality::Enum GetQuality(int quality);
 
 struct Image
 {
-    Image() : mDecoder(NULL), mWidth(0), mHeight(0), mNumMips(0), mNumFaces(0), mBits(NULL), mDataSize(0)
+    Image() : mDecoder(NULL), mWidth(0), mHeight(0), mHasMipmaps(false), mIsCubemap(false), mBits(NULL), mDataSize(0)
     {
     }
     Image(Image&& other)
@@ -54,8 +54,8 @@ struct Image
         mWidth = other.mWidth;
         mHeight = other.mHeight;
         mDataSize = other.mDataSize;
-        mNumMips = other.mNumMips;
-        mNumFaces = other.mNumFaces;
+        mHasMipmaps = other.mHasMipmaps;
+		mIsCubemap = other.mIsCubemap;
         mFormat = other.mFormat;
         mBits = other.mBits;
 
@@ -63,8 +63,8 @@ struct Image
         other.mWidth = 0;
         other.mHeight = 0;
         other.mDataSize = 0;
-        other.mNumMips = 0;
-        other.mNumFaces = 0;
+        other.mHasMipmaps = false;
+        other.mIsCubemap = 0;
         other.mFormat = TextureFormat::Unknown;
         other.mBits = 0;
     }
@@ -81,20 +81,33 @@ struct Image
     void* mDecoder;
     int mWidth, mHeight;
     uint32_t mDataSize;
-    uint8_t mNumMips;
-    uint8_t mNumFaces;
+    bool mHasMipmaps;
+    bool mIsCubemap;
     TextureFormat mFormat;
     Image& operator=(const Image& other)
     {
         mDecoder = other.mDecoder;
         mWidth = other.mWidth;
         mHeight = other.mHeight;
-        mNumMips = other.mNumMips;
-        mNumFaces = other.mNumFaces;
+		mHasMipmaps = other.mHasMipmaps;
+		mIsCubemap = other.mIsCubemap;
         mFormat = other.mFormat;
         SetBits(other.mBits, other.mDataSize);
         return *this;
     }
+	unsigned int GetMipmapCount() const 
+	{
+		if (!mHasMipmaps)
+		{
+			return 1;
+		}
+		return (unsigned int)(log2(mWidth));
+	}
+	unsigned int GetFaceCount() const
+	{
+		return mIsCubemap ? 6 : 1;
+	}
+
     unsigned char* GetBits() const
     {
         return mBits;
@@ -163,13 +176,10 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 class RenderTarget
 {
 public:
-    RenderTarget()
-    {
-        mImage = std::make_shared<Image>();
-    }
+    RenderTarget() = default;
 
     void InitBuffer(int width, int height, bool depthBuffer);
-    void InitCube(int width, int mipmapCount);
+    void InitCube(int width, bool hasMipmaps);
     void BindAsTarget() const;
     void BindAsCubeTarget() const;
     void BindCubeFace(size_t face, int mipmap, int faceWidth);
@@ -178,7 +188,7 @@ public:
     void Swap(RenderTarget& other);
 
 
-    std::shared_ptr<Image> mImage;
+    Image mImage;
 	TextureHandle mGLTexID = {0};
 	TextureHandle mGLTexDepth = {0};
 	FrameBufferHandle mFrameBuffer = { 0 };

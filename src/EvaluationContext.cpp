@@ -335,15 +335,12 @@ void drawBlades(int indexCount, int instanceCount, int elementCount)
 }
 
 void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
-                                     unsigned int program,
                                      size_t nodeIndex,
                                      std::shared_ptr<RenderTarget> reusableTarget)
 {
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
-		// todogl
-        // glActiveTexture(GL_TEXTURE0 + inputIndex);
         int targetIndex = input.mOverrideInputs[inputIndex];
         if (targetIndex < 0)
         {
@@ -351,23 +348,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
         }
         if (targetIndex < 0)
         {
-			// todogl
-            // glBindTexture(GL_TEXTURE_2D, 0);
         }
         else
         {
-            unsigned int parameter = -1;/* todogl glGetUniformLocation(program, sampler2DName[inputIndex]);*/
-            if (parameter == 0xFFFFFFFF)
-                parameter = -1; /* todogl glGetUniformLocation(program, samplerCubeName[inputIndex]);*/
-            if (parameter == 0xFFFFFFFF)
-            {
-				// todogl
-                //glBindTexture(GL_TEXTURE_2D, 0);
-                continue;
-            }
-			// todogl
-            // glUniform1i(parameter, inputIndex);
-
             std::shared_ptr<RenderTarget> tgt;
             if (inputIndex == 0 && reusableTarget)
             {
@@ -381,8 +364,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
             if (tgt)
             {
                 const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[nodeIndex][inputIndex];
-                if (tgt->mImage->mNumFaces == 1)
+                if (!tgt->mImage.mIsCubemap)
                 {
+					bgfx::setTexture(inputIndex, gEvaluators.mSamplers2D[inputIndex], tgt->mGLTexID);
                     /* todogl
 					glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
                     TexParam(filter[inputSampler.mFilterMin],
@@ -403,9 +387,9 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                              GL_TEXTURE_CUBE_MAP);
                     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
                     // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                    if (tgt->mImage->mNumMips > 1)
+                    if (tgt->mImage.mNumMips > 1)
                     {
-                        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage->mNumMips - 1);
+                        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage.mNumMips - 1);
                         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                     }
 					*/
@@ -531,8 +515,9 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
         glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
 
-
-        BindTextures(evaluationStage, program, nodeIndex, std::shared_ptr<RenderTarget>());
+		*/
+        BindTextures(evaluationStage, nodeIndex, std::shared_ptr<RenderTarget>());
+		/*
         glEnable(GL_RASTERIZER_DISCARD);
         glBindVertexArray(feedbackVertexArray);
         glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
@@ -597,14 +582,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         transientTarget->Clone(*tgt);
     }
 
-    uint8_t mipmapCount = tgt->mImage->mNumMips;
+    uint8_t mipmapCount = tgt->mImage.GetMipmapCount();
     for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
         for (int mip = 0; mip < mipmapCount; mip++)
         {
             if (!evaluationInfo.uiPass)
             {
-                if (tgt->mImage->mNumFaces == 6)
+                if (tgt->mImage.mIsCubemap)
                 {
                     tgt->BindAsCubeTarget();
                 }
@@ -615,29 +600,29 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 }
             }
 
-            size_t faceCount = evaluationInfo.uiPass ? 1 : tgt->mImage->mNumFaces;
+            size_t faceCount = evaluationInfo.uiPass ? 1 : (tgt->mImage.mIsCubemap ? 6 : 1);
             for (size_t face = 0; face < faceCount; face++)
             {
-                if (tgt->mImage->mNumFaces == 6)
+				if (tgt->mImage.mIsCubemap)
                 {
-                    tgt->BindCubeFace(face, mip, tgt->mImage->mWidth);
+                    tgt->BindCubeFace(face, mip, tgt->mImage.mWidth);
                 }
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
                 memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
                 float sizeDiv = float(mip + 1);
-                evaluationInfo.viewport[0] = float(tgt->mImage->mWidth) / sizeDiv;
-                evaluationInfo.viewport[1] = float(tgt->mImage->mHeight) / sizeDiv;
+                evaluationInfo.viewport[0] = float(tgt->mImage.mWidth) / sizeDiv;
+                evaluationInfo.viewport[1] = float(tgt->mImage.mHeight) / sizeDiv;
                 evaluationInfo.passNumber = passNumber;
                 evaluationInfo.mipmapNumber = mip;
                 evaluationInfo.mipmapCount = mipmapCount;
 
-                //BindTextures(evaluationStage, program, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
+                BindTextures(evaluationStage, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
 
 				if (evaluation.mbClearBuffer)
 				{
 					bgfx::setViewClear(1, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
 				}
-				bgfx::setViewRect(1, 0, 0, tgt->mImage->mWidth, tgt->mImage->mHeight);
+				bgfx::setViewRect(1, 0, 0, tgt->mImage.mWidth, tgt->mImage.mHeight);
 
 				float tempUniforms[16];
 				const Parameters & parameters = mEvaluationStages.mParameters[nodeIndex];
@@ -739,8 +724,8 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
     }
     const auto tgt = evaluation.mTarget;
 
-    const int width = tgt->mImage->mWidth;
-    const int height = tgt->mImage->mHeight;
+    const int width = tgt->mImage.mWidth;
+    const int height = tgt->mImage.mHeight;
 
     if (!width || !height)
     {
@@ -1129,9 +1114,13 @@ Builder::~Builder()
 
 void Builder::Add(const char* graphName, const EvaluationStages& stages)
 {
+	/* aync
     mMutex.lock();
     mEntries.push_back({graphName, 0.f, stages});
     mMutex.unlock();
+	*/
+	// sync 
+	DoBuild(Builder::Entry{ graphName, 0.f, stages });
 }
 
 void Builder::Add(Material* material)

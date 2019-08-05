@@ -921,7 +921,9 @@ bool GraphControler::NodeIs2D(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
-        return target->mImage->mNumFaces == 1;
+	{
+        return !target->mImage.mIsCubemap;
+	}
     return false;
 }
 
@@ -934,7 +936,9 @@ bool GraphControler::NodeIsCubemap(size_t nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
-        return target->mImage->mNumFaces == 6;
+	{
+        return target->mImage.mIsCubemap;
+	}
     return false;
 }
 

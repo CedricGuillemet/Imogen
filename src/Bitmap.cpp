@@ -100,8 +100,8 @@ Image Image::DecodeImage(FFMPEGCodec::Decoder* decoder, int frame)
     decoder->ReadFrame(frame);
     Image image;
     image.mDecoder = decoder;
-    image.mNumMips = 1;
-    image.mNumFaces = 1;
+    image.mHasMipmaps = false;
+    image.mIsCubemap = false;
     image.mFormat = TextureFormat::RGB8; // todo:shoud be bgr8
     image.mWidth = int(decoder->mWidth);
     image.mHeight = int(decoder->mHeight);
@@ -147,8 +147,8 @@ int Image::LoadSVG(const char* filename, Image* image, float dpi)
     image->SetBits(img, imgSize);
     image->mWidth = width;
     image->mHeight = height;
-    image->mNumMips = 1;
-    image->mNumFaces = 1;
+    image->mHasMipmaps = false;
+    image->mIsCubemap = false;
     image->mFormat = TextureFormat::RGBA8;
     image->mDecoder = NULL;
 
@@ -196,20 +196,28 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
     bool allocTexture = false;
     if (!textureHandle.idx)
     {
-        //glGenTextures(1, &textureId);
-		
+		textureHandle = bgfx::createTexture2D(
+			uint16_t(image->mWidth)
+			, uint16_t(image->mHeight)
+			, image->mHasMipmaps
+			, uint16_t(1)
+			, bgfx::TextureFormat::Enum(image->mFormat)
+			, uint64_t(0)
+			, nullptr
+		);
+		allocTexture = true;
     }
-	assert(!textureHandle.idx);
+	assert(textureHandle.idx);
 	assert(cubeFace == -1);
 
 	unsigned int texelSize = bimg::getBitsPerPixel(image->mFormat)/8;
 	assert(texelSize == 4);
 	unsigned int offset = 0;
-	if (image->mNumFaces > 1)
+	if (image->mIsCubemap)
 	{
 		for (int face = 0; face < cubeFace; face++)
 		{
-			for (int i = 0; i < image->mNumMips; i++)
+			for (auto i = 0; i < image->GetMipmapCount(); i++)
 			{
 				offset += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
 			}
@@ -223,13 +231,14 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
 	uint16_t w = uint16_t(image->mWidth >> mipmap);
 	uint16_t h = uint16_t(image->mHeight >> mipmap);
 	
-	TextureHandle texture = bgfx::createTexture2D(
-		w
-		, h
-		, (image->mNumMips > 1)
-		, image->mNumMips
-		, bgfx::TextureFormat::RGBA8
+	bgfx::updateTexture2D(
+		textureHandle
+		, 0
 		, mipmap
+		, 0
+		, 0
+		, w
+		, h
 		, bgfx::copy(image->GetBits() + offset, w * h * texelSize)
 	);
 
@@ -238,7 +247,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
 		vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * (bimg::getBitsPerPixel(image->mFormat)/8));
 	}
 
-	return texture;
+	return textureHandle;
 	/*
     unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
     glBindTexture(targetType, textureId);
@@ -275,8 +284,8 @@ int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const cha
         image->SetBits((unsigned char*)imageContainer->m_data, imageContainer->m_size);
         image->mWidth = imageContainer->m_width;
         image->mHeight = imageContainer->m_height;
-        image->mNumMips = imageContainer->m_numMips;
-        image->mNumFaces = imageContainer->m_cubeMap ? 6 : 1;
+        image->mHasMipmaps = imageContainer->m_numMips > 1;
+        image->mIsCubemap = imageContainer->m_cubeMap;
         image->mFormat = (imageContainer->m_format == bimg::TextureFormat::RGB8) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
         image->mDecoder = NULL;
         if (filename)
@@ -349,8 +358,8 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
                     , image->mHeight
                     , 1
                     , 1
-                    , (image->mNumFaces == 6) ? true : false
-                    , (image->mNumMips>1)
+                    , image->mIsCubemap
+                    , image->mHasMipmaps
                     , image->GetBits()
                 );
 
@@ -371,11 +380,11 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             bimg::imageWriteKtx(
                 &writer
                 , image->mFormat
-                , (image->mNumFaces == 6)
+                , image->mIsCubemap
                 , image->mWidth
                 , image->mHeight
                 , 1
-                , image->mNumMips
+                , image->GetMipmapCount()
                 , 1
                 , image->GetBits()
                 , &err
@@ -492,17 +501,17 @@ void RenderTarget::Destroy()
 {
 	if (mFrameBuffer.idx)
 	{
-		bgfx::destroy(mFrameBuffer);
+		//bgfx::destroy(mFrameBuffer);
 	}
 	mGLTexDepth = {0};
-    mImage->mWidth = mImage->mHeight = 0;
+    mImage = Image();
 	mGLTexID = {0};
 }
 
 void RenderTarget::Clone(const RenderTarget& other)
 {
     // TODO: clone other type of render target
-    InitBuffer(other.mImage->mWidth, other.mImage->mHeight, other.mGLTexDepth.idx != 0);
+    InitBuffer(other.mImage.mWidth, other.mImage.mHeight, other.mGLTexDepth.idx != 0);
 }
 
 void RenderTarget::Swap(RenderTarget& other)
@@ -515,21 +524,22 @@ void RenderTarget::Swap(RenderTarget& other)
 
 void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 {
-    if ((width == mImage->mWidth) && (mImage->mHeight == height) && mImage->mNumFaces == 1 &&
+    if ((width == mImage.mWidth) && (mImage.mHeight == height) && !mImage.mIsCubemap &&
         (!(depthBuffer ^ (mGLTexDepth.idx != 0))))
         return;
     Destroy();
 
-    if (!width || !height)
-    {
-        Log("Trying to init FBO with 0 sized dimension.\n");
-    }
-    mImage->mWidth = width;
-    mImage->mHeight = height;
-    mImage->mNumMips = 1;
-    mImage->mNumFaces = 1;
-    mImage->mFormat = TextureFormat::RGBA8;
+    mImage.mWidth = width;
+    mImage.mHeight = height;
+    mImage.mHasMipmaps = false;
+    mImage.mIsCubemap = false;
+    mImage.mFormat = TextureFormat::RGBA8;
 
+	if (!width || !height)
+	{
+		Log("Trying to init FBO with 0 sized dimension.\n");
+		return;
+	}
 	/*mGLTexID = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::BGRA8);
 	if (depthBuffer)
 	{
@@ -543,32 +553,32 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 	assert(!depthBuffer);
 	if (!depthBuffer)
 	{
-		mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::BGRA8);
+		mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum(mImage.mFormat));
 		mGLTexID = bgfx::getTexture(mFrameBuffer);
 		bgfx::setName(mFrameBuffer, "RenderTargetBuffer");
 	}
 	
 }
 
-void RenderTarget::InitCube(int width, int mipmapCount)
+void RenderTarget::InitCube(int width, bool hasMipmaps)
 {
-    if ((width == mImage->mWidth) && (mImage->mHeight == width) && mImage->mNumFaces == 6 &&
-        (mImage->mNumMips == mipmapCount))
+    if ((width == mImage.mWidth) && (mImage.mHeight == width) && mImage.mIsCubemap &&
+        (mImage.mHasMipmaps == hasMipmaps))
         return;
     Destroy();
 
-    if (!width)
-    {
-        Log("Trying to init FBO with 0 sized dimension.\n");
-    }
+    mImage.mWidth = width;
+    mImage.mHeight = width;
+    mImage.mHasMipmaps = hasMipmaps;
+    mImage.mIsCubemap = true;
+    mImage.mFormat = TextureFormat::RGBA8;
 
-    mImage->mWidth = width;
-    mImage->mHeight = width;
-    mImage->mNumMips = mipmapCount;
-    mImage->mNumFaces = 6;
-    mImage->mFormat = TextureFormat::RGBA8;
+	if (!width)
+	{
+		Log("Trying to init FBO with 0 sized dimension.\n");
+		return;
+	}
 
-
-	mGLTexID = bgfx::createTextureCube(width, mipmapCount != 1, 1, bgfx::TextureFormat::RGBA8);
+	mGLTexID = bgfx::createTextureCube(width, hasMipmaps, 1, bgfx::TextureFormat::Enum(mImage.mFormat));
 	mFrameBuffer = bgfx::createFrameBuffer(1, &mGLTexID, true);
 }

@@ -39,6 +39,9 @@ DECLARE_NODE(ImageWrite)
 	const char* stockImages[] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png", "Stock/dds-icon.png", "Stock/ktx-icon.png", "Stock/mp4-icon.png"};
 	Image image;
 	
+	param->width = std::max(param->width, 8);
+	param->height = std::max(param->height, 8);
+
 	// set info stock image
 	if (Image::Read(stockImages[param->format], &image) == EVAL_OK)
 	{

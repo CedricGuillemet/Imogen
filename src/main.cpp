@@ -337,16 +337,19 @@ int main_Async(int argc, char** argv)
 
     // save lib after all TS thread done in case a job adds something to the library (ie, thumbnail, paint 2D/3D)
     SaveLib(&library, library.mFilename);
+	imogen.Finish(); // keep dock being saved
+
+	// evaluators
+	gEvaluators.Clear();
 
     // Cleanup
     ImGui_Implbgfx_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    imogen.Finish(); // keep dock being saved
+    
 
-	// evaluators
-	gEvaluators.Clear();
+
 
 	// Shutdown bgfx.
 	bgfx::shutdown();

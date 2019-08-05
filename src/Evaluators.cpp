@@ -647,7 +647,7 @@ namespace EvaluationAPI
 {
     int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, const Image* image, int cubeFace)
     {
-        if (image->mNumFaces != 1)
+        if (!image->mIsCubemap)
         {
             return EVAL_ERR;
         }
@@ -657,7 +657,7 @@ namespace EvaluationAPI
             tgt = evaluationContext->CreateRenderTarget(target);
         }
 
-        tgt->InitCube(image->mWidth, image->mNumMips);
+        tgt->InitCube(image->mWidth, image->mHasMipmaps);
 
         Image::Upload(image, tgt->mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, Dirty::Parameter, true);
@@ -718,8 +718,8 @@ namespace EvaluationAPI
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
             return EVAL_ERR;
-        *imageWidth = renderTarget->mImage->mWidth;
-        *imageHeight = renderTarget->mImage->mHeight;
+        *imageWidth = renderTarget->mImage.mWidth;
+        *imageHeight = renderTarget->mImage.mHeight;
         return EVAL_OK;
     }
 
@@ -835,36 +835,51 @@ namespace EvaluationAPI
         {
             return EVAL_ERR;
         }
+		auto sourceImage = tgt->mImage;
+		TextureHandle transient = bgfx::createTexture2D(
+			uint16_t(sourceImage.mWidth)
+			, uint16_t(sourceImage.mHeight)
+			, sourceImage.mHasMipmaps
+			, uint16_t(1)
+			, bgfx::TextureFormat::Enum(sourceImage.mFormat)
+			, BGFX_TEXTURE_READ_BACK
+			, nullptr
+			);
 
+		bgfx::blit(2, transient,0,0,tgt->mGLTexID);
         // compute total size
         auto img = tgt->mImage;
-        unsigned int texelSize = bimg::getBitsPerPixel(img->mFormat)/8;
-        //unsigned int texelFormat = glInternalFormats[img->mFormat];
-        uint32_t size = 0; // img.mNumFaces * img.mWidth * img.mHeight * texelSize;
-        for (int i = 0; i < img->mNumMips; i++)
-            size += img->mNumFaces * (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
+        unsigned int texelSize = bimg::getBitsPerPixel(img.mFormat)/8;
+        uint32_t size = 0; 
+		
+        for (auto i = 0; i < img.GetMipmapCount(); i++)
+		{
+            size += img.GetFaceCount() * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+		}
 
         image->Allocate(size);
-        image->mWidth = img->mWidth;
-        image->mHeight = img->mHeight;
-        image->mNumMips = img->mNumMips;
-        image->mFormat = img->mFormat;
-        image->mNumFaces = img->mNumFaces;
-		/* todogl
-#ifdef glGetTexImage
-        unsigned char* ptr = image->GetBits();
-        if (img->mNumFaces == 1)
+        image->mWidth = img.mWidth;
+        image->mHeight = img.mHeight;
+        image->mHasMipmaps = img.mHasMipmaps;
+        image->mFormat = img.mFormat;
+        image->mIsCubemap = img.mIsCubemap;
+
+		uint32_t availableFrame;
+		unsigned char* ptr = image->GetBits();
+        if (!img.mIsCubemap)
         {
-            glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
-            for (int i = 0; i < img->mNumMips; i++)
+            for (auto i = 0; i < img.GetMipmapCount(); i++)
             {
-                glGetTexImage(GL_TEXTURE_2D, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
-                ptr += (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
+				availableFrame = bgfx::readTexture(transient, ptr, i);
+                ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
             }
+			while(bgfx::frame() != availableFrame)
+			{
+			};
         }
         else
         {
-            glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
+            /*glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID); todogl
             for (int cube = 0; cube < img->mNumFaces; cube++)
             {
                 for (int i = 0; i < img->mNumMips; i++)
@@ -872,10 +887,9 @@ namespace EvaluationAPI
                     glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + cube, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
                     ptr += (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
                 }
-            }
+            }*/
         }
-#endif
-*/
+		bgfx::destroy(transient);
         return EVAL_OK;
     }
 
@@ -887,25 +901,20 @@ namespace EvaluationAPI
         {
             tgt = evaluationContext->CreateRenderTarget(target);
         }
-        //unsigned int texelSize = textureFormatSize[image->mFormat];
-        //unsigned int inputFormat = glInputFormats[image->mFormat];
-        //unsigned int internalFormat = glInternalFormats[image->mFormat];
-        //unsigned char* ptr = image->GetBits();
         
-		//TextureID texType = 0;// todogl GL_TEXTURE_2D;
-		if (image->mNumFaces == 1)
+		if (!image->mIsCubemap)
 		{
 			tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
 		}
 		else
 		{
-			tgt->InitCube(image->mWidth, image->mNumMips);
-			//texType = 0;// todogl GL_TEXTURE_CUBE_MAP;
+			tgt->InitCube(image->mWidth, image->mHasMipmaps);
 		}
-		for (int face = 0; face < image->mNumFaces; face++)
+
+		for (auto face = 0; face < image->GetFaceCount(); face++)
 		{
-			int cubeFace = (image->mNumFaces == 1)?-1:face;
-			for (int i = 0; i < image->mNumMips; i++)
+			int cubeFace = image->mIsCubemap ? face : -1;
+			for (auto i = 0; i < image->GetMipmapCount(); i++)
 			{
 				Image::Upload(image, tgt->mGLTexID, cubeFace, i);
 			}

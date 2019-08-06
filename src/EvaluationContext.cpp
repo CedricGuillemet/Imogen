@@ -613,9 +613,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 				int paramIndex = 0;
 				for (const auto& uniform : evaluator.mUniformHandles)
 				{
-					auto paramSize = GetParameterTypeSize(gMetaNodes[nodeType].mParams[paramIndex].mType);
-					memcpy(tempUniforms, ptr, paramSize);
-					bgfx::setUniform(uniform, tempUniforms, 1);
+					const auto& parameter = gMetaNodes[nodeType].mParams[paramIndex];
+					auto paramSize = GetParameterTypeSize(parameter.mType);
+					if (paramSize <= 16*sizeof(float))
+					{
+						memcpy(tempUniforms, ptr, paramSize);
+						bgfx::setUniform(uniform, tempUniforms, 1);
+					}
 					paramIndex++;
 					ptr += paramSize;
 				}

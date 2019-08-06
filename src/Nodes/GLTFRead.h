@@ -37,7 +37,7 @@ DECLARE_NODE(GLTFRead)
 	EnableFrameClear(context, target, 1);
 	SetVertexSpace(context, target, 1/*VertexSpace_World*/);
 	
-	if (strlen(params->filename) && GetEvaluationSceneName(context, target) == params->filename)
+	if (strlen(params->filename) && strcmp(GetEvaluationSceneName(context, target), params->filename))
 	{
 		GLTFReadAsync(context, params->filename, target);
 	}

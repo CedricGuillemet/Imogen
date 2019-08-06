@@ -46,29 +46,6 @@
 #include <bgfx/embedded_shader.h>
 #include "Scene.h"
 
-#include "C:\Users\cedri\Dev\test\Color.dx11.h"
-#include "C:\Users\cedri\Dev\test\Color.dx9.h"
-#include "C:\Users\cedri\Dev\test\Color.esl.h"
-#include "C:\Users\cedri\Dev\test\Color.glsl.h"
-#include "C:\Users\cedri\Dev\test\Color.mtl.h"
-#include "C:\Users\cedri\Dev\test\Color.spv.h"
-#include "C:\Users\cedri\Dev\test\NodeVS.dx11.h"
-#include "C:\Users\cedri\Dev\test\NodeVS.dx9.h"
-#include "C:\Users\cedri\Dev\test\NodeVS.esl.h"
-#include "C:\Users\cedri\Dev\test\NodeVS.glsl.h"
-#include "C:\Users\cedri\Dev\test\NodeVS.mtl.h"
-#include "C:\Users\cedri\Dev\test\NodeVS.spv.h"
-
-/*
-static const bgfx::EmbeddedShader s_embeddedShaders[] =
-{
-	BGFX_EMBEDDED_SHADER(ColorFS),
-	BGFX_EMBEDDED_SHADER(NodeVS),
-
-	BGFX_EMBEDDED_SHADER_END()
-};
-*/
-bx::AllocatorI* getDefaultAllocator();
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.
 
@@ -217,8 +194,6 @@ int main_Async(int argc, char** argv)
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-	//bx::AllocatorI* g_allocator = getDefaultAllocator();
-	//imguiCreate(16.f, g_allocator);
 
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = "imgui.ini";

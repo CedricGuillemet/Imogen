@@ -28,7 +28,7 @@ vec4 brushSampleMouse(vec3 positionWorld)
 
 void main()
 {
-	if (u_uiPass == 1)
+	if (u_pass.x == 1)
 	{
 		vec3 lightdir = normalize(vec3(1.0, 1.0, 1.0));
 		float dt = max(dot(lightdir, normalize(v_normal)), 0.5);

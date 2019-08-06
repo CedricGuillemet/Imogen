@@ -137,7 +137,7 @@ void main()
 	uv *= 1.;
     
   // noise seed
-  vec3 v = vec3(uv, float(u_passNumber)*0.05);
+  vec3 v = vec3(uv, float(u_pass.x)*0.05);
   float disp_freq = u_Frequency; // param
   v.xy *= disp_freq;
   // get first some density variation

@@ -583,21 +583,6 @@ mat4 mtxFromCols(vec4 _0, vec4 _1, vec4 _2, vec4 _3)
     return transpose(mat4(_0, _1, _2, _3) );
 #endif // BGFX_SHADER_LANGUAGE_GLSL
 }
-
-/*
-uniform vec4  u_viewRect;
-uniform vec4  u_viewTexel;
-uniform mat4  u_view;
-uniform mat4  u_invView;
-uniform mat4  u_proj;
-uniform mat4  u_invProj;
-uniform mat4  u_viewProj;
-uniform mat4  u_invViewProj;
-uniform mat4  u_model[BGFX_CONFIG_MAX_BONES];
-uniform mat4  u_modelView;
-uniform mat4  u_modelViewProj;
-uniform vec4  u_alphaRef4;
-*/
 #define u_alphaRef u_alphaRef4.x
 
 #endif // __cplusplus

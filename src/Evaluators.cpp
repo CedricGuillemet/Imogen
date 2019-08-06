@@ -440,6 +440,19 @@ void Evaluators::SetEvaluators()
 	// default shaders
 	mBlitProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "Blit_fs"), false);
 
+	// evaluation uniforms
+	u_viewRot = bgfx::createUniform("u_viewRot", bgfx::UniformType::Mat4, 1);
+	u_viewProjection = bgfx::createUniform("u_viewProjection", bgfx::UniformType::Mat4, 1);
+	u_viewInverse = bgfx::createUniform("u_viewInverse", bgfx::UniformType::Mat4, 1);
+	u_world = bgfx::createUniform("u_world", bgfx::UniformType::Mat4, 1);
+	u_worldViewProjection = bgfx::createUniform("u_worldViewProjection", bgfx::UniformType::Mat4, 1);
+	u_mouse = bgfx::createUniform("u_mouse", bgfx::UniformType::Vec4, 1);
+	u_keyModifier = bgfx::createUniform("u_keyModifier", bgfx::UniformType::Vec4, 1);
+	u_inputIndices = bgfx::createUniform("u_inputIndices", bgfx::UniformType::Vec4, 2);
+	u_target = bgfx::createUniform("u_target", bgfx::UniformType::Vec4, 1);
+	u_pass = bgfx::createUniform("u_pass", bgfx::UniformType::Vec4, 1);
+	u_viewport = bgfx::createUniform("u_viewport", bgfx::UniformType::Vec4, 1);
+
 	// default samplers
 	for (int i = 0;i<8;i++)
 	{
@@ -578,6 +591,21 @@ void Evaluators::Clear()
 	mEvaluatorScripts.clear();
 	mEvaluatorPerNodeType.clear();
 	mShaderHandles.clear();
+
+	if (u_viewRot.idx)
+	{
+		bgfx::destroy(u_viewRot);
+		bgfx::destroy(u_viewProjection);
+		bgfx::destroy(u_viewInverse);
+		bgfx::destroy(u_world);
+		bgfx::destroy(u_worldViewProjection);
+		bgfx::destroy(u_mouse);
+		bgfx::destroy(u_keyModifier);
+		bgfx::destroy(u_inputIndices);
+		bgfx::destroy(u_target);
+		bgfx::destroy(u_pass);
+		bgfx::destroy(u_viewport);
+	}
 }
 
 int Evaluators::GetMask(size_t nodeType) const
@@ -642,6 +670,21 @@ void Evaluators::EvaluatorScript::RunPython() const
     mPyModule.attr("main")(gEvaluators.mImogenModule.attr("accessor_api")());
 }
 #endif
+
+void Evaluators::ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo)
+{
+	bgfx::setUniform(u_viewRot, evaluationInfo.viewRot);
+	bgfx::setUniform(u_viewProjection, evaluationInfo.viewProjection);
+	bgfx::setUniform(u_viewInverse, evaluationInfo.viewInverse);
+	bgfx::setUniform(u_world, evaluationInfo.world);
+	bgfx::setUniform(u_worldViewProjection, evaluationInfo.worldViewProjection);
+	bgfx::setUniform(u_mouse, evaluationInfo.mouse);
+	bgfx::setUniform(u_keyModifier, evaluationInfo.keyModifier);
+	bgfx::setUniform(u_inputIndices, evaluationInfo.inputIndices, 2);
+	bgfx::setUniform(u_target, &evaluationInfo.targetIndex);
+	bgfx::setUniform(u_pass, &evaluationInfo.uiPass);
+	bgfx::setUniform(u_viewport, evaluationInfo.viewport);
+}
 
 namespace EvaluationAPI
 {
@@ -852,7 +895,7 @@ namespace EvaluationAPI
         unsigned int texelSize = bimg::getBitsPerPixel(img.mFormat)/8;
         uint32_t size = 0; 
 		
-        for (auto i = 0; i < img.GetMipmapCount(); i++)
+        for (size_t i = 0; i < img.GetMipmapCount(); i++)
 		{
             size += img.GetFaceCount() * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 		}
@@ -868,7 +911,7 @@ namespace EvaluationAPI
 		unsigned char* ptr = image->GetBits();
         if (!img.mIsCubemap)
         {
-            for (auto i = 0; i < img.GetMipmapCount(); i++)
+            for (size_t i = 0; i < img.GetMipmapCount(); i++)
             {
 				availableFrame = bgfx::readTexture(transient, ptr, i);
                 ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
@@ -911,10 +954,10 @@ namespace EvaluationAPI
 			tgt->InitCube(image->mWidth, image->mHasMipmaps);
 		}
 
-		for (auto face = 0; face < image->GetFaceCount(); face++)
+		for (size_t face = 0; face < image->GetFaceCount(); face++)
 		{
 			int cubeFace = image->mIsCubemap ? face : -1;
-			for (auto i = 0; i < image->GetMipmapCount(); i++)
+			for (size_t i = 0; i < image->GetMipmapCount(); i++)
 			{
 				Image::Upload(image, tgt->mGLTexID, cubeFace, i);
 			}

@@ -25,74 +25,26 @@
 
 #include "Platform.h"
 #include "Scene.h"
-#include "EvaluationContext.h"
+#include "Evaluators.h"
 
 std::weak_ptr<Scene> Scene::mDefaultScene;
 
-void Scene::Mesh::Primitive::Draw() const
+void Scene::Mesh::Primitive::Draw(ProgramHandle program) const
 {
-    /*
-	todogl
-	unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    for (auto& buffer : mBuffers)
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, buffer.id);
-        switch (buffer.format)
-        {
-        case Format::UV:
-            glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 8, 0);
-            glEnableVertexAttribArray(SemUV0);
-            break;
-        case Format::COL:
-            glVertexAttribPointer(SemUV0 + 1, 4, GL_FLOAT, GL_FALSE, 16, 0);
-            glEnableVertexAttribArray(SemUV0 + 1);
-            break;
-        case Format::POS:
-            glVertexAttribPointer(SemUV0 + 2, 3, GL_FLOAT, GL_FALSE, 12, 0);
-            glEnableVertexAttribArray(SemUV0 + 2);
-            break;
-        case Format::NORM:
-            glVertexAttribPointer(SemUV0 + 3, 3, GL_FLOAT, GL_FALSE, 12, 0);
-            glEnableVertexAttribArray(SemUV0 + 3);
-            break;
-        }
-    }
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-    glBindVertexArray(vao);
-
-    if (!mIndexBuffer.id)
-    {
-        glDrawArrays(GL_TRIANGLES, 0, mBuffers[0].count);
-    }
-    else
-    {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer.id);
-        glDrawElements(GL_TRIANGLES,
-            mIndexBuffer.count,
-            (mIndexBuffer.stride == 4) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT,
-            (void*)0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glDeleteVertexArrays(1, &vao);
-	*/
+	for (auto i = 0; i < mStreams.size(); i++)
+	{
+		bgfx::setVertexBuffer(i, mStreams[i]);
+	}
+	bgfx::setIndexBuffer(mIbh);
+	bgfx::submit(1, program);
 }
 
 
 Scene::Mesh::Primitive::~Primitive()
 {
-	if (mVbh.idx)
+	for (auto i = 0; i < mStreams.size(); i++)
 	{
-		bgfx::destroy(mVbh);
+		bgfx::destroy(mStreams[i]);
 	}
 	if (mIbh.idx)
 	{
@@ -102,14 +54,6 @@ Scene::Mesh::Primitive::~Primitive()
 
 void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count)
 {
-    /* todogl
-	unsigned int va;
-    glGenBuffers(1, &va);
-    glBindBuffer(GL_ARRAY_BUFFER, va);
-    glBufferData(GL_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    mBuffers.push_back({ va, format, stride, count });
-	*/
 	mDecl.begin();
 	switch (format)
 	{
@@ -128,7 +72,7 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
 	}
 	mDecl.end();
 
-	mVbh = bgfx::createVertexBuffer(bgfx::copy(data, stride * count), mDecl);
+	mStreams.push_back(bgfx::createVertexBuffer(bgfx::copy(data, stride * count), mDecl));
 	mVertexCount = count;
 }
 
@@ -142,30 +86,27 @@ void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int strid
 	mIndexCount = count;
 }
 
-void Scene::Mesh::Draw() const
+void Scene::Mesh::Draw(ProgramHandle program) const
 {
     for (auto& prim : mPrimitives)
     {
-        prim.Draw();
+        prim.Draw(program);
     }
 }
 
-void Scene::Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const
+void Scene::Draw(EvaluationInfo& evaluationInfo, ProgramHandle program) const
 {
     for (unsigned int i = 0; i < mMeshIndex.size(); i++)
     {
         int index = mMeshIndex[i];
         if (index == -1)
+		{
             continue;
-
-        /*todogl
-		glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
-        memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
-        FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		*/
-        //mMeshes[index].Draw();
+		}
+        memcpy(evaluationInfo.world, mWorldTransforms[i], sizeof(Mat4x4));
+        FPU_MatrixF_x_MatrixF(evaluationInfo.world, evaluationInfo.viewProjection, evaluationInfo.worldViewProjection);
+		gEvaluators.ApplyEvaluationInfo(evaluationInfo);
+        mMeshes[index].Draw(program);
     }
 }
 

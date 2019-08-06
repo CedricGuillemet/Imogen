@@ -74,7 +74,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 	int numSamples = u_sampleCount;
 	vec3 color = vec3(0.0, 0.0, 0.0);
 	float totalWeight = float(numSamples);
-	float textureSize = 256.0;//textureSize(CubeSampler0, u_mipmapNumber).x;
+	float textureSize = 256.0;//textureSize(CubeSampler0, u_target.z).x;
 	float envMapDim = float(textureSize);
 	for(int i = 0; i < numSamples; i++) {
 		vec2 Xi = hammersley2d(i, numSamples);
@@ -119,7 +119,7 @@ void main()
 	else
 	{
 		// irradiance
-		float roughness = float(u_mipmapNumber)/max(float(u_mipmapCount-1), 1.);
+		float roughness = u_target.z/max(u_target.w - 1., 1.);
 		gl_FragColor = vec4(prefilterEnvMap(N, roughness), 1.0);
 	}
 }

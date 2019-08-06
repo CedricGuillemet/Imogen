@@ -7,27 +7,17 @@
 mat4 u_viewRot;
 mat4 u_viewProjection;
 mat4 u_viewInverse;
-mat4 u_model;
-mat4 u_modelViewProjection;
+mat4 u_world;
+mat4 u_worldViewProjection;
 vec4 u_viewport;
 
-int u_targetIndex;
-int u_forcedDirty;
-int	u_uiPass;
-int u_passNumber;
 
 vec4 u_mouse; // x,y, lbut down, rbut down
-ivec4 u_keyModifier; // ctrl, alt, shift
-ivec4 u_inputIndices[2];
+vec4 u_keyModifier; // ctrl, alt, shift
+vec4 u_inputIndices[2];
 
-int u_frame;
-int u_localFrame;
-int u_mVertexSpace;
-int u_dirtyFlag;
-
-int u_mipmapNumber;
-int u_mipmapCount;
-
+vec4 u_pass; // uiPass, passNumber, frame, localFrame
+vec4 u_target; // targetIndex, vertexSpace, mipmapNumber, mipmapCount
 
 
 vec2 Rotate2D(vec2 v, float a) 

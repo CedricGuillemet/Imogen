@@ -18,7 +18,7 @@ void main()
 	vec4 res = vec4(0.0, 0.0, 0.0, 0.0);
 	float brushRadius = 0.25;
 	vec4 brush = brushSample(v_texcoord0-u_mouse.xy, brushRadius);
-	if (u_uiPass == 1)
+	if (u_pass.x == 1)
 	{
 		res = brush;
     }

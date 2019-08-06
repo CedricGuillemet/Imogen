@@ -394,7 +394,7 @@ void MainLoop(void* arg)
 		{
 			bgfx::reset(width, height, BGFX_RESET_VSYNC | BGFX_RESET_FLIP_AFTER_RENDER);
 		}
-		io.DisplaySize = ImVec2(width, height);
+		io.DisplaySize = ImVec2(float(width), float(height));
         
 		ImGui_Implbgfx_NewFrame();
         ImGui_ImplSDL2_NewFrame(loopdata->mWindow);

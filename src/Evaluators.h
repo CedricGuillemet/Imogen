@@ -47,25 +47,32 @@ struct EvaluationInfo
     float viewRot[16];
     float viewProjection[16];
     float viewInverse[16];
-    float model[16];
-    float modelViewProjection[16];
+    float world[16];
+    float worldViewProjection[16];
     float viewport[4];
 
-    int targetIndex;
-    int forcedDirty;
-    int uiPass;
-    int passNumber;
     float mouse[4];
-    int keyModifier[4];
-    int inputIndices[8];
+    float keyModifier[4];
+    float inputIndices[8];
 
-    int frame;
-    int localFrame;
-    int vertexSpace;
-    int dirtyFlag;
 
-    int mipmapNumber;
-    int mipmapCount;
+	float uiPass; // pass
+	float passNumber;
+    float frame;
+	float localFrame;
+
+    
+	float targetIndex; //target
+    float vertexSpace;
+    float mipmapNumber;
+    float mipmapCount;
+
+
+	// not used by shaders
+	uint32_t dirtyFlag;
+	uint32_t forcedDirty;
+
+	uint32_t padding[2];
 };
 
 typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
@@ -109,10 +116,23 @@ struct Evaluators
 	{
 		return *mEvaluatorPerNodeType[nodeType];
 	}
+	void ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo);
 protected:
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
 	std::vector<ShaderHandle> mShaderHandles;
+
+	bgfx::UniformHandle u_viewRot;
+	bgfx::UniformHandle u_viewProjection;
+	bgfx::UniformHandle u_viewInverse;
+	bgfx::UniformHandle u_world;
+	bgfx::UniformHandle u_worldViewProjection;
+	bgfx::UniformHandle u_mouse;
+	bgfx::UniformHandle u_keyModifier;
+	bgfx::UniformHandle u_inputIndices;
+	bgfx::UniformHandle u_target;
+	bgfx::UniformHandle u_pass;
+	bgfx::UniformHandle u_viewport;
 public:
 	ProgramHandle mBlitProgram;
 	std::vector<UniformHandle> mSamplers2D;

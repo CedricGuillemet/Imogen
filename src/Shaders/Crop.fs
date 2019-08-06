@@ -8,7 +8,7 @@ vec4 u_quad;
 
 void main()
 {
-	if (u_uiPass == 1)
+	if (u_pass.x == 1)
 	{
 		vec4 q = vec4(min(u_quad.x, u_quad.z), 
 			min(u_quad.y, u_quad.w),

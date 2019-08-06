@@ -58,7 +58,7 @@ vec4 StepJFA (in vec2 fragCoord, in float level, float c_maxSteps)
 void main()
 {
     vec4 res;
-    if (u_passNumber == 0)
+    if (u_pass.x == 0.)
     {
         float v = texture2D(Sampler0, v_texcoord0).x;
         if (v > 0.5)
@@ -70,9 +70,9 @@ void main()
             res = Pack(vec4(vec2(10000.0, 10000.0), gl_FragCoord.xy));
         }
     }
-    else if (u_passNumber != (u_passCount - 1))
+    else if (u_pass.x != (u_passCount - 1))
     {
-        res = StepJFA(gl_FragCoord.xy, float(u_passNumber-1), float(u_passCount-2));
+        res = StepJFA(gl_FragCoord.xy, u_pass.x-1., float(u_passCount-2));
     }
     else
     {

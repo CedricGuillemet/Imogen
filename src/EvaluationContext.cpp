@@ -241,9 +241,9 @@ void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) co
         evaluationInfo.mouse[2] = mUIInputs.mLButDown ? 1.f : 0.f;
         evaluationInfo.mouse[3] = mUIInputs.mRButDown ? 1.f : 0.f;
 
-        evaluationInfo.keyModifier[0] = mUIInputs.mbCtrl ? 1 : 0;
-        evaluationInfo.keyModifier[1] = mUIInputs.mbAlt ? 1 : 0;
-        evaluationInfo.keyModifier[2] = mUIInputs.mbShift ? 1 : 0;
+        evaluationInfo.keyModifier[0] = mUIInputs.mbCtrl ? 1.f : 0.f;
+        evaluationInfo.keyModifier[1] = mUIInputs.mbAlt ? 1.f : 0.f;
+        evaluationInfo.keyModifier[2] = mUIInputs.mbShift ? 1.f : 0.f;
         evaluationInfo.keyModifier[3] = 0;
     }
     else
@@ -498,24 +498,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
     if (destinationBuffer->mElementCount)
     {
         const Parameters& parameters = mEvaluationStages.mParameters[nodeIndex];
-        /* todogl
-		glUseProgram(program);
 
-        glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
-        evaluationInfo.vertexSpace = evaluation.mVertexSpace;
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-        glBindBuffer(GL_UNIFORM_BUFFER, mParametersGLSLBuffer);
-        glBufferData(
-            GL_UNIFORM_BUFFER, parameters.size(), parameters.data(), GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, mParametersGLSLBuffer);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-
-		*/
         BindTextures(evaluationStage, nodeIndex, std::shared_ptr<RenderTarget>());
 		/*
         glEnable(GL_RASTERIZER_DISCARD);
@@ -612,8 +595,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 float sizeDiv = float(mip + 1);
                 evaluationInfo.viewport[0] = float(tgt->mImage.mWidth) / sizeDiv;
                 evaluationInfo.viewport[1] = float(tgt->mImage.mHeight) / sizeDiv;
-                evaluationInfo.passNumber = passNumber;
-                evaluationInfo.mipmapNumber = mip;
+                evaluationInfo.passNumber = float(passNumber);
+                evaluationInfo.mipmapNumber = float(mip);
                 evaluationInfo.mipmapCount = mipmapCount;
 
                 BindTextures(evaluationStage, nodeIndex, passNumber ? transientTarget : std::shared_ptr<RenderTarget>());
@@ -689,12 +672,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 						;
 
 					bgfx::setState(state);
-					auto& prim = evaluationStage.mGScene->mMeshes[0].mPrimitives[0];
-					bgfx::setVertexBuffer(0, prim.mVbh);
-					bgfx::setIndexBuffer(prim.mIbh);
-					bgfx::submit(1, program);
-
-                    //evaluationStage.mGScene->Draw(this, evaluationInfo);
+                    evaluationStage.mGScene->Draw(evaluationInfo, program);
                 }
             } // face
         }     // mip
@@ -749,10 +727,7 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
 
 	bgfx::setState(state);
 	bgfx::setTexture(0, gEvaluators.mSamplers2D[0], tgt->mGLTexID);
-	auto& prim = def->mMeshes[0].mPrimitives[0];
-	bgfx::setVertexBuffer(0, prim.mVbh);
-	bgfx::setIndexBuffer(prim.mIbh);
-	bgfx::submit(2, gEvaluators.mBlitProgram);
+	def->Draw(EvaluationInfo{}, gEvaluators.mBlitProgram);
 }
 
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
@@ -867,8 +842,8 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
     evaluation.mProcessing = 0;
 
-    mEvaluationInfo.targetIndex = int(nodeIndex);
-    mEvaluationInfo.frame = mCurrentTime;
+    mEvaluationInfo.targetIndex = float(nodeIndex);
+    mEvaluationInfo.frame = float(mCurrentTime);
     mEvaluationInfo.dirtyFlag = evaluation.mDirtyFlag;
     memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
     SetKeyboardMouseInfos(mEvaluationInfo);

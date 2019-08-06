@@ -69,7 +69,7 @@ struct Scene
 			~Primitive();
             //std::vector<Buffer> mBuffers;
             //IndexBuffer mIndexBuffer = { 0, 0, 0 };
-			bgfx::VertexBufferHandle mVbh;
+			std::vector<bgfx::VertexBufferHandle> mStreams;
 			bgfx::IndexBufferHandle mIbh;
 			bgfx::VertexDecl mDecl;
 
@@ -77,16 +77,16 @@ struct Scene
 			uint32_t mIndexCount;
             void AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count);
             void AddIndexBuffer(const void* data, unsigned int stride, unsigned int count);
-            void Draw() const;
+            void Draw(ProgramHandle program) const;
         };
         std::vector<Primitive> mPrimitives;
-        void Draw() const;
+        void Draw(ProgramHandle program) const;
     };
     std::vector<Mesh> mMeshes;
     std::vector<Mat4x4> mWorldTransforms;
     std::vector<int> mMeshIndex;
     std::string mName;
-    void Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const;
+    void Draw(EvaluationInfo& evaluationInfo, ProgramHandle program) const;
 protected:
 	static std::weak_ptr<Scene> mDefaultScene;
 };

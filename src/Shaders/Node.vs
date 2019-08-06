@@ -7,9 +7,9 @@ $output v_texcoord0, v_color0, v_positionWorld, v_normal
 
 void main()
 {
-	if (u_mVertexSpace == 1)
+	if (u_target.y == 1.)
     {
-		gl_Position = mul(vec4(a_position.xyz, 1.0), u_modelViewProjection);
+		gl_Position = mul(vec4(a_position.xyz, 1.0), u_worldViewProjection);
 	}
 	else
 	{
@@ -18,6 +18,6 @@ void main()
 	
 	v_texcoord0 = a_texcoord0;
 	v_color0 = a_color0;
-	v_normal = mul(vec4(a_normal, 0.0), u_model).xyz;
-	v_positionWorld = mul(vec4(a_position, 1.0), u_model).xyz;
+	v_normal = mul(vec4(a_normal, 0.0), u_world).xyz;
+	v_positionWorld = mul(vec4(a_position, 1.0), u_world).xyz;
 }

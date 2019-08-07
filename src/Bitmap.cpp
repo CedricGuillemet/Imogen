@@ -550,14 +550,26 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 	
 	mFrameBuffer = bgfx::createFrameBuffer(depthBuffer?2:1, textureHandles, true);
 	*/
-	assert(!depthBuffer);
-	if (!depthBuffer)
+	//assert(!depthBuffer);
+	//if (!depthBuffer)
 	{
 		mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum(mImage.mFormat));
 		mGLTexID = bgfx::getTexture(mFrameBuffer);
 		bgfx::setName(mFrameBuffer, "RenderTargetBuffer");
 	}
-	
+	/*
+	else
+	{
+		bgfx::TextureHandle fbtextures[] =
+		{
+			bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D24, BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL),
+			bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::Enum(mImage.mFormat)),
+		};
+		mGLTexID = fbtextures[0];
+		mGLTexDepth = fbtextures[1];
+		mFrameBuffer = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
+	}
+	*/
 }
 
 void RenderTarget::InitCube(int width, bool hasMipmaps)

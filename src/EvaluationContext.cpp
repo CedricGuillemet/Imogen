@@ -37,17 +37,6 @@ static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BOR
 #endif
 // todogl
 //static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
-/*static const char* sampler2DName[] = {
-    "Sampler0", "Sampler1", "Sampler2", "Sampler3", "Sampler4", "Sampler5", "Sampler6", "Sampler7"};
-static const char* samplerCubeName[] = {"CubeSampler0",
-                                        "CubeSampler1",
-                                        "CubeSampler2",
-                                        "CubeSampler3",
-                                        "CubeSampler4",
-                                        "CubeSampler5",
-                                        "CubeSampler6",
-                                        "CubeSampler7"};
-										*/
 
 static const float rotMatrices[6][16] = {
     // toward +x
@@ -180,18 +169,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
     , mRuntimeUniqueId(-1)
     , mInputNodeIndex(-1)
 {
-    // evaluation statedes
-    /* todogl
-	glGenBuffers(1, &mEvaluationStateGLSLBuffer);
-    glBindBuffer(GL_UNIFORM_BUFFER, mEvaluationStateGLSLBuffer);
 
-    glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), NULL, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, mEvaluationStateGLSLBuffer);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    // parameters
-    glGenBuffers(1, &mParametersGLSLBuffer);
-	*/
     mEvaluations.resize(evaluation.mStages.size());
 }
 
@@ -207,10 +185,6 @@ EvaluationContext::~EvaluationContext()
     mWriteStreams.clear();
 #endif
 
-	/* todogl
-    glDeleteBuffers(1, &mEvaluationStateGLSLBuffer);
-    glDeleteBuffers(1, &mParametersGLSLBuffer);
-	*/
     Clear();
 }
 
@@ -378,8 +352,8 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                 }
                 else
                 {
+                    bgfx::setTexture(inputIndex, gEvaluators.mSamplersCube[inputIndex], tgt->mGLTexID);
                     /* todogl
-					glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID);
                     TexParam(filter[inputSampler.mFilterMin],
                              filter[inputSampler.mFilterMag],
                              wrap[inputSampler.mWrapU],
@@ -691,8 +665,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     {
         transientTarget->Destroy();
     }
-	// todogl
-    // glDisable(GL_BLEND);
+
 	bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
 }
 
@@ -888,10 +861,6 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 
 bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
 {
-    /* todogl
-	GLint last_viewport[4];
-    glGetIntegerv(GL_VIEWPORT, last_viewport);
-	*/
     // run C nodes
     bool anyNodeIsProcessing = false;
     for (size_t nodeIndex : nodesToEvaluate)
@@ -908,29 +877,15 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     for (auto index : mStillDirty)
         SetTargetDirty(index, Dirty::Input);
     mStillDirty.clear();
-	/*
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(0);
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+
     return anyNodeIsProcessing;
-	*/
-	return false;
 }
 
 void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo)
 {
-    /* todogl
-	GLint last_viewport[4];
-    glGetIntegerv(GL_VIEWPORT, last_viewport);
-	*/
     mEvaluationInfo = evaluationInfo;
 
     RunNode(nodeIndex);
-	/*
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glUseProgram(0);
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
-	*/
 }
 
 void EvaluationContext::RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes)

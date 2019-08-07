@@ -77,16 +77,16 @@ struct Scene
 			uint32_t mIndexCount;
             void AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count);
             void AddIndexBuffer(const void* data, unsigned int stride, unsigned int count);
-            void Draw(ProgramHandle program) const;
+            void Draw(bgfx::ViewId viewId, ProgramHandle program) const;
         };
         std::vector<Primitive> mPrimitives;
-        void Draw(ProgramHandle program) const;
+        void Draw(bgfx::ViewId viewId, ProgramHandle program) const;
     };
     std::vector<Mesh> mMeshes;
     std::vector<Mat4x4> mWorldTransforms;
     std::vector<int> mMeshIndex;
     std::string mName;
-    void Draw(EvaluationInfo& evaluationInfo, ProgramHandle program) const;
+    void Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, ProgramHandle program) const;
 protected:
 	static std::weak_ptr<Scene> mDefaultScene;
 };

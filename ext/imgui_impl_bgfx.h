@@ -32,5 +32,5 @@ struct ImDrawData;
 
 void ImGui_Implbgfx_Init();
 void ImGui_Implbgfx_Shutdown();
-void ImGui_Implbgfx_RenderDrawData(ImDrawData* _drawData);
+void ImGui_Implbgfx_RenderDrawData(bgfx::ViewId viewId, ImDrawData* _drawData);
 void ImGui_Implbgfx_NewFrame();

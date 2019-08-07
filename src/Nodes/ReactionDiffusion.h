@@ -40,6 +40,6 @@ DECLARE_NODE(ReactionDiffusion)
 		return EVAL_OK;
     }
     
-	SetEvaluationSize(context, evaluation->targetIndex, 256<< param->size, 256<< param->size);
+	SetEvaluationSize(context, int(evaluation->targetIndex), 256<< param->size, 256<< param->size);
 	return EVAL_OK;
 }

@@ -247,11 +247,6 @@ foreach(SHADER ${SHADER_FILES})
   get_filename_component(FILE_NAME ${SHADER} NAME_WE)
   get_filename_component(FILE_NAME_EXT ${SHADER} EXT)
   
-
-
-  
-
-  
   if(${FILE_NAME_EXT} STREQUAL ".vs")
 	  set(SHADER_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_dx11.h")
 	  add_custom_command(
@@ -290,6 +285,25 @@ foreach(SHADER ${SHADER_FILES})
 	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_fs_spv.h\"\n")
 	  list(APPEND SHADER_OUTPUT_FILES ${SHADER_OUTPUT})
 	  FILE(APPEND ${shaders_cpp_file} "BGFX_EMBEDDED_SHADER(${FILE_NAME}_fs),\n")
+  elseif(${FILE_NAME_EXT} STREQUAL ".cs")
+	set(SHADER_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_cs_dx11.h")
+	add_custom_command(
+		OUTPUT ${SHADER_OUTPUT}
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o ${SHADER_OUTPUT} --platform windows -p cs_5_0 -O 1 --type compute --bin2c ${FILE_NAME}_cs_dx11
+		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_dx9.h" --platform windows -p ps_5_0 -O 3 --type compute --bin2c ${FILE_NAME}_cs_dx9
+		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_esl.h" --platform android --type compute --bin2c ${FILE_NAME}_cs_esl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_glsl.h" --platform linux -p 430 --type compute --bin2c ${FILE_NAME}_cs_glsl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_mtl.h" --platform osx -p metal --type compute --bin2c ${FILE_NAME}_cs_mtl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_spv.h" --platform linux -p spirv --type compute --bin2c ${FILE_NAME}_cs_spv
+		DEPENDS ${SHADER})
+	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_dx11.h\"\n")
+	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_dx9.h\"\n")
+	  #FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_esl.h\"\n")
+	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_glsl.h\"\n")
+	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_mtl.h\"\n")
+	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_spv.h\"\n")
+	  list(APPEND SHADER_OUTPUT_FILES ${SHADER_OUTPUT})
+	  FILE(APPEND ${shaders_cpp_file} "BGFX_EMBEDDED_SHADER(${FILE_NAME}_cs),\n")
    endif()
 
 endforeach(SHADER)

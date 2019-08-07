@@ -34,7 +34,7 @@ DECLARE_NODE(Crop)
 	int croppedWidth = 256;
 	int croppedHeight = 256;
 	int width, height;
-	const int res = GetEvaluationSize(context, evaluation->inputIndices[0], &width, &height);
+	const int res = GetEvaluationSize(context, int(evaluation->inputIndices[0]), &width, &height);
 	if (res == EVAL_OK)
 	{
 		croppedWidth = width * int(fabsf(params->quad[2] - params->quad[0]));
@@ -45,11 +45,11 @@ DECLARE_NODE(Crop)
 	
 	if (evaluation->uiPass)
 	{
-		SetEvaluationSize(context, evaluation->targetIndex, width, height);
+		SetEvaluationSize(context, int(evaluation->targetIndex), width, height);
 	}
 	else
 	{
-		SetEvaluationSize(context, evaluation->targetIndex, croppedWidth, croppedHeight);
+		SetEvaluationSize(context, int(evaluation->targetIndex), croppedWidth, croppedHeight);
 	}
 	
 	return EVAL_OK;

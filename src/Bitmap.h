@@ -180,9 +180,6 @@ public:
 
     void InitBuffer(int width, int height, bool depthBuffer);
     void InitCube(int width, bool hasMipmaps);
-    void BindAsTarget() const;
-    void BindAsCubeTarget() const;
-    void BindCubeFace(size_t face, int mipmap, int faceWidth);
     void Destroy();
     void Clone(const RenderTarget& other);
     void Swap(RenderTarget& other);

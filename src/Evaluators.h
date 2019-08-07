@@ -135,8 +135,11 @@ protected:
 	bgfx::UniformHandle u_viewport;
 public:
 	ProgramHandle mBlitProgram;
+	ProgramHandle mProgressProgram;
+	ProgramHandle mDisplayCubemapProgram;
 	std::vector<UniformHandle> mSamplers2D;
 	std::vector<UniformHandle> mSamplersCube;
+	bgfx::UniformHandle u_time;
 };
 
 extern Evaluators gEvaluators;

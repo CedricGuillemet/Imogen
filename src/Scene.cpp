@@ -29,14 +29,15 @@
 
 std::weak_ptr<Scene> Scene::mDefaultScene;
 
-void Scene::Mesh::Primitive::Draw(ProgramHandle program) const
+void Scene::Mesh::Primitive::Draw(bgfx::ViewId viewId, ProgramHandle program) const
 {
 	for (auto i = 0; i < mStreams.size(); i++)
 	{
 		bgfx::setVertexBuffer(i, mStreams[i]);
 	}
 	bgfx::setIndexBuffer(mIbh);
-	bgfx::submit(1, program);
+	assert(program.idx);
+	bgfx::submit(viewId, program);
 }
 
 
@@ -86,15 +87,15 @@ void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int strid
 	mIndexCount = count;
 }
 
-void Scene::Mesh::Draw(ProgramHandle program) const
+void Scene::Mesh::Draw(bgfx::ViewId viewId, ProgramHandle program) const
 {
     for (auto& prim : mPrimitives)
     {
-        prim.Draw(program);
+        prim.Draw(viewId, program);
     }
 }
 
-void Scene::Draw(EvaluationInfo& evaluationInfo, ProgramHandle program) const
+void Scene::Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, ProgramHandle program) const
 {
     for (unsigned int i = 0; i < mMeshIndex.size(); i++)
     {
@@ -106,7 +107,7 @@ void Scene::Draw(EvaluationInfo& evaluationInfo, ProgramHandle program) const
         memcpy(evaluationInfo.world, mWorldTransforms[i], sizeof(Mat4x4));
         FPU_MatrixF_x_MatrixF(evaluationInfo.world, evaluationInfo.viewProjection, evaluationInfo.worldViewProjection);
 		gEvaluators.ApplyEvaluationInfo(evaluationInfo);
-        mMeshes[index].Draw(program);
+        mMeshes[index].Draw(viewId, program);
     }
 }
 

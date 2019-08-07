@@ -264,7 +264,7 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
                 EvaluationInfo evaluationInfo;
                 evaluationInfo.forcedDirty = 1;
                 evaluationInfo.uiPass = 0;
-                mEditingContext.RunSingle(nodeIndex, evaluationInfo);
+                mEditingContext.RunSingle(viewId_BuildEvaluation, nodeIndex, evaluationInfo);
             }
             break;
         case Con_Bool:
@@ -959,6 +959,8 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
     {
         return;
     }
+	AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUIProgress, nodeIndex, &mEditingContext);
+	return;
     if (NodeIsProcesing(nodeIndex) == 1)
     {
         AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUIProgress, nodeIndex, &mEditingContext);

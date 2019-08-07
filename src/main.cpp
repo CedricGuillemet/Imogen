@@ -75,6 +75,75 @@ TaskScheduler g_TS;
 
 #else
 
+extern "C"
+{
+	int stbi_write_png(char const* filename, int x, int y, int comp, const void* data, int stride_bytes);
+	int stbi_write_jpg(char const* filename, int x, int y, int comp, const void* data, int quality);
+}
+
+struct bgfxCallback : public bgfx::CallbackI
+{
+	virtual ~bgfxCallback() {}
+	virtual void fatal(
+		const char* _filePath
+		, uint16_t _line
+		, bgfx::Fatal::Enum _code
+		, const char* _str
+	) {}
+	virtual void traceVargs(
+		const char* _filePath
+		, uint16_t _line
+		, const char* _format
+		, va_list _argList
+	) {}
+	virtual void profilerBegin(
+		const char* _name
+		, uint32_t _abgr
+		, const char* _filePath
+		, uint16_t _line
+	) {}
+	virtual void profilerBeginLiteral(
+		const char* _name
+		, uint32_t _abgr
+		, const char* _filePath
+		, uint16_t _line
+	) {}
+	virtual void profilerEnd() {}
+	virtual uint32_t cacheReadSize(uint64_t _id) { return 0; }
+	virtual bool cacheRead(uint64_t _id, void* _data, uint32_t _size) { return false; }
+	virtual void cacheWrite(uint64_t _id, const void* _data, uint32_t _size) {}
+	virtual void screenShot(
+		const char* _filePath
+		, uint32_t _width
+		, uint32_t _height
+		, uint32_t _pitch
+		, const void* _data
+		, uint32_t _size
+		, bool _yflip
+	) 
+	{
+		int w,h,x,y;
+		char filename[512];
+		sscanf(_filePath, "%s|%d|%d|%d|%d", filename, &x, &y, &w, &h);
+		unsigned char *ptr = (unsigned char*)_data;
+		ptr += (x + y * _width) * _pitch;
+		stbi_write_png(filename, w, h, _pitch, _data, _width * _pitch);
+	}
+
+	virtual void captureBegin(
+		uint32_t _width
+		, uint32_t _height
+		, uint32_t _pitch
+		, bgfx::TextureFormat::Enum _format
+		, bool _yflip
+	) 
+	{}
+	virtual void captureEnd() 
+	{}
+	virtual void captureFrame(const void* _data, uint32_t _size)
+	{}
+};
+
 SDL_Window* glThreadWindow;
 SDL_GLContext glThreadContext;
 
@@ -166,7 +235,9 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
 	bgfx::Init init;
-	init.type = bgfx::RendererType::Count;//:Direct3D9;//:OpenGL;
+	init.type = bgfx::RendererType::OpenGL; //:Direct3D11;//:OpenGL; //:Count;//:OpenGL; // :Direct3D9;//
+	bgfxCallback callback;
+	init.callback = &callback;
 	bgfx::init(init);
 #else
 	bgfx::init();
@@ -250,6 +321,8 @@ int main_Async(int argc, char** argv)
     loopdata.mNodeGraphControler = &nodeGraphControler;
     gBuilder = loopdata.mBuilder = &builder;
     imogen.SetExistingMaterialActive(".default");
+	bgfx::setViewMode(viewId_Evaluation, bgfx::ViewMode::Sequential);
+	bgfx::setViewMode(viewId_BuildEvaluation, bgfx::ViewMode::Sequential);
 
 	std::string infoTitle = IMOGENCOMPLETETITLE;
 	switch (bgfx::getCaps()->vendorId)
@@ -390,7 +463,7 @@ void MainLoop(void* arg)
 		bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
 		bgfx::touch(0);
 
-		ImGui_Implbgfx_RenderDrawData(ImGui::GetDrawData());
+		ImGui_Implbgfx_RenderDrawData(viewId_ImGui, ImGui::GetDrawData());
 
 		bgfx::frame();
 		g_TS.RunPinnedTasks();

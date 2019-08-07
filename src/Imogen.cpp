@@ -170,7 +170,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
+        nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo);
     }
     EvaluationAPI::GetEvaluationSize(&nodeGraphControler.mEditingContext, selNode, &imageWidth, &imageHeight);
     if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
@@ -178,7 +178,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 0;
-        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
+        nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo);
     }
     ImTextureID displayedTexture = 0;
     ImRect rc;

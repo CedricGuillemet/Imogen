@@ -100,7 +100,7 @@ struct EvaluationContext
     void RunAll();
     // return true if any node is in processing state
     bool RunBackward(size_t nodeIndex);
-    void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
+    void RunSingle(size_t nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo);
     void RunDirty();
 
 
@@ -206,15 +206,15 @@ protected:
 
     EvaluationThumbnails mThumbnails;
 
-    void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluateGLSL(const EvaluationStage& evaluationStage, bgfx::ViewId viewId, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo);
 #ifdef USE_PYTHON
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 #endif
-    void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, bgfx::ViewId viewId, size_t index, EvaluationInfo& evaluationInfo);
     // return true if any node is still in processing state
     bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
-    void RunNode(size_t nodeIndex);
+    void RunNode(bgfx::ViewId viewId, size_t nodeIndex);
     void GenerateThumbnail(size_t nodeIndex);
 
     void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);

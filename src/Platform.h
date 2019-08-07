@@ -44,6 +44,12 @@ typedef bgfx::FrameBufferHandle FrameBufferHandle;
 typedef bgfx::UniformHandle UniformHandle;
 typedef bimg::TextureFormat::Enum TextureFormat;
 
+enum bgfxViewIds
+{
+	viewId_Evaluation,
+	viewId_BuildEvaluation,
+	viewId_ImGui
+};
 #ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>

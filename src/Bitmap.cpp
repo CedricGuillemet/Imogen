@@ -34,7 +34,8 @@
 #include <bx/file.h>
 #include <bgfx/bgfx.h>
 #include "JSGlue.h"
-
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#include "stb_image_write.h"
 #define NANOSVG_ALL_COLOR_KEYWORDS // Include full list of color keywords.
 #define NANOSVG_IMPLEMENTATION     // Expands implementation
 #include "nanosvg.h"
@@ -50,6 +51,15 @@ bx::AllocatorI* getDefaultAllocator()
 {
     static bx::DefaultAllocator s_allocator;
     return &s_allocator;
+}
+
+extern "C" 
+{
+	typedef void (*stbi_write_func)(void* context, void* data, int size);
+	int stbi_write_png(char const* filename, int x, int y, int comp, const void* data, int stride_bytes);
+	int stbi_write_jpg(char const* filename, int x, int y, int comp, const void* data, int quality);
+	int stbi_write_png_to_func(stbi_write_func func, void* context, int w, int h, int comp, const void* data, int stride_in_bytes);
+	int stbi_write_jpg_to_func(stbi_write_func func, void* context, int x, int y, int comp, const void* data, int quality);
 }
 
 bimg::Quality::Enum GetQuality(int quality)
@@ -69,29 +79,16 @@ bimg::Quality::Enum GetQuality(int quality)
     }
 }
 
-void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
+void SaveCapture(const std::string& filename, int x, int y, int w, int h)
 {
     w &= 0xFFFFFFFC;
     h &= 0xFFFFFFFC;
-	
-	//bgfx::readTexture(
-	/* todogl
-    int viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
-	*/
-    unsigned char* imgBits = new unsigned char[w * h * 4];
-	/*todogl
-    glReadPixels(x, viewport[3] - y - h, w, h, GL_RGB, GL_UNSIGNED_BYTE, imgBits);
-	*/
-    bx::FileWriter writer;
-    bx::Error err;
 
-    if (bx::open(&writer, filemane.c_str(), false, &err))
-    {
-        bimg::imageWritePng(&writer, w, h, w * 3, imgBits, bimg::TextureFormat::RGB8, false/*_yflip*/, &err);
-    }
+	char filenameInfos[512];
+	sprintf(filenameInfos, "%s|%d|%d|%d|%d", filename.c_str(), x, y, w, h);
 
-    delete[] imgBits;
+	bgfx::FrameBufferHandle fbh = BGFX_INVALID_HANDLE;
+	bgfx::requestScreenShot(fbh, filenameInfos);
 }
 
 #if USE_FFMPEG
@@ -217,7 +214,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
 	{
 		for (int face = 0; face < cubeFace; face++)
 		{
-			for (auto i = 0; i < image->GetMipmapCount(); i++)
+			for (size_t i = 0; i < image->GetMipmapCount(); i++)
 			{
 				offset += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
 			}
@@ -231,17 +228,24 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
 	uint16_t w = uint16_t(image->mWidth >> mipmap);
 	uint16_t h = uint16_t(image->mHeight >> mipmap);
 	
-	bgfx::updateTexture2D(
-		textureHandle
-		, 0
-		, mipmap
-		, 0
-		, 0
-		, w
-		, h
-		, bgfx::copy(image->GetBits() + offset, w * h * texelSize)
-	);
-
+	if (image->mIsCubemap)
+	{
+		bgfx::updateTextureCube(textureHandle, 0, cubeFace, mipmap, 0, 0, image->mWidth, image->mWidth, 
+			bgfx::copy(image->GetBits() + offset, w * h * texelSize));
+	}
+	else
+	{
+		bgfx::updateTexture2D(
+			textureHandle
+			, 0
+			, mipmap
+			, 0
+			, 0
+			, w
+			, h
+			, bgfx::copy(image->GetBits() + offset, w * h * texelSize)
+		);
+	}
 	if (allocTexture)
 	{
 		vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * (bimg::getBitsPerPixel(image->mFormat)/8));
@@ -314,6 +318,13 @@ void Image::VFlip(Image* image)
     }
 }
 
+void stbi_writer(void* context, void* data, int size)
+{
+	bx::FileWriter *writer = (bx::FileWriter*)context;
+	bx::Error err;
+	writer->write(data, size, &err);
+}
+
 int Image::Write(const char* filename, Image* image, int format, int quality)
 {
     if (!image->mWidth || !image->mHeight)
@@ -338,10 +349,10 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         switch (format)
         {
         case 0: // jpeg
-            //bimg::imageWriteJpg(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), texformat, false/*_yflip*/, quality, &err);
+			stbi_write_jpg_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), quality);
             break;
         case 1: // png
-            bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
+			stbi_write_png_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
             break;
         case 2: // tga
             bimg::imageWriteTga(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
@@ -471,32 +482,6 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
     mCacheAccess.unlock();
 }
 
-void RenderTarget::BindAsTarget() const
-{
-    /* todogl
-	glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-    glViewport(0, 0, mImage->mWidth, mImage->mHeight);
-	*/
-}
-
-void RenderTarget::BindAsCubeTarget() const
-{
-    /* todogl
-	
-	glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-	*/
-}
-
-void RenderTarget::BindCubeFace(size_t face, int mipmap, int faceWidth)
-{
-    /* todogl
-	glFramebufferTexture2D(
-        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face), mGLTexID, mipmap);
-    glViewport(0, 0, faceWidth >> mipmap, faceWidth >> mipmap);
-	*/
-}
-
 void RenderTarget::Destroy()
 {
 	if (mFrameBuffer.idx)
@@ -553,7 +538,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 	//assert(!depthBuffer);
 	//if (!depthBuffer)
 	{
-		mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum(mImage.mFormat));
+		mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::BGRA8);//:Enum(mImage.mFormat));
 		mGLTexID = bgfx::getTexture(mFrameBuffer);
 		bgfx::setName(mFrameBuffer, "RenderTargetBuffer");
 	}

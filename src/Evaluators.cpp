@@ -439,6 +439,8 @@ void Evaluators::SetEvaluators()
 
 	// default shaders
 	mBlitProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "Blit_fs"), false);
+	mProgressProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "ProgressingNode_fs"), false);
+	mDisplayCubemapProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "DisplayCubemap_fs"), false);
 
 	// evaluation uniforms
 	u_viewRot = bgfx::createUniform("u_viewRot", bgfx::UniformType::Mat4, 1);
@@ -452,6 +454,9 @@ void Evaluators::SetEvaluators()
 	u_target = bgfx::createUniform("u_target", bgfx::UniformType::Vec4, 1);
 	u_pass = bgfx::createUniform("u_pass", bgfx::UniformType::Vec4, 1);
 	u_viewport = bgfx::createUniform("u_viewport", bgfx::UniformType::Vec4, 1);
+
+	// specific uniforms
+	u_time = bgfx::createUniform("u_time", bgfx::UniformType::Vec4, 1);
 
 	// default samplers
 	for (int i = 0;i<8;i++)
@@ -591,6 +596,11 @@ void Evaluators::Clear()
 	mEvaluatorScripts.clear();
 	mEvaluatorPerNodeType.clear();
 	mShaderHandles.clear();
+
+	bgfx::destroy(u_time);
+	bgfx::destroy(mBlitProgram);
+	bgfx::destroy(mProgressProgram);
+	bgfx::destroy(mDisplayCubemapProgram);
 
 	if (u_viewRot.idx)
 	{
@@ -889,7 +899,7 @@ namespace EvaluationAPI
 			, nullptr
 			);
 
-		bgfx::blit(2, transient,0,0,tgt->mGLTexID);
+		
         // compute total size
         auto img = tgt->mImage;
         unsigned int texelSize = bimg::getBitsPerPixel(img.mFormat)/8;
@@ -911,27 +921,31 @@ namespace EvaluationAPI
 		unsigned char* ptr = image->GetBits();
         if (!img.mIsCubemap)
         {
+			
             for (size_t i = 0; i < img.GetMipmapCount(); i++)
             {
+				bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, 0);
 				availableFrame = bgfx::readTexture(transient, ptr, i);
                 ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
             }
-			while(bgfx::frame() != availableFrame)
-			{
-			};
+
         }
         else
         {
-            /*glBindTexture(GL_TEXTURE_CUBE_MAP, tgt->mGLTexID); todogl
-            for (int cube = 0; cube < img->mNumFaces; cube++)
+            for (int cube = 0; cube < 6; cube++)
             {
-                for (int i = 0; i < img->mNumMips; i++)
+                for (size_t i = 0; i < img.GetMipmapCount(); i++)
                 {
-                    glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + cube, i, texelFormat, GL_UNSIGNED_BYTE, ptr);
-                    ptr += (img->mWidth >> i) * (img->mHeight >> i) * texelSize;
+					bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, cube);
+					availableFrame = bgfx::readTexture(transient, ptr, i);
+                    ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
                 }
-            }*/
+            }
         }
+		while (bgfx::frame() != availableFrame)
+		{
+		};
+
 		bgfx::destroy(transient);
         return EVAL_OK;
     }
@@ -956,22 +970,13 @@ namespace EvaluationAPI
 
 		for (size_t face = 0; face < image->GetFaceCount(); face++)
 		{
-			int cubeFace = image->mIsCubemap ? face : -1;
+			int cubeFace = image->mIsCubemap ? int(face) : -1;
 			for (size_t i = 0; i < image->GetMipmapCount(); i++)
 			{
 				Image::Upload(image, tgt->mGLTexID, cubeFace, i);
 			}
 		}
-		/* todogl
-		if (image->mNumMips > 1)
-		{
-			TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, texType);
-		}
-		else
-		{
-			TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, texType);
-		}
-		*/
+
 #if USE_FFMPEG
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
 		{
@@ -1075,16 +1080,13 @@ namespace EvaluationAPI
         auto tgt = evaluationContext->GetRenderTarget(target);
         renderer->render();
 
-        tgt->BindAsTarget();
+        //tgt->BindAsTarget();
         renderer->present();
 
         float progress = renderer->getProgress();
         evaluationContext->StageSetProgress(target, progress);
         bool renderDone = progress >= 1.f - FLT_EPSILON;
-        /* todogl
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glUseProgram(0);
-		*/
+
         if (renderDone)
         {
             evaluationContext->StageSetProcessing(target, false);

@@ -898,7 +898,6 @@ bgfx::TextureHandle m_texture;
 bgfx::UniformHandle s_tex;
 bgfx::UniformHandle u_imageLodEnabled;
 
-bgfx::ViewId m_viewId = 255;
 void ImGui_Implbgfx_Init()
 {
 	bgfx::RendererType::Enum type = bgfx::getRendererType();
@@ -965,22 +964,22 @@ void ImGui_Implbgfx_NewFrame()
 	}
 }
 
-void ImGui_Implbgfx_RenderDrawData(ImDrawData* _drawData)
+void ImGui_Implbgfx_RenderDrawData(bgfx::ViewId viewId, ImDrawData* _drawData)
 {
 	const ImGuiIO& io = ImGui::GetIO();
 	const float width  = io.DisplaySize.x;
 	const float height = io.DisplaySize.y;
 
 
-	bgfx::setViewName(m_viewId, "ImGui");
-	bgfx::setViewMode(m_viewId, bgfx::ViewMode::Sequential);
+	bgfx::setViewName(viewId, "ImGui");
+	bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 
 	const bgfx::Caps* caps = bgfx::getCaps();
 	{
 		float ortho[16];
 		bx::mtxOrtho(ortho, 0.0f, width, height, 0.0f, 0.0f, 1000.0f, 0.0f, caps->homogeneousDepth);
-		bgfx::setViewTransform(m_viewId, NULL, ortho);
-		bgfx::setViewRect(m_viewId, 0, 0, uint16_t(width), uint16_t(height) );
+		bgfx::setViewTransform(viewId, NULL, ortho);
+		bgfx::setViewRect(viewId, 0, 0, uint16_t(width), uint16_t(height) );
 	}
 
 	// Render command lists
@@ -1057,7 +1056,8 @@ void ImGui_Implbgfx_RenderDrawData(ImDrawData* _drawData)
 				bgfx::setTexture(0, s_tex, th);
 				bgfx::setVertexBuffer(0, &tvb, 0, numVertices);
 				bgfx::setIndexBuffer(&tib, offset, cmd->ElemCount);
-				bgfx::submit(m_viewId, program);
+				assert(program.idx);
+				bgfx::submit(viewId, program);
 			}
 
 			offset += cmd->ElemCount;

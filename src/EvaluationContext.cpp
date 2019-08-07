@@ -393,6 +393,7 @@ int EvaluationContext::GetBindedComputeBuffer(size_t nodeIndex) const
 }
 
 void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationStage,
+											bgfx::ViewId viewId,
                                             size_t nodeIndex,
                                             EvaluationInfo& evaluationInfo)
 {
@@ -506,6 +507,7 @@ void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationSta
 }
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
+									 bgfx::ViewId viewId,
                                      size_t nodeIndex,
                                      EvaluationInfo& evaluationInfo)
 {
@@ -539,6 +541,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         transientTarget->Clone(*tgt);
     }
 
+	auto w = tgt->mImage.mWidth;
+	auto h = tgt->mImage.mHeight;
+	FrameBufferHandle proxyFrameBuffer = bgfx::createFrameBuffer(w, h, bgfx::TextureFormat::BGRA8);
     uint8_t mipmapCount = tgt->mImage.GetMipmapCount();
     for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
@@ -546,24 +551,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         {
             if (!evaluationInfo.uiPass)
             {
-                if (tgt->mImage.mIsCubemap)
-                {
-                    tgt->BindAsCubeTarget();
-                }
-                else
-                {
-					bgfx::setViewFrameBuffer(1, tgt->mFrameBuffer);
-					
-                }
+				bgfx::setViewFrameBuffer(viewId, proxyFrameBuffer);
+				bgfx::setViewRect(viewId, 0, 0,  w>>mip, h>>mip);
             }
 
             size_t faceCount = evaluationInfo.uiPass ? 1 : (tgt->mImage.mIsCubemap ? 6 : 1);
             for (size_t face = 0; face < faceCount; face++)
             {
-				if (tgt->mImage.mIsCubemap)
-                {
-                    tgt->BindCubeFace(face, mip, tgt->mImage.mWidth);
-                }
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
                 memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
                 float sizeDiv = float(mip + 1);
@@ -577,9 +571,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
 				if (evaluation.mbClearBuffer)
 				{
-					bgfx::setViewClear(1, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
+					bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
 				}
-				bgfx::setViewRect(1, 0, 0, tgt->mImage.mWidth, tgt->mImage.mHeight);
+				bgfx::setViewRect(viewId, 0, 0, tgt->mImage.mWidth, tgt->mImage.mHeight);
 
 				float tempUniforms[16];
 				const Parameters & parameters = mEvaluationStages.mParameters[nodeIndex];
@@ -650,8 +644,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 						;
 
 					bgfx::setState(state);
-                    evaluationStage.mGScene->Draw(evaluationInfo, program);
+                    evaluationStage.mGScene->Draw(evaluationInfo, viewId, program);
                 }
+
+				// copy from proxy to destination
+				bgfx::blit(viewId, tgt->mGLTexID, mip, 0, 0, face, bgfx::getTexture(proxyFrameBuffer), 0, 0, 0, 0, w>>mip, h>>mip);
             } // face
         }     // mip
         // swap target for multipass
@@ -661,12 +658,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
             transientTarget->Swap(*tgt);
         }
     } // passNumber
+	bgfx::destroy(proxyFrameBuffer);
     if (transientTarget)
     {
         transientTarget->Destroy();
     }
-
-	bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
 }
 
 void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
@@ -693,8 +689,8 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
     int sourceCoords[4];
     mThumbnails.GetThumbCoordinates(thumb, sourceCoords);
 	bgfx::touch(2);
-	bgfx::setViewFrameBuffer(2, thumbTarget.mFrameBuffer);
-	bgfx::setViewRect(2, sourceCoords[0], sourceCoords[1], sourceCoords[2] - sourceCoords[0], sourceCoords[3] - sourceCoords[1]);
+	bgfx::setViewFrameBuffer(viewId_Evaluation, thumbTarget.mFrameBuffer);
+	bgfx::setViewRect(viewId_Evaluation, sourceCoords[0], sourceCoords[1], sourceCoords[2] - sourceCoords[0], sourceCoords[3] - sourceCoords[1]);
 
 	uint64_t state = 0
 		| BGFX_STATE_WRITE_RGB
@@ -704,7 +700,7 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
 
 	bgfx::setState(state);
 	bgfx::setTexture(0, gEvaluators.mSamplers2D[0], tgt->mGLTexID);
-	def->Draw(EvaluationInfo{}, gEvaluators.mBlitProgram);
+	def->Draw(EvaluationInfo{}, viewId_Evaluation, gEvaluators.mBlitProgram);
 }
 
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
@@ -799,7 +795,7 @@ void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& n
     }
 }
 
-void EvaluationContext::RunNode(size_t nodeIndex)
+void EvaluationContext::RunNode(bgfx::ViewId viewId, size_t nodeIndex)
 {
     auto& currentStage = mEvaluationStages.mStages[nodeIndex];
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
@@ -838,7 +834,7 @@ void EvaluationContext::RunNode(size_t nodeIndex)
 #endif
     if (evaluationMask & EvaluationGLSLCompute)
     {
-        EvaluateGLSLCompute(currentStage, nodeIndex, mEvaluationInfo);
+        EvaluateGLSLCompute(currentStage, viewId, nodeIndex, mEvaluationInfo);
     }
 
     if (evaluationMask & EvaluationGLSL)
@@ -852,10 +848,13 @@ void EvaluationContext::RunNode(size_t nodeIndex)
             evaluation.mTarget->InitBuffer(mDefaultWidth, mDefaultHeight, evaluation.mbDepthBuffer);
         }
 
-        EvaluateGLSL(currentStage, nodeIndex, mEvaluationInfo);
+        EvaluateGLSL(currentStage, viewId, nodeIndex, mEvaluationInfo);
     }
 
-    GenerateThumbnail(nodeIndex);
+	if (viewId == viewId_Evaluation)
+	{
+		GenerateThumbnail(nodeIndex);
+	}
     //evaluation.mDirtyFlag = 0;
 }
 
@@ -870,7 +869,7 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
                              mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
         if (!evaluation.mbActive)
             continue;
-        RunNode(nodeIndex);
+        RunNode(viewId_Evaluation, nodeIndex);
         anyNodeIsProcessing |= evaluation.mProcessing != 0;
     }
     // set dirty nodes that tell so
@@ -881,11 +880,11 @@ bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
     return anyNodeIsProcessing;
 }
 
-void EvaluationContext::RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo)
+void EvaluationContext::RunSingle(size_t nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo)
 {
     mEvaluationInfo = evaluationInfo;
 
-    RunNode(nodeIndex);
+    RunNode(viewId, nodeIndex);
 }
 
 void EvaluationContext::RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes)
@@ -1116,7 +1115,7 @@ void Builder::DoBuild(Entry& entry)
                 EvaluationInfo evaluationInfo;
                 evaluationInfo.forcedDirty = 1;
                 evaluationInfo.uiPass = 0;
-                writeContext.RunSingle(i, evaluationInfo);
+                writeContext.RunSingle(i, viewId_BuildEvaluation, evaluationInfo);
             }
         }
         entry.mProgress = float(i + 1) / float(stageCount);
@@ -1159,12 +1158,18 @@ namespace DrawUICallbacks
 {
     void DrawUIProgress(EvaluationContext* context, size_t nodeIndex)
     {
-        /*todogl
-		glUseProgram(gDefaultShader.mProgressShader);
-        glUniform1f(glGetUniformLocation(gDefaultShader.mProgressShader, "time"),
-                    float(double(SDL_GetTicks()) / 1000.0));
-        context->mFSQuad.Render();
-		*/
+		auto def = Scene::BuildDefaultScene();
+
+		uint64_t state = 0
+			| BGFX_STATE_WRITE_RGB
+			| BGFX_STATE_WRITE_A
+			| BGFX_STATE_DEPTH_TEST_ALWAYS
+			;
+
+		bgfx::setState(state);
+		float uniform[] = { float(double(SDL_GetTicks()) / 1000.0), 0.f, 0.f, 0.f};
+		bgfx::setUniform(gEvaluators.u_time, uniform);
+		def->Draw(EvaluationInfo{}, viewId_ImGui, gEvaluators.mProgressProgram);
     }
 
     void DrawUISingle(EvaluationContext* context, size_t nodeIndex)
@@ -1172,20 +1177,21 @@ namespace DrawUICallbacks
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        context->RunSingle(nodeIndex, evaluationInfo);
+        context->RunSingle(nodeIndex, viewId_ImGui, evaluationInfo);
     }
 
     void DrawUICubemap(EvaluationContext* context, size_t nodeIndex)
     {
-        /*todogl
-		glUseProgram(gDefaultShader.mDisplayCubemapShader);
-        int tgt = glGetUniformLocation(gDefaultShader.mDisplayCubemapShader, "samplerCubemap");
-        glUniform1i(tgt, 0);
-        glActiveTexture(GL_TEXTURE0);
-        TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, context->GetEvaluationTexture(nodeIndex));
-        context->mFSQuad.Render();
-		*/
+		auto def = Scene::BuildDefaultScene();
+
+		uint64_t state = 0
+			| BGFX_STATE_WRITE_RGB
+			| BGFX_STATE_WRITE_A
+			| BGFX_STATE_DEPTH_TEST_ALWAYS
+			;
+
+		bgfx::setState(state);
+		bgfx::setTexture(0, gEvaluators.mSamplersCube[0], context->GetEvaluationTexture(nodeIndex));
+		def->Draw(EvaluationInfo{}, viewId_ImGui, gEvaluators.mDisplayCubemapProgram);
     }
 } // namespace DrawUICallbacks

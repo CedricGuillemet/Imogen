@@ -4,13 +4,13 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform float u_time;
+uniform vec4 u_time;
 
 
 void main()
 {
 	vec2 npos = v_texcoord0-vec2(0.5, 0.5);
-	float mixcontrol = sin(u_time);
+	float mixcontrol = sin(u_time.x);
 	if (mixcontrol < 0.0) 
 	{ 
 		mixcontrol = pow(1.0 - abs(mixcontrol), 3.0) - 1.0; 
@@ -21,10 +21,10 @@ void main()
 	}
 
 	mixcontrol = mixcontrol * 0.5 + 0.5;
-	float c1time = u_time * 2.0;
+	float c1time = u_time.x * 2.0;
 	vec2 c1pos = npos + vec2(sin(c1time), cos(c1time)) * 0.24;
 	float c1size = 0.05;
-	float c2time = u_time * 2.0 + PI;
+	float c2time = u_time.x * 2.0 + PI;
 	vec2 c2pos = npos + vec2(sin(c2time), cos(c2time)) * 0.24;
 	float c2size = 0.05;
 	c1pos = mix(npos, c1pos, mixcontrol);

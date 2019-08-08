@@ -212,7 +212,14 @@ add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
 endif()
 
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build the BGFX examples.")
+
+if(NOT EMSCRIPTEN)
 set(BGFX_BUILD_TOOLS ON CACHE BOOL "Build the BGFX tools.")
+elseif()
+set(BGFX_BUILD_TOOLS 0)
+set(BGFX_BUILD_EXAMPLES 0)
+endif() # emscripten
+
 add_subdirectory(${IMOGEN_BGFX_DIR}/)
 set_property(TARGET astc PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
 set_property(TARGET astc-codec PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
@@ -229,7 +236,7 @@ set_property(TARGET bx PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx)
 
 
 ###########################################
-
+if(NOT EMSCRIPTEN)
 file(GLOB SHADER_FILES  ${CMAKE_SOURCE_DIR}/src/shaders/*.vs 
                         ${CMAKE_SOURCE_DIR}/src/shaders/*.fs
 						${CMAKE_SOURCE_DIR}/src/shaders/*.cs
@@ -310,10 +317,12 @@ endforeach(SHADER)
 
 FILE(APPEND ${shaders_cpp_file} "BGFX_EMBEDDED_SHADER_END()\n};\n")
 add_custom_target(Shaders DEPENDS ${SHADER_OUTPUT_FILES})
+add_dependencies(${EXE_NAME} Shaders)
+
+endif() # EMSCRIPTEN
 
 #########################################
 
-add_dependencies(${EXE_NAME} Shaders)
 TARGET_LINK_LIBRARIES(${EXE_NAME} ${PYTHON37_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBRARIES} bx bimg bgfx)
 
 if(APPLE)

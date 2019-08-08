@@ -670,7 +670,8 @@ void EvaluationContext::GenerateThumbnail(size_t nodeIndex)
 
 	bgfx::setState(state);
 	bgfx::setTexture(0, gEvaluators.mSamplers2D[0], tgt->mGLTexID);
-	def->Draw(EvaluationInfo{}, viewId_Evaluation, gEvaluators.mBlitProgram);
+    EvaluationInfo evaluationInfo;
+	def->Draw(evaluationInfo, viewId_Evaluation, gEvaluators.mBlitProgram);
 }
 
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
@@ -1023,7 +1024,8 @@ void Builder::Add(const char* graphName, const EvaluationStages& stages)
     mMutex.unlock();
 	*/
 	// sync 
-	DoBuild(Builder::Entry{ graphName, 0.f, stages });
+    Builder::Entry entry{ graphName, 0.f, stages };
+	DoBuild(entry);
 }
 
 void Builder::Add(Material* material)
@@ -1140,7 +1142,8 @@ namespace DrawUICallbacks
 		float uniform[] = { float(double(SDL_GetTicks()) / 1000.0), 0.f, 0.f, 0.f};
 		bgfx::setUniform(gEvaluators.u_time, uniform);
 
-		def->Draw(EvaluationInfo{}, viewId_ImGui, gEvaluators.mProgressProgram);
+        EvaluationInfo evaluationInfo;
+		def->Draw(evaluationInfo, viewId_ImGui, gEvaluators.mProgressProgram);
     }
 
     void DrawUISingle(EvaluationContext* context, size_t nodeIndex)
@@ -1163,6 +1166,7 @@ namespace DrawUICallbacks
 
 		bgfx::setState(state);
 		bgfx::setTexture(0, gEvaluators.mSamplersCube[0], context->GetEvaluationTexture(nodeIndex));
-		def->Draw(EvaluationInfo{}, viewId_ImGui, gEvaluators.mDisplayCubemapProgram);
+        EvaluationInfo evaluationInfo;
+		def->Draw(evaluationInfo, viewId_ImGui, gEvaluators.mDisplayCubemapProgram);
     }
 } // namespace DrawUICallbacks

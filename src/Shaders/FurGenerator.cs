@@ -1,4 +1,5 @@
-layout (std140) uniform FurGeneratorBlock
+#include "bgfx_compute.sh"
+/*layout (std140) uniform FurGeneratorBlock
 {
 	int hairCount;
 	float lengthFactor;
@@ -23,9 +24,11 @@ out vec4 outCompute14;
 
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
-
+*/
+NUM_THREADS(16, 16, 1)
 void main()
 {
+	/*
 	float n = float(gl_VertexID);
 	vec2 uv = vec2(mod(n, 32.0), floor(n/32.0)) / 32.0;
 	uv *= 4.;
@@ -58,4 +61,5 @@ void main()
 	outCompute12 = vec4(0.);
 	outCompute13 = vec4(0.);
 	outCompute14 = vec4(0.);
+	*/
 }

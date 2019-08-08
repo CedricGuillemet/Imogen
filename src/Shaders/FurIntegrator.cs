@@ -1,3 +1,5 @@
+#include "bgfx_compute.sh"
+/*
 layout(location = 0)in vec4 inCompute0;
 layout(location = 1)in vec4 inCompute1;
 layout(location = 2)in vec4 inCompute2;
@@ -47,9 +49,11 @@ layout (std140) uniform EvaluationBlock
 	int localFrame;
 } EvaluationParam;
 
-
+*/
+NUM_THREADS(16, 16, 1)
 void main()
 {
+	/*
 	vec3 norm0 = inCompute1.xyz;
 	float stifness = 1.;
 	
@@ -76,4 +80,5 @@ void main()
 	outCompute12 = vec4(0.);
 	outCompute13 = vec4(0.);
 	outCompute14 = vec4(0.);
+	*/
 }

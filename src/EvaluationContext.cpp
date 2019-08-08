@@ -29,15 +29,6 @@
 #include "Evaluators.h"
 #include "GraphControler.h"
 
-#ifdef GL_CLAMP_TO_BORDER
-static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_BORDER, GL_MIRRORED_REPEAT};
-#else
-// todogl
-//static const unsigned int wrap[] = {GL_REPEAT, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT};
-#endif
-// todogl
-//static const unsigned int filter[] = {GL_LINEAR, GL_NEAREST};
-
 static const float rotMatrices[6][16] = {
     // toward +x
     {0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
@@ -340,33 +331,12 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                 const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[nodeIndex][inputIndex];
                 if (!tgt->mImage.mIsCubemap)
                 {
-					bgfx::setTexture(inputIndex, gEvaluators.mSamplers2D[inputIndex], tgt->mGLTexID);
-                    /* todogl
-					glBindTexture(GL_TEXTURE_2D, tgt->mGLTexID);
-                    TexParam(filter[inputSampler.mFilterMin],
-                             filter[inputSampler.mFilterMag],
-                             wrap[inputSampler.mWrapU],
-                             wrap[inputSampler.mWrapV],
-                             GL_TEXTURE_2D);
-							 */
+
+					bgfx::setTexture(inputIndex, gEvaluators.mSamplers2D[inputIndex], tgt->mGLTexID, inputSampler.Value());
                 }
                 else
                 {
-                    bgfx::setTexture(inputIndex, gEvaluators.mSamplersCube[inputIndex], tgt->mGLTexID);
-                    /* todogl
-                    TexParam(filter[inputSampler.mFilterMin],
-                             filter[inputSampler.mFilterMag],
-                             wrap[inputSampler.mWrapU],
-                             wrap[inputSampler.mWrapV],
-                             GL_TEXTURE_CUBE_MAP);
-                    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
-                    // glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-                    if (tgt->mImage.mNumMips > 1)
-                    {
-                        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, tgt->mImage.mNumMips - 1);
-                        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                    }
-					*/
+                    bgfx::setTexture(inputIndex, gEvaluators.mSamplersCube[inputIndex], tgt->mGLTexID, inputSampler.Value());
                 }
             }
         }

@@ -290,14 +290,14 @@ foreach(SHADER ${SHADER_FILES})
 	add_custom_command(
 		OUTPUT ${SHADER_OUTPUT}
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o ${SHADER_OUTPUT} --platform windows -p cs_5_0 -O 1 --type compute --bin2c ${FILE_NAME}_cs_dx11
-		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_dx9.h" --platform windows -p ps_5_0 -O 3 --type compute --bin2c ${FILE_NAME}_cs_dx9
-		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_esl.h" --platform android --type compute --bin2c ${FILE_NAME}_cs_esl
-		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_glsl.h" --platform linux -p 430 --type compute --bin2c ${FILE_NAME}_cs_glsl
-		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_mtl.h" --platform osx -p metal --type compute --bin2c ${FILE_NAME}_cs_mtl
-		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_spv.h" --platform linux -p spirv --type compute --bin2c ${FILE_NAME}_cs_spv
+		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_cs_dx9.h" --platform windows -p ps_5_0 -O 3 --type compute --bin2c ${FILE_NAME}_cs_dx9
+		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_cs_esl.h" --platform android --type compute --bin2c ${FILE_NAME}_cs_esl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_cs_glsl.h" --platform linux -p 430 --type compute --bin2c ${FILE_NAME}_cs_glsl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_cs_mtl.h" --platform osx -p metal --type compute --bin2c ${FILE_NAME}_cs_mtl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_cs_spv.h" --platform linux -p spirv --type compute --bin2c ${FILE_NAME}_cs_spv
 		DEPENDS ${SHADER})
 	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_dx11.h\"\n")
-	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_dx9.h\"\n")
+	  FILE(APPEND ${shaders_inc_file} "static const uint8_t ${FILE_NAME}_cs_dx9[1] = {0};\n")
 	  #FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_esl.h\"\n")
 	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_glsl.h\"\n")
 	  FILE(APPEND ${shaders_inc_file} "#include \"${FILE_NAME}_cs_mtl.h\"\n")
@@ -305,7 +305,7 @@ foreach(SHADER ${SHADER_FILES})
 	  list(APPEND SHADER_OUTPUT_FILES ${SHADER_OUTPUT})
 	  FILE(APPEND ${shaders_cpp_file} "BGFX_EMBEDDED_SHADER(${FILE_NAME}_cs),\n")
    endif()
-
+   
 endforeach(SHADER)
 
 FILE(APPEND ${shaders_cpp_file} "BGFX_EMBEDDED_SHADER_END()\n};\n")

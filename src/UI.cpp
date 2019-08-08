@@ -29,6 +29,7 @@
 #include "Utils.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
+#include "Evaluators.h"
 
 static inline ImVec4 operator*(const ImVec4& lhs, const float t)
 {
@@ -257,7 +258,7 @@ void UICallbackNodeInserted(size_t nodeIndex)
         }
     }
 }
-
+extern Evaluators gEvaluators;
 static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -266,17 +267,19 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
     {
         ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
 
-        ImRect cbRect = cb.mOrginalRect;
-        float h = cbRect.Max.y - cbRect.Min.y;
-        float w = cbRect.Max.x - cbRect.Min.x;
-		bgfx::setViewRect(viewId_ImGui, int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
+		ImRect cr = cb.mClippedRect;
+		bgfx::setScissor(int(cr.Min.x),
+						int(cr.Min.y),
+						int(cr.Max.x - cr.Min.x),
+						int(cr.Max.y - cr.Min.y));
 
-        cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
-        ImRect clippedRect = cb.mClippedRect;
-		bgfx::setScissor(int(clippedRect.Min.x),
-                  int(io.DisplaySize.y - clippedRect.Max.y),
-                  int(clippedRect.Max.x - clippedRect.Min.x),
-                  int(clippedRect.Max.y - clippedRect.Min.y));
+		cr = cb.mOrginalRect;
+		float sx = (cr.Max.x - cr.Min.x) / io.DisplaySize.x * 2.f;
+		float sy = (cr.Max.y - cr.Min.y) / io.DisplaySize.y * 2.f;
+		float tx = cr.Min.x / io.DisplaySize.x * 2.f - 1.f;
+		float ty = -cr.Max.y / io.DisplaySize.y * 2.f + 1.f;
+		float uvt[4] = {sx, sy, tx, ty };
+		bgfx::setUniform(gEvaluators.u_uvTransform, uvt);
 
         cb.mFunc(cb.mEvaluationContext, cb.mNodeIndex);
     }

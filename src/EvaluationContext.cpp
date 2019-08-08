@@ -489,7 +489,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     const auto& parameters = mEvaluationStages.GetParameters(nodeIndex);
     const auto nodeType = mEvaluationStages.GetNodeType(nodeIndex);
 
-	bgfx::touch(1);
+	bgfx::touch(viewId);
 
     if (!program.idx)
     {
@@ -1139,6 +1139,7 @@ namespace DrawUICallbacks
 		bgfx::setState(state);
 		float uniform[] = { float(double(SDL_GetTicks()) / 1000.0), 0.f, 0.f, 0.f};
 		bgfx::setUniform(gEvaluators.u_time, uniform);
+
 		def->Draw(EvaluationInfo{}, viewId_ImGui, gEvaluators.mProgressProgram);
     }
 

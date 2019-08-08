@@ -127,10 +127,11 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     auto& mesh = defaultScene->mMeshes.back();
     mesh.mPrimitives.resize(1);
     auto& prim = mesh.mPrimitives.back();
-	static const float fsVts[] = { 0.f, 0.f, 2.f, 0.f, 0.f, 2.f};
-	static const uint16_t fsIdx[] = { 0, 1, 2 };
-    prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 3);
-	prim.AddIndexBuffer(fsIdx, 2, 3);
+	static const float fsVts[] = { 0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f};
+	static const uint16_t fsIdx[] = { 0, 1, 2, 1, 3, 2 };
+    prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 4);
+	prim.AddIndexBuffer(fsIdx, 2, 6);
+
     // add node and transform
     defaultScene->mWorldTransforms.resize(1);
     defaultScene->mWorldTransforms[0].Identity();

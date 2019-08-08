@@ -432,7 +432,7 @@ Evaluators::~Evaluators()
 void Evaluators::SetEvaluators()
 {
     Clear();
-
+	
 	const bgfx::RendererType::Enum type = bgfx::getRendererType();
 	ShaderHandle nodeVSShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, "Node_vs");
 	mShaderHandles.push_back(nodeVSShader);
@@ -457,6 +457,7 @@ void Evaluators::SetEvaluators()
 
 	// specific uniforms
 	u_time = bgfx::createUniform("u_time", bgfx::UniformType::Vec4, 1);
+	u_uvTransform = bgfx::createUniform("u_uvTransform", bgfx::UniformType::Vec4, 1);
 
 	// default samplers
 	for (int i = 0;i<8;i++)
@@ -469,7 +470,7 @@ void Evaluators::SetEvaluators()
 		mSamplers2D.push_back(sampler2D);
 		mSamplersCube.push_back(samplerCube);
 	}
-
+	
     mEvaluatorPerNodeType.clear();
     mEvaluatorPerNodeType.resize(gMetaNodes.size(), nullptr);
 
@@ -477,6 +478,7 @@ void Evaluators::SetEvaluators()
 
 	for (int i = 0; i < gMetaNodes.size(); i++)
 	{
+		int mask = 0;
 		const std::string& nodeName = gMetaNodes[i].mName;
 		std::string vsShaderName = nodeName + "_vs";
 		std::string fsShaderName = nodeName + "_fs";
@@ -485,15 +487,14 @@ void Evaluators::SetEvaluators()
 		ShaderHandle fsShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, fsShaderName.c_str());
 		ShaderHandle csShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, csShaderName.c_str());
 		ProgramHandle program{0};
-		int mask = 0;
 		if (vsShader.idx != bgfx::kInvalidHandle && fsShader.idx != bgfx::kInvalidHandle)
 		{
 			// valid VS/FS
-			program = bgfx::createProgram(vsShader, fsShader, false);
+			//program = bgfx::createProgram(vsShader, fsShader, false);
 			mask |= EvaluationGLSL;
 			mShaderHandles.push_back(vsShader);
 			mShaderHandles.push_back(fsShader);
-			assert(program.idx);
+			//assert(program.idx);
 		}
 		else if (fsShader.idx != bgfx::kInvalidHandle)
 		{
@@ -509,9 +510,9 @@ void Evaluators::SetEvaluators()
 			mask |= EvaluationGLSLCompute;
 			mShaderHandles.push_back(csShader);
 		}
-
+		
 		EvaluatorScript& script = mEvaluatorScripts[nodeName];
-
+		
 		if (program.idx)
 		{
 			script.mProgram = program;
@@ -523,6 +524,7 @@ void Evaluators::SetEvaluators()
 				script.mUniformHandles.push_back(handle);
 			}
 		}
+		
 		// C++ functions
 		auto iter = nodeFunctions.find(nodeName);
 		if (iter != nodeFunctions.end())
@@ -597,10 +599,13 @@ void Evaluators::Clear()
 	mEvaluatorPerNodeType.clear();
 	mShaderHandles.clear();
 
-	bgfx::destroy(u_time);
-	bgfx::destroy(mBlitProgram);
-	bgfx::destroy(mProgressProgram);
-	bgfx::destroy(mDisplayCubemapProgram);
+	if (u_time.idx)
+	{
+		bgfx::destroy(u_time);
+		bgfx::destroy(mBlitProgram);
+		bgfx::destroy(mProgressProgram);
+		bgfx::destroy(mDisplayCubemapProgram);
+	}
 
 	if (u_viewRot.idx)
 	{

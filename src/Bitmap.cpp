@@ -525,6 +525,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 		Log("Trying to init FBO with 0 sized dimension.\n");
 		return;
 	}
+
 	/*mGLTexID = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::BGRA8);
 	if (depthBuffer)
 	{

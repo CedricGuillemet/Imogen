@@ -959,8 +959,6 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
     {
         return;
     }
-	AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUIProgress, nodeIndex, &mEditingContext);
-	return;
     if (NodeIsProcesing(nodeIndex) == 1)
     {
         AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUIProgress, nodeIndex, &mEditingContext);

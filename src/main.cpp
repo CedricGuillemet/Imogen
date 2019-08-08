@@ -235,7 +235,7 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
 	bgfx::Init init;
-	init.type = bgfx::RendererType::OpenGL; //:Direct3D11;//:OpenGL; //:Count;//:OpenGL; // :Direct3D9;//
+	init.type = bgfx::RendererType::Count; //:Direct3D11;//:OpenGL; //:Count;//:OpenGL; // :Direct3D9;//
 	bgfxCallback callback;
 	init.callback = &callback;
 	bgfx::init(init);
@@ -273,8 +273,6 @@ int main_Async(int argc, char** argv)
     ImGui_ImplSDL2_InitForOpenGL(loopdata.mWindow, loopdata.mGLContext);
 
     InitFonts();
-
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
     ImGui_Implbgfx_Init();
 
@@ -395,10 +393,6 @@ int main_Async(int argc, char** argv)
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
 
-    
-
-
-
 	// Shutdown bgfx.
 	bgfx::shutdown();
 
@@ -451,7 +445,7 @@ void MainLoop(void* arg)
         InitCallbackRects();
         loopdata->mImogen->HandleHotKeys();
 
-        loopdata->mNodeGraphControler->mEditingContext.RunDirty();
+        //loopdata->mNodeGraphControler->mEditingContext.RunDirty();
         loopdata->mImogen->Show(loopdata->mBuilder, library, capturing);
         if (!capturing && loopdata->mImogen->ShowMouseState())
         {
@@ -460,11 +454,7 @@ void MainLoop(void* arg)
 
         // Rendering
         ImGui::Render();
-		bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
-		bgfx::touch(0);
-
 		ImGui_Implbgfx_RenderDrawData(viewId_ImGui, ImGui::GetDrawData());
-
 		bgfx::frame();
 		g_TS.RunPinnedTasks();
     };

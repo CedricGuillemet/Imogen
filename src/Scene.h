@@ -67,8 +67,6 @@ struct Scene
         struct Primitive
         {
 			~Primitive();
-            //std::vector<Buffer> mBuffers;
-            //IndexBuffer mIndexBuffer = { 0, 0, 0 };
 			std::vector<bgfx::VertexBufferHandle> mStreams;
 			bgfx::IndexBufferHandle mIbh;
 			bgfx::VertexDecl mDecl;

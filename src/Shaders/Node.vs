@@ -5,6 +5,8 @@ $output v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "Common.shader"
 
+vec4 u_uvTransform;
+
 void main()
 {
 	if (u_target.y == 1.)
@@ -13,7 +15,8 @@ void main()
 	}
 	else
 	{
-		gl_Position = vec4(a_texcoord0.xy*2.0-1.0,0.5,1.0); 
+		vec2 trUV = a_texcoord0.xy * u_uvTransform.xy + u_uvTransform.zw;
+		gl_Position = vec4(trUV.xy, 0.5, 1.0); 
 	}
 	
 	v_texcoord0 = a_texcoord0;

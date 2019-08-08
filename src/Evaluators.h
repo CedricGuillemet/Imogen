@@ -140,6 +140,7 @@ public:
 	std::vector<UniformHandle> mSamplers2D;
 	std::vector<UniformHandle> mSamplersCube;
 	bgfx::UniformHandle u_time;
+	bgfx::UniformHandle u_uvTransform;
 };
 
 extern Evaluators gEvaluators;

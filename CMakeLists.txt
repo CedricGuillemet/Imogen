@@ -181,7 +181,7 @@ ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DE
 if (EMSCRIPTEN)
 add_definitions(-DEMSCRIPTEN)
 add_definitions(-D_X86_)
-set(EMS_OPTS "-s USE_SDL=2 -s USE_WEBGL2=1 -s WASM=1 -s FULL_ES3=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy -g4 --source-map-base http://localhost:8000/")
+set(EMS_OPTS "-s USE_SDL=2 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy -g4 --source-map-base http://localhost:8000/")
 add_definitions(${EMS_OPTS})
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 set(EMS_PRELOAD " --preload-file DefaultLibrary.imogen --preload-file imgui.ini --preload-file Nodes --preload-file Stock")
@@ -216,8 +216,9 @@ set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build the BGFX examples.")
 if(NOT EMSCRIPTEN)
 set(BGFX_BUILD_TOOLS ON CACHE BOOL "Build the BGFX tools.")
 elseif()
-set(BGFX_BUILD_TOOLS 0)
-set(BGFX_BUILD_EXAMPLES 0)
+set(BGFX_BUILD_TOOLS OFF)
+set(BGFX_BUILD_EXAMPLES OFF)
+set(BGFX_CUSTOM_TARGETS OFF)
 endif() # emscripten
 
 add_subdirectory(${IMOGEN_BGFX_DIR}/)
@@ -261,7 +262,7 @@ foreach(SHADER ${SHADER_FILES})
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o ${SHADER_OUTPUT} --platform windows -p vs_5_0 -O 3 --type vertex --bin2c ${FILE_NAME}_vs_dx11
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_dx9.h" --platform windows -p vs_3_0 -O 3 --type vertex --bin2c ${FILE_NAME}_vs_dx9
 		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_esl.h" --platform android --type vertex --bin2c ${FILE_NAME}_vs_esl
-		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_glsl.h" --platform linux -p 120 --type vertex --bin2c ${FILE_NAME}_vs_glsl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_glsl.h" --platform asm.js -p 120 --type vertex --bin2c ${FILE_NAME}_vs_glsl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_mtl.h" --platform osx -p metal --type vertex --bin2c ${FILE_NAME}_vs_mtl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_spv.h" --platform linux -p spirv --type vertex --bin2c ${FILE_NAME}_vs_spv
 		DEPENDS ${SHADER})
@@ -280,7 +281,7 @@ foreach(SHADER ${SHADER_FILES})
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o ${SHADER_OUTPUT} --platform windows -p ps_5_0 -O 3 --type fragment --bin2c ${FILE_NAME}_fs_dx11
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_dx9.h" --platform windows -p ps_5_0 -O 3 --type fragment --bin2c ${FILE_NAME}_fs_dx9
 		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_esl.h" --platform android --type fragment --bin2c ${FILE_NAME}_fs_esl
-		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_glsl.h" --platform linux -p 130 --type fragment --bin2c ${FILE_NAME}_fs_glsl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_glsl.h" --platform asm.js -p 120 --type fragment --bin2c ${FILE_NAME}_fs_glsl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_mtl.h" --platform osx -p metal --type fragment --bin2c ${FILE_NAME}_fs_mtl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_spv.h" --platform linux -p spirv --type fragment --bin2c ${FILE_NAME}_fs_spv
 		DEPENDS ${SHADER})

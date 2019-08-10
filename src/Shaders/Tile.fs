@@ -38,8 +38,8 @@ vec2 cellPoint(vec2 cell)
     float cellsize = 0.5;
 	vec2 vnoise = vec2(noise(cell) + cos(cell.y) * cellsize,
 		noise(cell*cellsize) + sin(cell.x) * cellsize) * u_noiseFactor;
-	float quincunxX = float(int(floor(cell.y))&1) * cellsize * u_quincunx.x;
-    float quincunxY = float(int(floor(cell.x))&1) * cellsize * u_quincunx.y;
+	float quincunxX = 0.;//float(int(floor(cell.y))&1) * cellsize * u_quincunx.x;
+    float quincunxY = 0.;//float(int(floor(cell.x))&1) * cellsize * u_quincunx.y;
 	return vnoise + vec2(quincunxX, quincunxY);
 }
 

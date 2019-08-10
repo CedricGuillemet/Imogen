@@ -221,6 +221,10 @@ set(BGFX_BUILD_EXAMPLES OFF)
 set(BGFX_CUSTOM_TARGETS OFF)
 endif() # emscripten
 
+set(BGFX_BUILD_TOOLS OFF)
+set(BGFX_BUILD_EXAMPLES OFF)
+set(BGFX_CUSTOM_TARGETS OFF)
+
 add_subdirectory(${IMOGEN_BGFX_DIR}/)
 set_property(TARGET astc PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
 set_property(TARGET astc-codec PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
@@ -262,7 +266,8 @@ foreach(SHADER ${SHADER_FILES})
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o ${SHADER_OUTPUT} --platform windows -p vs_5_0 -O 3 --type vertex --bin2c ${FILE_NAME}_vs_dx11
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_dx9.h" --platform windows -p vs_3_0 -O 3 --type vertex --bin2c ${FILE_NAME}_vs_dx9
 		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_esl.h" --platform android --type vertex --bin2c ${FILE_NAME}_vs_esl
-		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_glsl.h" --platform asm.js -p 120 --type vertex --bin2c ${FILE_NAME}_vs_glsl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_glsl.h" --platform windows -p 120 --type vertex --bin2c ${FILE_NAME}_vs_glsl
+        COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_SOURCE_DIR}/bin/Nodes/Shaders/${FILE_NAME}_vs.bin" --platform asm.js -p 120 --type vertex
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_mtl.h" --platform osx -p metal --type vertex --bin2c ${FILE_NAME}_vs_mtl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_spv.h" --platform linux -p spirv --type vertex --bin2c ${FILE_NAME}_vs_spv
 		DEPENDS ${SHADER})
@@ -281,7 +286,8 @@ foreach(SHADER ${SHADER_FILES})
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o ${SHADER_OUTPUT} --platform windows -p ps_5_0 -O 3 --type fragment --bin2c ${FILE_NAME}_fs_dx11
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_dx9.h" --platform windows -p ps_5_0 -O 3 --type fragment --bin2c ${FILE_NAME}_fs_dx9
 		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_esl.h" --platform android --type fragment --bin2c ${FILE_NAME}_fs_esl
-		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_glsl.h" --platform asm.js -p 120 --type fragment --bin2c ${FILE_NAME}_fs_glsl
+		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_glsl.h" --platform windows -p 120 --type fragment --bin2c ${FILE_NAME}_fs_glsl
+        COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_SOURCE_DIR}/bin/Nodes/Shaders/${FILE_NAME}_fs.bin" --platform asm.js -p 120 --type fragment
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_mtl.h" --platform osx -p metal --type fragment --bin2c ${FILE_NAME}_fs_mtl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_spv.h" --platform linux -p spirv --type fragment --bin2c ${FILE_NAME}_fs_spv
 		DEPENDS ${SHADER})

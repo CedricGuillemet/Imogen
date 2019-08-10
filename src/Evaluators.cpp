@@ -41,9 +41,12 @@
 #include "cgltf.h"
 #include "GraphControler.h"
 #include <functional>
+#include <bx/bx.h>
+#include <bx/readerwriter.h>
+#ifndef __EMSCRIPTEN__
 #include <bgfx/embedded_shader.h>
 #include "EmbeddedShaders.cpp"
-
+#endif
 Evaluators gEvaluators;
 
 extern TaskScheduler g_TS;
@@ -429,18 +432,43 @@ Evaluators::~Evaluators()
 {
 }
 
+bgfx::ShaderHandle LoadShader(const char* shaderName)
+{
+#ifdef __EMSCRIPTEN__
+    
+    std::string filePath = std::string("Nodes/Shaders/") + shaderName + ".bin";
+    auto buffer = ReadFile(filePath.c_str());
+    if (buffer.size())
+	{
+        Log(" *** %s\n", shaderName);
+        auto shader = bgfx::createShader(bgfx::copy(buffer.data(), buffer.size()));
+        bgfx::frame();
+        return shader;
+    }
+    else
+    {
+        Log("Can't open file at %s\n", filePath.c_str());
+        return {bgfx::kInvalidHandle};
+    }
+#else
+    const bgfx::RendererType::Enum type = bgfx::getRendererType();
+    return bgfx::createEmbeddedShader(s_embeddedShaders, type, shaderName);
+#endif
+}
+
 void Evaluators::SetEvaluators()
 {
     Clear();
 	
-	const bgfx::RendererType::Enum type = bgfx::getRendererType();
-	ShaderHandle nodeVSShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, "Node_vs");
+	
+	ShaderHandle nodeVSShader = LoadShader("Node_vs");
 	mShaderHandles.push_back(nodeVSShader);
 
 	// default shaders
-	mBlitProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "Blit_fs"), false);
-	mProgressProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "ProgressingNode_fs"), false);
-	mDisplayCubemapProgram = bgfx::createProgram(nodeVSShader, bgfx::createEmbeddedShader(s_embeddedShaders, type, "DisplayCubemap_fs"), false);
+    
+	mBlitProgram = bgfx::createProgram(nodeVSShader, LoadShader("Blit_fs"), false);
+	mProgressProgram = bgfx::createProgram(nodeVSShader, LoadShader("ProgressingNode_fs"), false);
+	mDisplayCubemapProgram = bgfx::createProgram(nodeVSShader, LoadShader("DisplayCubemap_fs"), false);
 
 	// evaluation uniforms
 	u_viewRot = bgfx::createUniform("u_viewRot", bgfx::UniformType::Mat4, 1);
@@ -482,15 +510,18 @@ void Evaluators::SetEvaluators()
 		const std::string& nodeName = gMetaNodes[i].mName;
 		std::string vsShaderName = nodeName + "_vs";
 		std::string fsShaderName = nodeName + "_fs";
-		std::string csShaderName = nodeName + "_cs";
-		ShaderHandle vsShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, vsShaderName.c_str());
-		ShaderHandle fsShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, fsShaderName.c_str());
-		ShaderHandle csShader = bgfx::createEmbeddedShader(s_embeddedShaders, type, csShaderName.c_str());
-		ProgramHandle program{0};
+		
+		ShaderHandle vsShader = LoadShader(vsShaderName.c_str());
+		ShaderHandle fsShader = LoadShader(fsShaderName.c_str());
+#ifndef __EMSCRIPTEN__
+        std::string csShaderName = nodeName + "_cs";
+		ShaderHandle csShader = LoadShader(csShaderName.c_str());
+#endif
+		ProgramHandle program{bgfx::kInvalidHandle};
 		if (vsShader.idx != bgfx::kInvalidHandle && fsShader.idx != bgfx::kInvalidHandle)
 		{
 			// valid VS/FS
-			//program = bgfx::createProgram(vsShader, fsShader, false);
+			program = bgfx::createProgram(vsShader, fsShader, false);
 			mask |= EvaluationGLSL;
 			mShaderHandles.push_back(vsShader);
 			mShaderHandles.push_back(fsShader);
@@ -504,13 +535,14 @@ void Evaluators::SetEvaluators()
 			mShaderHandles.push_back(fsShader);
 			assert(program.idx);
 		}
+#ifndef __EMSCRIPTEN__
 		else if (csShader.idx != bgfx::kInvalidHandle)
 		{
 			// valid CS
 			mask |= EvaluationGLSLCompute;
 			mShaderHandles.push_back(csShader);
 		}
-		
+#endif
 		EvaluatorScript& script = mEvaluatorScripts[nodeName];
 		
 		if (program.idx)

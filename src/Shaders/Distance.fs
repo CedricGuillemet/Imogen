@@ -4,7 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-int u_passCount;
+uniform vec4 u_passCount;
 
 // source
 // https://www.shadertoy.com/view/ldVGWc
@@ -21,7 +21,7 @@ vec4 Unpack(vec4 v)
     return v * s;
 }
 
-vec4 StepJFA (in vec2 fragCoord, in float level, float c_maxSteps)
+vec4 StepJFA (vec2 fragCoord, float level, float c_maxSteps)
 {
     level = clamp(level, 0.0, c_maxSteps);
     float stepwidth = floor(exp2(c_maxSteps - level)+0.5);
@@ -70,9 +70,9 @@ void main()
             res = Pack(vec4(vec2(10000.0, 10000.0), gl_FragCoord.xy));
         }
     }
-    else if (u_pass.x != (u_passCount - 1))
+    else if (u_pass.x != (u_passCount.x - 1.))
     {
-        res = StepJFA(gl_FragCoord.xy, u_pass.x-1., float(u_passCount-2));
+        res = StepJFA(gl_FragCoord.xy, u_pass.x-1., (u_passCount.x-2.));
     }
     else
     {

@@ -5,12 +5,12 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "Common.shader"
 
 // starting point : https://www.shadertoy.com/view/4d2Xzh
-vec2 u_translation;
-vec2 u_quincunx;
-float u_noiseFactor;
-float u_rotationFactor;
-float u_scale;
-float u_innerScale;
+uniform vec4 u_translation;
+uniform vec4 u_quincunx;
+uniform vec4 u_noiseFactor;
+uniform vec4 u_rotationFactor;
+uniform vec4 u_scale;
+uniform vec4 u_innerScale;
 
 float hash(float n)
 {
@@ -37,9 +37,9 @@ vec2 cellPoint(vec2 cell)
 {
     float cellsize = 0.5;
 	vec2 vnoise = vec2(noise(cell) + cos(cell.y) * cellsize,
-		noise(cell*cellsize) + sin(cell.x) * cellsize) * u_noiseFactor;
-	float quincunxX = 0.;//float(int(floor(cell.y))&1) * cellsize * u_quincunx.x;
-    float quincunxY = 0.;//float(int(floor(cell.x))&1) * cellsize * u_quincunx.y;
+		noise(cell*cellsize) + sin(cell.x) * cellsize) * u_noiseFactor.x;
+	float quincunxX = mod(cell.y,2.) * cellsize * u_quincunx.x;
+    float quincunxY = mod(cell.x,2.) * cellsize * u_quincunx.y;
 	return vnoise + vec2(quincunxX, quincunxY);
 }
 
@@ -67,7 +67,7 @@ vec4 getCell(vec2 t, out float rad, out float idx, out vec2 uvAtCellCenter)
                     nd = d;
                     nc = c;
                     nq = q;
-                    uvAtCellCenter = c / u_scale - u_translation;
+                    uvAtCellCenter = c / u_scale.x - u_translation.xy;
                 }
             }
         }
@@ -80,14 +80,15 @@ vec4 getCell(vec2 t, out float rad, out float idx, out vec2 uvAtCellCenter)
         {
             for(int x = -1; x < 2; x += 1)
             {
-                if(x==0 && y==0)
-                    continue;
+                if(x!=0 || y!=0)
+                {
 
                 vec2 b = vec2(float(x), float(y));
                 vec2 q = b + nq;
                 vec2 c = q + cellPoint(q);
 
                 rad = min(rad, distance(nc, c) * 0.5);
+                }
             }
         }
     }
@@ -98,7 +99,7 @@ vec4 getSprite(vec2 uv, float ng)
 {
 	mat2 rot = mat2(vec2(cos(ng), -sin(ng)), vec2(sin(ng), cos(ng)));
 	uv = mul(rot, uv);
-    uv /= u_innerScale;
+    uv /= u_innerScale.x;
     uv += 0.5;
     //uv = max(min(uv, vec2(1.0)), vec2(0.0));
     return texture2D(Sampler0, uv);
@@ -108,13 +109,13 @@ void main()
 {
 	float rad, idx;
     vec2 uvAtCellCenter;
-	vec2 tt = (v_texcoord0 + u_translation) * u_scale;
+	vec2 tt = (v_texcoord0 + u_translation.xy) * u_scale.x;
     vec4 c = getCell(tt, rad, idx, uvAtCellCenter);
     vec4 multiplier = vec4(1.0, 1.0, 1.0, 1.0);
     if (u_inputIndices[0].y > -1.)
     {
         multiplier = texture2D(Sampler1, uvAtCellCenter);
     }
-	vec4 spr = getSprite(c.xy, idx * u_rotationFactor) * multiplier;
+	vec4 spr = getSprite(c.xy, idx * u_rotationFactor.x) * multiplier;
 	gl_FragColor = vec4(spr.xyz, 1.0);
 }

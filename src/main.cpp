@@ -235,7 +235,7 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
 	bgfx::Init init;
-	init.type = bgfx::RendererType::Count; //:Direct3D11;//:OpenGL; //:Count;//:OpenGL; // :Direct3D9;//
+	init.type = bgfx::RendererType::Count; //:OpenGL; //:Count; //:Direct3D11;//:OpenGL; //:Count;//:OpenGL; // :Direct3D9;//
 	bgfxCallback callback;
 	init.callback = &callback;
 	bgfx::init(init);

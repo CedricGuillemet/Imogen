@@ -122,25 +122,25 @@ protected:
     std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
 	std::vector<ShaderHandle> mShaderHandles;
 
-	bgfx::UniformHandle u_viewRot;
-	bgfx::UniformHandle u_viewProjection;
-	bgfx::UniformHandle u_viewInverse;
-	bgfx::UniformHandle u_world;
-	bgfx::UniformHandle u_worldViewProjection;
-	bgfx::UniformHandle u_mouse;
-	bgfx::UniformHandle u_keyModifier;
-	bgfx::UniformHandle u_inputIndices;
-	bgfx::UniformHandle u_target;
-	bgfx::UniformHandle u_pass;
-	bgfx::UniformHandle u_viewport;
+	bgfx::UniformHandle u_viewRot{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_viewProjection{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_viewInverse{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_world{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_worldViewProjection{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_mouse{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_keyModifier{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_inputIndices{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_target{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_pass{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_viewport{ bgfx::kInvalidHandle };
 public:
-	ProgramHandle mBlitProgram;
-	ProgramHandle mProgressProgram;
-	ProgramHandle mDisplayCubemapProgram;
+	ProgramHandle mBlitProgram{ bgfx::kInvalidHandle };
+	ProgramHandle mProgressProgram{ bgfx::kInvalidHandle };
+	ProgramHandle mDisplayCubemapProgram{ bgfx::kInvalidHandle };
 	std::vector<UniformHandle> mSamplers2D;
 	std::vector<UniformHandle> mSamplersCube;
-	bgfx::UniformHandle u_time;
-	bgfx::UniformHandle u_uvTransform;
+	bgfx::UniformHandle u_time{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_uvTransform{ bgfx::kInvalidHandle };
 };
 
 extern Evaluators gEvaluators;

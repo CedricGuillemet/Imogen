@@ -603,7 +603,7 @@ void Evaluators::EvaluatorScript::Clear()
 	{
 		bgfx::destroy(sampler);
 	}
-	if (mProgram.idx)
+	if (mProgram.idx != bgfx::kInvalidHandle)
 	{
 		bgfx::destroy(mProgram);
 	}
@@ -631,7 +631,7 @@ void Evaluators::Clear()
 	mEvaluatorPerNodeType.clear();
 	mShaderHandles.clear();
 
-	if (u_time.idx)
+	if (u_time.idx != bgfx::kInvalidHandle)
 	{
 		bgfx::destroy(u_time);
 		bgfx::destroy(mBlitProgram);
@@ -639,7 +639,7 @@ void Evaluators::Clear()
 		bgfx::destroy(mDisplayCubemapProgram);
 	}
 
-	if (u_viewRot.idx)
+	if (u_viewRot.idx != bgfx::kInvalidHandle)
 	{
 		bgfx::destroy(u_viewRot);
 		bgfx::destroy(u_viewProjection);
@@ -657,6 +657,7 @@ void Evaluators::Clear()
 
 int Evaluators::GetMask(size_t nodeType) const
 {
+	return 0;
 	auto& evalNode = mEvaluatorPerNodeType[nodeType];
 	return evalNode->mMask;
 }

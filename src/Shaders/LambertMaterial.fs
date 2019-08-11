@@ -4,7 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-vec2 u_view;
+uniform vec4 u_view;
 
 //===============================================================================================
 // some code by knarkowicz https://www.shadertoy.com/view/4sSfzK

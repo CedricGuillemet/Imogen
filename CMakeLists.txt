@@ -11,6 +11,18 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build the BGFX examples.")
+
+if(NOT EMSCRIPTEN)
+set(BGFX_BUILD_TOOLS ON CACHE BOOL "Build the BGFX tools.")
+elseif()
+set(BGFX_BUILD_TOOLS OFF  CACHE BOOL "Build the BGFX tools.")
+set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build the BGFX examples.")
+set(BGFX_CUSTOM_TARGETS OFF CACHE BOOL "Build the BGFX targets.")
+endif() # emscripten
+
+
+
 file(GLOB SRC_FILES
     ${CMAKE_SOURCE_DIR}/src/*.h
     ${CMAKE_SOURCE_DIR}/src/*.cpp
@@ -68,6 +80,7 @@ LINK_DIRECTORIES(${GTK3_LIBRARY_DIRS})
 
 # Add other flags to the compiler
 ADD_DEFINITIONS(${GTK3_CFLAGS_OTHER})
+ADD_DEFINITIONS(BGFX_CONFIG_RENDERER_OPENGLES=31)
 set(PLATFORM_LIBS dl pthread ${GTK3_LIBRARIES})
 endif()
 
@@ -181,7 +194,7 @@ ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DE
 if (EMSCRIPTEN)
 add_definitions(-DEMSCRIPTEN)
 add_definitions(-D_X86_)
-set(EMS_OPTS "-s USE_SDL=2 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy -g4 --source-map-base http://localhost:8000/")
+set(EMS_OPTS "-s USE_SDL=2 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy")
 add_definitions(${EMS_OPTS})
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 set(EMS_PRELOAD " --preload-file DefaultLibrary.imogen --preload-file imgui.ini --preload-file Nodes --preload-file Stock")
@@ -210,20 +223,6 @@ add_custom_command(TARGET ${EXE_NAME} PRE_BUILD
 )
 
 endif()
-
-set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Build the BGFX examples.")
-
-if(NOT EMSCRIPTEN)
-set(BGFX_BUILD_TOOLS ON CACHE BOOL "Build the BGFX tools.")
-elseif()
-set(BGFX_BUILD_TOOLS OFF)
-set(BGFX_BUILD_EXAMPLES OFF)
-set(BGFX_CUSTOM_TARGETS OFF)
-endif() # emscripten
-
-set(BGFX_BUILD_TOOLS OFF)
-set(BGFX_BUILD_EXAMPLES OFF)
-set(BGFX_CUSTOM_TARGETS OFF)
 
 add_subdirectory(${IMOGEN_BGFX_DIR}/)
 set_property(TARGET astc PROPERTY FOLDER ${IMOGEN_BGFX_DIR}/bgfx/3rdparty)
@@ -267,7 +266,7 @@ foreach(SHADER ${SHADER_FILES})
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_dx9.h" --platform windows -p vs_3_0 -O 3 --type vertex --bin2c ${FILE_NAME}_vs_dx9
 		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_esl.h" --platform android --type vertex --bin2c ${FILE_NAME}_vs_esl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_glsl.h" --platform windows -p 120 --type vertex --bin2c ${FILE_NAME}_vs_glsl
-        COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_SOURCE_DIR}/bin/Nodes/Shaders/${FILE_NAME}_vs.bin" --platform asm.js -p 120 --type vertex
+        COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_SOURCE_DIR}/bin/Nodes/Shaders/${FILE_NAME}_vs.bin" --platform asm.js --type vertex
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_mtl.h" --platform osx -p metal --type vertex --bin2c ${FILE_NAME}_vs_mtl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_vs_spv.h" --platform linux -p spirv --type vertex --bin2c ${FILE_NAME}_vs_spv
 		DEPENDS ${SHADER})
@@ -287,7 +286,7 @@ foreach(SHADER ${SHADER_FILES})
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_dx9.h" --platform windows -p ps_5_0 -O 3 --type fragment --bin2c ${FILE_NAME}_fs_dx9
 		#COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_esl.h" --platform android --type fragment --bin2c ${FILE_NAME}_fs_esl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_glsl.h" --platform windows -p 120 --type fragment --bin2c ${FILE_NAME}_fs_glsl
-        COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_SOURCE_DIR}/bin/Nodes/Shaders/${FILE_NAME}_fs.bin" --platform asm.js -p 120 --type fragment
+        COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_SOURCE_DIR}/bin/Nodes/Shaders/${FILE_NAME}_fs.bin" --platform asm.js --type fragment
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_mtl.h" --platform osx -p metal --type fragment --bin2c ${FILE_NAME}_fs_mtl
 		COMMAND "$<TARGET_FILE:shaderc>" -f ${SHADER} -o "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}_fs_spv.h" --platform linux -p spirv --type fragment --bin2c ${FILE_NAME}_fs_spv
 		DEPENDS ${SHADER})

@@ -4,8 +4,6 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-int u_size; // 1<<(size+8)
-
 vec4 brushSample(vec2 uv, float radius)
 {
 	vec2 nuv = (uv) / radius + vec2(0.5, 0.5);
@@ -18,7 +16,7 @@ void main()
 	vec4 res = vec4(0.0, 0.0, 0.0, 0.0);
 	float brushRadius = 0.25;
 	vec4 brush = brushSample(v_texcoord0-u_mouse.xy, brushRadius);
-	if (u_pass.x == 1)
+	if (u_pass.x == 1.)
 	{
 		res = brush;
     }

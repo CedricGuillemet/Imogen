@@ -4,8 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-int u_mode;
-int u_size;
+uniform vec4 u_mode;
 
 vec4 EquirectToCubemap(vec2 vuv)
 {
@@ -27,7 +26,8 @@ vec4 CubemapToEquirect(vec2 vuv)
 void main()
 {
     vec4 res;
-	if (u_mode == 0)
+	int mode = int(u_mode.x);
+	if (mode == 0)
 		res = EquirectToCubemap(v_texcoord0);
 	else
 		res = CubemapToEquirect(v_texcoord0);

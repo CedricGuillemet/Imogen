@@ -6,7 +6,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 ////////////////////////////////////////////////////////////////////////////////////////
 // Normal map blending by ZigguratVertigo https://www.shadertoy.com/view/4t2SzR
 
-int u_technique;
+uniform vec4 u_technique;
 
 #define TECHNIQUE_RNM 				 0
 #define TECHNIQUE_PartialDerivatives 1
@@ -111,17 +111,18 @@ vec3 NormalBlend_Overlay(vec3 n1, vec3 n2)
 // Combine normals
 vec3 CombineNormal(vec3 n1, vec3 n2)
 {
- 	if (u_technique == TECHNIQUE_RNM)
+    int tech = int(u_technique.x);
+ 	if (tech == TECHNIQUE_RNM)
         return NormalBlend_RNM(n1, n2);
-    else if (u_technique == TECHNIQUE_PartialDerivatives)
+    else if (tech == TECHNIQUE_PartialDerivatives)
         return NormalBlend_PartialDerivatives(n1, n2);
-    else if (u_technique == TECHNIQUE_Whiteout)
+    else if (tech == TECHNIQUE_Whiteout)
         return NormalBlend_Whiteout(n1, n2);
-    else if (u_technique == TECHNIQUE_UDN)
+    else if (tech == TECHNIQUE_UDN)
         return NormalBlend_UDN(n1, n2);
-    else if (u_technique == TECHNIQUE_Unity)
+    else if (tech == TECHNIQUE_Unity)
         return NormalBlend_Unity(n1, n2);
-    else if (u_technique == TECHNIQUE_Linear)
+    else if (tech == TECHNIQUE_Linear)
         return NormalBlend_Linear(n1, n2);
     else
         return NormalBlend_Overlay(n1, n2);

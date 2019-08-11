@@ -4,12 +4,10 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-vec4 u_ambient;
-vec4 u_lightdir, u_Kr;
-float u_rayleigh_brightness, u_mie_brightness, u_spot_brightness, u_scatter_strength, u_rayleigh_strength, u_mie_strength;
-float u_rayleigh_collection_power, u_mie_collection_power, u_mie_distribution;
-int u_size;
-
+uniform vec4 u_ambient;
+uniform vec4 u_lightdir, u_Kr;
+uniform vec4 u_rayleigh_brightness, u_mie_brightness, u_spot_brightness, u_scatter_strength, u_rayleigh_strength, u_mie_strength;
+uniform vec4 u_rayleigh_collection_power, u_mie_collection_power, u_mie_distribution;
 
 float surface_height = 0.99;
 float range = 0.01;
@@ -71,9 +69,9 @@ void main()
 	vec3 eyedir = get_world_normal(v_texcoord0);
 	vec3 ld = normalize(u_lightdir.xyz);
 	float alpha = dot(eyedir, ld);
-	float rayleigh_factor = phase(alpha, -0.01)*u_rayleigh_brightness;
-	float mie_factor = phase(alpha, u_mie_distribution)*u_mie_brightness;
-	float spot = smoothstep(0.0, 15.0, phase(alpha, 0.9995))*u_spot_brightness;
+	float rayleigh_factor = phase(alpha, -0.01)*u_rayleigh_brightness.x;
+	float mie_factor = phase(alpha, u_mie_distribution.x)*u_mie_brightness.x;
+	float spot = smoothstep(0.0, 15.0, phase(alpha, 0.9995))*u_spot_brightness.x;
 	vec3 eye_position = vec3(0.0, surface_height, 0.0);
 	float eye_depth = atmospheric_depth(eye_position, eyedir);
 	float step_length = eye_depth/float(step_count);
@@ -86,13 +84,13 @@ void main()
 		vec3 position = eye_position + eyedir*sample_distance;
 		float extinction = horizon_extinction(position, ld.xyz, surface_height-0.35);
 		float sample_depth = atmospheric_depth(position, ld.xyz);
-		vec3 influx = absorb(sample_depth, vec3(intensity, intensity, intensity), u_scatter_strength)*extinction;
-		rayleigh_collected += absorb(sample_distance, u_Kr.xyz*influx, u_rayleigh_strength);
-		mie_collected += absorb(sample_distance, influx, u_mie_strength);
+		vec3 influx = absorb(sample_depth, vec3(intensity, intensity, intensity), u_scatter_strength.x)*extinction;
+		rayleigh_collected += absorb(sample_distance, u_Kr.xyz*influx, u_rayleigh_strength.x);
+		mie_collected += absorb(sample_distance, influx, u_mie_strength.x);
 	}
 	
-    rayleigh_collected = (rayleigh_collected*eye_extinction*pow(eye_depth, u_rayleigh_collection_power))/float(step_count);
-	mie_collected = (mie_collected*eye_extinction*pow(eye_depth, u_mie_collection_power))/float(step_count);
+    rayleigh_collected = (rayleigh_collected*eye_extinction*pow(eye_depth, u_rayleigh_collection_power.x))/float(step_count);
+	mie_collected = (mie_collected*eye_extinction*pow(eye_depth, u_mie_collection_power.x))/float(step_count);
 	vec3 color = vec3(spot*mie_collected + mie_factor*mie_collected + rayleigh_factor*rayleigh_collected);
 	gl_FragColor = vec4(max(color * u_ambient.w, u_ambient.xyz), 1.0);
 }

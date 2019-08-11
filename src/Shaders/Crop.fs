@@ -4,11 +4,11 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-vec4 u_quad;
+uniform vec4 u_quad;
 
 void main()
 {
-	if (u_pass.x == 1)
+	if (u_pass.x == 1.)
 	{
 		vec4 q = vec4(min(u_quad.x, u_quad.z), 
 			min(u_quad.y, u_quad.w),

@@ -4,9 +4,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-int u_mode; // radiance, irradiance
-int u_size;
-int u_sampleCount;
+uniform vec4 u_mode; // radiance, irradiance
+uniform vec4 u_sampleCount;
 
 vec3 get_world_normal(vec2 uv)
 {
@@ -71,38 +70,40 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 {
 	vec3 N = R;
 	vec3 V = R;
-	int numSamples = u_sampleCount;
+	//int numSamples = u_sampleCount;
 	vec3 color = vec3(0.0, 0.0, 0.0);
-	float totalWeight = float(numSamples);
+	float totalWeight = u_sampleCount.x;
 	float textureSize = 256.0;//textureSize(CubeSampler0, u_target.z).x;
 	float envMapDim = float(textureSize);
-	for(int i = 0; i < numSamples; i++) {
-		vec2 Xi = hammersley2d(i, numSamples);
-		vec3 H = importanceSample_GGX(Xi, roughness, N);
-		vec3 L = 2.0 * dot(V, H) * H - V;
-		
-		color += textureCubeLod(CubeSampler0, L, 0.).rgb;// * dotNL;
-		/*
-		float dotNL = clamp(dot(N, L), 0.0, 1.0);
-		if(dotNL > 0.0) 
+	for(int i = 0; i < 1024; i++) 
+	{
+		if (i<int(u_sampleCount.x))
 		{
-			// Filtering based on https://placeholderart.wordpress.com/2015/07/28/implementation-notes-runtime-environment-map-filtering-for-image-based-lighting/
+			vec2 Xi = hammersley2d(i, int(u_sampleCount.x));
+			vec3 H = importanceSample_GGX(Xi, roughness, N);
+			vec3 L = 2.0 * dot(V, H) * H - V;
+			
+			color += textureCubeLod(CubeSampler0, L, 0.).rgb;// * dotNL;
+			float dotNL = clamp(dot(N, L), 0.0, 1.0);
+			if(dotNL > 0.0) 
+			{
+				// Filtering based on https://placeholderart.wordpress.com/2015/07/28/implementation-notes-runtime-environment-map-filtering-for-image-based-lighting/
 
-			float dotNH = clamp(dot(N, H), 0.0, 1.0);
-			float dotVH = clamp(dot(V, H), 0.0, 1.0);
+				float dotNH = clamp(dot(N, H), 0.0, 1.0);
+				float dotVH = clamp(dot(V, H), 0.0, 1.0);
 
-			// Probability Distribution Function
-			float pdf = D_GGX(dotNH, roughness) * dotNH / (4.0 * dotVH) + 0.0001;
-			// Slid angle of current smple
-			float omegaS = 1.0 / (float(numSamples) * pdf);
-			// Solid angle of 1 pixel across all cube faces
-			float omegaP = 4.0 * PI / (6.0 * envMapDim * envMapDim);
-			// Biased (+1.0) mip level for better result
-			float mipLevel = roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
-			color += textureCubeLod(CubeSampler0, L, mipLevel).rgb * dotNL;
-			totalWeight += dotNL;
+				// Probability Distribution Function
+				float pdf = D_GGX(dotNH, roughness) * dotNH / (4.0 * dotVH) + 0.0001;
+				// Slid angle of current smple
+				float omegaS = 1.0 / (u_sampleCount.x * pdf);
+				// Solid angle of 1 pixel across all cube faces
+				float omegaP = 4.0 * PI / (6.0 * envMapDim * envMapDim);
+				// Biased (+1.0) mip level for better result
+				float mipLevel = roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
+				color += textureCubeLod(CubeSampler0, L, mipLevel).rgb * dotNL;
+				totalWeight += dotNL;
+			}
 		}
-		*/
 	}
 	return (color / totalWeight);
 }
@@ -111,7 +112,7 @@ void main()
 {
 	vec3 N = get_world_normal(v_texcoord0);
 	N.y = -N.y;
-	if (u_mode == 0)
+	if (u_mode.x == 0.)
 	{
 		//radiance
 		gl_FragColor = vec4(prefilterEnvMap(N, 0.5), 1.0);

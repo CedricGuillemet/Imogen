@@ -4,10 +4,10 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-int u_pointCount;
-float u_seed;
-float u_distanceBlend;
-float u_squareWidth;
+uniform vec4 u_pointCount;
+uniform vec4 u_seed;
+uniform vec4 u_distanceBlend;
+uniform vec4 u_squareWidth;
 
 float rand(float n){return fract(sin(n) * 43758.5453123);}
 
@@ -28,18 +28,22 @@ void main()
 {
     float col = 1.f;
     float minDist = 10.;
-    for(int i = 0;i<u_pointCount;i++)
+    int pointCount = int(u_pointCount.x);
+    for(int i = 0;i<64;i++)
     {
-        float f = float(i) * u_seed;
-        vec4 r = vec4(rand(f), rand(f*1.2721), rand(f*7.8273) * u_squareWidth, rand(f*7.8273) * 0.9 + 0.1);        
-        
-        float d = mix(sdAxisAlignedRect(v_texcoord0, r.xy-r.zz, r.xy+r.zz),
-        	sdAxisAlignedRectManhattan(v_texcoord0, r.xy-r.zz, r.xy+r.zz), u_distanceBlend);
-        
-        if (d < minDist)
+        if (i<pointCount)
         {
-        	minDist = d;
-            col = r.w;
+            float f = float(i) * u_seed.x;
+            vec4 r = vec4(rand(f), rand(f*1.2721), rand(f*7.8273) * u_squareWidth.x, rand(f*7.8273) * 0.9 + 0.1);        
+            
+            float d = mix(sdAxisAlignedRect(v_texcoord0, r.xy-r.zz, r.xy+r.zz),
+                sdAxisAlignedRectManhattan(v_texcoord0, r.xy-r.zz, r.xy+r.zz), u_distanceBlend.x);
+            
+            if (d < minDist)
+            {
+                minDist = d;
+                col = r.w;
+            }
         }
     }        
 

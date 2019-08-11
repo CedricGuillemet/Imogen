@@ -3,7 +3,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-vec4 u_ramp[8];
+uniform vec4 u_ramp[8];
 
 vec4 GetRamp(float v, vec4 arr[8]) 
 {

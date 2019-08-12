@@ -7,9 +7,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 /////////////////////////////////////////////////////////////////////////
 // PBR by knarkowicz https://www.shadertoy.com/view/4sSfzK
 
-uniform vec4 u_view;
-uniform vec4 u_displacementFactor;
-uniform vec4 u_geometry;
+uniform vec4 view;
+uniform vec4 displacementFactor;
+uniform vec4 geometry;
 
 float camHeight = -0.2;
 
@@ -77,7 +77,7 @@ vec3 EnvRemap( vec3 c )
 float displace(vec3 p)
 {
 	float disp = boxmap(Sampler3, p, normalize(p), 1.0 ).x;
-	return -disp * u_displacementFactor.x;
+	return -disp * displacementFactor.x;
 }
 
 float DoorKnob( vec3 p, mat3 localToWorld )
@@ -112,16 +112,16 @@ float Scene( vec3 p, mat3 localToWorld )
 	vec3 centerMesh = vec3(0., -camHeight, 0.);
 	float ret = 0.;
 	
-    int geometry = int(u_geometry.x);
-    if (geometry == 0)
+    int igeometry = int(geometry.x);
+    if (igeometry == 0)
 		ret = DoorKnob(p, localToWorld);
-	else if (geometry == 1)
+	else if (igeometry == 1)
 		ret = Sphere(p+centerMesh, 1.0);
-	else if (geometry == 2)
+	else if (igeometry == 2)
 		ret = Box(p+centerMesh, vec3(0.5, 0.5, 0.5));
-	else if (geometry == 3)
+	else if (igeometry == 3)
 		ret = max(p.y, 0.);
-	if (geometry == 4)
+	if (igeometry == 4)
 		ret = Cylinder(p+centerMesh, 0.7, 0.7);
         
 	ret += displace(p);
@@ -182,8 +182,8 @@ void main()
 	vec2 p = v_texcoord0 * 2.0 - 1.0;
 
      // camera movement	
-	float an = u_view.x * PI * 2.0;
-	float dn = u_view.y * PI * 0.5;
+	float an = view.x * PI * 2.0;
+	float dn = view.y * PI * 0.5;
 	float cdn = cos(dn);
 
 	vec3 ro = vec3( 2.0*sin(an)*cdn, camHeight + sin(dn)*2.0, 2.0*cos(an)*cdn );

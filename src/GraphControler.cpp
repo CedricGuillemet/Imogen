@@ -38,7 +38,7 @@ void AddExtractedView(size_t nodeIndex);
 GraphControler::GraphControler()
     : mbMouseDragging(false)
     , mbUsingMouse(false)
-    , mEditingContext(mEvaluationStages, false, 1024, 1024)
+    , mEditingContext(mEvaluationStages, false, 1024, 1024, true)
 {
     mSelectedNodeIndex = -1;
     mBackgroundNode = -1;
@@ -264,7 +264,7 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
                 EvaluationInfo evaluationInfo;
                 evaluationInfo.forcedDirty = 1;
                 evaluationInfo.uiPass = 0;
-                mEditingContext.RunSingle(viewId_BuildEvaluation, nodeIndex, evaluationInfo);
+                //mEditingContext.RunSingle(viewId_BuildEvaluation, nodeIndex, evaluationInfo); TODOEVA
             }
             break;
         case Con_Bool:
@@ -919,11 +919,12 @@ void GraphControler::ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int
 
 bool GraphControler::NodeIs2D(size_t nodeIndex) const
 {
-    auto target = mEditingContext.GetRenderTarget(nodeIndex);
+    /*auto target = mEditingContext.GetRenderTarget(nodeIndex); TODOEVA
     if (target)
 	{
         return !target->mImage.mIsCubemap;
 	}
+	*/
     return false;
 }
 
@@ -934,11 +935,11 @@ bool GraphControler::NodeIsCompute(size_t nodeIndex) const
 
 bool GraphControler::NodeIsCubemap(size_t nodeIndex) const
 {
-    auto target = mEditingContext.GetRenderTarget(nodeIndex);
+    /*auto target = mEditingContext.GetRenderTarget(nodeIndex); TODOEVA
     if (target)
 	{
         return target->mImage.mIsCubemap;
-	}
+	}*/
     return false;
 }
 

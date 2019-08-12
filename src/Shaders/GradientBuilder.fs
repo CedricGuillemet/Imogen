@@ -3,7 +3,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-uniform vec4 u_ramp[8];
+uniform vec4 gradient[8];
 
 vec4 GetRamp(float v, vec4 arr[8]) 
 {
@@ -24,5 +24,5 @@ vec4 GetRamp(float v, vec4 arr[8])
 
 void main()
 {
-	gl_FragColor = vec4(GetRamp(v_texcoord0.x, u_ramp).xyz, 1.0);
+	gl_FragColor = vec4(GetRamp(v_texcoord0.x, gradient).xyz, 1.0);
 }

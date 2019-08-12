@@ -4,10 +4,10 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 u_Frequency;
-uniform vec4 u_Strength;
-uniform vec4 u_Randomization;
-uniform vec4 u_VerticalShift;
+uniform vec4 frequency;
+uniform vec4 strength;
+uniform vec4 randomization;
+uniform vec4 verticalShift;
 	
 	
 // simplex noise obviously not by me, see main() below
@@ -137,18 +137,18 @@ void main()
     
   // noise seed
   vec3 v = vec3(uv, float(u_pass.x)*0.05);
-  float disp_freq = u_Frequency.x; // param
+  float disp_freq = frequency.x; // param
   v.xy *= disp_freq;
   // get first some density variation
   float fbv = fbm3(-2.0*v+11.2);
   vec4 disp = 0.5*mix(vec4(0.0, 0.0, 0.0, 0.0), pow(0.5+0.5*vec4(fbv, fbv, fbv, fbv), vec4(2.0, 2.0, 2.0, 2.0)), 0.05);
   v.xy /= disp_freq;
   // add to randomization coordinates
-  v += disp.x*u_Randomization.x; //param
+  v += disp.x*randomization.x; //param
   
   // vector field ("fluid" direction)
   vec2 off =  0.25*curlNoise(vec3(v)).xy;// vec2(fbm3(v), fbm3(v+99.0));
-  off.y = min(0.0, off.y-u_VerticalShift.x);
+  off.y = min(0.0, off.y-verticalShift.x);
   // maybe apply density to vector field too?
   //off /= 1.0+disp.x*10.0;
   vec2 uv2 = v_texcoord0;
@@ -156,7 +156,7 @@ void main()
   vec4 res = vec4(0.0, 0.0, 0.0, 0.0);
   //res += texture2D(Sampler0, uv2)*0.9;
   // mutate previous state with field direction
-  res += texture2D(Sampler0, (0.5+0.5*(1.0*(-1.0+2.0*uv2)))+off*u_Strength.x); // param
+  res += texture2D(Sampler0, (0.5+0.5*(1.0*(-1.0+2.0*uv2)))+off*strength.x); // param
   
   // disperse and output
   //res = pow( 0.97*clamp(res-disp, 0.0, 111.0), vec4(1.002*(1.0+disp)));

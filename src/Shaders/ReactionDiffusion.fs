@@ -5,9 +5,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "Common.shader"
 
 // adapted from https://www.shadertoy.com/view/4sccRj
-uniform vec4 u_boost;
-uniform vec4 u_divisor;
-uniform vec4 u_colorStep;
+uniform vec4 boost;
+uniform vec4 divisor;
+uniform vec4 colorStep;
 
 vec4 getSample(vec2 offset, vec2 fragCoord)
 {
@@ -39,10 +39,10 @@ vec4 dopass(vec2 uv, vec2 fc)
     col /= 8.0;
     col = T(0., 0., fc) - col*50.0;
     col -= 0.5;
-    col = col*u_boost.x;
+    col = col*boost.x;
     col = smoothstep(vec4(-0.5, -0.5, -0.5, -0.5), vec4(0.5, 0.5, 0.5, 0.5), col);
-	float ra = length(col.xyz)/sqrt(u_divisor.x);
-    col = mix(col, vec4(ra,ra,ra,ra), u_colorStep.x);
+	float ra = length(col.xyz)/sqrt(divisor.x);
+    col = mix(col, vec4(ra,ra,ra,ra), colorStep.x);
 	return col;
 }
 	

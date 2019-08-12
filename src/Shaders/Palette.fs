@@ -3,8 +3,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-uniform vec4 u_paletteIndex;
-uniform vec4 u_ditherStrength;
+uniform vec4 palette;
+uniform vec4 ditherStrength;
 
 float find_closest(int x, int y, float c0)
 {
@@ -272,10 +272,10 @@ void main()
 	ditheredRGB.g = find_closest(x, y, rgb.g);
 	ditheredRGB.b = find_closest(x, y, rgb.b);
 	float r = 0.25;
-	color = vec4(mix(color.rgb, ditheredRGB, u_ditherStrength.x), 1.0);
+	color = vec4(mix(color.rgb, ditheredRGB, ditherStrength.x), 1.0);
 	
 	vec4 res;
-	int paletteIndex = int(u_paletteIndex.x);
+	int paletteIndex = int(palette.x);
 	if (paletteIndex < 6)
 		res = GetCGA(color, paletteIndex);
 	if (paletteIndex < 7)

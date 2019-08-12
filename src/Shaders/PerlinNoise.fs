@@ -5,10 +5,10 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 
 // http://www.kamend.com/2012/06/perlin-noise-and-glsl/
 
-uniform vec4 u_translation;
-uniform vec4 u_octaves;
-uniform vec4 u_lacunarity;
-uniform vec4 u_gain;
+uniform vec4 translation;
+uniform vec4 octaves;
+uniform vec4 lacunarity;
+uniform vec4 gain;
 
 vec3 mod289(vec3 x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0;
@@ -136,6 +136,6 @@ float fbm(vec2 P, int octaves, float lacunarity, float gain)
 
 void main()
 {
-	float f = fbm(v_texcoord0 + u_translation.xy, int(u_octaves.x), u_lacunarity.x, u_gain.x);
+	float f = fbm(v_texcoord0 + translation.xy, int(octaves.x), lacunarity.x, gain.x);
 	gl_FragColor = vec4(f, f, f, f);
 }

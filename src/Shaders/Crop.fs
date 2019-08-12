@@ -4,16 +4,16 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 u_quad;
+uniform vec4 quad;
 
 void main()
 {
 	if (u_pass.x == 1.)
 	{
-		vec4 q = vec4(min(u_quad.x, u_quad.z), 
-			min(u_quad.y, u_quad.w),
-			max(u_quad.x, u_quad.z), 
-			max(u_quad.y, u_quad.w));
+		vec4 q = vec4(min(quad.x, quad.z), 
+			min(quad.y, quad.w),
+			max(quad.x, quad.z), 
+			max(quad.y, quad.w));
 		float barx = min(step(q.x, v_texcoord0.x), step(v_texcoord0.x, q.z));
 		float bary = min(step(q.y, v_texcoord0.y), step(v_texcoord0.y, q.w));
 		float colFactor = min(barx, bary);
@@ -21,7 +21,7 @@ void main()
 		return;
 	}
 	
-	vec4 q = u_quad;
+	vec4 q = quad;
 	vec2 uv = vec2(mix(min(q.x, q.z), max(q.x, q.z), v_texcoord0.x), mix(min(q.y, q.w), max(q.y, q.w), v_texcoord0.y));
 	gl_FragColor = texture2D(Sampler0, uv);
 }

@@ -4,7 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 u_ramp[8];
+uniform vec4 ramp[8];
 
 float GetRamp(float v, vec4 arr[8]) 
 {
@@ -30,7 +30,7 @@ void main()
 	if (u_inputIndices[0].y > -1.)
 		r = texture2D(Sampler1, vec2(tex.x, 0.5));
 	else
-		r = tex * GetRamp(tex.x, u_ramp);
+		r = tex * GetRamp(tex.x, ramp);
 
     gl_FragColor = r;
 }

@@ -4,10 +4,10 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 
 // https://github.com/Erkaman/glsl-worley
-uniform vec4 u_translation;
-uniform vec4 u_scale;
-uniform vec4 u_jitter;
-uniform vec4 u_manhattan;
+uniform vec4 translation;
+uniform vec4 scale;
+uniform vec4 jitter;
+uniform vec4 manhattan;
 
 // Permutation polynomial: (34x^2 + x) mod 289
 vec3 permute(vec3 x) 
@@ -63,7 +63,7 @@ float worley(vec2 P, float jitter, bool manhattanDistance)
 
 void main()
 {
-	float w = worley((v_texcoord0 + u_translation.xy) * u_scale.x, u_jitter.x, u_manhattan.x > 0.001);
+	float w = worley((v_texcoord0 + translation.xy) * scale.x, jitter.x, manhattan.x > 0.001);
 	gl_FragColor = vec4(w, w, w, w);
 }
 

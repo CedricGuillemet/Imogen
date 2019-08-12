@@ -435,19 +435,16 @@ Evaluators::~Evaluators()
 bgfx::ShaderHandle LoadShader(const char* shaderName)
 {
 #ifdef __EMSCRIPTEN__
-    
     std::string filePath = std::string("Nodes/Shaders/") + shaderName + ".bin";
     auto buffer = ReadFile(filePath.c_str());
     if (buffer.size())
 	{
-        Log(" *** %s\n", shaderName);
         auto shader = bgfx::createShader(bgfx::copy(buffer.data(), buffer.size()));
         bgfx::frame();
         return shader;
     }
     else
     {
-        Log("Can't open file at %s\n", filePath.c_str());
         return {bgfx::kInvalidHandle};
     }
 #else
@@ -460,12 +457,10 @@ void Evaluators::SetEvaluators()
 {
     Clear();
 	
-	
 	ShaderHandle nodeVSShader = LoadShader("Node_vs");
 	mShaderHandles.push_back(nodeVSShader);
 
 	// default shaders
-    
 	mBlitProgram = bgfx::createProgram(nodeVSShader, LoadShader("Blit_fs"), false);
 	mProgressProgram = bgfx::createProgram(nodeVSShader, LoadShader("ProgressingNode_fs"), false);
 	mDisplayCubemapProgram = bgfx::createProgram(nodeVSShader, LoadShader("DisplayCubemap_fs"), false);
@@ -552,7 +547,48 @@ void Evaluators::SetEvaluators()
 			// uniforms
 			for (const auto& parameter : gMetaNodes[i].mParams)
 			{
-				bgfx::UniformHandle handle = bgfx::createUniform(parameter.mName.c_str(), bgfx::UniformType::Vec4, 1);
+				int count = 1;
+				switch (parameter.mType)
+				{
+				case Con_Float:
+					break;
+				case Con_Float2:
+					break;
+				case Con_Float3:
+					break;
+				case Con_Float4:
+					break;
+				case Con_Color4:
+					break;
+				case Con_Int:
+					break;
+				case Con_Int2:
+					break;
+				case Con_Ramp:
+					count = 8;
+					break;
+				case Con_Angle:
+					break;
+				case Con_Angle2:
+					break;
+				case Con_Angle3:
+					break;
+				case Con_Angle4:
+					break;
+				case Con_Enum:
+					break;
+				case Con_Structure:
+				case Con_FilenameRead:
+				case Con_FilenameWrite:
+				case Con_ForceEvaluate:
+					continue;
+				case Con_Bool:
+					break;
+				case Con_Ramp4:
+					count = 8;
+					break;
+				}
+				bgfx::UniformHandle handle = bgfx::createUniform(parameter.mName.c_str(), bgfx::UniformType::Vec4, count);
 				script.mUniformHandles.push_back(handle);
 			}
 		}
@@ -657,7 +693,6 @@ void Evaluators::Clear()
 
 int Evaluators::GetMask(size_t nodeType) const
 {
-	return 0;
 	auto& evalNode = mEvaluatorPerNodeType[nodeType];
 	return evalNode->mMask;
 }
@@ -742,6 +777,7 @@ namespace EvaluationAPI
         {
             return EVAL_ERR;
         }
+		/* TODOEVA
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
         {
@@ -752,6 +788,7 @@ namespace EvaluationAPI
 
         Image::Upload(image, tgt->mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, Dirty::Parameter, true);
+		*/
         return EVAL_OK;
     }
 
@@ -806,11 +843,12 @@ namespace EvaluationAPI
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
-        auto renderTarget = evaluationContext->GetRenderTarget(target);
+        /*auto renderTarget = evaluationContext->GetRenderTarget(target); TODOEVA
         if (!renderTarget)
             return EVAL_ERR;
         *imageWidth = renderTarget->mImage.mWidth;
         *imageHeight = renderTarget->mImage.mHeight;
+		*/
         return EVAL_OK;
     }
 
@@ -818,7 +856,7 @@ namespace EvaluationAPI
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
-        auto renderTarget = evaluationContext->GetRenderTarget(target);
+        /*auto renderTarget = evaluationContext->GetRenderTarget(target); TODOEVA
         if (!renderTarget)
         {
             renderTarget = evaluationContext->CreateRenderTarget(target);
@@ -827,6 +865,7 @@ namespace EvaluationAPI
         //    return EVAL_OK;
         renderTarget->InitBuffer(
             imageWidth, imageHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
+			*/
         return EVAL_OK;
     }
 
@@ -835,12 +874,13 @@ namespace EvaluationAPI
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
 
-        auto renderTarget = evaluationContext->GetRenderTarget(target);
+        /*auto renderTarget = evaluationContext->GetRenderTarget(target); TODOEVA
         if (!renderTarget)
         {
             renderTarget = evaluationContext->CreateRenderTarget(target);
         }
         renderTarget->InitCube(faceWidth, mipmapCount);
+		*/
         return EVAL_OK;
     }
 
@@ -921,7 +961,7 @@ namespace EvaluationAPI
             return EVAL_ERR;
         }
 
-        auto tgt = evaluationContext->GetRenderTarget(target);
+        /*auto tgt = evaluationContext->GetRenderTarget(target); TODOEVA
         if (!tgt)
         {
             return EVAL_ERR;
@@ -985,12 +1025,13 @@ namespace EvaluationAPI
 		};
 
 		bgfx::destroy(transient);
+		*/
         return EVAL_OK;
     }
 
     int SetEvaluationImage(EvaluationContext* evaluationContext, int target, const Image* image)
     {
-        EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
+        /*EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
         {
@@ -1013,8 +1054,8 @@ namespace EvaluationAPI
 			{
 				Image::Upload(image, tgt->mGLTexID, cubeFace, i);
 			}
-		}
-
+		} TODOEVA
+		
 #if USE_FFMPEG
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
 		{
@@ -1022,6 +1063,7 @@ namespace EvaluationAPI
 		}
 #endif
         evaluationContext->SetTargetDirty(target, Dirty::Input, true);
+		*/
         return EVAL_OK;
     }
 
@@ -1100,7 +1142,7 @@ namespace EvaluationAPI
 
     int UpdateRenderer(EvaluationContext* evaluationContext, int target)
     {
-        auto& eval = evaluationContext->mEvaluationStages;
+        /*auto& eval = evaluationContext->mEvaluationStages;
         GLSLPathTracer::Renderer* renderer = (GLSLPathTracer::Renderer*)eval.mStages[target].renderer;
         GLSLPathTracer::Scene* rdscene = (GLSLPathTracer::Scene*)eval.mStages[target].mScene;
 
@@ -1129,7 +1171,8 @@ namespace EvaluationAPI
         {
             evaluationContext->StageSetProcessing(target, false);
             return EVAL_OK;
-        }
+        } TODOEVA
+		*/
         return EVAL_DIRTY;
     }
 
@@ -1296,15 +1339,17 @@ namespace EvaluationAPI
 
     int Evaluate(EvaluationContext* evaluationContext, int target, int width, int height, Image* image)
     {
-        EvaluationContext context(evaluationContext->mEvaluationStages, true, width, height);
+        /*EvaluationContext context(evaluationContext->mEvaluationStages, true, width, height);
         context.SetCurrentTime(evaluationContext->GetCurrentTime());
         // set all nodes as dirty so that evaluation (in build) will not bypass most nodes
-        context.DirtyAll();
+        context.DirtyAll(); TODOEVA
         while (context.RunBackward(target))
         {
             // processing... maybe good on next run
         }
+		
         GetEvaluationImage(&context, target, image);
+		*/
         return EVAL_OK;
     }
 

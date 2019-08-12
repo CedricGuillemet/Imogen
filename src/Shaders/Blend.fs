@@ -3,17 +3,17 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-uniform vec4 u_A;
-uniform vec4 u_B;
-uniform vec4 u_op;
+uniform vec4 A;
+uniform vec4 B;
+uniform vec4 operation;
 
 void main()
 {
 	vec4 res;
-    vec4 a = texture2D(Sampler0, v_texcoord0) * u_A;
-    vec4 b = texture2D(Sampler1, v_texcoord0) * u_B;
+    vec4 a = texture2D(Sampler0, v_texcoord0) * A;
+    vec4 b = texture2D(Sampler1, v_texcoord0) * B;
     vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
-	int op = int(u_op.x);
+	int op = int(operation.x);
 	if (op == 0) // Add
 		res = a + b;
 	else if (op == 1) // Multiply

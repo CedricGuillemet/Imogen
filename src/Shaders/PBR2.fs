@@ -7,8 +7,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 /////////////////////////////////////////////////////////////////////////
 // PBR by knarkowicz https://www.shadertoy.com/view/4sSfzK
 
-uniform vec4 u_view;
-uniform vec4 u_depthFactor;
+uniform vec4 view;
+uniform vec4 depthFactor;
 uniform vec4 u_geometry;
 
 float camHeight = -0.2;
@@ -186,8 +186,8 @@ void main()
 	vec2 p = v_texcoord0 * 2.0 - 1.0;
 
      // camera movement	
-	float an = u_view.x * PI * 2.0;
-	float dn = u_view.y * PI * 0.5;
+	float an = view.x * PI * 2.0;
+	float dn = view.y * PI * 0.5;
 	float cdn = cos(dn);
 
 	vec3 ro = vec3( 2.0*sin(an)*cdn, camHeight + sin(dn)*2.0, 2.0*cos(an)*cdn );
@@ -222,7 +222,7 @@ void main()
 	
 		vec3 eyeToFragment = -rd;//(inverse(tbn) * -rd); todo
 	
-		texcoord = ParallaxMapping(Sampler2, texcoord, eyeToFragment, u_depthFactor.x);
+		texcoord = ParallaxMapping(Sampler2, texcoord, eyeToFragment, depthFactor.x);
 		
         vec3 texNorm = texture2D(Sampler1, texcoord).xyz * 2.0 - 1.0;
 	

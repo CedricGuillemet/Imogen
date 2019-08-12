@@ -4,13 +4,13 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 u_op;
+uniform vec4 type;
 
 void main()
 {
     vec2 uvin = v_texcoord0 - vec2(0.5,0.5);
 	vec2 uv;
-	int op = int(u_op.x);
+	int op = int(type.x);
 	if (op == 1)
 	{
 		uv.x = cos(uvin.x * PI * 2. + PI / 2.) * (1. - (uvin.y + 0.5)) / 2. + 0.5;

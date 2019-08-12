@@ -75,8 +75,8 @@ struct GraphControler : public GraphEditorDelegate
     virtual bool RenderBackground() override;
     virtual void ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int nodeHovered) override;
 
-    EvaluationContext mEditingContext;
     EvaluationStages mEvaluationStages;
+	EvaluationContext mEditingContext;
     int mBackgroundNode;
     
 

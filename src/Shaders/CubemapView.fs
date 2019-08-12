@@ -4,9 +4,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 u_view;
-uniform vec4 u_mode;
-uniform vec4 u_LOD;
+uniform vec4 view;
+uniform vec4 mode;
+uniform vec4 LOD;
 
 vec4 CrossView(vec2 uv)
 {
@@ -33,7 +33,7 @@ vec4 CrossView(vec2 uv)
 			nd = vec3(d.x, d.y*cs.y - d.z*sn.y, d.y*sn.y + d.z*cs.y);
 		}
 
-	return textureCubeLod(CubeSampler0, nd, u_LOD.x);
+	return textureCubeLod(CubeSampler0, nd, LOD.x);
 }
 
 vec4 getUV(vec2 I)
@@ -65,7 +65,7 @@ vec4 IsometricView(vec2 uv)
    		nuv = getUV(I-vec2(0.5,0.0));  
     else
         nuv = vec4(1.0, 1.0, 1.0, 0.0)-getUV(vec2(I.x, -I.y)+vec2(0.5,0.0));  
-	return textureCubeLod(CubeSampler0, nuv.xyz*2.0-1.0, u_LOD.x) *abs(nuv.w);
+	return textureCubeLod(CubeSampler0, nuv.xyz*2.0-1.0, LOD.x) *abs(nuv.w);
 }
 
 vec4 Projection(vec2 uv)
@@ -73,13 +73,13 @@ vec4 Projection(vec2 uv)
 	vec2 ng = uv * vec2(PI, PI * 0.5);
 	vec2 a = cos(ng);
 	vec2 b = sin(ng);
-	return textureCubeLod(CubeSampler0, normalize(vec3(a.x*a.y, -b.y, b.x*a.y)), u_LOD.x); 
+	return textureCubeLod(CubeSampler0, normalize(vec3(a.x*a.y, -b.y, b.x*a.y)), LOD.x); 
 }
 
 vec4 CameraView(vec2 uv)
 {
-	float an = u_view.x * PI * 2.0;
-	float dn = u_view.y * PI * 0.5;
+	float an = view.x * PI * 2.0;
+	float dn = view.y * PI * 0.5;
 	float cdn = cos(dn);
 
 	vec3 ro = vec3( 2.0*sin(an)*cdn, sin(dn)*2.0, 2.0*cos(an)*cdn );
@@ -90,19 +90,19 @@ vec4 CameraView(vec2 uv)
 
 	vec3 rd = normalize( uv.x*uu - uv.y*vv + 1.5*ww );
 
-	return textureCubeLod(CubeSampler0, rd, u_LOD.x);
+	return textureCubeLod(CubeSampler0, rd, LOD.x);
 }
 
 void main()
 {
 	vec4 res;
 	vec2 uv = v_texcoord0 * 2.0 - 1.0;
-	int mode = int(u_mode.x);
-	if (mode == 0)
+	int imode = int(mode.x);
+	if (imode == 0)
 		res = Projection(uv);
-	else if (mode == 1)
+	else if (imode == 1)
 		res = IsometricView(uv);
-	else if (mode == 2)
+	else if (imode == 2)
 		res = CrossView(uv);
 	else
 		res = CameraView(uv);

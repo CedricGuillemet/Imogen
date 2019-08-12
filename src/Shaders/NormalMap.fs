@@ -3,13 +3,13 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-uniform vec4 u_spread;
-uniform vec4 u_invert;
+uniform vec4 spread;
+uniform vec4 invert;
 
 vec2 stdNormalMap(vec2 uv) 
 {
     float height = texture2D(Sampler0, uv).r;
-	if (u_invert.x > 0.001)
+	if (invert.x > 0.001)
 	{
 		height = 1.0 - height;
 	}
@@ -18,5 +18,5 @@ vec2 stdNormalMap(vec2 uv)
 
 void main()
 {
-	gl_FragColor = vec4(stdNormalMap(v_texcoord0) * u_spread.x + 0.5, 1., 1.);
+	gl_FragColor = vec4(stdNormalMap(v_texcoord0) * spread.x + 0.5, 1., 1.);
 }

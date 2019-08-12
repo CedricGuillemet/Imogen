@@ -4,8 +4,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 u_mode; // radiance, irradiance
-uniform vec4 u_sampleCount;
+uniform vec4 mode; // radiance, irradiance
+uniform vec4 sampleCount;
 
 vec3 get_world_normal(vec2 uv)
 {
@@ -70,16 +70,16 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 {
 	vec3 N = R;
 	vec3 V = R;
-	//int numSamples = u_sampleCount;
+	//int numSamples = sampleCount;
 	vec3 color = vec3(0.0, 0.0, 0.0);
-	float totalWeight = u_sampleCount.x;
+	float totalWeight = sampleCount.x;
 	float textureSize = 256.0;//textureSize(CubeSampler0, u_target.z).x;
 	float envMapDim = float(textureSize);
 	for(int i = 0; i < 1024; i++) 
 	{
-		if (i<int(u_sampleCount.x))
+		if (i<int(sampleCount.x))
 		{
-			vec2 Xi = hammersley2d(i, int(u_sampleCount.x));
+			vec2 Xi = hammersley2d(i, int(sampleCount.x));
 			vec3 H = importanceSample_GGX(Xi, roughness, N);
 			vec3 L = 2.0 * dot(V, H) * H - V;
 			
@@ -95,7 +95,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 				// Probability Distribution Function
 				float pdf = D_GGX(dotNH, roughness) * dotNH / (4.0 * dotVH) + 0.0001;
 				// Slid angle of current smple
-				float omegaS = 1.0 / (u_sampleCount.x * pdf);
+				float omegaS = 1.0 / (sampleCount.x * pdf);
 				// Solid angle of 1 pixel across all cube faces
 				float omegaP = 4.0 * PI / (6.0 * envMapDim * envMapDim);
 				// Biased (+1.0) mip level for better result
@@ -112,7 +112,7 @@ void main()
 {
 	vec3 N = get_world_normal(v_texcoord0);
 	N.y = -N.y;
-	if (u_mode.x == 0.)
+	if (mode.x == 0.)
 	{
 		//radiance
 		gl_FragColor = vec4(prefilterEnvMap(N, 0.5), 1.0);

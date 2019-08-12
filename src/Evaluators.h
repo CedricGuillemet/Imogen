@@ -121,7 +121,7 @@ protected:
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
 	std::vector<ShaderHandle> mShaderHandles;
-
+public:
 	bgfx::UniformHandle u_viewRot{ bgfx::kInvalidHandle };
 	bgfx::UniformHandle u_viewProjection{ bgfx::kInvalidHandle };
 	bgfx::UniformHandle u_viewInverse{ bgfx::kInvalidHandle };
@@ -133,7 +133,7 @@ protected:
 	bgfx::UniformHandle u_target{ bgfx::kInvalidHandle };
 	bgfx::UniformHandle u_pass{ bgfx::kInvalidHandle };
 	bgfx::UniformHandle u_viewport{ bgfx::kInvalidHandle };
-public:
+
 	ProgramHandle mBlitProgram{ bgfx::kInvalidHandle };
 	ProgramHandle mProgressProgram{ bgfx::kInvalidHandle };
 	ProgramHandle mDisplayCubemapProgram{ bgfx::kInvalidHandle };

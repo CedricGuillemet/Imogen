@@ -176,17 +176,15 @@ void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 class RenderTarget
 {
 public:
-    RenderTarget() = default;
 
     void InitBuffer(int width, int height, bool depthBuffer);
     void InitCube(int width, bool hasMipmaps);
     void Destroy();
-    void Clone(const RenderTarget& other);
     void Swap(RenderTarget& other);
 
 
     Image mImage;
-	TextureHandle mGLTexID = {0};
-	TextureHandle mGLTexDepth = {0};
-	FrameBufferHandle mFrameBuffer = { 0 };
+	TextureHandle mGLTexID = { bgfx::kInvalidHandle };
+	TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
+	FrameBufferHandle mFrameBuffer = { bgfx::kInvalidHandle };
 };

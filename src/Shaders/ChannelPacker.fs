@@ -3,10 +3,10 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-uniform vec4 u_chanR;
-uniform vec4 u_chanG;
-uniform vec4 u_chanB;
-uniform vec4 u_chanA;
+uniform vec4 R;
+uniform vec4 G;
+uniform vec4 B;
+uniform vec4 A;
 
 void main()
 {
@@ -18,14 +18,14 @@ void main()
 		
 	int T[4];
 	int C[4];
-	T[0] = int(mod((u_chanR.x/4.),4.));
-	C[0] = int(mod(u_chanR.x,4.));
-	T[1] = int(mod((u_chanG.x/4.),4.));
-	C[1] = int(mod(u_chanG.x,4.));
-	T[2] = int(mod((u_chanB.x/4.),4.));
-	C[2] = int(mod(u_chanB.x,4.));
-	T[3] = int(mod((u_chanA.x/4.),4.));
-	C[3] = int(mod(u_chanA.x,4.));
+	T[0] = int(mod((R.x/4.),4.));
+	C[0] = int(mod(R.x,4.));
+	T[1] = int(mod((G.x/4.),4.));
+	C[1] = int(mod(G.x,4.));
+	T[2] = int(mod((B.x/4.),4.));
+	C[2] = int(mod(B.x,4.));
+	T[3] = int(mod((A.x/4.),4.));
+	C[3] = int(mod(A.x,4.));
 
 	vec4 res = vec4(0.,0.,0.,0.);
 	float v = 0.;
@@ -39,13 +39,13 @@ void main()
 	}
 	
 
-	if (u_chanR.x>15.)
+	if (R.x>15.)
 		res.x = 1. - res.x;
-	if (u_chanG.x>15.)
+	if (G.x>15.)
 		res.y = 1. - res.y;
-	if (u_chanB.x>15.)
+	if (B.x>15.)
 		res.z = 1. - res.z;
-	if (u_chanA.x>15.)
+	if (A.x>15.)
 		res.w = 1. - res.w;
 
 	gl_FragColor = res;

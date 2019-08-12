@@ -4,7 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 u_passCount;
+uniform vec4 passCount;
 
 // source
 // https://www.shadertoy.com/view/ldVGWc
@@ -70,9 +70,9 @@ void main()
             res = Pack(vec4(vec2(10000.0, 10000.0), gl_FragCoord.xy));
         }
     }
-    else if (u_pass.x != (u_passCount.x - 1.))
+    else if (u_pass.x != (passCount.x - 1.))
     {
-        res = StepJFA(gl_FragCoord.xy, u_pass.x-1., (u_passCount.x-2.));
+        res = StepJFA(gl_FragCoord.xy, u_pass.x-1., (passCount.x-2.));
     }
     else
     {

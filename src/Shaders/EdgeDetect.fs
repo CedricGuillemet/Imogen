@@ -3,7 +3,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-uniform vec4 u_radius;
+uniform vec4 radius;
 
 // Use these parameters to fiddle with settings
 float step = 1.0;
@@ -47,6 +47,6 @@ vec3 sobel(float stepx, float stepy, vec2 center){
 
 void main()
 {
-	float e = u_radius.x;
+	float e = radius.x;
 	gl_FragColor = vec4(sobel(e, e, v_texcoord0), 1.0);
 }

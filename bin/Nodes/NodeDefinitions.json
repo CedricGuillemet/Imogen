@@ -60,10 +60,6 @@
 		"category": 1,
         "description":"Renders a 4 square black and white checker. Use a Transform node to scale it to any number of squares.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
-		"inputs": [{
-			"name": "",
-			"type": "Float"
-		}],
 		"outputs": [{
 			"name": "",
 			"type": "Float4"
@@ -73,10 +69,6 @@
 		"category": 1,
         "description":"Renders a one directioned sine as a greyscale value.",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
-		"inputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
 		"outputs": [{
 			"name": "",
 			"type": "Float4"
@@ -160,7 +152,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Type",
+			"name": "type",
 			"type": "Enum",
 			"enum": "Directional|Box|",
             "description":"Selection of the Blur type."
@@ -382,7 +374,7 @@
 			"loop": false,
             "description":"Translate the noise seeds so you can have virtualy infinite different noise."
             },{
-			"name": "Quincunx",
+			"name": "quincunx",
 			"type": "Float2",
 			"default": "0.0,0.0",
 			"description":"Offset line and/or column."
@@ -450,7 +442,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "technique",
+			"name": "mode",
 			"type": "Enum",
 			"enum": "RNM|Partial Derivatives|Whiteout|UDN|Unity|Linear|Overlay|",
             "description":"Different techniques for blending. Check the examples below to see the differences."
@@ -480,12 +472,12 @@
 			"default":"10.0",
             "description":""
 		}, {
-			"name": "U",
+			"name": "u",
 			"type": "Float",
 			"default":"1.0",
             "description":"Interpolate between centered seed (checker) to jittered random position."
 		}, {
-			"name": "V",
+			"name": "v",
 			"type": "Float",
 			"default":"0.5",
             "description":"Interpolation factor between full color to distance-like color per cell."
@@ -638,12 +630,12 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "min",
+			"name": "minimum",
 			"type": "Float4",
             "default":"0.5,0.5,0.5,1.0",
             "description":"The minimal value for each source component."
 		}, {
-			"name": "max",
+			"name": "maximum",
 			"type": "Float4",
             "default":"0.6,0.6,0.6,1.0",
             "description":"The maximal value for each source component."
@@ -1217,7 +1209,7 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Center",
+			"name": "center",
 			"type": "Float2",
 			"default":"0.5,0.5",
             "description":"Center of the operation in clipspace coordinates [0..1]"

@@ -4,7 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-vec2 u_view;
+uniform vec4 view;
 
 //===============================================================================================
 // some code by knarkowicz https://www.shadertoy.com/view/4sSfzK
@@ -41,8 +41,8 @@ void main()
 	vec2 p = v_texcoord0 * 2.0 - 1.0;
 
      // camera movement	
-	float an = u_view.x * PI * 2.0;
-	float dn = u_view.y * PI * 0.5;
+	float an = view.x * PI * 2.0;
+	float dn = view.y * PI * 0.5;
 	float cdn = cos(dn);
 	vec3 ro = vec3( 2.5*sin(an)*cdn, 1.0 + sin(dn)*2.0, 2.5*cos(an)*cdn );
     vec3 ta = vec3( 0.0, 1.0, 0.0 );

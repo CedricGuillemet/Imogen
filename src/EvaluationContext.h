@@ -90,38 +90,46 @@ protected:
 
 struct EvaluationContext
 {
-    EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
+    EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight, bool useThumbnail);
     ~EvaluationContext();
 
     // iterative editing
     void AddEvaluation(size_t nodeIndex);
     void DelEvaluation(size_t nodeIndex);
-
+	/*
     void RunAll();
     // return true if any node is in processing state
     bool RunBackward(size_t nodeIndex);
     void RunSingle(size_t nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo);
     void RunDirty();
+	*/
 
+	void Evaluate();
 
     void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
     int GetCurrentTime() const { return mCurrentTime; }
     void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
-    void GetThumb(size_t nodeIndex, TextureHandle& textureHandle, ImRect& uvs) const { mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); }
-	TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
+    void GetThumb(size_t nodeIndex, TextureHandle& textureHandle, ImRect& uvs) const 
+	{ 
+		assert(mUseThumbnail);
+		mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); 
+	}
 
+	TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
+	/* TODOEVA
     std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) 
     { 
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget; 
     }
-
+	
     const std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) const
     {
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget;
     }
+	*/
 #if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
 #endif
@@ -147,14 +155,13 @@ struct EvaluationContext
     void StageSetProcessing(size_t target, int processing);
     void StageSetProgress(size_t target, float progress);
 
-    void AllocRenderTargetsForEditingPreview();
-    std::shared_ptr<RenderTarget> CreateRenderTarget(size_t nodeIndex)
-    {
-        assert(nodeIndex < mEvaluations.size());
-        mEvaluations[nodeIndex].mTarget = std::make_shared<RenderTarget>();
-        return mEvaluations[nodeIndex].mTarget;
-    }
-    const EvaluationThumbnails& GetThumbnails() const { return mThumbnails; }
+    //void AllocRenderTargetsForEditingPreview();
+
+    const EvaluationThumbnails& GetThumbnails() const 
+	{ 
+		assert(mUseThumbnail);
+		return mThumbnails; 
+	}
     void AllocateComputeBuffer(int target, int elementCount, int elementSize);
 
     struct ComputeBuffer
@@ -170,11 +177,11 @@ struct EvaluationContext
     void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
 
     EvaluationStages& mEvaluationStages;
-    void DirtyAll();
+    //void DirtyAll();
 
     struct Evaluation
     {
-        std::shared_ptr<RenderTarget> mTarget;
+        RenderTarget* mTarget = nullptr;
         
         ComputeBuffer mComputeBuffer;
         EvaluationThumbnails::Thumb mThumb;
@@ -185,6 +192,7 @@ struct EvaluationContext
 		uint8_t mDirtyFlag = 0;
 		uint8_t mProcessing = false;
         uint8_t mVertexSpace        = 0; // UV, worldspace
+		int mUseCount;
         union
         {
             uint8_t u = 0;
@@ -198,6 +206,8 @@ struct EvaluationContext
     };
     
     std::vector<Evaluation> mEvaluations;
+	
+
 
     UIInput mUIInputs;
     size_t mInputNodeIndex;
@@ -206,27 +216,37 @@ protected:
 
     EvaluationThumbnails mThumbnails;
 
-    void EvaluateGLSL(const EvaluationStage& evaluationStage, bgfx::ViewId viewId, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluateGLSL(const EvaluationStage& evaluationStage, bgfx::ViewId& viewId, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo);
 #ifdef USE_PYTHON
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 #endif
     void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, bgfx::ViewId viewId, size_t index, EvaluationInfo& evaluationInfo);
     // return true if any node is still in processing state
-    bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
-    void RunNode(bgfx::ViewId viewId, size_t nodeIndex);
-    void GenerateThumbnail(size_t nodeIndex);
+    //bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 
-    void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
+	void RunNode(bgfx::ViewId& viewId, size_t nodeIndex);
+
+
+    void GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex);
+
+    //void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 
     void BindTextures(const EvaluationStage& evaluationStage,
                       size_t nodeIndex,
-                      std::shared_ptr<RenderTarget> reusableTarget);
-    void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
+                      RenderTarget* reusableTarget);
+    //void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
-
+	void ComputeTargetUseCount();
+	void ReleaseInputs(size_t nodeIndex);
     int GetBindedComputeBuffer(size_t nodeIndex) const;
 
+	RenderTarget* AcquireRenderTarget(int width, int height, bool depthBuffer);
+	RenderTarget* AcquireClone(RenderTarget* source);
+	void ReleaseRenderTarget(RenderTarget* renderTarget);
+
+
+	std::vector<RenderTarget*> mAvailableRenderTargets;
     std::vector<ComputeBuffer> mComputeBuffers;
 #if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
@@ -234,16 +254,16 @@ protected:
 
     EvaluationInfo mEvaluationInfo;
 
-    std::vector<int> mStillDirty;
     int mDefaultWidth;
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
+	bool mUseThumbnail;
     unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
     int mCurrentTime;
 
-    unsigned int mParametersGLSLBuffer;
-
+	std::vector<int> mRemaining;
     void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const;
+	void SetUniforms(size_t nodeIndex);
 };
 
 struct Builder

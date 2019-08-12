@@ -3,8 +3,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-int u_paletteIndex;
-float u_ditherStrength;
+uniform vec4 palette;
+uniform vec4 ditherStrength;
 
 float find_closest(int x, int y, float c0)
 {
@@ -94,17 +94,17 @@ float find_closest(int x, int y, float c0)
 
 vec4 hex(int u_color)
 {
-	/*float rValue = float((u_color&0xFF0000)>>16);
-	float gValue = float((u_color&0xFF00)>>8);
-	float bValue = float(u_color&0xFF);
+	float rValue = float(u_color/65536);
+	float gValue = mod(float(u_color/256), 256);
+	float bValue = mod(float(u_color), 256);
 	return vec4(rValue, gValue, bValue, 255.0) / 255.;
-	*/
-	return vec4(1.0,0.0,1.0,1.0);
 }
 
 vec4 best4(vec4 original, int pal[4])
 {
+	return vec4(0.,0.,0.,0.);
 	int best = 0;
+#pragma unroll_loop
 	for (int i = 1;i<4;i++)
 	{
 		if (length(hex(pal[i]) - original) < length(hex(pal[best]) - original))
@@ -113,17 +113,17 @@ vec4 best4(vec4 original, int pal[4])
 	
 	return hex(pal[best]);
 }
-
-vec4 best16(vec4 original, int pal[16])
-{
-	int best = 0;
-	for (int i = 1;i<16;i++)
-	{
-		if (length(hex(pal[i]) - original) < length(hex(pal[best]) - original))
-			best = i;
-	}
-	
-	return hex(pal[best]);
+// using a macro here instead of a function because of webgl (error: can't copy 16 int)
+#define best16 \
+{\
+return vec4(0.,0.,0.,0.);\
+	int best = 0;\
+	for (int i = 1;i<16;i++)\
+	{\
+		if (length(hex(pal[i]) - original) < length(hex(pal[best]) - original))\
+			best = i;\
+	}\
+	return hex(pal[best]);\
 }
 
 vec4 GetCGA(vec4 original, int index)
@@ -191,8 +191,8 @@ vec4 GetEGA(vec4 original)
 	pal[13] = 0xFF55FF;
 	pal[14] = 0xFFFF55;
 	pal[15] = 0xFFFFFF;
-	
-	return best16(original, pal);
+#pragma unroll_loop
+	best16
 }
 
 vec4 GetGameBoy(vec4 original)
@@ -228,8 +228,8 @@ vec4 GetPico8(vec4 original)
 	pal[13] = 0x1D2B53;
 	pal[14] = 0x008751;
 	pal[15] = 0x00E436;
-	
-	return best16(original, pal);
+#pragma unroll_loop	
+	best16
 }
 
 vec4 GetC64(vec4 original)
@@ -254,8 +254,8 @@ vec4 GetC64(vec4 original)
 	pal[13] = 0xAAFF66;
 	pal[14] = 0x0088FF;
 	pal[15] = 0xBBBBBB;
-	
-	return best16(original, pal);
+#pragma unroll_loop	
+	best16
 }
 
 void main()
@@ -272,18 +272,19 @@ void main()
 	ditheredRGB.g = find_closest(x, y, rgb.g);
 	ditheredRGB.b = find_closest(x, y, rgb.b);
 	float r = 0.25;
-	color = vec4(mix(color.rgb, ditheredRGB, u_ditherStrength), 1.0);
+	color = vec4(mix(color.rgb, ditheredRGB, ditherStrength.x), 1.0);
 	
 	vec4 res;
-	if (u_paletteIndex < 6)
-		res = GetCGA(color, u_paletteIndex);
-	if (u_paletteIndex < 7)
+	int paletteIndex = int(palette.x);
+	if (paletteIndex < 6)
+		res = GetCGA(color, paletteIndex);
+	if (paletteIndex < 7)
 		res = GetEGA(color);
-	if (u_paletteIndex < 8)
+	if (paletteIndex < 8)
 		res = GetGameBoy(color);
-	if (u_paletteIndex < 9)
+	if (paletteIndex < 9)
 		res = GetPico8(color);
-	if (u_paletteIndex < 10)
+	if (paletteIndex < 10)
 		res = GetC64(color);
 	gl_FragColor = res;
 }

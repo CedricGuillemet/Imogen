@@ -1,15 +1,14 @@
 $input a_texcoord0, a_color0, a_position, a_normal
 $output v_texcoord0, v_color0, v_positionWorld, v_normal
 
-
 #include "bgfx_shader.sh"
 #include "Common.shader"
 
-vec4 u_uvTransform;
+uniform vec4 u_uvTransform;
 
 void main()
 {
-	if (u_target.y == 1.)
+	if (u_target.y > 0.5)
     {
 		gl_Position = mul(vec4(a_position.xyz, 1.0), u_worldViewProjection);
 	}

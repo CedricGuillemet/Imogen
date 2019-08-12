@@ -3,10 +3,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-int u_type;
-float u_angle;
-float u_strength;
-int u_passCount;
+uniform vec4 type;
+uniform vec4 angle;
+uniform vec4 strength;
 
 void main()
 {
@@ -28,12 +27,13 @@ void main()
 	g[14] = 0.023089;
 
 	vec4 col = vec4(0.0, 0.0, 0.0, 0.0);
-	if (u_type == 0)
+	int itype = int(type.x);
+	if (itype == 0)
 	{
-		vec2 dir = vec2(cos(u_angle), sin(u_angle));
+		vec2 dir = vec2(cos(angle.x), sin(angle.x));
 		for(int i = 0;i<15;i++)
 		{
-			col += texture2D(Sampler0, v_texcoord0 + dir * u_strength * float(i-7)) * g[i];
+			col += texture2D(Sampler0, v_texcoord0 + dir * strength.x * float(i-7)) * g[i];
 		}
 	}
 	else
@@ -45,7 +45,7 @@ void main()
 			for(int i = 0;i<15;i++)
 			{
 				float w = g[i] * g[j];
-				col += texture2D(Sampler0, v_texcoord0 + vec2(float(i-7), float(j-7)) * u_strength) * w;
+				col += texture2D(Sampler0, v_texcoord0 + vec2(float(i-7), float(j-7)) * strength.x) * w;
 				sum += w;
 			}
 		}

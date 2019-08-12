@@ -4,8 +4,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-vec4 radius; 
-vec4 T; 
+uniform vec4 radius; 
+uniform vec4 T; 
 
 void main()
 {

@@ -166,11 +166,11 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
     // make 2 evaluation for node to get the UI pass image size
     if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
     {
-        nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview();
+        //nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview(); TODOEVA
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo);
+        //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
     }
     EvaluationAPI::GetEvaluationSize(&nodeGraphControler.mEditingContext, selNode, &imageWidth, &imageHeight);
     if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
@@ -178,7 +178,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 0;
-        nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo);
+        //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
     }
     ImTextureID displayedTexture = 0;
     ImRect rc;
@@ -213,8 +213,8 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
                     (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode).idx : 0);
                 if (displayedTexture)
                 {
-                    auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
-                    displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
+                    /*auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode); TODOEVA
+                    displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));*/
                 }
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
                 mouseUVPos.y = 1.f - mouseUVPos.y;

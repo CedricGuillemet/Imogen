@@ -4,20 +4,20 @@
 #define TwoPI (PI*2.0)
 
 
-mat4 u_viewRot;
-mat4 u_viewProjection;
-mat4 u_viewInverse;
-mat4 u_world;
-mat4 u_worldViewProjection;
-vec4 u_viewport;
+uniform mat4 u_viewRot;
+uniform mat4 u_viewProjection;
+uniform mat4 u_viewInverse;
+uniform mat4 u_world;
+uniform mat4 u_worldViewProjection;
+uniform vec4 u_viewport;
 
 
-vec4 u_mouse; // x,y, lbut down, rbut down
-vec4 u_keyModifier; // ctrl, alt, shift
-vec4 u_inputIndices[2];
+uniform vec4 u_mouse; // x,y, lbut down, rbut down
+uniform vec4 u_keyModifier; // ctrl, alt, shift
+uniform vec4 u_inputIndices[2];
 
-vec4 u_pass; // uiPass, passNumber, frame, localFrame
-vec4 u_target; // targetIndex, vertexSpace, mipmapNumber, mipmapCount
+uniform vec4 u_pass; // uiPass, passNumber, frame, localFrame
+uniform vec4 u_target; // targetIndex, vertexSpace, mipmapNumber, mipmapCount
 
 
 vec2 Rotate2D(vec2 v, float a) 

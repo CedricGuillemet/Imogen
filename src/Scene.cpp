@@ -31,11 +31,12 @@ std::weak_ptr<Scene> Scene::mDefaultScene;
 
 void Scene::Mesh::Primitive::Draw(bgfx::ViewId viewId, ProgramHandle program) const
 {
+	bgfx::setIndexBuffer(mIbh);
 	for (auto i = 0; i < mStreams.size(); i++)
 	{
 		bgfx::setVertexBuffer(i, mStreams[i]);
 	}
-	bgfx::setIndexBuffer(mIbh);
+	
 	assert(program.idx);
 	bgfx::submit(viewId, program);
 }
@@ -47,7 +48,7 @@ Scene::Mesh::Primitive::~Primitive()
 	{
 		bgfx::destroy(mStreams[i]);
 	}
-	if (mIbh.idx)
+	if (mIbh.idx != bgfx::kInvalidHandle)
 	{
 		bgfx::destroy(mIbh);
 	}
@@ -79,7 +80,7 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
 
 void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int stride, unsigned int count)
 {
-	if (mIbh.idx)
+	if (mIbh.idx != bgfx::kInvalidHandle)
 	{
 		bgfx::destroy(mIbh);
 	}
@@ -127,7 +128,10 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     auto& mesh = defaultScene->mMeshes.back();
     mesh.mPrimitives.resize(1);
     auto& prim = mesh.mPrimitives.back();
-	static const float fsVts[] = { 0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f};
+	static const float fsVts[] = { 0.f, 0.f,
+		1.f, 0.f,
+		0.f, 1.f,
+		1.f, 1.f,};
 	static const uint16_t fsIdx[] = { 0, 1, 2, 1, 3, 2 };
     prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 4);
 	prim.AddIndexBuffer(fsIdx, 2, 6);

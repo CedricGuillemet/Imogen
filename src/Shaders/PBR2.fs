@@ -7,9 +7,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 /////////////////////////////////////////////////////////////////////////
 // PBR by knarkowicz https://www.shadertoy.com/view/4sSfzK
 
-vec2 u_view;
-float u_depthFactor;
-int u_geometry;
+uniform vec4 view;
+uniform vec4 depthFactor;
+uniform vec4 u_geometry;
 
 float camHeight = -0.2;
 
@@ -112,13 +112,14 @@ float Scene( vec3 p, mat3 localToWorld )
 	vec3 centerMesh = vec3(0., -camHeight, 0.);
 	float ret = 0.;
 	
-	if (u_geometry == 0)
+    int geometry = int(u_geometry.x);
+	if (geometry == 0)
 		ret = DoorKnob(p, localToWorld);
-	else if (u_geometry == 1)
+	else if (geometry == 1)
 		ret = Sphere(p+centerMesh, 1.0);
-    else if (u_geometry == 2)
+    else if (geometry == 2)
 		ret = Box(p+centerMesh, vec3(0.5, 0.5, 0.5));
-	else if (u_geometry == 3)
+	else if (geometry == 3)
 		ret = max(p.y, 0.);
     else
 		ret = Cylinder(p+centerMesh, 0.7, 0.7);
@@ -140,13 +141,11 @@ float CastRay( in vec3 ro, in vec3 rd, mat3 localToWorld )
    
     for ( int i = 0; i < 50; ++i )
     {
-        if ( h < 0.001 || t > maxd ) 
+        if ( h > 0.001 && t < maxd ) 
         {
-            break;
+            h = Scene( ro + rd * t, localToWorld );
+            t += h;
         }
-        
-	    h = Scene( ro + rd * t, localToWorld );
-        t += h;
     }
 
     if ( t > maxd )
@@ -187,8 +186,8 @@ void main()
 	vec2 p = v_texcoord0 * 2.0 - 1.0;
 
      // camera movement	
-	float an = u_view.x * PI * 2.0;
-	float dn = u_view.y * PI * 0.5;
+	float an = view.x * PI * 2.0;
+	float dn = view.y * PI * 0.5;
 	float cdn = cos(dn);
 
 	vec3 ro = vec3( 2.0*sin(an)*cdn, camHeight + sin(dn)*2.0, 2.0*cos(an)*cdn );
@@ -223,7 +222,7 @@ void main()
 	
 		vec3 eyeToFragment = -rd;//(inverse(tbn) * -rd); todo
 	
-		texcoord = ParallaxMapping(Sampler2, texcoord, eyeToFragment, u_depthFactor);
+		texcoord = ParallaxMapping(Sampler2, texcoord, eyeToFragment, depthFactor.x);
 		
         vec3 texNorm = texture2D(Sampler1, texcoord).xyz * 2.0 - 1.0;
 	

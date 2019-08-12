@@ -3,10 +3,10 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
-float u_total_strength;// = 0.6;
-float u_area;// = 0.0075;
-float u_falloff;// = 0.00001;
-float u_radius;// = 0.016;
+uniform vec4 strength;// = 0.6;
+uniform vec4 area;// = 0.0075;
+uniform vec4 falloff;// = 0.00001;
+uniform vec4 radius;// = 0.016;
 
 
 float hash(vec2 p)  // replace this by something better
@@ -96,7 +96,7 @@ void main()
 	//clipSpaceNormal.z = -clipSpaceNormal.z;
 	vec3 position = vec3(v_texcoord0, depth);
 	// occ
-	float radius_depth = u_radius/(depth+0.01);
+	float radius_depth = radius.x/(depth+0.01);
 	float occlusion = 0.0;
 	for(int i=0; i < samples; i++) 
 	{
@@ -106,11 +106,11 @@ void main()
 		float occ_depth = texture2D(Sampler0, clamp(hemi_ray.xy,0.0,1.0)).x;
 		float difference = occ_depth - depth;
 		
-		occlusion += step(u_falloff, difference) * (1.0-smoothstep(u_falloff, u_area, difference));
+		occlusion += step(falloff.x, difference) * (1.0-smoothstep(falloff.x, area.x, difference));
 	}
   
   
-	float ao = 1.0 - u_total_strength * occlusion * (1.0 / float(samples));
+	float ao = 1.0 - strength.x * occlusion * (1.0 / float(samples));
 	
 	//return vec4(clipSpaceNormal*0.5+0.5, 1.0);
 	gl_FragColor = vec4(ao, ao, ao, ao);

@@ -484,19 +484,14 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
 
 void RenderTarget::Destroy()
 {
-	if (mFrameBuffer.idx)
+	if (mFrameBuffer.idx != bgfx::kInvalidHandle)
 	{
-		//bgfx::destroy(mFrameBuffer);
+		bgfx::destroy(mFrameBuffer);
+		mFrameBuffer = { bgfx::kInvalidHandle };
 	}
-	mGLTexDepth = {0};
+	mGLTexDepth = { bgfx::kInvalidHandle };
     mImage = Image();
-	mGLTexID = {0};
-}
-
-void RenderTarget::Clone(const RenderTarget& other)
-{
-    // TODO: clone other type of render target
-    InitBuffer(other.mImage.mWidth, other.mImage.mHeight, other.mGLTexDepth.idx != 0);
+	mGLTexID = { bgfx::kInvalidHandle };
 }
 
 void RenderTarget::Swap(RenderTarget& other)

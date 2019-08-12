@@ -6,7 +6,6 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 
 uniform vec4 u_time;
 
-
 void main()
 {
 	vec2 npos = v_texcoord0-vec2(0.5, 0.5);

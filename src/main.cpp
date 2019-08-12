@@ -191,10 +191,63 @@ void RenderImogenFrame()
     renderImogenFrame(true);
 }
 
+
+struct CommandLineParameters
+{
+	bool mbDebugWindow = false;
+	std::string mCommandAsync;
+	bgfx::RendererType::Enum mRenderAPI = bgfx::RendererType::Count;
+};
+
 // because of asynchornous local storage DB mount
 #ifndef __EMSCRIPTEN__
+
+CommandLineParameters ParseCommandLine(int argc, char** argv)
+{
+	CommandLineParameters commandLineParameter;
+
+	for (int i = 1; i < argc; i++)
+	{
+		if (!strcmp(argv[i], "-debug"))
+		{
+			commandLineParameter.mbDebugWindow = true;
+		}
+		if (!strcmp(argv[i], "-runplugin") && i < (argc - 1))
+		{
+			commandLineParameter.mCommandAsync = argv[i + 1];
+		}
+		if (!strcmp(argv[i], "-vulkan"))
+		{
+			commandLineParameter.mRenderAPI = bgfx::RendererType::Vulkan;
+		}
+		if (!strcmp(argv[i], "-opengl"))
+		{
+			commandLineParameter.mRenderAPI = bgfx::RendererType::OpenGL;
+		}
+		if (!strcmp(argv[i], "-d3d12"))
+		{
+			commandLineParameter.mRenderAPI = bgfx::RendererType::Direct3D12;
+		}
+		if (!strcmp(argv[i], "-d3d11"))
+		{
+			commandLineParameter.mRenderAPI = bgfx::RendererType::Direct3D11;
+		}
+		if (!strcmp(argv[i], "-d3d9"))
+		{
+			commandLineParameter.mRenderAPI = bgfx::RendererType::Direct3D9;
+		}
+	}
+	return commandLineParameter;
+}
+
 int main(int argc, char** argv)
 #else
+
+CommandLineParameters ParseCommandLine(int argc, char** argv)
+{
+	return {};
+}
+
 int main(int argc, char** argv)
 {
     MountJSDirectory();
@@ -202,6 +255,7 @@ int main(int argc, char** argv)
 int main_Async(int argc, char** argv)
 #endif
 {
+	auto commandLineParameters = ParseCommandLine(argc, argv);
 #ifdef WIN32
     // locale for sscanf
     setlocale(LC_ALL, "C");
@@ -235,7 +289,7 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
 	bgfx::Init init;
-	init.type = bgfx::RendererType::Count; //:Count; //:OpenGL; //:Direct3D11;//:Count; //:Count;//:OpenGL; // :Direct3D9;//
+	init.type = commandLineParameters.mRenderAPI;//bgfx::RendererType::Count; //:Count; //:OpenGL; //:Direct3D11;//:Count; //:Count;//:OpenGL; // :Direct3D9;//
 	bgfxCallback callback;
 	init.callback = &callback;
 	bgfx::init(init);
@@ -299,19 +353,11 @@ int main_Async(int argc, char** argv)
 
     Builder builder;
 
-    bool bDebugWindow = false;
-    for (int i = 1;i<argc;i++)
+	if (commandLineParameters.mCommandAsync.size())
     {
-        if (!strcmp(argv[i], "-debug"))
-        {
-            bDebugWindow = true;
-        }
-        if (!strcmp(argv[i], "-runplugin") && i < (argc-1))
-        {
-            imogen.RunCommandAsync(argv[i+1], true);
-        }
+        imogen.RunCommandAsync(commandLineParameters.mCommandAsync.c_str(), true);
     }
-    imogen.Init(bDebugWindow);
+    imogen.Init(commandLineParameters.mbDebugWindow);
 
     gEvaluators.SetEvaluators();
 

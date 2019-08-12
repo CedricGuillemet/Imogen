@@ -25,8 +25,8 @@
 
 DECLARE_NODE(FurDisplay)
 {
-	const int target = int(evaluation->targetIndex);
-	EnableFrameClear(context, target, 1);
-	EnableDepthBuffer(context, target, 1);
-	return EVAL_OK;
+    const int target = int(evaluation->targetIndex);
+    EnableFrameClear(context, target, 1);
+    EnableDepthBuffer(context, target, 1);
+    return EVAL_OK;
 }

@@ -131,14 +131,14 @@ struct InputSampler
                 mFilterMag == other.mFilterMag);
     }
 
-	uint32_t Value() const
-	{
-		static const uint32_t wrapu[] = {0, BGFX_SAMPLER_U_CLAMP, BGFX_SAMPLER_U_BORDER, 0 };
-		static const uint32_t wrapv[] = { 0, BGFX_SAMPLER_V_CLAMP, BGFX_SAMPLER_V_BORDER, 0 };
-		static const uint32_t filterMin[] = {0, BGFX_SAMPLER_MIN_POINT };
-		static const uint32_t filterMag[] = {0, BGFX_SAMPLER_MIN_POINT };
-		return wrapu[mWrapU] + wrapv[mWrapV] + filterMin[mFilterMin] + filterMag[mFilterMag];
-	}
+    uint32_t Value() const
+    {
+        static const uint32_t wrapu[] = {0, BGFX_SAMPLER_U_CLAMP, BGFX_SAMPLER_U_BORDER, 0 };
+        static const uint32_t wrapv[] = { 0, BGFX_SAMPLER_V_CLAMP, BGFX_SAMPLER_V_BORDER, 0 };
+        static const uint32_t filterMin[] = {0, BGFX_SAMPLER_MIN_POINT };
+        static const uint32_t filterMag[] = {0, BGFX_SAMPLER_MIN_POINT };
+        return wrapu[mWrapU] + wrapv[mWrapV] + filterMin[mFilterMin] + filterMag[mFilterMag];
+    }
 
 };
 typedef std::vector<InputSampler> InputSamplers;
@@ -435,7 +435,7 @@ struct Material
     uint32_t mBackgroundNode;
 
     // run time
-	TextureHandle mThumbnailTextureHandle;
+    TextureHandle mThumbnailTextureHandle;
     unsigned int mRuntimeUniqueId;
 };
 

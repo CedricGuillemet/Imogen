@@ -56,23 +56,23 @@ struct EvaluationInfo
     float inputIndices[8];
 
 
-	float uiPass; // pass
-	float passNumber;
+    float uiPass; // pass
+    float passNumber;
     float frame;
-	float localFrame;
+    float localFrame;
 
     
-	float targetIndex; //target
+    float targetIndex; //target
     float vertexSpace;
     float mipmapNumber;
     float mipmapCount;
 
 
-	// not used by shaders
-	uint32_t dirtyFlag;
-	uint32_t forcedDirty;
+    // not used by shaders
+    uint32_t dirtyFlag;
+    uint32_t forcedDirty;
 
-	uint32_t padding[2];
+    uint32_t padding[2];
 };
 
 typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
@@ -95,52 +95,52 @@ struct Evaluators
 
     struct EvaluatorScript
     {
-		EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1), mMask(0)
+        EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1), mMask(0)
         {
         }
-		void Clear();
+        void Clear();
 
-		ProgramHandle mProgram;
-		NodeFunction mCFunction;
+        ProgramHandle mProgram;
+        NodeFunction mCFunction;
         int mType;
-		int mMask;
-		std::vector<UniformHandle> mUniformHandles;
+        int mMask;
+        std::vector<UniformHandle> mUniformHandles;
 #if USE_PYTHON    
-		pybind11::module mPyModule;
+        pybind11::module mPyModule;
 
-		void RunPython() const;
+        void RunPython() const;
 #endif
     };
 
-	const EvaluatorScript& GetEvaluator(size_t nodeType) const
-	{
-		return *mEvaluatorPerNodeType[nodeType];
-	}
-	void ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo);
+    const EvaluatorScript& GetEvaluator(size_t nodeType) const
+    {
+        return *mEvaluatorPerNodeType[nodeType];
+    }
+    void ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo);
 protected:
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
-	std::vector<ShaderHandle> mShaderHandles;
+    std::vector<ShaderHandle> mShaderHandles;
 public:
-	bgfx::UniformHandle u_viewRot{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_viewProjection{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_viewInverse{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_world{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_worldViewProjection{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_mouse{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_keyModifier{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_inputIndices{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_target{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_pass{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_viewport{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_viewRot{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_viewProjection{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_viewInverse{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_world{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_worldViewProjection{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_mouse{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_keyModifier{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_inputIndices{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_target{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_pass{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_viewport{ bgfx::kInvalidHandle };
 
-	ProgramHandle mBlitProgram{ bgfx::kInvalidHandle };
-	ProgramHandle mProgressProgram{ bgfx::kInvalidHandle };
-	ProgramHandle mDisplayCubemapProgram{ bgfx::kInvalidHandle };
-	std::vector<UniformHandle> mSamplers2D;
-	std::vector<UniformHandle> mSamplersCube;
-	bgfx::UniformHandle u_time{ bgfx::kInvalidHandle };
-	bgfx::UniformHandle u_uvTransform{ bgfx::kInvalidHandle };
+    ProgramHandle mBlitProgram{ bgfx::kInvalidHandle };
+    ProgramHandle mProgressProgram{ bgfx::kInvalidHandle };
+    ProgramHandle mDisplayCubemapProgram{ bgfx::kInvalidHandle };
+    std::vector<UniformHandle> mSamplers2D;
+    std::vector<UniformHandle> mSamplersCube;
+    bgfx::UniformHandle u_time{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_uvTransform{ bgfx::kInvalidHandle };
 };
 
 extern Evaluators gEvaluators;

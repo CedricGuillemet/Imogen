@@ -25,33 +25,33 @@
 
 struct CubeRadianceBlock
 {
-	int mode;
-	int size;
-	int sampleCount;
+    int mode;
+    int size;
+    int sampleCount;
 };
 
 DECLARE_NODE(CubeRadiance)
 {
-	CubeRadianceBlock* params = (CubeRadianceBlock*)parameters;
-	int size = 128 << params->size;
-	const int source = evaluation->inputIndices[0];
-	int width, height;
-	const int res = GetEvaluationSize(context, source, &width, &height);
-	if (params->size == 0 && source != -1 && res == EVAL_OK)
-	{
-		size = width;
-	}
-	
-	if (params->mode == 0)
-	{
-		// radiance
-		SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
-	}
-	else
-	{
-		// irradiance
-		SetEvaluationCubeSize(context, evaluation->targetIndex, size, int(log2(size))+1);
-	}
-	return EVAL_OK;
+    CubeRadianceBlock* params = (CubeRadianceBlock*)parameters;
+    int size = 128 << params->size;
+    const int source = evaluation->inputIndices[0];
+    int width, height;
+    const int res = GetEvaluationSize(context, source, &width, &height);
+    if (params->size == 0 && source != -1 && res == EVAL_OK)
+    {
+        size = width;
+    }
+    
+    if (params->mode == 0)
+    {
+        // radiance
+        SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
+    }
+    else
+    {
+        // irradiance
+        SetEvaluationCubeSize(context, evaluation->targetIndex, size, int(log2(size))+1);
+    }
+    return EVAL_OK;
 }
 

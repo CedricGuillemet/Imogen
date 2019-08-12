@@ -96,40 +96,40 @@ struct EvaluationContext
     // iterative editing
     void AddEvaluation(size_t nodeIndex);
     void DelEvaluation(size_t nodeIndex);
-	/*
+    /*
     void RunAll();
     // return true if any node is in processing state
     bool RunBackward(size_t nodeIndex);
     void RunSingle(size_t nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo);
     void RunDirty();
-	*/
+    */
 
-	void Evaluate();
+    void Evaluate();
 
     void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
     int GetCurrentTime() const { return mCurrentTime; }
     void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
     void GetThumb(size_t nodeIndex, TextureHandle& textureHandle, ImRect& uvs) const 
-	{ 
-		assert(mUseThumbnail);
-		mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); 
-	}
+    { 
+        assert(mUseThumbnail);
+        mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); 
+    }
 
-	TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
-	/* TODOEVA
+    TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
+    /* TODOEVA
     std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) 
     { 
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget; 
     }
-	
+    
     const std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) const
     {
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget;
     }
-	*/
+    */
 #if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
 #endif
@@ -158,10 +158,10 @@ struct EvaluationContext
     //void AllocRenderTargetsForEditingPreview();
 
     const EvaluationThumbnails& GetThumbnails() const 
-	{ 
-		assert(mUseThumbnail);
-		return mThumbnails; 
-	}
+    { 
+        assert(mUseThumbnail);
+        return mThumbnails; 
+    }
     void AllocateComputeBuffer(int target, int elementCount, int elementSize);
 
     struct ComputeBuffer
@@ -189,10 +189,10 @@ struct EvaluationContext
 
         uint64_t mBlendingSrc        = BGFX_STATE_BLEND_ONE;
         uint64_t mBlendingDst        = BGFX_STATE_BLEND_ZERO;
-		uint8_t mDirtyFlag = 0;
-		uint8_t mProcessing = false;
+        uint8_t mDirtyFlag = 0;
+        uint8_t mProcessing = false;
         uint8_t mVertexSpace        = 0; // UV, worldspace
-		int mUseCount;
+        int mUseCount;
         union
         {
             uint8_t u = 0;
@@ -206,7 +206,7 @@ struct EvaluationContext
     };
     
     std::vector<Evaluation> mEvaluations;
-	
+    
 
 
     UIInput mUIInputs;
@@ -225,7 +225,7 @@ protected:
     // return true if any node is still in processing state
     //bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 
-	void RunNode(bgfx::ViewId& viewId, size_t nodeIndex);
+    void RunNode(bgfx::ViewId& viewId, size_t nodeIndex);
 
 
     void GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex);
@@ -237,16 +237,16 @@ protected:
                       RenderTarget* reusableTarget);
     //void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
-	void ComputeTargetUseCount();
-	void ReleaseInputs(size_t nodeIndex);
+    void ComputeTargetUseCount();
+    void ReleaseInputs(size_t nodeIndex);
     int GetBindedComputeBuffer(size_t nodeIndex) const;
 
-	RenderTarget* AcquireRenderTarget(int width, int height, bool depthBuffer);
-	RenderTarget* AcquireClone(RenderTarget* source);
-	void ReleaseRenderTarget(RenderTarget* renderTarget);
+    RenderTarget* AcquireRenderTarget(int width, int height, bool depthBuffer);
+    RenderTarget* AcquireClone(RenderTarget* source);
+    void ReleaseRenderTarget(RenderTarget* renderTarget);
 
 
-	std::vector<RenderTarget*> mAvailableRenderTargets;
+    std::vector<RenderTarget*> mAvailableRenderTargets;
     std::vector<ComputeBuffer> mComputeBuffers;
 #if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
@@ -257,13 +257,13 @@ protected:
     int mDefaultWidth;
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
-	bool mUseThumbnail;
+    bool mUseThumbnail;
     unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
     int mCurrentTime;
 
-	std::vector<int> mRemaining;
+    std::vector<int> mRemaining;
     void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const;
-	void SetUniforms(size_t nodeIndex);
+    void SetUniforms(size_t nodeIndex);
 };
 
 struct Builder

@@ -46,7 +46,7 @@ struct GraphControler : public GraphEditorDelegate
     ImVec2 GetEvaluationSize(size_t nodeIndex) const override;
     bool RecurseIsLinked(int from, int to) const override { return mModel.RecurseIsLinked(from, to); }
     bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const override { return mModel.IsIOPinned(nodeIndex, io, forOutput); }
-	TextureHandle GetBitmapInfo(size_t nodeIndex) const override;
+    TextureHandle GetBitmapInfo(size_t nodeIndex) const override;
 
     // operations
     bool InTransaction() override { return mModel.InTransaction(); }
@@ -76,7 +76,7 @@ struct GraphControler : public GraphEditorDelegate
     virtual void ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int nodeHovered) override;
 
     EvaluationStages mEvaluationStages;
-	EvaluationContext mEditingContext;
+    EvaluationContext mEditingContext;
     int mBackgroundNode;
     
 

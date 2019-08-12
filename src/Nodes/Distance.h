@@ -24,18 +24,18 @@
 //
 struct DistanceBlock
 {
-	int passCount;
+    int passCount;
 };
 
 DECLARE_NODE(Distance)
 {
-	DistanceBlock* param = (DistanceBlock*)parameters;
-	const int source = evaluation->inputIndices[0];
-	int width, height;
-	const int res = GetEvaluationSize(context, source, &width, &height);
-	if (source != -1 && res == EVAL_OK)
+    DistanceBlock* param = (DistanceBlock*)parameters;
+    const int source = evaluation->inputIndices[0];
+    int width, height;
+    const int res = GetEvaluationSize(context, source, &width, &height);
+    if (source != -1 && res == EVAL_OK)
     {
-		param->passCount = int(log2(width))+1;
+        param->passCount = int(log2(width))+1;
     }    
     return EVAL_OK;
 }

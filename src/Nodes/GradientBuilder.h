@@ -25,6 +25,6 @@
 
 DECLARE_NODE(GradientBuilder)
 {
-	SetEvaluationSize(context, evaluation->targetIndex, 512, 64);
-	return EVAL_OK;
+    SetEvaluationSize(context, evaluation->targetIndex, 512, 64);
+    return EVAL_OK;
 }

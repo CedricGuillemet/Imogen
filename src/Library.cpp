@@ -322,7 +322,7 @@ void LoadLib(Library* library, const std::string& filename)
 
     for (auto& material : library->mMaterials)
     {
-		material.mThumbnailTextureHandle = {0};
+        material.mThumbnailTextureHandle = {bgfx::kInvalidHandle};
         material.mRuntimeUniqueId = GetRuntimeId();
         for (auto& node : material.mMaterialNodes)
         {

@@ -46,9 +46,9 @@ typedef bimg::TextureFormat::Enum TextureFormat;
 
 enum bgfxViewIds
 {
-	viewId_BuildEvaluation,
-	viewId_ImGui,
-	viewId_Evaluation,
+    viewId_BuildEvaluation,
+    viewId_ImGui,
+    viewId_Evaluation,
 
 };
 #ifdef __EMSCRIPTEN__

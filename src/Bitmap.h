@@ -55,7 +55,7 @@ struct Image
         mHeight = other.mHeight;
         mDataSize = other.mDataSize;
         mHasMipmaps = other.mHasMipmaps;
-		mIsCubemap = other.mIsCubemap;
+        mIsCubemap = other.mIsCubemap;
         mFormat = other.mFormat;
         mBits = other.mBits;
 
@@ -89,24 +89,24 @@ struct Image
         mDecoder = other.mDecoder;
         mWidth = other.mWidth;
         mHeight = other.mHeight;
-		mHasMipmaps = other.mHasMipmaps;
-		mIsCubemap = other.mIsCubemap;
+        mHasMipmaps = other.mHasMipmaps;
+        mIsCubemap = other.mIsCubemap;
         mFormat = other.mFormat;
         SetBits(other.mBits, other.mDataSize);
         return *this;
     }
-	unsigned int GetMipmapCount() const 
-	{
-		if (!mHasMipmaps)
-		{
-			return 1;
-		}
-		return (unsigned int)(log2(mWidth));
-	}
-	unsigned int GetFaceCount() const
-	{
-		return mIsCubemap ? 6 : 1;
-	}
+    unsigned int GetMipmapCount() const 
+    {
+        if (!mHasMipmaps)
+        {
+            return 1;
+        }
+        return (unsigned int)(log2(mWidth));
+    }
+    unsigned int GetFaceCount() const
+    {
+        return mIsCubemap ? 6 : 1;
+    }
 
     unsigned char* GetBits() const
     {
@@ -159,14 +159,14 @@ struct ImageCache
 {
     // synchronous texture cache
     // use for simple textures(stock) or to replace with a more efficient one
-	TextureHandle GetTexture(const std::string& filename);
+    TextureHandle GetTexture(const std::string& filename);
     Image* GetImage(const std::string& filepath);
     void AddImage(const std::string& filepath, Image* image);
-	const std::pair<uint16_t, uint16_t> GetImageSize(const std::string& filename);
+    const std::pair<uint16_t, uint16_t> GetImageSize(const std::string& filename);
 protected:
     std::map<std::string, TextureHandle> mSynchronousTextureCache;
     std::map<std::string, Image> mImageCache;
-	std::map < std::string, std::pair<uint16_t, uint16_t> > mImageSizes;
+    std::map < std::string, std::pair<uint16_t, uint16_t> > mImageSizes;
     std::mutex mCacheAccess;
 };
 extern ImageCache gImageCache;
@@ -184,7 +184,7 @@ public:
 
 
     Image mImage;
-	TextureHandle mGLTexID = { bgfx::kInvalidHandle };
-	TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
-	FrameBufferHandle mFrameBuffer = { bgfx::kInvalidHandle };
+    TextureHandle mGLTexID = { bgfx::kInvalidHandle };
+    TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
+    FrameBufferHandle mFrameBuffer = { bgfx::kInvalidHandle };
 };

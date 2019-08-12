@@ -438,7 +438,7 @@ bgfx::ShaderHandle LoadShader(const char* shaderName)
     std::string filePath = std::string("Nodes/Shaders/") + shaderName + ".bin";
     auto buffer = ReadFile(filePath.c_str());
     if (buffer.size())
-	{
+    {
         auto shader = bgfx::createShader(bgfx::copy(buffer.data(), buffer.size()));
         bgfx::frame();
         return shader;
@@ -456,161 +456,161 @@ bgfx::ShaderHandle LoadShader(const char* shaderName)
 void Evaluators::SetEvaluators()
 {
     Clear();
-	
-	ShaderHandle nodeVSShader = LoadShader("Node_vs");
-	mShaderHandles.push_back(nodeVSShader);
+    
+    ShaderHandle nodeVSShader = LoadShader("Node_vs");
+    mShaderHandles.push_back(nodeVSShader);
 
-	// default shaders
-	mBlitProgram = bgfx::createProgram(nodeVSShader, LoadShader("Blit_fs"), false);
-	mProgressProgram = bgfx::createProgram(nodeVSShader, LoadShader("ProgressingNode_fs"), false);
-	mDisplayCubemapProgram = bgfx::createProgram(nodeVSShader, LoadShader("DisplayCubemap_fs"), false);
+    // default shaders
+    mBlitProgram = bgfx::createProgram(nodeVSShader, LoadShader("Blit_fs"), false);
+    mProgressProgram = bgfx::createProgram(nodeVSShader, LoadShader("ProgressingNode_fs"), false);
+    mDisplayCubemapProgram = bgfx::createProgram(nodeVSShader, LoadShader("DisplayCubemap_fs"), false);
 
-	// evaluation uniforms
-	u_viewRot = bgfx::createUniform("u_viewRot", bgfx::UniformType::Mat4, 1);
-	u_viewProjection = bgfx::createUniform("u_viewProjection", bgfx::UniformType::Mat4, 1);
-	u_viewInverse = bgfx::createUniform("u_viewInverse", bgfx::UniformType::Mat4, 1);
-	u_world = bgfx::createUniform("u_world", bgfx::UniformType::Mat4, 1);
-	u_worldViewProjection = bgfx::createUniform("u_worldViewProjection", bgfx::UniformType::Mat4, 1);
-	u_mouse = bgfx::createUniform("u_mouse", bgfx::UniformType::Vec4, 1);
-	u_keyModifier = bgfx::createUniform("u_keyModifier", bgfx::UniformType::Vec4, 1);
-	u_inputIndices = bgfx::createUniform("u_inputIndices", bgfx::UniformType::Vec4, 2);
-	u_target = bgfx::createUniform("u_target", bgfx::UniformType::Vec4, 1);
-	u_pass = bgfx::createUniform("u_pass", bgfx::UniformType::Vec4, 1);
-	u_viewport = bgfx::createUniform("u_viewport", bgfx::UniformType::Vec4, 1);
+    // evaluation uniforms
+    u_viewRot = bgfx::createUniform("u_viewRot", bgfx::UniformType::Mat4, 1);
+    u_viewProjection = bgfx::createUniform("u_viewProjection", bgfx::UniformType::Mat4, 1);
+    u_viewInverse = bgfx::createUniform("u_viewInverse", bgfx::UniformType::Mat4, 1);
+    u_world = bgfx::createUniform("u_world", bgfx::UniformType::Mat4, 1);
+    u_worldViewProjection = bgfx::createUniform("u_worldViewProjection", bgfx::UniformType::Mat4, 1);
+    u_mouse = bgfx::createUniform("u_mouse", bgfx::UniformType::Vec4, 1);
+    u_keyModifier = bgfx::createUniform("u_keyModifier", bgfx::UniformType::Vec4, 1);
+    u_inputIndices = bgfx::createUniform("u_inputIndices", bgfx::UniformType::Vec4, 2);
+    u_target = bgfx::createUniform("u_target", bgfx::UniformType::Vec4, 1);
+    u_pass = bgfx::createUniform("u_pass", bgfx::UniformType::Vec4, 1);
+    u_viewport = bgfx::createUniform("u_viewport", bgfx::UniformType::Vec4, 1);
 
-	// specific uniforms
-	u_time = bgfx::createUniform("u_time", bgfx::UniformType::Vec4, 1);
-	u_uvTransform = bgfx::createUniform("u_uvTransform", bgfx::UniformType::Vec4, 1);
+    // specific uniforms
+    u_time = bgfx::createUniform("u_time", bgfx::UniformType::Vec4, 1);
+    u_uvTransform = bgfx::createUniform("u_uvTransform", bgfx::UniformType::Vec4, 1);
 
-	// default samplers
-	for (int i = 0;i<8;i++)
-	{
-		char tmps[512];
-		sprintf(tmps,"Sampler%d", i);
-		bgfx::UniformHandle sampler2D = bgfx::createUniform(tmps, bgfx::UniformType::Sampler, 1);
-		sprintf(tmps, "CubeSampler%d", i);
-		bgfx::UniformHandle samplerCube = bgfx::createUniform(tmps, bgfx::UniformType::Sampler, 1);
-		mSamplers2D.push_back(sampler2D);
-		mSamplersCube.push_back(samplerCube);
-	}
-	
+    // default samplers
+    for (int i = 0;i<8;i++)
+    {
+        char tmps[512];
+        sprintf(tmps,"Sampler%d", i);
+        bgfx::UniformHandle sampler2D = bgfx::createUniform(tmps, bgfx::UniformType::Sampler, 1);
+        sprintf(tmps, "CubeSampler%d", i);
+        bgfx::UniformHandle samplerCube = bgfx::createUniform(tmps, bgfx::UniformType::Sampler, 1);
+        mSamplers2D.push_back(sampler2D);
+        mSamplersCube.push_back(samplerCube);
+    }
+    
     mEvaluatorPerNodeType.clear();
     mEvaluatorPerNodeType.resize(gMetaNodes.size(), nullptr);
 
-	extern std::map<std::string, NodeFunction> nodeFunctions;
+    extern std::map<std::string, NodeFunction> nodeFunctions;
 
-	for (int i = 0; i < gMetaNodes.size(); i++)
-	{
-		int mask = 0;
-		const std::string& nodeName = gMetaNodes[i].mName;
-		std::string vsShaderName = nodeName + "_vs";
-		std::string fsShaderName = nodeName + "_fs";
-		
-		ShaderHandle vsShader = LoadShader(vsShaderName.c_str());
-		ShaderHandle fsShader = LoadShader(fsShaderName.c_str());
+    for (int i = 0; i < gMetaNodes.size(); i++)
+    {
+        int mask = 0;
+        const std::string& nodeName = gMetaNodes[i].mName;
+        std::string vsShaderName = nodeName + "_vs";
+        std::string fsShaderName = nodeName + "_fs";
+        
+        ShaderHandle vsShader = LoadShader(vsShaderName.c_str());
+        ShaderHandle fsShader = LoadShader(fsShaderName.c_str());
 #ifndef __EMSCRIPTEN__
         std::string csShaderName = nodeName + "_cs";
-		ShaderHandle csShader = LoadShader(csShaderName.c_str());
+        ShaderHandle csShader = LoadShader(csShaderName.c_str());
 #endif
-		ProgramHandle program{bgfx::kInvalidHandle};
-		if (vsShader.idx != bgfx::kInvalidHandle && fsShader.idx != bgfx::kInvalidHandle)
-		{
-			// valid VS/FS
-			program = bgfx::createProgram(vsShader, fsShader, false);
-			mask |= EvaluationGLSL;
-			mShaderHandles.push_back(vsShader);
-			mShaderHandles.push_back(fsShader);
-			//assert(program.idx);
-		}
-		else if (fsShader.idx != bgfx::kInvalidHandle)
-		{
-			// valid FS -> use nodeVS
-			program = bgfx::createProgram(nodeVSShader, fsShader, false);
-			mask |= EvaluationGLSL;
-			mShaderHandles.push_back(fsShader);
-			assert(program.idx);
-		}
+        ProgramHandle program{bgfx::kInvalidHandle};
+        if (vsShader.idx != bgfx::kInvalidHandle && fsShader.idx != bgfx::kInvalidHandle)
+        {
+            // valid VS/FS
+            program = bgfx::createProgram(vsShader, fsShader, false);
+            mask |= EvaluationGLSL;
+            mShaderHandles.push_back(vsShader);
+            mShaderHandles.push_back(fsShader);
+            //assert(program.idx);
+        }
+        else if (fsShader.idx != bgfx::kInvalidHandle)
+        {
+            // valid FS -> use nodeVS
+            program = bgfx::createProgram(nodeVSShader, fsShader, false);
+            mask |= EvaluationGLSL;
+            mShaderHandles.push_back(fsShader);
+            assert(program.idx);
+        }
 #ifndef __EMSCRIPTEN__
-		else if (csShader.idx != bgfx::kInvalidHandle)
-		{
-			// valid CS
-			mask |= EvaluationGLSLCompute;
-			mShaderHandles.push_back(csShader);
-		}
+        else if (csShader.idx != bgfx::kInvalidHandle)
+        {
+            // valid CS
+            mask |= EvaluationGLSLCompute;
+            mShaderHandles.push_back(csShader);
+        }
 #endif
-		EvaluatorScript& script = mEvaluatorScripts[nodeName];
-		
-		if (program.idx)
-		{
-			script.mProgram = program;
+        EvaluatorScript& script = mEvaluatorScripts[nodeName];
+        
+        if (program.idx)
+        {
+            script.mProgram = program;
 
-			// uniforms
-			for (const auto& parameter : gMetaNodes[i].mParams)
-			{
-				int count = 1;
-				switch (parameter.mType)
-				{
-				case Con_Float:
-					break;
-				case Con_Float2:
-					break;
-				case Con_Float3:
-					break;
-				case Con_Float4:
-					break;
-				case Con_Color4:
-					break;
-				case Con_Int:
-					break;
-				case Con_Int2:
-					break;
-				case Con_Ramp:
-					count = 8;
-					break;
-				case Con_Angle:
-					break;
-				case Con_Angle2:
-					break;
-				case Con_Angle3:
-					break;
-				case Con_Angle4:
-					break;
-				case Con_Enum:
-					break;
-				case Con_Structure:
-				case Con_FilenameRead:
-				case Con_FilenameWrite:
-				case Con_ForceEvaluate:
-					continue;
-				case Con_Bool:
-					break;
-				case Con_Ramp4:
-					count = 8;
-					break;
-				}
-				bgfx::UniformHandle handle = bgfx::createUniform(parameter.mName.c_str(), bgfx::UniformType::Vec4, count);
-				script.mUniformHandles.push_back(handle);
-			}
-		}
-		
-		// C++ functions
-		auto iter = nodeFunctions.find(nodeName);
-		if (iter != nodeFunctions.end())
-		{
-			script.mCFunction = iter->second;
-			mask |= EvaluationC;
-		}
-		script.mMask = mask;
-		script.mType = i;
-		mEvaluatorPerNodeType[i] = &script;
-		auto& evalNode = mEvaluatorPerNodeType[i];
-		//assert(mask); enable when compute shaders are back
-	}
+            // uniforms
+            for (const auto& parameter : gMetaNodes[i].mParams)
+            {
+                int count = 1;
+                switch (parameter.mType)
+                {
+                case Con_Float:
+                    break;
+                case Con_Float2:
+                    break;
+                case Con_Float3:
+                    break;
+                case Con_Float4:
+                    break;
+                case Con_Color4:
+                    break;
+                case Con_Int:
+                    break;
+                case Con_Int2:
+                    break;
+                case Con_Ramp:
+                    count = 8;
+                    break;
+                case Con_Angle:
+                    break;
+                case Con_Angle2:
+                    break;
+                case Con_Angle3:
+                    break;
+                case Con_Angle4:
+                    break;
+                case Con_Enum:
+                    break;
+                case Con_Structure:
+                case Con_FilenameRead:
+                case Con_FilenameWrite:
+                case Con_ForceEvaluate:
+                    continue;
+                case Con_Bool:
+                    break;
+                case Con_Ramp4:
+                    count = 8;
+                    break;
+                }
+                bgfx::UniformHandle handle = bgfx::createUniform(parameter.mName.c_str(), bgfx::UniformType::Vec4, count);
+                script.mUniformHandles.push_back(handle);
+            }
+        }
+        
+        // C++ functions
+        auto iter = nodeFunctions.find(nodeName);
+        if (iter != nodeFunctions.end())
+        {
+            script.mCFunction = iter->second;
+            mask |= EvaluationC;
+        }
+        script.mMask = mask;
+        script.mType = i;
+        mEvaluatorPerNodeType[i] = &script;
+        auto& evalNode = mEvaluatorPerNodeType[i];
+        //assert(mask); enable when compute shaders are back
+    }
 
-	
+    
 
 
-	/*
+    /*
 #if USE_PYTHON
     for (auto& file : evaluatorfilenames)
     {
@@ -630,71 +630,71 @@ void Evaluators::SetEvaluators()
     }
 #endif
 */
-	
+    
 }
 
 void Evaluators::EvaluatorScript::Clear()
 {
-	for (auto& sampler : mUniformHandles)
-	{
-		bgfx::destroy(sampler);
-	}
-	if (mProgram.idx != bgfx::kInvalidHandle)
-	{
-		bgfx::destroy(mProgram);
-	}
+    for (auto& sampler : mUniformHandles)
+    {
+        bgfx::destroy(sampler);
+    }
+    if (mProgram.idx != bgfx::kInvalidHandle)
+    {
+        bgfx::destroy(mProgram);
+    }
 }
 
 void Evaluators::Clear()
 {
-	for (auto& sampler : mSamplers2D)
-	{
-		bgfx::destroy(sampler);
-	}
-	for (auto& sampler : mSamplersCube)
-	{
-		bgfx::destroy(sampler);
-	}
+    for (auto& sampler : mSamplers2D)
+    {
+        bgfx::destroy(sampler);
+    }
+    for (auto& sampler : mSamplersCube)
+    {
+        bgfx::destroy(sampler);
+    }
     for (auto& script : mEvaluatorScripts)
     {
-		script.second.Clear();
+        script.second.Clear();
     }
-	for (auto& shader : mShaderHandles)
-	{
-		bgfx::destroy(shader);
-	}
-	mEvaluatorScripts.clear();
-	mEvaluatorPerNodeType.clear();
-	mShaderHandles.clear();
+    for (auto& shader : mShaderHandles)
+    {
+        bgfx::destroy(shader);
+    }
+    mEvaluatorScripts.clear();
+    mEvaluatorPerNodeType.clear();
+    mShaderHandles.clear();
 
-	if (u_time.idx != bgfx::kInvalidHandle)
-	{
-		bgfx::destroy(u_time);
-		bgfx::destroy(mBlitProgram);
-		bgfx::destroy(mProgressProgram);
-		bgfx::destroy(mDisplayCubemapProgram);
-	}
+    if (u_time.idx != bgfx::kInvalidHandle)
+    {
+        bgfx::destroy(u_time);
+        bgfx::destroy(mBlitProgram);
+        bgfx::destroy(mProgressProgram);
+        bgfx::destroy(mDisplayCubemapProgram);
+    }
 
-	if (u_viewRot.idx != bgfx::kInvalidHandle)
-	{
-		bgfx::destroy(u_viewRot);
-		bgfx::destroy(u_viewProjection);
-		bgfx::destroy(u_viewInverse);
-		bgfx::destroy(u_world);
-		bgfx::destroy(u_worldViewProjection);
-		bgfx::destroy(u_mouse);
-		bgfx::destroy(u_keyModifier);
-		bgfx::destroy(u_inputIndices);
-		bgfx::destroy(u_target);
-		bgfx::destroy(u_pass);
-		bgfx::destroy(u_viewport);
-	}
+    if (u_viewRot.idx != bgfx::kInvalidHandle)
+    {
+        bgfx::destroy(u_viewRot);
+        bgfx::destroy(u_viewProjection);
+        bgfx::destroy(u_viewInverse);
+        bgfx::destroy(u_world);
+        bgfx::destroy(u_worldViewProjection);
+        bgfx::destroy(u_mouse);
+        bgfx::destroy(u_keyModifier);
+        bgfx::destroy(u_inputIndices);
+        bgfx::destroy(u_target);
+        bgfx::destroy(u_pass);
+        bgfx::destroy(u_viewport);
+    }
 }
 
 int Evaluators::GetMask(size_t nodeType) const
 {
-	auto& evalNode = mEvaluatorPerNodeType[nodeType];
-	return evalNode->mMask;
+    auto& evalNode = mEvaluatorPerNodeType[nodeType];
+    return evalNode->mMask;
 }
 
 #if USE_PYTHON
@@ -756,17 +756,17 @@ void Evaluators::EvaluatorScript::RunPython() const
 
 void Evaluators::ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo)
 {
-	bgfx::setUniform(u_viewRot, evaluationInfo.viewRot);
-	bgfx::setUniform(u_viewProjection, evaluationInfo.viewProjection);
-	bgfx::setUniform(u_viewInverse, evaluationInfo.viewInverse);
-	bgfx::setUniform(u_world, evaluationInfo.world);
-	bgfx::setUniform(u_worldViewProjection, evaluationInfo.worldViewProjection);
-	bgfx::setUniform(u_mouse, evaluationInfo.mouse);
-	bgfx::setUniform(u_keyModifier, evaluationInfo.keyModifier);
-	bgfx::setUniform(u_inputIndices, evaluationInfo.inputIndices, 2);
-	bgfx::setUniform(u_target, &evaluationInfo.targetIndex);
-	bgfx::setUniform(u_pass, &evaluationInfo.uiPass);
-	bgfx::setUniform(u_viewport, evaluationInfo.viewport);
+    bgfx::setUniform(u_viewRot, evaluationInfo.viewRot);
+    bgfx::setUniform(u_viewProjection, evaluationInfo.viewProjection);
+    bgfx::setUniform(u_viewInverse, evaluationInfo.viewInverse);
+    bgfx::setUniform(u_world, evaluationInfo.world);
+    bgfx::setUniform(u_worldViewProjection, evaluationInfo.worldViewProjection);
+    bgfx::setUniform(u_mouse, evaluationInfo.mouse);
+    bgfx::setUniform(u_keyModifier, evaluationInfo.keyModifier);
+    bgfx::setUniform(u_inputIndices, evaluationInfo.inputIndices, 2);
+    bgfx::setUniform(u_target, &evaluationInfo.targetIndex);
+    bgfx::setUniform(u_pass, &evaluationInfo.uiPass);
+    bgfx::setUniform(u_viewport, evaluationInfo.viewport);
 }
 
 namespace EvaluationAPI
@@ -777,7 +777,7 @@ namespace EvaluationAPI
         {
             return EVAL_ERR;
         }
-		/* TODOEVA
+        /* TODOEVA
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
         {
@@ -788,7 +788,7 @@ namespace EvaluationAPI
 
         Image::Upload(image, tgt->mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, Dirty::Parameter, true);
-		*/
+        */
         return EVAL_OK;
     }
 
@@ -808,7 +808,7 @@ namespace EvaluationAPI
         if (material)
         {
             material->mThumbnail = pngImage;
-			material->mThumbnailTextureHandle = {0};
+            material->mThumbnailTextureHandle = {0};
         }
         return EVAL_OK;
     }
@@ -848,7 +848,7 @@ namespace EvaluationAPI
             return EVAL_ERR;
         *imageWidth = renderTarget->mImage.mWidth;
         *imageHeight = renderTarget->mImage.mHeight;
-		*/
+        */
         return EVAL_OK;
     }
 
@@ -865,7 +865,7 @@ namespace EvaluationAPI
         //    return EVAL_OK;
         renderTarget->InitBuffer(
             imageWidth, imageHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
-			*/
+            */
         return EVAL_OK;
     }
 
@@ -880,7 +880,7 @@ namespace EvaluationAPI
             renderTarget = evaluationContext->CreateRenderTarget(target);
         }
         renderTarget->InitCube(faceWidth, mipmapCount);
-		*/
+        */
         return EVAL_OK;
     }
 
@@ -966,27 +966,27 @@ namespace EvaluationAPI
         {
             return EVAL_ERR;
         }
-		auto sourceImage = tgt->mImage;
-		TextureHandle transient = bgfx::createTexture2D(
-			uint16_t(sourceImage.mWidth)
-			, uint16_t(sourceImage.mHeight)
-			, sourceImage.mHasMipmaps
-			, uint16_t(1)
-			, bgfx::TextureFormat::Enum(sourceImage.mFormat)
-			, BGFX_TEXTURE_READ_BACK
-			, nullptr
-			);
+        auto sourceImage = tgt->mImage;
+        TextureHandle transient = bgfx::createTexture2D(
+            uint16_t(sourceImage.mWidth)
+            , uint16_t(sourceImage.mHeight)
+            , sourceImage.mHasMipmaps
+            , uint16_t(1)
+            , bgfx::TextureFormat::Enum(sourceImage.mFormat)
+            , BGFX_TEXTURE_READ_BACK
+            , nullptr
+            );
 
-		
+        
         // compute total size
         auto img = tgt->mImage;
         unsigned int texelSize = bimg::getBitsPerPixel(img.mFormat)/8;
         uint32_t size = 0; 
-		
+        
         for (size_t i = 0; i < img.GetMipmapCount(); i++)
-		{
+        {
             size += img.GetFaceCount() * (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
-		}
+        }
 
         image->Allocate(size);
         image->mWidth = img.mWidth;
@@ -995,15 +995,15 @@ namespace EvaluationAPI
         image->mFormat = img.mFormat;
         image->mIsCubemap = img.mIsCubemap;
 
-		uint32_t availableFrame;
-		unsigned char* ptr = image->GetBits();
+        uint32_t availableFrame;
+        unsigned char* ptr = image->GetBits();
         if (!img.mIsCubemap)
         {
-			
+            
             for (size_t i = 0; i < img.GetMipmapCount(); i++)
             {
-				bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, 0);
-				availableFrame = bgfx::readTexture(transient, ptr, i);
+                bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, 0);
+                availableFrame = bgfx::readTexture(transient, ptr, i);
                 ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
             }
 
@@ -1014,18 +1014,18 @@ namespace EvaluationAPI
             {
                 for (size_t i = 0; i < img.GetMipmapCount(); i++)
                 {
-					bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, cube);
-					availableFrame = bgfx::readTexture(transient, ptr, i);
+                    bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, cube);
+                    availableFrame = bgfx::readTexture(transient, ptr, i);
                     ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
                 }
             }
         }
-		while (bgfx::frame() != availableFrame)
-		{
-		};
+        while (bgfx::frame() != availableFrame)
+        {
+        };
 
-		bgfx::destroy(transient);
-		*/
+        bgfx::destroy(transient);
+        */
         return EVAL_OK;
     }
 
@@ -1038,32 +1038,32 @@ namespace EvaluationAPI
             tgt = evaluationContext->CreateRenderTarget(target);
         }
         
-		if (!image->mIsCubemap)
-		{
-			tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
-		}
-		else
-		{
-			tgt->InitCube(image->mWidth, image->mHasMipmaps);
-		}
+        if (!image->mIsCubemap)
+        {
+            tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
+        }
+        else
+        {
+            tgt->InitCube(image->mWidth, image->mHasMipmaps);
+        }
 
-		for (size_t face = 0; face < image->GetFaceCount(); face++)
-		{
-			int cubeFace = image->mIsCubemap ? int(face) : -1;
-			for (size_t i = 0; i < image->GetMipmapCount(); i++)
-			{
-				Image::Upload(image, tgt->mGLTexID, cubeFace, i);
-			}
-		} TODOEVA
-		
+        for (size_t face = 0; face < image->GetFaceCount(); face++)
+        {
+            int cubeFace = image->mIsCubemap ? int(face) : -1;
+            for (size_t i = 0; i < image->GetMipmapCount(); i++)
+            {
+                Image::Upload(image, tgt->mGLTexID, cubeFace, i);
+            }
+        } TODOEVA
+        
 #if USE_FFMPEG
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
-		{
+        {
             stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
-		}
+        }
 #endif
         evaluationContext->SetTargetDirty(target, Dirty::Input, true);
-		*/
+        */
         return EVAL_OK;
     }
 
@@ -1172,7 +1172,7 @@ namespace EvaluationAPI
             evaluationContext->StageSetProcessing(target, false);
             return EVAL_OK;
         } TODOEVA
-		*/
+        */
         return EVAL_DIRTY;
     }
 
@@ -1347,9 +1347,9 @@ namespace EvaluationAPI
         {
             // processing... maybe good on next run
         }
-		
+        
         GetEvaluationImage(&context, target, image);
-		*/
+        */
         return EVAL_OK;
     }
 

@@ -90,10 +90,10 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             url = url.substr(0, sz);
         }
 
-		TextureHandle textureHandle = gImageCache.GetTexture(url);
+        TextureHandle textureHandle = gImageCache.GetTexture(url);
         if (textureHandle.idx)
         {
-			auto size = gImageCache.GetImageSize(url);
+            auto size = gImageCache.GetImageSize(url);
             return {true,
                     false,
                     (ImTextureID)(uint64_t)textureHandle.idx,
@@ -386,7 +386,7 @@ struct PinnedTaskUploadImage : PinnedTask
 
     virtual void Execute()
     {
-		TextureHandle textureHandle = Image::Upload(mImage, {0});
+        TextureHandle textureHandle = Image::Upload(mImage, {0});
         if (mbIsThumbnail)
         {
             Material* material = library.Get(mIdentifier);
@@ -784,8 +784,8 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
         
-		
-		//mNodeGraphControler->mEditingContext.RunAll(); todogl
+        
+        //mNodeGraphControler->mEditingContext.RunAll(); todogl
 
         //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         //mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
@@ -799,7 +799,7 @@ Material& Imogen::NewMaterial(const std::string& materialName)
     library.mMaterials.push_back(Material());
     Material& back = library.mMaterials.back();
     back.mName = materialName;
-	back.mThumbnailTextureHandle = {0};
+    back.mThumbnailTextureHandle = {0};
     back.mRuntimeUniqueId = GetRuntimeId();
 
     if (previousSelection != -1)
@@ -847,7 +847,7 @@ void Imogen::LibraryEdit(Library& library)
     }
     ImGui::SameLine();
 
-	TextureHandle libraryViewTextureHandle = gImageCache.GetTexture("Stock/library-view.png");
+    TextureHandle libraryViewTextureHandle = gImageCache.GetTexture("Stock/library-view.png");
     static const ImVec2 iconSize(16.f, 16.f);
     for (int i = 0; i < 4; i++)
     {
@@ -1439,7 +1439,7 @@ void Imogen::Init(bool bDebugWindow)
     mbDebugWindow = bDebugWindow;
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	/*
+    /*
     DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
 
 #ifndef __EMSCRIPTEN__
@@ -1506,7 +1506,7 @@ void Imogen::Init(bool bDebugWindow)
 
 void Imogen::Finish()
 {
-	mNodeGraphControler->Clear();
+    mNodeGraphControler->Clear();
 }
 
 const char* GetShortCutLib(const char* functionName)
@@ -1996,7 +1996,7 @@ void Imogen::ShowTitleBar(Builder* builder)
     ImGui::SameLine();
 
     // exporting frame / build
-	TextureHandle buildIcon = gImageCache.GetTexture("Stock/Build.png");
+    TextureHandle buildIcon = gImageCache.GetTexture("Stock/Build.png");
     if (ImageButton("BuildMaterial", buildIcon, ImVec2(30, 30)))
     {
         BuildCurrentMaterial(builder);
@@ -2135,8 +2135,8 @@ void Imogen::ShowTimeLine()
         PlayPause();
     }
 
-	TextureHandle playNoLoopTextureHandle = gImageCache.GetTexture("Stock/PlayNoLoop.png");
-	TextureHandle playLoopTextureHandle = gImageCache.GetTexture("Stock/PlayLoop.png");
+    TextureHandle playNoLoopTextureHandle = gImageCache.GetTexture("Stock/PlayNoLoop.png");
+    TextureHandle playLoopTextureHandle = gImageCache.GetTexture("Stock/PlayLoop.png");
 
     ImGui::SameLine();
     if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureHandle.idx : playNoLoopTextureHandle.idx),

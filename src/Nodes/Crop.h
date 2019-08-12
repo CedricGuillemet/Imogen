@@ -25,33 +25,33 @@
 
 struct CropBlock
 {
-	float quad[4];
+    float quad[4];
 };
 
 DECLARE_NODE(Crop)
 {
-	CropBlock* params = (CropBlock*)parameters;
-	int croppedWidth = 256;
-	int croppedHeight = 256;
-	int width, height;
-	const int res = GetEvaluationSize(context, int(evaluation->inputIndices[0]), &width, &height);
-	if (res == EVAL_OK)
-	{
-		croppedWidth = width * int(fabsf(params->quad[2] - params->quad[0]));
-		croppedHeight = height * int(fabsf(params->quad[3] - params->quad[1]));
-	}
-	//if (croppedWidth<8) { croppedWidth = 8; }
-	//if (croppedHeight<8) { croppedHeight = 8; }
-	
-	if (evaluation->uiPass)
-	{
-		SetEvaluationSize(context, int(evaluation->targetIndex), width, height);
-	}
-	else
-	{
-		SetEvaluationSize(context, int(evaluation->targetIndex), croppedWidth, croppedHeight);
-	}
-	
-	return EVAL_OK;
+    CropBlock* params = (CropBlock*)parameters;
+    int croppedWidth = 256;
+    int croppedHeight = 256;
+    int width, height;
+    const int res = GetEvaluationSize(context, int(evaluation->inputIndices[0]), &width, &height);
+    if (res == EVAL_OK)
+    {
+        croppedWidth = width * int(fabsf(params->quad[2] - params->quad[0]));
+        croppedHeight = height * int(fabsf(params->quad[3] - params->quad[1]));
+    }
+    //if (croppedWidth<8) { croppedWidth = 8; }
+    //if (croppedHeight<8) { croppedHeight = 8; }
+    
+    if (evaluation->uiPass)
+    {
+        SetEvaluationSize(context, int(evaluation->targetIndex), width, height);
+    }
+    else
+    {
+        SetEvaluationSize(context, int(evaluation->targetIndex), croppedWidth, croppedHeight);
+    }
+    
+    return EVAL_OK;
 }
 

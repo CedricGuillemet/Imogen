@@ -315,7 +315,9 @@ TextureHandle EvaluationContext::GetEvaluationTexture(size_t nodeIndex) const
     assert (nodeIndex < mEvaluations.size());
     const auto& tgt = mEvaluations[nodeIndex].mTarget;
     if (!tgt)
-        return {0};
+	{
+        return {bgfx::kInvalidHandle};
+	}
     return tgt->mGLTexID;
 }
 
@@ -803,7 +805,10 @@ void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex
         return;
     }
     const auto tgt = evaluation.mTarget;
-
+	if (!tgt)
+	{
+		return; // can be null for file read/file write
+	}
     const int width = tgt->mImage.mWidth;
     const int height = tgt->mImage.mHeight;
 
@@ -910,7 +915,7 @@ void EvaluationContext::ComputeTargetUseCount()
 void EvaluationContext::ReleaseInputs(size_t nodeIndex)
 {
     // is this node used anytime soon?
-    if (!mEvaluations[nodeIndex].mUseCount)
+    if (!mEvaluations[nodeIndex].mUseCount && mEvaluations[nodeIndex].mTarget)
     {
         ReleaseRenderTarget(mEvaluations[nodeIndex].mTarget);
         mEvaluations[nodeIndex].mTarget = nullptr;
@@ -1094,7 +1099,7 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
     }
 
     ReleaseInputs(nodeIndex);
-    //evaluation.mDirtyFlag = 0;
+    evaluation.mDirtyFlag = 0;
 }
 /*
 bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)

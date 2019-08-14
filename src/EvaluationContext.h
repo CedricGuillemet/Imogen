@@ -96,13 +96,6 @@ struct EvaluationContext
     // iterative editing
     void AddEvaluation(size_t nodeIndex);
     void DelEvaluation(size_t nodeIndex);
-    /*
-    void RunAll();
-    // return true if any node is in processing state
-    bool RunBackward(size_t nodeIndex);
-    void RunSingle(size_t nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo);
-    void RunDirty();
-    */
 
     void Evaluate();
 
@@ -117,19 +110,19 @@ struct EvaluationContext
     }
 
     TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
-    /* TODOEVA
-    std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) 
+
+    RenderTarget* GetRenderTarget(size_t nodeIndex) 
     { 
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget; 
     }
     
-    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t nodeIndex) const
+    const RenderTarget* GetRenderTarget(size_t nodeIndex) const
     {
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget;
     }
-    */
+    
 #if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
 #endif
@@ -155,7 +148,7 @@ struct EvaluationContext
     void StageSetProcessing(size_t target, int processing);
     void StageSetProgress(size_t target, float progress);
 
-    //void AllocRenderTargetsForEditingPreview();
+    
 
     const EvaluationThumbnails& GetThumbnails() const 
     { 
@@ -177,7 +170,7 @@ struct EvaluationContext
     void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
 
     EvaluationStages& mEvaluationStages;
-    //void DirtyAll();
+    
 
     struct Evaluation
     {

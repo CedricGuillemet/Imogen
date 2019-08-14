@@ -213,8 +213,11 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
                     (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode).idx : 0);
                 if (displayedTexture)
                 {
-                    /*auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode); TODOEVA
-                    displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));*/
+                    auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
+					if (tgt)
+					{
+						displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
+					}
                 }
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
                 mouseUVPos.y = 1.f - mouseUVPos.y;

@@ -10,6 +10,6 @@ namespace GLSLPathTracer
         Quad();
         void Draw(Program *);
     private:
-        GLuint vao, vbo;
+        unsigned int vao, vbo;
     };
 }

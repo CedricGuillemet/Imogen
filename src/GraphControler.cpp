@@ -38,7 +38,7 @@ void AddExtractedView(size_t nodeIndex);
 GraphControler::GraphControler()
     : mbMouseDragging(false)
     , mbUsingMouse(false)
-    , mEditingContext(mEvaluationStages, false, 1024, 1024)
+    , mEditingContext(mEvaluationStages, false, 1024, 1024, true)
 {
     mSelectedNodeIndex = -1;
     mBackgroundNode = -1;
@@ -264,7 +264,7 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
                 EvaluationInfo evaluationInfo;
                 evaluationInfo.forcedDirty = 1;
                 evaluationInfo.uiPass = 0;
-                mEditingContext.RunSingle(nodeIndex, evaluationInfo);
+                //mEditingContext.RunSingle(viewId_BuildEvaluation, nodeIndex, evaluationInfo); TODOEVA
             }
             break;
         case Con_Bool:
@@ -318,10 +318,10 @@ int GraphControler::ShowMultiplexed(const std::vector<size_t>& inputs, int curre
             }
             ImGui::PushID(index);
 
-            unsigned int textureId;
+            TextureHandle textureHandle;
             ImRect uvs;
-            mEditingContext.GetThumb(inputs[index], textureId, uvs);
-            if (ImGui::ImageButton((ImTextureID)(int64_t)textureId, ImVec2(iconWidth, iconWidth), uvs.Min, uvs.Max, -1, ImVec4(0, 0, 0, 1)))
+            mEditingContext.GetThumb(inputs[index], textureHandle, uvs);
+            if (ImGui::ImageButton((ImTextureID)(int64_t)textureHandle.idx, ImVec2(iconWidth, iconWidth), uvs.Min, uvs.Max, -1, ImVec4(0, 0, 0, 1)))
             {
                 ret = index;
             }
@@ -522,11 +522,11 @@ void GraphControler::NodeEdit()
             ImGui::PushID(1717171);
             ImGui::BeginGroup();
             HandlePinIO(mSelectedNodeIndex, 0, true);
-            unsigned int maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
+            TextureHandle maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
             bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
             float ofs = selectedNodeAsBackground ? 0.5f : 0.f;
             if (ImGui::ImageButton(
-                    (ImTextureID)(uint64_t)maxiMini, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
+                    (ImTextureID)(uint64_t)maxiMini.idx, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
             {
                 mBackgroundNode = selectedNodeAsBackground ? -1 : mSelectedNodeIndex;
             }
@@ -919,9 +919,12 @@ void GraphControler::ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int
 
 bool GraphControler::NodeIs2D(size_t nodeIndex) const
 {
-    auto target = mEditingContext.GetRenderTarget(nodeIndex);
+    /*auto target = mEditingContext.GetRenderTarget(nodeIndex); TODOEVA
     if (target)
-        return target->mImage->mNumFaces == 1;
+    {
+        return !target->mImage.mIsCubemap;
+    }
+    */
     return false;
 }
 
@@ -932,9 +935,11 @@ bool GraphControler::NodeIsCompute(size_t nodeIndex) const
 
 bool GraphControler::NodeIsCubemap(size_t nodeIndex) const
 {
-    auto target = mEditingContext.GetRenderTarget(nodeIndex);
+    /*auto target = mEditingContext.GetRenderTarget(nodeIndex); TODOEVA
     if (target)
-        return target->mImage->mNumFaces == 6;
+    {
+        return target->mImage.mIsCubemap;
+    }*/
     return false;
 }
 
@@ -965,13 +970,13 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
     }
     else
     {
-        unsigned int textureId;
+        TextureHandle textureHandle;
         ImRect uvs;
-        mEditingContext.GetThumb(nodeIndex, textureId, uvs);
-        if (textureId)
+        mEditingContext.GetThumb(nodeIndex, textureHandle, uvs);
+        if (textureHandle.idx)
         {
             drawList->AddRectFilled(rc.Min, rc.Max, 0xFF000000);
-            drawList->AddImage((ImTextureID)(int64_t)textureId,
+            drawList->AddImage((ImTextureID)(int64_t)textureHandle.idx,
                            rc.Min + marge,
                            rc.Max - marge,
                            uvs.Min,
@@ -1038,11 +1043,11 @@ void GraphControler::ComputeGraphArrays()
     }
 }
 
-unsigned int GraphControler::GetBitmapInfo(size_t nodeIndex) const
+TextureHandle GraphControler::GetBitmapInfo(size_t nodeIndex) const
 {
-    unsigned int stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
-    unsigned int stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
-    unsigned int stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
+    TextureHandle stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
+    TextureHandle stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
+    TextureHandle stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
 
     if (NodeIsCompute(nodeIndex))
     {
@@ -1056,6 +1061,6 @@ unsigned int GraphControler::GetBitmapInfo(size_t nodeIndex) const
     {
         return stagecubemap;
     }
-    return 0;
+    return {0};
 }
 

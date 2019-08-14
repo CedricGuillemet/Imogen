@@ -43,7 +43,7 @@ struct GraphEditorDelegate
     virtual bool NodeIsCompute(size_t nodeIndex) const = 0;
     virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const = 0;
     virtual bool RecurseIsLinked(int from, int to) const = 0;
-    virtual unsigned int GetBitmapInfo(size_t nodeIndex) const = 0;
+    virtual TextureHandle GetBitmapInfo(size_t nodeIndex) const = 0;
 
     virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) = 0;
     virtual void ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int nodeHovered) = 0;

@@ -49,6 +49,7 @@ struct Scene
                 UV = 1 << 3,
             };
         };
+        /*
         struct Buffer
         {
             unsigned int id;
@@ -62,20 +63,28 @@ struct Scene
             unsigned int stride;
             unsigned int count;
         };
+        */
         struct Primitive
         {
-            std::vector<Buffer> mBuffers;
-            IndexBuffer mIndexBuffer = { 0, 0, 0 };
+            ~Primitive();
+            std::vector<bgfx::VertexBufferHandle> mStreams;
+            bgfx::IndexBufferHandle mIbh = {bgfx::kInvalidHandle};
+            bgfx::VertexDecl mDecl;
+
+            uint32_t mVertexCount;
+            uint32_t mIndexCount;
             void AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count);
             void AddIndexBuffer(const void* data, unsigned int stride, unsigned int count);
-            void Draw() const;
+            void Draw(bgfx::ViewId viewId, ProgramHandle program) const;
         };
         std::vector<Primitive> mPrimitives;
-        void Draw() const;
+        void Draw(bgfx::ViewId viewId, ProgramHandle program) const;
     };
     std::vector<Mesh> mMeshes;
     std::vector<Mat4x4> mWorldTransforms;
     std::vector<int> mMeshIndex;
     std::string mName;
-    void Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const;
+    void Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, ProgramHandle program) const;
+protected:
+    static std::weak_ptr<Scene> mDefaultScene;
 };

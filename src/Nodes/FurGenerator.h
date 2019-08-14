@@ -25,12 +25,12 @@
 
 struct FurGeneratorBlock
 {
-	int hairCount;
-	float lengthFactor;
+    int hairCount;
+    float lengthFactor;
 };
 
 DECLARE_NODE(FurGenerator)
 {
-	FurGeneratorBlock* param = (FurGeneratorBlock*)parameters;
-	return AllocateComputeBuffer(context, evaluation->targetIndex, param->hairCount, 15 * 4 * 4);
+    FurGeneratorBlock* param = (FurGeneratorBlock*)parameters;
+    return AllocateComputeBuffer(context, evaluation->targetIndex, param->hairCount, 15 * 4 * 4);
 }

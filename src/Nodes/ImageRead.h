@@ -25,45 +25,45 @@
 
 struct ImageReadBlock
 {
-	char filename[1024];
-	char XPosFilename[1024];
-	char XNegFilename[1024];
-	char YPosFilename[1024];
-	char YNegFilename[1024];
-	char ZPosFilename[1024];
-	char ZNegFilename[1024];
+    char filename[1024];
+    char XPosFilename[1024];
+    char XNegFilename[1024];
+    char YPosFilename[1024];
+    char YNegFilename[1024];
+    char ZPosFilename[1024];
+    char ZNegFilename[1024];
 };
 
 DECLARE_NODE(ImageRead)
 {
-	ImageReadBlock* params = (ImageReadBlock*)parameters;
+    ImageReadBlock* params = (ImageReadBlock*)parameters;
 
-	const char *files[] = { params->XPosFilename, params->XNegFilename, params->YNegFilename, params->YPosFilename, params->ZPosFilename, params->ZNegFilename};
-	if (!(evaluation->dirtyFlag & Dirty::Parameter))
+    const char *files[] = { params->XPosFilename, params->XNegFilename, params->YNegFilename, params->YPosFilename, params->ZPosFilename, params->ZNegFilename};
+    if (!(evaluation->dirtyFlag & Dirty::Parameter))
     {
-		return EVAL_OK;
-	}
+        return EVAL_OK;
+    }
 
-	if (strlen(params->filename))
-	{
-		SetProcessing(context, evaluation->targetIndex, 1);
+    if (strlen(params->filename))
+    {
+        SetProcessing(context, evaluation->targetIndex, 1);
         ReadImageAsync(context, params->filename, evaluation->targetIndex, -1);
-	}
-	else
-	{
-		for (int i = 0; i < 6; i++)
-		{
-			if (!strlen(files[i]))
+    }
+    else
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            if (!strlen(files[i]))
             {
-				return EVAL_OK;
+                return EVAL_OK;
             }
-		}
-		SetProcessing(context, evaluation->targetIndex, 1);
-		for (int i = 0; i < 6; i++)
-		{
+        }
+        SetProcessing(context, evaluation->targetIndex, 1);
+        for (int i = 0; i < 6; i++)
+        {
             ReadImageAsync(context, files[i], evaluation->targetIndex, i);
-		}		
-	}
+        }        
+    }
 
-	return EVAL_OK;
+    return EVAL_OK;
 }

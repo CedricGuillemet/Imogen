@@ -25,28 +25,29 @@
 
 DECLARE_NODE(Paint3D)
 {
-	if (evaluation->uiPass == 1)
-	{
-		SetBlendingMode(context, evaluation->targetIndex, ONE, ZERO);
-		OverrideInput(context, evaluation->targetIndex, 0, evaluation->targetIndex);
-		SetVertexSpace(context, evaluation->targetIndex, 1/*VertexSpace_World*/);
-		EnableDepthBuffer(context, evaluation->targetIndex, 1);
-		EnableFrameClear(context, evaluation->targetIndex, 1);
-	}
-	else
-	{
-		SetBlendingMode(context, evaluation->targetIndex, ONE, ONE_MINUS_SRC_ALPHA);
-		OverrideInput(context, evaluation->targetIndex, 0, -1); // remove override
-		SetVertexSpace(context, evaluation->targetIndex, 0/*VertexSpace_UV*/);
-		EnableDepthBuffer(context, evaluation->targetIndex, 0);
-		EnableFrameClear(context, evaluation->targetIndex, 0);
-	}
-	
-	// use scene from input node
-	void *scene;
-	if (GetEvaluationScene(context, evaluation->inputIndices[0], &scene) == EVAL_OK)
-	{
-		SetEvaluationScene(context, evaluation->targetIndex, scene);
-	}
-	return EVAL_OK;
+    int target = int(evaluation->targetIndex);
+    if (evaluation->uiPass == 1)
+    {
+        SetBlendingMode(context, target, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO);
+        OverrideInput(context, target, 0, evaluation->targetIndex);
+        SetVertexSpace(context, target, 1/*VertexSpace_World*/);
+        EnableDepthBuffer(context, target, 1);
+        EnableFrameClear(context, target, 1);
+    }
+    else
+    {
+        SetBlendingMode(context, target, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA);
+        OverrideInput(context, target, 0, -1); // remove override
+        SetVertexSpace(context, target, 0/*VertexSpace_UV*/);
+        EnableDepthBuffer(context, target, 0);
+        EnableFrameClear(context, target, 0);
+    }
+    
+    // use scene from input node
+    void *scene;
+    if (GetEvaluationScene(context, evaluation->inputIndices[0], &scene) == EVAL_OK)
+    {
+        SetEvaluationScene(context, target, scene);
+    }
+    return EVAL_OK;
 }

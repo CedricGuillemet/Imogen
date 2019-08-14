@@ -53,7 +53,7 @@
 		"saveTexture": true
 		}
 		,{
-		"name": "CubeRadiance",
+	"name": "CubeRadiance",
 		"category": 8,
         "description":"Compute cubemap radiance or irradiance and generate a cubemap with optional mipmaps",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
@@ -85,7 +85,7 @@
 		}
 		]
 		}, {
-		"name": "PBR2",
+	"name": "PBR2",
 		"category": 2,
         "description":"Experimental node.",
         "experimental":true,
@@ -176,8 +176,8 @@
             "description":"The source image and its channel used for Alpha in the output."
 			}
 			]
-	}, {
-		"name": "Lens",
+		}, {
+	"name": "Lens",
 		"category": 0,
         "description":"Deforms the source using a lens computation with an optionnal vignette shading.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
@@ -200,8 +200,8 @@
 			"default":"1.0",
             "description":"Vignette shading: Corners get darker. 0 to disable vignette."
 		}]
-	}, {
-		"name": "Distance",
+		}, {
+	"name": "Distance",
 		"category": 0,
         "description":"Generate a signed distance field from a black and white source image.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
@@ -220,8 +220,8 @@
             "description":"",
             "hidden": true
 		}]
-	}, {
-		"name": "Multiplex",
+		}, {
+	"name": "Multiplex",
 		"category": 10,
         "description":"Route one input into the output. This choice can be propagated to further nodes.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],

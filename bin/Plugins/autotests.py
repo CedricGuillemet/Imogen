@@ -13,7 +13,7 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "ZNegFilename", "Autotests/Assets/Lycksele/negz.jpg")
     
 def imageTests():
-
+    '''
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
     imageRead = Imogen.AddNode("ImageRead")
@@ -62,6 +62,7 @@ def imageTests():
     Imogen.Build()
     Imogen.DeleteGraph()
     
+    # physical sky to dds
     Imogen.NewGraph("ImageRead05")
     physicalSky = Imogen.AddNode("PhysicalSky")
     imageWrite = Imogen.AddNode("ImageWrite")
@@ -70,7 +71,18 @@ def imageTests():
     Imogen.Connect(physicalSky, 0, imageWrite, 0)
     Imogen.Build()
     Imogen.DeleteGraph()
-    
+    '''
+    # cirlce -> png
+    Imogen.NewGraph("Gen01")
+    circle = Imogen.AddNode("Circle")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Circle01.png")
+    Imogen.SetParameter(imageWrite, "format", "1")
+    Imogen.SetParameter(imageWrite, "width", "4096")
+    Imogen.SetParameter(imageWrite, "height", "4096")
+    Imogen.Connect(circle, 0, imageWrite, 0)
+    Imogen.Build()
+    Imogen.DeleteGraph()
     
 def clearTests(folder):
     for the_file in os.listdir(folder):

@@ -47,88 +47,100 @@ struct EvaluationInfo
     float viewRot[16];
     float viewProjection[16];
     float viewInverse[16];
-    float model[16];
-    float modelViewProjection[16];
+    float world[16];
+    float worldViewProjection[16];
     float viewport[4];
 
-    int targetIndex;
-    int forcedDirty;
-    int uiPass;
-    int passNumber;
     float mouse[4];
-    int keyModifier[4];
-    int inputIndices[8];
+    float keyModifier[4];
+    float inputIndices[8];
 
-    int frame;
-    int localFrame;
-    int vertexSpace;
-    int dirtyFlag;
 
-    int mipmapNumber;
-    int mipmapCount;
+    float uiPass; // pass
+    float passNumber;
+    float frame;
+    float localFrame;
+
+    
+    float targetIndex; //target
+    float vertexSpace;
+    float mipmapNumber;
+    float mipmapCount;
+
+
+    // not used by shaders
+    uint32_t dirtyFlag;
+    uint32_t forcedDirty;
+
+    uint32_t padding[2];
 };
 
 typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
-
-struct Evaluator
-{
-    Evaluator() : mGLSLProgram(0), mCFunction(0), mMask(-1)
-    {
-    }
-    unsigned int mGLSLProgram;
-	NodeFunction mCFunction;
-#if USE_PYTHON    
-    pybind11::module mPyModule;
-
-    void RunPython() const;
-#endif
-
-    std::string mName;
-    size_t mNodeType;
-	int mMask;
-};
 
 struct Evaluators
 {
     Evaluators();
     ~Evaluators();
 
-    void SetEvaluators(const std::vector<EvaluatorFile>& evaluatorfilenames);
-    std::string GetEvaluator(const std::string& filename);
+    void SetEvaluators();
     static void InitPython();
-    int GetMask(size_t nodeType);
-    void ClearEvaluators();
-
-    const Evaluator& GetEvaluator(size_t nodeType) const
-    {
-        return mEvaluatorPerNodeType[nodeType];
-    }
+    int GetMask(size_t nodeType) const;
+    void Clear();
 
     void InitPythonModules();
 #if USE_PYTHON    
     pybind11::module mImogenModule;
 #endif
     static void ReloadPlugins();
-    protected:
+
     struct EvaluatorScript
     {
-        EvaluatorScript() : mProgram(0), mCFunction(0), mType(-1)
+        EvaluatorScript() : mProgram({0}), mCFunction(0), mType(-1), mMask(0)
         {
         }
-        EvaluatorScript(const std::string& text) : mText(text), mProgram(0), mCFunction(0), mType(-1)
-        {
-        }
-        std::string mText;
-        unsigned int mProgram;
-		NodeFunction mCFunction;
+        void Clear();
+
+        ProgramHandle mProgram;
+        NodeFunction mCFunction;
         int mType;
-#if USE_PYTHON        
+        int mMask;
+        std::vector<UniformHandle> mUniformHandles;
+#if USE_PYTHON    
         pybind11::module mPyModule;
+
+        void RunPython() const;
 #endif
     };
 
+    const EvaluatorScript& GetEvaluator(size_t nodeType) const
+    {
+        return *mEvaluatorPerNodeType[nodeType];
+    }
+    void ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo);
+protected:
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
-    std::vector<Evaluator> mEvaluatorPerNodeType;
+    std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
+    std::vector<ShaderHandle> mShaderHandles;
+public:
+    bgfx::UniformHandle u_viewRot{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_viewProjection{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_viewInverse{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_world{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_worldViewProjection{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_mouse{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_keyModifier{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_inputIndices{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_target{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_pass{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_viewport{ bgfx::kInvalidHandle };
+
+    ProgramHandle mBlitProgram{ bgfx::kInvalidHandle };
+    ProgramHandle mProgressProgram{ bgfx::kInvalidHandle };
+    ProgramHandle mDisplayCubemapProgram{ bgfx::kInvalidHandle };
+    std::vector<UniformHandle> mSamplers2D;
+    std::vector<UniformHandle> mSamplersCube;
+    bgfx::UniformHandle u_time{ bgfx::kInvalidHandle };
+    bgfx::UniformHandle u_uvTransform{ bgfx::kInvalidHandle };
 };
 
 extern Evaluators gEvaluators;
@@ -147,7 +159,7 @@ namespace EvaluationAPI
     int AllocateImage(Image* image);
 
     // static int Evaluate(int target, int width, int height, Image *image);
-    void SetBlendingMode(EvaluationContext* evaluationContext, int target, int blendSrc, int blendDst);
+    void SetBlendingMode(EvaluationContext* evaluationContext, int target, uint64_t blendSrc, uint64_t blendDst);
     void EnableDepthBuffer(EvaluationContext* evaluationContext, int target, int enable);
     void EnableFrameClear(EvaluationContext* evaluationContext, int target, int enable);
     void SetVertexSpace(EvaluationContext* evaluationContext, int target, int vertexSpace);

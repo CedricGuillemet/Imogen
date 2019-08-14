@@ -25,21 +25,21 @@
 
 struct EquirectConverterBlock
 {
-	int mode;
-	int size;
+    int mode;
+    int size;
 };
 
 DECLARE_NODE(EquirectConverter)
 {
-	EquirectConverterBlock* param = (EquirectConverterBlock*)parameters;
-	const int size = 256 << param->size;
-	if (param->mode == 0)
-	{
-		SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
-	}
-	else
-	{
-		SetEvaluationSize(context, evaluation->targetIndex, size, size);
-	}
-	return EVAL_OK;
+    EquirectConverterBlock* param = (EquirectConverterBlock*)parameters;
+    const int size = 256 << param->size;
+    if (param->mode == 0)
+    {
+        SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
+    }
+    else
+    {
+        SetEvaluationSize(context, evaluation->targetIndex, size, size);
+    }
+    return EVAL_OK;
 }

@@ -82,11 +82,11 @@ struct Serialize
         fp = fopen(szFilename, doWrite ? "wb" : "rb");
         if (!fp)
         {
-            Log("Unable to open file %s for %s\n", szFilename, doWrite?"writing":"reading");
+            Log("Unable to open file %s for %s\n", szFilename, doWrite ? "writing" : "reading");
         }
         else
         {
-            Log("Open file %s for %s\n", szFilename, doWrite ? "writing" : "readin");
+            Log("Open file %s for %s\n", szFilename, doWrite ? "writing" : "reading");
         }
     }
 
@@ -322,7 +322,7 @@ void LoadLib(Library* library, const std::string& filename)
 
     for (auto& material : library->mMaterials)
     {
-        material.mThumbnailTextureId = 0;
+        material.mThumbnailTextureHandle = {bgfx::kInvalidHandle};
         material.mRuntimeUniqueId = GetRuntimeId();
         for (auto& node : material.mMaterialNodes)
         {

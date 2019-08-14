@@ -34,11 +34,27 @@
 #define IMOGENTITLE "Imogen 0.14 "
 #define IMOGENCOMPLETETITLE IMOGENTITLE BUILDTYPE
 
+#include <bgfx/bgfx.h>
+#include <bimg/bimg.h>
+
+typedef bgfx::TextureHandle TextureHandle;
+typedef bgfx::ShaderHandle ShaderHandle;
+typedef bgfx::ProgramHandle ProgramHandle;
+typedef bgfx::FrameBufferHandle FrameBufferHandle;
+typedef bgfx::UniformHandle UniformHandle;
+typedef bimg::TextureFormat::Enum TextureFormat;
+
+enum bgfxViewIds
+{
+    viewId_BuildEvaluation,
+    viewId_ImGui,
+    viewId_Evaluation,
+
+};
 #ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>
 #include <SDL.h>
-#include <GLES3/gl3.h>
 
 #define USE_SDL 1
 
@@ -75,7 +91,7 @@ struct TaskScheduler
 #elif WIN32
 
 #include <SDL2/SDL.h>
-#include <GL/gl3w.h>
+#include <SDL2/SDL_syswm.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <io.h>
@@ -89,7 +105,6 @@ struct TaskScheduler
 
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
-#define USE_GLDEBUG 1
 #define USE_SDL 1
 
 typedef enki::IPinnedTask PinnedTask;
@@ -100,7 +115,6 @@ typedef enki::TaskScheduler TaskScheduler;
 #elif __linux__
 
 #include <SDL2/SDL.h>
-#include <GL/gl3w.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -113,7 +127,6 @@ typedef enki::TaskScheduler TaskScheduler;
 
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
-#define USE_GLDEBUG 1
 #define USE_SDL 1
 
 typedef enki::IPinnedTask PinnedTask;

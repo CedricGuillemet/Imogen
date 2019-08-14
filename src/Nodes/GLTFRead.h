@@ -25,22 +25,22 @@
 
 struct GLTFReadBlock
 {
-	char filename[1024];
-	Camera camera;
+    char filename[1024];
+    Camera camera;
 };
 
 DECLARE_NODE(GLTFRead)
 {
-	GLTFReadBlock* params = (GLTFReadBlock*)parameters;
-	const int target = evaluation->targetIndex;
-	EnableDepthBuffer(context, target, 1);
-	EnableFrameClear(context, target, 1);
-	SetVertexSpace(context, target, 1/*VertexSpace_World*/);
-	
-	if (strlen(params->filename) && GetEvaluationSceneName(context, target) == params->filename)
-	{
-		GLTFReadAsync(context, params->filename, target);
-	}
+    GLTFReadBlock* params = (GLTFReadBlock*)parameters;
+    const int target = evaluation->targetIndex;
+    EnableDepthBuffer(context, target, 1);
+    EnableFrameClear(context, target, 1);
+    SetVertexSpace(context, target, 1/*VertexSpace_World*/);
+    
+    if (strlen(params->filename) && strcmp(GetEvaluationSceneName(context, target), params->filename))
+    {
+        GLTFReadAsync(context, params->filename, target);
+    }
 
-	return EVAL_OK;
+    return EVAL_OK;
 }

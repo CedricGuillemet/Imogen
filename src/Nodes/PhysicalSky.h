@@ -25,17 +25,17 @@
 
 struct PhysicalSkyBlock
 {
-	float ambient[4];
-	float lightdir[4], Kr[4];
-	float rayleigh_brightness, mie_brightness, spot_brightness, scatter_strength, rayleigh_strength, mie_strength;
-	float rayleigh_collection_power, mie_collection_power, mie_distribution;
-	int size;
+    float ambient[4];
+    float lightdir[4], Kr[4];
+    float rayleigh_brightness, mie_brightness, spot_brightness, scatter_strength, rayleigh_strength, mie_strength;
+    float rayleigh_collection_power, mie_collection_power, mie_distribution;
+    int size;
 };
 
 DECLARE_NODE(PhysicalSky)
 {
-	PhysicalSkyBlock* param = (PhysicalSkyBlock*)parameters;
-	const int size = 256 << param->size;
-	SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
-	return EVAL_OK;
+    PhysicalSkyBlock* param = (PhysicalSkyBlock*)parameters;
+    const int size = 256 << param->size;
+    SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
+    return EVAL_OK;
 }

@@ -25,103 +25,90 @@
 
 #include "Platform.h"
 #include "Scene.h"
-#include "EvaluationContext.h"
+#include "Evaluators.h"
 
-void Scene::Mesh::Primitive::Draw() const
+std::weak_ptr<Scene> Scene::mDefaultScene;
+
+void Scene::Mesh::Primitive::Draw(bgfx::ViewId viewId, ProgramHandle program) const
 {
-    unsigned int vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    for (auto& buffer : mBuffers)
+    bgfx::setIndexBuffer(mIbh);
+    for (auto i = 0; i < mStreams.size(); i++)
     {
-        glBindBuffer(GL_ARRAY_BUFFER, buffer.id);
-        switch (buffer.format)
-        {
-        case Format::UV:
-            glVertexAttribPointer(SemUV0, 2, GL_FLOAT, GL_FALSE, 8, 0);
-            glEnableVertexAttribArray(SemUV0);
-            break;
-        case Format::COL:
-            glVertexAttribPointer(SemUV0 + 1, 4, GL_FLOAT, GL_FALSE, 16, 0);
-            glEnableVertexAttribArray(SemUV0 + 1);
-            break;
-        case Format::POS:
-            glVertexAttribPointer(SemUV0 + 2, 3, GL_FLOAT, GL_FALSE, 12, 0);
-            glEnableVertexAttribArray(SemUV0 + 2);
-            break;
-        case Format::NORM:
-            glVertexAttribPointer(SemUV0 + 3, 3, GL_FLOAT, GL_FALSE, 12, 0);
-            glEnableVertexAttribArray(SemUV0 + 3);
-            break;
-        }
+        bgfx::setVertexBuffer(i, mStreams[i]);
     }
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
-    glBindVertexArray(vao);
-
-    if (!mIndexBuffer.id)
-    {
-        glDrawArrays(GL_TRIANGLES, 0, mBuffers[0].count);
-    }
-    else
-    {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer.id);
-        glDrawElements(GL_TRIANGLES,
-            mIndexBuffer.count,
-            (mIndexBuffer.stride == 4) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT,
-            (void*)0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    glDeleteVertexArrays(1, &vao);
+    
+    assert(program.idx);
+    bgfx::submit(viewId, program);
 }
+
+
+Scene::Mesh::Primitive::~Primitive()
+{
+    for (auto i = 0; i < mStreams.size(); i++)
+    {
+        bgfx::destroy(mStreams[i]);
+    }
+    if (mIbh.idx != bgfx::kInvalidHandle)
+    {
+        bgfx::destroy(mIbh);
+    }
+}
+
 void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count)
 {
-    unsigned int va;
-    glGenBuffers(1, &va);
-    glBindBuffer(GL_ARRAY_BUFFER, va);
-    glBufferData(GL_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    mBuffers.push_back({ va, format, stride, count });
+    mDecl.begin();
+    switch (format)
+    {
+    case Format::UV:
+        mDecl.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
+        break;
+    case Format::COL:
+        mDecl.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float);
+        break;
+    case Format::POS:
+        mDecl.add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float);
+        break;
+    case Format::NORM:
+        mDecl.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
+        break;
+    }
+    mDecl.end();
+
+    mStreams.push_back(bgfx::createVertexBuffer(bgfx::copy(data, stride * count), mDecl));
+    mVertexCount = count;
 }
 
 void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int stride, unsigned int count)
 {
-    unsigned int ia;
-    glGenBuffers(1, &ia);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ia);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, stride * count, data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    mIndexBuffer = { ia, stride, count };
+    if (mIbh.idx != bgfx::kInvalidHandle)
+    {
+        bgfx::destroy(mIbh);
+    }
+    mIbh = bgfx::createIndexBuffer(bgfx::copy(data, stride* count), (stride == 4)?BGFX_BUFFER_INDEX32:0);
+    mIndexCount = count;
 }
-void Scene::Mesh::Draw() const
+
+void Scene::Mesh::Draw(bgfx::ViewId viewId, ProgramHandle program) const
 {
     for (auto& prim : mPrimitives)
     {
-        prim.Draw();
+        prim.Draw(viewId, program);
     }
 }
-void Scene::Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const
+
+void Scene::Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, ProgramHandle program) const
 {
     for (unsigned int i = 0; i < mMeshIndex.size(); i++)
     {
         int index = mMeshIndex[i];
         if (index == -1)
+        {
             continue;
-
-        glBindBuffer(GL_UNIFORM_BUFFER, context->mEvaluationStateGLSLBuffer);
-        memcpy(evaluationInfo.model, mWorldTransforms[i], sizeof(Mat4x4));
-        FPU_MatrixF_x_MatrixF(evaluationInfo.model, evaluationInfo.viewProjection, evaluationInfo.modelViewProjection);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(EvaluationInfo), &evaluationInfo, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-        mMeshes[index].Draw();
+        }
+        memcpy(evaluationInfo.world, mWorldTransforms[i], sizeof(Mat4x4));
+        FPU_MatrixF_x_MatrixF(evaluationInfo.world, evaluationInfo.viewProjection, evaluationInfo.worldViewProjection);
+        gEvaluators.ApplyEvaluationInfo(evaluationInfo);
+        mMeshes[index].Draw(viewId, program);
     }
 }
 
@@ -132,16 +119,27 @@ Scene::~Scene()
 
 std::shared_ptr<Scene> Scene::BuildDefaultScene()
 {
+    if (!mDefaultScene.expired())
+    {
+        return mDefaultScene.lock();
+    }
     auto defaultScene = std::make_shared<Scene>();
     defaultScene->mMeshes.resize(1);
     auto& mesh = defaultScene->mMeshes.back();
     mesh.mPrimitives.resize(1);
     auto& prim = mesh.mPrimitives.back();
-    static const float fsVts[] = { 0.f, 0.f, 2.f, 0.f, 0.f, 2.f };
-    prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 3);
+    static const float fsVts[] = { 0.f, 0.f,
+        1.f, 0.f,
+        0.f, 1.f,
+        1.f, 1.f,};
+    static const uint16_t fsIdx[] = { 0, 1, 2, 1, 3, 2 };
+    prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 4);
+    prim.AddIndexBuffer(fsIdx, 2, 6);
+
     // add node and transform
     defaultScene->mWorldTransforms.resize(1);
     defaultScene->mWorldTransforms[0].Identity();
     defaultScene->mMeshIndex.resize(1, 0);
+    mDefaultScene = defaultScene;
     return defaultScene;
 }

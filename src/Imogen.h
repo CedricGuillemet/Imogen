@@ -72,10 +72,6 @@ struct Imogen
 
     void Show(Builder* builder, Library& library, bool capturing);
     void ValidateCurrentMaterial(Library& library);
-    void DiscoverNodes(const char* extension,
-                       const char* directory,
-                       EVALUATOR_TYPE evaluatorType,
-                       std::vector<EvaluatorFile>& files);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
 
@@ -135,7 +131,7 @@ protected:
     void Playback(bool timeHasChanged);
 
     int GetFunctionByName(const char* functionName) const;
-    bool ImageButton(const char* functionName, unsigned int icon, ImVec2 size);
+    bool ImageButton(const char* functionName, TextureHandle icon, ImVec2 size);
     bool Button(const char* functionName, const char* label, ImVec2 size);
 
     static void ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line_start);

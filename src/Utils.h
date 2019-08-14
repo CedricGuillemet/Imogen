@@ -28,35 +28,9 @@
 #include <float.h>
 #include <vector>
 #include <math.h>
-
-typedef unsigned int TextureID;
-static const int SemUV0 = 0;
-
-class FullScreenTriangle
-{
-public:
-    FullScreenTriangle() : mGLFullScreenVertexArrayName(-1)
-    {
-    }
-    ~FullScreenTriangle()
-    {
-    }
-    void Init();
-    void Render();
-    void Finish();
-
-protected:
-    TextureID mGLFullScreenVertexArrayName;
-    TextureID mFsVA;
-};
-
-
-void TexParam(TextureID MinFilter, TextureID MagFilter, TextureID WrapS, TextureID WrapT, TextureID texMode);
+#include "Platform.h"
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
-
-unsigned int LoadShader(const std::string& shaderString, const char* fileName);
-unsigned int LoadShaderTransformFeedback(const std::string& shaderString, const char* fileName);
 
 
 typedef void (*LogOutput)(const char* szText);
@@ -821,7 +795,6 @@ void IMessageBox(const char* text, const char* title);
 void DiscoverFiles(const char* extension, const char* directory, std::vector<std::string>& files);
 
 void OpenShellURL(const std::string& url);
-void GetTextureDimension(unsigned int textureId, int* w, int* h);
 
 std::string GetName(const std::string& name);
 std::string GetGroup(const std::string& name);

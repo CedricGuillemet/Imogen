@@ -31,10 +31,10 @@ std::map<std::string, NodeFunction> nodeFunctions;
 
 struct AddNodeFunction
 {
-	AddNodeFunction(const std::string& nodeName, NodeFunction function)
-	{
-		nodeFunctions[nodeName] = function;
-	}
+    AddNodeFunction(const std::string& nodeName, NodeFunction function)
+    {
+        nodeFunctions[nodeName] = function;
+    }
 };
 
 #define DECLARE_NODE(NODE) int NODE(void *parameters, EvaluationInfo* evaluation, EvaluationContext* context); \

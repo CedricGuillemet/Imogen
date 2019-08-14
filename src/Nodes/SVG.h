@@ -25,28 +25,28 @@
 
 struct SVGParam
 {
-	char filename[1024];
-	float dpi;
+    char filename[1024];
+    float dpi;
 };
 
 DECLARE_NODE(SVG)
 {
-	SVGParam* param = (SVGParam*)parameters;
-	Image image;
-	if (param->dpi <= 1.0)
-	{
-		param->dpi = 96.0;
-	}
-	if (!(evaluation->dirtyFlag & Dirty::Parameter))
-	{
-		return EVAL_OK;
-	}
-	if (strlen(param->filename))
-	{
-		if (Image::LoadSVG(param->filename, &image, param->dpi) == EVAL_OK)
-		{
-			SetEvaluationImage(context, evaluation->targetIndex, &image);
-		}
-	}
-	return EVAL_OK;
+    SVGParam* param = (SVGParam*)parameters;
+    Image image;
+    if (param->dpi <= 1.0)
+    {
+        param->dpi = 96.0;
+    }
+    if (!(evaluation->dirtyFlag & Dirty::Parameter))
+    {
+        return EVAL_OK;
+    }
+    if (strlen(param->filename))
+    {
+        if (Image::LoadSVG(param->filename, &image, param->dpi) == EVAL_OK)
+        {
+            SetEvaluationImage(context, evaluation->targetIndex, &image);
+        }
+    }
+    return EVAL_OK;
 }

@@ -25,21 +25,21 @@
 
 struct ReactionDiffusionBlock
 {
-	float boost;
-	float divisor;
-	float colorStep;
-	int PassCount;
-	int size;
+    float boost;
+    float divisor;
+    float colorStep;
+    int PassCount;
+    int size;
 };
 
 DECLARE_NODE(ReactionDiffusion)
 {
-	ReactionDiffusionBlock* param = (ReactionDiffusionBlock*)parameters;
+    ReactionDiffusionBlock* param = (ReactionDiffusionBlock*)parameters;
     if (!(evaluation->dirtyFlag & Dirty::Parameter))
     {
-		return EVAL_OK;
+        return EVAL_OK;
     }
     
-	SetEvaluationSize(context, evaluation->targetIndex, 256<< param->size, 256<< param->size);
-	return EVAL_OK;
+    SetEvaluationSize(context, int(evaluation->targetIndex), 256<< param->size, 256<< param->size);
+    return EVAL_OK;
 }

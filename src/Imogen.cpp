@@ -76,7 +76,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             ((Imogen*)data_.userData)->DecodeThumbnailAsync(libraryMaterial);
             return {true,
                     true,
-                    (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureId,
+                    (ImTextureID)(uint64_t)libraryMaterial->mThumbnailTextureHandle.idx,
                     ImVec2(100, 100)};
         }
     }
@@ -89,17 +89,15 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             sscanf(url.c_str() + sz + 1, "%d%%", &percent);
             url = url.substr(0, sz);
         }
-        unsigned int textureId = gImageCache.GetTexture(url);
-        if (textureId)
+
+        TextureHandle textureHandle = gImageCache.GetTexture(url);
+        if (textureHandle.idx)
         {
-            int w, h;
-            GetTextureDimension(textureId, &w, &h);
+            auto size = gImageCache.GetImageSize(url);
             return {true,
                     false,
-                    (ImTextureID)(uint64_t)textureId,
-                    ImVec2(float(w * percent / 100), float(h * percent / 100)),
-                    ImVec2(0.f, 1.f),
-                    ImVec2(1.f, 0.f)};
+                    (ImTextureID)(uint64_t)textureHandle.idx,
+                    ImVec2(float(size.first * percent / 100), float(size.second * percent / 100))};
         }
     }
 
@@ -168,11 +166,11 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
     // make 2 evaluation for node to get the UI pass image size
     if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
     {
-        nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview();
+        //nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview(); TODOEVA
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
+        //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
     }
     EvaluationAPI::GetEvaluationSize(&nodeGraphControler.mEditingContext, selNode, &imageWidth, &imageHeight);
     if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
@@ -180,7 +178,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
         EvaluationInfo evaluationInfo;
         evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 0;
-        nodeGraphControler.mEditingContext.RunSingle(selNode, evaluationInfo);
+        //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
     }
     ImTextureID displayedTexture = 0;
     ImRect rc;
@@ -212,11 +210,14 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
             else
             {
                 displayedTexture = (ImTextureID)(int64_t)(
-                    (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode) : 0);
+                    (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode).idx : 0);
                 if (displayedTexture)
                 {
                     auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
-                    displayedTextureSize = ImVec2(float(tgt->mImage->mWidth), float(tgt->mImage->mHeight));
+					if (tgt)
+					{
+						displayedTextureSize = ImVec2(float(tgt->mImage.mWidth), float(tgt->mImage.mHeight));
+					}
                 }
                 ImVec2 mouseUVPos = (io.MousePos - p) / ImVec2(w, h);
                 mouseUVPos.y = 1.f - mouseUVPos.y;
@@ -388,12 +389,12 @@ struct PinnedTaskUploadImage : PinnedTask
 
     virtual void Execute()
     {
-        unsigned int textureId = Image::Upload(mImage, 0);
+        TextureHandle textureHandle = Image::Upload(mImage, {0});
         if (mbIsThumbnail)
         {
             Material* material = library.Get(mIdentifier);
             if (material)
-                material->mThumbnailTextureId = textureId;
+                material->mThumbnailTextureHandle = textureHandle;
         }
         else
         {
@@ -521,10 +522,10 @@ struct DecodeImageTaskSet : TaskSet
 
 void Imogen::DecodeThumbnailAsync(Material* material)
 {
-    static unsigned int defaultTextureId = gImageCache.GetTexture("Stock/thumbnail-icon.png");
-    if (!material->mThumbnailTextureId)
+    static TextureHandle defaultTextureHandle = gImageCache.GetTexture("Stock/thumbnail-icon.png");
+    if (!material->mThumbnailTextureHandle.idx)
     {
-        material->mThumbnailTextureId = defaultTextureId;
+        material->mThumbnailTextureHandle = defaultTextureHandle;
         g_TS.AddTaskSetToPipe(
             new DecodeThumbnailTaskSet(&material->mThumbnail,
                                        std::make_pair(material - library.mMaterials.data(), material->mRuntimeUniqueId),
@@ -603,7 +604,7 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
                 break;
             case 1:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureHandle.idx), ImVec2(64, 64));
                 clicked = ImGui::IsItemClicked();
                 ImGui::SameLine();
                 ImGui::TreeNodeEx(GetName(resource.mName).c_str(), node_flags);
@@ -611,12 +612,12 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
                 break;
             case 2:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(64, 64));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureHandle.idx), ImVec2(64, 64));
                 clicked = ImGui::IsItemClicked();
                 break;
             case 3:
                 ImGui::Image(
-                    (ImTextureID)(int64_t)(resource.mThumbnailTextureId), ImVec2(128, 128));
+                    (ImTextureID)(int64_t)(resource.mThumbnailTextureHandle.idx), ImVec2(128, 128));
                 clicked = ImGui::IsItemClicked();
                 break;
         }
@@ -785,7 +786,10 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
-        mNodeGraphControler->mEditingContext.RunAll();
+        
+        
+        //mNodeGraphControler->mEditingContext.RunAll(); todogl
+
         //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         //mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
 
@@ -798,7 +802,7 @@ Material& Imogen::NewMaterial(const std::string& materialName)
     library.mMaterials.push_back(Material());
     Material& back = library.mMaterials.back();
     back.mName = materialName;
-    back.mThumbnailTextureId = 0;
+    back.mThumbnailTextureHandle = {0};
     back.mRuntimeUniqueId = GetRuntimeId();
 
     if (previousSelection != -1)
@@ -846,14 +850,14 @@ void Imogen::LibraryEdit(Library& library)
     }
     ImGui::SameLine();
 
-    unsigned int libraryViewTextureId = gImageCache.GetTexture("Stock/library-view.png");
+    TextureHandle libraryViewTextureHandle = gImageCache.GetTexture("Stock/library-view.png");
     static const ImVec2 iconSize(16.f, 16.f);
     for (int i = 0; i < 4; i++)
     {
         if (i)
             ImGui::SameLine();
         ImGui::PushID(99 + i);
-        if (ImGui::ImageButton((ImTextureID)(int64_t)libraryViewTextureId,
+        if (ImGui::ImageButton((ImTextureID)(int64_t)libraryViewTextureHandle.idx,
                                iconSize,
                                ImVec2(float(i) * 0.25f, 0.f),
                                ImVec2(float(i + 1) * 0.25f, 1.f),
@@ -1438,7 +1442,7 @@ void Imogen::Init(bool bDebugWindow)
     mbDebugWindow = bDebugWindow;
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
+    /*
     DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
 
 #ifndef __EMSCRIPTEN__
@@ -1446,7 +1450,7 @@ void Imogen::Init(bool bDebugWindow)
     DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
     DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
 #endif
-
+*/
     struct HotKeyFunction
     {
         const char* name;
@@ -1473,12 +1477,12 @@ void Imogen::Init(bool bDebugWindow)
         {"ToggleSequencer", "Show or hide Sequencer window", [&]() { mbShowTimeline = !mbShowTimeline; }},
         {"ToggleParameters", "Show or hide Parameters window", [&]() { mbShowParameters = !mbShowParameters; }},
         {"MaterialNew", "Create a new graph", [&]() { NewMaterial(); }},
-        {"ReloadShaders",
+        /*{"ReloadShaders",
          "Reload them",
          [&]() {
              gEvaluators.SetEvaluators(mEvaluatorFiles);
              mNodeGraphControler->mEditingContext.RunAll();
-         }},
+         }},*/
         {"DeleteSelectedNodes", "Delete selected nodes in the current graph", []() {}},
         {"AnimationSetKey",
          "Make a new animation key with the current parameters values at the current time",
@@ -1505,6 +1509,7 @@ void Imogen::Init(bool bDebugWindow)
 
 void Imogen::Finish()
 {
+    mNodeGraphControler->Clear();
 }
 
 const char* GetShortCutLib(const char* functionName)
@@ -1666,9 +1671,9 @@ int Imogen::GetFunctionByName(const char* functionName) const
     return -1;
 }
 
-bool Imogen::ImageButton(const char* functionName, unsigned int icon, ImVec2 size)
+bool Imogen::ImageButton(const char* functionName, TextureHandle icon, ImVec2 size)
 {
-    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon, size);
+    bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon.idx, size);
     if (ImGui::IsItemHovered())
     {
         int functionIndex = GetFunctionByName(functionName);
@@ -1994,7 +1999,7 @@ void Imogen::ShowTitleBar(Builder* builder)
     ImGui::SameLine();
 
     // exporting frame / build
-    unsigned int buildIcon = gImageCache.GetTexture("Stock/Build.png");
+    TextureHandle buildIcon = gImageCache.GetTexture("Stock/Build.png");
     if (ImageButton("BuildMaterial", buildIcon, ImVec2(30, 30)))
     {
         BuildCurrentMaterial(builder);
@@ -2133,11 +2138,11 @@ void Imogen::ShowTimeLine()
         PlayPause();
     }
 
-    unsigned int playNoLoopTextureId = gImageCache.GetTexture("Stock/PlayNoLoop.png");
-    unsigned int playLoopTextureId = gImageCache.GetTexture("Stock/PlayLoop.png");
+    TextureHandle playNoLoopTextureHandle = gImageCache.GetTexture("Stock/PlayNoLoop.png");
+    TextureHandle playLoopTextureHandle = gImageCache.GetTexture("Stock/PlayLoop.png");
 
     ImGui::SameLine();
-    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureId : playNoLoopTextureId),
+    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureHandle.idx : playNoLoopTextureHandle.idx),
                            ImVec2(16.f, 16.f)))
     {
         mbPlayLoop = !mbPlayLoop;
@@ -2278,7 +2283,7 @@ void Imogen::ShowDebugWindow()
         for (auto& atlas : atlases)
         {
             ImGui::Text("Atlas %d", int(&atlas - atlases.data()));
-            ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID, ImVec2(1024, 1024));
+            ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID.idx, ImVec2(1024, 1024));
         }
     }
     if (ImGui::CollapsingHeader("Memory"))
@@ -2565,7 +2570,7 @@ void Imogen::ValidateCurrentMaterial(Library& library)
 {
     ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
 }
-
+/*
 void Imogen::DiscoverNodes(const char* extension,
                            const char* directory,
                            EVALUATOR_TYPE evaluatorType,
@@ -2589,7 +2594,7 @@ void Imogen::DiscoverNodes(const char* extension,
 
     tinydir_close(&dir);
 }
-
+*/
 struct readHelper
 {
     Imogen* imogen;

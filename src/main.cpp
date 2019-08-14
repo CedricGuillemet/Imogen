@@ -289,7 +289,7 @@ int main_Async(int argc, char** argv)
 
 #ifndef __EMSCRIPTEN__
     bgfx::Init init;
-    init.type = commandLineParameters.mRenderAPI;//bgfx::RendererType::Count; //:Count; //:OpenGL; //:Direct3D11;//:Count; //:Count;//:OpenGL; // :Direct3D9;//
+    init.type = commandLineParameters.mRenderAPI;
     bgfxCallback callback;
     init.callback = &callback;
     bgfx::init(init);
@@ -309,12 +309,6 @@ int main_Async(int argc, char** argv)
     glThreadContext = SDL_GL_CreateContext(loopdata.mWindow);
     glThreadWindow = loopdata.mWindow;
 #endif
-    /*loopdata.mGLContext = SDL_GL_CreateContext(loopdata.mWindow);
-    if (!loopdata.mGLContext)
-    {
-        fprintf(stderr, "Failed to initialize GL context!\n");
-        return 1;
-    }*/
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -324,7 +318,7 @@ int main_Async(int argc, char** argv)
     io.IniFilename = "imgui.ini";
 
     // Setup Platform/Renderer bindings
-    ImGui_ImplSDL2_InitForOpenGL(loopdata.mWindow, loopdata.mGLContext);
+    ImGui_ImplSDL2_InitForOpenGL(loopdata.mWindow, nullptr);
 
     InitFonts();
 

@@ -155,14 +155,6 @@ struct EvaluationContext
         assert(mUseThumbnail);
         return mThumbnails; 
     }
-    void AllocateComputeBuffer(int target, int elementCount, int elementSize);
-
-    struct ComputeBuffer
-    {
-        unsigned int mBuffer{0};
-        unsigned int mElementCount;
-        unsigned int mElementSize;
-    };
 
     void Clear();
 
@@ -176,7 +168,6 @@ struct EvaluationContext
     {
         RenderTarget* mTarget = nullptr;
         
-        ComputeBuffer mComputeBuffer;
         EvaluationThumbnails::Thumb mThumb;
         float mProgress             = 0.f;
 
@@ -214,7 +205,6 @@ protected:
 #ifdef USE_PYTHON
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
 #endif
-    void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, bgfx::ViewId viewId, size_t index, EvaluationInfo& evaluationInfo);
     // return true if any node is still in processing state
     //bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 
@@ -232,7 +222,6 @@ protected:
 
     void ComputeTargetUseCount();
     void ReleaseInputs(size_t nodeIndex);
-    int GetBindedComputeBuffer(size_t nodeIndex) const;
 
     RenderTarget* AcquireRenderTarget(int width, int height, bool depthBuffer);
     RenderTarget* AcquireClone(RenderTarget* source);
@@ -240,7 +229,6 @@ protected:
 
 
     std::vector<RenderTarget*> mAvailableRenderTargets;
-    std::vector<ComputeBuffer> mComputeBuffers;
 #if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 #endif

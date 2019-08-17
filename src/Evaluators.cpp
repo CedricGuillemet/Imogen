@@ -1181,12 +1181,6 @@ namespace EvaluationAPI
         context->StageSetProcessing(target, processing);
     }
 
-    int AllocateComputeBuffer(EvaluationContext* context, int target, int elementCount, int elementSize)
-    {
-        context->AllocateComputeBuffer(target, elementCount, elementSize);
-        return EVAL_OK;
-    }
-
     typedef int (*jobFunction)(void*);
 
     struct CFunctionTaskSet : TaskSet

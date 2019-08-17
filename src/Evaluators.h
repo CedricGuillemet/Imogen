@@ -172,7 +172,6 @@ namespace EvaluationAPI
     int Job(EvaluationContext* evaluationContext, int (*jobFunction)(void*), void* ptr, unsigned int size);
     int JobMain(EvaluationContext* evaluationContext, int (*jobMainFunction)(void*), void* ptr, unsigned int size);
     void SetProcessing(EvaluationContext* context, int target, int processing);
-    int AllocateComputeBuffer(EvaluationContext* context, int target, int elementCount, int elementSize);
 
     int LoadScene(const char* filename, void** scene);
     int SetEvaluationScene(EvaluationContext* evaluationContext, int target, void* scene);

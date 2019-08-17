@@ -300,11 +300,6 @@ void EvaluationContext::Clear()
         {
             eval.mTarget->Destroy();
         }
-        if (eval.mComputeBuffer.mBuffer)
-        {
-            // todogl
-            //glDeleteBuffers(1, &eval.mComputeBuffer.mBuffer);
-        }
     }
     mThumbnails.Clear();
     mInputNodeIndex = -1;
@@ -412,25 +407,6 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
     }
 }
 
-int EvaluationContext::GetBindedComputeBuffer(size_t nodeIndex) const
-{
-    const Input& input = mEvaluationStages.mInputs[nodeIndex];
-    for (int inputIndex = 0; inputIndex < 8; inputIndex++)
-    {
-        const int targetIndex = input.mInputs[inputIndex];
-        if (targetIndex == -1)
-        {
-            continue;
-        }
-        const auto& evaluation = mEvaluations[targetIndex];
-        if (evaluation.mComputeBuffer.mBuffer && evaluation.mbActive)
-        {
-            return targetIndex;
-        }
-    }
-    return -1;
-}
-
 void EvaluationContext::SetUniforms(size_t nodeIndex)
 {
     float tempUniforms[8 * 4]; // max size for ramp
@@ -531,119 +507,6 @@ void EvaluationContext::SetUniforms(size_t nodeIndex)
     }
 }
 
-void EvaluationContext::EvaluateGLSLCompute(const EvaluationStage& evaluationStage,
-                                            bgfx::ViewId viewId,
-                                            size_t nodeIndex,
-                                            EvaluationInfo& evaluationInfo)
-{
-    if (bladeIA == -1)
-    {
-        float bladeVertices[4 * tess];
-        unsigned short bladeIndices[2 * tess];
-
-        for (int i = 0; i < tess; i++)
-        {
-            bladeVertices[i * 4] = -1.f;
-            bladeVertices[i * 4 + 1] = bladeVertices[i * 4 + 3] = float(i) / float(tess - 1);
-            bladeVertices[i * 4 + 2] = 1.f;
-        }
-        for (int i = 0; i < tess * 2; i++)
-        {
-            bladeIndices[i] = i;
-        }
-
-        bladeIA = UploadIndices(bladeIndices, sizeof(bladeIndices) / sizeof(unsigned short));
-        UploadVertices(bladeVertices, sizeof(bladeVertices));
-    }
-
-    const auto& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
-    const ProgramHandle program = evaluator.mProgram;
-    const auto& evaluation = mEvaluations[nodeIndex];
-
-    // allocate buffer
-    unsigned int feedbackVertexArray = 0;
-    ComputeBuffer* destinationBuffer = NULL;
-    ComputeBuffer* sourceBuffer = NULL;
-    ComputeBuffer tempBuffer;
-    int computeBufferIndex = GetBindedComputeBuffer(nodeIndex);
-    if (computeBufferIndex != -1)
-    {
-        if (!mEvaluations[nodeIndex].mComputeBuffer.mBuffer)
-        {
-            // only allocate if needed
-            AllocateComputeBuffer(int(nodeIndex),
-                mEvaluations[computeBufferIndex].mComputeBuffer.mElementCount,
-                mEvaluations[computeBufferIndex].mComputeBuffer.mElementSize);
-        }
-        sourceBuffer = &mEvaluations[computeBufferIndex].mComputeBuffer;
-    }
-    else
-    {
-        //
-        Swap(mEvaluations[nodeIndex].mComputeBuffer, tempBuffer);
-
-        AllocateComputeBuffer(int(nodeIndex), tempBuffer.mElementCount, tempBuffer.mElementSize);
-        sourceBuffer = &tempBuffer;
-    }
-
-    //if (mComputeBuffers.size() <= nodeIndex)
-    //    return; // no compute buffer destination, no source either -> non connected node -> early exit
-
-    /// build source VAO
-    /* todogl
-    glGenVertexArrays(1, &feedbackVertexArray);
-    glBindVertexArray(feedbackVertexArray);
-    glBindBuffer(GL_ARRAY_BUFFER, sourceBuffer->mBuffer);
-    const int transformElementCount = sourceBuffer->mElementSize / (4 * sizeof(float));
-    for (int i = 0; i < transformElementCount; i++)
-    {
-        glVertexAttribPointer(
-            i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4 * transformElementCount, (void*)(4 * sizeof(float) * i));
-        glEnableVertexAttribArray(i);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    glBindVertexArray(0);
-    */
-
-    destinationBuffer = &mEvaluations[nodeIndex].mComputeBuffer;
-
-    // compute buffer
-    if (destinationBuffer->mElementCount)
-    {
-        const Parameters& parameters = mEvaluationStages.mParameters[nodeIndex];
-
-        BindTextures(evaluationStage, nodeIndex, nullptr);
-        /*
-        glEnable(GL_RASTERIZER_DISCARD);
-        glBindVertexArray(feedbackVertexArray);
-        glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER,
-                          0,
-                          destinationBuffer->mBuffer,
-                          0,
-                          destinationBuffer->mElementCount * destinationBuffer->mElementSize);
-
-        glBeginTransformFeedback(GL_POINTS);
-        glDrawArrays(GL_POINTS, 0, destinationBuffer->mElementCount);
-        glEndTransformFeedback();
-
-        glDisable(GL_RASTERIZER_DISCARD);
-        glBindVertexArray(0);
-        glUseProgram(0);
-        */
-    }
-    if (feedbackVertexArray)
-    {
-        // todogl
-        //glDeleteVertexArrays(1, &feedbackVertexArray);
-    }
-
-    if (tempBuffer.mBuffer)
-    {
-        // todogl
-        //glDeleteBuffers(1, &tempBuffer.mBuffer);
-    }
-}
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                                      bgfx::ViewId& viewId,
@@ -717,48 +580,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 SetUniforms(nodeIndex);
                 
-
-                if (evaluationStage.mTypename == "FurDisplay")
-                {
-                    /*const ComputeBuffer* buffer*/ int sourceBuffer = GetBindedComputeBuffer(nodeIndex);
-                    if (sourceBuffer != -1)
-                    {
-                        const ComputeBuffer* buffer = &mEvaluations[sourceBuffer].mComputeBuffer;
-                        unsigned int vao;
-                        /* todogl
-                        glGenVertexArrays(1, &vao);
-                        glBindVertexArray(vao);
-
-                        // blade vertices
-                        glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
-                        glVertexAttribPointer(0 , 2, GL_FLOAT, GL_FALSE, bladesVertexSize, 0);
-                        glEnableVertexAttribArray(0);
-                        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                        // blade instances
-                        const size_t transformElementCount = buffer->mElementSize / (sizeof(float) * 4);
-                        glBindBuffer(GL_ARRAY_BUFFER, buffer->mBuffer);
-                        for (unsigned int vp = 0; vp < transformElementCount; vp++)
-                        {
-                            glVertexAttribPointer(1 + vp,
-                                                  4,
-                                                  GL_FLOAT,
-                                                  GL_FALSE,
-                                                  GLsizei(sizeof(float) * 4 * transformElementCount),
-                                                  (void*)(4 * sizeof(float) * vp));
-                            glEnableVertexAttribArray(1 + vp);
-                        }
-
-                        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-                        glBindVertexArray(vao);
-                        drawBlades(tess * 2, buffer->mElementCount, int(transformElementCount));
-                        glBindVertexArray(0);
-                        glDeleteVertexArrays(1, &vao);
-                        */
-                    }
-                }
-                else
                 {
                     uint64_t state = 0
                         | BGFX_STATE_WRITE_RGB
@@ -1078,10 +899,6 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
         EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
     }
 #endif
-    if (evaluationMask & EvaluationGLSLCompute)
-    {
-        EvaluateGLSLCompute(currentStage, viewId, nodeIndex, mEvaluationInfo);
-    }
 
     if (evaluationMask & EvaluationGLSL)
     {
@@ -1244,22 +1061,6 @@ void EvaluationContext::SetTargetDirty(size_t target, Dirty::Type dirtyFlag, boo
         mEvaluations[target].mDirtyFlag = 0;
     }
 }
-
-void EvaluationContext::AllocateComputeBuffer(int target, int elementCount, int elementSize)
-{
-    ComputeBuffer& buffer = mEvaluations[target].mComputeBuffer;
-    buffer.mElementCount = elementCount;
-    buffer.mElementSize = elementSize;
-    /* todogl
-    if (!buffer.mBuffer)
-        glGenBuffers(1, &buffer.mBuffer);
-
-    glBindBuffer(GL_ARRAY_BUFFER, buffer.mBuffer);
-    glBufferData(GL_ARRAY_BUFFER, elementSize * elementCount, NULL, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    */
-}
-
 
 void EvaluationContext::StageSetProcessing(size_t target, int processing)
 {

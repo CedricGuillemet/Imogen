@@ -45,8 +45,6 @@ int NODE(void *parameters, EvaluationInfo* evaluation, EvaluationContext* contex
 #include "CubeRadiance.h"
 #include "Distance.h"
 #include "EquirectConverter.h"
-#include "FurDisplay.h"
-#include "FurGenerator.h"
 #include "GLTFRead.h"
 #include "GradientBuilder.h"
 #include "ImageRead.h"

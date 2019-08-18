@@ -144,6 +144,7 @@ struct Image
     static void VFlip(Image* image);
     static int Write(const char* filename, Image* image, int format, int quality);
     static int EncodePng(Image* image, std::vector<unsigned char>& pngImage);
+	static int Resize(Image* image, int width, int height);
 #if USE_FFMPEG
     static Image DecodeImage(FFMPEGCodec::Decoder* decoder, int frame);
 #endif

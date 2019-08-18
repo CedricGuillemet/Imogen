@@ -36,6 +36,9 @@ DECLARE_NODE(PhysicalSky)
 {
     PhysicalSkyBlock* param = (PhysicalSkyBlock*)parameters;
     const int size = 256 << param->size;
-    SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
+	const int target = int(evaluation->targetIndex);
+	SetEvaluationPersistent(context, target, 1);
+
+    SetEvaluationCubeSize(context, target, size, 1);
     return EVAL_OK;
 }

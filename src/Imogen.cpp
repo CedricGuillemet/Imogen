@@ -168,7 +168,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
     {
         //nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview(); TODOEVA
         EvaluationInfo evaluationInfo;
-        evaluationInfo.forcedDirty = 1;
+        //evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
         //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
     }
@@ -176,7 +176,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
     if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
     {
         EvaluationInfo evaluationInfo;
-        evaluationInfo.forcedDirty = 1;
+        //evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 0;
         //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
     }

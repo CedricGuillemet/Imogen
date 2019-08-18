@@ -38,7 +38,7 @@ void AddExtractedView(size_t nodeIndex);
 GraphControler::GraphControler()
     : mbMouseDragging(false)
     , mbUsingMouse(false)
-    , mEditingContext(mEvaluationStages, false, 1024, 1024, true)
+    , mEditingContext(mEvaluationStages, false, false, 1024, 1024, true)
 {
     mSelectedNodeIndex = -1;
     mBackgroundNode = -1;
@@ -258,15 +258,17 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
                 dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
             }
         break;
+		/*
         case Con_ForceEvaluate:
             if (ImGui::Button(param.mName.c_str()))
             {
                 EvaluationInfo evaluationInfo;
-                evaluationInfo.forcedDirty = 1;
+                //evaluationInfo.forcedDirty = 1;
                 evaluationInfo.uiPass = 0;
                 //mEditingContext.RunSingle(viewId_BuildEvaluation, nodeIndex, evaluationInfo); TODOEVA
             }
             break;
+			*/
         case Con_Bool:
             {
                 bool checked = (*(int*)paramBuffer) != 0;
@@ -591,8 +593,7 @@ void GraphControler::ApplyDirtyList()
                     // time
                     mEvaluationStages.SetStartEndFrame(nodeIndex, startFrame, endFrame);
                     //dirty
-                    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Sampler);
-                    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
+                    mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter | Dirty::Sampler);
                     ExtractedViewNodeInserted(nodeIndex);
                     UICallbackNodeInserted(nodeIndex);
                 }

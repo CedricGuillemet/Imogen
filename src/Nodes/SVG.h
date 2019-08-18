@@ -45,7 +45,10 @@ DECLARE_NODE(SVG)
     {
         if (Image::LoadSVG(param->filename, &image, param->dpi) == EVAL_OK)
         {
-            SetEvaluationImage(context, evaluation->targetIndex, &image);
+			const int target = int(evaluation->targetIndex);
+			SetEvaluationPersistent(context, target, 1);
+
+            SetEvaluationImage(context, target, &image);
         }
     }
     return EVAL_OK;

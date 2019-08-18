@@ -127,7 +127,7 @@ struct bgfxCallback : public bgfx::CallbackI
         sscanf(_filePath, "%s|%d|%d|%d|%d", filename, &x, &y, &w, &h);
         unsigned char *ptr = (unsigned char*)_data;
         ptr += (x + y * _width) * _pitch;
-        //stbi_write_png(filename, w, h, _pitch, _data, _width * _pitch);
+        stbi_write_png(filename, w, h, _pitch, _data, _width * _pitch);
     }
 
     virtual void captureBegin(

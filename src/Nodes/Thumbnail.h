@@ -34,13 +34,14 @@ DECLARE_NODE(Thumbnail)
         }
     }
     
-    if (!evaluation->forcedDirty)
+	if (!IsBuilding(context))
     {
         return EVAL_OK;
     }
     
-    if (Evaluate(context, evaluation->inputIndices[0], 256, 256, &image) == EVAL_OK)
+    if (GetEvaluationImage(context, evaluation->inputIndices[0], &image) == EVAL_OK)
     {
+		Image::Resize(&image, 256, 256);
         if (SetThumbnailImage(context, &image) == EVAL_OK)
         {    
             return EVAL_OK;

@@ -42,15 +42,17 @@ DECLARE_NODE(CubeRadiance)
         size = width;
     }
     
+	int target = int(evaluation->targetIndex);
+	SetEvaluationPersistent(context, target, 1);
     if (params->mode == 0)
     {
         // radiance
-        SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
+        SetEvaluationCubeSize(context, target, size, 1);
     }
     else
     {
         // irradiance
-        SetEvaluationCubeSize(context, evaluation->targetIndex, size, int(log2(size))+1);
+        SetEvaluationCubeSize(context, target, size, int(log2(size))+1);
     }
     return EVAL_OK;
 }

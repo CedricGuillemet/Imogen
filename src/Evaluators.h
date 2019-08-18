@@ -70,9 +70,6 @@ struct EvaluationInfo
 
     // not used by shaders
     uint32_t dirtyFlag;
-    uint32_t forcedDirty;
-
-    uint32_t padding[2];
 };
 
 typedef int(*NodeFunction)(void* parameters, EvaluationInfo* evaluation, EvaluationContext* context);
@@ -164,10 +161,12 @@ namespace EvaluationAPI
     void EnableFrameClear(EvaluationContext* evaluationContext, int target, int enable);
     void SetVertexSpace(EvaluationContext* evaluationContext, int target, int vertexSpace);
     int OverrideInput(EvaluationContext* evaluationContext, int target, int inputIndex, int newInputTarget);
+	int IsBuilding(EvaluationContext* evaluationContext);
 
     // int SetNodeImage(int target, Image *image);
     int GetEvaluationSize(const EvaluationContext* evaluationContext, int target, int* imageWidth, int* imageHeight);
     int SetEvaluationSize(EvaluationContext* evaluationContext, int target, int imageWidth, int imageHeight);
+	int SetEvaluationPersistent(EvaluationContext* evaluationContext, int target, int persistent);
     int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int mipmapCount);
     int Job(EvaluationContext* evaluationContext, int (*jobFunction)(void*), void* ptr, unsigned int size);
     int JobMain(EvaluationContext* evaluationContext, int (*jobMainFunction)(void*), void* ptr, unsigned int size);
@@ -186,7 +185,6 @@ namespace EvaluationAPI
 
     int Read(EvaluationContext* evaluationContext, const char* filename, Image* image);
     int Write(EvaluationContext* evaluationContext, const char* filename, Image* image, int format, int quality);
-    int Evaluate(EvaluationContext* evaluationContext, int target, int width, int height, Image* image);
 
     int ReadGLTF(EvaluationContext* evaluationContext, const char* filename, Scene** scene);
     int GLTFReadAsync(EvaluationContext* context, const char* filename, int target);

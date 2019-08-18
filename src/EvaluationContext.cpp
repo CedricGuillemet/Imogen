@@ -145,11 +145,12 @@ std::vector<RenderTarget> EvaluationThumbnails::GetAtlasTextures() const
     return ret;
 }
 
-EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
-                                     bool synchronousEvaluation,
-                                     int defaultWidth,
-                                     int defaultHeight, 
-                                     bool useThumbnail)
+EvaluationContext::EvaluationContext(EvaluationStages& evaluation
+									 , bool building
+                                     , bool synchronousEvaluation
+                                     , int defaultWidth
+                                     , int defaultHeight
+                                     , bool useThumbnail)
     : mEvaluationStages(evaluation)
 #ifdef __EMSCRIPTEN
     , mbSynchronousEvaluation(true)
@@ -161,6 +162,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation,
     , mRuntimeUniqueId(-1)
     , mInputNodeIndex(-1)
     , mUseThumbnail(useThumbnail)
+	, mBuilding(building)
 {
 
     mEvaluations.resize(evaluation.mStages.size());
@@ -198,6 +200,10 @@ void EvaluationContext::DelEvaluation(size_t nodeIndex)
     }
     // set nodes using that node to be dirty
     SetTargetDirty(nodeIndex, Dirty::Input, false);
+	if (mEvaluations[nodeIndex].mTarget)
+	{
+		delete mEvaluations[nodeIndex].mTarget;
+	}
     mEvaluations.erase(mEvaluations.begin() + nodeIndex);
 }
 
@@ -314,53 +320,6 @@ TextureHandle EvaluationContext::GetEvaluationTexture(size_t nodeIndex) const
         return {bgfx::kInvalidHandle};
 	}
     return tgt->mGLTexID;
-}
-
-unsigned int bladesVertexArray;
-unsigned int bladesVertexSize = 2 * sizeof(float);
-
-unsigned int UploadIndices(const unsigned short* indices, unsigned int indexCount)
-{
-    unsigned int indexArray;
-    /* todogl 
-    glGenBuffers(1, &indexArray);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexArray);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(unsigned short), indices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    */
-    return indexArray;
-}
-
-void UploadVertices(const void* vertices, unsigned int vertexArraySize)
-{
-    /* todogl
-    glGenBuffers(1, &bladesVertexArray);
-    glBindBuffer(GL_ARRAY_BUFFER, bladesVertexArray);
-    glBufferData(GL_ARRAY_BUFFER, vertexArraySize, vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    */
-}
-
-static const int tess = 10;
-static unsigned int bladeIA = -1;
-void drawBlades(int indexCount, int instanceCount, int elementCount)
-{
-    // instances
-    /* todogl
-    for (int i = 0; i < elementCount; i++)
-        glVertexAttribDivisor(1 + i, 1);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bladeIA);
-
-    glDrawElementsInstanced(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_SHORT, (void*)0, instanceCount);
-
-    for (int i = 0; i < elementCount; i++)
-        glVertexAttribDivisor(1 + i, 0);
-
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    */
 }
 
 void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
@@ -701,19 +660,7 @@ void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
     }
 }
 #endif
-/*
-void EvaluationContext::AllocRenderTargetsForEditingPreview()
-{
-    // alloc targets
-    for (size_t i = 0; i < mEvaluationStages.GetStagesCount(); i++)
-    {
-        if (!mEvaluations[i].mTarget)
-        {
-            mEvaluations[i].mTarget = std::make_shared<RenderTarget>();
-        }
-    }
-}
-*/
+
 void EvaluationContext::ComputeTargetUseCount()
 {
     for (auto& evaluation : mEvaluations)
@@ -736,7 +683,7 @@ void EvaluationContext::ComputeTargetUseCount()
 void EvaluationContext::ReleaseInputs(size_t nodeIndex)
 {
     // is this node used anytime soon?
-    if (!mEvaluations[nodeIndex].mUseCount && mEvaluations[nodeIndex].mTarget)
+    if (!mEvaluations[nodeIndex].mUseCount && mEvaluations[nodeIndex].mTarget && !mEvaluations[nodeIndex].mbPersistent)
     {
         ReleaseRenderTarget(mEvaluations[nodeIndex].mTarget);
         mEvaluations[nodeIndex].mTarget = nullptr;
@@ -751,7 +698,7 @@ void EvaluationContext::ReleaseInputs(size_t nodeIndex)
             assert(mEvaluations[input].mUseCount);
 
             mEvaluations[input].mUseCount--;
-            if (mEvaluations[input].mUseCount <= 0 && mEvaluations[input].mTarget)
+            if (mEvaluations[input].mUseCount <= 0 && mEvaluations[input].mTarget && !mEvaluations[input].mbPersistent)
             {
                 ReleaseRenderTarget(mEvaluations[input].mTarget);
                 mEvaluations[input].mTarget = nullptr;
@@ -760,108 +707,6 @@ void EvaluationContext::ReleaseInputs(size_t nodeIndex)
     }
 }
 
-/*
-void EvaluationContext::AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate)
-{
-    std::vector<std::shared_ptr<RenderTarget>> freeRenderTargets;
-    std::vector<uint8_t> useCount(nodesToEvaluate.size(), 0);
-    // compute use count
-    
-
-    for (auto index : nodesToEvaluate)
-    {
-        if (!useCount[index])
-            continue;
-
-        if (freeRenderTargets.empty())
-        {
-            mEvaluations[index].mTarget = std::make_shared<RenderTarget>();
-        }
-        else
-        {
-            mEvaluations[index].mTarget = freeRenderTargets.back();
-            freeRenderTargets.pop_back();
-        }
-
-        const Input& input = mEvaluationStages.mInputs[index];
-        for (auto targetIndex : input.mInputs)
-        {
-            if (targetIndex == -1)
-                continue;
-
-            useCount[targetIndex]--;
-            if (!useCount[targetIndex])
-            {
-                freeRenderTargets.push_back(mEvaluations[targetIndex].mTarget);
-            }
-        }
-    }
-}
-*/
-/*
-void EvaluationContext::RunNode(bgfx::ViewId viewId, size_t nodeIndex)
-{
-    auto& currentStage = mEvaluationStages.mStages[nodeIndex];
-    const Input& input = mEvaluationStages.mInputs[nodeIndex];
-    auto& evaluation = mEvaluations[nodeIndex];
-
-    // check processing
-    for (auto& inp : input.mInputs)
-    {
-        if (inp < 0)
-            continue;
-        if (mEvaluations[inp].mProcessing)
-        {
-            evaluation.mProcessing = 1;
-            return;
-        }
-    }
-
-    evaluation.mProcessing = 0;
-
-    mEvaluationInfo.targetIndex = float(nodeIndex);
-    mEvaluationInfo.frame = float(mCurrentTime);
-    mEvaluationInfo.dirtyFlag = evaluation.mDirtyFlag;
-    memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
-    SetKeyboardMouseInfos(mEvaluationInfo);
-    int evaluationMask = gEvaluators.GetMask(currentStage.mType);
-
-    if (evaluationMask & EvaluationC)
-    {
-        EvaluateC(currentStage, nodeIndex, mEvaluationInfo);
-    }
-#ifdef USE_PYTHON
-    if (evaluationMask & EvaluationPython)
-    {
-        EvaluatePython(currentStage, nodeIndex, mEvaluationInfo);
-    }
-#endif
-    if (evaluationMask & EvaluationGLSLCompute)
-    {
-        EvaluateGLSLCompute(currentStage, viewId, nodeIndex, mEvaluationInfo);
-    }
-
-    if (evaluationMask & EvaluationGLSL)
-    {
-        if (!evaluation.mTarget)
-        {
-            evaluation.mTarget = CreateRenderTarget(nodeIndex);
-        }
-        if (!evaluation.mTarget->mGLTexID.idx)
-        {
-            evaluation.mTarget->InitBuffer(mDefaultWidth, mDefaultHeight, evaluation.mbDepthBuffer);
-        }
-
-        EvaluateGLSL(currentStage, viewId, nodeIndex, mEvaluationInfo);
-    }
-
-    if (viewId == viewId_Evaluation)
-    {
-        //GenerateThumbnail(nodeIndex);
-    }
-    //evaluation.mDirtyFlag = 0;
-}
-*/
 void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
 {
     auto& currentStage = mEvaluationStages.mStages[nodeIndex];
@@ -918,96 +763,7 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
     ReleaseInputs(nodeIndex);
     evaluation.mDirtyFlag = 0;
 }
-/*
-bool EvaluationContext::RunNodeList(const std::vector<size_t>& nodesToEvaluate)
-{
-    // run C nodes
-    bool anyNodeIsProcessing = false;
-    for (size_t nodeIndex : nodesToEvaluate)
-    {
-        auto& evaluation = mEvaluations[nodeIndex];
-        evaluation.mbActive = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame &&
-                             mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
-        if (!evaluation.mbActive)
-            continue;
-        RunNode(viewId_Evaluation, nodeIndex);
-        anyNodeIsProcessing |= evaluation.mProcessing != 0;
-    }
-    // set dirty nodes that tell so
-    for (auto index : mStillDirty)
-        SetTargetDirty(index, Dirty::Input);
-    mStillDirty.clear();
 
-    return anyNodeIsProcessing;
-}
-
-void EvaluationContext::RunSingle(size_t nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo)
-{
-    mEvaluationInfo = evaluationInfo;
-
-    RunNode(viewId, nodeIndex);
-}
-
-void EvaluationContext::RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes)
-{
-    const Input& input = mEvaluationStages.mInputs[nodeIndex];
-
-    for (size_t inputIndex = 0; inputIndex < 8; inputIndex++)
-    {
-        int targetIndex = input.mInputs[inputIndex];
-        if (targetIndex == -1)
-            continue;
-        RecurseBackward(targetIndex, usedNodes);
-    }
-
-    if (std::find(usedNodes.begin(), usedNodes.end(), nodeIndex) == usedNodes.end())
-        usedNodes.push_back(nodeIndex);
-}
-
-void EvaluationContext::RunDirty()
-{
-    memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
-    std::vector<size_t> nodesToEvaluate;
-    for (size_t index = 0; index < evaluationOrderList.size(); index++)
-    {
-        size_t currentNodeIndex = evaluationOrderList[index];
-        if (mEvaluations[currentNodeIndex].mDirtyFlag)
-            nodesToEvaluate.push_back(currentNodeIndex);
-    }
-    AllocRenderTargetsForEditingPreview();
-    RunNodeList(nodesToEvaluate);
-}
-
-void EvaluationContext::DirtyAll()
-{
-    // tag all as dirty
-    for (auto& evaluation : mEvaluations)
-    {
-        evaluation.mDirtyFlag = Dirty::Parameter;
-    }
-}
-
-void EvaluationContext::RunAll()
-{
-    DirtyAll();
-    // get list of nodes to run
-    memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-    auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
-    AllocRenderTargetsForEditingPreview();
-    RunNodeList(evaluationOrderList);
-}
-
-bool EvaluationContext::RunBackward(size_t nodeIndex)
-{
-    memset(&mEvaluationInfo, 0, sizeof(EvaluationInfo));
-    mEvaluationInfo.forcedDirty = true;
-    std::vector<size_t> nodesToEvaluate;
-    RecurseBackward(nodeIndex, nodesToEvaluate);
-    AllocRenderTargetsForBaking(nodesToEvaluate);
-    return RunNodeList(nodesToEvaluate);
-}
-*/
 #if USE_FFMPEG
 FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename, int width, int height)
 {
@@ -1027,30 +783,33 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
 }
 #endif
 
-void EvaluationContext::SetTargetDirty(size_t target, Dirty::Type dirtyFlag, bool onlyChild)
+void EvaluationContext::SetTargetDirty(size_t target, uint32_t dirtyFlag, bool onlyChild)
 {
     assert(dirtyFlag != Dirty::AddedNode);
     assert(dirtyFlag != Dirty::DeletedNode);
 
     auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
-    mEvaluations[target].mDirtyFlag = dirtyFlag;
+	uint32_t dirtyFlagSource = mEvaluations[target].mDirtyFlag;
+    mEvaluations[target].mDirtyFlag |= dirtyFlag;
     for (size_t i = 0; i < evaluationOrderList.size(); i++)
     {
         size_t currentNodeIndex = evaluationOrderList[i];
         if (currentNodeIndex != target)
+		{
             continue;
-
+		}
         for (i++; i < evaluationOrderList.size(); i++)
         {
             currentNodeIndex = evaluationOrderList[i];
             if (mEvaluations[currentNodeIndex].mDirtyFlag)
+			{
                 continue;
-
+			}
             for (auto inp : mEvaluationStages.mInputs[currentNodeIndex].mInputs)
             {
                 if (inp >= 0 && mEvaluations[inp].mDirtyFlag)
                 {
-                    mEvaluations[currentNodeIndex].mDirtyFlag = Dirty::Input;
+                    mEvaluations[currentNodeIndex].mDirtyFlag |= Dirty::Input;
                     break;
                 }
             }
@@ -1058,8 +817,13 @@ void EvaluationContext::SetTargetDirty(size_t target, Dirty::Type dirtyFlag, boo
     }
     if (onlyChild)
     {
-        mEvaluations[target].mDirtyFlag = 0;
+        mEvaluations[target].mDirtyFlag = dirtyFlagSource;
     }
+}
+
+void EvaluationContext::SetTargetPersistent(size_t nodeIndex, bool persistent)
+{
+	mEvaluations[nodeIndex].mbPersistent = persistent;
 }
 
 void EvaluationContext::StageSetProcessing(size_t target, int processing)
@@ -1165,40 +929,26 @@ bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
 
 void Builder::DoBuild(Entry& entry)
 {
-    auto& evaluationStages = entry.mEvaluationStages;
-    size_t stageCount = evaluationStages.mStages.size();
-    for (size_t i = 0; i < stageCount; i++)
+	auto & evaluationStages = entry.mEvaluationStages;
+	int startFrame(INT_MAX), endFrame(INT_MIN);
+	for (auto& evaluation : evaluationStages.mStages)
+	{
+		startFrame = std::min(startFrame, evaluation.mStartFrame);
+		endFrame = std::max(endFrame, evaluation.mEndFrame);
+	}
+    EvaluationContext writeContext(evaluationStages, true, true, 4096, 4096, false);
+
+	// dirty all or parameters might not be taken into consideration
+	for (auto& evaluation : writeContext.mEvaluations)
+	{
+		evaluation.mDirtyFlag = -1;
+	}
+    for (int frame = startFrame; frame < endFrame; frame++)
     {
-        const auto& node = evaluationStages.mStages[i];
-        const MetaNode& currentMeta = gMetaNodes[node.mType];
-        bool forceEval = false;
-        for (auto& param : currentMeta.mParams)
-        {
-            if (!param.mName.c_str())
-                break;
-            if (param.mType == Con_ForceEvaluate)
-            {
-                forceEval = true;
-                break;
-            }
-        }
-        if (forceEval)
-        {
-            EvaluationContext writeContext(evaluationStages, true, 1024, 1024, false);
-            for (int frame = node.mStartFrame; frame <= node.mEndFrame; frame++)
-            {
-                writeContext.SetCurrentTime(frame);
-                evaluationStages.SetTime(&writeContext, frame, false);
-                evaluationStages.ApplyAnimation(&writeContext, frame);
-                EvaluationInfo evaluationInfo;
-                evaluationInfo.forcedDirty = 1;
-                evaluationInfo.uiPass = 0;
-                //writeContext.RunSingle(i, viewId_BuildEvaluation, evaluationInfo); TODOEVA
-            }
-        }
-        entry.mProgress = float(i + 1) / float(stageCount);
-        if (!mbRunning)
-            break;
+        writeContext.SetCurrentTime(frame);
+        evaluationStages.SetTime(&writeContext, frame, false);
+        evaluationStages.ApplyAnimation(&writeContext, frame);
+        writeContext.Evaluate();
     }
 }
 
@@ -1255,7 +1005,7 @@ namespace DrawUICallbacks
     void DrawUISingle(EvaluationContext* context, size_t nodeIndex)
     {
         EvaluationInfo evaluationInfo;
-        evaluationInfo.forcedDirty = 1;
+        //evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
         //context->RunSingle(nodeIndex, viewId_ImGui, evaluationInfo); TODOEVA
     }

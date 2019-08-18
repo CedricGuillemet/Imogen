@@ -42,14 +42,15 @@ DECLARE_NODE(Crop)
     }
     //if (croppedWidth<8) { croppedWidth = 8; }
     //if (croppedHeight<8) { croppedHeight = 8; }
-    
+	int target = int(evaluation->targetIndex);
+	SetEvaluationPersistent(context, target, 1);
     if (evaluation->uiPass)
     {
-        SetEvaluationSize(context, int(evaluation->targetIndex), width, height);
+        SetEvaluationSize(context, target, width, height);
     }
     else
     {
-        SetEvaluationSize(context, int(evaluation->targetIndex), croppedWidth, croppedHeight);
+        SetEvaluationSize(context, target, croppedWidth, croppedHeight);
     }
     
     return EVAL_OK;

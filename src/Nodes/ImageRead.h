@@ -44,9 +44,12 @@ DECLARE_NODE(ImageRead)
         return EVAL_OK;
     }
 
+	int target = int(evaluation->targetIndex);
+	SetEvaluationPersistent(context, target, 1);
+
     if (strlen(params->filename))
     {
-        SetProcessing(context, evaluation->targetIndex, 1);
+        SetProcessing(context, target, 1);
         ReadImageAsync(context, params->filename, evaluation->targetIndex, -1);
     }
     else
@@ -58,10 +61,10 @@ DECLARE_NODE(ImageRead)
                 return EVAL_OK;
             }
         }
-        SetProcessing(context, evaluation->targetIndex, 1);
+        SetProcessing(context, target, 1);
         for (int i = 0; i < 6; i++)
         {
-            ReadImageAsync(context, files[i], evaluation->targetIndex, i);
+            ReadImageAsync(context, files[i], target, i);
         }        
     }
 

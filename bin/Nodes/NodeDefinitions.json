@@ -694,7 +694,7 @@
 		}, {
 			"name": "format",
 			"type": "Enum",
-			"enum": "JPEG|PNG|TGA|BMP|HDR|DDS|KTX|MP4|",
+			"enum": "JPEG|PNG|TGA|BMP|HDR|DDS|KTX|EXR|MP4|",
             "description":""
 		}, {
 			"name": "quality",
@@ -712,7 +712,7 @@
 		}, {
 			"name": "mode",
 			"type": "Enum",
-			"enum": "Free|Keep ratio on Y|Keep ratio on X|",
+			"enum": "Free|Keep ratio on Y|Keep ratio on X|Same as source|",
             "description":""
 		}, {
 			"name": "export",

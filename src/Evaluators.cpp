@@ -107,7 +107,9 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         controler->ApplyDirtyList();
         gBuilder->Add("Graph", controler->mEvaluationStages);
     });
-    m.def("AddNode", [](const std::string& nodeType) -> int { return Imogen::instance->AddNode(nodeType); });
+    m.def("AddNode", [](const std::string& nodeType) -> int { 
+		return Imogen::instance->AddNode(nodeType); 
+	});
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
         Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
         Imogen::instance->GetNodeGraphControler()->mModel.SetParameter(nodeIndex, paramName, value);
@@ -362,7 +364,6 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("AllocateImage", EvaluationAPI::AllocateImage);
     m.def("FreeImage", Image::Free);
     m.def("SetThumbnailImage", EvaluationAPI::SetThumbnailImage);
-    m.def("Evaluate", EvaluationAPI::Evaluate);
     m.def("SetBlendingMode", EvaluationAPI::SetBlendingMode);
     m.def("GetEvaluationSize", EvaluationAPI::GetEvaluationSize);
     m.def("SetEvaluationSize", EvaluationAPI::SetEvaluationSize);
@@ -773,11 +774,6 @@ namespace EvaluationAPI
 {
     int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, const Image* image, int cubeFace)
     {
-        if (!image->mIsCubemap)
-        {
-            return EVAL_ERR;
-        }
-        /* TODOEVA
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
         {
@@ -788,7 +784,6 @@ namespace EvaluationAPI
 
         Image::Upload(image, tgt->mGLTexID, cubeFace);
         evaluationContext->SetTargetDirty(target, Dirty::Parameter, true);
-        */
         return EVAL_OK;
     }
 
@@ -843,12 +838,14 @@ namespace EvaluationAPI
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
-        /*auto renderTarget = evaluationContext->GetRenderTarget(target); TODOEVA
+        auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
+		{
+			*imageWidth = *imageHeight = 0;
             return EVAL_ERR;
+		}
         *imageWidth = renderTarget->mImage.mWidth;
         *imageHeight = renderTarget->mImage.mHeight;
-        */
         return EVAL_OK;
     }
 
@@ -868,6 +865,15 @@ namespace EvaluationAPI
             */
         return EVAL_OK;
     }
+
+	int SetEvaluationPersistent(EvaluationContext* evaluationContext, int target, int persistent)
+	{
+		if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+			return EVAL_ERR;
+
+		evaluationContext->mEvaluations[target].mbPersistent = persistent != 0;
+		return EVAL_OK;
+	}
 
     int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int mipmapCount)
     {
@@ -930,6 +936,11 @@ namespace EvaluationAPI
         return EVAL_ERR;
     }
 
+	int IsBuilding(EvaluationContext* evaluationContext)
+	{
+		return evaluationContext->IsBuilding() ? 1 : 0;
+	}
+
     const char* GetEvaluationSceneName(EvaluationContext* evaluationContext, int target)
     {
         void* scene;
@@ -961,7 +972,7 @@ namespace EvaluationAPI
             return EVAL_ERR;
         }
 
-        /*auto tgt = evaluationContext->GetRenderTarget(target); TODOEVA
+        auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
         {
             return EVAL_ERR;
@@ -976,7 +987,6 @@ namespace EvaluationAPI
             , BGFX_TEXTURE_READ_BACK
             , nullptr
             );
-
         
         // compute total size
         auto img = tgt->mImage;
@@ -994,19 +1004,18 @@ namespace EvaluationAPI
         image->mHasMipmaps = img.mHasMipmaps;
         image->mFormat = img.mFormat;
         image->mIsCubemap = img.mIsCubemap;
-
+		bgfx::frame(); // Ensure every previous draw call has been issued or a blank target is expected.
         uint32_t availableFrame;
         unsigned char* ptr = image->GetBits();
         if (!img.mIsCubemap)
         {
-            
             for (size_t i = 0; i < img.GetMipmapCount(); i++)
             {
                 bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, 0);
                 availableFrame = bgfx::readTexture(transient, ptr, i);
                 ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+				while (bgfx::frame() != availableFrame) {};
             }
-
         }
         else
         {
@@ -1017,21 +1026,18 @@ namespace EvaluationAPI
                     bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, cube);
                     availableFrame = bgfx::readTexture(transient, ptr, i);
                     ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+					while (bgfx::frame() != availableFrame) {};
                 }
             }
         }
-        while (bgfx::frame() != availableFrame)
-        {
-        };
-
+        
         bgfx::destroy(transient);
-        */
         return EVAL_OK;
     }
 
     int SetEvaluationImage(EvaluationContext* evaluationContext, int target, const Image* image)
     {
-        /*EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
+        EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
         {
@@ -1054,7 +1060,7 @@ namespace EvaluationAPI
             {
                 Image::Upload(image, tgt->mGLTexID, cubeFace, i);
             }
-        } TODOEVA
+        }
         
 #if USE_FFMPEG
         if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
@@ -1063,7 +1069,7 @@ namespace EvaluationAPI
         }
 #endif
         evaluationContext->SetTargetDirty(target, Dirty::Input, true);
-        */
+        
         return EVAL_OK;
     }
 
@@ -1329,22 +1335,6 @@ namespace EvaluationAPI
         }
 
         return Image::Write(filename, image, format, quality);
-    }
-
-    int Evaluate(EvaluationContext* evaluationContext, int target, int width, int height, Image* image)
-    {
-        /*EvaluationContext context(evaluationContext->mEvaluationStages, true, width, height);
-        context.SetCurrentTime(evaluationContext->GetCurrentTime());
-        // set all nodes as dirty so that evaluation (in build) will not bypass most nodes
-        context.DirtyAll(); TODOEVA
-        while (context.RunBackward(target))
-        {
-            // processing... maybe good on next run
-        }
-        
-        GetEvaluationImage(&context, target, image);
-        */
-        return EVAL_OK;
     }
 
     int ReadGLTF(EvaluationContext* evaluationContext, const char* filename, Scene** scene)

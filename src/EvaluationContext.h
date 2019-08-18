@@ -90,7 +90,7 @@ protected:
 
 struct EvaluationContext
 {
-    EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight, bool useThumbnail);
+    EvaluationContext(EvaluationStages& evaluation, bool building, bool synchronousEvaluation, int defaultWidth, int defaultHeight, bool useThumbnail);
     ~EvaluationContext();
 
     // iterative editing
@@ -123,6 +123,14 @@ struct EvaluationContext
         return mEvaluations[nodeIndex].mTarget;
     }
     
+	RenderTarget* CreateRenderTarget(size_t nodeIndex)
+	{
+		assert(nodeIndex < mEvaluations.size());
+		assert(!mEvaluations[nodeIndex].mTarget);
+		mEvaluations[nodeIndex].mTarget = new RenderTarget;
+		return mEvaluations[nodeIndex].mTarget;
+	}
+
 #if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
 #endif
@@ -134,7 +142,9 @@ struct EvaluationContext
     {
         mbSynchronousEvaluation = synchronous;
     }
-    void SetTargetDirty(size_t target, Dirty::Type dirtyflag, bool onlyChild = false);
+	bool IsBuilding() const { return mBuilding; }
+    void SetTargetDirty(size_t target, uint32_t dirtyflag, bool onlyChild = false);
+	void SetTargetPersistent(size_t nodeIndex, bool persistent);
     int StageIsProcessing(size_t target) const
     {
         assert (target < mEvaluations.size());
@@ -173,7 +183,7 @@ struct EvaluationContext
 
         uint64_t mBlendingSrc        = BGFX_STATE_BLEND_ONE;
         uint64_t mBlendingDst        = BGFX_STATE_BLEND_ZERO;
-        uint8_t mDirtyFlag = 0;
+        uint32_t mDirtyFlag = 0;
         uint8_t mProcessing = false;
         uint8_t mVertexSpace        = 0; // UV, worldspace
         int mUseCount;
@@ -185,6 +195,7 @@ struct EvaluationContext
                 uint8_t mbDepthBuffer : 1;
                 uint8_t mbClearBuffer : 1;
                 uint8_t mbActive : 1;
+				uint8_t mbPersistent : 1; // target isn't deleted when not used anymore by subsequent nodes
             };
         };
     };
@@ -239,6 +250,7 @@ protected:
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
     bool mUseThumbnail;
+	bool mBuilding;
     unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
     int mCurrentTime;
 

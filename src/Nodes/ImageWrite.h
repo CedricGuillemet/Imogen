@@ -61,23 +61,27 @@ DECLARE_NODE(ImageWrite)
         const float ratio = float(imageWidth) / float(imageHeight);
         if (param->mode == 1)
         {
-            param->width = imageWidth;
             param->height = int(param->width / ratio);
         }
-        else
+        else if (param->mode == 2)
         {
             param->width = int(param->height * ratio);
-            param->height = imageHeight;
         }
+		else if (param->mode == 3)
+		{
+			param->width = imageWidth;
+			param->height = imageHeight;
+		}
     }
     
-    if (!evaluation->forcedDirty)
+	if (!IsBuilding(context))
     {
         return EVAL_OK;
     }
     
-    if (Evaluate(context, evaluation->inputIndices[0], param->width, param->height, &image) == EVAL_OK)
-    {
+	if (GetEvaluationImage(context, evaluation->inputIndices[0], &image) == EVAL_OK)
+	{
+		Image::Resize(&image, param->width, param->height);
         if (Image::Write(param->filename, &image, param->format, param->quality) == EVAL_OK)
         {    
             Log("Image %s saved.\n", param->filename);

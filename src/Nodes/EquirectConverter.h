@@ -33,13 +33,15 @@ DECLARE_NODE(EquirectConverter)
 {
     EquirectConverterBlock* param = (EquirectConverterBlock*)parameters;
     const int size = 256 << param->size;
+	int target = int(evaluation->targetIndex);
+	SetEvaluationPersistent(context, target, 1);
     if (param->mode == 0)
     {
-        SetEvaluationCubeSize(context, evaluation->targetIndex, size, 1);
+        SetEvaluationCubeSize(context, target, size, 1);
     }
     else
     {
-        SetEvaluationSize(context, evaluation->targetIndex, size, size);
+        SetEvaluationSize(context, target, size, size);
     }
     return EVAL_OK;
 }

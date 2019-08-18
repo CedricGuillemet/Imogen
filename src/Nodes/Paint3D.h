@@ -25,7 +25,9 @@
 
 DECLARE_NODE(Paint3D)
 {
-    int target = int(evaluation->targetIndex);
+    const int target = int(evaluation->targetIndex);
+	SetEvaluationPersistent(context, target, 1);
+
     if (evaluation->uiPass == 1)
     {
         SetBlendingMode(context, target, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO);

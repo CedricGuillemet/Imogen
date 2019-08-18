@@ -40,6 +40,9 @@ DECLARE_NODE(ReactionDiffusion)
         return EVAL_OK;
     }
     
-    SetEvaluationSize(context, int(evaluation->targetIndex), 256<< param->size, 256<< param->size);
+	const int target = int(evaluation->targetIndex);
+	SetEvaluationPersistent(context, target, 1);
+
+    SetEvaluationSize(context, target, 256<< param->size, 256<< param->size);
     return EVAL_OK;
 }

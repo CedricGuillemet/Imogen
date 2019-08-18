@@ -41,7 +41,8 @@
 #include "nanosvg.h"
 #define NANOSVGRAST_IMPLEMENTATION
 #include "nanosvgrast.h"
-
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
 #if USE_FFMPEG
 #include "ffmpegCodec.h"
 #endif
@@ -60,6 +61,8 @@ extern "C"
     int stbi_write_jpg(char const* filename, int x, int y, int comp, const void* data, int quality);
     int stbi_write_png_to_func(stbi_write_func func, void* context, int w, int h, int comp, const void* data, int stride_in_bytes);
     int stbi_write_jpg_to_func(stbi_write_func func, void* context, int x, int y, int comp, const void* data, int quality);
+	int stbi_write_bmp_to_func(stbi_write_func func, void* context, int w, int h, int comp, const void* data);
+	int stbi_write_tga_to_func(stbi_write_func func, void* context, int w, int h, int comp, const void* data);
 }
 
 bimg::Quality::Enum GetQuality(int quality)
@@ -205,7 +208,6 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
         allocTexture = true;
     }
     assert(textureHandle.idx);
-    assert(cubeFace == -1);
 
     unsigned int texelSize = bimg::getBitsPerPixel(image->mFormat)/8;
     assert(texelSize == 4);
@@ -228,7 +230,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
     uint16_t w = uint16_t(image->mWidth >> mipmap);
     uint16_t h = uint16_t(image->mHeight >> mipmap);
     
-    if (image->mIsCubemap)
+    if (cubeFace != -1)
     {
         bgfx::updateTextureCube(textureHandle, 0, cubeFace, mipmap, 0, 0, image->mWidth, image->mWidth, 
             bgfx::copy(image->GetBits() + offset, w * h * texelSize));
@@ -252,31 +254,6 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
     }
 
     return textureHandle;
-    /*
-    unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
-    glBindTexture(targetType, textureId);
-
-    unsigned int inputFormat = glInputFormats[image->mFormat];
-    unsigned int internalFormat = glInternalFormats[image->mFormat];
-    
-
-    
-
-    glTexImage2D((cubeFace == -1) ? GL_TEXTURE_2D : glCubeFace[cubeFace],
-                 mipmap,
-                 internalFormat,
-                 image->mWidth >> mipmap,
-                 image->mHeight >> mipmap,
-                 0,
-                 inputFormat,
-                 GL_UNSIGNED_BYTE,
-                 image->GetBits() + offset);
-    TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
-
-    glBindTexture(targetType, 0);
-    
-    return textureId;
-    */
 }
 
 int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename)
@@ -349,22 +326,32 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         switch (format)
         {
         case 0: // jpeg
-            //stbi_write_jpg_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), quality);
+            stbi_write_jpg_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), quality);
             break;
         case 1: // png
-            //stbi_write_png_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
+            stbi_write_png_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
             break;
         case 2: // tga
-            bimg::imageWriteTga(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
+			stbi_write_tga_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits());
             break;
+		case 3: // bmp
+			stbi_write_bmp_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits());
+			break;
         case 4: // hdr
-            bimg::imageWriteHdr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
+            bimg::imageWriteHdr(&writer
+				, image->mWidth
+				, image->mHeight
+				, image->mWidth * components
+				, image->GetBits()
+				, bimg::TextureFormat::RGBA8//, image->mFormat
+				, false/*_yflip*/
+				, &err);
             break;
         case 5: // dds
             {
                 bimg::ImageContainer* imageContainer = bimg::imageAlloc(
                     g_allocator
-                    , image->mFormat
+                    , bimg::TextureFormat::RGBA8
                     , image->mWidth
                     , image->mHeight
                     , 1
@@ -390,7 +377,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         case 6: // ktx
             bimg::imageWriteKtx(
                 &writer
-                , image->mFormat
+				, bimg::TextureFormat::RGBA8//, image->mFormat
                 , image->mIsCubemap
                 , image->mWidth
                 , image->mHeight
@@ -424,6 +411,27 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 
     bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * 4, image->GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
     return EVAL_OK;
+}
+
+int Image::Resize(Image* image, int width, int height)
+{
+	if (image->mWidth == width && image->mHeight == height)
+	{
+		return EVAL_OK;
+	}
+
+	int channelCount = 4;
+	size_t size = width * height * channelCount;
+	unsigned char* output = new unsigned char [size];
+	stbir_resize_uint8(image->mBits, image->mWidth, image->mHeight, image->mWidth * channelCount,
+		output, width, height, width * channelCount,
+		channelCount);
+
+	image->mWidth = width;
+	image->mHeight = height;
+	image->SetBits(output, size);
+	delete [] output;
+	return EVAL_OK;
 }
 
 TextureHandle ImageCache::GetTexture(const std::string& filename)
@@ -513,7 +521,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     mImage.mHeight = height;
     mImage.mHasMipmaps = false;
     mImage.mIsCubemap = false;
-    mImage.mFormat = TextureFormat::RGBA8;
+    mImage.mFormat = TextureFormat::BGRA8;
 
     if (!width || !height)
     {
@@ -534,7 +542,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     //assert(!depthBuffer);
     //if (!depthBuffer)
     {
-        mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::BGRA8);//:Enum(mImage.mFormat));
+        mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum(mImage.mFormat));
         mGLTexID = bgfx::getTexture(mFrameBuffer);
         bgfx::setName(mFrameBuffer, "RenderTargetBuffer");
     }
@@ -564,7 +572,7 @@ void RenderTarget::InitCube(int width, bool hasMipmaps)
     mImage.mHeight = width;
     mImage.mHasMipmaps = hasMipmaps;
     mImage.mIsCubemap = true;
-    mImage.mFormat = TextureFormat::RGBA8;
+    mImage.mFormat = TextureFormat::BGRA8;
 
     if (!width)
     {

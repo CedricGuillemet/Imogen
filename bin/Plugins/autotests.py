@@ -13,10 +13,9 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "ZNegFilename", "Autotests/Assets/Lycksele/negz.jpg")
     
 def imageTests():
-
+    '''
     ###################################################
     # read one jpg, write it back
-    
     Imogen.NewGraph("ImageRead01")
     imageRead = Imogen.AddNode("ImageRead")
     Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/Vancouver.jpg")
@@ -84,21 +83,41 @@ def imageTests():
     Imogen.SetParameter(imageWrite, "mode", "3")
     Imogen.Connect(imageRead, 0, imageWrite, 0)
     Imogen.Build()
+    # jpg from cubemap
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/JpgFromCubemap.jpg")
+    Imogen.SetParameter(imageWrite, "format", "0")
+    Imogen.SetParameter(imageWrite, "mode", "3")
+    Imogen.Build()
     Imogen.DeleteGraph()
-    '''
+    
     #read equirect hdr, convert to cubemap, write dds
     Imogen.NewGraph("ImageRead03")
     imageRead = Imogen.AddNode("ImageRead")
     Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/studio022.hdr")
     equirect = Imogen.AddNode("EquirectConverter")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Cubemap02.dds")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Equirect2cubemap.dds")
     Imogen.SetParameter(imageWrite, "format", "5")
     Imogen.Connect(imageRead, 0, equirect, 0)
     Imogen.Connect(equirect, 0, imageWrite, 0)
+    Imogen.SetParameter(imageWrite, "width", "256")
+    Imogen.SetParameter(imageWrite, "height", "256")
     Imogen.Build()
     Imogen.DeleteGraph()
     
+    # read cube, save same cube
+    Imogen.NewGraph("ImageRead03b")
+    imageRead = Imogen.AddNode("ImageRead")
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Run/Cubemap01.dds")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/SameCubemap01.dds")
+    Imogen.SetParameter(imageWrite, "format", "5")
+    Imogen.SetParameter(imageWrite, "mode", "3")
+    Imogen.Connect(imageRead, 0, imageWrite, 0)
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    
+    #################################################
     #read a cubemap dds, convert to equirect, save jpg
     Imogen.NewGraph("ImageRead04")
     imageRead = Imogen.AddNode("ImageRead")
@@ -106,10 +125,16 @@ def imageTests():
     equirect = Imogen.AddNode("EquirectConverter")
     Imogen.SetParameter(equirect, "mode", "1")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Equirect01.jpg")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/EquirectFromCubemap01.jpg")
     Imogen.SetParameter(imageWrite, "format", "0")
     Imogen.Connect(imageRead, 0, equirect, 0)
     Imogen.Connect(equirect, 0, imageWrite, 0)
+    Imogen.SetParameter(imageWrite, "width", "512")
+    Imogen.SetParameter(imageWrite, "height", "256")
+    Imogen.Build()
+    # test with a resulting dds
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Run/Equirect2cubemap.dds")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/EquirectFromCubemap02.jpg")
     Imogen.Build()
     Imogen.DeleteGraph()
     
@@ -117,12 +142,14 @@ def imageTests():
     Imogen.NewGraph("ImageRead05")
     physicalSky = Imogen.AddNode("PhysicalSky")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Cubemap03.dds")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Cubemap-PhysicalSky.dds")
     Imogen.SetParameter(imageWrite, "format", "5")
+    Imogen.SetParameter(imageWrite, "width", "1024")
+    Imogen.SetParameter(imageWrite, "height", "1024")
     Imogen.Connect(physicalSky, 0, imageWrite, 0)
     Imogen.Build()
     Imogen.DeleteGraph()
-    '''
+    
     # circle -> png
     Imogen.NewGraph("Gen01")
     circle = Imogen.AddNode("Circle")
@@ -133,21 +160,37 @@ def imageTests():
     Imogen.SetParameter(imageWrite, "height", "4096")
     Imogen.Connect(circle, 0, imageWrite, 0)
     Imogen.Build()
-    Imogen.DeleteGraph()
-    
-    # circle -> jpg
-    Imogen.NewGraph("Gen02")
-    circle = Imogen.AddNode("Circle")
-    imageWrite = Imogen.AddNode("ImageWrite")
     Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Circle02.jpg")
     Imogen.SetParameter(imageWrite, "format", "0")
     Imogen.SetParameter(imageWrite, "width", "512")
     Imogen.SetParameter(imageWrite, "height", "512")
-    Imogen.Connect(circle, 0, imageWrite, 0)
     Imogen.Build()
     Imogen.DeleteGraph()
+    '''
+    ###########################################
+    # crop -> jpg
+    Imogen.NewGraph("Crop01")
+    imageRead = Imogen.AddNode("ImageRead")
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/Vancouver.jpg")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    crop = Imogen.AddNode("Crop")
+    Imogen.Connect(imageRead, 0, crop, 0)
+    Imogen.Connect(crop, 0, imageWrite, 0)
+    # 1K
+    Imogen.SetParameter(imageWrite, "mode", "0")
+    Imogen.SetParameter(imageWrite, "width", "1024")
+    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/crop-1024.jpg")
+    Imogen.Build()  
+    # as source
+    Imogen.SetParameter(imageWrite, "mode", "3")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/crop-sourceSize.jpg")
+    Imogen.Build()  
     
-    # save cube to jpg
+
+    # 6jpg -> cubemap filter -> dds
+    # hdr -> equirect2cubemap -> filter -> hdr
+    # reaction diffusion / distance
     
 def clearTests(folder):
     for the_file in os.listdir(folder):

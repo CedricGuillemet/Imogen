@@ -100,5 +100,7 @@ void main()
 	mie_collected = (mie_collected*eye_extinction*pow(eye_depth, mieCollectionPower.x))/float(step_count);
 	vec3 color = vec3(spot*mie_collected + mie_factor*mie_collected + rayleigh_factor*rayleigh_collected);
 	gl_FragColor = vec4(max(color * ambient.w, ambient.xyz), 1.0);
+		gl_FragColor.xyz = u_viewRot[0].xyz * 0.5 + vec3(0.5,0.5,0.5);
+
 }
 

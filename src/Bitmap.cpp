@@ -419,14 +419,23 @@ int Image::Resize(Image* image, int width, int height)
 	{
 		return EVAL_OK;
 	}
-
-	int channelCount = 4;
-	size_t size = width * height * channelCount;
+	if (image->GetMipmapCount() > 1)
+	{
+		// don't resize images with mipmaps
+		return EVAL_ERR;
+	}
+	const int channelCount = 4;
+	const int faceCount = image->GetFaceCount();
+	const size_t sourceFaceSize = image->mWidth * image->mHeight * channelCount;
+	const size_t faceSize = width * height * channelCount;
+	size_t size = faceSize * faceCount;
 	unsigned char* output = new unsigned char [size];
-	stbir_resize_uint8(image->mBits, image->mWidth, image->mHeight, image->mWidth * channelCount,
-		output, width, height, width * channelCount,
-		channelCount);
-
+	for (int face = 0; face < faceCount; face++)
+	{
+		stbir_resize_uint8(&image->mBits[sourceFaceSize * face], image->mWidth, image->mHeight, image->mWidth * channelCount,
+			&output[faceSize * face], width, height, width * channelCount,
+			channelCount);
+	}
 	image->mWidth = width;
 	image->mHeight = height;
 	image->SetBits(output, size);
@@ -492,11 +501,12 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
 
 void RenderTarget::Destroy()
 {
-    if (mFrameBuffer.idx != bgfx::kInvalidHandle)
+    /*if (mFrameBuffer.idx != bgfx::kInvalidHandle)
     {
         bgfx::destroy(mFrameBuffer);
         mFrameBuffer = { bgfx::kInvalidHandle };
     }
+	*/
     mGLTexDepth = { bgfx::kInvalidHandle };
     mImage = Image();
     mGLTexID = { bgfx::kInvalidHandle };
@@ -507,7 +517,7 @@ void RenderTarget::Swap(RenderTarget& other)
     ::Swap(mImage, other.mImage);
     ::Swap(mGLTexID, other.mGLTexID);
     ::Swap(mGLTexDepth, other.mGLTexDepth);
-    ::Swap(mFrameBuffer, other.mFrameBuffer);
+    //::Swap(mFrameBuffer, other.mFrameBuffer);
 }
 
 void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
@@ -542,9 +552,10 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     //assert(!depthBuffer);
     //if (!depthBuffer)
     {
-        mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum(mImage.mFormat));
-        mGLTexID = bgfx::getTexture(mFrameBuffer);
-        bgfx::setName(mFrameBuffer, "RenderTargetBuffer");
+        //mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum(mImage.mFormat));
+        //mGLTexID = bgfx::getTexture(mFrameBuffer);
+        //bgfx::setName(mFrameBuffer, "RenderTargetBuffer");
+		mGLTexID = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
     }
     /*
     else
@@ -565,7 +576,9 @@ void RenderTarget::InitCube(int width, bool hasMipmaps)
 {
     if ((width == mImage.mWidth) && (mImage.mHeight == width) && mImage.mIsCubemap &&
         (mImage.mHasMipmaps == hasMipmaps))
+	{
         return;
+	}
     Destroy();
 
     mImage.mWidth = width;
@@ -580,6 +593,5 @@ void RenderTarget::InitCube(int width, bool hasMipmaps)
         return;
     }
 
-    mGLTexID = bgfx::createTextureCube(width, hasMipmaps, 1, bgfx::TextureFormat::Enum(mImage.mFormat));
-    mFrameBuffer = bgfx::createFrameBuffer(1, &mGLTexID, true);
+    mGLTexID = bgfx::createTextureCube(width, hasMipmaps, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
 }

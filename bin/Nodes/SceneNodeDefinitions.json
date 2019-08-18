@@ -85,47 +85,6 @@
 		}
 		]
 		}, {
-	"name": "PBR2",
-		"category": 2,
-        "description":"Experimental node.",
-        "experimental":true,
-		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
-		"inputs": [{
-			"name": "Albedo",
-			"type": "Float4"
-		}, {
-			"name": "Normal",
-			"type": "Float4"
-		}, {
-			"name": "Depth",
-			"type": "Float4"
-		}, {
-			"name": "Roughness",
-			"type": "Float4"
-		}, {
-			"name": "Cubemap",
-			"type": "Float4"
-		}],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "view",
-			"type": "Float2",
-			"rangeMinX": 1.0,
-			"rangeMaxX": 0.0,
-			"rangeMinY": 0.0,
-			"rangeMaxY": 1.0,
-			"relative": true,
-            "description":""
-		},{
-			"name": "depthFactor",
-			"type": "Float",
-			"default":"0.0",
-            "description":""
-		}]
-	}, {
 		"name": "ChannelPacker",
 		"category": 0,
         "description":"Pack channels from 1 to 4 inputs into a new output. This can be used to pack normal/roughness/metallic into a 4 channels image.",

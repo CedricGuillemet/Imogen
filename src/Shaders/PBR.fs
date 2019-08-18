@@ -207,6 +207,18 @@ void main()
 	float t = CastRay( ro, rd, localToWorld );
     if ( t > 0.0 )
     {
+	/*
+		displacement mapping
+		mat3 tbn = cotangent_frame( normal, pos, texcoord );
+	
+		vec3 eyeToFragment = -rd;//(inverse(tbn) * -rd); todo
+	
+		texcoord = ParallaxMapping(Sampler2, texcoord, eyeToFragment, depthFactor.x);
+		
+        vec3 texNorm = texture2D(Sampler1, texcoord).xyz * 2.0 - 1.0;
+	
+		vec3 worldNormal = normalize(mul(tbn, texNorm));
+	*/
         vec3 pos = ro + t * rd;
         vec3 normal = SceneNormal( pos, localToWorld );        
         vec3 viewDir = -rd;

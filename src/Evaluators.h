@@ -167,7 +167,7 @@ namespace EvaluationAPI
     int GetEvaluationSize(const EvaluationContext* evaluationContext, int target, int* imageWidth, int* imageHeight);
     int SetEvaluationSize(EvaluationContext* evaluationContext, int target, int imageWidth, int imageHeight);
 	int SetEvaluationPersistent(EvaluationContext* evaluationContext, int target, int persistent);
-    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int mipmapCount);
+    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int hasMipmap);
     int Job(EvaluationContext* evaluationContext, int (*jobFunction)(void*), void* ptr, unsigned int size);
     int JobMain(EvaluationContext* evaluationContext, int (*jobMainFunction)(void*), void* ptr, unsigned int size);
     void SetProcessing(EvaluationContext* context, int target, int processing);

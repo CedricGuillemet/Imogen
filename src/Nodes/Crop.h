@@ -37,11 +37,12 @@ DECLARE_NODE(Crop)
     const int res = GetEvaluationSize(context, int(evaluation->inputIndices[0]), &width, &height);
     if (res == EVAL_OK)
     {
-        croppedWidth = width * int(fabsf(params->quad[2] - params->quad[0]));
-        croppedHeight = height * int(fabsf(params->quad[3] - params->quad[1]));
+        croppedWidth = int(width * fabsf(params->quad[2] - params->quad[0]));
+        croppedHeight = int(height * fabsf(params->quad[3] - params->quad[1]));
+		croppedWidth = std::max(croppedWidth, 8);
+		croppedHeight = std::max(croppedHeight, 8);
     }
-    //if (croppedWidth<8) { croppedWidth = 8; }
-    //if (croppedHeight<8) { croppedHeight = 8; }
+
 	int target = int(evaluation->targetIndex);
 	SetEvaluationPersistent(context, target, 1);
     if (evaluation->uiPass)

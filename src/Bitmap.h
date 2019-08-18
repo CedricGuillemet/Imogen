@@ -187,5 +187,5 @@ public:
     Image mImage;
     TextureHandle mGLTexID = { bgfx::kInvalidHandle };
     TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
-    FrameBufferHandle mFrameBuffer = { bgfx::kInvalidHandle };
+    //FrameBufferHandle mFrameBuffer = { bgfx::kInvalidHandle };
 };

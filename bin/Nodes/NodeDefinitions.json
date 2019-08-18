@@ -1006,35 +1006,6 @@
             "description":"One of 2 modes. XY offset : R and G channels are used for X and Y displacement. Rotation-Distance: R is used as an angle (0..1 -> 0..2pi) and G is the length of the displacement."
 		}]
 	}, {
-		"name": "TerrainPreview",
-		"category": 2,
-        "description":"Experimental node.",
-        "experimental":true,
-		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
-		"inputs": [{
-			"name": "Height",
-			"type": "Float4"
-		}, {
-			"name": "Diffuse",
-			"type": "Float4"
-		}, {
-			"name": "AO",
-			"type": "Float4"
-		}, {
-			"name": "Cubemap",
-			"type": "Float4"
-		}],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "camera",
-			"type": "Camera",
-			"default":"",
-            "description":""
-		}]
-	}, {
 		"name": "AO",
 		"category": 4,
         "description":"Compute ambient occlusion based on an input heightmap.",

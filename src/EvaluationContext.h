@@ -62,6 +62,7 @@ struct EvaluationThumbnails
     void DelThumb(const Thumb thumb);
     void GetThumb(const Thumb thumb, TextureHandle& textureId, ImRect& uvs) const;
     RenderTarget& GetThumbTarget(const Thumb thumb);
+	FrameBufferHandle& GetThumbFrameBuffer(const Thumb thumb);
     void GetThumbCoordinates(const Thumb thumb, int* coordinates) const;
     std::vector<RenderTarget> GetAtlasTextures() const;
 protected:
@@ -80,6 +81,7 @@ protected:
             mbUsed.resize(thumbnailsPerAtlas, false);
         }
         RenderTarget mTarget;
+		FrameBufferHandle mFrameBuffer;
         std::vector<bool> mbUsed;
         size_t mUsedCount = 0;
     };

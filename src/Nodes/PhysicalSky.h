@@ -39,6 +39,6 @@ DECLARE_NODE(PhysicalSky)
 	const int target = int(evaluation->targetIndex);
 	SetEvaluationPersistent(context, target, 1);
 
-    SetEvaluationCubeSize(context, target, size, 1);
+    SetEvaluationCubeSize(context, target, size, 0);
     return EVAL_OK;
 }

@@ -36,11 +36,13 @@ static const float rotMatrices[6][16] = {
     // -x
     {0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1},
 
+	// -y
+{1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
+
     //+y
     {1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1},
 
-    // -y
-    {1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
+
 
     // +z
     {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
@@ -54,6 +56,7 @@ void EvaluationThumbnails::Clear()
     for (auto& atlas : mAtlases)
     {
         atlas.mTarget.Destroy();
+		bgfx::destroy(atlas.mFrameBuffer);
     }
     mAtlases.clear();
 }
@@ -88,6 +91,11 @@ EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumb()
     // no atlas, create new one
     mAtlases.push_back(ThumbAtlas(ThumbnailsPerAtlas));
     mAtlases.back().mTarget.InitBuffer(int(AtlasSize), int(AtlasSize), false);
+
+	bgfx::Attachment at;
+	at.init(mAtlases.back().mTarget.mGLTexID, bgfx::Access::Write, 0);
+	mAtlases.back().mFrameBuffer = bgfx::createFrameBuffer(1, &at);
+
     return AddThumbInAtlas(mAtlases.size() - 1);
 }
 
@@ -108,6 +116,12 @@ void EvaluationThumbnails::GetThumb(const Thumb thumb, TextureHandle& textureHan
 RenderTarget& EvaluationThumbnails::GetThumbTarget(const Thumb thumb)
 {
     return mAtlases[thumb.mAtlasIndex].mTarget;
+}
+
+bgfx::FrameBufferHandle& EvaluationThumbnails::GetThumbFrameBuffer(const Thumb thumb)
+{
+	return mAtlases[thumb.mAtlasIndex].mFrameBuffer;
+	
 }
 
 ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t thumbIndex) const
@@ -359,7 +373,7 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
                 }
                 else
                 {
-                    bgfx::setTexture(inputIndex, gEvaluators.mSamplersCube[inputIndex], tgt->mGLTexID, inputSampler.Value());
+                    bgfx::setTexture(inputIndex+8, gEvaluators.mSamplersCube[inputIndex], tgt->mGLTexID, inputSampler.Value());
                 }
             }
         }
@@ -502,29 +516,43 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
     auto w = tgt->mImage.mWidth;
     auto h = tgt->mImage.mHeight;
-    FrameBufferHandle proxyFrameBuffer = bgfx::createFrameBuffer(w, h, bgfx::TextureFormat::BGRA8);
-    uint8_t mipmapCount = tgt->mImage.GetMipmapCount();
+	FrameBufferHandle proxyFrameBuffer[16];
+	for (int i = 0;i<sizeof(proxyFrameBuffer)/sizeof(FrameBufferHandle);i++)
+	{
+		proxyFrameBuffer[i] = {bgfx::kInvalidHandle};
+	}
+	size_t faceCount = evaluationInfo.uiPass ? 1 : (tgt->mImage.mIsCubemap ? 6 : 1);
+	const uint8_t mipmapCount = tgt->mImage.GetMipmapCount();
+	for (auto i = 0;i< mipmapCount;i++)
+	{
+		proxyFrameBuffer[i] = bgfx::createFrameBuffer(w>>i, h>>i, bgfx::TextureFormat::BGRA8);
+	}
+	
+
+    
     for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
         for (int mip = 0; mip < mipmapCount; mip++)
         {
-            //if (!evaluationInfo.uiPass)
-            {
-                bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());
-                bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
-                bgfx::setViewFrameBuffer(viewId, tgt->mFrameBuffer);//proxyFrameBuffer);
-                bgfx::setViewRect(viewId, 0, 0,  w>>mip, h>>mip);
-                bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0xF03030ff, 1.0f, 0);
-            }
+			FrameBufferHandle& currentProxy = proxyFrameBuffer[mip];
+			for (size_t face = 0; face < faceCount; face++)
+			{
+				const int viewportWidth = w >> mip;
+				const int viewportHeight = h >> mip;
+				bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());
+				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+				bgfx::setViewFrameBuffer(viewId, currentProxy);
+				bgfx::setViewRect(viewId, 0, 0, viewportWidth , viewportHeight);
+				//bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0xF03030ff+face*0x2000, 1.0f, 0);
 
-            size_t faceCount = evaluationInfo.uiPass ? 1 : (tgt->mImage.mIsCubemap ? 6 : 1);
-            for (size_t face = 0; face < faceCount; face++)
-            {
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
-                memcpy(evaluationInfo.inputIndices, input.mInputs, sizeof(input.mInputs));
-                float sizeDiv = float(mip + 1);
-                evaluationInfo.viewport[0] = float(tgt->mImage.mWidth) / sizeDiv;
-                evaluationInfo.viewport[1] = float(tgt->mImage.mHeight) / sizeDiv;
+				for (int i = 0; i < 8; i++)
+				{
+					evaluationInfo.inputIndices[i] = input.mInputs[i];
+				}
+
+                evaluationInfo.viewport[0] = float(viewportWidth);
+                evaluationInfo.viewport[1] = float(viewportHeight);
                 evaluationInfo.passNumber = float(passNumber);
                 evaluationInfo.mipmapNumber = float(mip);
                 evaluationInfo.mipmapCount = mipmapCount;
@@ -535,7 +563,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 {
                     bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
                 }
-                bgfx::setViewRect(viewId, 0, 0, tgt->mImage.mWidth, tgt->mImage.mHeight);
 
                 SetUniforms(nodeIndex);
                 
@@ -544,9 +571,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                         | BGFX_STATE_WRITE_RGB
                         | BGFX_STATE_WRITE_A
                         | BGFX_STATE_BLEND_FUNC(evaluation.mBlendingSrc, evaluation.mBlendingDst)
-                        //| BGFX_STATE_MSAA
                         | (evaluation.mbDepthBuffer ? BGFX_STATE_DEPTH_TEST_LEQUAL : BGFX_STATE_DEPTH_TEST_ALWAYS)
-                        //BGFX_STATE_PT_TRISTRIP*/
                         ;
 
                     bgfx::setState(state);
@@ -557,9 +582,12 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
                 // copy from proxy to destination
                 viewId++;
-                //bgfx::blit(viewId, tgt->mGLTexID, mip, 0, 0, face, bgfx::getTexture(proxyFrameBuffer), 0, 0, 0, 0, w>>mip, h>>mip);
+				bgfx::touch(viewId);
+				bgfx::setViewFrameBuffer(viewId, {0});
+				bgfx::setViewRect(viewId, 0, 0, viewportWidth, viewportHeight);
+				bgfx::blit(viewId++, tgt->mGLTexID, mip, 0, 0, face, bgfx::getTexture(currentProxy), 0, 0, 0, 0, viewportWidth, viewportHeight);
             } // face
-        }     // mip
+        } // mip
         // swap target for multipass
         // set previous target as source
         if (passCount > 1 && passNumber != (passCount - 1))
@@ -567,7 +595,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
             transientTarget->Swap(*tgt);
         }
     } // passNumber
-    bgfx::destroy(proxyFrameBuffer);
+	for (auto i =0;i< mipmapCount;i++)
+	{
+		if (proxyFrameBuffer[i].idx != bgfx::kInvalidHandle)
+		{
+			bgfx::destroy(proxyFrameBuffer[i]);
+		}
+	}
     if (transientTarget)
     {
         transientTarget->Destroy();
@@ -596,15 +630,15 @@ void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex
     {
         return;
     }
-
     // create thumbnail
-    auto thumbTarget = mThumbnails.GetThumbTarget(thumb);
+	auto thumbFrameBuffer = mThumbnails.GetThumbFrameBuffer(thumb);
+
     auto def = Scene::BuildDefaultScene();
     int sourceCoords[4];
     mThumbnails.GetThumbCoordinates(thumb, sourceCoords);
     bgfx::setViewName(viewId, "Make Thumbnail");
     bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
-    bgfx::setViewFrameBuffer(viewId, thumbTarget.mFrameBuffer);
+    bgfx::setViewFrameBuffer(viewId, thumbFrameBuffer);
     auto h = sourceCoords[3] - sourceCoords[1];
     if (bgfx::getRendererType() == bgfx::RendererType::OpenGL || bgfx::getRendererType() == bgfx::RendererType::OpenGLES)
     {
@@ -629,6 +663,8 @@ void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex
     
     EvaluationInfo evaluationInfo = {0};
     def->Draw(evaluationInfo, viewId, gEvaluators.mBlitProgram);
+
+	
     viewId++;
 }
 
@@ -730,7 +766,11 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
     mEvaluationInfo.targetIndex = float(nodeIndex);
     mEvaluationInfo.frame = float(mCurrentTime);
     mEvaluationInfo.dirtyFlag = evaluation.mDirtyFlag;
-    memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
+    //memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
+	for (int i = 0; i < 8; i++)
+	{
+		mEvaluationInfo.inputIndices[i] = input.mInputs[i];
+	}
     SetKeyboardMouseInfos(mEvaluationInfo);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 

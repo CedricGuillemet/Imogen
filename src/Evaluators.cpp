@@ -853,7 +853,7 @@ namespace EvaluationAPI
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
-        /*auto renderTarget = evaluationContext->GetRenderTarget(target); TODOEVA
+        auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
         {
             renderTarget = evaluationContext->CreateRenderTarget(target);
@@ -862,31 +862,34 @@ namespace EvaluationAPI
         //    return EVAL_OK;
         renderTarget->InitBuffer(
             imageWidth, imageHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
-            */
+
         return EVAL_OK;
     }
 
 	int SetEvaluationPersistent(EvaluationContext* evaluationContext, int target, int persistent)
 	{
 		if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+		{
 			return EVAL_ERR;
-
+		}
 		evaluationContext->mEvaluations[target].mbPersistent = persistent != 0;
 		return EVAL_OK;
 	}
 
-    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int mipmapCount)
+    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int hasMipmap)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+		{
             return EVAL_ERR;
+		}
 
-        /*auto renderTarget = evaluationContext->GetRenderTarget(target); TODOEVA
+        auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
         {
             renderTarget = evaluationContext->CreateRenderTarget(target);
         }
-        renderTarget->InitCube(faceWidth, mipmapCount);
-        */
+        renderTarget->InitCube(faceWidth, hasMipmap != 0);
+        
         return EVAL_OK;
     }
 

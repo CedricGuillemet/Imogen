@@ -37,7 +37,7 @@ DECLARE_NODE(EquirectConverter)
 	SetEvaluationPersistent(context, target, 1);
     if (param->mode == 0)
     {
-        SetEvaluationCubeSize(context, target, size, 1);
+        SetEvaluationCubeSize(context, target, size, 0);
     }
     else
     {

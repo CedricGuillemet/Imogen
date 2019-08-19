@@ -548,6 +548,9 @@ void GraphControler::ApplyDirtyList()
     const auto& dirtyList = mModel.GetDirtyList();
     bool evaluationOrderChanged = false;
     bool graphArrayChanged = false;
+
+	std::vector<int> deletionInEvaluation;
+
     for (const auto& dirtyItem : dirtyList)
     {
         int nodeIndex = int(dirtyItem.mNodeIndex);
@@ -599,8 +602,8 @@ void GraphControler::ApplyDirtyList()
                 }
                 break;
             case Dirty::DeletedNode:
-                mEvaluationStages.DelEvaluation(nodeIndex);
-                mEditingContext.DelEvaluation(nodeIndex);
+				mEditingContext.SetTargetDirty(nodeIndex, Dirty::Input, false);
+				deletionInEvaluation.push_back(nodeIndex);
                 evaluationOrderChanged = true;
                 graphArrayChanged = true;
                 ExtractedViewNodeDeleted(nodeIndex);
@@ -631,6 +634,11 @@ void GraphControler::ApplyDirtyList()
                 break;
         }
     }
+	for (auto nodeIndex : deletionInEvaluation)
+	{
+		mEvaluationStages.DelEvaluation(nodeIndex);
+		mEditingContext.DelEvaluation(nodeIndex);
+	}
     mModel.ClearDirtyList();
 
     if (evaluationOrderChanged)

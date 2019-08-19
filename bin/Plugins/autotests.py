@@ -166,7 +166,7 @@ def imageTests():
     Imogen.SetParameter(imageWrite, "height", "512")
     Imogen.Build()
     Imogen.DeleteGraph()
-    '''
+    
     ###########################################
     # crop -> jpg
     Imogen.NewGraph("Crop01")
@@ -186,8 +186,30 @@ def imageTests():
     Imogen.SetParameter(imageWrite, "mode", "3")
     Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/crop-sourceSize.jpg")
     Imogen.Build()  
-    
+    Imogen.DeleteGraph()
+    '''
 
+    ###########################################
+    # channel packer to png
+    Imogen.NewGraph("Packer")
+    packer = Imogen.AddNode("ChannelPacker")
+    circle = Imogen.AddNode("Circle")
+    ngon = Imogen.AddNode("NGon")
+    checker = Imogen.AddNode("Checker")
+    Sine = Imogen.AddNode("Sine")
+    Imogen.Connect(circle, 0, packer, 0)
+    Imogen.Connect(ngon, 0, packer, 1)
+    Imogen.Connect(checker, 0, packer, 2)
+    Imogen.Connect(Sine, 0, packer, 3)
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.Connect(packer, 0, imageWrite, 0)
+    Imogen.SetParameter(imageWrite, "format", "1")
+    Imogen.SetParameter(imageWrite, "width", "1024")
+    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/ChannelPacker.png")
+    Imogen.Build()  
+    Imogen.DeleteGraph()
+    
     # 6jpg -> cubemap filter -> dds
     # hdr -> equirect2cubemap -> filter -> hdr
     # reaction diffusion / distance

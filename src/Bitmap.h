@@ -183,9 +183,7 @@ public:
     void Destroy();
     void Swap(RenderTarget& other);
 
-
     Image mImage;
     TextureHandle mGLTexID = { bgfx::kInvalidHandle };
     TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
-    //FrameBufferHandle mFrameBuffer = { bgfx::kInvalidHandle };
 };

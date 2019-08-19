@@ -110,7 +110,7 @@ void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
 {
     auto& stage = mStages[target];
     int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
-    #if USE_FFMPEG
+#if USE_FFMPEG
     if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
     {
         stage.mLocalTime = newLocalTime;
@@ -119,7 +119,7 @@ void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
         Image::Free(&image);
     }
     else
-    #endif
+#endif
     {
         stage.mLocalTime = newLocalTime;
     }

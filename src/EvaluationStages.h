@@ -133,7 +133,7 @@ struct EvaluationStages
     void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
 
     // ffmpeg encoders
-    #if USE_FFMPEG
+#if USE_FFMPEG
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 #endif
     // Data

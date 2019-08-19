@@ -11,10 +11,10 @@ uniform vec4 A;
 void main()
 {
     vec4 lu[4];
-	lu[0]= texture2D(Sampler0, v_texcoord0);
-	lu[1]= texture2D(Sampler1, v_texcoord0);
-	lu[2]= texture2D(Sampler2, v_texcoord0);
-	lu[3]= texture2D(Sampler3, v_texcoord0);
+	lu[0] = texture2D(Sampler0, v_texcoord0);
+	lu[1] = texture2D(Sampler1, v_texcoord0);
+	lu[2] = texture2D(Sampler2, v_texcoord0);
+	lu[3] = texture2D(Sampler3, v_texcoord0);
 		
 	int T[4];
 	int C[4];
@@ -28,16 +28,17 @@ void main()
 	C[3] = int(mod(A.x,4.));
 
 	vec4 res = vec4(0.,0.,0.,0.);
-	float v = 0.;
 	
-	for (int c=0;c<4;c++)
+	for (int component = 0; component < 4; component++)
 	{
-		for (int t=0;t<4;t++)
+		for (int t = 0; t < 4; t++)
 		{
-			res[c] = lu[t][c] * ((T[c]==t&&C[t]==c)?1.:0.);
+			for (int c = 0; c < 4; c++)
+			{
+				res[component] += lu[t][c] * ((T[component] == t && C[component] == c) ? 1. : 0.);
+			}
 		}
 	}
-	
 
 	if (R.x>15.)
 		res.x = 1. - res.x;

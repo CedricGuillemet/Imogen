@@ -212,10 +212,10 @@ void EvaluationContext::DelEvaluation(size_t nodeIndex)
     {
         mThumbnails.DelThumb(mEvaluations[nodeIndex].mThumb);
     }
-    // set nodes using that node to be dirty
-    SetTargetDirty(nodeIndex, Dirty::Input, false);
+
 	if (mEvaluations[nodeIndex].mTarget)
 	{
+		mEvaluations[nodeIndex].mTarget->Destroy();
 		delete mEvaluations[nodeIndex].mTarget;
 	}
     mEvaluations.erase(mEvaluations.begin() + nodeIndex);

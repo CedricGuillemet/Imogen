@@ -501,15 +501,13 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
 
 void RenderTarget::Destroy()
 {
-    /*if (mFrameBuffer.idx != bgfx::kInvalidHandle)
+    if (mGLTexID.idx != bgfx::kInvalidHandle)
     {
-        bgfx::destroy(mFrameBuffer);
-        mFrameBuffer = { bgfx::kInvalidHandle };
+        bgfx::destroy(mGLTexID);
+        mGLTexID = { bgfx::kInvalidHandle };
     }
-	*/
     mGLTexDepth = { bgfx::kInvalidHandle };
     mImage = Image();
-    mGLTexID = { bgfx::kInvalidHandle };
 }
 
 void RenderTarget::Swap(RenderTarget& other)
@@ -524,7 +522,9 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
 {
     if ((width == mImage.mWidth) && (mImage.mHeight == height) && !mImage.mIsCubemap &&
         (!(depthBuffer ^ (mGLTexDepth.idx != 0))))
+	{
         return;
+	}
     Destroy();
 
     mImage.mWidth = width;
@@ -539,37 +539,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
         return;
     }
 
-    /*mGLTexID = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::BGRA8);
-    if (depthBuffer)
-    {
-        mGLTexDepth = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D24F);
-    }
-
-    TextureHandle textureHandles[] = { mGLTexID , mGLTexDepth };
-    
-    mFrameBuffer = bgfx::createFrameBuffer(depthBuffer?2:1, textureHandles, true);
-    */
-    //assert(!depthBuffer);
-    //if (!depthBuffer)
-    {
-        //mFrameBuffer = bgfx::createFrameBuffer(width, height, bgfx::TextureFormat::Enum(mImage.mFormat));
-        //mGLTexID = bgfx::getTexture(mFrameBuffer);
-        //bgfx::setName(mFrameBuffer, "RenderTargetBuffer");
-		mGLTexID = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
-    }
-    /*
-    else
-    {
-        bgfx::TextureHandle fbtextures[] =
-        {
-            bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D24, BGFX_TEXTURE_RT | BGFX_SAMPLER_COMPARE_LEQUAL),
-            bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::Enum(mImage.mFormat)),
-        };
-        mGLTexID = fbtextures[0];
-        mGLTexDepth = fbtextures[1];
-        mFrameBuffer = bgfx::createFrameBuffer(BX_COUNTOF(fbtextures), fbtextures, true);
-    }
-    */
+	mGLTexID = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
 }
 
 void RenderTarget::InitCube(int width, bool hasMipmaps)

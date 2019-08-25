@@ -102,7 +102,7 @@ Image Image::DecodeImage(FFMPEGCodec::Decoder* decoder, int frame)
     image.mDecoder = decoder;
     image.mHasMipmaps = false;
     image.mIsCubemap = false;
-    image.mFormat = TextureFormat::RGB8; // todo:shoud be bgr8
+    image.mFormat = bgfx::TextureFormat::RGB8; // todo:shoud be bgr8
     image.mWidth = int(decoder->mWidth);
     image.mHeight = int(decoder->mHeight);
     size_t lineSize = image.mWidth * 3;
@@ -149,7 +149,7 @@ int Image::LoadSVG(const char* filename, Image* image, float dpi)
     image->mHeight = height;
     image->mHasMipmaps = false;
     image->mIsCubemap = false;
-    image->mFormat = TextureFormat::RGBA8;
+    image->mFormat = bgfx::TextureFormat::RGBA8;
     image->mDecoder = NULL;
 
     free(img);
@@ -191,7 +191,7 @@ int Image::Free(Image* image)
     return EVAL_OK;
 }
 
-TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int cubeFace, int mipmap)
+bgfx::TextureHandle Image::Upload(const Image* image, bgfx::TextureHandle textureHandle, int cubeFace, int mipmap)
 {
     bool allocTexture = false;
     if (!textureHandle.idx)
@@ -201,7 +201,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
             , uint16_t(image->mHeight)
             , image->mHasMipmaps
             , uint16_t(1)
-            , bgfx::TextureFormat::Enum(image->mFormat)
+            , image->mFormat
             , uint64_t(0)
             , nullptr
         );
@@ -209,7 +209,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
     }
     assert(textureHandle.idx);
 
-    unsigned int texelSize = bimg::getBitsPerPixel(image->mFormat)/8;
+    unsigned int texelSize = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat))/8;
     assert(texelSize == 4);
     unsigned int offset = 0;
     if (image->mIsCubemap)
@@ -250,7 +250,7 @@ TextureHandle Image::Upload(const Image* image, TextureHandle textureHandle, int
     }
     if (allocTexture)
     {
-        vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * (bimg::getBitsPerPixel(image->mFormat)/8));
+        vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * (bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat))/8));
     }
 
     return textureHandle;
@@ -267,7 +267,7 @@ int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const cha
         image->mHeight = imageContainer->m_height;
         image->mHasMipmaps = imageContainer->m_numMips > 1;
         image->mIsCubemap = imageContainer->m_cubeMap;
-        image->mFormat = (imageContainer->m_format == bimg::TextureFormat::RGB8) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
+        image->mFormat = (imageContainer->m_format == bgfx::TextureFormat::RGB8) ? bgfx::TextureFormat::RGB8 : bgfx::TextureFormat::RGBA8;
         image->mDecoder = NULL;
         if (filename)
         {
@@ -282,7 +282,7 @@ int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const cha
 
 void Image::VFlip(Image* image)
 {
-    int pixelSize = (image->mFormat == TextureFormat::RGB8) ? 3 : 4;
+    int pixelSize = (image->mFormat == bgfx::TextureFormat::RGB8) ? 3 : 4;
     int stride = image->mWidth * pixelSize;
     for (int y = 0; y < image->mHeight / 2; y++)
     {
@@ -309,7 +309,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         return EVAL_ERR;
     }
 
-    const int components = bimg::getBitsPerPixel(image->mFormat)/8;
+    const int components = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat))/8;
     
     bx::AllocatorI* g_allocator = getDefaultAllocator();
     bx::Error err;
@@ -389,7 +389,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
             );
             break;
         case 7: // exr
-            bimg::imageWriteExr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), image->mFormat, false/*_yflip*/, &err);
+            bimg::imageWriteExr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), bimg::TextureFormat::Enum(image->mFormat), false/*_yflip*/, &err);
             break;
         }
 #ifdef __EMSCRIPTEN__
@@ -443,7 +443,7 @@ int Image::Resize(Image* image, int width, int height)
 	return EVAL_OK;
 }
 
-TextureHandle ImageCache::GetTexture(const std::string& filename)
+bgfx::TextureHandle ImageCache::GetTexture(const std::string& filename)
 {
     auto iter = mSynchronousTextureCache.find(filename);
     if (iter != mSynchronousTextureCache.end())
@@ -452,7 +452,7 @@ TextureHandle ImageCache::GetTexture(const std::string& filename)
     }
 
     Image image;
-    TextureHandle textureHandle{0};
+	bgfx::TextureHandle textureHandle{0};
     if (Image::Read(filename.c_str(), &image) == EVAL_OK)
     {
         mImageSizes[filename] = std::make_pair<uint16_t, uint16_t>(uint16_t(image.mWidth), uint16_t(image.mHeight));
@@ -499,29 +499,29 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
     mCacheAccess.unlock();
 }
 
-void RenderTarget::Destroy()
+void ImageTexture::Destroy()
 {
-    if (mGLTexID.idx != bgfx::kInvalidHandle)
+    if (mTexture.idx != bgfx::kInvalidHandle)
     {
-        bgfx::destroy(mGLTexID);
-        mGLTexID = { bgfx::kInvalidHandle };
+        bgfx::destroy(mTexture);
+        mTexture = { bgfx::kInvalidHandle };
     }
-    mGLTexDepth = { bgfx::kInvalidHandle };
+    //mGLTexDepth = { bgfx::kInvalidHandle };
     mImage = Image();
 }
 
-void RenderTarget::Swap(RenderTarget& other)
+void ImageTexture::Swap(ImageTexture& other)
 {
     ::Swap(mImage, other.mImage);
-    ::Swap(mGLTexID, other.mGLTexID);
-    ::Swap(mGLTexDepth, other.mGLTexDepth);
+    ::Swap(mTexture, other.mTexture);
+    //::Swap(mGLTexDepth, other.mGLTexDepth);
     //::Swap(mFrameBuffer, other.mFrameBuffer);
 }
 
-void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
+void ImageTexture::Init2D(int width, int height, bool depthBuffer)
 {
-    if ((width == mImage.mWidth) && (mImage.mHeight == height) && !mImage.mIsCubemap &&
-        (!(depthBuffer ^ (mGLTexDepth.idx != 0))))
+    if ((width == mImage.mWidth) && (mImage.mHeight == height) && !mImage.mIsCubemap /*&&
+        (!(depthBuffer ^ (mGLTexDepth.idx != 0)))*/)
 	{
         return;
 	}
@@ -531,7 +531,7 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
     mImage.mHeight = height;
     mImage.mHasMipmaps = false;
     mImage.mIsCubemap = false;
-    mImage.mFormat = TextureFormat::BGRA8;
+    mImage.mFormat = bgfx::TextureFormat::BGRA8;
 
     if (!width || !height)
     {
@@ -539,10 +539,10 @@ void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
         return;
     }
 
-	mGLTexID = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
+	mTexture = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
 }
 
-void RenderTarget::InitCube(int width, bool hasMipmaps)
+void ImageTexture::InitCube(int width, bool hasMipmaps)
 {
     if ((width == mImage.mWidth) && (mImage.mHeight == width) && mImage.mIsCubemap &&
         (mImage.mHasMipmaps == hasMipmaps))
@@ -555,7 +555,7 @@ void RenderTarget::InitCube(int width, bool hasMipmaps)
     mImage.mHeight = width;
     mImage.mHasMipmaps = hasMipmaps;
     mImage.mIsCubemap = true;
-    mImage.mFormat = TextureFormat::BGRA8;
+    mImage.mFormat = bgfx::TextureFormat::BGRA8;
 
     if (!width)
     {
@@ -563,5 +563,5 @@ void RenderTarget::InitCube(int width, bool hasMipmaps)
         return;
     }
 
-    mGLTexID = bgfx::createTextureCube(width, hasMipmaps, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
+    mTexture = bgfx::createTextureCube(width, hasMipmaps, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
 }

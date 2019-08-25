@@ -458,7 +458,7 @@ void Evaluators::SetEvaluators()
 {
     Clear();
     
-    ShaderHandle nodeVSShader = LoadShader("Node_vs");
+    bgfx::ShaderHandle nodeVSShader = LoadShader("Node_vs");
     mShaderHandles.push_back(nodeVSShader);
 
     // default shaders
@@ -507,13 +507,13 @@ void Evaluators::SetEvaluators()
         std::string vsShaderName = nodeName + "_vs";
         std::string fsShaderName = nodeName + "_fs";
         
-        ShaderHandle vsShader = LoadShader(vsShaderName.c_str());
-        ShaderHandle fsShader = LoadShader(fsShaderName.c_str());
+		bgfx::ShaderHandle vsShader = LoadShader(vsShaderName.c_str());
+		bgfx::ShaderHandle fsShader = LoadShader(fsShaderName.c_str());
 #ifndef __EMSCRIPTEN__
         std::string csShaderName = nodeName + "_cs";
-        ShaderHandle csShader = LoadShader(csShaderName.c_str());
+		bgfx::ShaderHandle csShader = LoadShader(csShaderName.c_str());
 #endif
-        ProgramHandle program{bgfx::kInvalidHandle};
+		bgfx::ProgramHandle program{bgfx::kInvalidHandle};
         if (vsShader.idx != bgfx::kInvalidHandle && fsShader.idx != bgfx::kInvalidHandle)
         {
             // valid VS/FS
@@ -782,7 +782,7 @@ namespace EvaluationAPI
 
         tgt->InitCube(image->mWidth, image->mHasMipmaps);
 
-        Image::Upload(image, tgt->mGLTexID, cubeFace);
+        Image::Upload(image, tgt->mTexture, cubeFace);
         evaluationContext->SetTargetDirty(target, Dirty::Parameter, true);
         return EVAL_OK;
     }
@@ -860,7 +860,7 @@ namespace EvaluationAPI
         }
         // if (gCurrentContext->GetEvaluationInfo().uiPass)
         //    return EVAL_OK;
-        renderTarget->InitBuffer(
+        renderTarget->Init2D(
             imageWidth, imageHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
 
         return EVAL_OK;
@@ -981,7 +981,7 @@ namespace EvaluationAPI
             return EVAL_ERR;
         }
         auto sourceImage = tgt->mImage;
-        TextureHandle transient = bgfx::createTexture2D(
+		bgfx::TextureHandle transient = bgfx::createTexture2D(
             uint16_t(sourceImage.mWidth)
             , uint16_t(sourceImage.mHeight)
             , sourceImage.mHasMipmaps
@@ -993,7 +993,7 @@ namespace EvaluationAPI
         
         // compute total size
         auto img = tgt->mImage;
-        unsigned int texelSize = bimg::getBitsPerPixel(img.mFormat)/8;
+        unsigned int texelSize = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(img.mFormat))/8;
         uint32_t size = 0; 
         
         for (size_t i = 0; i < img.GetMipmapCount(); i++)
@@ -1014,7 +1014,7 @@ namespace EvaluationAPI
         {
             for (size_t i = 0; i < img.GetMipmapCount(); i++)
             {
-                bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, 0);
+                bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, 0);
                 availableFrame = bgfx::readTexture(transient, ptr, i);
                 ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 				while (bgfx::frame() != availableFrame) {};
@@ -1026,7 +1026,7 @@ namespace EvaluationAPI
             {
                 for (size_t i = 0; i < img.GetMipmapCount(); i++)
                 {
-                    bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mGLTexID, i, 0, 0, cube);
+                    bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, cube);
                     availableFrame = bgfx::readTexture(transient, ptr, i);
                     ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
 					while (bgfx::frame() != availableFrame) {};
@@ -1049,7 +1049,7 @@ namespace EvaluationAPI
         
         if (!image->mIsCubemap)
         {
-            tgt->InitBuffer(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
+            tgt->Init2D(image->mWidth, image->mHeight, evaluationContext->mEvaluations[target].mbDepthBuffer);
         }
         else
         {
@@ -1061,7 +1061,7 @@ namespace EvaluationAPI
             int cubeFace = image->mIsCubemap ? int(face) : -1;
             for (size_t i = 0; i < image->GetMipmapCount(); i++)
             {
-                Image::Upload(image, tgt->mGLTexID, cubeFace, i);
+                Image::Upload(image, tgt->mTexture, cubeFace, i);
             }
         }
         

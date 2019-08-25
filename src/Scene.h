@@ -49,21 +49,6 @@ struct Scene
                 UV = 1 << 3,
             };
         };
-        /*
-        struct Buffer
-        {
-            unsigned int id;
-            unsigned int format;
-            unsigned int stride;
-            unsigned int count;
-        };
-        struct IndexBuffer
-        {
-            unsigned int id;
-            unsigned int stride;
-            unsigned int count;
-        };
-        */
         struct Primitive
         {
             ~Primitive();
@@ -75,16 +60,16 @@ struct Scene
             uint32_t mIndexCount;
             void AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count);
             void AddIndexBuffer(const void* data, unsigned int stride, unsigned int count);
-            void Draw(bgfx::ViewId viewId, ProgramHandle program) const;
+            void Draw(bgfx::ViewId viewId, bgfx::ProgramHandle program) const;
         };
         std::vector<Primitive> mPrimitives;
-        void Draw(bgfx::ViewId viewId, ProgramHandle program) const;
+        void Draw(bgfx::ViewId viewId, bgfx::ProgramHandle program) const;
     };
     std::vector<Mesh> mMeshes;
     std::vector<Mat4x4> mWorldTransforms;
     std::vector<int> mMeshIndex;
     std::string mName;
-    void Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, ProgramHandle program) const;
+    void Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, bgfx::ProgramHandle program) const;
 protected:
     static std::weak_ptr<Scene> mDefaultScene;
 };

@@ -4,6 +4,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
+SAMPLER2D(Sampler0, 0);
+SAMPLERCUBE(CubeSampler0, 1);
+
 uniform vec4 mode;
 
 vec4 EquirectToCubemap(vec2 vuv)

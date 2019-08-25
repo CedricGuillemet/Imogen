@@ -320,7 +320,7 @@ int GraphControler::ShowMultiplexed(const std::vector<size_t>& inputs, int curre
             }
             ImGui::PushID(index);
 
-            TextureHandle textureHandle;
+			bgfx::TextureHandle textureHandle;
             ImRect uvs;
             mEditingContext.GetThumb(inputs[index], textureHandle, uvs);
             if (ImGui::ImageButton((ImTextureID)(int64_t)textureHandle.idx, ImVec2(iconWidth, iconWidth), uvs.Min, uvs.Max, -1, ImVec4(0, 0, 0, 1)))
@@ -524,7 +524,7 @@ void GraphControler::NodeEdit()
             ImGui::PushID(1717171);
             ImGui::BeginGroup();
             HandlePinIO(mSelectedNodeIndex, 0, true);
-            TextureHandle maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
+			bgfx::TextureHandle maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
             bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
             float ofs = selectedNodeAsBackground ? 0.5f : 0.f;
             if (ImGui::ImageButton(
@@ -973,13 +973,9 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
     {
         AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUIProgress, nodeIndex, &mEditingContext);
     }
-    else if (NodeIsCubemap(nodeIndex))
-    {
-        AddUICustomDraw(drawList, rc, DrawUICallbacks::DrawUICubemap, nodeIndex, &mEditingContext);
-    }
     else
     {
-        TextureHandle textureHandle;
+		bgfx::TextureHandle textureHandle;
         ImRect uvs;
         mEditingContext.GetThumb(nodeIndex, textureHandle, uvs);
         if (textureHandle.idx)
@@ -1052,11 +1048,11 @@ void GraphControler::ComputeGraphArrays()
     }
 }
 
-TextureHandle GraphControler::GetBitmapInfo(size_t nodeIndex) const
+bgfx::TextureHandle GraphControler::GetBitmapInfo(size_t nodeIndex) const
 {
-    TextureHandle stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
-    TextureHandle stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
-    TextureHandle stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
+	bgfx::TextureHandle stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
+	bgfx::TextureHandle stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");
+	bgfx::TextureHandle stageCompute = gImageCache.GetTexture("Stock/StageCompute.png");
 
     if (NodeIsCompute(nodeIndex))
     {

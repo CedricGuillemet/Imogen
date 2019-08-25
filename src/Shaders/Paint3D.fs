@@ -4,6 +4,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
+SAMPLER2D(Sampler0, 0);
+SAMPLER2D(Sampler1, 1);
+
 vec4 brushSample(vec2 uv, float radius)
 {
 	vec2 nuv = (uv) / radius + vec2(0.5, 0.5);

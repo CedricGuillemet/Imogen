@@ -29,7 +29,7 @@
 
 std::weak_ptr<Scene> Scene::mDefaultScene;
 
-void Scene::Mesh::Primitive::Draw(bgfx::ViewId viewId, ProgramHandle program) const
+void Scene::Mesh::Primitive::Draw(bgfx::ViewId viewId, bgfx::ProgramHandle program) const
 {
     bgfx::setIndexBuffer(mIbh);
     for (auto i = 0; i < mStreams.size(); i++)
@@ -61,6 +61,15 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
     {
     case Format::UV:
         mDecl.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
+		if (!bgfx::getCaps()->originBottomLeft)
+		{
+			float *pv = (float*)data;
+			for (unsigned int i = 0;i<count;i++)
+			{
+				const int idx = i * 2 + 1;
+				pv[idx] = 1.f - pv[idx];
+			}
+		}
         break;
     case Format::COL:
         mDecl.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float);
@@ -88,7 +97,7 @@ void Scene::Mesh::Primitive::AddIndexBuffer(const void* data, unsigned int strid
     mIndexCount = count;
 }
 
-void Scene::Mesh::Draw(bgfx::ViewId viewId, ProgramHandle program) const
+void Scene::Mesh::Draw(bgfx::ViewId viewId, bgfx::ProgramHandle program) const
 {
     for (auto& prim : mPrimitives)
     {
@@ -96,7 +105,7 @@ void Scene::Mesh::Draw(bgfx::ViewId viewId, ProgramHandle program) const
     }
 }
 
-void Scene::Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, ProgramHandle program) const
+void Scene::Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, bgfx::ProgramHandle program) const
 {
     for (unsigned int i = 0; i < mMeshIndex.size(); i++)
     {
@@ -128,7 +137,7 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     auto& mesh = defaultScene->mMeshes.back();
     mesh.mPrimitives.resize(1);
     auto& prim = mesh.mPrimitives.back();
-    static const float fsVts[] = { 0.f, 0.f,
+    static float fsVts[] = { 0.f, 0.f,
         1.f, 0.f,
         0.f, 1.f,
         1.f, 1.f,};

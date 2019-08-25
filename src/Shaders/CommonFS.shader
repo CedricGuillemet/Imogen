@@ -92,6 +92,7 @@ vec4 cubemap2D( sampler2D sam, in vec3 d )
 }
 */
 
+/*
 SAMPLER2D(Sampler0, 0);
 SAMPLER2D(Sampler1, 1);
 SAMPLER2D(Sampler2, 2);
@@ -108,4 +109,4 @@ SAMPLERCUBE(CubeSampler4, 12);
 SAMPLERCUBE(CubeSampler5, 13);
 SAMPLERCUBE(CubeSampler6, 14);
 SAMPLERCUBE(CubeSampler7, 15);
-
+*/

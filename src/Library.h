@@ -435,7 +435,7 @@ struct Material
     uint32_t mBackgroundNode;
 
     // run time
-    TextureHandle mThumbnailTextureHandle;
+    bgfx::TextureHandle mThumbnailTextureHandle;
     unsigned int mRuntimeUniqueId;
 };
 

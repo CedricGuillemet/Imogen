@@ -65,7 +65,7 @@ struct Image
         other.mDataSize = 0;
         other.mHasMipmaps = false;
         other.mIsCubemap = 0;
-        other.mFormat = TextureFormat::Unknown;
+        other.mFormat = bgfx::TextureFormat::Unknown;
         other.mBits = 0;
     }
 
@@ -83,7 +83,7 @@ struct Image
     uint32_t mDataSize;
     bool mHasMipmaps;
     bool mIsCubemap;
-    TextureFormat mFormat;
+    bgfx::TextureFormat::Enum mFormat;
     Image& operator=(const Image& other)
     {
         mDecoder = other.mDecoder;
@@ -138,7 +138,7 @@ struct Image
 
     static int Read(const char* filename, Image* image);
     static int Free(Image* image);
-    static TextureHandle Upload(const Image* image, TextureHandle textureHandle, int cubeFace = -1, int mipmap = 0);
+    static bgfx::TextureHandle Upload(const Image* image, bgfx::TextureHandle textureHandle, int cubeFace = -1, int mipmap = 0);
     static int LoadSVG(const char* filename, Image* image, float dpi);
     static int ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename = nullptr);
     static void VFlip(Image* image);
@@ -160,12 +160,12 @@ struct ImageCache
 {
     // synchronous texture cache
     // use for simple textures(stock) or to replace with a more efficient one
-    TextureHandle GetTexture(const std::string& filename);
+	bgfx::TextureHandle GetTexture(const std::string& filename);
     Image* GetImage(const std::string& filepath);
     void AddImage(const std::string& filepath, Image* image);
     const std::pair<uint16_t, uint16_t> GetImageSize(const std::string& filename);
 protected:
-    std::map<std::string, TextureHandle> mSynchronousTextureCache;
+    std::map<std::string, bgfx::TextureHandle> mSynchronousTextureCache;
     std::map<std::string, Image> mImageCache;
     std::map < std::string, std::pair<uint16_t, uint16_t> > mImageSizes;
     std::mutex mCacheAccess;
@@ -174,16 +174,16 @@ extern ImageCache gImageCache;
 
 void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 
-class RenderTarget
+class ImageTexture
 {
 public:
 
-    void InitBuffer(int width, int height, bool depthBuffer);
+    void Init2D(int width, int height, bool depthBuffer);
     void InitCube(int width, bool hasMipmaps);
     void Destroy();
-    void Swap(RenderTarget& other);
+    void Swap(ImageTexture& other);
 
     Image mImage;
-    TextureHandle mGLTexID = { bgfx::kInvalidHandle };
-    TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
+	bgfx::TextureHandle mTexture = { bgfx::kInvalidHandle };
+	//bgfx::TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
 };

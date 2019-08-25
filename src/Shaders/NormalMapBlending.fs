@@ -3,6 +3,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
+SAMPLER2D(Sampler0, 0);
+SAMPLER2D(Sampler1, 1);
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // Normal map blending by ZigguratVertigo https://www.shadertoy.com/view/4t2SzR
 

@@ -97,11 +97,11 @@ struct Evaluators
         }
         void Clear();
 
-        ProgramHandle mProgram;
+		bgfx::ProgramHandle mProgram;
         NodeFunction mCFunction;
         int mType;
         int mMask;
-        std::vector<UniformHandle> mUniformHandles;
+        std::vector<bgfx::UniformHandle> mUniformHandles;
 #if USE_PYTHON    
         pybind11::module mPyModule;
 
@@ -117,7 +117,7 @@ struct Evaluators
 protected:
     std::map<std::string, EvaluatorScript> mEvaluatorScripts;
     std::vector<EvaluatorScript*> mEvaluatorPerNodeType;
-    std::vector<ShaderHandle> mShaderHandles;
+    std::vector<bgfx::ShaderHandle> mShaderHandles;
 public:
     bgfx::UniformHandle u_viewRot{ bgfx::kInvalidHandle };
     bgfx::UniformHandle u_viewProjection{ bgfx::kInvalidHandle };
@@ -131,11 +131,11 @@ public:
     bgfx::UniformHandle u_pass{ bgfx::kInvalidHandle };
     bgfx::UniformHandle u_viewport{ bgfx::kInvalidHandle };
 
-    ProgramHandle mBlitProgram{ bgfx::kInvalidHandle };
-    ProgramHandle mProgressProgram{ bgfx::kInvalidHandle };
-    ProgramHandle mDisplayCubemapProgram{ bgfx::kInvalidHandle };
-    std::vector<UniformHandle> mSamplers2D;
-    std::vector<UniformHandle> mSamplersCube;
+	bgfx::ProgramHandle mBlitProgram{ bgfx::kInvalidHandle };
+	bgfx::ProgramHandle mProgressProgram{ bgfx::kInvalidHandle };
+	bgfx::ProgramHandle mDisplayCubemapProgram{ bgfx::kInvalidHandle };
+    std::vector<bgfx::UniformHandle> mSamplers2D;
+    std::vector<bgfx::UniformHandle> mSamplersCube;
     bgfx::UniformHandle u_time{ bgfx::kInvalidHandle };
     bgfx::UniformHandle u_uvTransform{ bgfx::kInvalidHandle };
 };

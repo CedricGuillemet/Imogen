@@ -4,6 +4,12 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
+SAMPLER2D(Sampler0, 0);
+SAMPLER2D(Sampler1, 1);
+SAMPLER2D(Sampler2, 2);
+SAMPLER2D(Sampler3, 3);
+SAMPLERCUBE(CubeSampler4, 4);
+
 /////////////////////////////////////////////////////////////////////////
 // PBR by knarkowicz https://www.shadertoy.com/view/4sSfzK
 

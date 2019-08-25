@@ -3,6 +3,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
+SAMPLER2D(Sampler0, 0);
+
 uniform vec4 strength;// = 0.6;
 uniform vec4 area;// = 0.0075;
 uniform vec4 falloff;// = 0.00001;

@@ -4,6 +4,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
+SAMPLER2D(Sampler0, 0);
+
 uniform vec4 passCount;
 
 // source
@@ -11,13 +13,13 @@ uniform vec4 passCount;
 
 vec4 Pack(vec4 coord)
 {
-    float s = 256.0;//float(texture2DSize(Sampler0, 0).x);
+    float s = float(256.0/*textureSize(Sampler0, 0).x*/);
     return coord / s;
 }
 
 vec4 Unpack(vec4 v)
 {
-    float s = 256.0;//float(textureSize(Sampler0, 0).x);
+    float s = float(256.0/*textureSize(Sampler0, 0).x*/);
     return v * s;
 }
 

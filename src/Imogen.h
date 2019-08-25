@@ -131,7 +131,7 @@ protected:
     void Playback(bool timeHasChanged);
 
     int GetFunctionByName(const char* functionName) const;
-    bool ImageButton(const char* functionName, TextureHandle icon, ImVec2 size);
+    bool ImageButton(const char* functionName, bgfx::TextureHandle icon, ImVec2 size);
     bool Button(const char* functionName, const char* label, ImVec2 size);
 
     static void ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line_start);

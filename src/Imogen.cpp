@@ -90,7 +90,7 @@ inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData da
             url = url.substr(0, sz);
         }
 
-        TextureHandle textureHandle = gImageCache.GetTexture(url);
+		bgfx::TextureHandle textureHandle = gImageCache.GetTexture(url);
         if (textureHandle.idx)
         {
             auto size = gImageCache.GetImageSize(url);
@@ -270,12 +270,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-            if (selNode != -1 && nodeGraphControler.NodeIsCubemap(selNode))
-            {
-                AddUICustomDraw(
-                    draw_list, rc, DrawUICallbacks::DrawUICubemap, selNode, &nodeGraphControler.mEditingContext);
-            }
-            else if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
+			if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
             {
                 AddUICustomDraw(
                     draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
@@ -389,7 +384,7 @@ struct PinnedTaskUploadImage : PinnedTask
 
     virtual void Execute()
     {
-        TextureHandle textureHandle = Image::Upload(mImage, {0});
+		bgfx::TextureHandle textureHandle = Image::Upload(mImage, {0});
         if (mbIsThumbnail)
         {
             Material* material = library.Get(mIdentifier);
@@ -522,7 +517,7 @@ struct DecodeImageTaskSet : TaskSet
 
 void Imogen::DecodeThumbnailAsync(Material* material)
 {
-    static TextureHandle defaultTextureHandle = gImageCache.GetTexture("Stock/thumbnail-icon.png");
+    static bgfx::TextureHandle defaultTextureHandle = gImageCache.GetTexture("Stock/thumbnail-icon.png");
     if (!material->mThumbnailTextureHandle.idx)
     {
         material->mThumbnailTextureHandle = defaultTextureHandle;
@@ -850,7 +845,7 @@ void Imogen::LibraryEdit(Library& library)
     }
     ImGui::SameLine();
 
-    TextureHandle libraryViewTextureHandle = gImageCache.GetTexture("Stock/library-view.png");
+	bgfx::TextureHandle libraryViewTextureHandle = gImageCache.GetTexture("Stock/library-view.png");
     static const ImVec2 iconSize(16.f, 16.f);
     for (int i = 0; i < 4; i++)
     {
@@ -1671,7 +1666,7 @@ int Imogen::GetFunctionByName(const char* functionName) const
     return -1;
 }
 
-bool Imogen::ImageButton(const char* functionName, TextureHandle icon, ImVec2 size)
+bool Imogen::ImageButton(const char* functionName, bgfx::TextureHandle icon, ImVec2 size)
 {
     bool res = ImGui::ImageButton((ImTextureID)(int64_t)icon.idx, size);
     if (ImGui::IsItemHovered())
@@ -1999,7 +1994,7 @@ void Imogen::ShowTitleBar(Builder* builder)
     ImGui::SameLine();
 
     // exporting frame / build
-    TextureHandle buildIcon = gImageCache.GetTexture("Stock/Build.png");
+	bgfx::TextureHandle buildIcon = gImageCache.GetTexture("Stock/Build.png");
     if (ImageButton("BuildMaterial", buildIcon, ImVec2(30, 30)))
     {
         BuildCurrentMaterial(builder);
@@ -2138,8 +2133,8 @@ void Imogen::ShowTimeLine()
         PlayPause();
     }
 
-    TextureHandle playNoLoopTextureHandle = gImageCache.GetTexture("Stock/PlayNoLoop.png");
-    TextureHandle playLoopTextureHandle = gImageCache.GetTexture("Stock/PlayLoop.png");
+	bgfx::TextureHandle playNoLoopTextureHandle = gImageCache.GetTexture("Stock/PlayNoLoop.png");
+	bgfx::TextureHandle playLoopTextureHandle = gImageCache.GetTexture("Stock/PlayLoop.png");
 
     ImGui::SameLine();
     if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureHandle.idx : playNoLoopTextureHandle.idx),
@@ -2283,7 +2278,7 @@ void Imogen::ShowDebugWindow()
         for (auto& atlas : atlases)
         {
             ImGui::Text("Atlas %d", int(&atlas - atlases.data()));
-            ImGui::Image((ImTextureID)(int64_t)atlas.mGLTexID.idx, ImVec2(1024, 1024));
+            ImGui::Image((ImTextureID)(int64_t)atlas.idx, ImVec2(1024, 1024));
         }
     }
     if (ImGui::CollapsingHeader("Memory"))

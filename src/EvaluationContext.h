@@ -47,48 +47,47 @@ struct UIInput
 
 struct EvaluationThumbnails
 {
-    struct Thumb
-    {
-        unsigned short mAtlasIndex = 0xFFFF;
-        unsigned short mThumbIndex = 0xFFFF;
-        bool Valid() const
-        {
-            return mAtlasIndex != 0xFFFF && mThumbIndex != 0xFFFF;
-        }
-    };
+	struct Thumb
+	{
+		unsigned short mAtlasIndex = 0xFFFF;
+		unsigned short mThumbIndex = 0xFFFF;
+		bool Valid() const
+		{
+			return mAtlasIndex != 0xFFFF && mThumbIndex != 0xFFFF;
+		}
+	};
 
-    void Clear();
-    Thumb AddThumb();
-    void DelThumb(const Thumb thumb);
-    void GetThumb(const Thumb thumb, TextureHandle& textureId, ImRect& uvs) const;
-    RenderTarget& GetThumbTarget(const Thumb thumb);
-	FrameBufferHandle& GetThumbFrameBuffer(const Thumb thumb);
-    void GetThumbCoordinates(const Thumb thumb, int* coordinates) const;
-    std::vector<RenderTarget> GetAtlasTextures() const;
+	void Clear();
+	Thumb AddThumb();
+	void DelThumb(const Thumb thumb);
+	void GetThumb(const Thumb thumb, bgfx::TextureHandle& textureId, ImRect& uvs) const;
+	bgfx::FrameBufferHandle& GetThumbFrameBuffer(const Thumb thumb);
+	void GetThumbCoordinates(const Thumb thumb, int* coordinates) const;
+	std::vector<bgfx::TextureHandle> GetAtlasTextures() const;
 protected:
 
-    const size_t AtlasSize = 4096;
-    const size_t ThumbnailSize = 256;
-    const size_t ThumbnailsPerAtlas = (AtlasSize / ThumbnailSize) * (AtlasSize / ThumbnailSize);
+	const size_t AtlasSize = 4096;
+	const size_t ThumbnailSize = 256;
+	const size_t ThumbnailsPerAtlas = (AtlasSize / ThumbnailSize) * (AtlasSize / ThumbnailSize);
 
-    ImRect ComputeUVFromIndexInAtlas(size_t thumbIndex) const;
-    Thumb AddThumbInAtlas(size_t atlasIndex);
+	ImRect ComputeUVFromIndexInAtlas(size_t thumbIndex) const;
+	Thumb AddThumbInAtlas(size_t atlasIndex);
 
-    struct ThumbAtlas
-    {
-        ThumbAtlas(size_t thumbnailsPerAtlas)
-        {
-            mbUsed.resize(thumbnailsPerAtlas, false);
-        }
-        RenderTarget mTarget;
-		FrameBufferHandle mFrameBuffer;
-        std::vector<bool> mbUsed;
-        size_t mUsedCount = 0;
-    };
+	struct ThumbAtlas
+	{
+		ThumbAtlas(size_t thumbnailsPerAtlas)
+		{
+			mbUsed.resize(thumbnailsPerAtlas, false);
+		}
+		bgfx::FrameBufferHandle mFrameBuffer;
+		std::vector<bool> mbUsed;
+		size_t mUsedCount = 0;
+	};
 
-    std::vector<ThumbAtlas> mAtlases;
-    std::vector<Thumb> mThumbs;
+	std::vector<ThumbAtlas> mAtlases;
+	std::vector<Thumb> mThumbs;
 };
+
 
 struct EvaluationContext
 {
@@ -105,31 +104,31 @@ struct EvaluationContext
     int GetCurrentTime() const { return mCurrentTime; }
     void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
-    void GetThumb(size_t nodeIndex, TextureHandle& textureHandle, ImRect& uvs) const 
+    void GetThumb(size_t nodeIndex, bgfx::TextureHandle& textureHandle, ImRect& uvs) const
     { 
         assert(mUseThumbnail);
         mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); 
     }
 
-    TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
+	bgfx::TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
 
-    RenderTarget* GetRenderTarget(size_t nodeIndex) 
+    ImageTexture* GetRenderTarget(size_t nodeIndex) 
     { 
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget; 
     }
     
-    const RenderTarget* GetRenderTarget(size_t nodeIndex) const
+    const ImageTexture* GetRenderTarget(size_t nodeIndex) const
     {
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget;
     }
     
-	RenderTarget* CreateRenderTarget(size_t nodeIndex)
+	ImageTexture* CreateRenderTarget(size_t nodeIndex)
 	{
 		assert(nodeIndex < mEvaluations.size());
 		assert(!mEvaluations[nodeIndex].mTarget);
-		mEvaluations[nodeIndex].mTarget = new RenderTarget;
+		mEvaluations[nodeIndex].mTarget = new ImageTexture;
 		return mEvaluations[nodeIndex].mTarget;
 	}
 
@@ -178,7 +177,7 @@ struct EvaluationContext
 
     struct Evaluation
     {
-        RenderTarget* mTarget = nullptr;
+        ImageTexture* mTarget = nullptr;
         
         EvaluationThumbnails::Thumb mThumb;
         float mProgress             = 0.f;
@@ -213,7 +212,7 @@ protected:
 
     EvaluationThumbnails mThumbnails;
 
-    void EvaluateGLSL(const EvaluationStage& evaluationStage, bgfx::ViewId& viewId, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
     void EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo);
 #ifdef USE_PYTHON
     void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
@@ -230,18 +229,18 @@ protected:
 
     void BindTextures(const EvaluationStage& evaluationStage,
                       size_t nodeIndex,
-                      RenderTarget* reusableTarget);
+                      ImageTexture* reusableTarget);
     //void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
     void ComputeTargetUseCount();
     void ReleaseInputs(size_t nodeIndex);
 
-    RenderTarget* AcquireRenderTarget(int width, int height, bool depthBuffer);
-    RenderTarget* AcquireClone(RenderTarget* source);
-    void ReleaseRenderTarget(RenderTarget* renderTarget);
+    ImageTexture* AcquireRenderTarget(int width, int height, bool depthBuffer);
+    ImageTexture* AcquireClone(ImageTexture* source);
+    void ReleaseRenderTarget(ImageTexture* renderTarget);
 
 
-    std::vector<RenderTarget*> mAvailableRenderTargets;
+    std::vector<ImageTexture*> mAvailableRenderTargets;
 #if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 #endif
@@ -296,7 +295,6 @@ private:
 
 namespace DrawUICallbacks
 {
-    void DrawUICubemap(EvaluationContext* context, size_t nodeIndex);
     void DrawUISingle(EvaluationContext* context, size_t nodeIndex);
     void DrawUIProgress(EvaluationContext* context, size_t nodeIndex);
 } // namespace DrawUICallbacks

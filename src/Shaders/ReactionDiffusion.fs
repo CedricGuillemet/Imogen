@@ -4,6 +4,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
+SAMPLER2D(Sampler0, 0);
+
 // adapted from https://www.shadertoy.com/view/4sccRj
 uniform vec4 boost;
 uniform vec4 divisor;

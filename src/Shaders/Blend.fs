@@ -3,6 +3,9 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "bgfx_shader.sh"
 #include "CommonFS.shader"
 
+SAMPLER2D(Sampler0, 0);
+SAMPLER2D(Sampler1, 1);
+
 uniform vec4 A;
 uniform vec4 B;
 uniform vec4 operation;

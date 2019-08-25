@@ -107,7 +107,7 @@ EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumb()
 	bgfx::frame();
 	bgfx::setViewFrameBuffer(1, fb);
 	bgfx::setViewRect(1, 0, 0, AtlasSize, AtlasSize);
-	bgfx::setViewClear(1, BGFX_CLEAR_COLOR /*| BGFX_CLEAR_DEPTH*/, 0xFF000000, 1.0f, 0);
+	bgfx::setViewClear(1, BGFX_CLEAR_COLOR /*| BGFX_CLEAR_DEPTH*/, 0x00000000, 1.0f, 0);
 	bgfx::touch(1);
 	bgfx::frame();
 
@@ -536,12 +536,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
     
     int passCount = GetIntParameter(evaluationStage.mType, parameters, "passCount", 1);
-    ImageTexture* transientTarget = nullptr;
-    if (passCount > 1)
-    {
-        // new transient target
-        transientTarget = AcquireClone(tgt);
-    }
+    
 
     auto w = tgt->mImage.mWidth;
     auto h = tgt->mImage.mHeight;
@@ -580,7 +575,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 evaluationInfo.mipmapNumber = float(mip);
                 evaluationInfo.mipmapCount = mipmapCount;
 
-                BindTextures(evaluationStage, nodeIndex, passNumber ? transientTarget : nullptr);
+                BindTextures(evaluationStage, nodeIndex, passNumber ? tgt : nullptr);
 
                 if (evaluation.mbClearBuffer)
                 {
@@ -588,7 +583,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 }
 
                 SetUniforms(nodeIndex);
-                
+
                 {
                     uint64_t state = 0
                         | BGFX_STATE_WRITE_RGB
@@ -616,18 +611,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 				bgfx::frame();
 			} // face
         } // mip
-        // swap target for multipass
-        // set previous target as source
-        if (passCount > 1 && passNumber != (passCount - 1))
-        {
-            transientTarget->Swap(*tgt);
-        }
     } // passNumber
 
-    if (transientTarget)
-    {
-        transientTarget->Destroy();
-    }
     viewId++;
 }
 
@@ -663,7 +648,7 @@ void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex
 	bgfx::setViewFrameBuffer(viewId, thumbFrameBuffer);
 	auto h = sourceCoords[3] - sourceCoords[1];
 	bgfx::setViewRect(viewId, sourceCoords[0], sourceCoords[1], sourceCoords[2] - sourceCoords[0], h);
-	bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR /*| BGFX_CLEAR_DEPTH*/, 0x3030F0ff, 1.0f, 0);
+	bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR /*| BGFX_CLEAR_DEPTH*/, 0x303030ff, 1.0f, 0);
 	uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS;
 
 	bgfx::setState(state);
@@ -734,6 +719,10 @@ void EvaluationContext::ComputeTargetUseCount()
 
 void EvaluationContext::ReleaseInputs(size_t nodeIndex)
 {
+	if (!mBuilding)
+	{
+		return;
+	}
     // is this node used anytime soon?
     if (!mEvaluations[nodeIndex].mUseCount && mEvaluations[nodeIndex].mTarget && !mEvaluations[nodeIndex].mbPersistent)
     {

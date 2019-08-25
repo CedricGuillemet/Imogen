@@ -928,12 +928,11 @@ void GraphControler::ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int
 
 bool GraphControler::NodeIs2D(size_t nodeIndex) const
 {
-    /*auto target = mEditingContext.GetRenderTarget(nodeIndex); TODOEVA
+    auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
     {
         return !target->mImage.mIsCubemap;
     }
-    */
     return false;
 }
 
@@ -944,11 +943,11 @@ bool GraphControler::NodeIsCompute(size_t nodeIndex) const
 
 bool GraphControler::NodeIsCubemap(size_t nodeIndex) const
 {
-    /*auto target = mEditingContext.GetRenderTarget(nodeIndex); TODOEVA
+    auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
     {
         return target->mImage.mIsCubemap;
-    }*/
+    }
     return false;
 }
 

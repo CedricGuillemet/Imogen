@@ -120,25 +120,6 @@
             "description":"Higher value for the Hermite interpolation. Result is undertimined when high value < low value."
 		}]
 	}, {
-		"name": "Pixelize",
-		"category": 0,
-        "description":"Lower the resolution of the image using nearest filter.",
-		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
-		"inputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "scale",
-			"type": "Float",
-			"default": "10.0",
-            "description":"Number of pixels on a side."
-		}]
-	}, {
 		"name": "Blur",
 		"category": 4,
         "description":"Performs a Directional of Box blur filter. Directional blur is a gaussian pass with 16 pixels. Box is 16x16.",
@@ -448,10 +429,14 @@
             "description":"Different techniques for blending. Check the examples below to see the differences."
 		}]
 	}, {
-		"name": "iqnoise",
+		"name": "Voronoi",
 		"category": 5,
         "description":"Generate noise based on work by Inigo Quilez.",
 		"color": [0.5882353186607361, 0.9803922176361084, 0.5882353186607361, 1.0],
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
 		"outputs": [{
 			"name": "",
 			"type": "Float4"
@@ -472,15 +457,19 @@
 			"default":"10.0",
             "description":""
 		}, {
-			"name": "u",
+			"name": "noise",
 			"type": "Float",
 			"default":"1.0",
             "description":"Interpolate between centered seed (checker) to jittered random position."
 		}, {
-			"name": "v",
+			"name": "colorInterpolation",
 			"type": "Float",
 			"default":"0.5",
             "description":"Interpolation factor between full color to distance-like color per cell."
+		}, {
+			"name": "distanceBlend",
+			"type": "Float",
+            "description":"Distance computation type interpolate between Euclydean distance (0.) and Manhattan Distance (1.)"
 		}]
 	}, {
 		"name": "WorleyNoise",
@@ -1076,34 +1065,6 @@
 			"type": "Float",
             "default":"0.01",
             "description":"The radius size in clipspace used for detection. The higher value, the broader the search is."
-		}]
-	}, {
-		"name": "Voronoi",
-		"category": 5,
-        "description":"Generates a Voronoi texture based on random seeds.",
-		"color": [0.5882353186607361, 0.9803922176361084, 0.5882353186607361, 1.0],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "pointCount",
-			"type": "Int",
-			"default":"20",
-            "description":"The number of seeds."
-		},{
-			"name": "seed",
-			"type": "Float",
-			"default":"13.37",
-            "description":"The seeds random position base value."
-		}, {
-			"name": "distanceBlend",
-			"type": "Float",
-            "description":"Distance computation type interpolate between Euclydean distance (0.) and Manhattan Distance (1.)"
-		}, {
-			"name": "squareWidth",
-			"type": "Float",
-            "description":"Size of each seed in clipspace size."
 		}]
 	}, {
 		"name": "Kaleidoscope",

@@ -5,7 +5,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "Common.shader"
 
 SAMPLER2D(Sampler0, 0);
-SAMPLERCUBE(CubeSampler0, 1);
+SAMPLERCUBE(CubeSampler0, 8);
 
 uniform vec4 mode;
 

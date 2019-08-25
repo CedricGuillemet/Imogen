@@ -4,10 +4,14 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-uniform vec4 pointCount;
-uniform vec4 seed;
+SAMPLER2D(Sampler0, 0);
+
+uniform vec4 translation;
+uniform vec4 size;
+uniform vec4 noise;
+uniform vec4 colorInterpolation;
 uniform vec4 distanceBlend;
-uniform vec4 squareWidth;
+
 
 float rand(float n){return fract(sin(n) * 43758.5453123);}
 
@@ -26,26 +30,41 @@ float sdAxisAlignedRectManhattan(vec2 uv, vec2 tl, vec2 br)
 
 void main()
 {
-    float col = 1.f;
-    float minDist = 10.;
-    int ipointCount = int(pointCount.x);
-    for(int i = 0;i<64;i++)
+    
+	vec2 nuv = v_texcoord0 + translation.xy;
+    //vec2 pst = floor(v_texcoord0*size.x);
+    vec2 p = floor(nuv*size.x);
+    vec2 f = fract(nuv*size.x);
+		
+	float k = 1.0+63.0*pow(1.0-colorInterpolation.x,4.0);
+	
+	vec3 va = vec3(0.,0.,0.);
+	float wt = 0.0;
+    vec3 color;
+    for( int j=-2; j<=2; j++ )
     {
-        if (i<ipointCount)
+        for( int i=-2; i<=2; i++ )
         {
-            float f = float(i) * seed.x;
-            vec4 r = vec4(rand(f), rand(f*1.2721), rand(f*7.8273) * squareWidth.x, rand(f*7.8273) * 0.9 + 0.1);        
-            
-            float d = mix(sdAxisAlignedRect(v_texcoord0, r.xy-r.zz, r.xy+r.zz),
-                sdAxisAlignedRectManhattan(v_texcoord0, r.xy-r.zz, r.xy+r.zz), distanceBlend.x);
-            
-            if (d < minDist)
-            {
-                minDist = d;
-                col = r.w;
-            }
-        }
-    }        
+            vec2 g = vec2( float(i),float(j) );
+            vec3 o = hash3( p + g )*vec3(noise.x,noise.x,1.0);
+                
+            vec2 r = g - f + o.xy;
+            float d = mix(sqrt(dot(r,r)), abs(r.x)+abs(r.y), distanceBlend.x);
+            float ww = pow( 1.0-smoothstep(0.0,1.414,d), k );
 
-    gl_FragColor = vec4(col, col, col, col);
+            if (u_inputIndices[0].x > -1.)
+            {
+                color = texture2D(Sampler0, (p + g + o.xy ) / size.x - translation.xy).xyz;
+            }
+            else
+            {
+                color = vec3(o.zzz);
+            }
+            va += color * ww;
+            wt += ww;
+        }
+    }
+
+    vec3 result = va/wt;
+	gl_FragColor = vec4(result, 1.);
 }

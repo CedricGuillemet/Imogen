@@ -187,7 +187,7 @@ def imageTests():
     Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/crop-sourceSize.jpg")
     Imogen.Build()  
     Imogen.DeleteGraph()
-    '''
+    
 
     ###########################################
     # channel packer to png
@@ -209,6 +209,39 @@ def imageTests():
     Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/ChannelPacker.png")
     Imogen.Build()  
     Imogen.DeleteGraph()
+    
+    ###########################################
+    # blur
+    Imogen.NewGraph("Blur")
+    imageRead = Imogen.AddNode("ImageRead")
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/Vancouver.jpg")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    blur = Imogen.AddNode("Blur")
+    Imogen.Connect(imageRead, 0, blur, 0)
+    Imogen.Connect(blur, 0, imageWrite, 0)
+    Imogen.SetParameter(blur, "strength", "0.001")
+    # 1 dir pass
+    Imogen.SetParameter(imageWrite, "mode", "0")
+    Imogen.SetParameter(imageWrite, "width", "1024")
+    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.SetParameter(blur, "angle", "45")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/blur-directional-1pass.jpg")
+    Imogen.Build()
+    # 30 dir passes
+    Imogen.SetParameter(blur, "passCount", "30")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/blur-directional-30passes.jpg")
+    Imogen.Build()
+    # 1 box pass
+    Imogen.SetParameter(blur, "type", "1")
+    Imogen.SetParameter(blur, "passCount", "1")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/blur-box-1pass.jpg")
+    Imogen.Build()
+    # 30 box pass
+    Imogen.SetParameter(blur, "passCount", "30")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/blur-box-30passes.jpg")
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    '''
     
     # 6jpg -> cubemap filter -> dds
     # hdr -> equirect2cubemap -> filter -> hdr

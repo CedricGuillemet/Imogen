@@ -781,13 +781,8 @@ void Imogen::UpdateNewlySelectedGraph()
         mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
-        
-        
-        //mNodeGraphControler->mEditingContext.RunAll(); todogl
-
         //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         //mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
-
     }
 }
 

@@ -242,7 +242,39 @@ def imageTests():
     Imogen.Build()
     Imogen.DeleteGraph()
     '''
-    
+    ###########################################
+    # voronoi from image
+    Imogen.NewGraph("Voronoi")
+    imageRead = Imogen.AddNode("ImageRead")
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/Vancouver.jpg")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    voronoi = Imogen.AddNode("Voronoi")
+    Imogen.Connect(imageRead, 0, voronoi, 0)
+    Imogen.Connect(voronoi, 0, imageWrite, 0)
+    Imogen.SetParameter(voronoi, "size", "30")
+    Imogen.SetParameter(voronoi, "noise", "0.5")
+    Imogen.SetParameter(voronoi, "colorInterpolation", "0")
+    Imogen.SetParameter(imageWrite, "mode", "0")
+    Imogen.SetParameter(imageWrite, "width", "1024")
+    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Voronoi-image.jpg")
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    # noise generator
+    Imogen.NewGraph("Voronoi")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    voronoi = Imogen.AddNode("Voronoi")
+    Imogen.Connect(voronoi, 0, imageWrite, 0)
+    Imogen.SetParameter(voronoi, "size", "20")
+    Imogen.SetParameter(voronoi, "noise", "1.0")
+    Imogen.SetParameter(voronoi, "colorInterpolation", "1")
+    # from image
+    Imogen.SetParameter(imageWrite, "mode", "0")
+    Imogen.SetParameter(imageWrite, "width", "1024")
+    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.SetParameter(imageWrite, "filename", "Autotests/Run/Voronoi-noise.jpg")
+    Imogen.Build()
+    Imogen.DeleteGraph()
     # 6jpg -> cubemap filter -> dds
     # hdr -> equirect2cubemap -> filter -> hdr
     # reaction diffusion / distance

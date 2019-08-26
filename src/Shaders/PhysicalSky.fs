@@ -73,7 +73,8 @@ void main()
 	const float intensity = 1.8;
 	const int step_count = 16;
 
-	vec3 eyedir = get_world_normal(v_texcoord0);
+	vec2 uv = vec2(v_texcoord0.x, 1.-v_texcoord0.y);
+	vec3 eyedir = get_world_normal(uv);
 	vec3 ld = normalize(lightdir.xyz);
 	float alpha = dot(eyedir, ld);
 	float rayleigh_factor = phase(alpha, -0.01)*rayleighBrightness.x;

@@ -36,12 +36,12 @@ static const float rotMatrices[6][16] = {
     // -x
     {0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1},
 
-	// -y
-{1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
 
     //+y
     {1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1},
 
+	// -y
+{1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
 
 
     // +z
@@ -806,7 +806,7 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
     }
 
     ReleaseInputs(nodeIndex);
-    evaluation.mDirtyFlag = 0;
+    //evaluation.mDirtyFlag = 0;
 }
 
 #if USE_FFMPEG

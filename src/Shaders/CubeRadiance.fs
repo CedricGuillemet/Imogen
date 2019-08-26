@@ -11,7 +11,7 @@ uniform vec4 sampleCount;
 
 vec3 get_world_normal(vec2 uv)
 {
-	vec3 dir = mul(vec4(uv * 2.0 - 1.0, 1.0, 0.0), u_viewRot).xyz;
+	vec3 dir = mul(u_viewRot, vec4(uv * 2.0 - 1.0, 1.0, 0.0)).xyz;
 	return normalize(dir);
 }
 // Based omn http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/

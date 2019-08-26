@@ -61,7 +61,7 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
     {
     case Format::UV:
         mDecl.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float);
-		if (!bgfx::getCaps()->originBottomLeft)
+		/*if (!bgfx::getCaps()->originBottomLeft)
 		{
 			float *pv = (float*)data;
 			for (unsigned int i = 0;i<count;i++)
@@ -69,7 +69,7 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
 				const int idx = i * 2 + 1;
 				pv[idx] = 1.f - pv[idx];
 			}
-		}
+		}*/
         break;
     case Format::COL:
         mDecl.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Float);
@@ -137,12 +137,24 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     auto& mesh = defaultScene->mMeshes.back();
     mesh.mPrimitives.resize(1);
     auto& prim = mesh.mPrimitives.back();
-    static float fsVts[] = { 0.f, 0.f,
-        1.f, 0.f,
-        0.f, 1.f,
-        1.f, 1.f,};
+    static float fsUVInv[] = { 0.f, 1.f,
+        1.f, 1.f,
+        0.f, 0.f,
+        1.f, 0.f};
+	static float fsUV[] = { 0.f, 0.f,
+		1.f, 0.f,
+		0.f, 1.f,
+		1.f, 1.f };
+	static float fsPos[] = { 0.f, 0.f, 0.f,
+		1.f, 0.f, 0.f,
+		0.f, 1.f, 0.f,
+		1.f, 1.f, 0.f };
+
+	float *puv = bgfx::getCaps()->originBottomLeft ? fsUVInv : fsUV;
+
     static const uint16_t fsIdx[] = { 0, 1, 2, 1, 3, 2 };
-    prim.AddBuffer(fsVts, Scene::Mesh::Format::UV, 2 * sizeof(float), 4);
+    prim.AddBuffer(puv, Scene::Mesh::Format::UV, 2 * sizeof(float), 4);
+	prim.AddBuffer(fsPos, Scene::Mesh::Format::POS, 3 * sizeof(float), 4);
     prim.AddIndexBuffer(fsIdx, 2, 6);
 
     // add node and transform

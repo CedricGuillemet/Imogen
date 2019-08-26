@@ -150,6 +150,21 @@ def imageTests(outDir):
     Imogen.Build()
     Imogen.DeleteGraph()
     
+    # physical sky to equirect-jpg
+    Imogen.NewGraph("ImageRead05")
+    physicalSky = Imogen.AddNode("PhysicalSky")
+    equirect = Imogen.AddNode("EquirectConverter")
+    Imogen.SetParameter(equirect, "mode", "1")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.SetParameter(imageWrite, "filename", outDir+"EquirectFromCubemap03.jpg")
+    Imogen.SetParameter(imageWrite, "format", "0")
+    Imogen.SetParameter(imageWrite, "width", "512")
+    Imogen.SetParameter(imageWrite, "height", "256")
+    Imogen.Connect(physicalSky, 0, equirect, 0)
+    Imogen.Connect(equirect, 0, imageWrite, 0)
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    
     # circle -> png
     Imogen.NewGraph("Gen01")
     circle = Imogen.AddNode("Circle")

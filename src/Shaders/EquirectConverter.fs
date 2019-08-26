@@ -11,7 +11,7 @@ uniform vec4 mode;
 
 vec4 EquirectToCubemap(vec2 vuv)
 {
-	vec3 dir = mul(vec4(vuv * 2.0 - 1.0, 1.0, 0.0), u_viewRot).xyz;
+	vec3 dir = mul(u_viewRot, vec4(vuv * 2.0 - 1.0, 1.0, 0.0)).xyz;
 	vec2 uv = envMapEquirect(normalize(dir));
 	vec4 tex = texture2D(Sampler0, vec2(uv.x, 1.0-uv.y));
 	return tex;

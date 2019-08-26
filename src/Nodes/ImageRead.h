@@ -38,7 +38,7 @@ DECLARE_NODE(ImageRead)
 {
     ImageReadBlock* params = (ImageReadBlock*)parameters;
 
-    const char *files[] = { params->XPosFilename, params->XNegFilename, params->YNegFilename, params->YPosFilename, params->ZPosFilename, params->ZNegFilename};
+    const char *files[] = { params->XPosFilename, params->XNegFilename, params->YPosFilename, params->YNegFilename, params->ZPosFilename, params->ZNegFilename};
     if (!(evaluation->dirtyFlag & Dirty::Parameter))
     {
         return EVAL_OK;

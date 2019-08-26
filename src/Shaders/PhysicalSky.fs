@@ -5,7 +5,8 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "Common.shader"
 
 uniform vec4 ambient;
-uniform vec4 lightdir, Kr;
+uniform vec4 lightdir;
+uniform vec4 Kr;
 uniform vec4 rayleighBrightness;
 uniform vec4 mieBrightness;
 uniform vec4 spotBrightness;
@@ -15,11 +16,6 @@ uniform vec4 mieStrength;
 uniform vec4 rayleighCollectionPower;
 uniform vec4 mieCollectionPower;
 uniform vec4 mieDistribution;
-
-float surface_height = 0.99;
-float range = 0.01;
-float intensity = 1.8;
-const int step_count = 16;
 
 vec3 get_world_normal(vec2 texcoord0)
 {
@@ -73,6 +69,10 @@ vec3 absorb(float dist, vec3 color, float factor)
 
 void main()
 {
+	const float surface_height = 0.99;
+	const float intensity = 1.8;
+	const int step_count = 16;
+
 	vec3 eyedir = get_world_normal(v_texcoord0);
 	vec3 ld = normalize(lightdir.xyz);
 	float alpha = dot(eyedir, ld);
@@ -100,7 +100,7 @@ void main()
 	mie_collected = (mie_collected*eye_extinction*pow(eye_depth, mieCollectionPower.x))/float(step_count);
 	vec3 color = vec3(spot*mie_collected + mie_factor*mie_collected + rayleigh_factor*rayleigh_collected);
 	gl_FragColor = vec4(max(color * ambient.w, ambient.xyz), 1.0);
-		//gl_FragColor.xyz = u_viewRot[0].xyz * 0.5 + vec3(0.5,0.5,0.5);
+		//gl_FragColor.xyz = vec3(rayleighCollectionPower.x, mieCollectionPower.x, mieDistribution.x);//u_viewRot[0].xyz * 0.5 + vec3(0.5,0.5,0.5);
 
 }
 

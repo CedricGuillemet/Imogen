@@ -82,6 +82,7 @@ extern std::vector<ImHotKey::HotKey> mHotkeys;
 
 void RenderImogenFrame();
 void GraphEditorUpdateScrolling(GraphEditorDelegate* model);
+const char* GetRendererType();
 
 PYBIND11_EMBEDDED_MODULE(Imogen, m)
 {
@@ -100,6 +101,9 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     { 
         Imogen::instance->NewMaterial(graphName);
     });
+	m.def("GetRendererType", [](){
+		return std::string(GetRendererType());
+	});
     m.def("Build", []()
     {
         extern Builder* gBuilder;

@@ -539,7 +539,7 @@ void ImageTexture::Init2D(int width, int height, bool depthBuffer)
         return;
     }
 
-	mTexture = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
+	mTexture = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, mImage.mFormat, BGFX_TEXTURE_BLIT_DST);
 }
 
 void ImageTexture::InitCube(int width, bool hasMipmaps)
@@ -563,5 +563,5 @@ void ImageTexture::InitCube(int width, bool hasMipmaps)
         return;
     }
 
-    mTexture = bgfx::createTextureCube(width, hasMipmaps, 1, bgfx::TextureFormat::Enum(mImage.mFormat), BGFX_TEXTURE_BLIT_DST);
+    mTexture = bgfx::createTextureCube(width, hasMipmaps, 1, mImage.mFormat, BGFX_TEXTURE_BLIT_DST);
 }

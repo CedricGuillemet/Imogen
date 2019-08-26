@@ -199,6 +199,30 @@ struct CommandLineParameters
     bgfx::RendererType::Enum mRenderAPI = bgfx::RendererType::Count;
 };
 
+const char* GetRendererType()
+{
+	switch (bgfx::getCaps()->rendererType)
+	{
+	case bgfx::RendererType::Direct3D9:    //!< Direct3D 9.0
+		return "Direct3D_9";
+	case bgfx::RendererType::Direct3D11:   //!< Direct3D 11.0
+		return "Direct3D_11";
+	case bgfx::RendererType::Direct3D12:   //!< Direct3D 12.0
+		return "Direct3D_12";
+	case bgfx::RendererType::Gnm:          //!< GNM
+		return "GNM";
+	case bgfx::RendererType::Metal:        //!< Metal
+		return "Metal";
+	case bgfx::RendererType::Nvn:          //!< NVN
+		return "NVM";
+	case bgfx::RendererType::OpenGLES:     //!< OpenGL ES 2.0+
+		return "OpenGL_ES";
+	case bgfx::RendererType::OpenGL:       //!< OpenGL 2.1+
+		return "OpenGL";
+	case bgfx::RendererType::Vulkan:       //!< Vulkan
+		return "Vulkan";
+	}
+}
 // because of asynchornous local storage DB mount
 #ifndef __EMSCRIPTEN__
 
@@ -377,36 +401,8 @@ int main_Async(int argc, char** argv)
         default:
             break;
     }
-    switch (bgfx::getCaps()->rendererType)
-    {
-    case bgfx::RendererType::Direct3D9:    //!< Direct3D 9.0
-        infoTitle += " - Direct3D 9";
-        break;
-    case bgfx::RendererType::Direct3D11:   //!< Direct3D 11.0
-        infoTitle += " - Direct3D 11";
-        break;
-    case bgfx::RendererType::Direct3D12:   //!< Direct3D 12.0
-        infoTitle += " - Direct3D 12";
-        break;
-    case bgfx::RendererType::Gnm:          //!< GNM
-        infoTitle += " - GNM";
-        break;
-    case bgfx::RendererType::Metal:        //!< Metal
-        infoTitle += " - Metal";
-        break;
-    case bgfx::RendererType::Nvn:          //!< NVN
-        infoTitle += " - NVM";
-        break;
-    case bgfx::RendererType::OpenGLES:     //!< OpenGL ES 2.0+
-        infoTitle += " - OpenGL ES";
-        break;
-    case bgfx::RendererType::OpenGL:       //!< OpenGL 2.1+
-        infoTitle += " - OpenGL";
-        break;
-    case bgfx::RendererType::Vulkan:       //!< Vulkan
-        infoTitle += " - Vulkan";
-        break;
-    }
+	infoTitle += std::string(" - ") + GetRendererType();
+    
     SDL_SetWindowTitle(loopdata.mWindow, infoTitle.c_str());
 
 #ifdef __EMSCRIPTEN__

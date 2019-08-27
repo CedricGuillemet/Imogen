@@ -43,6 +43,8 @@
 #include "nanosvgrast.h"
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #include "stb_image_resize.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 #if USE_FFMPEG
 #include "ffmpegCodec.h"
 #endif
@@ -52,17 +54,6 @@ bx::AllocatorI* getDefaultAllocator()
 {
     static bx::DefaultAllocator s_allocator;
     return &s_allocator;
-}
-
-extern "C" 
-{
-    typedef void (*stbi_write_func)(void* context, void* data, int size);
-    int stbi_write_png(char const* filename, int x, int y, int comp, const void* data, int stride_bytes);
-    int stbi_write_jpg(char const* filename, int x, int y, int comp, const void* data, int quality);
-    int stbi_write_png_to_func(stbi_write_func func, void* context, int w, int h, int comp, const void* data, int stride_in_bytes);
-    int stbi_write_jpg_to_func(stbi_write_func func, void* context, int x, int y, int comp, const void* data, int quality);
-	int stbi_write_bmp_to_func(stbi_write_func func, void* context, int w, int h, int comp, const void* data);
-	int stbi_write_tga_to_func(stbi_write_func func, void* context, int w, int h, int comp, const void* data);
 }
 
 bimg::Quality::Enum GetQuality(int quality)

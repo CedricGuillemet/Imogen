@@ -915,6 +915,13 @@ void ParseStringToParameter(const std::string& str, uint32_t parameterType, void
             pi[0] = (str == "true") ? 1 : 0;
             break;
     }
+	if (parameterType >= Con_Angle && parameterType <= Con_Angle4)
+	{
+		for (int i = 0; i <= (parameterType - Con_Angle); i++)
+		{
+			pf[i] *= PI / 180.f;
+		}
+	}
 }
 
 void InitDefaultParameters(size_t nodeType, Parameters& parameters)
@@ -1002,7 +1009,7 @@ int GetIntParameter(size_t nodeType, const Parameters& parameters, const char* p
     return defaultValue;
 }
 
-const Camera* GetCameraParameter(size_t nodeType, const Parameters& parameters)
+Camera* GetCameraParameter(size_t nodeType, const Parameters& parameters)
 {
     const MetaNode& currentMeta = gMetaNodes[nodeType];
     const size_t paramsSize = ComputeNodeParametersSize(nodeType);

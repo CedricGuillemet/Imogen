@@ -119,6 +119,11 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         Imogen::instance->GetNodeGraphControler()->mModel.SetParameter(nodeIndex, paramName, value);
         Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
     });
+	m.def("SetCameraLookAt", [](int nodeIndex, float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ) {
+		Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
+		Imogen::instance->GetNodeGraphControler()->mModel.SetCameraLookAt(nodeIndex, Vec4(eyeX, eyeY, eyeZ, 0.f), Vec4(targetX, targetY, targetZ, 0.f));
+		Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
+		});
     m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
         auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
         model.BeginTransaction(false);
@@ -482,6 +487,7 @@ void Evaluators::SetEvaluators()
     u_target = bgfx::createUniform("u_target", bgfx::UniformType::Vec4, 1);
     u_pass = bgfx::createUniform("u_pass", bgfx::UniformType::Vec4, 1);
     u_viewport = bgfx::createUniform("u_viewport", bgfx::UniformType::Vec4, 1);
+	u_textureSize = bgfx::createUniform("u_textureSize", bgfx::UniformType::Vec4, 8);
 
     // specific uniforms
     u_time = bgfx::createUniform("u_time", bgfx::UniformType::Vec4, 1);
@@ -693,6 +699,7 @@ void Evaluators::Clear()
         bgfx::destroy(u_target);
         bgfx::destroy(u_pass);
         bgfx::destroy(u_viewport);
+		bgfx::destroy(u_textureSize);
     }
 }
 
@@ -772,6 +779,7 @@ void Evaluators::ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo)
     bgfx::setUniform(u_target, &evaluationInfo.targetIndex);
     bgfx::setUniform(u_pass, &evaluationInfo.uiPass);
     bgfx::setUniform(u_viewport, evaluationInfo.viewport);
+	bgfx::setUniform(u_textureSize, evaluationInfo.textureSize, 8);
 }
 
 namespace EvaluationAPI

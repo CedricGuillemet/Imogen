@@ -337,6 +337,11 @@ void EvaluationContext::Clear()
             eval.mTarget->Destroy();
         }
     }
+	for (auto& proxy : mProxies)
+	{
+		bgfx::destroy(proxy.second);
+	}
+
     mThumbnails.Clear();
     mInputNodeIndex = -1;
 }
@@ -352,7 +357,7 @@ bgfx::TextureHandle EvaluationContext::GetEvaluationTexture(size_t nodeIndex) co
     return tgt->mTexture;
 }
 
-void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
+void EvaluationContext::BindTextures(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage,
                                      size_t nodeIndex,
                                      ImageTexture* reusableTarget)
 {
@@ -382,9 +387,11 @@ void EvaluationContext::BindTextures(const EvaluationStage& evaluationStage,
             if (tgt)
             {
                 const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[nodeIndex][inputIndex];
+				evaluationInfo.textureSize[inputIndex * 4] = tgt->mImage.mWidth;
+				evaluationInfo.textureSize[inputIndex * 4 + 1] = tgt->mImage.mHeight;
+
                 if (!tgt->mImage.mIsCubemap)
                 {
-
                     bgfx::setTexture(inputIndex, gEvaluators.mSamplers2D[inputIndex], tgt->mTexture, inputSampler.Value());
                 }
                 else
@@ -496,18 +503,26 @@ void EvaluationContext::SetUniforms(size_t nodeIndex)
     }
 }
 
-static std::map<uint32_t, bgfx::FrameBufferHandle> mProxies;
-void GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuffer, int16_t width, uint16_t height)
+void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuffer, int16_t width, uint16_t height, bool depthBuffer)
 {
-	uint32_t key = (width << 16) + height;
+	uint32_t key = ((width & 0x7FFF) << 15) + (height&0x7FFF) + (depthBuffer?0x80000000:0);
 	auto iter = mProxies.find(key);
 	if (iter != mProxies.end())
 	{
 		currentFramebuffer = iter->second;
 		return;
 	}
-
-	currentFramebuffer = bgfx::createFrameBuffer(width, height, GetRTTextureFormat());
+	if (!depthBuffer)
+	{
+		currentFramebuffer = bgfx::createFrameBuffer(width, height, GetRTTextureFormat());
+	}
+	else
+	{
+		bgfx::TextureHandle fbTextures[2];
+		fbTextures[0] = bgfx::createTexture2D(width, height, false, 1, GetRTTextureFormat(), BGFX_TEXTURE_RT_WRITE_ONLY);
+		fbTextures[1] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
+		currentFramebuffer = bgfx::createFrameBuffer(2, fbTextures, true);
+	}
 	mProxies[key] = currentFramebuffer;
 }
 
@@ -543,17 +558,16 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 	const size_t faceCount = evaluationInfo.uiPass ? 1 : (tgt->mImage.mIsCubemap ? 6 : 1);
 	const uint8_t mipmapCount = tgt->mImage.GetMipmapCount();
 	
-	bgfx::ViewId viewId = 10;
-    
     for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
+		bgfx::ViewId viewId = 10;
         for (int mip = 0; mip < mipmapCount; mip++)
         {
 			const int viewportWidth = w >> mip;
 			const int viewportHeight = h >> mip;
 
 			bgfx::FrameBufferHandle currentFramebuffer;
-			GetRenderProxy(currentFramebuffer, viewportWidth, viewportHeight);
+			GetRenderProxy(currentFramebuffer, viewportWidth, viewportHeight, evaluation.mbDepthBuffer);
 
 			for (size_t face = 0; face < faceCount; face++)
 			{
@@ -574,8 +588,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 evaluationInfo.passNumber = float(passNumber);
                 evaluationInfo.mipmapNumber = float(mip);
                 evaluationInfo.mipmapCount = mipmapCount;
-
-                BindTextures(evaluationStage, nodeIndex, passNumber ? tgt : nullptr);
+				evaluationInfo.vertexSpace = (float)evaluation.mVertexSpace;
+                BindTextures(evaluationInfo, evaluationStage, nodeIndex, passNumber ? tgt : nullptr);
 
                 if (evaluation.mbClearBuffer)
                 {
@@ -589,7 +603,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                         | BGFX_STATE_WRITE_RGB
                         | BGFX_STATE_WRITE_A
                         | BGFX_STATE_BLEND_FUNC(evaluation.mBlendingSrc, evaluation.mBlendingDst)
-                        | (evaluation.mbDepthBuffer ? BGFX_STATE_DEPTH_TEST_LEQUAL : BGFX_STATE_DEPTH_TEST_ALWAYS)
+                        | (evaluation.mbDepthBuffer ? (BGFX_STATE_DEPTH_TEST_LEQUAL| BGFX_STATE_WRITE_Z) : BGFX_STATE_DEPTH_TEST_ALWAYS)
                         ;
 
                     bgfx::setState(state);
@@ -612,8 +626,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 			} // face
         } // mip
     } // passNumber
-
-    viewId++;
 }
 
 void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex)
@@ -806,7 +818,7 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
     }
 
     ReleaseInputs(nodeIndex);
-    //evaluation.mDirtyFlag = 0;
+    evaluation.mDirtyFlag = 0;
 }
 
 #if USE_FFMPEG

@@ -79,7 +79,7 @@ void SaveCapture(const std::string& filename, int x, int y, int w, int h)
     h &= 0xFFFFFFFC;
 
     char filenameInfos[512];
-    sprintf(filenameInfos, "%s|%d|%d|%d|%d", filename.c_str(), x, y, w, h);
+    sprintf(filenameInfos, "%d|%d|%d|%d|%s", x, y, w, h, filename.c_str());
 
     bgfx::FrameBufferHandle fbh = BGFX_INVALID_HANDLE;
     bgfx::requestScreenShot(fbh, filenameInfos);

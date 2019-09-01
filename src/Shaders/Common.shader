@@ -18,7 +18,7 @@ uniform vec4 u_inputIndices[2];
 
 uniform vec4 u_pass; // uiPass, passNumber, frame, localFrame
 uniform vec4 u_target; // targetIndex, vertexSpace, mipmapNumber, mipmapCount
-
+uniform vec4 u_textureSize[8];
 
 vec2 Rotate2D(vec2 v, float a) 
 {

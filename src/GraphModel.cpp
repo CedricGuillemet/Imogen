@@ -420,6 +420,19 @@ void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName
     SetDirty(nodeIndex, Dirty::Parameter);
 }
 
+void GraphModel::SetCameraLookAt(size_t nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up)
+{
+	assert(mbTransaction);
+	uint32_t nodeType = uint32_t(mNodes[nodeIndex].mType);
+	Camera* camera = GetCameraParameter(nodeType, mNodes[nodeIndex].mParameters);
+	if (!camera)
+	{
+		return;
+	}
+	camera->LookAt(eye, target, up);
+	SetDirty(nodeIndex, Dirty::Parameter);
+}
+
 AnimTrack* GraphModel::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
 {
     for (auto& animTrack : mAnimTrack)

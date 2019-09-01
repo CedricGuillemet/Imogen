@@ -51,7 +51,7 @@ vec4 dopass(vec2 uv, vec2 fc)
 void main()
 {
 	vec2 fc = gl_FragCoord.xy;
-	int ip = int(mod(u_pass.x,4.));
+	int ip = int(mod(u_pass.y,3.));
 	if (ip == 0)
 	{
 		vec4 col = BLURH;

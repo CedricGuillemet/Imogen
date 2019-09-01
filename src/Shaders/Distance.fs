@@ -13,15 +13,15 @@ uniform vec4 passCount;
 
 vec4 Pack(vec4 coord)
 {
-    float s = float(256.0/*textureSize(Sampler0, 0).x*/);
+    float s = u_textureSize[0].x;
     return coord / s;
 }
 
 vec4 Unpack(vec4 v)
 {
-    float s = float(256.0/*textureSize(Sampler0, 0).x*/);
+    float s = u_textureSize[0].x;  
     return v * s;
-}
+} 
 
 vec4 StepJFA (vec2 fragCoord, float level, float c_maxSteps)
 {
@@ -36,7 +36,7 @@ vec4 StepJFA (vec2 fragCoord, float level, float c_maxSteps)
         for (int x = -1; x <= 1; ++x) {
             vec2 sampleCoord = fragCoord + vec2(x,y) * stepwidth;
             
-            vec4 data = texture2D(Sampler0, sampleCoord / vec2(256.0, 256.0/*textureSize(Sampler0, 0).xy*/));
+            vec4 data = texture2D(Sampler0, sampleCoord / u_textureSize[0].xy);
             vec4 seedCoord = Unpack(data);
             
             float dist = length(seedCoord.xy - fragCoord);
@@ -60,7 +60,7 @@ vec4 StepJFA (vec2 fragCoord, float level, float c_maxSteps)
 void main()
 {
     vec4 res;
-    if (u_pass.x == 0.)
+    if (u_pass.y == 0.)
     {
         float v = texture2D(Sampler0, v_texcoord0).x;
         if (v > 0.5)
@@ -72,9 +72,9 @@ void main()
             res = Pack(vec4(vec2(10000.0, 10000.0), gl_FragCoord.xy));
         }
     }
-    else if (u_pass.x != (passCount.x - 1.))
+    else if (u_pass.y < (passCount.x - 1.))
     {
-        res = StepJFA(gl_FragCoord.xy, u_pass.x-1., (passCount.x-2.));
+        res = StepJFA(gl_FragCoord.xy, u_pass.y-1., (passCount.x-2.));
     }
     else
     {

@@ -227,7 +227,8 @@ protected:
 
     //void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 
-    void BindTextures(const EvaluationStage& evaluationStage,
+    void BindTextures(EvaluationInfo& evaluationInfo, 
+					  const EvaluationStage& evaluationStage,
                       size_t nodeIndex,
                       ImageTexture* reusableTarget);
     //void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
@@ -256,6 +257,10 @@ protected:
     int mCurrentTime;
 
     std::vector<int> mRemaining;
+
+	std::map<uint32_t, bgfx::FrameBufferHandle> mProxies;
+	void GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuffer, int16_t width, uint16_t height, bool depthBuffer);
+
     void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const;
     void SetUniforms(size_t nodeIndex);
 };

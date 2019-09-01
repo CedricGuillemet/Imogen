@@ -94,170 +94,141 @@ float find_closest(int x, int y, float c0)
 	return 1.0;
 }
 
-vec4 hex(int u_color)
-{
-	float rValue = float(u_color/65536);
-	float gValue = mod(float(u_color/256), 256);
-	float bValue = mod(float(u_color), 256);
-	return vec4(rValue, gValue, bValue, 255.0) / 255.;
-}
-
-vec4 best4(vec4 original, int pal[4])
-{
-	return vec4(0.,0.,0.,0.);
-	int best = 0;
-#pragma unroll_loop
-	for (int i = 1;i<4;i++)
-	{
-		if (length(hex(pal[i]) - original) < length(hex(pal[best]) - original))
-			best = i;
-	}
-	
-	return hex(pal[best]);
-}
-// using a macro here instead of a function because of webgl (error: can't copy 16 int)
-#define best16 \
-{\
-return vec4(0.,0.,0.,0.);\
-	int best = 0;\
-	for (int i = 1;i<16;i++)\
+#define best(X) {\
+	vec4 best = pal[0];\
+	for (int i = 1;i<X;i++)\
 	{\
-		if (length(hex(pal[i]) - original) < length(hex(pal[best]) - original))\
-			best = i;\
+		if (length(pal[i] - original) < length(best - original))\
+			best = pal[i];\
 	}\
-	return hex(pal[best]);\
+	return best;\
 }
 
 vec4 GetCGA(vec4 original, int index)
 {
-	int pal[4];
-	pal[0] = 0x000000;
+	vec4 pal[4];
+	pal[0] = vec4(0.,0.,0.,1.);
+	pal[1] = vec4(0.,0.,0.,1.);
+	pal[2] = vec4(0.,0.,0.,1.);
+	pal[3] = vec4(0.,0.,0.,1.);
 	if (index == 0)
 	{
-		pal[1] = 0x00AAAA;
-		pal[2] = 0xAA00AA;
-		pal[3] = 0xAAAAAA;
+		pal[1] = vec4(0.,0.66,0.66,1.);//0x00AAAA;
+		pal[2] = vec4(0.66,0.,0.66,1.);//0xAA00AA;
+		pal[3] = vec4(0.66,0.66,0.66,1.);//0xAAAAAA;
 	}
-	if (index == 1)
+	else if (index == 1)
 	{
-		pal[1] = 0x00AAAA;
-		pal[2] = 0xAA0000;
-		pal[3] = 0xAAAAAA;
+		pal[1] = vec4(0.,0.66,0.66,1.);//0x00AAAA;
+		pal[2] = vec4(0.66,0.,0.,1.);//0xAA0000;
+		pal[3] = vec4(0.66,0.66,0.66,1.);//0xAAAAAA;
 	}
-	if (index == 2)
+	else if (index == 2)
 	{
-		pal[1] = 0x00AA00;
-		pal[2] = 0xAA0000;
-		pal[3] = 0xAA5500;
+		pal[1] = vec4(0.,0.66,0.,1.);//0x00AA00;
+		pal[2] = vec4(0.66,0.,0.,1.);//0xAA0000;
+		pal[3] = vec4(0.66,0.33,0.,1.);//0xAA5500;
 	}
-	if (index == 3)
+	else if (index == 3)
 	{
-		pal[1] = 0x55FFFF;
-		pal[2] = 0xFF55FF;
-		pal[3] = 0xFFFFFF;
+		pal[1] = vec4(0.33,1.,1.,1.);//0x55FFFF;
+		pal[2] = vec4(1.,0.33,1.,1.);//0xFF55FF;
+		pal[3] = vec4(1.,1.,1.,1.);//0xFFFFFF;
 	}
-	if (index == 4)
+	else if (index == 4)
 	{
-		pal[1] = 0x55FFFF;
-		pal[2] = 0xFF5555;
-		pal[3] = 0xFFFFFF;
+		pal[1] = vec4(0.33,1.,1.,1.);//0x55FFFF;
+		pal[2] = vec4(1.,0.33,0.33,1.);//0xFF5555;
+		pal[3] = vec4(1.,1.,1.,1.);//0xFFFFFF;
 	}
-	else
+	else  if (index == 5)
 	{ 
-		pal[1] = 0x55FF55;
-		pal[2] = 0xFF5555;
-		pal[3] = 0xFFFF55;
+		pal[1] = vec4(0.33,1.,0.33,1.);//0x55FF55;
+		pal[2] = vec4(1.,0.33,0.33,1.);//0xFF5555;
+		pal[3] = vec4(1.,1.,0.33,1.);//0xFFFF55;
 	}
-	return best4(original, pal);
+
+	best(4)
 }
 
 vec4 GetEGA(vec4 original)
 {
-	int pal[16];
-	pal[0] = 0x000000;
-	pal[1] = 0x0000AA;
-	pal[2] = 0x00AA00;
-	pal[3] = 0x00AAAA;
-	
-	pal[4] = 0xAA0000;
-	pal[5] = 0xAA00AA;
-	pal[6] = 0xAA5500;
-	pal[7] = 0xAAAAAA;
-	
-	pal[8] = 0x555555;
-	pal[9] = 0x5555FF;
-	pal[10] = 0x55FF55;
-	pal[11] = 0x55FFFF;
-	
-	pal[12] = 0xFF5555;
-	pal[13] = 0xFF55FF;
-	pal[14] = 0xFFFF55;
-	pal[15] = 0xFFFFFF;
-#pragma unroll_loop
-	best16
+	vec4 pal[16];
+	pal[0] = vec4(0.,0.,0.,1.);//0x000000;
+	pal[1] = vec4(0.,0.,0.66,1.);//0x0000AA;
+	pal[2] = vec4(0.,0.66,0.,1.);//0x00AA00;
+	pal[3] = vec4(0.,0.66,0.66,1.);//0x00AAAA;
+	pal[4] = vec4(0.66,0.,0.,1.);//0xAA0000;
+	pal[5] = vec4(0.66,0.,0.66,1.);//0xAA00AA;
+	pal[6] = vec4(0.66,0.33,0.,1.);//0xAA5500;
+	pal[7] = vec4(0.66,0.66,0.66,1.);//0xAAAAAA;
+	pal[8] = vec4(0.33,0.33,0.33,1.);//0x555555;
+	pal[9] = vec4(0.33,0.33,1.,1.);//0x5555FF;
+	pal[10] = vec4(0.33,1.,0.33,1.);//0x55FF55;
+	pal[11] = vec4(0.33,1.,1.,1.);//0x55FFFF;
+	pal[12] = vec4(1.,0.33,0.33,1.);//0xFF5555;
+	pal[13] = vec4(1.,0.33,1.,1.);//0xFF55FF;
+	pal[14] = vec4(1.,1.,0.33,1.);//0xFFFF55;
+	pal[15] = vec4(1.,1.,1.,1.);//0xFFFFFF;
+
+	best(16)
 }
 
 vec4 GetGameBoy(vec4 original)
 {
-	int pal[4];
-	pal[0] = 0x0f380f;
-	pal[1] = 0x306230;
-	pal[2] = 0x8bac0f;
-	pal[3] = 0x9bbc0f;
+	vec4 pal[4];
+	pal[0] = vec4(0.06, 0.22, 0.06, 1.);//0x0f380f;
+	pal[1] = vec4(0.19, 0.38, 0.19, 1.);//0x306230;
+	pal[2] = vec4(0.54, 0.67, 0.06, 1.);//0x8bac0f;
+	pal[3] = vec4(0.60, 0.74, 0.06, 1.);//0x9bbc0f;
 	
-	return best4(original, pal);
+	best(4)
 }
 
 vec4 GetPico8(vec4 original)
 {
-	int pal[16];
-	pal[0] = 0x000000;
-	pal[1] = 0x5F574F;
-	pal[2] = 0xC2C3C7;
-	pal[3] = 0xFFF1E8;
-	
-	pal[4] = 0xFFEC27;
-	pal[5] = 0xFFA300;
-	pal[6] = 0xFFCCAA;
-	pal[7] = 0xAB5236;
-	
-	pal[8] = 0xFF77A8;
-	pal[9] = 0xFF004D;
-	pal[10] = 0x83769C;
-	pal[11] = 0x7E2553;
-	
-	pal[12] = 0x29ADDD;
-	pal[13] = 0x1D2B53;
-	pal[14] = 0x008751;
-	pal[15] = 0x00E436;
-#pragma unroll_loop	
-	best16
+	vec4 pal[16];
+	pal[0]=vec4(0.000, 0.000, 0.000,1.);
+	pal[1]=vec4(0.373, 0.341, 0.310,1.);
+	pal[2]=vec4(0.761, 0.765, 0.780,1.);
+	pal[3]=vec4(1.000, 0.945, 0.910,1.);
+	pal[4]=vec4(1.000, 0.925, 0.153,1.);
+	pal[5]=vec4(1.000, 0.639, 0.000,1.);
+	pal[6]=vec4(1.000, 0.800, 0.667,1.);
+	pal[7]=vec4(0.671, 0.322, 0.212,1.);
+	pal[8]=vec4(1.000, 0.467, 0.659,1.);
+	pal[9]=vec4(1.000, 0.000, 0.302,1.);
+	pal[10]=vec4(0.514, 0.463, 0.612,1.);
+	pal[11]=vec4(0.494, 0.145, 0.325,1.);
+	pal[12]=vec4(0.161, 0.678, 0.867,1.);
+	pal[13]=vec4(0.114, 0.169, 0.325,1.);
+	pal[14]=vec4(0.000, 0.529, 0.318,1.);
+	pal[15]=vec4(0.000, 0.894, 0.212,1.);
+
+	best(16)
 }
 
 vec4 GetC64(vec4 original)
 {
-	int pal[16];
-	pal[0] = 0x000000;
-	pal[1] = 0xFFFFFF;
-	pal[2] = 0x880000;
-	pal[3] = 0xAAFFEE;
-	
-	pal[4] = 0xCC44CC;
-	pal[5] = 0x00CC55;
-	pal[6] = 0x0000AA;
-	pal[7] = 0xEEEE77;
-	
-	pal[8] = 0xDD8855;
-	pal[9] = 0x664400;
-	pal[10] = 0xFF7777;
-	pal[11] = 0x333333;
-	
-	pal[12] = 0x777777;
-	pal[13] = 0xAAFF66;
-	pal[14] = 0x0088FF;
-	pal[15] = 0xBBBBBB;
-#pragma unroll_loop	
-	best16
+	vec4 pal[16];
+	pal[0]=vec4(0.000, 0.000, 0.000,1.);
+	pal[1]=vec4(1.000, 1.000, 1.000,1.);
+	pal[2]=vec4(0.533, 0.000, 0.000,1.);
+	pal[3]=vec4(0.667, 1.000, 0.933,1.);
+	pal[4]=vec4(0.800, 0.267, 0.800,1.);
+	pal[5]=vec4(0.000, 0.800, 0.333,1.);
+	pal[6]=vec4(0.000, 0.000, 0.667,1.);
+	pal[7]=vec4(0.933, 0.933, 0.467,1.);
+	pal[8]=vec4(0.867, 0.533, 0.333,1.);
+	pal[9]=vec4(0.400, 0.267, 0.000,1.);
+	pal[10]=vec4(1.000, 0.467, 0.467,1.);
+	pal[11]=vec4(0.200, 0.200, 0.200,1.);
+	pal[12]=vec4(0.467, 0.467, 0.467,1.);
+	pal[13]=vec4(0.667, 1.000, 0.400,1.);
+	pal[14]=vec4(0.000, 0.533, 1.000,1.);
+	pal[15]=vec4(0.733, 0.733, 0.733,1.);
+
+	best(16)
 }
 
 void main()
@@ -280,13 +251,13 @@ void main()
 	int paletteIndex = int(palette.x);
 	if (paletteIndex < 6)
 		res = GetCGA(color, paletteIndex);
-	if (paletteIndex < 7)
+	if (paletteIndex == 6)
 		res = GetEGA(color);
-	if (paletteIndex < 8)
+	if (paletteIndex == 7)
 		res = GetGameBoy(color);
-	if (paletteIndex < 9)
+	if (paletteIndex == 8)
 		res = GetPico8(color);
-	if (paletteIndex < 10)
+	if (paletteIndex == 9)
 		res = GetC64(color);
 	gl_FragColor = res;
 }

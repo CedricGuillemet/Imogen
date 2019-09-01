@@ -122,7 +122,7 @@ public:
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
     void SetStartEndFrame(int startFrame, int endFrame);
     void SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame);
-
+	void SetCameraLookAt(size_t nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up = Vec4(0.f, 1.f, 0.f, 0.f));
     // transaction is handled is the function
     void NodeGraphLayout(const std::vector<size_t>& orderList);
 

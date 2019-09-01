@@ -67,7 +67,7 @@ struct EvaluationInfo
     float mipmapNumber;
     float mipmapCount;
 
-
+	float textureSize[8 * 4];
     // not used by shaders
     uint32_t dirtyFlag;
 };
@@ -138,6 +138,7 @@ public:
     std::vector<bgfx::UniformHandle> mSamplersCube;
     bgfx::UniformHandle u_time{ bgfx::kInvalidHandle };
     bgfx::UniformHandle u_uvTransform{ bgfx::kInvalidHandle };
+	bgfx::UniformHandle u_textureSize{ bgfx::kInvalidHandle };
 };
 
 extern Evaluators gEvaluators;

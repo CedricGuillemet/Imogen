@@ -124,10 +124,11 @@ struct bgfxCallback : public bgfx::CallbackI
     {
         int w,h,x,y;
         char filename[512];
-        sscanf(_filePath, "%s|%d|%d|%d|%d", filename, &x, &y, &w, &h);
+        sscanf(_filePath, "%d|%d|%d|%d|%s", &x, &y, &w, &h, filename);
         unsigned char *ptr = (unsigned char*)_data;
-        ptr += (x + y * _width) * _pitch;
-        stbi_write_png(filename, w, h, _pitch, _data, _width * _pitch);
+		uint32_t comp = _pitch / _width;
+        ptr += (x + y * _width) * comp;
+        stbi_write_png(filename, w, h, comp, _data, _pitch);
     }
 
     virtual void captureBegin(
@@ -222,6 +223,7 @@ const char* GetRendererType()
 	case bgfx::RendererType::Vulkan:       //!< Vulkan
 		return "Vulkan";
 	}
+	return "Noop";
 }
 // because of asynchornous local storage DB mount
 #ifndef __EMSCRIPTEN__

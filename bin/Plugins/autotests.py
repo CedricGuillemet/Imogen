@@ -13,7 +13,7 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "ZNegFilename", "Autotests/Assets/Lycksele/negz.jpg")
     
 def imageTests(outDir):
-    
+    '''
     ###################################################
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
@@ -239,7 +239,7 @@ def imageTests(outDir):
     Imogen.SetParameter(imageWrite, "mode", "0")
     Imogen.SetParameter(imageWrite, "width", "1024")
     Imogen.SetParameter(imageWrite, "height", "1024")
-    Imogen.SetParameter(blur, "angle", "45")
+    Imogen.SetParameter(blur, "angle", "22.5")
     Imogen.SetParameter(imageWrite, "filename", outDir+"blur-directional-1pass.jpg")
     Imogen.Build()
     # 30 dir passes
@@ -290,9 +290,83 @@ def imageTests(outDir):
     Imogen.SetParameter(imageWrite, "filename", outDir+"Voronoi-noise.jpg")
     Imogen.Build()
     Imogen.DeleteGraph()
+    
+    # circle -> distance -> png
+    Imogen.NewGraph("Distance01")
+    circle = Imogen.AddNode("Circle")
+    distance = Imogen.AddNode("Distance")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.SetParameter(imageWrite, "filename", outDir+"Distance01.png")
+    Imogen.SetParameter(imageWrite, "format", "1")
+    Imogen.SetParameter(imageWrite, "width", "4096")
+    Imogen.SetParameter(imageWrite, "height", "4096")
+    Imogen.Connect(circle, 0, distance, 0)
+    Imogen.Connect(distance, 0, imageWrite, 0)
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    
+    
+    # palette
+    Imogen.NewGraph("Palette")
+    imageRead = Imogen.AddNode("ImageRead")
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/PartyCat.jpg")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    palette = Imogen.AddNode("Palette")
+    Imogen.Connect(imageRead, 0, palette, 0)
+    Imogen.Connect(palette, 0, imageWrite, 0)
+    Imogen.SetParameter(palette, "palette", "0")
+    Imogen.SetParameter(palette, "ditherStrength", "0.0")
+    Imogen.SetParameter(imageWrite, "format", "1")
+    Imogen.SetParameter(imageWrite, "mode", "3")
+    for pal in range(0, 10):
+        Imogen.SetParameter(palette, "palette", "{}".format(pal))
+        Imogen.SetParameter(imageWrite, "filename", (outDir+"Palette-{}.png").format(pal));
+        Imogen.Build()
+    Imogen.SetParameter(palette, "palette", "0")    
+    for dither in range(0, 10):
+        Imogen.SetParameter(palette, "ditherStrength", "{}".format(dither/10.0))
+        Imogen.SetParameter(imageWrite, "filename", (outDir+"DitherPalette-0-{}.png").format(dither/10.0));
+        Imogen.Build()
+    Imogen.DeleteGraph()
+    
+    # reaction diffusion
+    Imogen.NewGraph("ReactionDiffusion")
+    circle = Imogen.AddNode("Circle")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    reactionDiffusion = Imogen.AddNode("ReactionDiffusion")
+    Imogen.SetParameter(imageWrite, "filename", outDir+"ReactionDiffusion01.png")
+    Imogen.SetParameter(imageWrite, "format", "1")
+    Imogen.SetParameter(imageWrite, "width", "4096")
+    Imogen.SetParameter(imageWrite, "height", "4096")
+    Imogen.Connect(circle, 0, reactionDiffusion, 0)
+    Imogen.Connect(reactionDiffusion, 0, imageWrite, 0)
+    Imogen.Build()
+    Imogen.SetParameter(reactionDiffusion, "boost", "0.72")
+    Imogen.SetParameter(reactionDiffusion, "divisor", "3.9")
+    Imogen.SetParameter(reactionDiffusion, "colorStep", "0.01")
+    Imogen.SetParameter(imageWrite, "filename", outDir+"ReactionDiffusion02.png")
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    '''
+    
+    Imogen.NewGraph("GLTF01")
+    gltf = Imogen.AddNode("GLTFRead")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.SetParameter(gltf, "filename", "Autotests/Assets/CartoonHead.gltf/scene.gltf")
+    Imogen.SetCameraLookAt(gltf, 2., 1., 3.,0.,-1.,0.);
+    Imogen.SetParameter(imageWrite, "filename", outDir+"gltf01.jpg")
+    Imogen.SetParameter(imageWrite, "format", "0")
+    Imogen.SetParameter(imageWrite, "width", "1024")
+    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.Connect(gltf, 0, imageWrite, 0)
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    
+    # GLTF read + camera
+    
     # 6jpg -> cubemap filter -> dds
     # hdr -> equirect2cubemap -> filter -> hdr
-    # reaction diffusion / distance
+    # reaction diffusion
     
 def clearTests(folder):
     for the_file in os.listdir(folder):

@@ -151,11 +151,7 @@ struct Image
 protected:
     unsigned char* mBits;
 };
-/*
-extern const unsigned int glInternalFormats[];
-extern const unsigned int glInputFormats[];
-extern const unsigned int textureFormatSize[];
-*/
+bgfx::TextureFormat::Enum GetRTTextureFormat();
 struct ImageCache
 {
     // synchronous texture cache

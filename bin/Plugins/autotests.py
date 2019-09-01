@@ -13,7 +13,6 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "ZNegFilename", "Autotests/Assets/Lycksele/negz.jpg")
     
 def imageTests(outDir):
-    '''
     ###################################################
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
@@ -23,52 +22,37 @@ def imageTests(outDir):
     Imogen.Connect(imageRead, 0, imageWrite, 0)
     
     # free
-    Imogen.SetParameter(imageWrite, "mode", "0")
-    Imogen.SetParameter(imageWrite, "width", "2048")
-    Imogen.SetParameter(imageWrite, "height", "2048")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-free.jpg")
+    Imogen.SetParameters(imageWrite, {"filename":outDir+"Vancouver-free.jpg", "mode": 0, "width": 2048, "height": 2048})
     Imogen.Build()    
     # w=512 h=keep ratio
-    Imogen.SetParameter(imageWrite, "mode", "1")
-    Imogen.SetParameter(imageWrite, "width", "512")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-width512.jpg")
+    Imogen.SetParameters(imageWrite, {"mode":1, "width": 512, "filename": outDir+"Vancouver-width512.jpg"})
     Imogen.Build()
     # h= 1024 w=keep ratio
-    Imogen.SetParameter(imageWrite, "mode", "2")
-    Imogen.SetParameter(imageWrite, "height", "1024")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-height1024.jpg")
+    Imogen.SetParameters(imageWrite, {"mode":2, "height": 1024, "filename": outDir+"Vancouver-height1024.jpg"})
     Imogen.Build()
     # same size as source
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.jpg")
-    Imogen.SetParameter(imageWrite, "mode", "3")
+    Imogen.SetParameters(imageWrite, {"mode":3, "filename": outDir+"Vancouver-same.jpg"})
     Imogen.Build()
     #  same size as source PNG
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.png")
-    Imogen.SetParameter(imageWrite, "format", "1")
+    Imogen.SetParameters(imageWrite, {"format":1, "filename": outDir+"Vancouver-same.png"})
     Imogen.Build()
     #  same size as source TGA
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.tga")
-    Imogen.SetParameter(imageWrite, "format", "2")
+    Imogen.SetParameters(imageWrite, {"format":2, "filename": outDir+"Vancouver-same.tga"})
     Imogen.Build()
     #  same size as source BMP
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.bmp")
-    Imogen.SetParameter(imageWrite, "format", "3")
+    Imogen.SetParameters(imageWrite, {"format":3, "filename": outDir+"Vancouver-same.bmp"})
     Imogen.Build()
     #  same size as source HDR
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.hdr")
-    Imogen.SetParameter(imageWrite, "format", "4")
+    Imogen.SetParameters(imageWrite, {"format":4, "filename": outDir+"Vancouver-same.hdr"})
     Imogen.Build()
     #  same size as source DDS
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.dds")
-    Imogen.SetParameter(imageWrite, "format", "5")
+    Imogen.SetParameters(imageWrite, {"format":5, "filename": outDir+"Vancouver-same.dds"})
     Imogen.Build()
     #  same size as source KTX
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.ktx")
-    Imogen.SetParameter(imageWrite, "format", "6")
+    Imogen.SetParameters(imageWrite, {"format":6, "filename": outDir+"Vancouver-same.ktx"})
     Imogen.Build()
     #  same size as source EXR
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Vancouver-same.exr")
-    Imogen.SetParameter(imageWrite, "format", "7")
+    Imogen.SetParameters(imageWrite, {"format":7, "filename": outDir+"Vancouver-same.exr"})
     Imogen.Build()
     Imogen.DeleteGraph()
     
@@ -78,15 +62,11 @@ def imageTests(outDir):
     imageRead = Imogen.AddNode("ImageRead")
     setDefaultCubemap(imageRead)
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Cubemap01.dds")
-    Imogen.SetParameter(imageWrite, "format", "5")
-    Imogen.SetParameter(imageWrite, "mode", "3")
+    Imogen.SetParameters(imageWrite, {"mode":3, "format":5, "filename": outDir+"Cubemap01.dds"})
     Imogen.Connect(imageRead, 0, imageWrite, 0)
     Imogen.Build()
     # jpg from cubemap
-    Imogen.SetParameter(imageWrite, "filename", outDir+"JpgFromCubemap.jpg")
-    Imogen.SetParameter(imageWrite, "format", "0")
-    Imogen.SetParameter(imageWrite, "mode", "3")
+    Imogen.SetParameters(imageWrite, {"mode":3, "format":0, "filename": outDir+"JpgFromCubemap.jpg"})
     Imogen.Build()
     Imogen.DeleteGraph()
     
@@ -110,9 +90,7 @@ def imageTests(outDir):
     imageRead = Imogen.AddNode("ImageRead")
     Imogen.SetParameter(imageRead, "filename", outDir+"Cubemap01.dds")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"SameCubemap01.dds")
-    Imogen.SetParameter(imageWrite, "format", "5")
-    Imogen.SetParameter(imageWrite, "mode", "3")
+    Imogen.SetParameters(imageWrite, {"mode":3, "format":5, "filename": outDir+"SameCubemap01.dds"})
     Imogen.Connect(imageRead, 0, imageWrite, 0)
     Imogen.Build()
     Imogen.DeleteGraph()
@@ -132,6 +110,7 @@ def imageTests(outDir):
     Imogen.SetParameter(imageWrite, "width", "512")
     Imogen.SetParameter(imageWrite, "height", "256")
     Imogen.Build()
+    
     # test with a resulting dds
     Imogen.SetParameter(imageRead, "filename", outDir+"Equirect2cubemap.dds")
     Imogen.SetParameter(imageWrite, "filename", outDir+"EquirectFromCubemap02.jpg")
@@ -142,10 +121,7 @@ def imageTests(outDir):
     Imogen.NewGraph("ImageRead05")
     physicalSky = Imogen.AddNode("PhysicalSky")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Cubemap-PhysicalSky.dds")
-    Imogen.SetParameter(imageWrite, "format", "5")
-    Imogen.SetParameter(imageWrite, "width", "1024")
-    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":5, "filename": outDir+"Cubemap-PhysicalSky.dds"})
     Imogen.Connect(physicalSky, 0, imageWrite, 0)
     Imogen.Build()
     Imogen.DeleteGraph()
@@ -156,10 +132,7 @@ def imageTests(outDir):
     equirect = Imogen.AddNode("EquirectConverter")
     Imogen.SetParameter(equirect, "mode", "1")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"EquirectFromCubemap03.jpg")
-    Imogen.SetParameter(imageWrite, "format", "0")
-    Imogen.SetParameter(imageWrite, "width", "512")
-    Imogen.SetParameter(imageWrite, "height", "256")
+    Imogen.SetParameters(imageWrite, {"width":512, "height":256, "format":0, "filename": outDir+"EquirectFromCubemap03.jpg"})
     Imogen.Connect(physicalSky, 0, equirect, 0)
     Imogen.Connect(equirect, 0, imageWrite, 0)
     Imogen.Build()
@@ -169,16 +142,10 @@ def imageTests(outDir):
     Imogen.NewGraph("Gen01")
     circle = Imogen.AddNode("Circle")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Circle01.png")
-    Imogen.SetParameter(imageWrite, "format", "1")
-    Imogen.SetParameter(imageWrite, "width", "4096")
-    Imogen.SetParameter(imageWrite, "height", "4096")
+    Imogen.SetParameters(imageWrite, {"width":4096, "height":4096, "format":1, "filename": outDir+"Circle01.png"})
     Imogen.Connect(circle, 0, imageWrite, 0)
     Imogen.Build()
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Circle02.jpg")
-    Imogen.SetParameter(imageWrite, "format", "0")
-    Imogen.SetParameter(imageWrite, "width", "512")
-    Imogen.SetParameter(imageWrite, "height", "512")
+    Imogen.SetParameters(imageWrite, {"width":512, "height":512, "format":0, "filename": outDir+"Circle02.jpg"})
     Imogen.Build()
     Imogen.DeleteGraph()
     
@@ -192,10 +159,7 @@ def imageTests(outDir):
     Imogen.Connect(imageRead, 0, crop, 0)
     Imogen.Connect(crop, 0, imageWrite, 0)
     # 1K
-    Imogen.SetParameter(imageWrite, "mode", "0")
-    Imogen.SetParameter(imageWrite, "width", "1024")
-    Imogen.SetParameter(imageWrite, "height", "1024")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"crop-1024.jpg")
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "filename": outDir+"crop-1024.jpg"})
     Imogen.Build()  
     # as source
     Imogen.SetParameter(imageWrite, "mode", "3")
@@ -218,10 +182,7 @@ def imageTests(outDir):
     Imogen.Connect(Sine, 0, packer, 3)
     imageWrite = Imogen.AddNode("ImageWrite")
     Imogen.Connect(packer, 0, imageWrite, 0)
-    Imogen.SetParameter(imageWrite, "format", "1")
-    Imogen.SetParameter(imageWrite, "width", "1024")
-    Imogen.SetParameter(imageWrite, "height", "1024")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"ChannelPacker.png")
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":1, "filename": outDir+"ChannelPacker.png"})
     Imogen.Build()  
     Imogen.DeleteGraph()
     
@@ -236,11 +197,8 @@ def imageTests(outDir):
     Imogen.Connect(blur, 0, imageWrite, 0)
     Imogen.SetParameter(blur, "strength", "0.001")
     # 1 dir pass
-    Imogen.SetParameter(imageWrite, "mode", "0")
-    Imogen.SetParameter(imageWrite, "width", "1024")
-    Imogen.SetParameter(imageWrite, "height", "1024")
     Imogen.SetParameter(blur, "angle", "22.5")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"blur-directional-1pass.jpg")
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "filename": outDir+"blur-directional-1pass.jpg"})
     Imogen.Build()
     # 30 dir passes
     Imogen.SetParameter(blur, "passCount", "30")
@@ -266,13 +224,8 @@ def imageTests(outDir):
     voronoi = Imogen.AddNode("Voronoi")
     Imogen.Connect(imageRead, 0, voronoi, 0)
     Imogen.Connect(voronoi, 0, imageWrite, 0)
-    Imogen.SetParameter(voronoi, "size", "30")
-    Imogen.SetParameter(voronoi, "noise", "0.5")
-    Imogen.SetParameter(voronoi, "colorInterpolation", "0")
-    Imogen.SetParameter(imageWrite, "mode", "0")
-    Imogen.SetParameter(imageWrite, "width", "1024")
-    Imogen.SetParameter(imageWrite, "height", "1024")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Voronoi-image.jpg")
+    Imogen.SetParameters(voronoi, {"size":30, "noise":0.5, "colorInterpolation":0})
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "filename": outDir+"Voronoi-image.jpg"})
     Imogen.Build()
     Imogen.DeleteGraph()
     # noise generator
@@ -280,14 +233,9 @@ def imageTests(outDir):
     imageWrite = Imogen.AddNode("ImageWrite")
     voronoi = Imogen.AddNode("Voronoi")
     Imogen.Connect(voronoi, 0, imageWrite, 0)
-    Imogen.SetParameter(voronoi, "size", "20")
-    Imogen.SetParameter(voronoi, "noise", "1.0")
-    Imogen.SetParameter(voronoi, "colorInterpolation", "1")
+    Imogen.SetParameters(voronoi, {"size":20, "noise":1.0, "colorInterpolation":1})
     # from image
-    Imogen.SetParameter(imageWrite, "mode", "0")
-    Imogen.SetParameter(imageWrite, "width", "1024")
-    Imogen.SetParameter(imageWrite, "height", "1024")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Voronoi-noise.jpg")
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "filename": outDir+"Voronoi-noise.jpg"})
     Imogen.Build()
     Imogen.DeleteGraph()
     
@@ -296,15 +244,11 @@ def imageTests(outDir):
     circle = Imogen.AddNode("Circle")
     distance = Imogen.AddNode("Distance")
     imageWrite = Imogen.AddNode("ImageWrite")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"Distance01.png")
-    Imogen.SetParameter(imageWrite, "format", "1")
-    Imogen.SetParameter(imageWrite, "width", "4096")
-    Imogen.SetParameter(imageWrite, "height", "4096")
+    Imogen.SetParameters(imageWrite, {"width":4096, "height":4096, "format":1, "filename": outDir+"Distance01.png"})
     Imogen.Connect(circle, 0, distance, 0)
     Imogen.Connect(distance, 0, imageWrite, 0)
     Imogen.Build()
     Imogen.DeleteGraph()
-    
     
     # palette
     Imogen.NewGraph("Palette")
@@ -334,39 +278,30 @@ def imageTests(outDir):
     circle = Imogen.AddNode("Circle")
     imageWrite = Imogen.AddNode("ImageWrite")
     reactionDiffusion = Imogen.AddNode("ReactionDiffusion")
-    Imogen.SetParameter(imageWrite, "filename", outDir+"ReactionDiffusion01.png")
-    Imogen.SetParameter(imageWrite, "format", "1")
-    Imogen.SetParameter(imageWrite, "width", "4096")
-    Imogen.SetParameter(imageWrite, "height", "4096")
+    Imogen.SetParameters(imageWrite, {"width":4096, "height":4096, "format":1, "filename": outDir+"ReactionDiffusion01.png"})
     Imogen.Connect(circle, 0, reactionDiffusion, 0)
     Imogen.Connect(reactionDiffusion, 0, imageWrite, 0)
     Imogen.Build()
-    Imogen.SetParameter(reactionDiffusion, "boost", "0.72")
-    Imogen.SetParameter(reactionDiffusion, "divisor", "3.9")
-    Imogen.SetParameter(reactionDiffusion, "colorStep", "0.01")
+    Imogen.SetParameters(reactionDiffusion, {"boost":0.72, "divisor":3.9, "colorStep":0.01})
     Imogen.SetParameter(imageWrite, "filename", outDir+"ReactionDiffusion02.png")
     Imogen.Build()
     Imogen.DeleteGraph()
-    '''
+
     
+    # gltf read
     Imogen.NewGraph("GLTF01")
     gltf = Imogen.AddNode("GLTFRead")
     imageWrite = Imogen.AddNode("ImageWrite")
     Imogen.SetParameter(gltf, "filename", "Autotests/Assets/CartoonHead.gltf/scene.gltf")
     Imogen.SetCameraLookAt(gltf, 2., 1., 3.,0.,-1.,0.);
-    Imogen.SetParameter(imageWrite, "filename", outDir+"gltf01.jpg")
-    Imogen.SetParameter(imageWrite, "format", "0")
-    Imogen.SetParameter(imageWrite, "width", "1024")
-    Imogen.SetParameter(imageWrite, "height", "1024")
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":0, "filename": outDir+"gltf01.jpg"})
     Imogen.Connect(gltf, 0, imageWrite, 0)
     Imogen.Build()
     Imogen.DeleteGraph()
     
-    # GLTF read + camera
-    
     # 6jpg -> cubemap filter -> dds
     # hdr -> equirect2cubemap -> filter -> hdr
-    # reaction diffusion
+
     
 def clearTests(folder):
     for the_file in os.listdir(folder):

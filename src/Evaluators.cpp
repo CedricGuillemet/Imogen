@@ -119,6 +119,14 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         Imogen::instance->GetNodeGraphControler()->mModel.SetParameter(nodeIndex, paramName, value);
         Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
     });
+	m.def("SetParameters", [](int nodeIndex, pybind11::dict& dict) {
+		Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
+		for (auto& kv : dict)
+		{
+			Imogen::instance->GetNodeGraphControler()->mModel.SetParameter(nodeIndex, kv.first.str(), kv.second.str());
+		}
+		Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
+		});
 	m.def("SetCameraLookAt", [](int nodeIndex, float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ) {
 		Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
 		Imogen::instance->GetNodeGraphControler()->mModel.SetCameraLookAt(nodeIndex, Vec4(eyeX, eyeY, eyeZ, 0.f), Vec4(targetX, targetY, targetZ, 0.f));

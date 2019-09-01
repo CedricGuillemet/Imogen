@@ -50,24 +50,16 @@ static const float rotMatrices[6][16] = {
     //-z
     {-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
 
-bgfx::TextureFormat::Enum GetRTTextureFormat()
-{
-	bgfx::TextureFormat::Enum tft;
-	if (bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::BGRA8, BGFX_TEXTURE_RT))
-		tft = bgfx::TextureFormat::BGRA8;
-
-	else if (bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT))
-		tft = bgfx::TextureFormat::RGBA8;
-	else
-		exit(0);
-	return tft;
-}
 
 void EvaluationThumbnails::Clear()
 {
 	for (auto& atlas : mAtlases)
 	{
-		bgfx::destroy(atlas.mFrameBuffer);
+		if (atlas.mFrameBuffer.idx != bgfx::kInvalidHandle)
+		{
+			Log("Destroyed Thumbnails FB %d\n", atlas.mFrameBuffer.idx);
+			bgfx::destroy(atlas.mFrameBuffer);
+		}
 	}
 	mAtlases.clear();
 }
@@ -103,6 +95,7 @@ EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumb()
 	mAtlases.push_back(ThumbAtlas(ThumbnailsPerAtlas));
 
 	auto fb = bgfx::createFrameBuffer(AtlasSize, AtlasSize, GetRTTextureFormat());
+	Log("New Thumbnails FB %d\n", fb.idx);
 	mAtlases.back().mFrameBuffer = fb;
 	bgfx::frame();
 	bgfx::setViewFrameBuffer(1, fb);
@@ -337,10 +330,13 @@ void EvaluationContext::Clear()
             eval.mTarget->Destroy();
         }
     }
+	mEvaluations.clear();
 	for (auto& proxy : mProxies)
 	{
+		Log("Destroyed proxy FB %d\n", proxy.second.idx);
 		bgfx::destroy(proxy.second);
 	}
+	mProxies.clear();
 
     mThumbnails.Clear();
     mInputNodeIndex = -1;
@@ -515,6 +511,7 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 	if (!depthBuffer)
 	{
 		currentFramebuffer = bgfx::createFrameBuffer(width, height, GetRTTextureFormat());
+		Log("New proxy FB %d - %d %d\n", currentFramebuffer.idx, width, height);
 	}
 	else
 	{
@@ -522,7 +519,9 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 		fbTextures[0] = bgfx::createTexture2D(width, height, false, 1, GetRTTextureFormat(), BGFX_TEXTURE_RT_WRITE_ONLY);
 		fbTextures[1] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
 		currentFramebuffer = bgfx::createFrameBuffer(2, fbTextures, true);
+		Log("New proxy FB %d - %d %d depth\n", currentFramebuffer.idx, width, height);
 	}
+	assert(currentFramebuffer.idx != bgfx::kInvalidHandle);
 	mProxies[key] = currentFramebuffer;
 }
 
@@ -568,7 +567,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
 			bgfx::FrameBufferHandle currentFramebuffer;
 			GetRenderProxy(currentFramebuffer, viewportWidth, viewportHeight, evaluation.mbDepthBuffer);
-
+			
 			for (size_t face = 0; face < faceCount; face++)
 			{
 				bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());

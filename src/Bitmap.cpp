@@ -509,6 +509,25 @@ void ImageTexture::Swap(ImageTexture& other)
     //::Swap(mFrameBuffer, other.mFrameBuffer);
 }
 
+
+bgfx::TextureFormat::Enum GetRTTextureFormat()
+{
+	bgfx::TextureFormat::Enum tft;
+	if (bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::BGRA8, BGFX_TEXTURE_RT))
+	{
+		tft = bgfx::TextureFormat::BGRA8;
+	}
+	else if (bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT))
+	{
+		tft = bgfx::TextureFormat::RGBA8;
+	}
+	else
+	{
+		assert(0);
+	}
+	return tft;
+}
+
 void ImageTexture::Init2D(int width, int height, bool depthBuffer)
 {
     if ((width == mImage.mWidth) && (mImage.mHeight == height) && !mImage.mIsCubemap /*&&
@@ -522,7 +541,7 @@ void ImageTexture::Init2D(int width, int height, bool depthBuffer)
     mImage.mHeight = height;
     mImage.mHasMipmaps = false;
     mImage.mIsCubemap = false;
-    mImage.mFormat = bgfx::TextureFormat::BGRA8;
+    mImage.mFormat = GetRTTextureFormat();
 
     if (!width || !height)
     {
@@ -546,7 +565,7 @@ void ImageTexture::InitCube(int width, bool hasMipmaps)
     mImage.mHeight = width;
     mImage.mHasMipmaps = hasMipmaps;
     mImage.mIsCubemap = true;
-    mImage.mFormat = bgfx::TextureFormat::BGRA8;
+    mImage.mFormat = GetRTTextureFormat();
 
     if (!width)
     {

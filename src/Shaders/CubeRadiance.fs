@@ -4,7 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-SAMPLERCUBE(CubeSampler0, 0);
+SAMPLERCUBE(CubeSampler0, 8);
 
 uniform vec4 mode; // radiance, irradiance
 uniform vec4 sampleCount;
@@ -25,6 +25,11 @@ float random(vec2 co)
 	return fract(sin(sn) * c);
 }
 
+float hash(float n)
+{
+    return fract(sin(n) * 437587.5453);
+}
+
 vec2 hammersley2d(int i, int N) 
 {
 	// Radical inverse based on http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
@@ -37,7 +42,8 @@ vec2 hammersley2d(int i, int N)
 	float rdi = float(bits) * 2.3283064365386963e-10;
 	return vec2(float(i) /float(N), rdi);
 	*/
-	return vec2(0.0, 0.0);
+	float n = float(i)/float(N);
+	return vec2(n, random(vec2(abs(hash(n)), n)));
 }
 
 // Based on http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_slides.pdf
@@ -75,8 +81,7 @@ vec3 prefilterEnvMap(vec3 R, float roughness)
 	//int numSamples = sampleCount;
 	vec3 color = vec3(0.0, 0.0, 0.0);
 	float totalWeight = sampleCount.x;
-	float textureSize = 256.0;//textureSize(CubeSampler0, u_target.z).x;
-	float envMapDim = float(textureSize);
+	float envMapDim = u_textureSize[0].x/pow(u_target.z, 2.0);//   256.0;//textureSize(CubeSampler0, u_target.z).x;
 	for(int i = 0; i < 1024; i++) 
 	{
 		if (i<int(sampleCount.x))

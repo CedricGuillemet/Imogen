@@ -949,4 +949,3 @@ void GraphModel::SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame
     node.mEndFrame = endFrame;
     SetDirty(nodeIndex, Dirty::StartEndTime);
 }
-

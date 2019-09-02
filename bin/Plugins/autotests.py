@@ -13,6 +13,8 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "ZNegFilename", "Autotests/Assets/Lycksele/negz.jpg")
     
 def imageTests(outDir):
+    metanodes = Imogen.GetMetaNodes()
+    
     ###################################################
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
@@ -286,7 +288,6 @@ def imageTests(outDir):
     Imogen.SetParameter(imageWrite, "filename", outDir+"ReactionDiffusion02.png")
     Imogen.Build()
     Imogen.DeleteGraph()
-
     
     # gltf read
     Imogen.NewGraph("GLTF01")
@@ -296,6 +297,60 @@ def imageTests(outDir):
     Imogen.SetCameraLookAt(gltf, 2., 1., 3.,0.,-1.,0.);
     Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":0, "filename": outDir+"gltf01.jpg"})
     Imogen.Connect(gltf, 0, imageWrite, 0)
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    
+    # blend
+    Imogen.NewGraph("GraphForBlend")
+    blendNode = Imogen.AddNode("Blend")
+    imageRead = Imogen.AddNode("ImageRead")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.SetParameter(imageRead, "filename", "Autotests/Assets/PartyCat.jpg")
+    sineNode = Imogen.AddNode("Sine")
+    Imogen.Connect(imageRead, 0, blendNode, 0)
+    Imogen.Connect(sineNode, 0, blendNode, 1)
+    Imogen.Connect(blendNode, 0, imageWrite, 0)
+    
+    for node in metanodes:
+        nodeName = node["name"];
+        if nodeName == "Blend":
+            param = next((p for p in node["parameters"] if p["typeString"] == "Enum"), None)
+                
+            index = 0
+            for enum in param["enum"]:
+                Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "filename": outDir+"Blend-"+enum+".jpg"})
+                Imogen.SetParameters(blendNode, {"operation":index})
+                index = index + 1
+                Imogen.Build()
+    
+    # cubemap radiance filter
+    Imogen.NewGraph("CubeRadiance")
+    imageRead = Imogen.AddNode("ImageRead")
+    radiance = Imogen.AddNode("CubeRadiance")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.Connect(imageRead, 0, radiance, 0)
+    Imogen.Connect(radiance, 0, imageWrite, 0)
+    setDefaultCubemap(imageRead)
+    Imogen.SetParameters(imageWrite, {"mode":3, "format":5, "filename": outDir+"CubemapRadiance.dds"})
+    Imogen.SetParameters(radiance, {"mode":0, "size":1, "sampleCount":1000})
+    Imogen.Build()
+    Imogen.SetParameters(imageWrite, {"mode":3, "format":5, "filename": outDir+"CubemapIrradiance.dds"})
+    Imogen.SetParameters(radiance, {"mode":1, "size":1, "sampleCount":1000})
+    Imogen.Build()
+    Imogen.DeleteGraph()
+    
+    Imogen.NewGraph("CubeRadiance")
+    imageRead = Imogen.AddNode("ImageRead")
+    radiance = Imogen.AddNode("CubeRadiance")
+    equirect = Imogen.AddNode("EquirectConverter")
+    Imogen.SetParameter(equirect, "mode", "1")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.Connect(imageRead, 0, radiance, 0)
+    Imogen.Connect(radiance, 0, equirect, 0)
+    Imogen.Connect(equirect, 0, imageWrite, 0)
+    setDefaultCubemap(imageRead)
+    Imogen.SetParameters(imageWrite, {"width":512, "height":256, "mode":0, "format":1, "filename": outDir+"EquirectRadiance.png"})
+    Imogen.SetParameters(radiance, {"mode":0, "size":1, "sampleCount":1000})
     Imogen.Build()
     Imogen.DeleteGraph()
     

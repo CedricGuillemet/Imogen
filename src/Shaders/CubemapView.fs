@@ -4,7 +4,7 @@ $input v_texcoord0, v_color0, v_positionWorld, v_normal
 #include "CommonFS.shader"
 #include "Common.shader"
 
-SAMPLERCUBE(CubeSampler0, 0);
+SAMPLERCUBE(CubeSampler0, 8);
 
 uniform vec4 view;
 uniform vec4 mode;

@@ -60,9 +60,11 @@ public:
             , mStartFrame(startFrame)
             , mEndFrame(endFrame)
         {
+			mRuntimeUniqueId = GetRuntimeId();
         }
         Node() : mbSelected(false), mPinnedIO(0), mPinnedParameters(0)
         {
+			mRuntimeUniqueId = GetRuntimeId();
         }
         int mType;
         ImVec2 mPos;
@@ -73,7 +75,7 @@ public:
         MultiplexInput mMultiplexInput;
         Samplers mSamplers;
         bool mbSelected;
-
+		unsigned int mRuntimeUniqueId;
         // Helpers
         ImRect GetDisplayRect() const;
     };

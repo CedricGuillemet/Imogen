@@ -75,12 +75,6 @@ TaskScheduler g_TS;
 
 #else
 
-extern "C"
-{
-    int stbi_write_png(char const* filename, int x, int y, int comp, const void* data, int stride_bytes);
-    int stbi_write_jpg(char const* filename, int x, int y, int comp, const void* data, int quality);
-}
-
 struct bgfxCallback : public bgfx::CallbackI
 {
     virtual ~bgfxCallback() {}
@@ -127,8 +121,22 @@ struct bgfxCallback : public bgfx::CallbackI
         sscanf(_filePath, "%d|%d|%d|%d|%s", &x, &y, &w, &h, filename);
         unsigned char *ptr = (unsigned char*)_data;
 		uint32_t comp = _pitch / _width;
-        ptr += (x + y * _width) * comp;
-        stbi_write_png(filename, w, h, comp, _data, _pitch);
+		if (bgfx::getCaps()->originBottomLeft)
+		{
+			// yflip
+			ptr += (x + (_height - y - h - 1) * _width) * comp;
+		}
+		else
+		{
+			ptr += (x + y * _width) * comp;
+		}
+		Image image;
+		image.SetBits(w, h, comp, ptr, _pitch);
+		if (bgfx::getCaps()->originBottomLeft)
+		{
+			Image::VFlip(&image);
+		}
+		Image::Write(filename, &image, 1, 0);
     }
 
     virtual void captureBegin(
@@ -483,7 +491,6 @@ void MainLoop(void* arg)
         InitCallbackRects();
         loopdata->mImogen->HandleHotKeys();
 
-        //loopdata->mNodeGraphControler->mEditingContext.RunDirty();
         loopdata->mNodeGraphControler->mEditingContext.Evaluate();
         loopdata->mImogen->Show(loopdata->mBuilder, library, capturing);
         if (!capturing && loopdata->mImogen->ShowMouseState())
@@ -493,7 +500,7 @@ void MainLoop(void* arg)
 
         // Rendering
         ImGui::Render();
-        ImGui_Implbgfx_RenderDrawData(viewId_ImGui, ImGui::GetDrawData());
+        ImGui_Implbgfx_RenderDrawData(0, ImGui::GetDrawData());
         bgfx::frame();
         g_TS.RunPinnedTasks();
     };

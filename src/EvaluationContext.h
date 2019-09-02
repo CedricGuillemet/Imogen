@@ -159,7 +159,8 @@ struct EvaluationContext
     void StageSetProcessing(size_t target, int processing);
     void StageSetProgress(size_t target, float progress);
 
-    
+	int GetStageIndexFromRuntimeId(unsigned int runtimeUniqueId) const;
+	unsigned int GetStageRuntimeId(size_t stageIndex) const;
 
     const EvaluationThumbnails& GetThumbnails() const 
     { 
@@ -188,6 +189,7 @@ struct EvaluationContext
         uint8_t mProcessing = false;
         uint8_t mVertexSpace        = 0; // UV, worldspace
         int mUseCount;
+		RuntimeId mRuntimeUniqueId = InvalidRuntimeId;
         union
         {
             uint8_t u = 0;

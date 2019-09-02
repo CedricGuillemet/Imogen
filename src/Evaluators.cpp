@@ -1034,9 +1034,11 @@ namespace EvaluationAPI
         {
             for (size_t i = 0; i < img.GetMipmapCount(); i++)
             {
-                bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, 0);
+				int currentWidth = img.mWidth >> i;
+				int currentHeight = img.mHeight >> i;
+				bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, 0, currentWidth, currentHeight);
                 availableFrame = bgfx::readTexture(transient, ptr, i);
-                ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+				ptr += currentWidth * currentHeight * texelSize;
 				while (bgfx::frame() != availableFrame) {};
             }
         }
@@ -1046,9 +1048,11 @@ namespace EvaluationAPI
             {
                 for (size_t i = 0; i < img.GetMipmapCount(); i++)
                 {
-                    bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, cube);
+					int currentWidth = img.mWidth >> i;
+					int currentHeight = img.mHeight >> i;
+                    bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, cube, currentWidth, currentHeight);
                     availableFrame = bgfx::readTexture(transient, ptr, i);
-                    ptr += (img.mWidth >> i) * (img.mHeight >> i) * texelSize;
+                    ptr += currentWidth * currentHeight * texelSize;
 					while (bgfx::frame() != availableFrame) {};
                 }
             }
@@ -1456,19 +1460,28 @@ namespace EvaluationAPI
     {
         SetProcessing(context, target, 1);
         std::string strFilename = filename;
-        Job(context, [context, target, strFilename](){
+		RuntimeId runtimeId = context->GetStageRuntimeId(target);
+        Job(context, [context, runtimeId, strFilename](){
             Scene *scene;
             if (ReadGLTF(context, strFilename.c_str(), &scene) == EVAL_OK)
             {
-                JobMain(context, [context, scene, target](){
-                    SetEvaluationScene(context, target, scene);
-                    SetProcessing(context, target, 0);
+                JobMain(context, [context, scene, runtimeId](){
+					int stageIndex = context->GetStageIndexFromRuntimeId(runtimeId);
+					if (stageIndex != -1)
+					{
+						SetEvaluationScene(context, stageIndex, scene);
+						SetProcessing(context, stageIndex, 0);
+					}
                     return EVAL_OK;
                 });
             }
             else
             {
-                SetProcessing(context, target, 0);
+				int stageIndex = context->GetStageIndexFromRuntimeId(runtimeId);
+				if (stageIndex != -1)
+				{
+	                SetProcessing(context, stageIndex, 0);
+				}
             }
             return EVAL_OK;
         });
@@ -1478,29 +1491,38 @@ namespace EvaluationAPI
     int ReadImageAsync(EvaluationContext* context, const char *filename, int target, int face)
     {
         std::string strFilename = filename;
-        Job(context, [context, target, strFilename, face]() {
+		RuntimeId runtimeId = context->GetStageRuntimeId(target);
+        Job(context, [runtimeId, context, strFilename, face]() {
             Image image;
             if (Image::Read(strFilename.c_str(), &image) == EVAL_OK)
             {
-                JobMain(context, [image, face, context, target](){
-                    if (face != -1)
-                    {
-                        SetEvaluationImageCube(context, target, &image, face);
-                    }
-                    else
-                    {
-                        SetEvaluationImage(context, target, &image);
-                    }
-                    //FreeImage(&data->image);
-                    SetProcessing(context, target, 0);
-                    // don't set childOnly or the node will not be evaluated and we wont get the thumbnail
-                    context->SetTargetDirty(target, Dirty::Input, false);
+                JobMain(context, [runtimeId, image, face, context](){
+					int stageIndex = context->GetStageIndexFromRuntimeId(runtimeId);
+					if (stageIndex != -1)
+					{
+						if (face != -1)
+						{
+							SetEvaluationImageCube(context, stageIndex, &image, face);
+						}
+						else
+						{
+							SetEvaluationImage(context, stageIndex, &image);
+						}
+						//FreeImage(&data->image);
+						SetProcessing(context, stageIndex, 0);
+						// don't set childOnly or the node will not be evaluated and we wont get the thumbnail
+						context->SetTargetDirty(stageIndex, Dirty::Input, false);
+					}
                     return EVAL_OK;
                 });
             }
             else
             {
-                SetProcessing(context, target, 0);
+				int stageIndex = context->GetStageIndexFromRuntimeId(runtimeId);
+				if (stageIndex != -1)
+				{
+					SetProcessing(context, stageIndex, 0);
+				}
             }
             return EVAL_OK;
         });

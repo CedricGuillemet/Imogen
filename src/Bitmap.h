@@ -117,6 +117,21 @@ struct Image
         Allocate(size);
         memcpy(mBits, bits, size);
     }
+
+	void SetBits(int width, int height, int component, unsigned char* ptr, int pitch)
+	{
+		Allocate(width * height * component);
+		for (int y = 0; y < height; y++)
+		{
+			memcpy(&mBits[(y * width) * component], &ptr[pitch * y], width * component);
+		}
+		mWidth = width;
+		mHeight = height;
+		mHasMipmaps = false;
+		mIsCubemap = false;
+		mFormat = (component == 3)?bgfx::TextureFormat::RGB8:bgfx::TextureFormat::RGBA8;
+	}
+
     void Allocate(size_t size)
     {
         if (mBits && mDataSize != size)

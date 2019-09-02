@@ -84,6 +84,10 @@ inline Camera Lerp(Camera a, Camera b, float t)
     return a.Lerp(b, t);
 }
 
+typedef uint32_t RuntimeId;
+static const RuntimeId InvalidRuntimeId = 0xFFFFFFFF;
+RuntimeId GetRuntimeId();
+
 struct MultiplexInput
 {
     MultiplexInput()
@@ -164,7 +168,7 @@ struct MaterialNode
     uint32_t mFrameStart;
     uint32_t mFrameEnd;
     // runtime
-    unsigned int mRuntimeUniqueId;
+	RuntimeId mRuntimeUniqueId;
 };
 
 struct MaterialNodeRug
@@ -444,7 +448,7 @@ struct Material
 
     // run time
     bgfx::TextureHandle mThumbnailTextureHandle;
-    unsigned int mRuntimeUniqueId;
+	RuntimeId mRuntimeUniqueId;
 };
 
 struct Library
@@ -632,7 +636,8 @@ size_t GetMetaNodeIndex(const std::string& metaNodeName);
 void LoadMetaNodes();
 
 std::vector<MetaNode> ReadMetaNodes(const char* filename);
-unsigned int GetRuntimeId();
+
+
 extern Library library;
 
 struct RecentLibraries;

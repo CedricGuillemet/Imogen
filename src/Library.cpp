@@ -351,9 +351,9 @@ void SaveRecent(RecentLibraries* recent, const char* szFilename)
     SerializeWrite(szFilename).Ser(recent);
 }
 
-unsigned int GetRuntimeId()
+RuntimeId GetRuntimeId()
 {
-    static unsigned int runtimeId = 0;
+    static RuntimeId runtimeId = 10;
     return ++runtimeId;
 }
 

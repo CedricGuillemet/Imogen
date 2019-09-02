@@ -924,6 +924,23 @@ void EvaluationContext::ReleaseRenderTarget(ImageTexture* renderTarget)
     mAvailableRenderTargets.push_back(renderTarget);
 }
 
+int EvaluationContext::GetStageIndexFromRuntimeId(unsigned int runtimeUniqueId) const
+{
+	for (unsigned int i = 0; i < mEvaluations.size(); i++)
+	{
+		if (mEvaluations[i].mRuntimeUniqueId == runtimeUniqueId)
+		{
+			return int(i);
+		}
+	}
+	return -1;
+}
+
+unsigned int EvaluationContext::GetStageRuntimeId(size_t stageIndex) const
+{
+	return mEvaluations[stageIndex].mRuntimeUniqueId;
+}
+
 
 std::vector<ImageTexture*> mAvailableRenderTargets;
 
@@ -1055,7 +1072,7 @@ namespace DrawUICallbacks
         bgfx::setUniform(gEvaluators.u_time, uniform);
 
         EvaluationInfo evaluationInfo;
-        def->Draw(evaluationInfo, viewId_ImGui, gEvaluators.mProgressProgram);
+        def->Draw(evaluationInfo, 0, gEvaluators.mProgressProgram);
     }
 
     void DrawUISingle(EvaluationContext* context, size_t nodeIndex)
@@ -1066,3 +1083,5 @@ namespace DrawUICallbacks
         //context->RunSingle(nodeIndex, viewId_ImGui, evaluationInfo); TODOEVA
     }
 } // namespace DrawUICallbacks
+
+

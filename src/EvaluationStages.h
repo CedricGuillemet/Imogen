@@ -85,7 +85,7 @@ struct EvaluationStage
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
 #endif
     uint16_t mType;
-    unsigned int mRuntimeUniqueId;
+	RuntimeId mRuntimeUniqueId;
 
     int mStartFrame, mEndFrame;
     

@@ -16,7 +16,6 @@ def appendHotKeys(f):
 def saveScreen(filePath, content):
     Imogen.AutoLayout()
     Imogen.Render()
-    Imogen.Render()
     Imogen.CaptureScreen(filePath, content)
     
 def finishGraph(f, nodeName, baseDir):
@@ -34,7 +33,7 @@ def blendExample(filePath, operation, content):
     sineNode = Imogen.AddNode("Sine")
     Imogen.Connect(imageRead, 0, blendNode, 0)
     Imogen.Connect(sineNode, 0, blendNode, 1)
-    Imogen.SetParameter(blendNode, "Operation", operation)
+    Imogen.SetParameter(blendNode, "operation", operation)
     saveScreen(filePath, content)
     Imogen.DeleteGraph()
 
@@ -44,7 +43,7 @@ def paletteExample(filePath, operation, content):
     imageRead = Imogen.AddNode("ImageRead")
     Imogen.SetParameter(imageRead, "filename", "Media/Pictures/PartyCat.jpg")
     Imogen.Connect(imageRead, 0, paletteNode, 0)
-    Imogen.SetParameter(paletteNode, "Palette", operation)
+    Imogen.SetParameter(paletteNode, "palette", operation)
     saveScreen(filePath, content)
     Imogen.DeleteGraph()
     

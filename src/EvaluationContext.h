@@ -178,6 +178,11 @@ struct EvaluationContext
 
     struct Evaluation
     {
+		Evaluation()
+		{
+			mRuntimeUniqueId = GetRuntimeId();
+		}
+
         ImageTexture* mTarget = nullptr;
         
         EvaluationThumbnails::Thumb mThumb;

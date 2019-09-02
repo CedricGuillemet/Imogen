@@ -315,15 +315,16 @@ def imageTests(outDir):
         nodeName = node["name"];
         if nodeName == "Blend":
             param = next((p for p in node["parameters"] if p["typeString"] == "Enum"), None)
-                
             index = 0
             for enum in param["enum"]:
                 Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "filename": outDir+"Blend-"+enum+".jpg"})
                 Imogen.SetParameters(blendNode, {"operation":index})
                 index = index + 1
                 Imogen.Build()
+    Imogen.DeleteGraph()
     
     # cubemap radiance filter
+    
     Imogen.NewGraph("CubeRadiance")
     imageRead = Imogen.AddNode("ImageRead")
     radiance = Imogen.AddNode("CubeRadiance")
@@ -354,7 +355,6 @@ def imageTests(outDir):
     Imogen.Build()
     Imogen.DeleteGraph()
     
-    # 6jpg -> cubemap filter -> dds
     # hdr -> equirect2cubemap -> filter -> hdr
 
     

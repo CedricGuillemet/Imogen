@@ -51,7 +51,7 @@ int Log(const char* szFormat, ...)
     va_list ptr_arg;
     va_start(ptr_arg, szFormat);
 
-    static char buf[10240];
+    static char buf[102400];
     vsprintf(buf, szFormat, ptr_arg);
 
     static FILE* fp = fopen("log.txt", "wt");

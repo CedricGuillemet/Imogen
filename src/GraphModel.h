@@ -107,11 +107,13 @@ public:
     void SetNodePosition(size_t nodeIndex, const ImVec2 position);
     void DeleteSelectedNodes();
     void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
+	void DelLink(size_t inputNodeIndex, size_t inputSlotIndex);
     void DelLink(size_t linkIndex);
     void AddRug(const Rug& rug);
     void DelRug(size_t rugIndex);
     void SetRug(size_t rugIndex, const Rug& rug);
-    void SetSamplers(size_t nodeIndex, const Samplers& sampler);
+    void SetSamplers(size_t nodeIndex, const Samplers& samplers);
+	void SetSampler(size_t nodeIndex, size_t input, const InputSampler& sampler);
     void SetParameter(size_t nodeIndex, const std::string& parameterName, const std::string& parameterValue);
     void SetParameters(size_t nodeIndex, const Parameters& parameters);
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);

@@ -41,7 +41,8 @@ DECLARE_NODE(Thumbnail)
     
     if (GetEvaluationImage(context, evaluation->inputIndices[0], &image) == EVAL_OK)
     {
-		Image::Resize(&image, 256, 256);
+		InputSampler sampler{};
+		Image::Resize(&image, 256, 256, sampler);
         if (SetThumbnailImage(context, &image) == EVAL_OK)
         {    
             return EVAL_OK;

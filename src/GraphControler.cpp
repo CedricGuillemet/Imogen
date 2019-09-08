@@ -353,6 +353,7 @@ void GraphControler::PinnedEdit()
 {
     int dirtyNode = -1;
     Parameters dirtyParameters;
+	ImGui::BeginChild(655);
     for (const auto pin : mModel.GetParameterPins())
     {
         if (!pin)
@@ -380,6 +381,7 @@ void GraphControler::PinnedEdit()
 
         ImGui::PopID();
     }
+	ImGui::EndChild();
     if (dirtyNode != -1)
     {
         mModel.SetParameters(dirtyNode, dirtyParameters);
@@ -396,7 +398,7 @@ void GraphControler::EditNodeParameters()
     bool samplerDirty = false;
     const auto nodeType = mModel.GetNodeType(nodeIndex);
     const MetaNode& currentMeta = metaNodes[nodeType];
-
+	ImGui::BeginChild(655);
     // edit samplers
     auto samplers = mModel.GetSamplers(nodeIndex);
     if (ImGui::CollapsingHeader("Samplers", 0))
@@ -467,7 +469,7 @@ void GraphControler::EditNodeParameters()
             break;
         }
     }
-
+	ImGui::EndChild();
     if (dirty)
     {
         mModel.BeginTransaction(true);

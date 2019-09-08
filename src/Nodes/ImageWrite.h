@@ -38,7 +38,7 @@ DECLARE_NODE(ImageWrite)
     ImageWriteBlock* param = (ImageWriteBlock*)parameters;
     const char* stockImages[] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png", "Stock/dds-icon.png", "Stock/ktx-icon.png", "Stock/mp4-icon.png"};
     Image image;
-    
+	const int source = evaluation->inputIndices[0];
     param->width = std::max(param->width, 8);
     param->height = std::max(param->height, 8);
 
@@ -50,12 +50,12 @@ DECLARE_NODE(ImageWrite)
         }
     }
 
-    if (evaluation->inputIndices[0] == -1)
+    if (source == -1)
     {
         return EVAL_OK;
     }
     int imageWidth, imageHeight;
-    int res = GetEvaluationSize(context, evaluation->inputIndices[0], &imageWidth, &imageHeight);
+    int res = GetEvaluationSize(context, source, &imageWidth, &imageHeight);
     if (param->mode && res == EVAL_OK)
     {
         const float ratio = float(imageWidth) / float(imageHeight);
@@ -79,9 +79,11 @@ DECLARE_NODE(ImageWrite)
         return EVAL_OK;
     }
     
-	if (GetEvaluationImage(context, evaluation->inputIndices[0], &image) == EVAL_OK)
+	
+	if (GetEvaluationImage(context, source, &image) == EVAL_OK)
 	{
-		Image::Resize(&image, param->width, param->height);
+		auto sampler = context->mEvaluationStages.mInputSamplers[evaluation->targetIndex][0];
+		Image::Resize(&image, param->width, param->height, sampler);
         if (Image::Write(param->filename, &image, param->format, param->quality) == EVAL_OK)
         {    
             Log("Image %s saved.\n", param->filename);

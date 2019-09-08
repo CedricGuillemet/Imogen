@@ -115,9 +115,10 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
 		return Imogen::instance->AddNode(nodeType); 
 	});
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
-        Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
-        Imogen::instance->GetNodeGraphControler()->mModel.SetParameter(nodeIndex, paramName, value);
-        Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
+		auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
+        model.BeginTransaction(false);
+		model.SetParameter(nodeIndex, paramName, value);
+		model.EndTransaction();
     });
 	m.def("SetParameters", [](int nodeIndex, pybind11::dict& dict) {
 		Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
@@ -128,9 +129,10 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
 		Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
 		});
 	m.def("SetCameraLookAt", [](int nodeIndex, float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ) {
-		Imogen::instance->GetNodeGraphControler()->mModel.BeginTransaction(false);
-		Imogen::instance->GetNodeGraphControler()->mModel.SetCameraLookAt(nodeIndex, Vec4(eyeX, eyeY, eyeZ, 0.f), Vec4(targetX, targetY, targetZ, 0.f));
-		Imogen::instance->GetNodeGraphControler()->mModel.EndTransaction();
+		auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
+		model.BeginTransaction(false);
+		model.SetCameraLookAt(nodeIndex, Vec4(eyeX, eyeY, eyeZ, 0.f), Vec4(targetX, targetY, targetZ, 0.f));
+		model.EndTransaction();
 		});
     m.def("Connect", [](int nodeSource, int slotSource, int nodeDestination, int slotDestination) {
         auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
@@ -146,6 +148,69 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         GraphEditorUpdateScrolling(controler);
     });
     m.def("DeleteGraph", []() { Imogen::instance->DeleteCurrentMaterial(); });
+	// samplers
+	m.def("GetSamplers", [](int target) {
+		auto d = pybind11::list();
+		const auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
+		const auto& samplers = model.GetSamplers(target);
+		for (const auto& sampler : samplers)
+		{
+			auto s = pybind11::dict();
+			s["wrapU"] = sampler.mWrapU;
+			s["wrapV"] = sampler.mWrapU;
+			s["filterMin"] = sampler.mFilterMin;
+			s["filterMag"] = sampler.mFilterMag;
+			d.append(s);
+		}
+		return d;
+	});
+	m.def("SetSamplers", [](int target, int input, pybind11::dict& dict) {
+		auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
+		const auto& samplers = model.GetSamplers(target);
+		if (input < 0 || input >= samplers.size())
+		{
+			return;
+		}
+		model.BeginTransaction(false);
+		auto sampler = samplers[input];
+		for (auto& kv : dict)
+		{
+			if (kv.first.str().operator std::string() == "wrapU")
+			{
+				sampler.mWrapU = atoi(kv.second.str().operator std::string().c_str());
+			} 
+			else if (kv.first.str().operator std::string() == "wrapV")
+			{
+				sampler.mWrapV = atoi(kv.second.str().operator std::string().c_str());
+			}
+			else if (kv.first.str().operator std::string() == "filterMin")
+			{
+				sampler.mFilterMin = atoi(kv.second.str().operator std::string().c_str());
+			}
+			else if (kv.first.str().operator std::string() == "filterMag")
+			{
+				sampler.mFilterMag = atoi(kv.second.str().operator std::string().c_str());
+			}
+		}
+		model.SetSampler(target, input, sampler);
+		model.EndTransaction();
+	});
+
+	m.def("GetMultiplexList", [](int target, int input) {
+	});
+
+	m.def("SelectMultiplex", [](int target, int input, int indexInList) {
+	});
+
+	m.def("GetSelectedMultiplex", [](int target, int input) {
+	});
+
+	m.def("Disconnect", [](int target, int input) {
+		auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
+		model.BeginTransaction(false);
+		model.DelLink(target, input);
+		model.EndTransaction();
+	});
 
 
     m.def("GetMetaNodes", []() {

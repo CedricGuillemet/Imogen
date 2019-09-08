@@ -34,6 +34,7 @@
 #include <bx/file.h>
 #include <bgfx/bgfx.h>
 #include "JSGlue.h"
+#include "Library.h"
 //#define STB_IMAGE_WRITE_IMPLEMENTATION
 //#include "stb_image_write.h"
 #define NANOSVG_ALL_COLOR_KEYWORDS // Include full list of color keywords.
@@ -404,7 +405,7 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
     return EVAL_OK;
 }
 
-int Image::Resize(Image* image, int width, int height)
+int Image::Resize(Image* image, int width, int height, const InputSampler& sampler)
 {
 	if (image->mWidth == width && image->mHeight == height)
 	{
@@ -420,12 +421,14 @@ int Image::Resize(Image* image, int width, int height)
 	const size_t sourceFaceSize = image->mWidth * image->mHeight * channelCount;
 	const size_t faceSize = width * height * channelCount;
 	size_t size = faceSize * faceCount;
+	const auto filter = sampler.mFilterMin ? STBIR_FILTER_BOX : STBIR_FILTER_DEFAULT;
 	unsigned char* output = new unsigned char [size];
 	for (int face = 0; face < faceCount; face++)
 	{
-		stbir_resize_uint8(&image->mBits[sourceFaceSize * face], image->mWidth, image->mHeight, image->mWidth * channelCount,
+		stbir__resize_arbitrary(NULL, &image->mBits[sourceFaceSize * face], image->mWidth, image->mHeight, image->mWidth * channelCount,
 			&output[faceSize * face], width, height, width * channelCount,
-			channelCount);
+			0, 0, 1, 1, NULL, channelCount, -1, 0, STBIR_TYPE_UINT8, filter, filter,
+			STBIR_EDGE_CLAMP, STBIR_EDGE_CLAMP, STBIR_COLORSPACE_LINEAR);
 	}
 	image->mWidth = width;
 	image->mHeight = height;
@@ -497,18 +500,8 @@ void ImageTexture::Destroy()
         bgfx::destroy(mTexture);
         mTexture = { bgfx::kInvalidHandle };
     }
-    //mGLTexDepth = { bgfx::kInvalidHandle };
     mImage = Image();
 }
-
-void ImageTexture::Swap(ImageTexture& other)
-{
-    ::Swap(mImage, other.mImage);
-    ::Swap(mTexture, other.mTexture);
-    //::Swap(mGLTexDepth, other.mGLTexDepth);
-    //::Swap(mFrameBuffer, other.mFrameBuffer);
-}
-
 
 bgfx::TextureFormat::Enum GetRTTextureFormat()
 {

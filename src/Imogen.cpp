@@ -2276,6 +2276,28 @@ void Imogen::ShowDebugWindow()
             ImGui::Image((ImTextureID)(int64_t)atlas.idx, ImVec2(1024, 1024));
         }
     }
+	if (ImGui::CollapsingHeader("bgfx"))
+	{
+		const bgfx::Stats* stats = bgfx::getStats();
+		ImGui::Text("%d draw calls submitted", stats->numDraw);
+		ImGui::Text("%d compute calls submitted", stats->numCompute);
+		ImGui::Text("%d blit calls submitted", stats->numBlit);
+		ImGui::Text("%d GPU driver latency", stats->maxGpuLatency);
+		ImGui::Text("%d dynamic index buffers", stats->numDynamicIndexBuffers);
+		ImGui::Text("%d dynamic vertex buffers", stats->numDynamicVertexBuffers);
+		ImGui::Text("%d frame buffers", stats->numFrameBuffers);
+		ImGui::Text("%d index buffers", stats->numIndexBuffers);
+		ImGui::Text("%d programs", stats->numPrograms);
+		ImGui::Text("%d shaders", stats->numShaders);
+		ImGui::Text("%d textures", stats->numTextures);
+		ImGui::Text("%d uniforms", stats->numUniforms);
+		ImGui::Text("%d vertex buffers", stats->numVertexBuffers);
+		ImGui::Text("%d vertex layouts", stats->numVertexDecls);
+		ImGui::Text("%d Mb texture memory used", int(stats->textureMemoryUsed / (1 << 20)));
+		ImGui::Text("%d Mb target memory used", int(stats->rtMemoryUsed / (1 << 20)));
+		ImGui::Text("%d Mb available GPU memory", int(stats->gpuMemoryMax / (1 << 20)));
+		ImGui::Text("%d Mb GPU memory used", int(stats->gpuMemoryUsed / (1 << 20)));
+	}
     if (ImGui::CollapsingHeader("Memory"))
     {
         ImGui::Text("Undo/Redo footprint %d bytes", int(GetUndoRedoMemoryFootPrint()));

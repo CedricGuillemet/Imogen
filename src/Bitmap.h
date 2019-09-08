@@ -42,7 +42,7 @@ namespace FFMPEGCodec
 #endif
 
 bimg::Quality::Enum GetQuality(int quality);
-
+struct InputSampler;
 struct Image
 {
     Image() : mDecoder(NULL), mWidth(0), mHeight(0), mHasMipmaps(false), mIsCubemap(false), mBits(NULL), mDataSize(0)
@@ -159,7 +159,7 @@ struct Image
     static void VFlip(Image* image);
     static int Write(const char* filename, Image* image, int format, int quality);
     static int EncodePng(Image* image, std::vector<unsigned char>& pngImage);
-	static int Resize(Image* image, int width, int height);
+	static int Resize(Image* image, int width, int height, const InputSampler& sampler);
 #if USE_FFMPEG
     static Image DecodeImage(FFMPEGCodec::Decoder* decoder, int frame);
 #endif
@@ -192,9 +192,7 @@ public:
     void Init2D(int width, int height, bool depthBuffer);
     void InitCube(int width, bool hasMipmaps);
     void Destroy();
-    void Swap(ImageTexture& other);
 
     Image mImage;
 	bgfx::TextureHandle mTexture = { bgfx::kInvalidHandle };
-	//bgfx::TextureHandle mGLTexDepth = { bgfx::kInvalidHandle };
 };

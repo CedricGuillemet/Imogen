@@ -331,6 +331,11 @@ void EvaluationContext::Clear()
         }
     }
 	mEvaluations.clear();
+	for (auto& renderTarget : mAvailableRenderTargets)
+	{
+		renderTarget->Destroy();
+	}
+	mAvailableRenderTargets.clear();
 	for (auto& proxy : mProxies)
 	{
 		Log("Destroyed proxy FB %d\n", proxy.second.idx);
@@ -940,9 +945,6 @@ unsigned int EvaluationContext::GetStageRuntimeId(size_t stageIndex) const
 {
 	return mEvaluations[stageIndex].mRuntimeUniqueId;
 }
-
-
-std::vector<ImageTexture*> mAvailableRenderTargets;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

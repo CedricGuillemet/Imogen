@@ -14,7 +14,7 @@ def setDefaultCubemap(node):
     
 def imageTests(outDir):
     metanodes = Imogen.GetMetaNodes()
-    
+    '''
     ###################################################
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
@@ -264,6 +264,7 @@ def imageTests(outDir):
     Imogen.SetParameter(palette, "ditherStrength", "0.0")
     Imogen.SetParameter(imageWrite, "format", "1")
     Imogen.SetParameter(imageWrite, "mode", "3")
+    
     for pal in range(0, 10):
         Imogen.SetParameter(palette, "palette", "{}".format(pal))
         Imogen.SetParameter(imageWrite, "filename", (outDir+"Palette-{}.png").format(pal));
@@ -273,6 +274,13 @@ def imageTests(outDir):
         Imogen.SetParameter(palette, "ditherStrength", "{}".format(dither/10.0))
         Imogen.SetParameter(imageWrite, "filename", (outDir+"DitherPalette-0-{}.png").format(dither/10.0));
         Imogen.Build()
+
+    # samplers
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":1, "mode":0, "filename": outDir+"Palette_1024_linear.png"})
+    Imogen.Build()
+    Imogen.SetSamplers(imageWrite, 0, {"filterMin" : 1})
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":1, "mode":0, "filename": outDir+"Palette_1024_nearest.png"})
+    Imogen.Build()
     Imogen.DeleteGraph()
     
     # reaction diffusion
@@ -354,9 +362,47 @@ def imageTests(outDir):
     Imogen.SetParameters(radiance, {"mode":0, "size":1, "sampleCount":1000})
     Imogen.Build()
     Imogen.DeleteGraph()
+    '''
+    Imogen.NewGraph("Multiplex")
+    circle = Imogen.AddNode("Circle")
+    ngon = Imogen.AddNode("NGon")
+    checker = Imogen.AddNode("Checker")
+    sine = Imogen.AddNode("Sine")
+    multiplexLeft = Imogen.AddNode("Multiplex")
+    multiplexRight = Imogen.AddNode("Multiplex")
+    blend = Imogen.AddNode("Blend")
+    imageWrite = Imogen.AddNode("ImageWrite")
     
-    # hdr -> equirect2cubemap -> filter -> hdr
-
+    Imogen.Connect(checker, 0, multiplexLeft, 0)
+    Imogen.Connect(checker, 0, multiplexRight, 4)
+    Imogen.Connect(sine, 0, multiplexLeft, 2)
+    Imogen.Connect(ngon, 0, multiplexLeft, 6)
+    
+    Imogen.Connect(circle, 0, multiplexRight, 1)
+    Imogen.Connect(circle, 0, blend, 0)
+    
+    Imogen.Connect(multiplexLeft, 0, multiplexRight, 3)
+    Imogen.Connect(multiplexRight, 0, blend, 1)
+    
+    Imogen.Connect(blend, 0, imageWrite, 0)
+    
+    Imogen.Connect(ngon, 0, multiplexRight, 7) # todelete
+    
+    Imogen.AutoLayout()
+    Imogen.Render()
+    Imogen.Render()
+    Imogen.CaptureScreen(outDir+"MultiplexGraph_0.png", "Graph")
+    
+    Imogen.Disconnect(multiplexRight, 7)
+    Imogen.AutoLayout()
+    Imogen.Render()
+    Imogen.Render()
+    Imogen.CaptureScreen(outDir+"MultiplexGraph_1.png", "Graph")
+    
+    
+    #Imogen.Build()
+    Imogen.DeleteGraph()
+    
     
 def clearTests(folder):
     for the_file in os.listdir(folder):

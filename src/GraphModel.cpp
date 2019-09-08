@@ -256,6 +256,26 @@ void GraphModel::DelLink(size_t linkIndex)
     DelLinkInternal(linkIndex);
 }
 
+void GraphModel::DelLink(size_t inputNodeIndex, size_t inputSlotIndex)
+{
+	assert(mbTransaction);
+	
+	for (size_t linkIndex = 0; linkIndex < mLinks.size(); linkIndex++)
+	{
+		const Link& link = mLinks[linkIndex];
+		if (link.mOutputNodeIndex == inputNodeIndex && link.mOutputSlotIndex == inputSlotIndex)
+		{
+			auto inputChanged = [this](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input); };
+			auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, inputChanged, inputChanged)
+				: nullptr;
+
+			inputChanged(int(linkIndex));
+			DelLinkInternal(linkIndex);
+			return;
+		}
+	}
+}
+
 void GraphModel::AddRug(const Rug& rug)
 {
     assert(mbTransaction);
@@ -397,6 +417,22 @@ void GraphModel::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& 
                         : nullptr;
     mNodes[nodeIndex].mSamplers = samplers;
     SetDirty(nodeIndex, Dirty::Sampler);
+}
+
+void GraphModel::SetSampler(size_t nodeIndex, size_t input, const InputSampler& sampler)
+{
+	assert(mbTransaction);
+	if (input >= mNodes[nodeIndex].mSamplers.size())
+	{
+		return ;
+	}
+	auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
+		int(nodeIndex),
+		[this](int index) { return &mNodes[index]; },
+		[this](int index) { SetDirty(index, Dirty::Sampler); })
+		: nullptr;
+	mNodes[nodeIndex].mSamplers[input] = sampler;
+	SetDirty(nodeIndex, Dirty::Sampler);
 }
 
 bool GraphModel::NodeHasUI(size_t nodeIndex) const

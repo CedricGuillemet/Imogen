@@ -16,6 +16,7 @@ def appendHotKeys(f):
 def saveScreen(filePath, content):
     Imogen.AutoLayout()
     Imogen.Render()
+    Imogen.Render()
     Imogen.CaptureScreen(filePath, content)
     
 def finishGraph(f, nodeName, baseDir):

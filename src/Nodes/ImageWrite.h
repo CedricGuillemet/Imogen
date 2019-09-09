@@ -38,19 +38,20 @@ DECLARE_NODE(ImageWrite)
     ImageWriteBlock* param = (ImageWriteBlock*)parameters;
     const char* stockImages[] = {"Stock/jpg-icon.png", "Stock/png-icon.png", "Stock/tga-icon.png", "Stock/bmp-icon.png", "Stock/hdr-icon.png", "Stock/dds-icon.png", "Stock/ktx-icon.png", "Stock/mp4-icon.png"};
     Image image;
-	const int source = evaluation->inputIndices[0];
+	const NodeIndex source = int(evaluation->inputIndices[0]);
     param->width = std::max(param->width, 8);
     param->height = std::max(param->height, 8);
+	NodeIndex target = int(evaluation->targetIndex);
 
     // set info stock image
     if (Image::Read(stockImages[param->format], &image) == EVAL_OK)
     {
-        if (SetEvaluationImage(context, evaluation->targetIndex, &image) == EVAL_OK)
+        if (SetEvaluationImage(context, target, &image) == EVAL_OK)
         {
         }
     }
 
-    if (source == -1)
+    if (!source.IsValid())
     {
         return EVAL_OK;
     }
@@ -82,7 +83,7 @@ DECLARE_NODE(ImageWrite)
 	
 	if (GetEvaluationImage(context, source, &image) == EVAL_OK)
 	{
-		auto sampler = context->mEvaluationStages.mInputSamplers[evaluation->targetIndex][0];
+		auto sampler = context->mEvaluationStages.mInputSamplers[target][0];
 		Image::Resize(&image, param->width, param->height, sampler);
         if (Image::Write(param->filename, &image, param->format, param->quality) == EVAL_OK)
         {    

@@ -35,7 +35,7 @@ EvaluationStages::EvaluationStages()
 {
 }
 
-void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
+void EvaluationStages::AddEvaluation(NodeIndex nodeIndex, size_t nodeType)
 {
     EvaluationStage evaluation;
     //#ifdef _DEBUG needed for fur
@@ -57,17 +57,19 @@ void EvaluationStages::AddEvaluation(size_t nodeIndex, size_t nodeType)
     mInputSamplers.insert(mInputSamplers.begin() + nodeIndex, InputSamplers());
     mInputSamplers[nodeIndex].resize(gMetaNodes[nodeType].mInputs.size());
     mInputs.insert(mInputs.begin() + nodeIndex, Input());
+	mMultiplex.insert(mMultiplex.begin() + nodeIndex, {});
 }
 
-void EvaluationStages::DelEvaluation(size_t nodeIndex)
+void EvaluationStages::DelEvaluation(NodeIndex nodeIndex)
 {
     mStages.erase(mStages.begin() + nodeIndex);
     mInputs.erase(mInputs.begin() + nodeIndex);
     mInputSamplers.erase(mInputSamplers.begin() + nodeIndex);
     mParameters.erase(mParameters.begin() + nodeIndex);
+	mMultiplex.erase(mMultiplex.begin() + nodeIndex);
 }
 
-void EvaluationStages::SetParameters(size_t nodeIndex, const Parameters& parameters)
+void EvaluationStages::SetParameters(NodeIndex nodeIndex, const Parameters& parameters)
 {
     EvaluationStage& stage = mStages[nodeIndex];
     mParameters[nodeIndex] = parameters;
@@ -87,10 +89,10 @@ void EvaluationStages::Clear()
     mOrderList.clear();
 }
 
-size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
+size_t EvaluationStages::GetEvaluationImageDuration(NodeIndex nodeIndex)
 {
 #if USE_FFMPEG
-    auto& stage = mStages[target];
+    auto& stage = mStages[nodeIndex];
     if (!stage.mDecoder)
         return 1;
     if (stage.mDecoder->mFrameCount > 2000)
@@ -104,18 +106,18 @@ size_t EvaluationStages::GetEvaluationImageDuration(size_t target)
 }
 
 void EvaluationStages::SetStageLocalTime(EvaluationContext* evaluationContext,
-                                         size_t target,
+	NodeIndex nodeIndex,
                                          int localTime,
                                          bool updateDecoder)
 {
-    auto& stage = mStages[target];
-    int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(target)));
+    auto& stage = mStages[nodeIndex];
+    int newLocalTime = ImMin(localTime, int(GetEvaluationImageDuration(nodeIndex)));
 #if USE_FFMPEG
     if (stage.mDecoder && updateDecoder && stage.mLocalTime != newLocalTime)
     {
         stage.mLocalTime = newLocalTime;
         Image image = stage.DecodeImage();
-        EvaluationAPI::SetEvaluationImage(evaluationContext, int(target), &image);
+        EvaluationAPI::SetEvaluationImage(evaluationContext, nodeIndex, &image);
         Image::Free(&image);
     }
     else
@@ -145,7 +147,7 @@ Image EvaluationStage::DecodeImage()
 }
 #endif
 
-void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame)
+void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, NodeIndex nodeIndex, int frame)
 {
     bool animatedNodes = false;
     EvaluationStage& stage = mStages[nodeIndex];
@@ -256,7 +258,7 @@ void EvaluationStages::RecurseSetPriority(std::vector<EvaluationStages::NodeOrde
     orders[currentIndex].mNodePriority = std::max(orders[currentIndex].mNodePriority, currentPriority + 1);
     for (auto input : mInputs[currentIndex].mInputs)
     {
-        if (input == -1)
+        if (!input.IsValid())
         {
             continue;
         }

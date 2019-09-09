@@ -95,15 +95,15 @@ struct Image
         SetBits(other.mBits, other.mDataSize);
         return *this;
     }
-    unsigned int GetMipmapCount() const 
+    uint8_t GetMipmapCount() const 
     {
         if (!mHasMipmaps)
         {
             return 1;
         }
-        return (unsigned int)(log2(mWidth));
+        return uint8_t(log2(mWidth));
     }
-    unsigned int GetFaceCount() const
+	uint8_t GetFaceCount() const
     {
         return mIsCubemap ? 6 : 1;
     }
@@ -112,6 +112,7 @@ struct Image
     {
         return mBits;
     }
+
     void SetBits(unsigned char* bits, size_t size)
     {
         Allocate(size);

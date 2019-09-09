@@ -891,12 +891,12 @@ void ComputeDelegateSelection(GraphEditorDelegate* delegate)
 {
     const auto& nodes = delegate->GetNodes();
     // only one selection allowed for delegate
-    delegate->mSelectedNodeIndex = -1;
+	delegate->mSelectedNodeIndex = {InvalidNodeIndex};
     for (auto& node : nodes)
     {
         if (node.mbSelected)
         {
-            if (delegate->mSelectedNodeIndex == -1)
+            if (delegate->mSelectedNodeIndex.IsValid())
             {
                 delegate->mSelectedNodeIndex = int(&node - nodes.data());
             }

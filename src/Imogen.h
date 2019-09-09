@@ -31,6 +31,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "Library.h"
+#include "ImogenConfig.h"
 
 struct GraphControler;
 struct Evaluation;
@@ -79,7 +80,7 @@ struct Imogen
     void SetExistingMaterialActive(const char* materialName);
     void DecodeThumbnailAsync(Material* material);
 
-    static void RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, bool forceUI = false);
+    static void RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphControler, bool forceUI = false);
     void HandleHotKeys();
 
     Material& NewMaterial(const std::string& materialName = "Name_Of_New_Material");

@@ -28,7 +28,7 @@ DECLARE_NODE(Thumbnail)
     Image image;
     if (Image::Read("Stock/thumbnail-icon.png", &image) == EVAL_OK)
     {
-        if (SetEvaluationImage(context, evaluation->targetIndex, &image) == EVAL_OK)
+        if (SetEvaluationImage(context, int(evaluation->targetIndex), &image) == EVAL_OK)
         {
             return EVAL_OK;
         }
@@ -39,7 +39,7 @@ DECLARE_NODE(Thumbnail)
         return EVAL_OK;
     }
     
-    if (GetEvaluationImage(context, evaluation->inputIndices[0], &image) == EVAL_OK)
+    if (GetEvaluationImage(context, int(evaluation->inputIndices[0]), &image) == EVAL_OK)
     {
 		InputSampler sampler{};
 		Image::Resize(&image, 256, 256, sampler);

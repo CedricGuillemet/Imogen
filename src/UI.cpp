@@ -223,14 +223,14 @@ struct ImogenDrawCallback
     NodeUICallBackFunc mFunc;
     ImRect mClippedRect;
     ImRect mOrginalRect;
-    size_t mNodeIndex;
+    NodeIndex mNodeIndex;
     EvaluationContext* mEvaluationContext;
 };
 
 std::vector<ImogenDrawCallback> mCallbackRects;
 
 
-void UICallbackNodeDeleted(size_t nodeIndex)
+void UICallbackNodeDeleted(NodeIndex nodeIndex)
 {
     auto iter = mCallbackRects.begin();
     for (; iter != mCallbackRects.end(); )
@@ -248,7 +248,7 @@ void UICallbackNodeDeleted(size_t nodeIndex)
     }
 }
 
-void UICallbackNodeInserted(size_t nodeIndex)
+void UICallbackNodeInserted(NodeIndex nodeIndex)
 {
     for (auto& extract : mCallbackRects)
     {
@@ -290,7 +290,7 @@ void InitCallbackRects()
     mCallbackRects.clear();
 }
 
-size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t nodeIndex, EvaluationContext* context)
+size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, NodeIndex nodeIndex, EvaluationContext* context)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 mi = draw_list->GetClipRectMin();
@@ -303,7 +303,7 @@ size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t
 }
 
 void AddUICustomDraw(
-    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext* context)
+    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, NodeIndex nodeIndex, EvaluationContext* context)
 {
     drawList->AddCallback((ImDrawCallback)(NodeUICallBack),
                           (void*)(AddNodeUICallbackRect(func, rc, nodeIndex, context)));

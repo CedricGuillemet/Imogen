@@ -34,10 +34,10 @@ DECLARE_NODE(CubeRadiance)
 {
     CubeRadianceBlock* params = (CubeRadianceBlock*)parameters;
     int size = 128 << params->size;
-    const int source = evaluation->inputIndices[0];
+    NodeIndex source = int(evaluation->inputIndices[0]);
     int width, height;
     const int res = GetEvaluationSize(context, source, &width, &height);
-    if (params->size == 0 && source != -1 && res == EVAL_OK)
+    if (params->size == 0 && source.IsValid() && res == EVAL_OK)
     {
         size = width;
     }

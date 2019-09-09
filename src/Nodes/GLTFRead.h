@@ -32,7 +32,7 @@ struct GLTFReadBlock
 DECLARE_NODE(GLTFRead)
 {
     GLTFReadBlock* params = (GLTFReadBlock*)parameters;
-    const int target = evaluation->targetIndex;
+    const NodeIndex target = int(evaluation->targetIndex);
     EnableDepthBuffer(context, target, 1);
     EnableFrameClear(context, target, 1);
     SetVertexSpace(context, target, 1/*VertexSpace_World*/);

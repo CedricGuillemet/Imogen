@@ -50,7 +50,7 @@ DECLARE_NODE(ImageRead)
     if (strlen(params->filename))
     {
         SetProcessing(context, target, 1);
-        ReadImageAsync(context, params->filename, evaluation->targetIndex, -1);
+        ReadImageAsync(context, params->filename, int(evaluation->targetIndex), -1);
     }
     else
     {

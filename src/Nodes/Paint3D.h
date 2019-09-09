@@ -31,7 +31,7 @@ DECLARE_NODE(Paint3D)
     if (evaluation->uiPass == 1)
     {
         SetBlendingMode(context, target, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO);
-        OverrideInput(context, target, 0, evaluation->targetIndex);
+        OverrideInput(context, target, 0, int(evaluation->targetIndex));
         SetVertexSpace(context, target, 1/*VertexSpace_World*/);
         EnableDepthBuffer(context, target, 1);
         EnableFrameClear(context, target, 1);
@@ -39,7 +39,7 @@ DECLARE_NODE(Paint3D)
     else
     {
         SetBlendingMode(context, target, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA);
-        OverrideInput(context, target, 0, -1); // remove override
+        OverrideInput(context, target, 0, InvalidNodeIndex); // remove override
         SetVertexSpace(context, target, 0/*VertexSpace_UV*/);
         EnableDepthBuffer(context, target, 0);
         EnableFrameClear(context, target, 0);
@@ -47,7 +47,7 @@ DECLARE_NODE(Paint3D)
     
     // use scene from input node
     void *scene;
-    if (GetEvaluationScene(context, evaluation->inputIndices[0], &scene) == EVAL_OK)
+    if (GetEvaluationScene(context, int(evaluation->inputIndices[0]), &scene) == EVAL_OK)
     {
         SetEvaluationScene(context, target, scene);
     }

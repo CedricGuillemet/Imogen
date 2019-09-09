@@ -857,7 +857,7 @@ void Evaluators::ApplyEvaluationInfo(const EvaluationInfo& evaluationInfo)
 
 namespace EvaluationAPI
 {
-    int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, const Image* image, int cubeFace)
+    int SetEvaluationImageCube(EvaluationContext* evaluationContext, NodeIndex target, const Image* image, int cubeFace)
     {
         auto tgt = evaluationContext->GetRenderTarget(target);
         if (!tgt)
@@ -893,7 +893,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    void SetBlendingMode(EvaluationContext* evaluationContext, int target, uint64_t blendSrc, uint64_t blendDst)
+    void SetBlendingMode(EvaluationContext* evaluationContext, NodeIndex target, uint64_t blendSrc, uint64_t blendDst)
     {
         EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
 
@@ -901,25 +901,25 @@ namespace EvaluationAPI
         evaluation.mBlendingDst = blendDst;
     }
 
-    void EnableDepthBuffer(EvaluationContext* evaluationContext, int target, int enable)
+    void EnableDepthBuffer(EvaluationContext* evaluationContext, NodeIndex target, int enable)
     {
         EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
         evaluation.mbDepthBuffer = enable != 0;
     }
 
-    void EnableFrameClear(EvaluationContext* evaluationContext, int target, int enable)
+    void EnableFrameClear(EvaluationContext* evaluationContext, NodeIndex target, int enable)
     {
         EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
         evaluation.mbClearBuffer = enable != 0;
     }
 
-    void SetVertexSpace(EvaluationContext* evaluationContext, int target, int vertexSpace)
+    void SetVertexSpace(EvaluationContext* evaluationContext, NodeIndex target, int vertexSpace)
     {
         EvaluationContext::Evaluation& evaluation = evaluationContext->mEvaluations[target];
         evaluation.mVertexSpace = vertexSpace;
     }
 
-    int GetEvaluationSize(const EvaluationContext* evaluationContext, int target, int* imageWidth, int* imageHeight)
+    int GetEvaluationSize(const EvaluationContext* evaluationContext, NodeIndex target, int* imageWidth, int* imageHeight)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
@@ -934,7 +934,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int SetEvaluationSize(EvaluationContext* evaluationContext, int target, int imageWidth, int imageHeight)
+    int SetEvaluationSize(EvaluationContext* evaluationContext, NodeIndex target, int imageWidth, int imageHeight)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
             return EVAL_ERR;
@@ -951,7 +951,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-	int SetEvaluationPersistent(EvaluationContext* evaluationContext, int target, int persistent)
+	int SetEvaluationPersistent(EvaluationContext* evaluationContext, NodeIndex target, int persistent)
 	{
 		if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
 		{
@@ -961,7 +961,7 @@ namespace EvaluationAPI
 		return EVAL_OK;
 	}
 
-    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int hasMipmap)
+    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, NodeIndex target, int faceWidth, int hasMipmap)
     {
         if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
 		{
@@ -980,20 +980,20 @@ namespace EvaluationAPI
 
     std::map<std::string, std::weak_ptr<Scene>> gSceneCache;
 
-    int SetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void* scene)
+    int SetEvaluationRTScene(EvaluationContext* evaluationContext, NodeIndex target, void* scene)
     {
         evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
         return EVAL_OK;
     }
 
-    int GetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void** scene)
+    int GetEvaluationRTScene(EvaluationContext* evaluationContext, NodeIndex target, void** scene)
     {
         *scene = evaluationContext->mEvaluationStages.mStages[target].mScene;
         return EVAL_OK;
     }
 
 
-    int SetEvaluationScene(EvaluationContext* evaluationContext, int target, void* scene)
+    int SetEvaluationScene(EvaluationContext* evaluationContext, NodeIndex target, void* scene)
     {
         const std::string& name = ((Scene*)scene)->mName;
         auto& stage = evaluationContext->mEvaluationStages.mStages[target];
@@ -1014,7 +1014,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int GetEvaluationScene(EvaluationContext* evaluationContext, int target, void** scene)
+    int GetEvaluationScene(EvaluationContext* evaluationContext, NodeIndex target, void** scene)
     {
         if (target >= 0 && target < evaluationContext->mEvaluationStages.mStages.size())
         {
@@ -1029,7 +1029,7 @@ namespace EvaluationAPI
 		return evaluationContext->IsBuilding() ? 1 : 0;
 	}
 
-    const char* GetEvaluationSceneName(EvaluationContext* evaluationContext, int target)
+    const char* GetEvaluationSceneName(EvaluationContext* evaluationContext, NodeIndex target)
     {
         void* scene;
         if (GetEvaluationScene(evaluationContext, target, &scene) == EVAL_OK && scene)
@@ -1040,22 +1040,22 @@ namespace EvaluationAPI
         return "";
     }
 
-    int GetEvaluationRenderer(EvaluationContext* evaluationContext, int target, void** renderer)
+    int GetEvaluationRenderer(EvaluationContext* evaluationContext, NodeIndex target, void** renderer)
     {
         *renderer = evaluationContext->mEvaluationStages.mStages[target].renderer;
         return EVAL_OK;
     }
 
 
-    int OverrideInput(EvaluationContext* evaluationContext, int target, int inputIndex, int newInputTarget)
+    int OverrideInput(EvaluationContext* evaluationContext, NodeIndex target, int inputIndex, int newInputTarget)
     {
         evaluationContext->mEvaluationStages.mInputs[target].mOverrideInputs[inputIndex] = newInputTarget;
         return EVAL_OK;
     }
 
-    int GetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image)
+    int GetEvaluationImage(EvaluationContext* evaluationContext, NodeIndex target, Image* image)
     {
-        if (target == -1 || target >= evaluationContext->mEvaluationStages.mStages.size())
+        if (!target.IsValid() || target >= evaluationContext->mEvaluationStages.mStages.size())
         {
             return EVAL_ERR;
         }
@@ -1097,7 +1097,7 @@ namespace EvaluationAPI
         unsigned char* ptr = image->GetBits();
         if (!img.mIsCubemap)
         {
-            for (size_t i = 0; i < img.GetMipmapCount(); i++)
+            for (auto i = 0; i < img.GetMipmapCount(); i++)
             {
 				int currentWidth = img.mWidth >> i;
 				int currentHeight = img.mHeight >> i;
@@ -1109,9 +1109,9 @@ namespace EvaluationAPI
         }
         else
         {
-            for (int cube = 0; cube < 6; cube++)
+            for (auto cube = 0; cube < 6; cube++)
             {
-                for (size_t i = 0; i < img.GetMipmapCount(); i++)
+                for (auto i = 0; i < img.GetMipmapCount(); i++)
                 {
 					int currentWidth = img.mWidth >> i;
 					int currentHeight = img.mHeight >> i;
@@ -1127,7 +1127,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int SetEvaluationImage(EvaluationContext* evaluationContext, int target, const Image* image)
+    int SetEvaluationImage(EvaluationContext* evaluationContext, NodeIndex target, const Image* image)
     {
         EvaluationStage& stage = evaluationContext->mEvaluationStages.mStages[target];
         auto tgt = evaluationContext->GetRenderTarget(target);
@@ -1148,7 +1148,7 @@ namespace EvaluationAPI
         for (size_t face = 0; face < image->GetFaceCount(); face++)
         {
             int cubeFace = image->mIsCubemap ? int(face) : -1;
-            for (size_t i = 0; i < image->GetMipmapCount(); i++)
+            for (auto i = 0; i < image->GetMipmapCount(); i++)
             {
                 Image::Upload(image, tgt->mTexture, cubeFace, i);
             }
@@ -1221,7 +1221,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int InitRenderer(EvaluationContext* evaluationContext, int target, int mode, void* scene)
+    int InitRenderer(EvaluationContext* evaluationContext, NodeIndex target, int mode, void* scene)
     {
         GLSLPathTracer::Scene* rdscene = (GLSLPathTracer::Scene*)scene;
         evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
@@ -1238,7 +1238,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int UpdateRenderer(EvaluationContext* evaluationContext, int target)
+    int UpdateRenderer(EvaluationContext* evaluationContext, NodeIndex target)
     {
         /*auto& eval = evaluationContext->mEvaluationStages;
         GLSLPathTracer::Renderer* renderer = (GLSLPathTracer::Renderer*)eval.mStages[target].renderer;
@@ -1274,7 +1274,7 @@ namespace EvaluationAPI
         return EVAL_DIRTY;
     }
 
-    void SetProcessing(EvaluationContext* context, int target, int processing)
+    void SetProcessing(EvaluationContext* context, NodeIndex target, int processing)
     {
         context->StageSetProcessing(target, processing);
     }
@@ -1521,7 +1521,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int GLTFReadAsync(EvaluationContext* context, const char* filename, int target)
+    int GLTFReadAsync(EvaluationContext* context, const char* filename, NodeIndex target)
     {
         SetProcessing(context, target, 1);
         std::string strFilename = filename;
@@ -1553,7 +1553,7 @@ namespace EvaluationAPI
         return EVAL_OK;
     }
 
-    int ReadImageAsync(EvaluationContext* context, const char *filename, int target, int face)
+    int ReadImageAsync(EvaluationContext* context, const char *filename, NodeIndex target, int face)
     {
         std::string strFilename = filename;
 		RuntimeId runtimeId = context->GetStageRuntimeId(target);

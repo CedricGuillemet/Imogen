@@ -30,10 +30,10 @@ struct DistanceBlock
 DECLARE_NODE(Distance)
 {
     DistanceBlock* param = (DistanceBlock*)parameters;
-    const int source = evaluation->inputIndices[0];
+    const NodeIndex source = int(evaluation->inputIndices[0]);
     int width, height;
     const int res = GetEvaluationSize(context, source, &width, &height);
-    if (source != -1 && res == EVAL_OK)
+    if (source.IsValid() && res == EVAL_OK)
     {
         param->passCount = int(log2(width))+1;
     }    

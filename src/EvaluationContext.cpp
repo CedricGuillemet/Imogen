@@ -28,6 +28,7 @@
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "GraphControler.h"
+#include "ImogenConfig.h"
 
 static const float rotMatrices[6][16] = {
     // toward +x
@@ -147,10 +148,10 @@ ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t thumbIndex) const
 
 void EvaluationThumbnails::GetThumbCoordinates(const Thumb thumb, int* coordinates) const
 {
-	const size_t index = thumb.mThumbIndex;
-	const size_t thumbnailsPerSide = AtlasSize / ThumbnailSize;
-	const size_t indexY = index / thumbnailsPerSide;
-	const size_t indexX = index % thumbnailsPerSide;
+	const uint16_t index = thumb.mThumbIndex;
+	const uint16_t thumbnailsPerSide = AtlasSize / ThumbnailSize;
+	const uint16_t indexY = index / thumbnailsPerSide;
+	const uint16_t indexX = index % thumbnailsPerSide;
 
 	coordinates[0] = int(indexX * ThumbnailSize);
 	coordinates[1] = int(indexY * ThumbnailSize);
@@ -206,7 +207,7 @@ EvaluationContext::~EvaluationContext()
     Clear();
 }
 
-void EvaluationContext::AddEvaluation(size_t nodeIndex)
+void EvaluationContext::AddEvaluation(NodeIndex nodeIndex)
 {
     mEvaluations.insert(mEvaluations.begin() + nodeIndex, Evaluation());
     if (mUseThumbnail)
@@ -215,7 +216,7 @@ void EvaluationContext::AddEvaluation(size_t nodeIndex)
     }
 }
 
-void EvaluationContext::DelEvaluation(size_t nodeIndex)
+void EvaluationContext::DelEvaluation(NodeIndex nodeIndex)
 {
     if (mUseThumbnail)
     {
@@ -287,7 +288,7 @@ void EvaluationContext::Evaluate()
     }
 }
 
-void EvaluationContext::SetKeyboardMouse(size_t nodeIndex, const UIInput& input)
+void EvaluationContext::SetKeyboardMouse(NodeIndex nodeIndex, const UIInput& input)
 {
     mUIInputs = input;
     mInputNodeIndex = nodeIndex;
@@ -347,7 +348,7 @@ void EvaluationContext::Clear()
     mInputNodeIndex = -1;
 }
 
-bgfx::TextureHandle EvaluationContext::GetEvaluationTexture(size_t nodeIndex) const
+bgfx::TextureHandle EvaluationContext::GetEvaluationTexture(NodeIndex nodeIndex) const
 {
     assert (nodeIndex < mEvaluations.size());
     const auto& tgt = mEvaluations[nodeIndex].mTarget;
@@ -359,7 +360,7 @@ bgfx::TextureHandle EvaluationContext::GetEvaluationTexture(size_t nodeIndex) co
 }
 
 void EvaluationContext::BindTextures(EvaluationInfo& evaluationInfo, const EvaluationStage& evaluationStage,
-                                     size_t nodeIndex,
+									NodeIndex nodeIndex,
                                      ImageTexture* reusableTarget)
 {
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
@@ -388,8 +389,8 @@ void EvaluationContext::BindTextures(EvaluationInfo& evaluationInfo, const Evalu
             if (tgt)
             {
                 const InputSampler& inputSampler = mEvaluationStages.mInputSamplers[nodeIndex][inputIndex];
-				evaluationInfo.textureSize[inputIndex * 4] = tgt->mImage.mWidth;
-				evaluationInfo.textureSize[inputIndex * 4 + 1] = tgt->mImage.mHeight;
+				evaluationInfo.textureSize[inputIndex * 4] = float(tgt->mImage.mWidth);
+				evaluationInfo.textureSize[inputIndex * 4 + 1] = float(tgt->mImage.mHeight);
 
                 if (!tgt->mImage.mIsCubemap)
                 {
@@ -404,7 +405,7 @@ void EvaluationContext::BindTextures(EvaluationInfo& evaluationInfo, const Evalu
     }
 }
 
-void EvaluationContext::SetUniforms(size_t nodeIndex)
+void EvaluationContext::SetUniforms(NodeIndex nodeIndex)
 {
     float tempUniforms[8 * 4]; // max size for ramp
     const Parameters& parameters = mEvaluationStages.mParameters[nodeIndex];
@@ -531,7 +532,7 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 }
 
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
-                                     size_t nodeIndex,
+									NodeIndex nodeIndex,
                                      EvaluationInfo& evaluationInfo)
 {
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
@@ -559,13 +560,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
     auto w = tgt->mImage.mWidth;
     auto h = tgt->mImage.mHeight;
-	const size_t faceCount = evaluationInfo.uiPass ? 1 : (tgt->mImage.mIsCubemap ? 6 : 1);
-	const uint8_t mipmapCount = tgt->mImage.GetMipmapCount();
+	const auto faceCount = evaluationInfo.uiPass ? 1 : (tgt->mImage.mIsCubemap ? 6 : 1);
+	const auto mipmapCount = tgt->mImage.GetMipmapCount();
 	
     for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
 		bgfx::ViewId viewId = 10;
-        for (int mip = 0; mip < mipmapCount; mip++)
+        for (auto mip = 0; mip < mipmapCount; mip++)
         {
 			const int viewportWidth = w >> mip;
 			const int viewportHeight = h >> mip;
@@ -573,7 +574,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 			bgfx::FrameBufferHandle currentFramebuffer;
 			GetRenderProxy(currentFramebuffer, viewportWidth, viewportHeight, evaluation.mbDepthBuffer);
 			
-			for (size_t face = 0; face < faceCount; face++)
+			for (auto face = 0; face < faceCount; face++)
 			{
 				bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());
 				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
@@ -584,7 +585,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
 				for (int i = 0; i < 8; i++)
 				{
-					evaluationInfo.inputIndices[i] = input.mInputs[i];
+					evaluationInfo.inputIndices[i] = input.mInputs[i].IsValid() ? float(input.mInputs[i]) : -1.f;
 				}
 
                 evaluationInfo.viewport[0] = float(viewportWidth);
@@ -632,7 +633,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     } // passNumber
 }
 
-void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex)
+void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, NodeIndex nodeIndex)
 {
     assert(mUseThumbnail);
     const auto& evaluation = mEvaluations[nodeIndex];
@@ -685,7 +686,7 @@ void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex
 	}
 }
 
-void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo)
+void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo)
 {
     try
     {
@@ -700,7 +701,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, size_t
 
 #if USE_PYTHON
 void EvaluationContext::EvaluatePython(const EvaluationStage& evaluationStage,
-                                       size_t index,
+	NodeIndex index,
                                        EvaluationInfo& evaluationInfo)
 {
     try // todo: find a better solution than a try catch
@@ -733,7 +734,7 @@ void EvaluationContext::ComputeTargetUseCount()
     }
 }
 
-void EvaluationContext::ReleaseInputs(size_t nodeIndex)
+void EvaluationContext::ReleaseInputs(NodeIndex nodeIndex)
 {
 	if (!mBuilding)
 	{
@@ -764,7 +765,7 @@ void EvaluationContext::ReleaseInputs(size_t nodeIndex)
     }
 }
 
-void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
+void EvaluationContext::RunNode(bgfx::ViewId& viewId, NodeIndex nodeIndex)
 {
     auto& currentStage = mEvaluationStages.mStages[nodeIndex];
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
@@ -787,10 +788,9 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, size_t nodeIndex)
     mEvaluationInfo.targetIndex = float(nodeIndex);
     mEvaluationInfo.frame = float(mCurrentTime);
     mEvaluationInfo.dirtyFlag = evaluation.mDirtyFlag;
-    //memcpy(mEvaluationInfo.inputIndices, input.mInputs, sizeof(mEvaluationInfo.inputIndices));
 	for (int i = 0; i < 8; i++)
 	{
-		mEvaluationInfo.inputIndices[i] = input.mInputs[i];
+		mEvaluationInfo.inputIndices[i] = input.mInputs[i].IsValid() ? (float)input.mInputs[i] : -1.f;
 	}
     SetKeyboardMouseInfos(mEvaluationInfo);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
@@ -844,7 +844,7 @@ FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename,
 }
 #endif
 
-void EvaluationContext::SetTargetDirty(size_t target, uint32_t dirtyFlag, bool onlyChild)
+void EvaluationContext::SetTargetDirty(NodeIndex target, uint32_t dirtyFlag, bool onlyChild)
 {
     assert(dirtyFlag != Dirty::AddedNode);
     assert(dirtyFlag != Dirty::DeletedNode);
@@ -882,12 +882,12 @@ void EvaluationContext::SetTargetDirty(size_t target, uint32_t dirtyFlag, bool o
     }
 }
 
-void EvaluationContext::SetTargetPersistent(size_t nodeIndex, bool persistent)
+void EvaluationContext::SetTargetPersistent(NodeIndex nodeIndex, bool persistent)
 {
 	mEvaluations[nodeIndex].mbPersistent = persistent;
 }
 
-void EvaluationContext::StageSetProcessing(size_t target, int processing)
+void EvaluationContext::StageSetProcessing(NodeIndex target, int processing)
 {
     if (mEvaluations[target].mProcessing != processing)
     {
@@ -896,7 +896,7 @@ void EvaluationContext::StageSetProcessing(size_t target, int processing)
     mEvaluations[target].mProcessing = processing;
 }
 
-void EvaluationContext::StageSetProgress(size_t target, float progress)
+void EvaluationContext::StageSetProgress(NodeIndex target, float progress)
 {
     mEvaluations[target].mProgress = progress;
 }
@@ -941,9 +941,9 @@ int EvaluationContext::GetStageIndexFromRuntimeId(unsigned int runtimeUniqueId) 
 	return -1;
 }
 
-unsigned int EvaluationContext::GetStageRuntimeId(size_t stageIndex) const
+unsigned int EvaluationContext::GetStageRuntimeId(NodeIndex nodeIndex) const
 {
-	return mEvaluations[stageIndex].mRuntimeUniqueId;
+	return mEvaluations[nodeIndex].mRuntimeUniqueId;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1059,7 +1059,7 @@ void Builder::BuildEntries()
 
 namespace DrawUICallbacks
 {
-    void DrawUIProgress(EvaluationContext* context, size_t nodeIndex)
+    void DrawUIProgress(EvaluationContext* context, NodeIndex nodeIndex)
     {
         auto def = Scene::BuildDefaultScene();
 
@@ -1077,7 +1077,7 @@ namespace DrawUICallbacks
         def->Draw(evaluationInfo, 0, gEvaluators.mProgressProgram);
     }
 
-    void DrawUISingle(EvaluationContext* context, size_t nodeIndex)
+    void DrawUISingle(EvaluationContext* context, NodeIndex nodeIndex)
     {
         EvaluationInfo evaluationInfo;
         //evaluationInfo.forcedDirty = 1;

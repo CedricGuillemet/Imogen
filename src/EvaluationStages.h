@@ -35,6 +35,8 @@
 #include "Utils.h"
 #include "Bitmap.h"
 #include "Scene.h"
+#include "ImogenConfig.h"
+
 
 struct ImDrawList;
 struct ImDrawCmd;
@@ -61,7 +63,8 @@ struct Dirty
 
 struct DirtyList
 {
-    size_t mNodeIndex;
+    NodeIndex mNodeIndex;
+	SlotIndex mSlotIndex;
     Dirty::Type mFlags;
 };
 
@@ -72,8 +75,8 @@ struct Input
         memset(mInputs, -1, sizeof(int) * 8);
         memset(mOverrideInputs, -1, sizeof(int) * 8);
     }
-    int mInputs[8];
-    int mOverrideInputs[8];
+    NodeIndex mInputs[8];
+	NodeIndex mOverrideInputs[8];
 };
 
 struct EvaluationStage
@@ -98,11 +101,12 @@ struct EvaluationStage
     void* renderer;
     Image DecodeImage();
 
-
-    
-    
-
     int mLocalTime;
+};
+
+struct MultiplexArray
+{
+	std::vector<NodeIndex> mMultiplexPerInputs[8];
 };
 
 // simple API
@@ -111,23 +115,23 @@ struct EvaluationStages
     EvaluationStages();
     void BuildEvaluationFromMaterial(Material& material);
 
-    void AddEvaluation(size_t nodeIndex, size_t nodeType);
-    void DelEvaluation(size_t nodeIndex);
+    void AddEvaluation(NodeIndex nodeIndex, size_t nodeType);
+    void DelEvaluation(NodeIndex nodeIndex);
 
     void Clear();
-    size_t GetEvaluationImageDuration(size_t target);
+    size_t GetEvaluationImageDuration(NodeIndex target);
 
-    void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
-    void SetSamplers(size_t nodeIndex, InputSamplers samplers) { mInputSamplers[nodeIndex] = samplers; }
+    void SetStageLocalTime(EvaluationContext* evaluationContext, NodeIndex nodeIndex, int localTime, bool updateDecoder);
+    void SetSamplers(NodeIndex nodeIndex, InputSamplers samplers) { mInputSamplers[nodeIndex] = samplers; }
 
-    Mat4x4* GetParameterViewMatrix(size_t nodeIndex) { return &mStages[nodeIndex].mParameterViewMatrix; }
-    const Parameters& GetParameters(size_t nodeIndex) const { return mParameters[nodeIndex]; }
-    void SetParameters(size_t nodeIndex, const Parameters& parameters);
-    uint16_t GetNodeType(size_t nodeIndex) const { return mStages[nodeIndex].mType; }
+    Mat4x4* GetParameterViewMatrix(NodeIndex nodeIndex) { return &mStages[nodeIndex].mParameterViewMatrix; }
+    const Parameters& GetParameters(NodeIndex nodeIndex) const { return mParameters[nodeIndex]; }
+    void SetParameters(NodeIndex nodeIndex, const Parameters& parameters);
+    uint16_t GetNodeType(NodeIndex nodeIndex) const { return mStages[nodeIndex].mType; }
     size_t GetStagesCount() const { return mStages.size(); }
 
     // animation
-    void ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame);
+    void ApplyAnimationForNode(EvaluationContext* context, NodeIndex nodeIndex, int frame);
     void ApplyAnimation(EvaluationContext* context, int frame);
 
     void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
@@ -141,6 +145,7 @@ struct EvaluationStages
     std::vector<EvaluationStage> mStages;
     std::vector<Input> mInputs; // merged with multiplexed
     std::vector<Input> mDirectInputs; // without multiplexed
+	std::vector<MultiplexArray> mMultiplex; // multiplex list per node
 
     std::vector<InputSamplers> mInputSamplers;
     std::vector<Parameters> mParameters;
@@ -148,7 +153,7 @@ struct EvaluationStages
     std::vector<AnimTrack> mAnimTrack;
 
     void ComputeEvaluationOrder();
-    void SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame) { mStages[nodeIndex].mStartFrame = startFrame; mStages[nodeIndex].mEndFrame = endFrame; }
+    void SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame) { mStages[nodeIndex].mStartFrame = startFrame; mStages[nodeIndex].mEndFrame = endFrame; }
 protected:
 
     std::vector<size_t> mOrderList;

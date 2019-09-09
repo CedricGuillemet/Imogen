@@ -136,7 +136,7 @@ void GraphModel::Redo()
 void GraphModel::MoveSelectedNodes(const ImVec2 delta)
 {
     assert(mbTransaction);
-    for (size_t i = 0 ; i < mNodes.size(); i++)
+    for (auto i = 0 ; i < mNodes.size(); i++)
     {
         auto& node = mNodes[i];
         if (!node.mbSelected)
@@ -151,7 +151,7 @@ void GraphModel::MoveSelectedNodes(const ImVec2 delta)
     }
 }
 
-void GraphModel::SetNodePosition(size_t nodeIndex, const ImVec2 position)
+void GraphModel::SetNodePosition(NodeIndex nodeIndex, const ImVec2 position)
 {
     assert(mbTransaction);
     auto ur = mUndoRedo
@@ -167,7 +167,7 @@ void GraphModel::AddNodeHelper(int nodeIndex)
     SetDirty(nodeIndex, Dirty::AddedNode);
 }
 
-void GraphModel::RemoveAnimation(size_t nodeIndex)
+void GraphModel::RemoveAnimation(NodeIndex nodeIndex)
 {
     if (mAnimTrack.empty())
         return;
@@ -193,7 +193,7 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
 {
     assert(mbTransaction);
 
-    size_t nodeIndex = mNodes.size();
+	NodeIndex nodeIndex = mNodes.size();
 
     auto delNode = [this](int index) { SetDirty(index, Dirty::DeletedNode); };
     auto addNode = [this](int index) { SetDirty(index, Dirty::AddedNode); };
@@ -208,18 +208,18 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
     return nodeIndex;
 }
 
-void GraphModel::AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
+void GraphModel::AddLinkInternal(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex)
 {
     size_t linkIndex = mLinks.size();
     Link link;
-    link.mInputNodeIndex = int(inputNodeIndex);
-    link.mInputSlotIndex = int(inputSlotIndex);
-    link.mOutputNodeIndex = int(outputNodeIndex);
-    link.mOutputSlotIndex = int(outputSlotIndex);
+    link.mInputNodeIndex = inputNodeIndex;
+    link.mInputSlotIndex = inputSlotIndex;
+    link.mOutputNodeIndex = outputNodeIndex;
+    link.mOutputSlotIndex = outputSlotIndex;
     mLinks.push_back(link);
 }
 
-void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex)
+void GraphModel::AddLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex)
 {
     assert(mbTransaction);
 
@@ -229,7 +229,7 @@ void GraphModel::AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t ou
         return;
     }
 
-    auto inputChanged = [this](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input); };
+    auto inputChanged = [this, outputSlotIndex](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input, outputSlotIndex); };
     size_t linkIndex = mLinks.size();
 
     auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; }, inputChanged, inputChanged)
@@ -248,7 +248,7 @@ void GraphModel::DelLink(size_t linkIndex)
 {
     assert(mbTransaction);
 
-    auto inputChanged = [this](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input); };
+    auto inputChanged = [this](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input, mLinks[index].mOutputSlotIndex); };
     auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, inputChanged, inputChanged)
                   : nullptr;
 
@@ -256,7 +256,7 @@ void GraphModel::DelLink(size_t linkIndex)
     DelLinkInternal(linkIndex);
 }
 
-void GraphModel::DelLink(size_t inputNodeIndex, size_t inputSlotIndex)
+void GraphModel::DelLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex)
 {
 	assert(mbTransaction);
 	
@@ -265,7 +265,7 @@ void GraphModel::DelLink(size_t inputNodeIndex, size_t inputSlotIndex)
 		const Link& link = mLinks[linkIndex];
 		if (link.mOutputNodeIndex == inputNodeIndex && link.mOutputSlotIndex == inputSlotIndex)
 		{
-			auto inputChanged = [this](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input); };
+			auto inputChanged = [this, inputSlotIndex](int index) { SetDirty(mLinks[index].mOutputNodeIndex, Dirty::Input, inputSlotIndex); };
 			auto ur = mUndoRedo ? std::make_unique<URDel<Link>>(int(linkIndex), [&]() { return &mLinks; }, inputChanged, inputChanged)
 				: nullptr;
 
@@ -381,7 +381,7 @@ void GraphModel::DeleteSelectedNodes()
     }
 }
 
-bool GraphModel::IsIOUsed(size_t nodeIndex, int slotIndex, bool forOutput) const
+bool GraphModel::IsIOUsed(NodeIndex nodeIndex, int slotIndex, bool forOutput) const
 {
     for (auto& link : mLinks)
     {
@@ -394,19 +394,19 @@ bool GraphModel::IsIOUsed(size_t nodeIndex, int slotIndex, bool forOutput) const
     return false;
 }
 
-void GraphModel::SelectNode(size_t nodeIndex, bool selected)
+void GraphModel::SelectNode(NodeIndex nodeIndex, bool selected)
 {
     // assert(mbTransaction);
     mNodes[nodeIndex].mbSelected = selected;
     SetDirty(nodeIndex, Dirty::VisualGraph);
 }
 
-ImVec2 GraphModel::GetNodePos(size_t nodeIndex) const
+ImVec2 GraphModel::GetNodePos(NodeIndex nodeIndex) const
 {
     return mNodes[nodeIndex].mPos;
 }
 
-void GraphModel::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& samplers)
+void GraphModel::SetSamplers(NodeIndex nodeIndex, const std::vector<InputSampler>& samplers)
 {
     assert(mbTransaction);
 
@@ -419,7 +419,7 @@ void GraphModel::SetSamplers(size_t nodeIndex, const std::vector<InputSampler>& 
     SetDirty(nodeIndex, Dirty::Sampler);
 }
 
-void GraphModel::SetSampler(size_t nodeIndex, size_t input, const InputSampler& sampler)
+void GraphModel::SetSampler(NodeIndex nodeIndex, size_t input, const InputSampler& sampler)
 {
 	assert(mbTransaction);
 	if (input >= mNodes[nodeIndex].mSamplers.size())
@@ -435,12 +435,12 @@ void GraphModel::SetSampler(size_t nodeIndex, size_t input, const InputSampler& 
 	SetDirty(nodeIndex, Dirty::Sampler);
 }
 
-bool GraphModel::NodeHasUI(size_t nodeIndex) const
+bool GraphModel::NodeHasUI(NodeIndex nodeIndex) const
 {
     return gMetaNodes[mNodes[nodeIndex].mType].mbHasUI;
 }
 
-void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName, const std::string& parameterValue)
+void GraphModel::SetParameter(NodeIndex nodeIndex, const std::string& parameterName, const std::string& parameterValue)
 {
     assert(mbTransaction);
     uint32_t nodeType = uint32_t(mNodes[nodeIndex].mType);
@@ -456,7 +456,7 @@ void GraphModel::SetParameter(size_t nodeIndex, const std::string& parameterName
     SetDirty(nodeIndex, Dirty::Parameter);
 }
 
-void GraphModel::SetCameraLookAt(size_t nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up)
+void GraphModel::SetCameraLookAt(NodeIndex nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up)
 {
 	assert(mbTransaction);
 	uint32_t nodeType = uint32_t(mNodes[nodeIndex].mType);
@@ -513,7 +513,7 @@ void GraphModel::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<b
 {
 }
 
-void GraphModel::SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned)
+void GraphModel::SetIOPin(NodeIndex nodeIndex, size_t io, bool forOutput, bool pinned)
 {
     assert(mbTransaction);
     auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
@@ -549,7 +549,7 @@ void GraphModel::SetMultiplexInputs(const std::vector<MultiplexInput>& multiplex
     }
 }
 
-void GraphModel::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned)
+void GraphModel::SetParameterPin(NodeIndex nodeIndex, size_t parameterIndex, bool pinned)
 {
     assert(mbTransaction);
     auto ur = mUndoRedo ? std::make_unique<URChange<Node>>(
@@ -562,7 +562,7 @@ void GraphModel::SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool p
     mNodes[nodeIndex].mPinnedParameters += pinned ? mask : 0;
 }
 
-void GraphModel::SetParameters(size_t nodeIndex, const std::vector<unsigned char>& parameters)
+void GraphModel::SetParameters(NodeIndex nodeIndex, const std::vector<unsigned char>& parameters)
 {
     assert(mbTransaction);
 
@@ -630,7 +630,7 @@ void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
 
     for (size_t i = 0; i < mNodesClipboard.size(); i++)
     {
-        size_t nodeIndex = mNodes.size();
+		NodeIndex nodeIndex = mNodes.size();
 
         auto delNode = [this](int index) { SetDirty(index, Dirty::DeletedNode); };
         auto addNode = [this](int index) { SetDirty(index, Dirty::AddedNode); };
@@ -640,13 +640,13 @@ void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
         mNodes.push_back(mNodesClipboard[i]);
         mNodes.back().mPos += offset;
         mNodes.back().mbSelected = true;
-        addNode(int(nodeIndex));
+        addNode(nodeIndex);
     }
 
     EndTransaction();
 }
 
-const Parameters& GraphModel::GetParameters(size_t nodeIndex) const
+const Parameters& GraphModel::GetParameters(NodeIndex nodeIndex) const
 {
     return mNodes[nodeIndex].mParameters;
 }
@@ -768,7 +768,7 @@ void GraphModel::NodeGraphLayout(const std::vector<size_t>& orderList)
 
     for (unsigned int i = 0; i < mNodes.size(); i++)
     {
-        size_t nodeIndex = orderList[mNodes.size() - i - 1];
+		NodeIndex nodeIndex = orderList[mNodes.size() - i - 1];
         RecurseNodeGraphLayout(nodePositions, stacks, nodeIndex, 0);
     }
 
@@ -794,7 +794,7 @@ void GraphModel::NodeGraphLayout(const std::vector<size_t>& orderList)
             currentLayerIndex = layout.mLayer;
             currentStackHeight = 0.f;
         }
-        size_t nodeIndex = layout.mNodeIndex;
+		NodeIndex nodeIndex = layout.mNodeIndex;
         const auto& node = mNodes[nodeIndex];
         float height = float(gMetaNodes[node.mType].mHeight);
         nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, currentStackHeight);
@@ -815,7 +815,7 @@ void GraphModel::NodeGraphLayout(const std::vector<size_t>& orderList)
     {
         pos += offset;
     }
-    for (unsigned int i = 0; i < mNodes.size(); i++)
+    for (auto i = 0; i < mNodes.size(); i++)
     {
         SetNodePosition(i, nodePos[i]);
     }
@@ -844,24 +844,24 @@ bool GraphModel::RecurseIsLinked(int from, int to) const
     return false;
 }
 
-void GraphModel::SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex)
+void GraphModel::SetMultiplexed(NodeIndex nodeIndex, SlotIndex slotIndex, int multiplex)
 {
     assert(mbTransaction);
     auto ur = mUndoRedo
-        ? std::make_unique<URChange<Node>>(int(nodeIndex), [this](int index) { return &mNodes[index]; }, [this](int index) { SetDirty(index, Dirty::Input); })
+        ? std::make_unique<URChange<Node>>(nodeIndex, [this](int index) { return &mNodes[index]; }, [this, slotIndex](int index) { SetDirty(index, Dirty::Input, slotIndex); })
         : nullptr;
 
     mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex] = multiplex;
-    SetDirty(nodeIndex, Dirty::Input);
+    SetDirty(nodeIndex, Dirty::Input, slotIndex);
 }
 
-bool GraphModel::IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const
+bool GraphModel::IsParameterPinned(NodeIndex nodeIndex, size_t parameterIndex) const
 {
     uint32_t mask = 1 << parameterIndex;
     return mNodes[nodeIndex].mPinnedParameters & mask;
 }
 
-bool GraphModel::IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const
+bool GraphModel::IsIOPinned(NodeIndex nodeIndex, size_t io, bool forOutput) const
 {
     uint32_t mask = 0;
     if (forOutput)
@@ -887,11 +887,11 @@ static bool NodeTypeHasMultiplexer(size_t nodeType)
     return false;
 }
 
-void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, std::vector<size_t>& list) const
+void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, std::vector<NodeIndex>& list) const
 {
-    for (auto& input : inputs[nodeIndex].mInputs)
+    for (auto input : inputs[nodeIndex].mInputs)
     {
-        if (input == -1)
+        if (!input.IsValid())
         {
             continue;
         }
@@ -906,7 +906,7 @@ void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, size_t n
     }
 }
 
-bool GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const
+bool GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, SlotIndex slotIndex, std::vector<NodeIndex>& list) const
 {
     int input = inputs[nodeIndex].mInputs[slotIndex];
     if (input == -1)
@@ -977,7 +977,7 @@ void GraphModel::SetStartEndFrame(int startFrame, int endFrame)
     mEndFrame = endFrame; 
 }
 
-void GraphModel::SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame)
+void GraphModel::SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame)
 {
     assert(mbTransaction);
     Node& node = mNodes[nodeIndex];

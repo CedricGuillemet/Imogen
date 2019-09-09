@@ -54,7 +54,7 @@ void GraphControler::Clear()
     ComputeGraphArrays();
 }
 
-void GraphControler::HandlePin(size_t nodeIndex, size_t parameterIndex)
+void GraphControler::HandlePin(NodeIndex nodeIndex, size_t parameterIndex)
 {
     bool checked = mModel.IsParameterPinned(nodeIndex, parameterIndex);
     if (ImGui::Checkbox("", &checked))
@@ -65,7 +65,7 @@ void GraphControler::HandlePin(size_t nodeIndex, size_t parameterIndex)
     }
 }
 
-bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
+bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
                                              unsigned int parameterIndex,
                                              void* paramBuffer,
                                              const MetaParameter& param)
@@ -297,7 +297,7 @@ bool GraphControler::EditSingleParameter(unsigned int nodeIndex,
     return dirty;
 }
 
-int GraphControler::ShowMultiplexed(const std::vector<size_t>& inputs, int currentMultiplexedOveride)
+int GraphControler::ShowMultiplexed(const std::vector<NodeIndex>& inputs, int currentMultiplexedOveride)
 {
     int ret = -1;
     float displayWidth = ImGui::GetContentRegionAvail().x;
@@ -360,7 +360,7 @@ void GraphControler::PinnedEdit()
         {
             continue;
         }
-        unsigned int nodeIndex = (pin >> 16) & 0xFFFF;
+        NodeIndex nodeIndex = uint16_t((pin >> 16) & 0xFFFF);
         unsigned int parameterIndex = pin & 0xFFFF;
 
         size_t nodeType = mModel.GetNodeType(nodeIndex);
@@ -390,7 +390,7 @@ void GraphControler::PinnedEdit()
 
 void GraphControler::EditNodeParameters()
 {
-    size_t nodeIndex = mSelectedNodeIndex;
+    NodeIndex nodeIndex = mSelectedNodeIndex;
 
     const MetaNode* metaNodes = gMetaNodes.data();
     bool dirty = false;
@@ -410,7 +410,7 @@ void GraphControler::EditNodeParameters()
             static const char* filterModes = {"LINEAR\0NEAREST"};
             ImGui::PushItemWidth(80);
             ImGui::PushID(int(99 + i));
-            HandlePinIO(nodeIndex, i, false);
+            HandlePinIO(nodeIndex, SlotIndex(int(i)), false);
             ImGui::SameLine();
             ImGui::Text("Sampler %zu", i);
             samplerDirty |= ImGui::Combo("U", (int*)&inputSampler.mWrapU, wrapModes);
@@ -444,7 +444,7 @@ void GraphControler::EditNodeParameters()
     {
         ImGui::PushID(667889 + i);
 
-        dirty |= EditSingleParameter((unsigned int)(nodeIndex), i, paramBuffer, param);
+        dirty |= EditSingleParameter(nodeIndex, i, paramBuffer, param);
 
         ImGui::PopID();
         paramBuffer += GetParameterTypeSize(param.mType);
@@ -454,8 +454,8 @@ void GraphControler::EditNodeParameters()
     // check for every possible inputs. only the first will be used for multiplexed inputs
     for (unsigned int slotIndex = 0; slotIndex < 8; slotIndex++)
     {
-        std::vector<size_t> inputs;
-        if (mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, slotIndex, inputs))
+        const std::vector<NodeIndex>& inputs = mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[slotIndex];
+        //if (mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, slotIndex, inputs))
         {
             int currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
 
@@ -478,7 +478,7 @@ void GraphControler::EditNodeParameters()
     }
 }
 
-void GraphControler::HandlePinIO(size_t nodeIndex, size_t slotIndex, bool forOutput)
+void GraphControler::HandlePinIO(NodeIndex nodeIndex, SlotIndex slotIndex, bool forOutput)
 {
     if (mModel.IsIOUsed(nodeIndex, int(slotIndex), forOutput))
     {
@@ -501,7 +501,7 @@ void GraphControler::NodeEdit()
 
     ImGuiIO& io = ImGui::GetIO();
 
-    if (mSelectedNodeIndex == -1)
+    if (!mSelectedNodeIndex.IsValid())
     {
         auto& io = mModel.GetIOPins();
         for (size_t nodeIndex = 0; nodeIndex < io.size(); nodeIndex++)
@@ -555,7 +555,7 @@ void GraphControler::ApplyDirtyList()
 
     for (const auto& dirtyItem : dirtyList)
     {
-        int nodeIndex = int(dirtyItem.mNodeIndex);
+        NodeIndex nodeIndex = dirtyItem.mNodeIndex;
         switch(dirtyItem.mFlags)
         {
             case Dirty::Input:
@@ -610,21 +610,21 @@ void GraphControler::ApplyDirtyList()
                 graphArrayChanged = true;
                 ExtractedViewNodeDeleted(nodeIndex);
                 UICallbackNodeDeleted(nodeIndex);
-                if (mSelectedNodeIndex == int(nodeIndex))
+                if (mSelectedNodeIndex == nodeIndex)
                 {
-                    mSelectedNodeIndex = -1;
+                    mSelectedNodeIndex = InvalidNodeIndex;
                 }
-                else if (mSelectedNodeIndex > int(nodeIndex))
+                else if (mSelectedNodeIndex > nodeIndex)
                 {
                    mSelectedNodeIndex --;
                 }
-                if (mBackgroundNode == int(nodeIndex))
+                if (mBackgroundNode == nodeIndex)
                 {
-                    mBackgroundNode = -1;
+                    mBackgroundNode = InvalidNodeIndex;
                 }
-                else if (mBackgroundNode > int(nodeIndex))
+                else if (mBackgroundNode > nodeIndex)
                 {
-                    mBackgroundNode--;
+                    mBackgroundNode --;
                 }
                 break;
             case Dirty::StartEndTime:
@@ -636,31 +636,53 @@ void GraphControler::ApplyDirtyList()
                 break;
         }
     }
+
 	for (auto nodeIndex : deletionInEvaluation)
 	{
 		mEvaluationStages.DelEvaluation(nodeIndex);
 		mEditingContext.DelEvaluation(nodeIndex);
 	}
-    mModel.ClearDirtyList();
+    
 
     if (evaluationOrderChanged)
     {
         mModel.GetInputs(mEvaluationStages.mInputs, mEvaluationStages.mDirectInputs);
         mEvaluationStages.ComputeEvaluationOrder();
     }
+
+	// second pass for multiplex
+	for (const auto& dirtyItem : dirtyList)
+	{
+		NodeIndex nodeIndex = dirtyItem.mNodeIndex;
+		switch (dirtyItem.mFlags)
+		{
+		case Dirty::Input:
+			mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, dirtyItem.mSlotIndex, mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[dirtyItem.mSlotIndex]);
+			break;
+		default:
+			break;
+		}
+	}
+
     if (graphArrayChanged)
     {
         ComputeGraphArrays();
     }
+
+	mModel.ClearDirtyList();
 }
 
 void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
 {
-    if (mSelectedNodeIndex == -1)
+    if (!mSelectedNodeIndex.IsValid())
+	{
         return;
+	}
 
     if (!input.mLButDown)
+	{
         mbMouseDragging = false;
+	}
 
     if (!input.mLButDown && !input.mRButDown && mModel.InTransaction() && mbUsingMouse)
     {
@@ -928,7 +950,7 @@ void GraphControler::ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int
     }
 }
 
-bool GraphControler::NodeIs2D(size_t nodeIndex) const
+bool GraphControler::NodeIs2D(NodeIndex nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
@@ -938,12 +960,12 @@ bool GraphControler::NodeIs2D(size_t nodeIndex) const
     return false;
 }
 
-bool GraphControler::NodeIsCompute(size_t nodeIndex) const
+bool GraphControler::NodeIsCompute(NodeIndex nodeIndex) const
 {
     return (gEvaluators.GetMask(mModel.GetNodeType(nodeIndex)) & EvaluationGLSLCompute) != 0;
 }
 
-bool GraphControler::NodeIsCubemap(size_t nodeIndex) const
+bool GraphControler::NodeIsCubemap(NodeIndex nodeIndex) const
 {
     auto target = mEditingContext.GetRenderTarget(nodeIndex);
     if (target)
@@ -953,7 +975,7 @@ bool GraphControler::NodeIsCubemap(size_t nodeIndex) const
     return false;
 }
 
-ImVec2 GraphControler::GetEvaluationSize(size_t nodeIndex) const
+ImVec2 GraphControler::GetEvaluationSize(NodeIndex nodeIndex) const
 {
     int imageWidth(1), imageHeight(1);
     EvaluationAPI::GetEvaluationSize(&mEditingContext, int(nodeIndex), &imageWidth, &imageHeight);
@@ -963,7 +985,7 @@ ImVec2 GraphControler::GetEvaluationSize(size_t nodeIndex) const
 void GraphControler::DrawNodeImage(ImDrawList* drawList,
                                        const ImRect& rc,
                                        const ImVec2 marge,
-                                       const size_t nodeIndex)
+                                       const NodeIndex nodeIndex)
 {
     bool nodeIsCompute = NodeIsCompute(nodeIndex);
     if (nodeIsCompute)
@@ -993,7 +1015,7 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
 
 bool GraphControler::RenderBackground()
 {
-    if (mBackgroundNode != -1)
+    if (mBackgroundNode.IsValid())
     {
         Imogen::RenderPreviewNode(mBackgroundNode, *this, true);
         return true;
@@ -1049,7 +1071,7 @@ void GraphControler::ComputeGraphArrays()
     }
 }
 
-bgfx::TextureHandle GraphControler::GetBitmapInfo(size_t nodeIndex) const
+bgfx::TextureHandle GraphControler::GetBitmapInfo(NodeIndex nodeIndex) const
 {
 	bgfx::TextureHandle stage2D = gImageCache.GetTexture("Stock/Stage2D.png");
 	bgfx::TextureHandle stagecubemap = gImageCache.GetTexture("Stock/StageCubemap.png");

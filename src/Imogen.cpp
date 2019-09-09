@@ -153,7 +153,7 @@ void ExtractedViewNodeInserted(size_t nodeIndex)
 }
 
 
-void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, bool forceUI)
+void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphControler, bool forceUI)
 {
     ImGuiIO& io = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -164,7 +164,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
     int imageWidth(1), imageHeight(1);
 
     // make 2 evaluation for node to get the UI pass image size
-    if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
+    if (selNode.IsValid() && nodeGraphControler.mModel.NodeHasUI(selNode))
     {
         //nodeGraphControler.mEditingContext.AllocRenderTargetsForEditingPreview(); TODOEVA
         EvaluationInfo evaluationInfo;
@@ -173,7 +173,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
         //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
     }
     EvaluationAPI::GetEvaluationSize(&nodeGraphControler.mEditingContext, selNode, &imageWidth, &imageHeight);
-    if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
+    if (selNode.IsValid() && nodeGraphControler.mModel.NodeHasUI(selNode))
     {
         EvaluationInfo evaluationInfo;
         //evaluationInfo.forcedDirty = 1;
@@ -203,14 +203,14 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
         }
         else
         {
-            if (selNode != -1 && nodeGraphControler.NodeIsCubemap(selNode))
+            if (selNode.IsValid() && nodeGraphControler.NodeIsCubemap(selNode))
             {
                 ImGui::InvisibleButton("ImTheInvisibleMan", ImVec2(w, h));
             }
             else
             {
                 displayedTexture = (ImTextureID)(int64_t)(
-                    (selNode != -1) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode).idx : 0);
+                    (selNode.IsValid()) ? nodeGraphControler.mEditingContext.GetEvaluationTexture(selNode).idx : 0);
                 if (displayedTexture)
                 {
                     auto tgt = nodeGraphControler.mEditingContext.GetRenderTarget(selNode);
@@ -270,7 +270,7 @@ void Imogen::RenderPreviewNode(int selNode, GraphControler& nodeGraphControler, 
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
             ImDrawList* draw_list = ImGui::GetWindowDrawList();
-			if (selNode != -1 && nodeGraphControler.mModel.NodeHasUI(selNode))
+			if (selNode.IsValid() && nodeGraphControler.mModel.NodeHasUI(selNode))
             {
                 AddUICustomDraw(
                     draw_list, rc, DrawUICallbacks::DrawUISingle, selNode, &nodeGraphControler.mEditingContext);
@@ -747,9 +747,9 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
             MaterialConnection& materialConnection = material.mMaterialConnections[i];
-            model.AddLink(materialConnection.mInputNodeIndex,
+            model.AddLink(uint16_t(materialConnection.mInputNodeIndex),
                                                 materialConnection.mInputSlotIndex,
-                                                materialConnection.mOutputNodeIndex,
+                                                uint16_t(materialConnection.mOutputNodeIndex),
                                                 materialConnection.mOutputSlotIndex);
         }
         for (size_t i = 0; i < material.mMaterialRugs.size(); i++)
@@ -2413,7 +2413,7 @@ void Imogen::ShowExtractedViews()
         }
         if (ImGui::Begin(tmps, &open))
         {
-            RenderPreviewNode(int(extraction.mNodeIndex), *mNodeGraphControler, true);
+            RenderPreviewNode(extraction.mNodeIndex, *mNodeGraphControler, true);
         }
         ImGui::End();
         if (!open)

@@ -28,6 +28,7 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include "ImogenConfig.h"
 #include "EvaluationStages.h"
 #include "Evaluators.h"
 
@@ -66,9 +67,9 @@ struct EvaluationThumbnails
 	std::vector<bgfx::TextureHandle> GetAtlasTextures() const;
 protected:
 
-	const size_t AtlasSize = 4096;
-	const size_t ThumbnailSize = 256;
-	const size_t ThumbnailsPerAtlas = (AtlasSize / ThumbnailSize) * (AtlasSize / ThumbnailSize);
+	const uint16_t AtlasSize = 4096;
+	const uint16_t ThumbnailSize = 256;
+	const uint16_t ThumbnailsPerAtlas = (AtlasSize / ThumbnailSize) * (AtlasSize / ThumbnailSize);
 
 	ImRect ComputeUVFromIndexInAtlas(size_t thumbIndex) const;
 	Thumb AddThumbInAtlas(size_t atlasIndex);
@@ -95,36 +96,36 @@ struct EvaluationContext
     ~EvaluationContext();
 
     // iterative editing
-    void AddEvaluation(size_t nodeIndex);
-    void DelEvaluation(size_t nodeIndex);
+    void AddEvaluation(NodeIndex nodeIndex);
+    void DelEvaluation(NodeIndex nodeIndex);
 
     void Evaluate();
 
-    void SetKeyboardMouse(size_t nodeIndex, const UIInput& input);
+    void SetKeyboardMouse(NodeIndex nodeIndex, const UIInput& input);
     int GetCurrentTime() const { return mCurrentTime; }
     void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
-    void GetThumb(size_t nodeIndex, bgfx::TextureHandle& textureHandle, ImRect& uvs) const
+    void GetThumb(NodeIndex nodeIndex, bgfx::TextureHandle& textureHandle, ImRect& uvs) const
     { 
         assert(mUseThumbnail);
         mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); 
     }
 
-	bgfx::TextureHandle GetEvaluationTexture(size_t nodeIndex) const;
+	bgfx::TextureHandle GetEvaluationTexture(NodeIndex nodeIndex) const;
 
-    ImageTexture* GetRenderTarget(size_t nodeIndex) 
+    ImageTexture* GetRenderTarget(NodeIndex nodeIndex)
     { 
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget; 
     }
     
-    const ImageTexture* GetRenderTarget(size_t nodeIndex) const
+    const ImageTexture* GetRenderTarget(NodeIndex nodeIndex) const
     {
         assert(nodeIndex < mEvaluations.size());
         return mEvaluations[nodeIndex].mTarget;
     }
     
-	ImageTexture* CreateRenderTarget(size_t nodeIndex)
+	ImageTexture* CreateRenderTarget(NodeIndex nodeIndex)
 	{
 		assert(nodeIndex < mEvaluations.size());
 		assert(!mEvaluations[nodeIndex].mTarget);
@@ -144,23 +145,23 @@ struct EvaluationContext
         mbSynchronousEvaluation = synchronous;
     }
 	bool IsBuilding() const { return mBuilding; }
-    void SetTargetDirty(size_t target, uint32_t dirtyflag, bool onlyChild = false);
-	void SetTargetPersistent(size_t nodeIndex, bool persistent);
-    int StageIsProcessing(size_t target) const
+    void SetTargetDirty(NodeIndex target, uint32_t dirtyflag, bool onlyChild = false);
+	void SetTargetPersistent(NodeIndex nodeIndex, bool persistent);
+    int StageIsProcessing(NodeIndex target) const
     {
         assert (target < mEvaluations.size());
         return mEvaluations[target].mProcessing;
     }
-    float StageGetProgress(size_t target) const
+    float StageGetProgress(NodeIndex target) const
     {
         assert(target < mEvaluations.size());
         return mEvaluations[target].mProgress;
     }
-    void StageSetProcessing(size_t target, int processing);
-    void StageSetProgress(size_t target, float progress);
+    void StageSetProcessing(NodeIndex target, int processing);
+    void StageSetProgress(NodeIndex target, float progress);
 
 	int GetStageIndexFromRuntimeId(unsigned int runtimeUniqueId) const;
-	unsigned int GetStageRuntimeId(size_t stageIndex) const;
+	unsigned int GetStageRuntimeId(NodeIndex stageIndex) const;
 
     const EvaluationThumbnails& GetThumbnails() const 
     { 
@@ -219,29 +220,29 @@ protected:
 
     EvaluationThumbnails mThumbnails;
 
-    void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-    void EvaluateC(const EvaluationStage& evaluationStage, size_t nodeIndex, EvaluationInfo& evaluationInfo);
+    void EvaluateGLSL(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);
+    void EvaluateC(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);
 #ifdef USE_PYTHON
-    void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+    void EvaluatePython(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);
 #endif
     // return true if any node is still in processing state
     //bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 
-    void RunNode(bgfx::ViewId& viewId, size_t nodeIndex);
+    void RunNode(bgfx::ViewId& viewId, NodeIndex nodeIndex);
 
 
-    void GenerateThumbnail(bgfx::ViewId& viewId, size_t nodeIndex);
+    void GenerateThumbnail(bgfx::ViewId& viewId, NodeIndex nodeIndex);
 
     //void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 
     void BindTextures(EvaluationInfo& evaluationInfo, 
 					  const EvaluationStage& evaluationStage,
-                      size_t nodeIndex,
+					  NodeIndex nodeIndex,
                       ImageTexture* reusableTarget);
     //void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
 
     void ComputeTargetUseCount();
-    void ReleaseInputs(size_t nodeIndex);
+    void ReleaseInputs(NodeIndex nodeIndex);
 
     ImageTexture* AcquireRenderTarget(int width, int height, bool depthBuffer);
     ImageTexture* AcquireClone(ImageTexture* source);
@@ -269,7 +270,7 @@ protected:
 	void GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuffer, int16_t width, uint16_t height, bool depthBuffer);
 
     void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const;
-    void SetUniforms(size_t nodeIndex);
+    void SetUniforms(NodeIndex nodeIndex);
 };
 
 struct Builder
@@ -307,6 +308,6 @@ private:
 
 namespace DrawUICallbacks
 {
-    void DrawUISingle(EvaluationContext* context, size_t nodeIndex);
-    void DrawUIProgress(EvaluationContext* context, size_t nodeIndex);
+    void DrawUISingle(EvaluationContext* context, NodeIndex nodeIndex);
+    void DrawUIProgress(EvaluationContext* context, NodeIndex nodeIndex);
 } // namespace DrawUICallbacks

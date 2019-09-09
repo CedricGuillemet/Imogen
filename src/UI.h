@@ -28,6 +28,7 @@
 #include "ImGradient.h"
 #include "imgui_markdown/imgui_markdown.h"
 #include <algorithm>
+#include "ImogenConfig.h"
 
 void SetStyle();
 void InitFonts();
@@ -180,12 +181,12 @@ private:
 struct ImRect;
 struct ImDrawList;
 struct EvaluationContext;
-typedef void (*NodeUICallBackFunc)(EvaluationContext* context, size_t nodeIndex);
+typedef void (*NodeUICallBackFunc)(EvaluationContext* context, NodeIndex nodeIndex);
 void AddUICustomDraw(
-    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext* context);
+    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, NodeIndex nodeIndex, EvaluationContext* context);
 void InitCallbackRects();
 
-void UICallbackNodeDeleted(size_t nodeIndex);
-void UICallbackNodeInserted(size_t nodeIndex);
+void UICallbackNodeDeleted(NodeIndex nodeIndex);
+void UICallbackNodeInserted(NodeIndex nodeIndex);
 
 extern ImFont *smallAF, *bigAF, *mediumAF;

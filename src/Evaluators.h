@@ -28,6 +28,7 @@
 #include <map>
 #include <string>
 #include "Imogen.h"
+#include "ImogenConfig.h"
 #if USE_PYTHON
 #include "pybind11/embed.h"
 #endif
@@ -150,44 +151,44 @@ struct Scene;
 namespace EvaluationAPI
 {
     // API
-    int GetEvaluationImage(EvaluationContext* evaluationContext, int target, Image* image);
-    int SetEvaluationImage(EvaluationContext* evaluationContext, int target, const Image* image);
-    int SetEvaluationImageCube(EvaluationContext* evaluationContext, int target, const Image* image, int cubeFace);
+    int GetEvaluationImage(EvaluationContext* evaluationContext, NodeIndex target, Image* image);
+    int SetEvaluationImage(EvaluationContext* evaluationContext, NodeIndex target, const Image* image);
+    int SetEvaluationImageCube(EvaluationContext* evaluationContext, NodeIndex target, const Image* image, int cubeFace);
     int SetThumbnailImage(EvaluationContext* evaluationContext, Image* image);
     int AllocateImage(Image* image);
 
     // static int Evaluate(int target, int width, int height, Image *image);
-    void SetBlendingMode(EvaluationContext* evaluationContext, int target, uint64_t blendSrc, uint64_t blendDst);
-    void EnableDepthBuffer(EvaluationContext* evaluationContext, int target, int enable);
-    void EnableFrameClear(EvaluationContext* evaluationContext, int target, int enable);
-    void SetVertexSpace(EvaluationContext* evaluationContext, int target, int vertexSpace);
-    int OverrideInput(EvaluationContext* evaluationContext, int target, int inputIndex, int newInputTarget);
+    void SetBlendingMode(EvaluationContext* evaluationContext, NodeIndex target, uint64_t blendSrc, uint64_t blendDst);
+    void EnableDepthBuffer(EvaluationContext* evaluationContext, NodeIndex target, int enable);
+    void EnableFrameClear(EvaluationContext* evaluationContext, NodeIndex target, int enable);
+    void SetVertexSpace(EvaluationContext* evaluationContext, NodeIndex target, int vertexSpace);
+    int OverrideInput(EvaluationContext* evaluationContext, NodeIndex target, int inputIndex, int newInputTarget);
 	int IsBuilding(EvaluationContext* evaluationContext);
 
     // int SetNodeImage(int target, Image *image);
-    int GetEvaluationSize(const EvaluationContext* evaluationContext, int target, int* imageWidth, int* imageHeight);
-    int SetEvaluationSize(EvaluationContext* evaluationContext, int target, int imageWidth, int imageHeight);
-	int SetEvaluationPersistent(EvaluationContext* evaluationContext, int target, int persistent);
-    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, int target, int faceWidth, int hasMipmap);
+    int GetEvaluationSize(const EvaluationContext* evaluationContext, NodeIndex target, int* imageWidth, int* imageHeight);
+    int SetEvaluationSize(EvaluationContext* evaluationContext, NodeIndex target, int imageWidth, int imageHeight);
+	int SetEvaluationPersistent(EvaluationContext* evaluationContext, NodeIndex target, int persistent);
+    int SetEvaluationCubeSize(EvaluationContext* evaluationContext, NodeIndex target, int faceWidth, int hasMipmap);
     int Job(EvaluationContext* evaluationContext, int (*jobFunction)(void*), void* ptr, unsigned int size);
     int JobMain(EvaluationContext* evaluationContext, int (*jobMainFunction)(void*), void* ptr, unsigned int size);
-    void SetProcessing(EvaluationContext* context, int target, int processing);
+    void SetProcessing(EvaluationContext* context, NodeIndex target, int processing);
 
     int LoadScene(const char* filename, void** scene);
-    int SetEvaluationScene(EvaluationContext* evaluationContext, int target, void* scene);
-    int GetEvaluationScene(EvaluationContext* evaluationContext, int target, void** scene);
-    int SetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void* scene);
-    int GetEvaluationRTScene(EvaluationContext* evaluationContext, int target, void** scene);
+    int SetEvaluationScene(EvaluationContext* evaluationContext, NodeIndex target, void* scene);
+    int GetEvaluationScene(EvaluationContext* evaluationContext, NodeIndex target, void** scene);
+    int SetEvaluationRTScene(EvaluationContext* evaluationContext, NodeIndex target, void* scene);
+    int GetEvaluationRTScene(EvaluationContext* evaluationContext, NodeIndex target, void** scene);
 
-    const char* GetEvaluationSceneName(EvaluationContext* evaluationContext, int target);
-    int GetEvaluationRenderer(EvaluationContext* evaluationContext, int target, void** renderer);
-    int InitRenderer(EvaluationContext* evaluationContext, int target, int mode, void* scene);
-    int UpdateRenderer(EvaluationContext* evaluationContext, int target);
+    const char* GetEvaluationSceneName(EvaluationContext* evaluationContext, NodeIndex target);
+    int GetEvaluationRenderer(EvaluationContext* evaluationContext, NodeIndex target, void** renderer);
+    int InitRenderer(EvaluationContext* evaluationContext, NodeIndex target, int mode, void* scene);
+    int UpdateRenderer(EvaluationContext* evaluationContext, NodeIndex target);
 
     int Read(EvaluationContext* evaluationContext, const char* filename, Image* image);
     int Write(EvaluationContext* evaluationContext, const char* filename, Image* image, int format, int quality);
 
     int ReadGLTF(EvaluationContext* evaluationContext, const char* filename, Scene** scene);
-    int GLTFReadAsync(EvaluationContext* context, const char* filename, int target);
-    int ReadImageAsync(EvaluationContext* context, const char *filename, int target, int face);
+    int GLTFReadAsync(EvaluationContext* context, const char* filename, NodeIndex target);
+    int ReadImageAsync(EvaluationContext* context, const char *filename, NodeIndex target, int face);
 } // namespace EvaluationAPI

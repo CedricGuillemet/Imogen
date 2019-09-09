@@ -29,23 +29,24 @@
 #include <string>
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "ImogenConfig.h"
 
 struct GraphEditorDelegate
 {
-    int mSelectedNodeIndex = -1;
+	NodeIndex mSelectedNodeIndex{InvalidNodeIndex};
 
     // getters
-    virtual ImVec2 GetEvaluationSize(size_t index) const = 0;
-    virtual int NodeIsProcesing(size_t nodeIndex) const = 0;
-    virtual float NodeProgress(size_t nodeIndex) const = 0;
-    virtual bool NodeIsCubemap(size_t nodeIndex) const = 0;
-    virtual bool NodeIs2D(size_t nodeIndex) const = 0;
-    virtual bool NodeIsCompute(size_t nodeIndex) const = 0;
-    virtual bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const = 0;
-    virtual bool RecurseIsLinked(int from, int to) const = 0;
-    virtual bgfx::TextureHandle GetBitmapInfo(size_t nodeIndex) const = 0;
+    virtual ImVec2 GetEvaluationSize(NodeIndex nodeIndex) const = 0;
+    virtual int NodeIsProcesing(NodeIndex nodeIndex) const = 0;
+    virtual float NodeProgress(NodeIndex nodeIndex) const = 0;
+    virtual bool NodeIsCubemap(NodeIndex nodeIndex) const = 0;
+    virtual bool NodeIs2D(NodeIndex nodeIndex) const = 0;
+    virtual bool NodeIsCompute(NodeIndex nodeIndex) const = 0;
+    virtual bool IsIOPinned(NodeIndex nodeIndex, size_t io, bool forOutput) const = 0;
+    virtual bool RecurseIsLinked(NodeIndex from, NodeIndex to) const = 0;
+    virtual bgfx::TextureHandle GetBitmapInfo(NodeIndex nodeIndex) const = 0;
 
-    virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, const size_t nodeIndex) = 0;
+    virtual void DrawNodeImage(ImDrawList* drawList, const ImRect& rc, const ImVec2 marge, NodeIndex nodeIndex) = 0;
     virtual void ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int nodeHovered) = 0;
 
     // operations
@@ -54,10 +55,10 @@ struct GraphEditorDelegate
     virtual void EndTransaction() = 0;
 
     virtual void DelRug(size_t rugIndex) = 0;
-    virtual void SelectNode(size_t nodeIndex, bool selected) = 0;
+    virtual void SelectNode(NodeIndex nodeIndex, bool selected) = 0;
     virtual void MoveSelectedNodes(const ImVec2 delta) = 0;
     
-    virtual void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex) = 0;
+    virtual void AddLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex) = 0;
     virtual void DelLink(size_t linkIndex) = 0;
 
     virtual void SetRug(size_t rugIndex, const ImRect& rect, const char *szText, uint32_t color) = 0;

@@ -34,7 +34,6 @@
 struct UndoRedoHandler;
 struct UndoRedo;
 
-
 typedef std::vector<InputSampler> Samplers;
 
 class GraphModel
@@ -102,60 +101,60 @@ public:
 
     // setters
     size_t AddNode(size_t type, ImVec2 position);
-    void SelectNode(size_t nodeIndex, bool selected);
+    void SelectNode(NodeIndex nodeIndex, bool selected);
     void MoveSelectedNodes(const ImVec2 delta);
-    void SetNodePosition(size_t nodeIndex, const ImVec2 position);
+    void SetNodePosition(NodeIndex nodeIndex, const ImVec2 position);
     void DeleteSelectedNodes();
-    void AddLink(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
-	void DelLink(size_t inputNodeIndex, size_t inputSlotIndex);
+    void AddLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex);
+	void DelLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex);
     void DelLink(size_t linkIndex);
     void AddRug(const Rug& rug);
     void DelRug(size_t rugIndex);
     void SetRug(size_t rugIndex, const Rug& rug);
-    void SetSamplers(size_t nodeIndex, const Samplers& samplers);
-	void SetSampler(size_t nodeIndex, size_t input, const InputSampler& sampler);
-    void SetParameter(size_t nodeIndex, const std::string& parameterName, const std::string& parameterValue);
-    void SetParameters(size_t nodeIndex, const Parameters& parameters);
+    void SetSamplers(NodeIndex nodeIndex, const Samplers& samplers);
+	void SetSampler(NodeIndex nodeIndex, size_t input, const InputSampler& sampler);
+    void SetParameter(NodeIndex nodeIndex, const std::string& parameterName, const std::string& parameterValue);
+    void SetParameters(NodeIndex nodeIndex, const Parameters& parameters);
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
-    void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
-    void SetParameterPin(size_t nodeIndex, size_t parameterIndex, bool pinned);
-    void SetMultiplexed(size_t nodeIndex, size_t slotIndex, int multiplex);
+    void SetIOPin(NodeIndex nodeIndex, size_t io, bool forOutput, bool pinned);
+    void SetParameterPin(NodeIndex nodeIndex, size_t parameterIndex, bool pinned);
+    void SetMultiplexed(NodeIndex nodeIndex, SlotIndex slotIndex, int multiplex);
     void SetMultiplexInputs(const std::vector<MultiplexInput>& multiplexInputs);
     void SetParameterPins(const std::vector<uint32_t>& pins);
     void SetIOPins(const std::vector<uint32_t>& pins);
     void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
     void SetStartEndFrame(int startFrame, int endFrame);
-    void SetStartEndFrame(size_t nodeIndex, int startFrame, int endFrame);
-	void SetCameraLookAt(size_t nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up = Vec4(0.f, 1.f, 0.f, 0.f));
+    void SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame);
+	void SetCameraLookAt(NodeIndex nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up = Vec4(0.f, 1.f, 0.f, 0.f));
     // transaction is handled is the function
     void NodeGraphLayout(const std::vector<size_t>& orderList);
 
     // getters
     size_t GetNodeCount() const { return mNodes.size(); }
-    int GetNodeType(size_t nodeIndex) const { return mNodes[nodeIndex].mType; }
-    bool NodeHasUI(size_t nodeIndex) const;
+    int GetNodeType(NodeIndex nodeIndex) const { return mNodes[nodeIndex].mType; }
+    bool NodeHasUI(NodeIndex nodeIndex) const;
     const std::vector<Rug>& GetRugs() const { return mRugs; }
     const std::vector<Node>& GetNodes() const { return mNodes; }
     const std::vector<Link>& GetLinks() const { return mLinks; }
-    ImVec2 GetNodePos(size_t nodeIndex) const;
-    bool IsIOUsed(size_t nodeIndex, int slotIndex, bool forOutput) const;
-    bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
-    bool IsParameterPinned(size_t nodeIndex, size_t parameterIndex) const;
+    ImVec2 GetNodePos(NodeIndex nodeIndex) const;
+    bool IsIOUsed(NodeIndex nodeIndex, int slotIndex, bool forOutput) const;
+    bool IsIOPinned(NodeIndex nodeIndex, size_t io, bool forOutput) const;
+    bool IsParameterPinned(NodeIndex nodeIndex, size_t parameterIndex) const;
     const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const;
     const std::vector<uint32_t> GetParameterPins() const;
     const std::vector<uint32_t> GetIOPins() const;
     const std::vector<MultiplexInput> GetMultiplexInputs() const;
-    const Parameters& GetParameters(size_t nodeIndex) const;
-    const Samplers& GetSamplers(size_t nodeIndex) const { return mNodes[nodeIndex].mSamplers; }
+    const Parameters& GetParameters(NodeIndex nodeIndex) const;
+    const Samplers& GetSamplers(NodeIndex nodeIndex) const { return mNodes[nodeIndex].mSamplers; }
     ImRect GetNodesDisplayRect() const;
     ImRect GetFinalNodeDisplayRect(const std::vector<size_t>& orderList) const;
     bool RecurseIsLinked(int from, int to) const;
-    int GetMultiplexed(size_t nodeIndex, size_t slotIndex) const { return mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex]; }
-    bool GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, size_t slotIndex, std::vector<size_t>& list) const;
+    int GetMultiplexed(NodeIndex nodeIndex, size_t slotIndex) const { return mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex]; }
+    bool GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, SlotIndex slotIndex, std::vector<NodeIndex>& list) const;
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }
-    void GetStartEndFrame(size_t nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
+    void GetStartEndFrame(NodeIndex nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
     void GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<Input>& directInputs) const;
 
     // dirty
@@ -187,14 +186,21 @@ private:
     bool mbTransaction;
     UndoRedo* mUndoRedo;
 
-    void SetDirty(size_t nodeIndex, Dirty::Type flags) { mDirtyList.push_back({nodeIndex, flags});}
+	void SetDirty(NodeIndex nodeIndex, Dirty::Type flags, SlotIndex slotIndex = {InvalidSlotIndex}) 
+	{ 
+		if (flags == Dirty::Input)
+		{
+			assert(slotIndex != -1);
+		}
+		mDirtyList.push_back({nodeIndex, slotIndex, flags});
+	}
     void AddNodeHelper(int nodeIndex);
 
     void DelLinkInternal(size_t linkIndex);
-    void AddLinkInternal(size_t inputNodeIndex, size_t inputSlotIndex, size_t outputNodeIndex, size_t outputSlotIndex);
-    void RemoveAnimation(size_t nodeIndex);
+    void AddLinkInternal(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex);
+    void RemoveAnimation(NodeIndex nodeIndex);
 
-    void GetMultiplexedInputs(const std::vector<Input>& inputs, size_t nodeIndex, std::vector<size_t>& list) const;
+    void GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, std::vector<NodeIndex>& list) const;
 
     // layout
     struct NodePosition

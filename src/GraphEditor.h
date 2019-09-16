@@ -33,7 +33,7 @@
 
 struct GraphEditorDelegate
 {
-	NodeIndex mSelectedNodeIndex{InvalidNodeIndex};
+	NodeIndex mSelectedNodeIndex{ InvalidNodeIndex };
 
     // getters
     virtual ImVec2 GetEvaluationSize(NodeIndex nodeIndex) const = 0;

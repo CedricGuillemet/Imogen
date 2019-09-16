@@ -250,26 +250,31 @@ bgfx::TextureHandle Image::Upload(const Image* image, bgfx::TextureHandle textur
 
 int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename)
 {
+	if (!dataSize)
+	{
+		return EVAL_ERR;
+	}
+
     bx::AllocatorI* g_allocator = getDefaultAllocator();
     bimg::ImageContainer* imageContainer = bimg::imageParse(g_allocator, data, (uint32_t)dataSize, bimg::TextureFormat::RGBA8); // todo handle HDR float
-    if (imageContainer)
-    {
-        image->SetBits((unsigned char*)imageContainer->m_data, imageContainer->m_size);
-        image->mWidth = imageContainer->m_width;
-        image->mHeight = imageContainer->m_height;
-        image->mHasMipmaps = imageContainer->m_numMips > 1;
-        image->mIsCubemap = imageContainer->m_cubeMap;
-        image->mFormat = (imageContainer->m_format == bgfx::TextureFormat::RGB8) ? bgfx::TextureFormat::RGB8 : bgfx::TextureFormat::RGBA8;
-        image->mDecoder = NULL;
-        if (filename)
-        {
-            gImageCache.AddImage(filename, image);
-        }
-        bimg::imageFree(imageContainer);
-        return EVAL_OK;
-    }
 
-    return EVAL_ERR;
+    if (!imageContainer)
+    {
+		return EVAL_ERR;
+	}
+    image->SetBits((unsigned char*)imageContainer->m_data, imageContainer->m_size);
+    image->mWidth = imageContainer->m_width;
+    image->mHeight = imageContainer->m_height;
+    image->mHasMipmaps = imageContainer->m_numMips > 1;
+    image->mIsCubemap = imageContainer->m_cubeMap;
+    image->mFormat = (imageContainer->m_format == bgfx::TextureFormat::RGB8) ? bgfx::TextureFormat::RGB8 : bgfx::TextureFormat::RGBA8;
+    image->mDecoder = NULL;
+    if (filename)
+    {
+        gImageCache.AddImage(filename, image);
+    }
+    bimg::imageFree(imageContainer);
+    return EVAL_OK;
 }
 
 void Image::VFlip(Image* image)
@@ -402,6 +407,8 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
     bx::Error err;
 
     bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * 4, image->GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
+	pngImage.resize(mb.getSize());
+	memcpy(pngImage.data(), mb.more(), mb.getSize());
     return EVAL_OK;
 }
 

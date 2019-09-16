@@ -72,8 +72,11 @@ struct Input
 {
     Input()
     {
-        memset(mInputs, -1, sizeof(int) * 8);
-        memset(mOverrideInputs, -1, sizeof(int) * 8);
+		for (auto i = 0; i < 8 ; i++)
+		{
+			mInputs[i] = { InvalidNodeIndex };
+			mOverrideInputs[i] = { InvalidNodeIndex };
+		}
     }
     NodeIndex mInputs[8];
 	NodeIndex mOverrideInputs[8];
@@ -88,7 +91,7 @@ struct EvaluationStage
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
 #endif
     uint16_t mType;
-	RuntimeId mRuntimeUniqueId = InvalidRuntimeId;
+	RuntimeId mRuntimeUniqueId;
 
     int mStartFrame, mEndFrame;
     
@@ -129,6 +132,7 @@ struct EvaluationStages
     void SetParameters(NodeIndex nodeIndex, const Parameters& parameters);
     uint16_t GetNodeType(NodeIndex nodeIndex) const { return mStages[nodeIndex].mType; }
     size_t GetStagesCount() const { return mStages.size(); }
+	void SetMaterialUniqueId(RuntimeId runtimeId);
 
     // animation
     void ApplyAnimationForNode(EvaluationContext* context, NodeIndex nodeIndex, int frame);
@@ -151,6 +155,8 @@ struct EvaluationStages
     std::vector<Parameters> mParameters;
 
     std::vector<AnimTrack> mAnimTrack;
+
+	RuntimeId mMaterialUniqueId;
 
     void ComputeEvaluationOrder();
     void SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame) { mStages[nodeIndex].mStartFrame = startFrame; mStages[nodeIndex].mEndFrame = endFrame; }

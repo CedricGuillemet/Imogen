@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <memory>
+#include <set>
 #include "GraphModel.h"
 #include "UndoRedo.h"
 
@@ -100,6 +101,8 @@ void GraphModel::GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<In
     for(const auto& link: mLinks)
     {
         auto source = link.mInputNodeIndex;
+		assert(source < mNodes.size() && source > -1);
+		assert(link.mOutputSlotIndex < 8 && link.mOutputSlotIndex > -1);
         inputs[link.mOutputNodeIndex].mInputs[link.mOutputSlotIndex] = source;
     }
 
@@ -111,8 +114,8 @@ void GraphModel::GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<In
         const auto& multiplexInput = mNodes[i].mMultiplexInput;
         for (auto j = 0; j < 8; j++)
         {
-            int m = multiplexInput.mInputs[j];
-            if (m != -1)
+            auto m = multiplexInput.mInputs[j];
+            if (m.IsValid())
             {
                 inputs[i].mInputs[j] = m;
             }
@@ -887,7 +890,7 @@ static bool NodeTypeHasMultiplexer(size_t nodeType)
     return false;
 }
 
-void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, std::vector<NodeIndex>& list) const
+void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, std::set<NodeIndex>& list) const
 {
     for (auto input : inputs[nodeIndex].mInputs)
     {
@@ -897,7 +900,7 @@ void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeInde
         }
         if (!NodeTypeHasMultiplexer(mNodes[input].mType))
         {
-            list.push_back(input);
+            list.insert(input);
         }
         else
         {
@@ -908,14 +911,19 @@ void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeInde
 
 bool GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, SlotIndex slotIndex, std::vector<NodeIndex>& list) const
 {
-    int input = inputs[nodeIndex].mInputs[slotIndex];
-    if (input == -1)
+    NodeIndex input = inputs[nodeIndex].mInputs[slotIndex];
+    if (!input.IsValid())
     {
         return false;
     }
     if (NodeTypeHasMultiplexer(mNodes[input].mType))
     {
-        GetMultiplexedInputs(inputs, input, list);
+		std::set<NodeIndex> uniqueList;
+        GetMultiplexedInputs(inputs, input, uniqueList);
+		for (auto nodeIndex : uniqueList)
+		{
+			list.push_back(nodeIndex);
+		}
         return true;
     }
     return false;

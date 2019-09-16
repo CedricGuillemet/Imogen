@@ -32,24 +32,23 @@
 
 static const float rotMatrices[6][16] = {
     // toward +x
-    {0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+    { 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
 
     // -x
-    {0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1},
+    { 0, 0,  1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1},
 
 
     //+y
-    {1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1},
+    { 1, 0,  0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1},
 
 	// -y
-{1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
-
+	{ 1, 0,  0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
 
     // +z
-    {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
+    { 1, 0,  0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
 
     //-z
-    {-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
+    {-1, 0,  0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1}};
 
 
 void EvaluationThumbnails::Clear()
@@ -183,7 +182,7 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation
 #endif
     , mDefaultWidth(defaultWidth)
     , mDefaultHeight(defaultHeight)
-    , mRuntimeUniqueId(-1)
+    , mRuntimeUniqueId(evaluation.mMaterialUniqueId)
     , mInputNodeIndex(-1)
     , mUseThumbnail(useThumbnail)
 	, mBuilding(building)
@@ -264,7 +263,6 @@ void EvaluationContext::Evaluate()
     // do something from the list
     if (!mRemaining.empty())
     {
-        bgfx::ViewId viewId = viewId_Evaluation;
         static const int nodeCountPerIteration = 100;
         for (int i = 0;i< nodeCountPerIteration;i++)
         {
@@ -278,7 +276,7 @@ void EvaluationContext::Evaluate()
                 continue;
             }*/
             
-            RunNode(viewId, nodeIndex);
+            RunNode(nodeIndex);
 
             if (mRemaining.empty())
             {
@@ -366,15 +364,12 @@ void EvaluationContext::BindTextures(EvaluationInfo& evaluationInfo, const Evalu
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
     for (int inputIndex = 0; inputIndex < 8; inputIndex++)
     {
-        int targetIndex = input.mOverrideInputs[inputIndex];
-        if (targetIndex < 0)
+        NodeIndex targetIndex = input.mOverrideInputs[inputIndex];
+        if (!targetIndex.IsValid())
         {
             targetIndex = input.mInputs[inputIndex];
         }
-        if (targetIndex < 0)
-        {
-        }
-        else
+        if (targetIndex.IsValid())
         {
             ImageTexture* tgt;
             if (inputIndex == 0 && reusableTarget)
@@ -557,6 +552,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     
     int passCount = GetIntParameter(evaluationStage.mType, parameters, "passCount", 1);
     
+	bgfx::FrameBufferHandle blitFramebuffer;
+	GetRenderProxy(blitFramebuffer, 16, 16, false);
 
     auto w = tgt->mImage.mWidth;
     auto h = tgt->mImage.mHeight;
@@ -565,7 +562,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 	
     for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
-		bgfx::ViewId viewId = 10;
+		
         for (auto mip = 0; mip < mipmapCount; mip++)
         {
 			const int viewportWidth = w >> mip;
@@ -576,6 +573,8 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 			
 			for (auto face = 0; face < faceCount; face++)
 			{
+				bgfx::ViewId viewId = 10;
+
 				bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());
 				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 				bgfx::setViewFrameBuffer(viewId, currentFramebuffer);
@@ -624,7 +623,9 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 				bgfx::setViewName(viewId, "blit");
 				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 				bgfx::setViewRect(viewId, 0, 0, viewportWidth, viewportHeight);
-				bgfx::blit(viewId, tgt->mTexture, mip, 0, 0, face, bgfx::getTexture(currentFramebuffer), 0, 0, 0, 0, viewportWidth, viewportHeight);
+				bgfx::setViewFrameBuffer(viewId, blitFramebuffer);
+				bgfx::touch(viewId);
+				bgfx::blit(viewId, tgt->mTexture, mip, 0, 0, face, bgfx::getTexture(currentFramebuffer), 0, 0, 0, 0, viewportWidth, viewportHeight, 0);
 				viewId++;
 
 				bgfx::frame();
@@ -633,9 +634,10 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     } // passNumber
 }
 
-void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, NodeIndex nodeIndex)
+void EvaluationContext::GenerateThumbnail(NodeIndex nodeIndex)
 {
     assert(mUseThumbnail);
+	bgfx::ViewId viewId = 20;
     const auto& evaluation = mEvaluations[nodeIndex];
     const auto thumb = evaluation.mThumb;
     if (!thumb.Valid())
@@ -684,6 +686,7 @@ void EvaluationContext::GenerateThumbnail(bgfx::ViewId& viewId, NodeIndex nodeIn
 		bgfx::setTexture(0, gEvaluators.mSamplers2D[0], tgt->mTexture);
 		def->Draw(evaluationInfo, viewId, gEvaluators.mBlitProgram);
 	}
+	bgfx::frame();
 }
 
 void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo)
@@ -726,7 +729,7 @@ void EvaluationContext::ComputeTargetUseCount()
         for (auto i = 0; i < 8; i++)
         {
             const auto input = mEvaluationStages.mInputs[j].mInputs[i];
-            if (input != -1)
+            if (input.IsValid())
             {
                 mEvaluations[input].mUseCount ++;
             }
@@ -750,7 +753,7 @@ void EvaluationContext::ReleaseInputs(NodeIndex nodeIndex)
     for (auto i = 0; i < 8; i++)
     {
         const auto input = mEvaluationStages.mInputs[nodeIndex].mInputs[i];
-        if (input != -1)
+        if (input.IsValid())
         {
             // use count must be positive
             assert(mEvaluations[input].mUseCount);
@@ -765,7 +768,7 @@ void EvaluationContext::ReleaseInputs(NodeIndex nodeIndex)
     }
 }
 
-void EvaluationContext::RunNode(bgfx::ViewId& viewId, NodeIndex nodeIndex)
+void EvaluationContext::RunNode(NodeIndex nodeIndex)
 {
     auto& currentStage = mEvaluationStages.mStages[nodeIndex];
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
@@ -774,8 +777,10 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, NodeIndex nodeIndex)
     // check processing
     for (auto& inp : input.mInputs)
     {
-        if (inp < 0)
+        if (!inp.IsValid())
+		{
             continue;
+		}
         if (mEvaluations[inp].mProcessing)
         {
             evaluation.mProcessing = 1;
@@ -818,7 +823,7 @@ void EvaluationContext::RunNode(bgfx::ViewId& viewId, NodeIndex nodeIndex)
 
     if (mUseThumbnail)
     {
-        GenerateThumbnail(viewId, nodeIndex);
+        GenerateThumbnail(nodeIndex);
     }
 
     ReleaseInputs(nodeIndex);
@@ -868,7 +873,7 @@ void EvaluationContext::SetTargetDirty(NodeIndex target, uint32_t dirtyFlag, boo
 			}
             for (auto inp : mEvaluationStages.mInputs[currentNodeIndex].mInputs)
             {
-                if (inp >= 0 && mEvaluations[inp].mDirtyFlag)
+                if (inp.IsValid() && mEvaluations[inp].mDirtyFlag)
                 {
                     mEvaluations[currentNodeIndex].mDirtyFlag |= Dirty::Input;
                     break;
@@ -929,7 +934,7 @@ void EvaluationContext::ReleaseRenderTarget(ImageTexture* renderTarget)
     mAvailableRenderTargets.push_back(renderTarget);
 }
 
-int EvaluationContext::GetStageIndexFromRuntimeId(unsigned int runtimeUniqueId) const
+int EvaluationContext::GetStageIndexFromRuntimeId(RuntimeId runtimeUniqueId) const
 {
 	for (unsigned int i = 0; i < mEvaluations.size(); i++)
 	{
@@ -941,7 +946,7 @@ int EvaluationContext::GetStageIndexFromRuntimeId(unsigned int runtimeUniqueId) 
 	return -1;
 }
 
-unsigned int EvaluationContext::GetStageRuntimeId(NodeIndex nodeIndex) const
+RuntimeId EvaluationContext::GetStageRuntimeId(NodeIndex nodeIndex) const
 {
 	return mEvaluations[nodeIndex].mRuntimeUniqueId;
 }

@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 #include <stdint.h>
+#include <set>
 #include "Library.h"
 #include "EvaluationStages.h"
 
@@ -59,11 +60,9 @@ public:
             , mStartFrame(startFrame)
             , mEndFrame(endFrame)
         {
-			mRuntimeUniqueId = GetRuntimeId();
         }
         Node() : mbSelected(false), mPinnedIO(0), mPinnedParameters(0)
         {
-			mRuntimeUniqueId = GetRuntimeId();
         }
         int mType;
         ImVec2 mPos;
@@ -74,7 +73,7 @@ public:
         MultiplexInput mMultiplexInput;
         Samplers mSamplers;
         bool mbSelected;
-		unsigned int mRuntimeUniqueId;
+		RuntimeId mRuntimeUniqueId;
         // Helpers
         ImRect GetDisplayRect() const;
     };
@@ -200,7 +199,7 @@ private:
     void AddLinkInternal(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex);
     void RemoveAnimation(NodeIndex nodeIndex);
 
-    void GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, std::vector<NodeIndex>& list) const;
+    void GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, std::set<NodeIndex>& list) const;
 
     // layout
     struct NodePosition

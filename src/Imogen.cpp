@@ -646,7 +646,6 @@ void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int 
         auto nodeType = model.GetNodeType(i);
         MaterialNode& dstNode = material.mMaterialNodes[i];
         MetaNode& metaNode = gMetaNodes[nodeType];
-        dstNode.mRuntimeUniqueId = GetRuntimeId();
         if (metaNode.mbSaveTexture)
         {
             Image image;
@@ -778,7 +777,7 @@ void Imogen::UpdateNewlySelectedGraph()
         mbIsPlaying = false;
         mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
 
-        mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode);
+        //mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode); TODO
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
         //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
@@ -793,7 +792,7 @@ Material& Imogen::NewMaterial(const std::string& materialName)
     Material& back = library.mMaterials.back();
     back.mName = materialName;
     back.mThumbnailTextureHandle = {0};
-    back.mRuntimeUniqueId = GetRuntimeId();
+	back.mBackgroundNode = -1;
 
     if (previousSelection != -1)
     {
@@ -801,6 +800,7 @@ Material& Imogen::NewMaterial(const std::string& materialName)
     }
     mSelectedMaterial = int(library.mMaterials.size()) - 1;
     ClearAll();
+	mNodeGraphControler->SetMaterialUniqueId(back.mRuntimeUniqueId);
     return library.mMaterials.back();
 }
 
@@ -861,7 +861,7 @@ void Imogen::LibraryEdit(Library& library)
     ImGui::BeginChild("TV");
     if (TVRes(library.mMaterials, "Graphs", mSelectedMaterial, 0, mLibraryViewMode, this))
     {
-        mNodeGraphControler->mSelectedNodeIndex = -1;
+        mNodeGraphControler->mSelectedNodeIndex.SetInvalid();
         // save previous
         if (previousSelection != -1)
         {
@@ -1699,6 +1699,60 @@ bool Imogen::Button(const char* functionName, const char* label, ImVec2 size)
     return res;
 }
 
+int Imogen::NewLibrary(const std::string& directory, const std::string& name, bool addDefaultMaterial)
+{
+	int ret;
+#ifdef __EMSCRIPTEN__
+	ret = int(mRecentLibraries.AddRecent("/offline/", tempName));
+#else
+	ret = int(mRecentLibraries.AddRecent(directory, name));
+#endif
+	// create lib
+	Library newLib;
+	if (addDefaultMaterial)
+	{
+		MaterialNode defNode;
+		defNode.mPosX = 40;
+		defNode.mPosY = 40;
+		defNode.mTypeName = "Color";
+		auto nodeType = GetMetaNodeIndex(defNode.mTypeName.c_str());
+		defNode.mType = uint32_t(nodeType);
+		defNode.mParameters.resize(ComputeNodeParametersSize(nodeType), 0);
+		InitDefaultParameters(nodeType, defNode.mParameters);
+
+		MaterialNodeRug defRug;
+		defRug.mPosX = 0;
+		defRug.mPosY = 0;
+		defRug.mColor = 0xFF7799CC;
+		defRug.mComment = "Imogen default material";
+		defRug.mSizeX = 400;
+		defRug.mSizeY = 300;
+
+		Material defMat;
+		defMat.mName = ".default";
+		defMat.mMaterialRugs.push_back(defRug);
+		defMat.mMaterialNodes.push_back(defNode);
+		defMat.mBackgroundNode = -1;
+
+		newLib.mMaterials.push_back(defMat);
+	}
+	SaveLib(&newLib, mRecentLibraries.GetRecentLibraries()[ret].ComputeFullPath().c_str());
+	return ret;
+}
+
+void Imogen::OpenLibrary(int libraryIndex, bool saveCurrent)
+{
+	if (saveCurrent)
+	{
+		SaveLib(&library, library.mFilename);
+	}
+	std::string selectedLibraryFilePath = mRecentLibraries.GetRecentLibraries()[libraryIndex].ComputeFullPath();
+	LoadLib(&library, selectedLibraryFilePath);
+	mNodeGraphControler->Clear();
+	SetExistingMaterialActive(".default");
+	mRecentLibraries.SetMostRecentLibraryIndex(libraryIndex);
+}
+
 // return -1 if nothing happens, index of recent library if one is chosen
 int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
 {
@@ -1787,41 +1841,7 @@ int Imogen::EditRecentLibraries(RecentLibraries& recentLibraries)
     ImGui::PushFont(bigAF);
     if (ImGui::Button(ICON_FA_PLUS " Create Library", ImVec2(editSize.x, 40.f)))
     {
-#ifdef __EMSCRIPTEN__
-        ret = int(recentLibraries.AddRecent("/offline/", tempName));
-#else
-        ret = int(recentLibraries.AddRecent(tempDir, tempName));
-#endif
-        // create lib
-        Library newLib;
-        if (addDefMat)
-        {
-            MaterialNode defNode;
-            defNode.mPosX = 40;
-            defNode.mPosY = 40;
-            defNode.mTypeName = "Color";
-            auto nodeType = GetMetaNodeIndex(defNode.mTypeName.c_str());
-            defNode.mType = uint32_t(nodeType);
-            defNode.mParameters.resize(ComputeNodeParametersSize(nodeType), 0);
-            InitDefaultParameters(nodeType, defNode.mParameters);
-
-            MaterialNodeRug defRug;
-            defRug.mPosX = 0;
-            defRug.mPosY = 0;
-            defRug.mColor = 0xFF7799CC;
-            defRug.mComment = "Imogen default material";
-            defRug.mSizeX = 400;
-            defRug.mSizeY = 300;
-
-            Material defMat;
-            defMat.mName = ".default";
-            defMat.mMaterialRugs.push_back(defRug);
-            defMat.mMaterialNodes.push_back(defNode);
-            defMat.mBackgroundNode = -1;
-
-            newLib.mMaterials.push_back(defMat);
-        }
-        SaveLib(&newLib, recentLibraries.GetRecentLibraries()[ret].ComputeFullPath().c_str());
+		ret = NewLibrary(tempDir, tempName, addDefMat);
         tempDir = tempName = "";
     }
     ImGui::PopFont();
@@ -2437,10 +2457,7 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
             std::string selectedLibraryFilePath = mRecentLibraries.GetMostRecentLibraryPath();
             if (library.mFilename != selectedLibraryFilePath)
             {
-                SaveLib(&library, library.mFilename);
-                LoadLib(&library, selectedLibraryFilePath);
-                mNodeGraphControler->Clear();
-                SetExistingMaterialActive(".default");
+				OpenLibrary(mRecentLibraries.GetMostRecentLibraryIndex(), true);
             }
         }
         return;

@@ -902,7 +902,7 @@ void ComputeDelegateSelection(GraphEditorDelegate* delegate)
             }
             else
             {
-                delegate->mSelectedNodeIndex = -1;
+                delegate->mSelectedNodeIndex.SetInvalid();
                 return;
             }
         }

@@ -14,6 +14,8 @@ def setDefaultCubemap(node):
     
 def imageTests(outDir):
     metanodes = Imogen.GetMetaNodes()
+    Imogen.OpenLibrary(Imogen.NewLibrary(outDir, "tempLibrary", False), False)
+    
     '''
     ###################################################
     # read one jpg, write it back
@@ -306,7 +308,7 @@ def imageTests(outDir):
     Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":0, "filename": outDir+"gltf01.jpg"})
     Imogen.Connect(gltf, 0, imageWrite, 0)
     Imogen.Build()
-    Imogen.DeleteGraph()
+    #Imogen.DeleteGraph()
     
     # blend
     Imogen.NewGraph("GraphForBlend")
@@ -362,7 +364,18 @@ def imageTests(outDir):
     Imogen.SetParameters(radiance, {"mode":0, "size":1, "sampleCount":1000})
     Imogen.Build()
     Imogen.DeleteGraph()
+    
+    # thumbnail
+    Imogen.NewGraph("ThumbnailTest")
+    circle = Imogen.AddNode("Circle")
+    thumbnail = Imogen.AddNode("Thumbnail")
+    Imogen.Connect(circle, 0, thumbnail, 0)
+    Imogen.Build()
+    thumbnailImage = Imogen.GetThumbnailImage("ThumbnailTest")
+    Imogen.WriteImage(outDir+"Thumbnail_1.png", thumbnailImage, 1, 0);
+    Imogen.DeleteGraph()
     '''
+    # multiplex !!
     Imogen.NewGraph("Multiplex")
     circle = Imogen.AddNode("Circle")
     ngon = Imogen.AddNode("NGon")
@@ -391,18 +404,50 @@ def imageTests(outDir):
     Imogen.AutoLayout()
     Imogen.Render()
     Imogen.Render()
+    Imogen.Render()
     Imogen.CaptureScreen(outDir+"MultiplexGraph_0.png", "Graph")
     
     Imogen.Disconnect(multiplexRight, 7)
     Imogen.AutoLayout()
     Imogen.Render()
     Imogen.Render()
+    Imogen.Render()
     Imogen.CaptureScreen(outDir+"MultiplexGraph_1.png", "Graph")
     
+    # get what's connected
+    Imogen.Log("Get multiplex list\n")
+    Imogen.Log("List blend[0] = {}\n".format(str(Imogen.GetMultiplexList(blend, 0))))
+    Imogen.Log("List imageWrite[0] = {}\n".format(str(Imogen.GetMultiplexList(imageWrite, 0))))
+    Imogen.Log("List blend[1] = {}\n".format(str(Imogen.GetMultiplexList(blend, 1))))
+    Imogen.Log("List blend[2] = {}\n".format(str(Imogen.GetMultiplexList(blend, 2))))
+    Imogen.Log("List blend[200] = {}\n".format(str(Imogen.GetMultiplexList(blend, 200))))
+    Imogen.Log("Get selected multiplex list\n")
+    Imogen.Log("GetSelectedMultiplex blend[0] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 0))))
+    Imogen.Log("GetSelectedMultiplex blend[1] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 1))))
+    Imogen.Log("GetSelectedMultiplex blend[2] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 2))))
+    Imogen.Log("GetSelectedMultiplex blend[200] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 200))))
     
-    #Imogen.Build()
-    Imogen.DeleteGraph()
+    Imogen.SelectMultiplexIndex(1000, 1000, 1000)
+    Imogen.SelectMultiplexIndex(blend, 1000, -18)
+    Imogen.SelectMultiplexIndex(blend, 0, -18)
+    Imogen.SelectMultiplexIndex(blend, 0, 0)
+    Imogen.SelectMultiplexIndex(blend, 0, 1)
+    Imogen.SelectMultiplexIndex(blend, 1, -1)
+    Imogen.SelectMultiplexIndex(blend, 1, 18)
+    Imogen.SelectMultiplexIndex(blend, 1, 1)
+    Imogen.Log("Current multiplex blend[1] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 1))))
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "format":0, "filename": outDir+"Multiplex_build0.jpg"})
+    Imogen.Build()
     
+    Imogen.SelectMultiplex(blend, 1, 300)
+    Imogen.SelectMultiplex(blend, 1, 2)
+    Imogen.Log("Current multiplex blend[1] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 1))))
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "format":0, "filename": outDir+"Multiplex_build1.jpg"})
+    Imogen.Build()
+   
+    
+    Imogen.CloseCurrentLibrary()
+
     
 def clearTests(folder):
     for the_file in os.listdir(folder):

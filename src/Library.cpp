@@ -323,10 +323,8 @@ void LoadLib(Library* library, const std::string& filename)
     for (auto& material : library->mMaterials)
     {
         material.mThumbnailTextureHandle = {bgfx::kInvalidHandle};
-        material.mRuntimeUniqueId = GetRuntimeId();
         for (auto& node : material.mMaterialNodes)
         {
-            node.mRuntimeUniqueId = GetRuntimeId();
             if (loadSer.dataVersion >= v_nodeTypeName)
             {
                 node.mType = uint32_t(GetMetaNodeIndex(node.mTypeName));
@@ -349,12 +347,6 @@ void LoadRecent(RecentLibraries* recent, const char* szFilename)
 void SaveRecent(RecentLibraries* recent, const char* szFilename)
 {
     SerializeWrite(szFilename).Ser(recent);
-}
-
-RuntimeId GetRuntimeId()
-{
-    static RuntimeId runtimeId = 10;
-    return ++runtimeId;
 }
 
 int GetParameterIndex(uint32_t nodeType, const char* parameterName)

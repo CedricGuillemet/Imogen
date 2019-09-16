@@ -40,18 +40,24 @@ GraphControler::GraphControler()
     , mbUsingMouse(false)
     , mEditingContext(mEvaluationStages, false, false, 1024, 1024, true)
 {
-    mSelectedNodeIndex = -1;
-    mBackgroundNode = -1;
+	mSelectedNodeIndex = { InvalidNodeIndex };
+	mBackgroundNode = { InvalidNodeIndex };
 }
 
 void GraphControler::Clear()
 {
-    mSelectedNodeIndex = -1;
-    mBackgroundNode = -1;
+	mSelectedNodeIndex = { InvalidNodeIndex };
+    mBackgroundNode = { InvalidNodeIndex };
     mModel.Clear();
     mEvaluationStages.Clear();
     mEditingContext.Clear();
     ComputeGraphArrays();
+}
+
+void GraphControler::SetMaterialUniqueId(RuntimeId runtimeId)
+{
+	mEditingContext.SetMaterialUniqueId(runtimeId);
+	mEvaluationStages.SetMaterialUniqueId(runtimeId);
 }
 
 void GraphControler::HandlePin(NodeIndex nodeIndex, size_t parameterIndex)

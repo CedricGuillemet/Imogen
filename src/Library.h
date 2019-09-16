@@ -32,6 +32,7 @@
 #include <memory>
 #include "Utils.h"
 #include <assert.h>
+#include "ImogenConfig.h"
 
 struct Camera
 {
@@ -84,23 +85,22 @@ inline Camera Lerp(Camera a, Camera b, float t)
     return a.Lerp(b, t);
 }
 
-typedef uint32_t RuntimeId;
-static const RuntimeId InvalidRuntimeId = 0xFFFFFFFF;
-RuntimeId GetRuntimeId();
-
 struct MultiplexInput
 {
     MultiplexInput()
     {
-        memset(mInputs, -1, sizeof(int) * 8);
+        for (auto& input : mInputs)
+		{
+			input = { InvalidNodeIndex };
+		}
     }
-    int mInputs[8];
+    NodeIndex mInputs[8];
 };
 
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
 // based on the unique id
-typedef std::pair<size_t, unsigned int> ASyncId;
+typedef std::pair<size_t, RuntimeId> ASyncId;
 template<typename T>
 T* GetByAsyncId(ASyncId id, std::vector<T>& items)
 {
@@ -661,10 +661,16 @@ struct RecentLibraries
     {
         std::string mName;
         std::string mPath;
+
         std::string ComputeFullPath() const
         {
             return mPath + mName + ".imogen";
         }
+
+		bool operator == (const RecentLibrary& other) const
+		{
+			return mName == other.mName && mPath == other.mPath;
+		}
     };
 
     const std::vector<RecentLibrary>& GetRecentLibraries() const
@@ -692,7 +698,7 @@ struct RecentLibraries
                 FILE* fp = fopen(iter->ComputeFullPath().c_str(), "rb");
                 if (!fp)
                 {
-                    Log("Library %s removed from recent because note found in FS\n", iter->ComputeFullPath().c_str());
+                    Log("Library %s removed from recent because not found in FS\n", iter->ComputeFullPath().c_str());
                     mMostRecentLibrary = -1; // something happened (deleted libs) -> display all libraries
                     iter = mRecentLibraries.erase(iter);
                     continue;
@@ -722,8 +728,12 @@ struct RecentLibraries
 
     size_t AddRecent(const std::string& path, const std::string& name)
     {
-        mRecentLibraries.push_back({ name, path });
-        WriteRecentLibraries();
+		RecentLibrary newRecentLibrary{ name, path };
+		if (std::find(mRecentLibraries.begin(), mRecentLibraries.end(), newRecentLibrary) == mRecentLibraries.end())
+		{
+			mRecentLibraries.push_back(newRecentLibrary);
+			WriteRecentLibraries();
+		}
         return mRecentLibraries.size() - 1;
     }
 

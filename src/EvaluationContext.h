@@ -160,8 +160,8 @@ struct EvaluationContext
     void StageSetProcessing(NodeIndex target, int processing);
     void StageSetProgress(NodeIndex target, float progress);
 
-	int GetStageIndexFromRuntimeId(unsigned int runtimeUniqueId) const;
-	unsigned int GetStageRuntimeId(NodeIndex stageIndex) const;
+	int GetStageIndexFromRuntimeId(RuntimeId runtimeUniqueId) const;
+	RuntimeId GetStageRuntimeId(NodeIndex stageIndex) const;
 
     const EvaluationThumbnails& GetThumbnails() const 
     { 
@@ -171,8 +171,8 @@ struct EvaluationContext
 
     void Clear();
 
-    unsigned int GetMaterialUniqueId() const { return mRuntimeUniqueId; }
-    void SetMaterialUniqueId(unsigned int uniqueId) { mRuntimeUniqueId = uniqueId; }
+    RuntimeId GetMaterialUniqueId() const { return mRuntimeUniqueId; }
+    void SetMaterialUniqueId(RuntimeId runtimeId) { mRuntimeUniqueId = runtimeId; }
 
     EvaluationStages& mEvaluationStages;
     
@@ -181,7 +181,6 @@ struct EvaluationContext
     {
 		Evaluation()
 		{
-			mRuntimeUniqueId = GetRuntimeId();
 		}
 
         ImageTexture* mTarget = nullptr;
@@ -195,7 +194,7 @@ struct EvaluationContext
         uint8_t mProcessing = false;
         uint8_t mVertexSpace        = 0; // UV, worldspace
         int mUseCount;
-		RuntimeId mRuntimeUniqueId = InvalidRuntimeId;
+		RuntimeId mRuntimeUniqueId;
         union
         {
             uint8_t u = 0;
@@ -228,10 +227,10 @@ protected:
     // return true if any node is still in processing state
     //bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 
-    void RunNode(bgfx::ViewId& viewId, NodeIndex nodeIndex);
+    void RunNode(NodeIndex nodeIndex);
 
 
-    void GenerateThumbnail(bgfx::ViewId& viewId, NodeIndex nodeIndex);
+    void GenerateThumbnail(NodeIndex nodeIndex);
 
     //void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 
@@ -261,7 +260,7 @@ protected:
     bool mbSynchronousEvaluation;
     bool mUseThumbnail;
 	bool mBuilding;
-    unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
+    RuntimeId mRuntimeUniqueId; // material unique Id for thumbnail update
     int mCurrentTime;
 
     std::vector<int> mRemaining;

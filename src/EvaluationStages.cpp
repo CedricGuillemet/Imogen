@@ -49,7 +49,6 @@ void EvaluationStages::AddEvaluation(NodeIndex nodeIndex, size_t nodeType)
     evaluation.mScene = nullptr;
     evaluation.mGScene = Scene::BuildDefaultScene();
     evaluation.renderer = nullptr;
-    evaluation.mRuntimeUniqueId = GetRuntimeId();
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
     
     mParameters.insert(mParameters.begin() + nodeIndex, Parameters());
@@ -57,7 +56,7 @@ void EvaluationStages::AddEvaluation(NodeIndex nodeIndex, size_t nodeType)
     mInputSamplers.insert(mInputSamplers.begin() + nodeIndex, InputSamplers());
     mInputSamplers[nodeIndex].resize(gMetaNodes[nodeType].mInputs.size());
     mInputs.insert(mInputs.begin() + nodeIndex, Input());
-	mMultiplex.insert(mMultiplex.begin() + nodeIndex, {});
+	mMultiplex.insert(mMultiplex.begin() + nodeIndex, MultiplexArray());
 }
 
 void EvaluationStages::DelEvaluation(NodeIndex nodeIndex)
@@ -87,6 +86,11 @@ void EvaluationStages::Clear()
     mParameters.clear();
     mAnimTrack.clear();
     mOrderList.clear();
+}
+
+void EvaluationStages::SetMaterialUniqueId(RuntimeId runtimeId)
+{
+	mMaterialUniqueId = runtimeId;
 }
 
 size_t EvaluationStages::GetEvaluationImageDuration(NodeIndex nodeIndex)
@@ -232,6 +236,7 @@ void EvaluationStages::BuildEvaluationFromMaterial(Material& material)
         //    materialConnection.mOutputNodeIndex, materialConnection.mInputSlotIndex, materialConnection.mInputNodeIndex);
     }
     ComputeEvaluationOrder();
+	mMaterialUniqueId = material.mRuntimeUniqueId;
     //SetAnimTrack(material.mAnimTrack);
 }
 

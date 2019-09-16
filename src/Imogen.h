@@ -112,6 +112,11 @@ struct Imogen
         }
     }
 
+	// libraries
+	int NewLibrary(const std::string& directory, const std::string& name, bool addDefaultMaterial);
+	void OpenLibrary(int libraryIndex, bool saveCurrent);
+	void CloseLibrary();
+
 protected:
     void ShowAppMainMenuBar();
     void ShowTitleBar(Builder* builder);
@@ -125,7 +130,7 @@ protected:
     void ShowDebugWindow();
     void ShowExtractedViews();
     int EditRecentLibraries(RecentLibraries& recentLibraries);
-    void CloseLibrary();
+    
     void ImportMaterial();
     void ExportMaterial();
 

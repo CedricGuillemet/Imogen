@@ -28,10 +28,7 @@ DECLARE_NODE(Thumbnail)
     Image image;
     if (Image::Read("Stock/thumbnail-icon.png", &image) == EVAL_OK)
     {
-        if (SetEvaluationImage(context, int(evaluation->targetIndex), &image) == EVAL_OK)
-        {
-            return EVAL_OK;
-        }
+        SetEvaluationImage(context, int(evaluation->targetIndex), &image);
     }
     
 	if (!IsBuilding(context))

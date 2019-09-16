@@ -37,7 +37,7 @@ struct NodeIndex
 	}*/
 	NodeIndex(size_t nodeIndex) : mNodeIndex(uint16_t(nodeIndex)) 
 	{
-		assert(nodeIndex < InvalidNodeIndex);
+		assert(nodeIndex == InvalidNodeIndex || nodeIndex < InvalidNodeIndex);
 	}
 
 	
@@ -46,11 +46,18 @@ struct NodeIndex
 	{
 		return mNodeIndex != InvalidNodeIndex;
 	}
+
+	void SetInvalid()
+	{
+		mNodeIndex = -1;
+	}
+
 	operator int() const 
 	{ 
 		assert(IsValid());
 		return int(mNodeIndex); 
 	}
+
 	bool operator == (const NodeIndex& other) const { return mNodeIndex == other.mNodeIndex; }
 
 	NodeIndex& operator -- ()
@@ -76,6 +83,7 @@ struct NodeIndex
 		mNodeIndex++;
 		return *this;
 	}
+
 private:
 	uint16_t mNodeIndex;
 
@@ -99,5 +107,31 @@ struct SlotIndex
 	{ 
 		assert(IsValid());
 		return int(mSlotIndex);
+	}
+};
+
+
+struct RuntimeId
+{
+	RuntimeId() : mRuntimeId(GetRuntimeId())
+	{
+	}
+
+	RuntimeId(const RuntimeId& other) : mRuntimeId(other.mRuntimeId)
+	{
+	}
+
+	bool operator == (RuntimeId& other) const
+	{
+		return mRuntimeId == other.mRuntimeId;
+	}
+
+private:	
+	uint32_t mRuntimeId;
+
+	uint32_t GetRuntimeId()
+	{
+		static uint32_t runtimeId = 10;
+		return ++runtimeId;
 	}
 };

@@ -20,6 +20,11 @@ uniform vec4 mieDistribution;
 vec3 get_world_normal(vec2 texcoord0)
 {
 	vec3 dir = mul(u_viewRot, vec4(texcoord0 * 2.0 - 1.0, 1.0, 0.0)).xyz;
+	if (u_viewRot[1].y == 0.)
+	{
+		dir.y = -dir.y;
+		dir.z = -dir.z;
+	}
 	return normalize(dir);
 }
 

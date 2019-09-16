@@ -197,12 +197,68 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
 	});
 
 	m.def("GetMultiplexList", [](int target, int input) {
+		auto d = pybind11::list();
+		const auto controler = Imogen::instance->GetNodeGraphControler();
+		const auto& multiplex = controler->mEvaluationStages.mMultiplex;
+		if (target >= 0 && target < multiplex.size() &&
+			input >= 0 && input < 8)
+		{
+			for (auto multiplexEntry : multiplex[target].mMultiplexPerInputs[input])
+			{
+				d.append(int(multiplexEntry));
+			}
+		}		
+		return d;
 	});
 
-	m.def("SelectMultiplex", [](int target, int input, int indexInList) {
+	m.def("SelectMultiplexIndex", [](int target, int input, int indexInList) {
+		const auto controler = Imogen::instance->GetNodeGraphControler();
+		auto& model = controler->mModel;
+		const auto& multiplex = controler->mEvaluationStages.mMultiplex;
+		if (target >= 0 && target < multiplex.size() &&
+			input >= 0 && input < 8)
+		{
+			const auto& multiplexInputs = multiplex[target].mMultiplexPerInputs[input];
+			if (indexInList >= 0 && indexInList < multiplexInputs.size())
+			{
+				model.BeginTransaction(false);
+				model.SetMultiplexed(target, input, int(multiplexInputs[indexInList]));
+				model.EndTransaction();
+			}
+		}
+	});
+
+	m.def("SelectMultiplex", [](int target, int input, int multiplexInput) {
+		const auto controler = Imogen::instance->GetNodeGraphControler();
+		auto& model = controler->mModel;
+		const auto& multiplex = controler->mEvaluationStages.mMultiplex;
+		if (target >= 0 && target < multiplex.size() &&
+			input >= 0 && input < 8)
+		{
+			const auto& multiplexInputs = multiplex[target].mMultiplexPerInputs[input];
+			if (std::find(multiplexInputs.begin(), multiplexInputs.end(), NodeIndex(multiplexInput)) != multiplexInputs.end())
+			{
+				model.BeginTransaction(false);
+				model.SetMultiplexed(target, input, multiplexInput);
+				model.EndTransaction();
+			}
+		}
 	});
 
 	m.def("GetSelectedMultiplex", [](int target, int input) {
+		const auto controler = Imogen::instance->GetNodeGraphControler();
+		const auto& model = controler->mModel;
+		const auto nodes = model.GetNodes();
+		if (target >= 0 && target < nodes.size() &&
+			input >= 0 && input < 8)
+		{
+			NodeIndex nodeIndex = nodes[target].mMultiplexInput.mInputs[input];
+			if (nodeIndex.IsValid())
+			{
+				return int(nodeIndex);
+			}
+		}
+		return -1;
 	});
 
 	m.def("Disconnect", [](int target, int input) {
@@ -211,8 +267,15 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
 		model.DelLink(target, input);
 		model.EndTransaction();
 	});
-
-
+	m.def("NewLibrary", [](const std::string& directory, const std::string& name, bool addDefaultMaterial) {
+		return Imogen::instance->NewLibrary(directory, name, addDefaultMaterial);
+	});
+	m.def("OpenLibrary", [](int libraryIndex, bool saveCurrent) {
+		Imogen::instance->OpenLibrary(libraryIndex, saveCurrent);
+	});
+	m.def("CloseCurrentLibrary", []() {
+		Imogen::instance->CloseLibrary();
+	});
     m.def("GetMetaNodes", []() {
         auto d = pybind11::list();
 
@@ -408,6 +471,15 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
         }
         return d;
     });
+	m.def("GetThumbnailImage", [](std::string& materialName) {
+		Image image;
+		Material* material = library.GetByName(materialName.c_str());
+		if (material)
+		{
+			Image::ReadMem(material->mThumbnail.data(), material->mThumbnail.size(), &image);
+		}
+		return image;
+	});
     m.def("RegisterPlugin", [](std::string& name, std::string command) {
         mRegisteredPlugins.push_back({name, command});
         Log("Plugin registered : %s \n", name.c_str());
@@ -443,7 +515,6 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("GetEvaluationImage", EvaluationAPI::GetEvaluationImage);
     m.def("SetEvaluationImage", EvaluationAPI::SetEvaluationImage);
     m.def("SetEvaluationImageCube", EvaluationAPI::SetEvaluationImageCube);
-    m.def("AllocateImage", EvaluationAPI::AllocateImage);
     m.def("FreeImage", Image::Free);
     m.def("SetThumbnailImage", EvaluationAPI::SetThumbnailImage);
     m.def("SetBlendingMode", EvaluationAPI::SetBlendingMode);
@@ -869,11 +940,6 @@ namespace EvaluationAPI
 
         Image::Upload(image, tgt->mTexture, cubeFace);
         evaluationContext->SetTargetDirty(target, Dirty::Parameter, true);
-        return EVAL_OK;
-    }
-
-    int AllocateImage(Image* image)
-    {
         return EVAL_OK;
     }
 

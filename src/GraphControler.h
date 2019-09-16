@@ -67,7 +67,7 @@ struct GraphControler : public GraphEditorDelegate
     const std::vector<Rug>& GetRugs()   const override  { return mRugs;  }
     const std::vector<Link>& GetLinks() const override  { return mLinks; }
 
-
+	void SetMaterialUniqueId(RuntimeId runtimeId);
 
     // UI
     void NodeEdit();

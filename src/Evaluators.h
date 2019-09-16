@@ -155,9 +155,7 @@ namespace EvaluationAPI
     int SetEvaluationImage(EvaluationContext* evaluationContext, NodeIndex target, const Image* image);
     int SetEvaluationImageCube(EvaluationContext* evaluationContext, NodeIndex target, const Image* image, int cubeFace);
     int SetThumbnailImage(EvaluationContext* evaluationContext, Image* image);
-    int AllocateImage(Image* image);
 
-    // static int Evaluate(int target, int width, int height, Image *image);
     void SetBlendingMode(EvaluationContext* evaluationContext, NodeIndex target, uint64_t blendSrc, uint64_t blendDst);
     void EnableDepthBuffer(EvaluationContext* evaluationContext, NodeIndex target, int enable);
     void EnableFrameClear(EvaluationContext* evaluationContext, NodeIndex target, int enable);
@@ -165,7 +163,6 @@ namespace EvaluationAPI
     int OverrideInput(EvaluationContext* evaluationContext, NodeIndex target, int inputIndex, int newInputTarget);
 	int IsBuilding(EvaluationContext* evaluationContext);
 
-    // int SetNodeImage(int target, Image *image);
     int GetEvaluationSize(const EvaluationContext* evaluationContext, NodeIndex target, int* imageWidth, int* imageHeight);
     int SetEvaluationSize(EvaluationContext* evaluationContext, NodeIndex target, int imageWidth, int imageHeight);
 	int SetEvaluationPersistent(EvaluationContext* evaluationContext, NodeIndex target, int persistent);

@@ -616,22 +616,28 @@ void GraphControler::ApplyDirtyList()
                 graphArrayChanged = true;
                 ExtractedViewNodeDeleted(nodeIndex);
                 UICallbackNodeDeleted(nodeIndex);
-                if (mSelectedNodeIndex == nodeIndex)
-                {
-                    mSelectedNodeIndex = InvalidNodeIndex;
-                }
-                else if (mSelectedNodeIndex > nodeIndex)
-                {
-                   mSelectedNodeIndex --;
-                }
-                if (mBackgroundNode == nodeIndex)
-                {
-                    mBackgroundNode = InvalidNodeIndex;
-                }
-                else if (mBackgroundNode > nodeIndex)
-                {
-                    mBackgroundNode --;
-                }
+				if (mSelectedNodeIndex.IsValid())
+				{
+					if (mSelectedNodeIndex == nodeIndex)
+					{
+						mSelectedNodeIndex = InvalidNodeIndex;
+					}
+					else if (mSelectedNodeIndex > nodeIndex)
+					{
+					   mSelectedNodeIndex --;
+					}
+				}
+				if (mBackgroundNode.IsValid())
+				{
+					if (mBackgroundNode == nodeIndex)
+					{
+						mBackgroundNode = InvalidNodeIndex;
+					}
+					else if (mBackgroundNode > nodeIndex)
+					{
+						mBackgroundNode --;
+					}
+				}
                 break;
             case Dirty::StartEndTime:
                 {

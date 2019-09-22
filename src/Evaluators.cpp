@@ -114,6 +114,9 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     m.def("AddNode", [](const std::string& nodeType) -> int { 
 		return Imogen::instance->AddNode(nodeType); 
 	});
+	m.def("DelNode", [](int nodeIndex){
+		Imogen::instance->DelNode(nodeIndex);
+	});
     m.def("SetParameter", [](int nodeIndex, const std::string& paramName, const std::string& value) {
 		auto& model = Imogen::instance->GetNodeGraphControler()->mModel;
         model.BeginTransaction(false);

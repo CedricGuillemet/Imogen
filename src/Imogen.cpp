@@ -706,11 +706,20 @@ int Imogen::AddNode(const std::string& nodeType)
     {
         return -1;
     }
-    mNodeGraphControler->mModel.BeginTransaction(false);
-    auto nodeIndex = mNodeGraphControler->mModel.AddNode(type, ImVec2(0, 0));
-    mNodeGraphControler->mModel.SetStartEndFrame(nodeIndex, 0, 1);
-    mNodeGraphControler->mModel.EndTransaction();
+	auto& model = mNodeGraphControler->mModel;
+	model.BeginTransaction(false);
+    auto nodeIndex = model.AddNode(type, ImVec2(0, 0));
+	model.SetStartEndFrame(nodeIndex, 0, 1);
+	model.EndTransaction();
     return int(nodeIndex);
+}
+
+void Imogen::DelNode(int nodeIndex)
+{
+	auto& model = mNodeGraphControler->mModel;
+	mNodeGraphControler->mModel.BeginTransaction(false);
+	model.DeleteNode(nodeIndex);
+	mNodeGraphControler->mModel.EndTransaction();
 }
 
 void Imogen::UpdateNewlySelectedGraph()
@@ -1542,6 +1551,7 @@ void Imogen::RunDeferedCommands()
     catch (pybind11::error_already_set& ex)
     {
         Log(ex.what());
+		exit(1);
     }
     if (mbQuitAfterRunCommand)
     {

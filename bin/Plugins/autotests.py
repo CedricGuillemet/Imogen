@@ -12,6 +12,13 @@ def setDefaultCubemap(node):
     Imogen.SetParameter(node, "ZPosFilename", "Autotests/Assets/Lycksele/posz.jpg")
     Imogen.SetParameter(node, "ZNegFilename", "Autotests/Assets/Lycksele/negz.jpg")
     
+def captureGraph(filename):
+    Imogen.AutoLayout()
+    Imogen.Render()
+    Imogen.Render()
+    Imogen.Render()
+    Imogen.CaptureScreen(filename, "Graph")    
+    
 def imageTests(outDir):
     metanodes = Imogen.GetMetaNodes()
     Imogen.OpenLibrary(Imogen.NewLibrary(outDir, "tempLibrary", False), False)
@@ -401,31 +408,22 @@ def imageTests(outDir):
     
     Imogen.Connect(ngon, 0, multiplexRight, 7) # todelete
     
-    Imogen.AutoLayout()
-    Imogen.Render()
-    Imogen.Render()
-    Imogen.Render()
-    Imogen.CaptureScreen(outDir+"MultiplexGraph_0.png", "Graph")
+    captureGraph(outDir+"MultiplexGraph_0.png")
     
     Imogen.Disconnect(multiplexRight, 7)
-    Imogen.AutoLayout()
-    Imogen.Render()
-    Imogen.Render()
-    Imogen.Render()
-    Imogen.CaptureScreen(outDir+"MultiplexGraph_1.png", "Graph")
+    captureGraph(outDir+"MultiplexGraph_1.png")
     
     # get what's connected
-    Imogen.Log("Get multiplex list\n")
-    Imogen.Log("List blend[0] = {}\n".format(str(Imogen.GetMultiplexList(blend, 0))))
-    Imogen.Log("List imageWrite[0] = {}\n".format(str(Imogen.GetMultiplexList(imageWrite, 0))))
-    Imogen.Log("List blend[1] = {}\n".format(str(Imogen.GetMultiplexList(blend, 1))))
-    Imogen.Log("List blend[2] = {}\n".format(str(Imogen.GetMultiplexList(blend, 2))))
-    Imogen.Log("List blend[200] = {}\n".format(str(Imogen.GetMultiplexList(blend, 200))))
-    Imogen.Log("Get selected multiplex list\n")
-    Imogen.Log("GetSelectedMultiplex blend[0] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 0))))
-    Imogen.Log("GetSelectedMultiplex blend[1] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 1))))
-    Imogen.Log("GetSelectedMultiplex blend[2] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 2))))
-    Imogen.Log("GetSelectedMultiplex blend[200] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 200))))
+    
+    assert Imogen.GetMultiplexList(blend, 0) == [], "List must be empty"
+    assert Imogen.GetMultiplexList(imageWrite, 0) == [], "List must be empty"
+    assert Imogen.GetMultiplexList(blend, 1) == [0, 1, 2, 3], "List is incorrect"
+    assert Imogen.GetMultiplexList(blend, 2) == [], "List must be empty"
+    assert Imogen.GetMultiplexList(blend, 200) == [], "List must be empty"
+    assert Imogen.GetSelectedMultiplex(blend, 0) == -1, "Wrong multiplex"
+    assert Imogen.GetSelectedMultiplex(blend, 1) == -1, "Wrong multiplex"
+    assert Imogen.GetSelectedMultiplex(blend, 2) == -1, "Wrong multiplex"
+    assert Imogen.GetSelectedMultiplex(blend, 200) == -1, "Wrong multiplex"
     
     Imogen.SelectMultiplexIndex(1000, 1000, 1000)
     Imogen.SelectMultiplexIndex(blend, 1000, -18)
@@ -435,16 +433,22 @@ def imageTests(outDir):
     Imogen.SelectMultiplexIndex(blend, 1, -1)
     Imogen.SelectMultiplexIndex(blend, 1, 18)
     Imogen.SelectMultiplexIndex(blend, 1, 1)
-    Imogen.Log("Current multiplex blend[1] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 1))))
+    assert Imogen.GetSelectedMultiplex(blend, 1) == 1, "Wrong multiplexed value"
     Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "format":0, "filename": outDir+"Multiplex_build0.jpg"})
     Imogen.Build()
     
     Imogen.SelectMultiplex(blend, 1, 300)
     Imogen.SelectMultiplex(blend, 1, 2)
-    Imogen.Log("Current multiplex blend[1] = {}\n".format(str(Imogen.GetSelectedMultiplex(blend, 1))))
+    assert Imogen.GetSelectedMultiplex(blend, 1) == 2, "Wrong multiplexed value"
     Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "format":0, "filename": outDir+"Multiplex_build1.jpg"})
     Imogen.Build()
    
+    Imogen.DelNode(2)
+    Imogen.SetParameters(imageWrite-1, {"width":1024, "height":1024, "mode":0, "format":0, "filename": outDir+"Multiplex_build2.jpg"})
+    Imogen.Build()
+    captureGraph(outDir+"MultiplexGraph_2.png")
+    
+    assert Imogen.GetSelectedMultiplex(blend, 1) == -1, "Wrong multiplexed value after node deletion"
     
     Imogen.CloseCurrentLibrary()
 

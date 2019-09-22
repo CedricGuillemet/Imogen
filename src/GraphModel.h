@@ -104,6 +104,7 @@ public:
     void MoveSelectedNodes(const ImVec2 delta);
     void SetNodePosition(NodeIndex nodeIndex, const ImVec2 position);
     void DeleteSelectedNodes();
+	void DeleteNode(NodeIndex nodeIndex);
     void AddLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex);
 	void DelLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex);
     void DelLink(size_t linkIndex);

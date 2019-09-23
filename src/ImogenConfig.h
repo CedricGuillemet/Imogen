@@ -35,7 +35,7 @@ struct NodeIndex
 	{
 		assert(nodeIndex >= 0);
 	}*/
-	NodeIndex(size_t nodeIndex) : mNodeIndex(uint16_t(nodeIndex)) 
+	NodeIndex(uint16_t nodeIndex) : mNodeIndex(uint16_t(nodeIndex)) 
 	{
 		assert(nodeIndex == InvalidNodeIndex || nodeIndex < InvalidNodeIndex);
 	}

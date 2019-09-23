@@ -1085,7 +1085,7 @@ namespace EvaluationAPI
 
     int GetEvaluationScene(EvaluationContext* evaluationContext, NodeIndex target, void** scene)
     {
-        if (target >= 0 && target < evaluationContext->mEvaluationStages.mStages.size())
+        if (target.IsValid() && target < evaluationContext->mEvaluationStages.mStages.size())
         {
             *scene = evaluationContext->mEvaluationStages.mStages[target].mGScene.get();
             return EVAL_OK;

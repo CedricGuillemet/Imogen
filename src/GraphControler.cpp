@@ -147,40 +147,6 @@ bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
             break;
         case Con_Ramp4:
             {
-			/*
-                float regionWidth = ImGui::GetWindowContentRegionWidth();
-                GradientEdit gradientDelegate;
-
-                gradientDelegate.mPointCount = 0;
-
-                for (int k = 0; k < 8; k++)
-                {
-                    gradientDelegate.mPts[k] = ((ImVec4*)paramBuffer)[k];
-                    if (k && gradientDelegate.mPts[k - 1].w > gradientDelegate.mPts[k].w)
-                        break;
-                    gradientDelegate.mPointCount++;
-                }
-
-                int colorIndex;
-                dirty |= ImGradient::Edit(gradientDelegate, ImVec2(regionWidth, 22), colorIndex);
-                if (colorIndex != -1)
-                {
-                    dirty |= ImGui::ColorPicker3("", &gradientDelegate.mPts[colorIndex].x);
-                }
-                if (dirty)
-                {
-                    for (size_t k = 0; k < gradientDelegate.mPointCount; k++)
-                    {
-                        ((ImVec4*)paramBuffer)[k] = gradientDelegate.mPts[k];
-                    }
-                    ((ImVec4*)paramBuffer)[0].w = 0.f;
-                    ((ImVec4*)paramBuffer)[gradientDelegate.mPointCount - 1].w = 1.f;
-                    for (size_t k = gradientDelegate.mPointCount; k < 8; k++)
-                    {
-                        ((ImVec4*)paramBuffer)[k].w = -1.f;
-                    }
-                }
-				*/
 				static NodeIndex previousNodeIndex;
 				static unsigned int previousParameterIndex{ 0xFFFFFFFF };
 			

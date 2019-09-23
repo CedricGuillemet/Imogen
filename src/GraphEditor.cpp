@@ -896,7 +896,7 @@ void ComputeDelegateSelection(GraphEditorDelegate* delegate)
     {
         if (node.mbSelected)
         {
-            if (delegate->mSelectedNodeIndex.IsValid())
+            if (!delegate->mSelectedNodeIndex.IsValid())
             {
                 delegate->mSelectedNodeIndex = int(&node - nodes.data());
             }

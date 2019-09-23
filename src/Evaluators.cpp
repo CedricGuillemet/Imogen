@@ -957,7 +957,7 @@ namespace EvaluationAPI
         if (material)
         {
             material->mThumbnail = pngImage;
-            material->mThumbnailTextureHandle = {0};
+            material->mThumbnailTextureHandle = {bgfx::kInvalidHandle};
         }
         return EVAL_OK;
     }

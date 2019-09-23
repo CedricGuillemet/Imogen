@@ -23,7 +23,6 @@ def imageTests(outDir):
     metanodes = Imogen.GetMetaNodes()
     Imogen.OpenLibrary(Imogen.NewLibrary(outDir, "tempLibrary", False), False)
     
-    '''
     ###################################################
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
@@ -381,7 +380,7 @@ def imageTests(outDir):
     thumbnailImage = Imogen.GetThumbnailImage("ThumbnailTest")
     Imogen.WriteImage(outDir+"Thumbnail_1.png", thumbnailImage, 1, 0);
     Imogen.DeleteGraph()
-    '''
+    
     # multiplex !!
     Imogen.NewGraph("Multiplex")
     circle = Imogen.AddNode("Circle")

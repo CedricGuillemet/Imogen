@@ -104,6 +104,6 @@ protected:
     void EditNodeParameters();
     void HandlePin(NodeIndex nodeIndex, size_t parameterIndex);
     void HandlePinIO(NodeIndex nodeIndex, SlotIndex slotIndex, bool forOutput);
-    int ShowMultiplexed(const std::vector<NodeIndex>& inputs, int currentMultiplexedOveride);
+    int ShowMultiplexed(const std::vector<NodeIndex>& inputs, NodeIndex currentMultiplexedOveride) const;
     void ComputeGraphArrays();
 };

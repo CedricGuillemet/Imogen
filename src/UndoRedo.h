@@ -217,6 +217,55 @@ struct URChange : public UndoRedo
 };
 
 
+template<typename T>
+struct URChangeValue : public UndoRedo
+{
+	URChangeValue(T& value,
+		std::function<void()> Changed = []() {})
+		: mValue(value), Changed(Changed)
+	{
+		if (gUndoRedoHandler.mbProcessing)
+			return;
+
+		mPreDo = mValue;
+	}
+
+	virtual ~URChangeValue()
+	{
+		if (gUndoRedoHandler.mbProcessing)
+			return;
+
+		mPostDo = mValue;
+		gUndoRedoHandler.AddUndo(*this);
+	}
+
+	void Undo() override
+	{
+		mValue = mPreDo;
+		Changed();
+		UndoRedo::Undo();
+	}
+
+	void Redo() override
+	{
+		UndoRedo::Redo();
+		mValue = mPostDo;
+		Changed();
+	}
+
+	size_t GetMemSize() const override
+	{
+		return sizeof(URChangeValue<T>);
+	}
+
+	T mPreDo;
+	T mPostDo;
+	T& mValue;
+
+	std::function<void()> Changed;
+};
+
+
 struct URDummy : public UndoRedo
 {
     URDummy() : UndoRedo()

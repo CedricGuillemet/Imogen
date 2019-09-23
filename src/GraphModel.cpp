@@ -764,6 +764,10 @@ void GraphModel::RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
 
 void GraphModel::NodeGraphLayout(const std::vector<size_t>& orderList)
 {
+	if (mNodes.empty())
+	{
+		return;
+	}
     // get stack/layer pos
     std::vector<NodePosition> nodePositions(mNodes.size(), { -1, -1, -1 });
     std::map<int, int> stacks;
@@ -990,6 +994,10 @@ const std::vector<MultiplexInput> GraphModel::GetMultiplexInputs() const
 void GraphModel::SetStartEndFrame(int startFrame, int endFrame)
 {
     assert(mbTransaction);
+
+	auto urStart = mUndoRedo ? std::make_unique<URChangeValue<int>>(mStartFrame): nullptr;
+	auto urEnd = mUndoRedo ? std::make_unique<URChangeValue<int>>(mEndFrame) : nullptr;
+
     mStartFrame = startFrame; 
     mEndFrame = endFrame; 
 }
@@ -997,6 +1005,10 @@ void GraphModel::SetStartEndFrame(int startFrame, int endFrame)
 void GraphModel::SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame)
 {
     assert(mbTransaction);
+	auto ur = mUndoRedo
+		? std::make_unique<URChange<Node>>(int(nodeIndex), [this](int index) { return &mNodes[index]; }, [this](int index) {SetDirty(index, Dirty::StartEndTime); })
+		: nullptr;
+
     Node& node = mNodes[nodeIndex];
     node.mStartFrame = startFrame;
     node.mEndFrame = endFrame;

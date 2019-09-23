@@ -25,7 +25,6 @@
 #pragma once
 
 #include "ImCurveEdit.h"
-#include "ImGradient.h"
 #include "imgui_markdown/imgui_markdown.h"
 #include <algorithm>
 #include "ImogenConfig.h"
@@ -127,54 +126,6 @@ private:
         std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
     }
     ImVec2 mMin, mMax;
-};
-
-struct GradientEdit : public ImGradient::Delegate
-{
-    GradientEdit()
-    {
-        mPointCount = 0;
-    }
-
-    size_t GetPointCount()
-    {
-        return mPointCount;
-    }
-
-    ImVec4* GetPoints()
-    {
-        return mPts;
-    }
-
-    virtual int EditPoint(int pointIndex, ImVec4 value)
-    {
-        mPts[pointIndex] = value;
-        SortValues();
-        for (size_t i = 0; i < GetPointCount(); i++)
-        {
-            if (mPts[i].w == value.w)
-                return int(i);
-        }
-        return pointIndex;
-    }
-    virtual void AddPoint(ImVec4 value)
-    {
-        if (mPointCount >= 8)
-            return;
-        mPts[mPointCount++] = value;
-        SortValues();
-    }
-    virtual ImVec4 GetPoint(float t);
-    ImVec4 mPts[8];
-    size_t mPointCount;
-
-private:
-    void SortValues()
-    {
-        auto b = std::begin(mPts);
-        auto e = std::begin(mPts) + GetPointCount();
-        std::sort(b, e, [](ImVec4 a, ImVec4 b) { return a.w < b.w; });
-    }
 };
 
 // draw callbacks

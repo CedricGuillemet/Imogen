@@ -32,6 +32,7 @@
 #include "UI.h"
 #include "Utils.h"
 #include "JSGlue.h"
+#include "imgui_color_gradient.h"
 
 void AddExtractedView(size_t nodeIndex);
 
@@ -146,6 +147,7 @@ bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
             break;
         case Con_Ramp4:
             {
+			/*
                 float regionWidth = ImGui::GetWindowContentRegionWidth();
                 GradientEdit gradientDelegate;
 
@@ -178,6 +180,52 @@ bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
                         ((ImVec4*)paramBuffer)[k].w = -1.f;
                     }
                 }
+				*/
+				static NodeIndex previousNodeIndex;
+				static unsigned int previousParameterIndex{ 0xFFFFFFFF };
+			
+				static ImGradient gradient;
+				static ImGradientMark* draggingMark = nullptr;
+				static ImGradientMark* selectedMark = nullptr;
+
+				bool sameParameter = previousNodeIndex == nodeIndex && previousParameterIndex == parameterIndex;
+				if (!sameParameter)
+				{
+					draggingMark = nullptr;
+					selectedMark = nullptr;
+
+					float previousPt = 0.f;
+					for (int k = 0; k < 8; k++)
+					{
+						ImVec4 pt = ((ImVec4*)paramBuffer)[k];
+						if (k && previousPt > pt.w)
+						{
+							break;
+						}
+						previousPt = pt.w;
+						gradient.addMark(pt.w, ImColor(pt.x, pt.y, pt.z));
+					}
+				}
+
+				dirty |= ImGui::GradientEditor(&gradient, draggingMark, selectedMark);
+				if (dirty)
+				{
+					int k = 0;
+					ImVec4* ptrc = (ImVec4*)paramBuffer;
+					for (auto* colors : gradient.getMarks())
+					{
+						*ptrc++ = ImVec4(colors->color[0], colors->color[1], colors->color[2], colors->position);
+						k++;
+						if (k == 7)
+						{
+							break;
+						}
+					}
+					ptrc->w = -1.f;
+				}
+
+				previousNodeIndex = nodeIndex;
+				previousParameterIndex = parameterIndex;
             }
         break;
         case Con_Angle:
@@ -303,7 +351,7 @@ bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
     return dirty;
 }
 
-int GraphControler::ShowMultiplexed(const std::vector<NodeIndex>& inputs, int currentMultiplexedOveride)
+int GraphControler::ShowMultiplexed(const std::vector<NodeIndex>& inputs, NodeIndex currentMultiplexedOveride) const
 {
     int ret = -1;
     float displayWidth = ImGui::GetContentRegionAvail().x;
@@ -463,7 +511,7 @@ void GraphControler::EditNodeParameters()
         const std::vector<NodeIndex>& inputs = mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[slotIndex];
         //if (mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, slotIndex, inputs))
         {
-            int currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
+            NodeIndex currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
 
             int selectedMultiplexIndex = ShowMultiplexed(inputs, currentMultiplexedOveride);
             if (selectedMultiplexIndex != -1 && inputs[selectedMultiplexIndex] != currentMultiplexedOveride)
@@ -538,7 +586,14 @@ void GraphControler::NodeEdit()
             if (ImGui::ImageButton(
                     (ImTextureID)(uint64_t)maxiMini.idx, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
             {
-                mBackgroundNode = selectedNodeAsBackground ? -1 : mSelectedNodeIndex;
+				if (selectedNodeAsBackground)
+				{
+					mBackgroundNode = mSelectedNodeIndex;
+				}
+				else
+				{
+					mBackgroundNode.SetInvalid();
+				}
             }
             ImGui::EndGroup();
             ImGui::SameLine();

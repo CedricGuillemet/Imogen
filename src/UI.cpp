@@ -35,7 +35,7 @@ static inline ImVec4 operator*(const ImVec4& lhs, const float t)
 {
     return ImVec4(lhs.x * t, lhs.y * t, lhs.z * t, lhs.w * t);
 }
-
+/*
 ImVec4 GradientEdit::GetPoint(float t)
 {
     if (GetPointCount() == 0)
@@ -53,7 +53,7 @@ ImVec4 GradientEdit::GetPoint(float t)
     }
     return mPts[GetPointCount() - 1];
 }
-
+*/
 void ImguiAppLog::AddLog(const char* fmt, ...)
 {
     int old_size = Buf.size();

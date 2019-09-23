@@ -150,7 +150,7 @@ public:
     ImRect GetNodesDisplayRect() const;
     ImRect GetFinalNodeDisplayRect(const std::vector<size_t>& orderList) const;
     bool RecurseIsLinked(int from, int to) const;
-    int GetMultiplexed(NodeIndex nodeIndex, size_t slotIndex) const { return mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex]; }
+    NodeIndex GetMultiplexed(NodeIndex nodeIndex, size_t slotIndex) const { return mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex]; }
     bool GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, SlotIndex slotIndex, std::vector<NodeIndex>& list) const;
     AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
     void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }

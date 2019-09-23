@@ -265,7 +265,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
                     *viewMatrix = res;
                 }
                 
-                ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(uva.x, uvb.y), ImVec2(uvb.x, uva.y));
+                ImGui::ImageButton(displayedTexture, ImVec2(w, h), ImVec2(uva.x, uva.y), ImVec2(uvb.x, uvb.y));
             }
             rc = ImRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
 
@@ -389,7 +389,9 @@ struct PinnedTaskUploadImage : PinnedTask
         {
             Material* material = library.Get(mIdentifier);
             if (material)
+			{
                 material->mThumbnailTextureHandle = textureHandle;
+			}
         }
         else
         {
@@ -518,7 +520,7 @@ struct DecodeImageTaskSet : TaskSet
 void Imogen::DecodeThumbnailAsync(Material* material)
 {
     static bgfx::TextureHandle defaultTextureHandle = gImageCache.GetTexture("Stock/thumbnail-icon.png");
-    if (!material->mThumbnailTextureHandle.idx)
+    if (material->mThumbnailTextureHandle.idx == bgfx::kInvalidHandle)
     {
         material->mThumbnailTextureHandle = defaultTextureHandle;
         g_TS.AddTaskSetToPipe(
@@ -788,6 +790,7 @@ void Imogen::UpdateNewlySelectedGraph()
 
         //mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode); TODO
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
+		mNodeGraphControler->mEvaluationStages.SetMaterialUniqueId(material.mRuntimeUniqueId);
 
         //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
         //mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
@@ -800,7 +803,7 @@ Material& Imogen::NewMaterial(const std::string& materialName)
     library.mMaterials.push_back(Material());
     Material& back = library.mMaterials.back();
     back.mName = materialName;
-    back.mThumbnailTextureHandle = {0};
+    back.mThumbnailTextureHandle = {bgfx::kInvalidHandle};
 	back.mBackgroundNode = -1;
 
     if (previousSelection != -1)
@@ -1713,7 +1716,7 @@ int Imogen::NewLibrary(const std::string& directory, const std::string& name, bo
 {
 	int ret;
 #ifdef __EMSCRIPTEN__
-	ret = int(mRecentLibraries.AddRecent("/offline/", tempName));
+	ret = int(mRecentLibraries.AddRecent("/offline/", name));
 #else
 	ret = int(mRecentLibraries.AddRecent(directory, name));
 #endif
@@ -2110,7 +2113,7 @@ void Imogen::PlayPause()
 
 void Imogen::ShowTimeLine()
 {
-    int selectedEntry = mNodeGraphControler->mSelectedNodeIndex;
+    NodeIndex selectedEntry = mNodeGraphControler->mSelectedNodeIndex;
     static int firstFrame = 0;
 
     mSequence->SetCurrentTime(mCurrentTime);
@@ -2181,9 +2184,9 @@ void Imogen::ShowTimeLine()
     ImGui::PopID();
     ImGui::SameLine();
     ImGui::SameLine(0, 40.f);
-    if (Button("AnimationSetKey", "Make Key", ImVec2(0, 0)) && selectedEntry != -1)
+    if (Button("AnimationSetKey", "Make Key", ImVec2(0, 0)) && selectedEntry.IsValid())
     {
-        mNodeGraphControler->mModel.MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
+		model.MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
     }
 
     ImGui::SameLine(0, 50.f);
@@ -2203,39 +2206,65 @@ void Imogen::ShowTimeLine()
     ImGui::PopID();
     ImGui::SameLine();
     int timeMask[2] = {0, 0};
-    if (selectedEntry != -1)
+    if (selectedEntry.IsValid())
     {
-        mNodeGraphControler->mModel.GetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
+		model.GetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
     }
     ImGui::PushItemWidth(120);
-    if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry != -1)
+    if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry.IsValid())
     {
         timeMask[1] = ImMax(timeMask[1], timeMask[0]);
         timeMask[0] = ImMin(timeMask[1], timeMask[0]);
-        mNodeGraphControler->mModel.SetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
+		model.BeginTransaction(true);
+		model.SetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
+		model.EndTransaction();
     }
     ImGui::PopItemWidth();
     ImGui::PopItemWidth();
 
+	int tempSelectedEntry = selectedEntry.IsValid() ? selectedEntry.operator int() : -1;
     Sequencer(mSequence,
               &mCurrentTime,
               NULL,
-              &selectedEntry,
+              &tempSelectedEntry,
               &firstFrame,
               ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
-    if (selectedEntry != -1)
+
+	if (tempSelectedEntry != -1)
+	{
+		selectedEntry = tempSelectedEntry;
+	}
+	else
+	{
+		selectedEntry.SetInvalid();
+	}
+
+    if (selectedEntry.IsValid() && !(selectedEntry == mNodeGraphControler->mSelectedNodeIndex))
     {
         auto& model = mNodeGraphControler->mModel;
         mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
-        model.SelectNode(selectedEntry, true);
-        int times[2];
-        model.GetStartEndFrame(selectedEntry, times[0], times[1]);
-        /*mNodeGraphControler->mModel.mEvaluationStages.SetStageLocalTime( todo
-            &mNodeGraphControler->mEditingContext,
-            selectedEntry,
-            ImClamp(mCurrentTime - times[0], 0, times[1] - times[0]),
-            true);*/
+
+		if (mNodeGraphControler->mSelectedNodeIndex.IsValid())
+		{
+			model.SelectNode(mNodeGraphControler->mSelectedNodeIndex, false);
+		}
+
+		if (selectedEntry.IsValid())
+		{
+			model.SelectNode(selectedEntry, true);
+			int times[2];
+			model.GetStartEndFrame(selectedEntry, times[0], times[1]);
+			/*mNodeGraphControler->mModel.mEvaluationStages.SetStageLocalTime( todo
+				&mNodeGraphControler->mEditingContext,
+				selectedEntry,
+				ImClamp(mCurrentTime - times[0], 0, times[1] - times[0]),
+				true);*/
+		}
     }
+	else
+	{
+		mNodeGraphControler->mSelectedNodeIndex.SetInvalid();
+	}
 }
 
 void Imogen::DeleteCurrentMaterial()

@@ -137,11 +137,11 @@ ImRect EvaluationThumbnails::ComputeUVFromIndexInAtlas(size_t thumbIndex) const
 	const float suv = 1.f / float(thumbnailsPerSide);
 	if (bgfx::getCaps()->originBottomLeft)
 	{
-		return ImRect(ImVec2(u, 1.f - v), ImVec2(u + suv, 1.f - (v + suv)));
+		return ImRect(ImVec2(u, 1.f - (v + suv)), ImVec2(u + suv, 1.f - v));
 	}
 	else
 	{
-		return ImRect(ImVec2(u, (v + suv)), ImVec2(u + suv, v));
+		return ImRect(ImVec2(u, v), ImVec2(u + suv, (v + suv)));
 	}
 }
 
@@ -337,7 +337,7 @@ void EvaluationContext::Clear()
 	mAvailableRenderTargets.clear();
 	for (auto& proxy : mProxies)
 	{
-		Log("Destroyed proxy FB %d\n", proxy.second.idx);
+		//Log("Destroyed proxy FB %d\n", proxy.second.idx);
 		bgfx::destroy(proxy.second);
 	}
 	mProxies.clear();
@@ -512,7 +512,7 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 	if (!depthBuffer)
 	{
 		currentFramebuffer = bgfx::createFrameBuffer(width, height, GetRTTextureFormat());
-		Log("New proxy FB %d - %d %d\n", currentFramebuffer.idx, width, height);
+		//Log("New proxy FB %d - %d %d\n", currentFramebuffer.idx, width, height);
 	}
 	else
 	{
@@ -520,7 +520,7 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 		fbTextures[0] = bgfx::createTexture2D(width, height, false, 1, GetRTTextureFormat(), BGFX_TEXTURE_RT_WRITE_ONLY);
 		fbTextures[1] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
 		currentFramebuffer = bgfx::createFrameBuffer(2, fbTextures, true);
-		Log("New proxy FB %d - %d %d depth\n", currentFramebuffer.idx, width, height);
+		//Log("New proxy FB %d - %d %d depth\n", currentFramebuffer.idx, width, height);
 	}
 	assert(currentFramebuffer.idx != bgfx::kInvalidHandle);
 	mProxies[key] = currentFramebuffer;

@@ -23,7 +23,7 @@
 // SOFTWARE.
 //
 
-#include "Platform.h"
+#include "Imogen.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "imgui_impl_sdl.h"
@@ -34,8 +34,8 @@
 #include "GraphEditor.h"
 #include "GraphControler.h"
 #include "EvaluationStages.h"
-#include "Imogen.h"
 #include "Evaluators.h"
+#include "Platform.h"
 #include "Loader.h"
 #include "UI.h"
 #include "imMouseState.h"

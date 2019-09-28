@@ -54,7 +54,7 @@ struct Scene
             ~Primitive();
             std::vector<bgfx::VertexBufferHandle> mStreams;
             bgfx::IndexBufferHandle mIbh = {bgfx::kInvalidHandle};
-            bgfx::VertexDecl mDecl;
+            bgfx::VertexLayout mDecl;
 
             uint32_t mVertexCount;
             uint32_t mIndexCount;

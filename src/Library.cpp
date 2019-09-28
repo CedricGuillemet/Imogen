@@ -22,16 +22,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-
+#include "rapidjson/document.h"
+#include "rapidjson/rapidjson.h"
+#include "rapidjson/writer.h"
 #include "Platform.h"
+
 #include <algorithm>
 #include <iostream>
 #include <fstream>
 #include "Library.h"
 #include "imgui.h"
-#include "rapidjson/rapidjson.h"
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
 #include <string.h>
 #include "JSGlue.h"
 

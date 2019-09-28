@@ -23,7 +23,6 @@
 // SOFTWARE.
 //
 #pragma once
-
 #include <stdio.h>
 #include <vector>
 #include <stdint.h>

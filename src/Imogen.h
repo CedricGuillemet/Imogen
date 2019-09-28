@@ -28,9 +28,9 @@
 #include <string>
 #include <memory>
 #include <functional>
+#include "Library.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "Library.h"
 #include "ImogenConfig.h"
 
 struct GraphControler;

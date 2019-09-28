@@ -1031,10 +1031,10 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
     }
     else
     {
-		bgfx::TextureHandle textureHandle;
+		bgfx::TextureHandle textureHandle{bgfx::kInvalidHandle};
         ImRect uvs;
         mEditingContext.GetThumb(nodeIndex, textureHandle, uvs);
-        if (textureHandle.idx)
+        if (textureHandle.idx != bgfx::kInvalidHandle)
         {
             drawList->AddRectFilled(rc.Min, rc.Max, 0xFF000000);
             drawList->AddImage((ImTextureID)(int64_t)textureHandle.idx,

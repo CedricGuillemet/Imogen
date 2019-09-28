@@ -59,6 +59,7 @@ struct NodeIndex
 	}
 
 	bool operator == (const NodeIndex& other) const { return mNodeIndex == other.mNodeIndex; }
+	bool operator != (const NodeIndex& other) const { return mNodeIndex != other.mNodeIndex; }
 
 	NodeIndex& operator -- ()
 	{
@@ -87,8 +88,8 @@ struct NodeIndex
 private:
 	uint16_t mNodeIndex;
 
-	bool operator != (int value) { return true; }
-	//bool operator == (int value) { return false; }
+	bool operator != (int value) const { return true; }
+	bool operator == (int value) const { return false; }
 };
 
 struct SlotIndex

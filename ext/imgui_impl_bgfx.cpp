@@ -30,7 +30,7 @@
 #include <bx/math.h>
 #include "imgui_impl_bgfx.h"
 
-inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::VertexLayout& _decl, uint32_t _numIndices)
+inline bool checkAvailTransientBuffers(uint32_t _numVertices, const bgfx::VertexDecl& _decl, uint32_t _numIndices)
 {
     return _numVertices == bgfx::getAvailTransientVertexBuffer(_numVertices, _decl)
         && (0 == _numIndices || _numIndices == bgfx::getAvailTransientIndexBuffer(_numIndices))
@@ -891,7 +891,7 @@ static const bgfx::EmbeddedShader s_embeddedShaders[] =
     BGFX_EMBEDDED_SHADER_END()
 };
 
-bgfx::VertexLayout  m_decl;
+bgfx::VertexDecl  m_decl;
 bgfx::ProgramHandle m_program;
 bgfx::ProgramHandle m_imageProgram;
 bgfx::TextureHandle m_texture;

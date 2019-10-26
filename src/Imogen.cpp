@@ -2351,7 +2351,7 @@ void Imogen::ShowDebugWindow()
 		ImGui::Text("%d textures", stats->numTextures);
 		ImGui::Text("%d uniforms", stats->numUniforms);
 		ImGui::Text("%d vertex buffers", stats->numVertexBuffers);
-		ImGui::Text("%d vertex layouts", stats->numVertexLayouts);
+		ImGui::Text("%d vertex layouts", stats->numVertexDecls);
 		ImGui::Text("%d Mb texture memory used", int(stats->textureMemoryUsed / (1 << 20)));
 		ImGui::Text("%d Mb target memory used", int(stats->rtMemoryUsed / (1 << 20)));
 		ImGui::Text("%d Mb available GPU memory", int(stats->gpuMemoryMax / (1 << 20)));

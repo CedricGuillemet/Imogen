@@ -125,7 +125,8 @@ namespace ImageInspect
                         const int height,
                         const unsigned char* const bits,
                         ImVec2 mouseUVCoord,
-                        ImVec2 displayedTextureSize)
+                        ImVec2 displayedTextureSize,
+						bool invertY)
     {
         ImGui::BeginTooltip();
         ImGui::BeginGroup();
@@ -145,7 +146,7 @@ namespace ImageInspect
         {
             for (int x = -zoomSize; x <= zoomSize; x++)
             {
-                uint32_t texel = ((uint32_t*)bits)[(basey - y) * width + x + basex];
+                uint32_t texel = invertY ? ((uint32_t*)bits)[(height - 1 - basey + y) * width + x + basex] : ((uint32_t*)bits)[(basey - y) * width + x + basex];
                 ImVec2 pos = pickRc.Min + ImVec2(float(x + zoomSize), float(y + zoomSize)) * quadSize;
                 draw_list->AddRectFilled(pos, pos + quadSize, texel);
             }
@@ -163,7 +164,7 @@ namespace ImageInspect
         {
             for (int x = -zoomSize; x <= zoomSize; x++)
             {
-                uint32_t texel = ((uint32_t*)bits)[(basey - y) * width + x + basex];
+				uint32_t texel = invertY ? ((uint32_t*)bits)[(height - 1 - basey + y) * width + x + basex] : ((uint32_t*)bits)[(basey - y) * width + x + basex];
                 const ImVec2 posQuad = normRc.Min + ImVec2(float(x + zoomSize), float(y + zoomSize)) * quadSize;
                 //draw_list->AddRectFilled(pos, pos + quadSize, texel);
                 const float nx = float(texel & 0xFF) / 128.f - 1.f;
@@ -173,12 +174,10 @@ namespace ImageInspect
             }
         }
 
-
-
         ImGui::EndGroup();
         ImGui::SameLine();
         ImGui::BeginGroup();
-        uint32_t texel = ((uint32_t*)bits)[(basey - zoomSize * 2 - 1) * width + basex];
+		uint32_t texel = invertY ? ((uint32_t*)bits)[(height - 1 - basey) * width + basex] : ((uint32_t*)bits)[basey * width + basex];
         ImVec4 color = ImColor(texel);
         ImVec4 colHSV;
         ImGui::ColorConvertRGBtoHSV(color.x, color.y, color.z, colHSV.x, colHSV.y, colHSV.z);

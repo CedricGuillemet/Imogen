@@ -33,8 +33,8 @@ DECLARE_NODE(Paint2D)
     Paint2DBlock* param = (Paint2DBlock*)parameters;
     const int target = int(evaluation->targetIndex);
 	SetEvaluationPersistent(context, target, 1);
-
+	EnableFrameClear(context, target, 0);
     SetEvaluationSize(context, target, 256<< param->size, 256<< param->size);
-    SetBlendingMode(context, target, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA);
+    SetBlendingMode(context, target, BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
     return EVAL_OK;
 }

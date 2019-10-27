@@ -297,7 +297,7 @@ void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) co
     if (mInputNodeIndex == evaluationInfo.targetIndex)
     {
         evaluationInfo.mouse[0] = mUIInputs.mRx;
-        evaluationInfo.mouse[1] = 1.f - mUIInputs.mRy;
+        evaluationInfo.mouse[1] = mUIInputs.mRy;
         evaluationInfo.mouse[2] = mUIInputs.mLButDown ? 1.f : 0.f;
         evaluationInfo.mouse[3] = mUIInputs.mRButDown ? 1.f : 0.f;
 
@@ -595,10 +595,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 				evaluationInfo.vertexSpace = (float)evaluation.mVertexSpace;
                 BindTextures(evaluationInfo, evaluationStage, nodeIndex, passNumber ? tgt : nullptr);
 
-                if (evaluation.mbClearBuffer)
-                {
-                    bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x000000ff, 1.0f, 0);
-                }
+                bgfx::setViewClear(viewId, evaluation.mbClearBuffer ? (BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH) : 0, 0x000000ff, 1.0f, 0);
 
                 SetUniforms(nodeIndex);
 

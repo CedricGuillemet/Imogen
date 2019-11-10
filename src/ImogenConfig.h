@@ -40,8 +40,6 @@ struct NodeIndex
 		assert(nodeIndex == InvalidNodeIndex || nodeIndex < InvalidNodeIndex);
 	}
 
-	
-	
 	bool IsValid() const
 	{
 		return mNodeIndex != InvalidNodeIndex;

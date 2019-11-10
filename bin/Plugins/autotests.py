@@ -22,7 +22,7 @@ def captureGraph(filename):
 def imageTests(outDir):
     metanodes = Imogen.GetMetaNodes()
     Imogen.OpenLibrary(Imogen.NewLibrary(outDir, "tempLibrary", False), False)
-    
+    '''
     ###################################################
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
@@ -380,7 +380,7 @@ def imageTests(outDir):
     thumbnailImage = Imogen.GetThumbnailImage("ThumbnailTest")
     Imogen.WriteImage(outDir+"Thumbnail_1.png", thumbnailImage, 1, 0);
     Imogen.DeleteGraph()
-    
+    '''
     # multiplex !!
     Imogen.NewGraph("Multiplex")
     circle = Imogen.AddNode("Circle")
@@ -432,6 +432,8 @@ def imageTests(outDir):
     Imogen.SelectMultiplexIndex(blend, 1, -1)
     Imogen.SelectMultiplexIndex(blend, 1, 18)
     Imogen.SelectMultiplexIndex(blend, 1, 1)
+    assert Imogen.GetMultiplexList(blend, 1) == [0, 1, 2, 3]
+    
     assert Imogen.GetSelectedMultiplex(blend, 1) == 1, "Wrong multiplexed value"
     Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "mode":0, "format":0, "filename": outDir+"Multiplex_build0.jpg"})
     Imogen.Build()

@@ -683,19 +683,47 @@ void GraphControler::ApplyDirtyList()
         mEvaluationStages.ComputeEvaluationOrder();
     }
 
-	// second pass for multiplex
+	// second pass for multiplex : get nodes and children
+    std::set<NodeIndex> multiplexDrityList;
 	for (const auto& dirtyItem : dirtyList)
 	{
 		NodeIndex nodeIndex = dirtyItem.mNodeIndex;
 		switch (dirtyItem.mFlags)
 		{
 		case Dirty::Input:
-			mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, dirtyItem.mSlotIndex, mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[dirtyItem.mSlotIndex]);
+            {
+                auto evaluationOrderList = mEvaluationStages.GetForwardEvaluationOrder();
+                multiplexDrityList.insert(nodeIndex);
+                for (size_t i = 0; i < evaluationOrderList.size(); i++)
+                {
+                    size_t currentNodeIndex = evaluationOrderList[i];
+                    if (currentNodeIndex != nodeIndex)
+                    {
+                        continue;
+                    }
+                    for (i++; i < evaluationOrderList.size(); i++)
+                    {
+                        currentNodeIndex = evaluationOrderList[i];
+                        multiplexDrityList.insert(currentNodeIndex);
+                    }
+                }
+            }
 			break;
 		default:
 			break;
 		}
 	}
+
+    // update multiplex list for all subsequent nodes
+    for (auto nodeIndex : multiplexDrityList)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            auto& multiplexList = mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[i];
+            multiplexList.clear();
+            mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, i, multiplexList);
+        }
+    }
 
     if (graphArrayChanged)
     {

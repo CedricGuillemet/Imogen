@@ -156,6 +156,7 @@ public:
     void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }
     void GetStartEndFrame(NodeIndex nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
     void GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<Input>& directInputs) const;
+    NodeIndex GetNodeIndex(RuntimeId runtimeUniqueId) const;
 
     // dirty
     const std::vector<DirtyList>& GetDirtyList() const { return mDirtyList; }

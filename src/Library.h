@@ -606,6 +606,7 @@ struct MetaNode
     bool mbHasUI;
     bool mbSaveTexture;
     bool mbExperimental;
+    bool mbThumbnail;
     bool operator==(const MetaNode& other) const
     {
         if (mName != other.mName)

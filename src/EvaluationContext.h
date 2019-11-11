@@ -110,6 +110,7 @@ struct EvaluationContext
         assert(mUseThumbnail);
         mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); 
     }
+    void GenerateThumbnail(NodeIndex nodeIndex);
 
 	bgfx::TextureHandle GetEvaluationTexture(NodeIndex nodeIndex) const;
 
@@ -230,7 +231,7 @@ protected:
     void RunNode(NodeIndex nodeIndex);
 
 
-    void GenerateThumbnail(NodeIndex nodeIndex);
+    
 
     //void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
 

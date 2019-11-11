@@ -424,7 +424,7 @@ int main_Async(int argc, char** argv)
     {
         MainLoop(&loopdata);
     }
-    imogen.ValidateCurrentMaterial(library);
+    imogen.CommitCurrentGraph(library);
     g_TS.WaitforAllAndShutdown();
 
     // save lib after all TS thread done in case a job adds something to the library (ie, thumbnail, paint 2D/3D)

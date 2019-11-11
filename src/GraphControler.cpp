@@ -578,7 +578,7 @@ void GraphControler::ApplyDirtyList()
     bool evaluationOrderChanged = false;
     bool graphArrayChanged = false;
 
-	std::vector<int> deletionInEvaluation;
+	std::vector<NodeIndex> deletionInEvaluation;
 
     for (const auto& dirtyItem : dirtyList)
     {
@@ -717,11 +717,14 @@ void GraphControler::ApplyDirtyList()
     // update multiplex list for all subsequent nodes
     for (auto nodeIndex : multiplexDrityList)
     {
-        for (int i = 0; i < 8; i++)
+        if (std::find(deletionInEvaluation.begin(), deletionInEvaluation.end(), nodeIndex) == deletionInEvaluation.end())
         {
-            auto& multiplexList = mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[i];
-            multiplexList.clear();
-            mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, i, multiplexList);
+            for (int i = 0; i < 8; i++)
+            {
+                auto& multiplexList = mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[i];
+                multiplexList.clear();
+                mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, i, multiplexList);
+            }
         }
     }
 
@@ -1048,6 +1051,13 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
                                        const ImVec2 marge,
                                        const NodeIndex nodeIndex)
 {
+    const auto& nodes = mModel.GetNodes();
+    auto& meta = gMetaNodes[nodes[nodeIndex].mType];
+    if (!meta.mbThumbnail)
+    {
+        return;
+    }
+
     bool nodeIsCompute = NodeIsCompute(nodeIndex);
     if (nodeIsCompute)
     {

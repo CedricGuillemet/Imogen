@@ -1014,3 +1014,15 @@ void GraphModel::SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFr
     node.mEndFrame = endFrame;
     SetDirty(nodeIndex, Dirty::StartEndTime);
 }
+
+NodeIndex GraphModel::GetNodeIndex(RuntimeId runtimeUniqueId) const
+{
+    for (int nodeIndex = 0; nodeIndex < mNodes.size(); nodeIndex ++)
+    {
+        if (mNodes[nodeIndex].mRuntimeUniqueId == runtimeUniqueId)
+        {
+            return nodeIndex;
+        }
+    }
+    return InvalidNodeIndex;
+}

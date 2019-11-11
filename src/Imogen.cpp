@@ -395,15 +395,13 @@ struct PinnedTaskUploadImage : PinnedTask
         }
         else
         {
-            /*auto* node = mControler->Get(mIdentifier); todo
-            size_t nodeIndex = node - mControler->mModel.mEvaluationStages.mStages.data();
-            if (node)
+            auto nodeIndex = mControler->mModel.GetNodeIndex(mIdentifier.second);
+            if (nodeIndex.IsValid())
             {
-                EvaluationAPI::SetEvaluationImage(&mControler->mEditingContext, int(nodeIndex), mImage);
-                mControler->mModel.mEvaluationStages.SetEvaluationParameters(nodeIndex, mControler->mModel.GetParameters(nodeIndex));
+                EvaluationAPI::SetEvaluationImage(&mControler->mEditingContext, nodeIndex, mImage);
+                mControler->mEditingContext.GenerateThumbnail(nodeIndex);
                 mControler->mEditingContext.StageSetProcessing(nodeIndex, false);
             }
-            */
             Image::Free(mImage);
         }
     }
@@ -467,24 +465,13 @@ struct EncodeImageTaskSet : TaskSet
     }
     virtual void ExecuteRange(TaskSetPartition range, uint32_t threadnum)
     {
-        int components = 4;
-        bx::AllocatorI* g_allocator = getDefaultAllocator();
-        bx::MemoryBlock mb(g_allocator);
-        bx::MemoryWriter writer(&mb);
-        bx::Error err;
-
-        bimg::imageWritePng(&writer, mImage.mWidth, mImage.mHeight, mImage.mWidth * 3, mImage.GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
-        if (mb.more(0))
+        Material* material = library.Get(mMaterialIdentifier);
+        if (material)
         {
-            Material* material = library.Get(mMaterialIdentifier);
-            if (material)
+            MaterialNode* node = material->Get(mNodeIdentifier);
+            if (node)
             {
-                MaterialNode* node = material->Get(mNodeIdentifier);
-                if (node)
-                {
-                    node->mImage.resize(mb.getSize());
-                    memcpy(node->mImage.data(), mb.more(0), mb.getSize());
-                }
+                Image::EncodePng(&mImage, node->mImage);
             }
         }
         delete this;
@@ -505,7 +492,7 @@ struct DecodeImageTaskSet : TaskSet
         Image image;
         if (!mSrc->empty() && Image::ReadMem(mSrc->data(), mSrc->size(), &image) == EVAL_OK)
         {
-            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, true, mNodeGraphControler);
+            PinnedTaskUploadImage uploadTexTask(&image, mIdentifier, false, mNodeGraphControler);
             g_TS.AddPinnedTask(&uploadTexTask);
             g_TS.WaitforTask(&uploadTexTask);
             Image::Free(&image);
@@ -634,7 +621,7 @@ bool TVRes(std::vector<T, Ty>& res, const char* szName, int& selection, int inde
     return ret;
 }
 
-void ValidateMaterial(Library& library, GraphControler& nodeGraphControler, int materialIndex)
+void CommitGraph(Library& library, GraphControler& nodeGraphControler, int materialIndex)
 {
     if (materialIndex == -1)
         return;
@@ -734,6 +721,7 @@ void Imogen::UpdateNewlySelectedGraph()
         model.BeginTransaction(false);
         Material& material = library.mMaterials[mSelectedMaterial];
         auto nodeCount = material.mMaterialNodes.size();
+        std::vector<std::pair<NodeIndex, std::vector<uint8_t>* >> nodeImages;
         for (size_t i = 0; i < nodeCount; i++)
         {
             MaterialNode& node = material.mMaterialNodes[i];
@@ -744,15 +732,10 @@ void Imogen::UpdateNewlySelectedGraph()
             model.SetParameters(nodeIndex, node.mParameters);
             model.SetStartEndFrame(nodeIndex, node.mFrameStart, node.mFrameEnd);
             model.SetSamplers(nodeIndex, node.mInputSamplers);
-
-            /*auto& lastNode = mNodeGraphControler->mModel.GetEvaluationStages().mStages.back(); todo
             if (!node.mImage.empty())
             {
-                mNodeGraphControler->mEditingContext.StageSetProcessing(i, true);
-                g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
-                    &node.mImage, std::make_pair(i, lastNode.mRuntimeUniqueId), mNodeGraphControler));
+                nodeImages.push_back({i, &node.mImage });
             }
-            */
         }
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
         {
@@ -782,6 +765,19 @@ void Imogen::UpdateNewlySelectedGraph()
         model.SetMultiplexInputs(material.mMultiplexInputs);
         model.EndTransaction();
         mNodeGraphControler->ApplyDirtyList();
+        // upload custom images to nodes
+        for (auto nodeImage : nodeImages)
+        {
+            auto nodeIndex = nodeImage.first;
+            const auto imageArray = nodeImage.second;
+            //auto& lastNode = mNodeGraphControler->mEvaluationStages.mStages[nodeIndex];
+            mNodeGraphControler->mEditingContext.StageSetProcessing(nodeIndex, true);
+            g_TS.AddTaskSetToPipe(new DecodeImageTaskSet(
+                imageArray, std::make_pair(nodeIndex, model.GetNodes()[nodeIndex].mRuntimeUniqueId), mNodeGraphControler));
+        }
+
+
+
         GraphEditorUpdateScrolling(mNodeGraphControler);
 
         mCurrentTime = 0;
@@ -808,7 +804,7 @@ Material& Imogen::NewMaterial(const std::string& materialName)
 
     if (previousSelection != -1)
     {
-        ValidateMaterial(library, *mNodeGraphControler, previousSelection);
+        CommitGraph(library, *mNodeGraphControler, previousSelection);
     }
     mSelectedMaterial = int(library.mMaterials.size()) - 1;
     ClearAll();
@@ -877,7 +873,7 @@ void Imogen::LibraryEdit(Library& library)
         // save previous
         if (previousSelection != -1)
         {
-            ValidateMaterial(library, *mNodeGraphControler, previousSelection);
+            CommitGraph(library, *mNodeGraphControler, previousSelection);
         }
         UpdateNewlySelectedGraph();
     }
@@ -898,7 +894,7 @@ void Imogen::SetExistingMaterialActive(int materialIndex)
 {
     if (materialIndex != mSelectedMaterial && mSelectedMaterial != -1)
     {
-        ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
+        CommitGraph(library, *mNodeGraphControler, mSelectedMaterial);
     }
     mSelectedMaterial = materialIndex;
     UpdateNewlySelectedGraph();
@@ -2634,9 +2630,9 @@ void Imogen::Playback(bool timeHasChanged)
     }
 }
 
-void Imogen::ValidateCurrentMaterial(Library& library)
+void Imogen::CommitCurrentGraph(Library& library)
 {
-    ValidateMaterial(library, *mNodeGraphControler, mSelectedMaterial);
+    CommitGraph(library, *mNodeGraphControler, mSelectedMaterial);
 }
 /*
 void Imogen::DiscoverNodes(const char* extension,

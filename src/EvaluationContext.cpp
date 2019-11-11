@@ -579,7 +579,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
 				bgfx::setViewFrameBuffer(viewId, currentFramebuffer);
 				bgfx::setViewRect(viewId, 0, 0, viewportWidth , viewportHeight);
-				//bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0xF03030ff+face*0x2000, 1.0f, 0);
 
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
 				for (int i = 0; i < 8; i++)

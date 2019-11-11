@@ -1087,6 +1087,12 @@ std::vector<MetaNode> ReadMetaNodes(const char* filename)
             curNode.mbHasUI = node["hasUI"].GetBool();
         }
 
+        curNode.mbThumbnail = true;
+        if (node.HasMember("thumbnail"))
+        {
+            curNode.mbThumbnail = node["thumbnail"].GetBool();
+        }
+
         if (node.HasMember("saveTexture"))
         {
             curNode.mbSaveTexture = node["saveTexture"].GetBool();

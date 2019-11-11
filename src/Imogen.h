@@ -72,7 +72,7 @@ struct Imogen
     void Finish();
 
     void Show(Builder* builder, Library& library, bool capturing);
-    void ValidateCurrentMaterial(Library& library);
+    void CommitCurrentGraph(Library& library);
 
     std::vector<EvaluatorFile> mEvaluatorFiles;
 

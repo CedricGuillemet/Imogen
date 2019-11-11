@@ -80,6 +80,9 @@ void Scene::Mesh::Primitive::AddBuffer(const void* data, unsigned int format, un
     case Format::NORM:
         mDecl.add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float);
         break;
+    default:
+        // skip unsupported attributes. 
+        return;
     }
     mDecl.end();
 

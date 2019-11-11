@@ -380,7 +380,7 @@ def imageTests(outDir):
     thumbnailImage = Imogen.GetThumbnailImage("ThumbnailTest")
     Imogen.WriteImage(outDir+"Thumbnail_1.png", thumbnailImage, 1, 0);
     Imogen.DeleteGraph()
-    '''
+    
     # multiplex !!
     Imogen.NewGraph("Multiplex")
     circle = Imogen.AddNode("Circle")
@@ -450,6 +450,17 @@ def imageTests(outDir):
     captureGraph(outDir+"MultiplexGraph_2.png")
     
     assert Imogen.GetSelectedMultiplex(blend, 1) == -1, "Wrong multiplexed value after node deletion"
+    '''
+    # gltf read stylized rock
+    Imogen.NewGraph("GLTF01")
+    gltf = Imogen.AddNode("GLTFRead")
+    imageWrite = Imogen.AddNode("ImageWrite")
+    Imogen.SetParameter(gltf, "filename", "Media/Mesh/stylized_rock/scene.gltf")
+    Imogen.SetCameraLookAt(gltf, 2., 1., 3.,0.,-1.,0.);
+    Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":0, "filename": outDir+"gltf02.jpg"})
+    Imogen.Connect(gltf, 0, imageWrite, 0)
+    Imogen.Build()
+    #Imogen.DeleteGraph()
     
     Imogen.CloseCurrentLibrary()
 

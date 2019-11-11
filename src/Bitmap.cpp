@@ -294,7 +294,7 @@ void Image::VFlip(Image* image)
 
 void stbi_writer(void* context, void* data, int size)
 {
-    bx::FileWriter *writer = (bx::FileWriter*)context;
+    bx::WriterI* writer = static_cast<bx::WriterI*>(context);
     bx::Error err;
     writer->write(data, size, &err);
 }
@@ -401,6 +401,7 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
 
 int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 {
+#if 0
     bx::AllocatorI* g_allocator = getDefaultAllocator();
     bx::MemoryBlock mb(g_allocator);
     bx::MemoryWriter writer(&mb);
@@ -409,6 +410,14 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
     bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * 4, image->GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
 	pngImage.resize(mb.getSize());
 	memcpy(pngImage.data(), mb.more(), mb.getSize());
+#endif
+    const int components = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat)) / 8;
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
+    bx::MemoryBlock mb(g_allocator);
+    bx::MemoryWriter writer(&mb);
+    stbi_write_png_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
+    pngImage.resize(mb.getSize());
+    memcpy(pngImage.data(), mb.more(), mb.getSize());
     return EVAL_OK;
 }
 

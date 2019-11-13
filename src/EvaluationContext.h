@@ -269,7 +269,7 @@ protected:
 	std::map<uint32_t, bgfx::FrameBufferHandle> mProxies;
 	void GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuffer, int16_t width, uint16_t height, bool depthBuffer);
 
-    void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const;
+    void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, NodeIndex nodeIndex) const;
     void SetUniforms(NodeIndex nodeIndex);
 };
 

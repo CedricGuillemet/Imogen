@@ -161,6 +161,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0xFF000000);
     ImGui::PushStyleColor(ImGuiCol_Button, 0xFF000000);
     float w = ImGui::GetContentRegionAvail().x;
+    float h = w;
     int imageWidth(1), imageHeight(1);
 
     // make 2 evaluation for node to get the UI pass image size
@@ -184,11 +185,12 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
     ImRect rc;
     ImVec2 displayedTextureSize;
     ImVec2 mouseUVCoord(-FLT_MAX, -FLT_MAX);
+    const ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+    Vec4 uva(0, 0), uvb(1, 1);
     if (imageWidth && imageHeight)
     {
-        float ratio = float(imageHeight) / float(imageWidth);
-        float h = w * ratio;
-        ImVec2 p = ImGui::GetCursorPos() + ImGui::GetWindowPos();
+        const float ratio = float(imageHeight) / float(imageWidth);
+        h = w * ratio;
 
         if (forceUI)
         {
@@ -224,7 +226,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
                 Vec4 mouseUVPosv(mouseUVPos.x, mouseUVPos.y);
                 mouseUVCoord = ImVec2(mouseUVPosv.x, mouseUVPosv.y);
 
-                Vec4 uva(0, 0), uvb(1, 1);
+                
                 auto nodeType = nodeGraphControler.mModel.GetNodeType(selNode);
                 Mat4x4* viewMatrix = nodeGraphControler.mEvaluationStages.GetParameterViewMatrix(selNode);
                 const Camera* nodeCamera = GetCameraParameter(nodeType, nodeGraphControler.mModel.GetParameters(selNode));
@@ -241,7 +243,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
 
                         ImVec2 pix2uv = ImVec2(1.f, 1.f) / ImVec2(w, h);
                         Vec4 localTranslate;
-                        localTranslate = Vec4(-io.MouseDelta.x * pix2uv.x, io.MouseDelta.y * pix2uv.y) *
+                        localTranslate = Vec4(-io.MouseDelta.x * pix2uv.x, -io.MouseDelta.y * pix2uv.y) *
                                          ((io.KeyAlt && io.MouseDown[2]) ? 1.f : 0.f) * res[0];
                         Mat4x4 localTranslateMat;
                         localTranslateMat.Translation(localTranslate);
@@ -295,7 +297,12 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
             int width = pickerImage.mWidth;
             int height = pickerImage.mHeight;
 
-            ImageInspect::inspect(width, height, pickerImage.GetBits(), mouseUVCoord, displayedTextureSize, true);
+            
+            ImVec2 mousePos = (io.MousePos - p) / ImVec2(w, h);
+            ImVec2 mousePosTr;
+            mousePosTr.x = ImLerp(uva.x, uvb.x, mousePos.x);
+            mousePosTr.y = 1.f - ImLerp(uva.y, uvb.y, mousePos.y);
+            ImageInspect::inspect(width, height, pickerImage.GetBits(), mousePosTr, displayedTextureSize, true);
         }
         else if (ImGui::IsWindowFocused())
         {

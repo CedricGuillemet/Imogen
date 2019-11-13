@@ -292,12 +292,14 @@ void EvaluationContext::SetKeyboardMouse(NodeIndex nodeIndex, const UIInput& inp
     mInputNodeIndex = nodeIndex;
 }
 
-void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo) const
+void EvaluationContext::SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, NodeIndex nodeIndex) const
 {
     if (mInputNodeIndex == evaluationInfo.targetIndex)
     {
-        evaluationInfo.mouse[0] = mUIInputs.mRx;
-        evaluationInfo.mouse[1] = mUIInputs.mRy;
+        Vec4 mousePos(mUIInputs.mRx, mUIInputs.mRy, 0.f);
+        mousePos.TransformPoint(*mEvaluationStages.GetParameterViewMatrix(nodeIndex));
+        evaluationInfo.mouse[0] = mousePos.x;
+        evaluationInfo.mouse[1] = mousePos.y;
         evaluationInfo.mouse[2] = mUIInputs.mLButDown ? 1.f : 0.f;
         evaluationInfo.mouse[3] = mUIInputs.mRButDown ? 1.f : 0.f;
 
@@ -511,7 +513,7 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 	}
 	if (!depthBuffer)
 	{
-		currentFramebuffer = bgfx::createFrameBuffer(width, height, GetRTTextureFormat());
+		currentFramebuffer = bgfx::createFrameBuffer(width, height, GetRTTextureFormat(), BGFX_TEXTURE_BLIT_DST);
 		//Log("New proxy FB %d - %d %d\n", currentFramebuffer.idx, width, height);
 	}
 	else
@@ -562,7 +564,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 	
     for (int passNumber = 0; passNumber < passCount; passNumber++)
     {
-		
         for (auto mip = 0; mip < mipmapCount; mip++)
         {
 			const int viewportWidth = w >> mip;
@@ -574,6 +575,17 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 			for (auto face = 0; face < faceCount; face++)
 			{
 				bgfx::ViewId viewId = 10;
+
+                if (!evaluation.mbClearBuffer)
+                {
+                    bgfx::setViewName(viewId, "blit");
+                    bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+                    bgfx::setViewRect(viewId, 0, 0, viewportWidth, viewportHeight);
+                    bgfx::setViewFrameBuffer(viewId, blitFramebuffer);
+                    bgfx::touch(viewId);
+                    bgfx::blit(viewId, bgfx::getTexture(currentFramebuffer), mip, 0, 0, face, tgt->mTexture, 0, 0, 0, 0, viewportWidth, viewportHeight, 0);
+                }
+
 
 				bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());
 				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
@@ -793,7 +805,7 @@ void EvaluationContext::RunNode(NodeIndex nodeIndex)
 	{
 		mEvaluationInfo.inputIndices[i] = input.mInputs[i].IsValid() ? (float)input.mInputs[i] : -1.f;
 	}
-    SetKeyboardMouseInfos(mEvaluationInfo);
+    SetKeyboardMouseInfos(mEvaluationInfo, nodeIndex);
     int evaluationMask = gEvaluators.GetMask(currentStage.mType);
 
     if (evaluationMask & EvaluationC)

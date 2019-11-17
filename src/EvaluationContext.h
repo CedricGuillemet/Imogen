@@ -28,7 +28,7 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
-#include "ImogenConfig.h"
+#include "Types.h"
 #include "EvaluationStages.h"
 #include "Evaluators.h"
 

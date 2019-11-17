@@ -27,7 +27,7 @@
 #include "ImCurveEdit.h"
 #include "imgui_markdown/imgui_markdown.h"
 #include <algorithm>
-#include "ImogenConfig.h"
+#include "Types.h"
 
 void SetStyle();
 void InitFonts();

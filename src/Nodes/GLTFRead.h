@@ -23,6 +23,8 @@
 // SOFTWARE.
 //
 
+#include "Cam.h"
+
 struct GLTFReadBlock
 {
     char filename[1024];

@@ -35,7 +35,8 @@
 #include "Utils.h"
 #include "Bitmap.h"
 #include "Scene.h"
-#include "ImogenConfig.h"
+#include "Types.h"
+#include "ParameterBlock.h"
 
 
 struct ImDrawList;
@@ -128,8 +129,8 @@ struct EvaluationStages
     void SetSamplers(NodeIndex nodeIndex, InputSamplers samplers) { mInputSamplers[nodeIndex] = samplers; }
 
     Mat4x4* GetParameterViewMatrix(NodeIndex nodeIndex) { return &mStages[nodeIndex].mParameterViewMatrix; }
-    const Parameters& GetParameters(NodeIndex nodeIndex) const { return mParameters[nodeIndex]; }
-    void SetParameters(NodeIndex nodeIndex, const Parameters& parameters);
+    const ParameterBlock& GetParameterBlock(NodeIndex nodeIndex) const { return mParameterBlocks[nodeIndex]; }
+    void SetParameterBlock(NodeIndex nodeIndex, const ParameterBlock& parameterBlock);
     uint16_t GetNodeType(NodeIndex nodeIndex) const { return mStages[nodeIndex].mType; }
     size_t GetStagesCount() const { return mStages.size(); }
 	void SetMaterialUniqueId(RuntimeId runtimeId);
@@ -152,7 +153,7 @@ struct EvaluationStages
 	std::vector<MultiplexArray> mMultiplex; // multiplex list per node
 
     std::vector<InputSamplers> mInputSamplers;
-    std::vector<Parameters> mParameters;
+    std::vector<ParameterBlock> mParameterBlocks;
 
     std::vector<AnimTrack> mAnimTrack;
 

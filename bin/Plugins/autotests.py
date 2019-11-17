@@ -22,7 +22,7 @@ def captureGraph(filename):
 def imageTests(outDir):
     metanodes = Imogen.GetMetaNodes()
     Imogen.OpenLibrary(Imogen.NewLibrary(outDir, "tempLibrary", False), False)
-    '''
+    
     ###################################################
     # read one jpg, write it back
     Imogen.NewGraph("ImageRead01")
@@ -450,7 +450,7 @@ def imageTests(outDir):
     captureGraph(outDir+"MultiplexGraph_2.png")
     
     assert Imogen.GetSelectedMultiplex(blend, 1) == -1, "Wrong multiplexed value after node deletion"
-    '''
+
     # gltf read stylized rock
     Imogen.NewGraph("GLTF01")
     gltf = Imogen.AddNode("GLTFRead")
@@ -460,7 +460,7 @@ def imageTests(outDir):
     Imogen.SetParameters(imageWrite, {"width":1024, "height":1024, "format":0, "filename": outDir+"gltf02.jpg"})
     Imogen.Connect(gltf, 0, imageWrite, 0)
     Imogen.Build()
-    #Imogen.DeleteGraph()
+    Imogen.DeleteGraph()
     
     Imogen.CloseCurrentLibrary()
 

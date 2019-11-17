@@ -26,6 +26,7 @@
 #pragma once
 #include <vector>
 #include "Utils.h"
+#include "Types.h"
 
 struct EvaluationContext;
 struct EvaluationInfo;

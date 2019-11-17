@@ -51,7 +51,7 @@ void EvaluationStages::AddEvaluation(NodeIndex nodeIndex, size_t nodeType)
     evaluation.renderer = nullptr;
     const size_t inputCount = gMetaNodes[nodeType].mInputs.size();
     
-    mParameters.insert(mParameters.begin() + nodeIndex, Parameters());
+    mParameterBlocks.insert(mParameterBlocks.begin() + nodeIndex, ParameterBlock(nodeType));
     mStages.insert(mStages.begin() + nodeIndex, evaluation);
     mInputSamplers.insert(mInputSamplers.begin() + nodeIndex, InputSamplers());
     mInputSamplers[nodeIndex].resize(gMetaNodes[nodeType].mInputs.size());
@@ -64,14 +64,14 @@ void EvaluationStages::DelEvaluation(NodeIndex nodeIndex)
     mStages.erase(mStages.begin() + nodeIndex);
     mInputs.erase(mInputs.begin() + nodeIndex);
     mInputSamplers.erase(mInputSamplers.begin() + nodeIndex);
-    mParameters.erase(mParameters.begin() + nodeIndex);
+    mParameterBlocks.erase(mParameterBlocks.begin() + nodeIndex);
 	mMultiplex.erase(mMultiplex.begin() + nodeIndex);
 }
 
-void EvaluationStages::SetParameters(NodeIndex nodeIndex, const Parameters& parameters)
+void EvaluationStages::SetParameterBlock(NodeIndex nodeIndex, const ParameterBlock& parameters)
 {
     EvaluationStage& stage = mStages[nodeIndex];
-    mParameters[nodeIndex] = parameters;
+    mParameterBlocks[nodeIndex] = parameters;
 #if USE_FFMPEG
     if (stage.mDecoder)
         stage.mDecoder = NULL;
@@ -83,7 +83,7 @@ void EvaluationStages::Clear()
     mStages.clear();
     mInputs.clear();
     mInputSamplers.clear();
-    mParameters.clear();
+    mParameterBlocks.clear();
     mAnimTrack.clear();
     mOrderList.clear();
 }
@@ -155,20 +155,20 @@ void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, NodeInd
 {
     bool animatedNodes = false;
     EvaluationStage& stage = mStages[nodeIndex];
-    Parameters parameters = mParameters[nodeIndex];
+    ParameterBlock parameterBlock = mParameterBlocks[nodeIndex];
     for (auto& animTrack : mAnimTrack)
     {
         if (animTrack.mNodeIndex == nodeIndex)
         {
-            size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-            animTrack.mAnimation->GetValue(frame, &parameters[parameterOffset]);
+            //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+            animTrack.mAnimation->GetValue(frame, parameterBlock.Data(animTrack.mParamIndex));
 
             animatedNodes = true;
         }
     }
     if (animatedNodes)
     {
-        SetParameters(nodeIndex, parameters);
+        SetParameterBlock(nodeIndex, parameterBlock);
         context->SetTargetDirty(nodeIndex, Dirty::Parameter);
     }
 }
@@ -182,14 +182,14 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
         EvaluationStage& stage = mStages[animTrack.mNodeIndex];
 
         animatedNodes[animTrack.mNodeIndex] = true;
-        size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-        animTrack.mAnimation->GetValue(frame, &mParameters[animTrack.mNodeIndex][parameterOffset]);
+        //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+        animTrack.mAnimation->GetValue(frame, mParameterBlocks[animTrack.mNodeIndex].Data(animTrack.mParamIndex));
     }
     for (size_t i = 0; i < animatedNodes.size(); i++)
     {
         if (!animatedNodes[i])
             continue;
-        SetParameters(i, mParameters[i]);
+        SetParameterBlock(i, mParameterBlocks[i]);
         context->SetTargetDirty(i, Dirty::Parameter);
     }
 }
@@ -213,20 +213,20 @@ void EvaluationStages::BuildEvaluationFromMaterial(Material& material)
     mStages.clear();
     mInputs.clear();
     mInputSamplers.clear();
-    mParameters.clear();
+    mParameterBlocks.clear();
 
     auto nodeCount = material.mMaterialNodes.size();
     mStages.reserve(nodeCount);
     mInputs.reserve(nodeCount);
     mInputSamplers.reserve(nodeCount);
-    mParameters.reserve(nodeCount);
+    mParameterBlocks.reserve(nodeCount);
 
     for (size_t i = 0; i < nodeCount; i++)
     {
         MaterialNode& node = material.mMaterialNodes[i];
-        AddEvaluation(i, node.mType);
+        AddEvaluation(i, node.mNodeType);
         auto& lastNode = mStages.back();
-        mParameters[i] = node.mParameters;
+        mParameterBlocks[i] = ParameterBlock(node.mNodeType, node.mParameters);
         //mInputSamplers[i] = node.mInputSamplers;
     }
     for (size_t i = 0; i < material.mMaterialConnections.size(); i++)

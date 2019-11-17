@@ -292,9 +292,9 @@ void Image::VFlip(Image* image)
     }
 }
 
-void stbi_writer(void* context, void* data, int size)
+template<typename Writer> void stbi_writer(void* context, void* data, int size)
 {
-    bx::WriterI* writer = static_cast<bx::WriterI*>(context);
+    Writer* writer = static_cast<Writer*>(context);
     bx::Error err;
     writer->write(data, size, &err);
 }
@@ -323,16 +323,16 @@ int Image::Write(const char* filename, Image* image, int format, int quality)
         switch (format)
         {
         case 0: // jpeg
-            stbi_write_jpg_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), quality);
+            stbi_write_jpg_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits(), quality);
             break;
         case 1: // png
-            stbi_write_png_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
+            stbi_write_png_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
             break;
         case 2: // tga
-			stbi_write_tga_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits());
+			stbi_write_tga_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits());
             break;
 		case 3: // bmp
-			stbi_write_bmp_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits());
+			stbi_write_bmp_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits());
 			break;
         case 4: // hdr
             bimg::imageWriteHdr(&writer
@@ -415,7 +415,7 @@ int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
     bx::AllocatorI* g_allocator = getDefaultAllocator();
     bx::MemoryBlock mb(g_allocator);
     bx::MemoryWriter writer(&mb);
-    stbi_write_png_to_func(stbi_writer, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
+    stbi_write_png_to_func(stbi_writer<bx::MemoryWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
     pngImage.resize(mb.getSize());
     memcpy(pngImage.data(), mb.more(), mb.getSize());
     return EVAL_OK;

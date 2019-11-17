@@ -181,6 +181,10 @@ struct EvaluationContext
     struct Evaluation
     {
 		Evaluation()
+            : mbDepthBuffer(false)
+            , mbClearBuffer(true)
+            , mbActive(false)
+            , mbPersistent(false)
 		{
 		}
 
@@ -198,7 +202,7 @@ struct EvaluationContext
 		RuntimeId mRuntimeUniqueId;
         union
         {
-            uint8_t u = 0;
+            uint8_t u;
             struct
             {
                 uint8_t mbDepthBuffer : 1;

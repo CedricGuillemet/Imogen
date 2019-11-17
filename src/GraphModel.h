@@ -101,6 +101,7 @@ public:
     // setters
     size_t AddNode(size_t type, ImVec2 position);
     void SelectNode(NodeIndex nodeIndex, bool selected);
+    void UnselectNodes();
     void MoveSelectedNodes(const ImVec2 delta);
     void SetNodePosition(NodeIndex nodeIndex, const ImVec2 position);
     void DeleteSelectedNodes();

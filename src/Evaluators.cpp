@@ -1170,7 +1170,7 @@ namespace EvaluationAPI
             {
 				int currentWidth = img.mWidth >> i;
 				int currentHeight = img.mHeight >> i;
-				bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, 0, currentWidth, currentHeight);
+				bgfx::blit(2, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, 0, currentWidth, currentHeight);
                 availableFrame = bgfx::readTexture(transient, ptr, i);
 				ptr += currentWidth * currentHeight * texelSize;
 				while (bgfx::frame() != availableFrame) {};
@@ -1184,7 +1184,7 @@ namespace EvaluationAPI
                 {
 					int currentWidth = img.mWidth >> i;
 					int currentHeight = img.mHeight >> i;
-                    bgfx::blit(viewId_Evaluation, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, cube, currentWidth, currentHeight);
+                    bgfx::blit(2, transient, i, 0, 0, 0, tgt->mTexture, i, 0, 0, cube, currentWidth, currentHeight);
                     availableFrame = bgfx::readTexture(transient, ptr, i);
                     ptr += currentWidth * currentHeight * texelSize;
 					while (bgfx::frame() != availableFrame) {};
@@ -1512,11 +1512,16 @@ namespace EvaluationAPI
         cgltf_data* data = NULL;
         cgltf_result result = cgltf_parse_file(&options, filename, &data);
         if (result != cgltf_result_success)
+        {
             return EVAL_ERR;
+        }
 
         result = cgltf_load_buffers(&options, data, filename);
         if (result != cgltf_result_success)
+        {
+            cgltf_free(data);
             return EVAL_ERR;
+        }
 
         Scene* sc = new Scene;
         sc->mName = strFilename;

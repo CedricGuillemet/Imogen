@@ -409,6 +409,15 @@ void GraphModel::SelectNode(NodeIndex nodeIndex, bool selected)
     SetDirty(nodeIndex, Dirty::VisualGraph);
 }
 
+void GraphModel::UnselectNodes()
+{
+    for (size_t i = 0; i < GetNodeCount(); i++)
+    {
+        mNodes[i].mbSelected = false;
+        SetDirty(i, Dirty::VisualGraph);
+    }
+}
+
 ImVec2 GraphModel::GetNodePos(NodeIndex nodeIndex) const
 {
     return mNodes[nodeIndex].mPos;
@@ -502,9 +511,6 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
     AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
     if (!animTrack)
     {
-        // URAdd<AnimTrack> urAdd(int(mEvaluationStages.mAnimTrack.size()), [&] { return
-        // &mEvaluationStages.mAnimTrack;
-        // });
         uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mType].mParams[parameterIndex].mType;
         AnimTrack newTrack;
         newTrack.mNodeIndex = nodeIndex;
@@ -514,9 +520,12 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
         mAnimTrack.push_back(newTrack);
         animTrack = &mAnimTrack.back();
     }
-    /*URChange<AnimTrack> urChange(int(animTrack - mEvaluationStages.mAnimTrack.data()),
-                                 [&](int index) { return &mEvaluationStages.mAnimTrack[index]; });*/
-    //EvaluationStage& stage = mEvaluationStages.mStages[nodeIndex];
+
+    auto ur = mUndoRedo ? std::make_unique<URChange<AnimTrack>>(
+        int(animTrack - mAnimTrack.data()),
+        [&](int index) { return &mAnimTrack[index]; })
+        : nullptr;
+
     size_t parameterOffset = GetParameterOffset(uint32_t(mNodes[nodeIndex].mType), parameterIndex);
     animTrack->mAnimation->SetValue(frame, &mNodes[nodeIndex].mParameters[parameterOffset]);
 }

@@ -528,8 +528,6 @@ const char* GetCurveParameterSuffix(uint32_t paramType, int suffixIndex);
 uint32_t GetCurveParameterColor(uint32_t paramType, int suffixIndex);
 AnimationBase* AllocateAnimation(uint32_t valueType);
 CurveType GetCurveTypeForParameterType(ConTypes paramType);
-struct GraphControler;
-void DecodeThumbnailAsync(Material* material, GraphControler* nodeGraphControler);
 size_t ComputeNodeParametersSize(size_t nodeType);
 const char* GetParameterTypeName(ConTypes paramType);
 void InitDefaultParameters(size_t nodeType, Parameters& parameters);

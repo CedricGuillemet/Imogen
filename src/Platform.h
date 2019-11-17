@@ -37,13 +37,6 @@
 #include <bgfx/bgfx.h>
 #include <bimg/bimg.h>
 
-enum bgfxViewIds
-{
-    viewId_BuildEvaluation,
-    viewId_ImGui,
-    viewId_Evaluation,
-
-};
 #ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>

@@ -393,8 +393,6 @@ int main_Async(int argc, char** argv)
     loopdata.mNodeGraphControler = &nodeGraphControler;
     gBuilder = loopdata.mBuilder = &builder;
     imogen.SetExistingMaterialActive(".default");
-    bgfx::setViewMode(viewId_Evaluation, bgfx::ViewMode::Sequential);
-    bgfx::setViewMode(viewId_BuildEvaluation, bgfx::ViewMode::Sequential);
 
     std::string infoTitle = IMOGENCOMPLETETITLE;
     switch (bgfx::getCaps()->vendorId)

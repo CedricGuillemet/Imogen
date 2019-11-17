@@ -663,7 +663,7 @@ void CommitGraph(Library& library, GraphControler& nodeGraphControler, int mater
         int times[2];
         model.GetStartEndFrame(i, times[0], times[1]);
         dstNode.mFrameStart = uint32_t(times[0]); // todo serialize time as signed values
-        dstNode.mFrameEnd = uint32_t(times[0]);
+        dstNode.mFrameEnd = uint32_t(times[1]);
     }
     auto links = model.GetLinks();
     material.mMaterialConnections.resize(links.size());
@@ -1248,6 +1248,7 @@ struct MySequence : public ImSequencer::SequenceInterface
     {
         mCurrentTime = currentTime;
     }
+
     virtual int GetFrameMin() const
     {
         int startFrame, endFrame;
@@ -1263,11 +1264,16 @@ struct MySequence : public ImSequencer::SequenceInterface
 
     virtual void BeginEdit(int index)
     {
+        mCurrentIndex = index;
+        mNodeGraphControler.mModel.GetStartEndFrame(index, mCurrentStart, mCurrentEnd);
     }
+
     virtual void EndEdit()
     {
-        // todo
-        //mNodeGraphControler.mModel.mEvaluationStages.SetTime(&mNodeGraphControler.mEditingContext, mCurrentTime, false);
+        mNodeGraphControler.mModel.BeginTransaction(true);
+        mNodeGraphControler.mModel.SetStartEndFrame(mCurrentIndex, mCurrentStart, mCurrentEnd);
+        mNodeGraphControler.mModel.EndTransaction();
+        mCurrentIndex = -1;
     }
 
     virtual int GetItemCount() const
@@ -1279,10 +1285,12 @@ struct MySequence : public ImSequencer::SequenceInterface
     {
         return 0;
     }
+
     virtual const char* GetItemTypeName(int typeIndex) const
     {
         return NULL;
     }
+
     virtual const char* GetItemLabel(int index) const
     {
         size_t nodeType = mNodeGraphControler.mModel.GetNodeType(index);
@@ -1293,22 +1301,50 @@ struct MySequence : public ImSequencer::SequenceInterface
     {
         const auto& model = mNodeGraphControler.mModel;
         size_t nodeType = model.GetNodeType(index);
-        int times[2];
-        model.GetStartEndFrame(index, times[0], times[1]);
+        
+        if (index == mCurrentIndex)
+        {
+            mCurrentDisplayStart = mCurrentStart;
+            mCurrentDisplayEnd = mCurrentEnd;
+            if (start)
+            {
+                *start = &mCurrentStart;
+            }
+            if (end)
+            {
+                *end = &mCurrentEnd;
+            }
+        }
+        else
+        {
+            model.GetStartEndFrame(index, mCurrentDisplayStart, mCurrentDisplayEnd);
+            if (start)
+            {
+                *start = &mCurrentDisplayStart;
+            }
+            if (end)
+            {
+                *end = &mCurrentDisplayEnd;
+            }
+        }
         if (color)
+        {
             *color = gMetaNodes[nodeType].mHeaderColor;
-        if (start)
-            *start = &times[0];
-        if (end)
-            *end = &times[1];
+        }
         if (type)
+        {
             *type = int(nodeType);
+        }
     }
 
-    virtual void Add(int type){};
+    virtual void Add(int type)
+    {
+    }
+
     virtual void Del(int index)
     {
     }
+
     virtual void Duplicate(int index)
     {
     }
@@ -1319,6 +1355,7 @@ struct MySequence : public ImSequencer::SequenceInterface
             return false;
         return mbExpansions[index] ? 300 : 0;
     }
+
     virtual void DoubleClick(int index)
     {
         if (index >= mbExpansions.size())
@@ -1429,6 +1466,9 @@ struct MySequence : public ImSequencer::SequenceInterface
         mCurveMax = curveMax.y;
     }
 
+    int mCurrentStart, mCurrentEnd;
+    int mCurrentIndex{-1};
+    int mCurrentDisplayStart, mCurrentDisplayEnd;
     GraphControler& mNodeGraphControler;
     std::vector<bool> mbExpansions;
     std::vector<bool> mbVisible;
@@ -2189,7 +2229,9 @@ void Imogen::ShowTimeLine()
     ImGui::SameLine(0, 40.f);
     if (Button("AnimationSetKey", "Make Key", ImVec2(0, 0)) && selectedEntry.IsValid())
     {
+        model.BeginTransaction(true);
 		model.MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
+        model.EndTransaction();
     }
 
     ImGui::SameLine(0, 50.f);
@@ -2245,13 +2287,19 @@ void Imogen::ShowTimeLine()
     if (selectedEntry.IsValid() && !(selectedEntry == mNodeGraphControler->mSelectedNodeIndex))
     {
         auto& model = mNodeGraphControler->mModel;
+        /*if (mNodeGraphControler->mSelectedNodeIndex.IsValid())
+        {
+            model.SelectNode(mNodeGraphControler->mSelectedNodeIndex, false);
+        }
+        */
+        model.UnselectNodes();
         mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
 
 		if (mNodeGraphControler->mSelectedNodeIndex.IsValid())
 		{
-			model.SelectNode(mNodeGraphControler->mSelectedNodeIndex, false);
+			model.SelectNode(mNodeGraphControler->mSelectedNodeIndex, true);
 		}
-
+#if 0
 		if (selectedEntry.IsValid())
 		{
 			model.SelectNode(selectedEntry, true);
@@ -2263,6 +2311,7 @@ void Imogen::ShowTimeLine()
 				ImClamp(mCurrentTime - times[0], 0, times[1] - times[0]),
 				true);*/
 		}
+#endif
     }
 	else
 	{

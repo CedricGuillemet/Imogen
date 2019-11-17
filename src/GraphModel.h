@@ -31,7 +31,7 @@
 #include <set>
 #include "Library.h"
 #include "EvaluationStages.h"
-
+#include "ParameterBlock.h"
 struct UndoRedoHandler;
 struct UndoRedo;
 
@@ -52,24 +52,27 @@ public:
 
     struct Node
     {
-        Node(int type, ImVec2 position, int startFrame, int endFrame) : mType(type)
+        Node(int nodeType, ImVec2 position, int startFrame, int endFrame) : mNodeType(nodeType)
             , mPos(position)
             , mbSelected(false)
             , mPinnedIO(0)
             , mPinnedParameters(0)
             , mStartFrame(startFrame)
             , mEndFrame(endFrame)
+            , mParameterBlock(nodeType)
         {
         }
-        Node() : mbSelected(false), mPinnedIO(0), mPinnedParameters(0)
+
+        Node() : mNodeType(-1), mbSelected(false), mPinnedIO(0), mPinnedParameters(0), mParameterBlock(-1)
         {
         }
-        int mType;
+
+        int mNodeType;
         ImVec2 mPos;
         uint32_t mPinnedIO;
         uint32_t mPinnedParameters;
         int mStartFrame, mEndFrame;
-        Parameters mParameters;
+        ParameterBlock mParameterBlock;
         MultiplexInput mMultiplexInput;
         Samplers mSamplers;
         bool mbSelected;
@@ -115,7 +118,7 @@ public:
     void SetSamplers(NodeIndex nodeIndex, const Samplers& samplers);
 	void SetSampler(NodeIndex nodeIndex, size_t input, const InputSampler& sampler);
     void SetParameter(NodeIndex nodeIndex, const std::string& parameterName, const std::string& parameterValue);
-    void SetParameters(NodeIndex nodeIndex, const Parameters& parameters);
+    void SetParameterBlock(NodeIndex nodeIndex, const ParameterBlock& parameterBlock);
     void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
     void SetIOPin(NodeIndex nodeIndex, size_t io, bool forOutput, bool pinned);
     void SetParameterPin(NodeIndex nodeIndex, size_t parameterIndex, bool pinned);
@@ -132,7 +135,7 @@ public:
 
     // getters
     size_t GetNodeCount() const { return mNodes.size(); }
-    int GetNodeType(NodeIndex nodeIndex) const { return mNodes[nodeIndex].mType; }
+    int GetNodeType(NodeIndex nodeIndex) const { return mNodes[nodeIndex].mNodeType; }
     bool NodeHasUI(NodeIndex nodeIndex) const;
     const std::vector<Rug>& GetRugs() const { return mRugs; }
     const std::vector<Node>& GetNodes() const { return mNodes; }
@@ -146,7 +149,7 @@ public:
     const std::vector<uint32_t> GetParameterPins() const;
     const std::vector<uint32_t> GetIOPins() const;
     const std::vector<MultiplexInput> GetMultiplexInputs() const;
-    const Parameters& GetParameters(NodeIndex nodeIndex) const;
+    const ParameterBlock& GetParameterBlock(NodeIndex nodeIndex) const;
     const Samplers& GetSamplers(NodeIndex nodeIndex) const { return mNodes[nodeIndex].mSamplers; }
     ImRect GetNodesDisplayRect() const;
     ImRect GetFinalNodeDisplayRect(const std::vector<size_t>& orderList) const;

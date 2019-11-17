@@ -29,6 +29,7 @@
 #include <set>
 #include "GraphModel.h"
 #include "UndoRedo.h"
+#include "Cam.h"
 
 extern UndoRedoHandler gUndoRedoHandler;
 size_t GetUndoRedoMemoryFootPrint()
@@ -39,8 +40,8 @@ size_t GetUndoRedoMemoryFootPrint()
 
 ImRect GraphModel::Node::GetDisplayRect() const
 {
-    int width = gMetaNodes[mType].mWidth;
-    int height = gMetaNodes[mType].mHeight;
+    int width = gMetaNodes[mNodeType].mWidth;
+    int height = gMetaNodes[mNodeType].mHeight;
     return ImRect(mPos, mPos + ImVec2(float(width), float(height)));
 }
 
@@ -204,7 +205,7 @@ size_t GraphModel::AddNode(size_t type, ImVec2 position)
     auto urNode = mUndoRedo ? std::make_unique<URAdd<Node>>(int(nodeIndex), [this]() { return &mNodes; }, delNode, addNode) : nullptr;
     
     mNodes.push_back(Node(int(type), position, mStartFrame, mEndFrame));
-    InitDefaultParameters(type, mNodes[nodeIndex].mParameters);
+    mNodes[nodeIndex].mParameterBlock.InitDefault();
     mNodes.back().mSamplers.resize(gMetaNodes[type].mInputs.size());
 
     addNode(int(nodeIndex));
@@ -454,7 +455,7 @@ void GraphModel::SetSampler(NodeIndex nodeIndex, size_t input, const InputSample
 
 bool GraphModel::NodeHasUI(NodeIndex nodeIndex) const
 {
-    return gMetaNodes[mNodes[nodeIndex].mType].mbHasUI;
+    return gMetaNodes[mNodes[nodeIndex].mNodeType].mbHasUI;
 }
 
 void GraphModel::SetParameter(NodeIndex nodeIndex, const std::string& parameterName, const std::string& parameterValue)
@@ -464,24 +465,24 @@ void GraphModel::SetParameter(NodeIndex nodeIndex, const std::string& parameterN
 	{
 		return;
 	}
-    uint32_t nodeType = uint32_t(mNodes[nodeIndex].mType);
+    uint32_t nodeType = uint32_t(mNodes[nodeIndex].mNodeType);
     int parameterIndex = GetParameterIndex(nodeType, parameterName.c_str());
     if (parameterIndex == -1)
     {
         return;
     }
     ConTypes parameterType = GetParameterType(nodeType, parameterIndex);
-    size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
+    //size_t paramOffset = GetParameterOffset(nodeType, parameterIndex);
     ParseStringToParameter(
-        parameterValue, parameterType, &mNodes[nodeIndex].mParameters[paramOffset]);
+        parameterValue, parameterType, mNodes[nodeIndex].mParameterBlock.Data(parameterIndex));
     SetDirty(nodeIndex, Dirty::Parameter);
 }
 
 void GraphModel::SetCameraLookAt(NodeIndex nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up)
 {
 	assert(mbTransaction);
-	uint32_t nodeType = uint32_t(mNodes[nodeIndex].mType);
-	Camera* camera = GetCameraParameter(nodeType, mNodes[nodeIndex].mParameters);
+	//uint32_t nodeType = uint32_t(mNodes[nodeIndex].mNodeType);
+	Camera* camera = mNodes[nodeIndex].mParameterBlock.GetCamera();
 	if (!camera)
 	{
 		return;
@@ -511,7 +512,7 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
     AnimTrack* animTrack = GetAnimTrack(nodeIndex, parameterIndex);
     if (!animTrack)
     {
-        uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mType].mParams[parameterIndex].mType;
+        uint32_t parameterType = gMetaNodes[mNodes[nodeIndex].mNodeType].mParams[parameterIndex].mType;
         AnimTrack newTrack;
         newTrack.mNodeIndex = nodeIndex;
         newTrack.mParamIndex = parameterIndex;
@@ -526,8 +527,8 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
         [&](int index) { return &mAnimTrack[index]; })
         : nullptr;
 
-    size_t parameterOffset = GetParameterOffset(uint32_t(mNodes[nodeIndex].mType), parameterIndex);
-    animTrack->mAnimation->SetValue(frame, &mNodes[nodeIndex].mParameters[parameterOffset]);
+    //size_t parameterOffset = GetParameterOffset(uint32_t(mNodes[nodeIndex].mNodeType), parameterIndex);
+    animTrack->mAnimation->SetValue(frame, mNodes[nodeIndex].mParameterBlock.Data(parameterIndex));
 }
 
 void GraphModel::GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const
@@ -583,7 +584,7 @@ void GraphModel::SetParameterPin(NodeIndex nodeIndex, size_t parameterIndex, boo
     mNodes[nodeIndex].mPinnedParameters += pinned ? mask : 0;
 }
 
-void GraphModel::SetParameters(NodeIndex nodeIndex, const std::vector<unsigned char>& parameters)
+void GraphModel::SetParameterBlock(NodeIndex nodeIndex, const ParameterBlock& parameterBlock)
 {
     assert(mbTransaction);
 
@@ -594,7 +595,7 @@ void GraphModel::SetParameters(NodeIndex nodeIndex, const std::vector<unsigned c
                               dirtyParameters)
                         : nullptr;
 
-    mNodes[nodeIndex].mParameters = parameters;
+    mNodes[nodeIndex].mParameterBlock = parameterBlock;
     dirtyParameters(int(nodeIndex));
 }
 
@@ -667,9 +668,9 @@ void GraphModel::PasteNodes(ImVec2 viewOffsetPosition)
     EndTransaction();
 }
 
-const Parameters& GraphModel::GetParameters(NodeIndex nodeIndex) const
+const ParameterBlock& GraphModel::GetParameterBlock(NodeIndex nodeIndex) const
 {
-    return mNodes[nodeIndex].mParameters;
+    return mNodes[nodeIndex].mParameterBlock;
 }
 
 static ImRect DisplayRectMargin(ImRect rect)
@@ -755,7 +756,7 @@ void GraphModel::RecurseNodeGraphLayout(std::vector<NodePosition>& positions,
         }
     }
 
-    size_t InputsCount = gMetaNodes[nodes[currentIndex].mType].mInputs.size();
+    size_t InputsCount = gMetaNodes[nodes[currentIndex].mNodeType].mInputs.size();
     std::vector<int> inputNodes(InputsCount, -1);
     for (auto& link : links)
     {
@@ -821,7 +822,7 @@ void GraphModel::NodeGraphLayout(const std::vector<size_t>& orderList)
         }
 		NodeIndex nodeIndex = layout.mNodeIndex;
         const auto& node = mNodes[nodeIndex];
-        float height = float(gMetaNodes[node.mType].mHeight);
+        float height = float(gMetaNodes[node.mNodeType].mHeight);
         nodePos[nodeIndex] = ImVec2(-layout.mLayer * 180.f, currentStackHeight);
         currentStackHeight += height + 40.f;
     }
@@ -920,7 +921,7 @@ void GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeInde
         {
             continue;
         }
-        if (!NodeTypeHasMultiplexer(mNodes[input].mType))
+        if (!NodeTypeHasMultiplexer(mNodes[input].mNodeType))
         {
             list.insert(input);
         }
@@ -938,7 +939,7 @@ bool GraphModel::GetMultiplexedInputs(const std::vector<Input>& inputs, NodeInde
     {
         return false;
     }
-    if (NodeTypeHasMultiplexer(mNodes[input].mType))
+    if (NodeTypeHasMultiplexer(mNodes[input].mNodeType))
     {
 		std::set<NodeIndex> uniqueList;
         GetMultiplexedInputs(inputs, input, uniqueList);

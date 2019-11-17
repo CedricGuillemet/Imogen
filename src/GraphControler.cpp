@@ -33,6 +33,7 @@
 #include "Utils.h"
 #include "JSGlue.h"
 #include "imgui_color_gradient.h"
+#include "Cam.h"
 
 void AddExtractedView(size_t nodeIndex);
 
@@ -372,7 +373,7 @@ int GraphControler::ShowMultiplexed(const std::vector<NodeIndex>& inputs, NodeIn
 void GraphControler::PinnedEdit()
 {
     int dirtyNode = -1;
-    Parameters dirtyParameters;
+    ParameterBlock dirtyParameterBlock(-1);
 	ImGui::BeginChild(655);
     for (const auto pin : mModel.GetParameterPins())
     {
@@ -386,17 +387,17 @@ void GraphControler::PinnedEdit()
         size_t nodeType = mModel.GetNodeType(nodeIndex);
         const MetaNode& metaNode = gMetaNodes[nodeType];
         if (parameterIndex >= metaNode.mParams.size())
+        {
             continue;
+        }
 
         ImGui::PushID(171717 + pin);
         const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
-        auto parameters = mModel.GetParameters(nodeIndex);
-        unsigned char* paramBuffer = parameters.data();
-        paramBuffer += GetParameterOffset(uint32_t(nodeType), parameterIndex);
-        if (EditSingleParameter(nodeIndex, parameterIndex, paramBuffer, metaParam))
+        auto parameters = mModel.GetParameterBlock(nodeIndex);
+        if (EditSingleParameter(nodeIndex, parameterIndex, parameters.Data(parameterIndex), metaParam))
         {
             dirtyNode = nodeIndex;
-            dirtyParameters = parameters;
+            dirtyParameterBlock = parameters;
         }
 
         ImGui::PopID();
@@ -404,7 +405,7 @@ void GraphControler::PinnedEdit()
 	ImGui::EndChild();
     if (dirtyNode != -1)
     {
-        mModel.SetParameters(dirtyNode, dirtyParameters);
+        mModel.SetParameterBlock(dirtyNode, dirtyParameterBlock);
     }
 }
 
@@ -457,18 +458,14 @@ void GraphControler::EditNodeParameters()
         return;
 
     // edit parameters
-    auto parameters = mModel.GetParameters(nodeIndex);
-    auto paramBuffer = parameters.data();
-    int i = 0;
-    for (const MetaParameter& param : currentMeta.mParams)
+    auto parameterBlock = mModel.GetParameterBlock(nodeIndex);
+    for (size_t i = 0;i< currentMeta.mParams.size(); i++)
     {
         ImGui::PushID(667889 + i);
 
-        dirty |= EditSingleParameter(nodeIndex, i, paramBuffer, param);
+        dirty |= EditSingleParameter(nodeIndex, i, parameterBlock.Data(i), currentMeta.mParams[i]);
 
         ImGui::PopID();
-        paramBuffer += GetParameterTypeSize(param.mType);
-        i++;
     }
 
     // check for every possible inputs. only the first will be used for multiplexed inputs
@@ -493,7 +490,7 @@ void GraphControler::EditNodeParameters()
     if (dirty)
     {
         mModel.BeginTransaction(true);
-        mModel.SetParameters(nodeIndex, parameters);
+        mModel.SetParameterBlock(nodeIndex, parameterBlock);
         mModel.EndTransaction();
     }
 }
@@ -591,7 +588,7 @@ void GraphControler::ApplyDirtyList()
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Input);
                 break;
             case Dirty::Parameter:
-                mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
+                mEvaluationStages.SetParameterBlock(nodeIndex, mModel.GetParameterBlock(nodeIndex));
                 mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter);
                 break;
             case Dirty::VisualGraph:
@@ -619,7 +616,7 @@ void GraphControler::ApplyDirtyList()
                     evaluationOrderChanged = true;
                     graphArrayChanged = true;
                     // params
-                    mEvaluationStages.SetParameters(nodeIndex, mModel.GetParameters(nodeIndex));
+                    mEvaluationStages.SetParameterBlock(nodeIndex, mModel.GetParameterBlock(nodeIndex));
                     // samplers
                     mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
                     // time
@@ -757,64 +754,58 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
     size_t res = 0;
     const MetaNode& metaNode = gMetaNodes[mModel.GetNodeType(mSelectedNodeIndex)];
 
-    Parameters parameters = mModel.GetParameters(mSelectedNodeIndex);
-    unsigned char* paramBuffer = parameters.data();
+    ParameterBlock parameterBlock = mModel.GetParameterBlock(mSelectedNodeIndex);
     bool parametersDirty = false;
 
-    // camera handling
-    for (auto& param : metaNode.mParams)
+    Camera* camera = parameterBlock.GetCamera();
+    if (camera)
     {
-        float* paramFlt = (float*)paramBuffer;
-        if (param.mType == Con_Camera)
+        if (fabsf(input.mWheel)>0.f)
         {
-            Camera* cam = (Camera*)paramBuffer;
-            if (fabsf(input.mWheel)>0.f)
+            camera->mPosition += camera->mDirection * input.mWheel;
+            parametersDirty = true;
+        }
+        Vec4 right = Cross(camera->mUp, camera->mDirection);
+        right.y = 0.f; // keep head up
+        right.Normalize();
+        auto& io = ImGui::GetIO();
+        if (io.KeyAlt)
+        {
+            if (io.MouseDown[2])
             {
-                cam->mPosition += cam->mDirection * input.mWheel;
+                camera->mPosition += (right * io.MouseDelta.x + camera->mUp * io.MouseDelta.y) * 0.01f;
                 parametersDirty = true;
             }
-            Vec4 right = Cross(cam->mUp, cam->mDirection);
-            right.y = 0.f; // keep head up
-            right.Normalize();
-            auto& io = ImGui::GetIO();
-            if (io.KeyAlt)
+            if (io.MouseDown[1])
             {
-                if (io.MouseDown[2])
-                {
-                    cam->mPosition += (right * io.MouseDelta.x + cam->mUp * io.MouseDelta.y) * 0.01f;
-                    parametersDirty = true;
-                }
-                if (io.MouseDown[1])
-                {
-                    cam->mPosition += (cam->mDirection * io.MouseDelta.y) * 0.01f;
-                    parametersDirty = true;
-                }
-                if (io.MouseDown[0])
-                {
-                    Mat4x4 tr, rtUp, rtRight, trp;
-                    tr.Translation(-(cam->mPosition));
-                    rtRight.RotationAxis(right, io.MouseDelta.y * 0.01f);
-                    rtUp.RotationAxis(cam->mUp, -io.MouseDelta.x * 0.01f);
-                    trp.Translation((cam->mPosition));
-                    Mat4x4 res = tr * rtRight * rtUp * trp;
-                    cam->mPosition.TransformPoint(res);
-                    cam->mDirection.TransformVector(res);
-                    cam->mUp.Cross(cam->mDirection, right);
-                    cam->mUp.Normalize();
-                    parametersDirty = true;
-                }
+                camera->mPosition += (camera->mDirection * io.MouseDelta.y) * 0.01f;
+                parametersDirty = true;
+            }
+            if (io.MouseDown[0])
+            {
+                Mat4x4 tr, rtUp, rtRight, trp;
+                tr.Translation(-(camera->mPosition));
+                rtRight.RotationAxis(right, io.MouseDelta.y * 0.01f);
+                rtUp.RotationAxis(camera->mUp, -io.MouseDelta.x * 0.01f);
+                trp.Translation((camera->mPosition));
+                Mat4x4 res = tr * rtRight * rtUp * trp;
+                camera->mPosition.TransformPoint(res);
+                camera->mDirection.TransformVector(res);
+                camera->mUp.Cross(camera->mDirection, right);
+                camera->mUp.Normalize();
+                parametersDirty = true;
             }
         }
-        paramBuffer += GetParameterTypeSize(param.mType);
     }
 
     //
-    paramBuffer = parameters.data();
+    //paramBuffer = parameters.Data();
     if (input.mLButDown)
     {
-        for (auto& param : metaNode.mParams)
+        for (size_t i = 0; i < metaNode.mParams.size(); i++)
         {
-            float* paramFlt = (float*)paramBuffer;
+            const auto& param = metaNode.mParams[i];
+            float* paramFlt = (float*)parameterBlock.Data(i);
             if (param.mbQuadSelect && param.mType == Con_Float4)
             {
                 parametersDirty = true;
@@ -840,7 +831,7 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
                     paramFlt[0] += (param.mRangeMaxX - param.mRangeMinX) * input.mDx;
                     if (param.mbLoop)
                         paramFlt[0] = fmodf(paramFlt[0], fabsf(param.mRangeMaxX - param.mRangeMinX)) +
-                                      min(param.mRangeMinX, param.mRangeMaxX);
+                                      Min(param.mRangeMinX, param.mRangeMaxX);
                 }
                 else
                 {
@@ -855,14 +846,13 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
                     paramFlt[1] += (param.mRangeMaxY - param.mRangeMinY) * input.mDy;
                     if (param.mbLoop)
                         paramFlt[1] = fmodf(paramFlt[1], fabsf(param.mRangeMaxY - param.mRangeMinY)) +
-                                      min(param.mRangeMinY, param.mRangeMaxY);
+                                      Min(param.mRangeMinY, param.mRangeMaxY);
                 }
                 else
                 {
                     paramFlt[1] = ImLerp(param.mRangeMinY, param.mRangeMaxY, input.mRx);
                 }
             }
-            paramBuffer += GetParameterTypeSize(param.mType);
         }
     }
     if (metaNode.mbHasUI || parametersDirty)
@@ -876,7 +866,7 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
         }
         if (parametersDirty && mModel.InTransaction() && bValidInput)
         {
-            mModel.SetParameters(mSelectedNodeIndex, parameters);
+            mModel.SetParameterBlock(mSelectedNodeIndex, parameterBlock);
         }
         mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
     }
@@ -900,7 +890,7 @@ void GraphControler::ContextMenu(ImVec2 rightclickPos, ImVec2 worldMousePos, int
         auto* node = nodeHovered != -1 ? &nodes[nodeHovered] : NULL;
         if (node)
         {
-            ImGui::Text("%s", metaNodes[node->mType].mName.c_str());
+            ImGui::Text("%s", metaNodes[node->mNodeType].mName.c_str());
             ImGui::Separator();
 
             if (ImGui::MenuItem("Extract view", NULL, false))
@@ -1052,7 +1042,7 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
                                        const NodeIndex nodeIndex)
 {
     const auto& nodes = mModel.GetNodes();
-    auto& meta = gMetaNodes[nodes[nodeIndex].mType];
+    auto& meta = gMetaNodes[nodes[nodeIndex].mNodeType];
     if (!meta.mbThumbnail)
     {
         return;
@@ -1119,7 +1109,7 @@ void GraphControler::ComputeGraphArrays()
     for (auto i = 0; i < nodes.size(); i++)
     {
         auto& n = nodes[i];
-        auto& meta = gMetaNodes[n.mType];
+        auto& meta = gMetaNodes[n.mNodeType];
 
         std::vector<const char*> inp(meta.mInputs.size(), nullptr);
         std::vector<const char*> outp(meta.mOutputs.size(), nullptr);

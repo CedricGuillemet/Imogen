@@ -43,7 +43,7 @@
 #include "Mem.h"
 #include <bx/allocator.h>
 #include <bx/readerwriter.h>
-
+#include "Libraries.h"
 Imogen* Imogen::instance = nullptr;
 
 extern TaskScheduler g_TS;
@@ -229,7 +229,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
                 
                 auto nodeType = nodeGraphControler.mModel.GetNodeType(selNode);
                 Mat4x4* viewMatrix = nodeGraphControler.mEvaluationStages.GetParameterViewMatrix(selNode);
-                const Camera* nodeCamera = GetCameraParameter(nodeType, nodeGraphControler.mModel.GetParameters(selNode));
+                const Camera* nodeCamera = nodeGraphControler.mModel.GetParameterBlock(selNode).GetCamera();
                 if (viewMatrix && !nodeCamera)
                 {
                     Mat4x4 res = *viewMatrix;
@@ -653,9 +653,9 @@ void CommitGraph(Library& library, GraphControler& nodeGraphControler, int mater
             }
         }
 
-        dstNode.mType = uint32_t(nodeType);
+        dstNode.mNodeType = uint32_t(nodeType);
         dstNode.mTypeName = metaNode.mName;
-        dstNode.mParameters = model.GetParameters(i);
+        dstNode.mParameters = model.GetParameterBlock(i);
         dstNode.mInputSamplers = model.GetSamplers(i);
         ImVec2 nodePos = model.GetNodePos(i);
         dstNode.mPosX = int32_t(nodePos.x);
@@ -732,11 +732,11 @@ void Imogen::UpdateNewlySelectedGraph()
         for (size_t i = 0; i < nodeCount; i++)
         {
             MaterialNode& node = material.mMaterialNodes[i];
-            if (node.mType == 0xFFFFFFFF)
+            if (node.mNodeType == 0xFFFFFFFF)
                 continue;
 
-            auto nodeIndex = model.AddNode(node.mType, ImVec2(float(node.mPosX), float(node.mPosY)));
-            model.SetParameters(nodeIndex, node.mParameters);
+            auto nodeIndex = model.AddNode(node.mNodeType, ImVec2(float(node.mPosX), float(node.mPosY)));
+            model.SetParameterBlock(nodeIndex, ParameterBlock(node.mNodeType, node.mParameters));
             model.SetStartEndFrame(nodeIndex, node.mFrameStart, node.mFrameEnd);
             model.SetSamplers(nodeIndex, node.mInputSamplers);
             if (!node.mImage.empty())
@@ -945,8 +945,8 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
 
                     int times[2];
                     model.GetStartEndFrame(mNodeIndex, times[0], times[1]);
-                    float value = GetParameterComponentValue(
-                        nodeIndex, model.GetParameters(nodeIndex),parameterIndex, int(curveIndex));
+                    const auto& parameters = model.GetParameterBlock(nodeIndex);
+                    float value = parameters.GetParameterComponentValue(parameterIndex, int(curveIndex));
                     curvePts[0] = ImVec2(float(times[0]) + 0.5f, value);
                     curvePts[1] = ImVec2(float(times[1]) + 0.5f, value);
                 }
@@ -1772,9 +1772,9 @@ int Imogen::NewLibrary(const std::string& directory, const std::string& name, bo
 		defNode.mPosY = 40;
 		defNode.mTypeName = "Color";
 		auto nodeType = GetMetaNodeIndex(defNode.mTypeName.c_str());
-		defNode.mType = uint32_t(nodeType);
+		defNode.mNodeType = uint32_t(nodeType);
 		defNode.mParameters.resize(ComputeNodeParametersSize(nodeType), 0);
-		InitDefaultParameters(nodeType, defNode.mParameters);
+        defNode.mParameters = ParameterBlock(nodeType).InitDefault();
 
 		MaterialNodeRug defRug;
 		defRug.mPosX = 0;

@@ -31,7 +31,7 @@
 #include "Library.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "ImogenConfig.h"
+#include "Types.h"
 
 struct GraphControler;
 struct Evaluation;

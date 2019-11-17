@@ -45,6 +45,7 @@
 #include <bgfx/platform.h>
 #include <bgfx/embedded_shader.h>
 #include "Scene.h"
+#include "Libraries.h"
 
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.

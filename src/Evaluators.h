@@ -28,7 +28,7 @@
 #include <map>
 #include <string>
 #include "Imogen.h"
-#include "ImogenConfig.h"
+#include "Types.h"
 #if USE_PYTHON
 #include "pybind11/embed.h"
 #endif

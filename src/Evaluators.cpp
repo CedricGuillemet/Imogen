@@ -35,7 +35,7 @@
 #include "TiledRenderer.h"
 #include "ProgressiveRenderer.h"
 #include "GPUBVH.h"
-#include "Camera.h"
+#include "Cam.h"
 #include <fstream>
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
@@ -360,10 +360,12 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     node.def("GetInputs", [](PyNode& node) {
         //
         auto d = pybind11::list();
-        if (node.mNode->mType == 0xFFFFFFFF)
+        if (node.mNode->mNodeType == 0xFFFFFFFF)
+        {
             return d;
+        }
 
-        MetaNode& metaNode = gMetaNodes[node.mNode->mType];
+        MetaNode& metaNode = gMetaNodes[node.mNode->mNodeType];
 
         for (auto& con : node.mGraph->mMaterialConnections)
         {
@@ -381,9 +383,11 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
     node.def("GetParameters", [](PyNode& node) {
         // name, type, value
         auto d = pybind11::list();
-        if (node.mNode->mType == 0xFFFFFFFF)
+        if (node.mNode->mNodeType == 0xFFFFFFFF)
+        {
             return d;
-        MetaNode& metaNode = gMetaNodes[node.mNode->mType];
+        }
+        MetaNode& metaNode = gMetaNodes[node.mNode->mNodeType];
 
         for (uint32_t index = 0; index < metaNode.mParams.size(); index++)
         {
@@ -393,7 +397,7 @@ PYBIND11_EMBEDDED_MODULE(Imogen, m)
             e["name"] = param.mName;
             e["type"] = pybind11::int_(int(param.mType));
 
-            size_t parameterOffset = GetParameterOffset(node.mNode->mType, index);
+            size_t parameterOffset = GetParameterOffset(node.mNode->mNodeType, index);
             if (parameterOffset >= node.mNode->mParameters.size())
             {
                 e["value"] = std::string("");

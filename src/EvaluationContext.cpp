@@ -28,7 +28,9 @@
 #include "EvaluationContext.h"
 #include "Evaluators.h"
 #include "GraphControler.h"
-#include "ImogenConfig.h"
+#include "Types.h"
+#include "Cam.h"
+#include "ParameterBlock.h"
 
 static const float rotMatrices[6][16] = {
     // toward +x
@@ -36,7 +38,6 @@ static const float rotMatrices[6][16] = {
 
     // -x
     { 0, 0,  1, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 1},
-
 
     //+y
     { 1, 0,  0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1},
@@ -57,7 +58,6 @@ void EvaluationThumbnails::Clear()
 	{
 		if (atlas.mFrameBuffer.idx != bgfx::kInvalidHandle)
 		{
-			Log("Destroyed Thumbnails FB %d\n", atlas.mFrameBuffer.idx);
 			bgfx::destroy(atlas.mFrameBuffer);
 		}
 	}
@@ -95,7 +95,6 @@ EvaluationThumbnails::Thumb EvaluationThumbnails::AddThumb()
 	mAtlases.push_back(ThumbAtlas(ThumbnailsPerAtlas));
 
 	auto fb = bgfx::createFrameBuffer(AtlasSize, AtlasSize, GetRTTextureFormat());
-	Log("New Thumbnails FB %d\n", fb.idx);
 	mAtlases.back().mFrameBuffer = fb;
 	bgfx::frame();
 	bgfx::setViewFrameBuffer(1, fb);
@@ -405,11 +404,11 @@ void EvaluationContext::BindTextures(EvaluationInfo& evaluationInfo, const Evalu
 void EvaluationContext::SetUniforms(NodeIndex nodeIndex)
 {
     float tempUniforms[8 * 4]; // max size for ramp
-    const Parameters& parameters = mEvaluationStages.mParameters[nodeIndex];
+    const ParameterBlock& parameterBlock = mEvaluationStages.mParameterBlocks[nodeIndex];
     const auto& evaluationStage = mEvaluationStages.mStages[nodeIndex];
     auto nodeType = evaluationStage.mType;
     const auto& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
-    const unsigned char* ptr = parameters.data();
+    const unsigned char* ptr = (const unsigned char*)parameterBlock.Data();
     int paramIndex = 0;
     for (const auto& uniform : evaluator.mUniformHandles)
     {
@@ -537,7 +536,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
     const auto tgt = evaluation.mTarget;
     const auto& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
     const bgfx::ProgramHandle program = evaluator.mProgram;
-    const auto& parameters = mEvaluationStages.GetParameters(nodeIndex);
+    const auto& parameters = mEvaluationStages.GetParameterBlock(nodeIndex);
     const auto nodeType = mEvaluationStages.GetNodeType(nodeIndex);
 
     if (!program.idx)
@@ -545,14 +544,14 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         return;
     }
 
-    const Camera* camera = GetCameraParameter(nodeType, parameters);
+    const Camera* camera = parameters.GetCamera();
     if (camera)
     {
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
     
-    int passCount = GetIntParameter(evaluationStage.mType, parameters, "passCount", 1);
+    int passCount = parameters.GetIntParameter("passCount", 1);
     
 	bgfx::FrameBufferHandle blitFramebuffer;
 	GetRenderProxy(blitFramebuffer, 16, 16, false);
@@ -702,7 +701,7 @@ void EvaluationContext::EvaluateC(const EvaluationStage& evaluationStage, NodeIn
     try
     {
         const auto& evaluator = gEvaluators.GetEvaluator(evaluationStage.mType);
-        int res = evaluator.mCFunction((unsigned char*)mEvaluationStages.mParameters[nodeIndex].data(), &evaluationInfo, this);
+        int res = evaluator.mCFunction(mEvaluationStages.mParameterBlocks[nodeIndex].Data(), &evaluationInfo, this);
     }
     catch (std::exception e)
     {

@@ -550,7 +550,6 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
         camera->ComputeViewProjectionMatrix(evaluationInfo.viewProjection, evaluationInfo.viewInverse);
     }
 
-    
     int passCount = parameters.GetIntParameter("passCount", 1);
     
 	bgfx::FrameBufferHandle blitFramebuffer;

@@ -32,10 +32,8 @@
 #include "Library.h"
 #include "EvaluationStages.h"
 #include "ParameterBlock.h"
-struct UndoRedoHandler;
-struct UndoRedo;
 
-typedef std::vector<InputSampler> Samplers;
+struct UndoRedo;
 
 class GraphModel
 {
@@ -74,7 +72,7 @@ public:
         int mStartFrame, mEndFrame;
         ParameterBlock mParameterBlock;
         MultiplexInput mMultiplexInput;
-        Samplers mSamplers;
+        InputSamplers mSamplers;
         bool mbSelected;
 		RuntimeId mRuntimeUniqueId;
         // Helpers
@@ -115,7 +113,7 @@ public:
     void AddRug(const Rug& rug);
     void DelRug(size_t rugIndex);
     void SetRug(size_t rugIndex, const Rug& rug);
-    void SetSamplers(NodeIndex nodeIndex, const Samplers& samplers);
+    void SetSamplers(NodeIndex nodeIndex, const InputSamplers& samplers);
 	void SetSampler(NodeIndex nodeIndex, size_t input, const InputSampler& sampler);
     void SetParameter(NodeIndex nodeIndex, const std::string& parameterName, const std::string& parameterValue);
     void SetParameterBlock(NodeIndex nodeIndex, const ParameterBlock& parameterBlock);
@@ -144,13 +142,14 @@ public:
     bool IsIOUsed(NodeIndex nodeIndex, int slotIndex, bool forOutput) const;
     bool IsIOPinned(NodeIndex nodeIndex, size_t io, bool forOutput) const;
     bool IsParameterPinned(NodeIndex nodeIndex, size_t parameterIndex) const;
-    const std::vector<AnimTrack>& GetAnimTrack() const { return mAnimTrack; }
+    const AnimationTracks& GetAnimationTracks() const { return *mAnimationTracks; }
+    std::shared_ptr<AnimationTracks> GetSharedAnimationTracks() const { return mAnimationTracks; }
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const;
     const std::vector<uint32_t> GetParameterPins() const;
     const std::vector<uint32_t> GetIOPins() const;
     const std::vector<MultiplexInput> GetMultiplexInputs() const;
     const ParameterBlock& GetParameterBlock(NodeIndex nodeIndex) const;
-    const Samplers& GetSamplers(NodeIndex nodeIndex) const { return mNodes[nodeIndex].mSamplers; }
+    const InputSamplers& GetSamplers(NodeIndex nodeIndex) const { return mNodes[nodeIndex].mSamplers; }
     ImRect GetNodesDisplayRect() const;
     ImRect GetFinalNodeDisplayRect(const std::vector<size_t>& orderList) const;
     bool RecurseIsLinked(int from, int to) const;
@@ -180,12 +179,11 @@ private:
     std::vector<Node> mNodes;
     std::vector<Link> mLinks;
     std::vector<Rug> mRugs;
-    std::vector<AnimTrack> mAnimTrack;
+    std::shared_ptr<AnimationTracks> mAnimationTracks;
 
     // non ser data / runtime datas
     std::vector<Node> mNodesClipboard;
     std::vector<DirtyList> mDirtyList;
-    //int mSelectedNodeIndex;
 
     // undo and transaction
     bool mbTransaction;
@@ -237,6 +235,4 @@ private:
         size_t currentIndex,
         int currentLayer);
     bool HasSelectedNodes() const;
-
-
 };

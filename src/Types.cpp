@@ -25,6 +25,7 @@
 
 #include <math.h>
 #include "Types.h"
+#include "bgfx/defines.h"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // matrix will receive the calculated perspective matrix.
@@ -234,4 +235,15 @@ void Mat4x4::OrthoOffCenterLH(const float l, float r, float b, const float t, fl
     m[3][1] = (t + b) / (b - t);
     m[3][2] = zn / (zn - zf);
     m[3][3] = 1.0f;
+}
+
+
+
+uint32_t InputSampler::Value() const
+{
+    static const uint32_t wrapu[] = { 0, BGFX_SAMPLER_U_CLAMP, BGFX_SAMPLER_U_BORDER, 0 };
+    static const uint32_t wrapv[] = { 0, BGFX_SAMPLER_V_CLAMP, BGFX_SAMPLER_V_BORDER, 0 };
+    static const uint32_t filterMin[] = { 0, BGFX_SAMPLER_MIN_POINT };
+    static const uint32_t filterMag[] = { 0, BGFX_SAMPLER_MIN_POINT };
+    return wrapu[mWrapU] + wrapv[mWrapV] + filterMin[mFilterMin] + filterMag[mFilterMag];
 }

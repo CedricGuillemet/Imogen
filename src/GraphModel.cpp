@@ -173,23 +173,28 @@ void GraphModel::AddNodeHelper(int nodeIndex)
 
 void GraphModel::RemoveAnimation(NodeIndex nodeIndex)
 {
-    if (mAnimTrack.empty())
-        return;
-    std::vector<int> tracks;
-    for (int i = 0; i < int(mAnimTrack.size()); i++)
+    if (mAnimationTracks->empty())
     {
-        const AnimTrack& animTrack = mAnimTrack[i];
+        return;
+    }
+    std::vector<int> tracks;
+    for (int i = 0; i < int(mAnimationTracks->size()); i++)
+    {
+        const AnimTrack& animTrack = mAnimationTracks->at(i);
         if (animTrack.mNodeIndex == nodeIndex)
+        {
             tracks.push_back(i);
+        }
     }
     if (tracks.empty())
+    {
         return;
-
+    }
     for (int i = 0; i < int(tracks.size()); i++)
     {
         int index = tracks[i] - i;
-        auto urAnimTrack = mUndoRedo ? std::make_unique<URDel<AnimTrack>>(index, [&] { return &mAnimTrack; }):nullptr;
-        mAnimTrack.erase(mAnimTrack.begin() + index);
+        auto urAnimTrack = mUndoRedo ? std::make_unique<URDel<AnimTrack>>(index, [&] { return mAnimationTracks.get(); }):nullptr;
+        mAnimationTracks->erase(mAnimationTracks->begin() + index);
     }
 }
 
@@ -493,10 +498,12 @@ void GraphModel::SetCameraLookAt(NodeIndex nodeIndex, const Vec4& eye, const Vec
 
 AnimTrack* GraphModel::GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex)
 {
-    for (auto& animTrack : mAnimTrack)
+    for (auto& animTrack : *mAnimationTracks)
     {
         if (animTrack.mNodeIndex == nodeIndex && animTrack.mParamIndex == parameterIndex)
+        {
             return &animTrack;
+        }
     }
     return NULL;
 }
@@ -518,13 +525,13 @@ void GraphModel::MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex)
         newTrack.mParamIndex = parameterIndex;
         newTrack.mValueType = parameterType;
         newTrack.mAnimation = AllocateAnimation(parameterType);
-        mAnimTrack.push_back(newTrack);
-        animTrack = &mAnimTrack.back();
+        mAnimationTracks->push_back(newTrack);
+        animTrack = &mAnimationTracks->back();
     }
 
     auto ur = mUndoRedo ? std::make_unique<URChange<AnimTrack>>(
-        int(animTrack - mAnimTrack.data()),
-        [&](int index) { return &mAnimTrack[index]; })
+        int(animTrack - mAnimationTracks->data()),
+        [&](int index) { return &mAnimationTracks->at(index); })
         : nullptr;
 
     //size_t parameterOffset = GetParameterOffset(uint32_t(mNodes[nodeIndex].mNodeType), parameterIndex);
@@ -556,10 +563,17 @@ void GraphModel::SetIOPin(NodeIndex nodeIndex, size_t io, bool forOutput, bool p
     mNodes[nodeIndex].mPinnedIO += pinned ? mask : 0;
 }
 
-void GraphModel::SetAnimTrack(const std::vector<AnimTrack>& animTrack)
+void GraphModel::SetAnimTrack(const AnimationTracks& animationTracks)
 {
     //assert(mbTransaction);
-    mAnimTrack = animTrack;
+    if (mAnimationTracks)
+    {
+        *mAnimationTracks = animationTracks;
+    }
+    else
+    {
+        mAnimationTracks = std::make_shared<AnimationTracks>(animationTracks);
+    }
 }
 
 void GraphModel::SetMultiplexInputs(const std::vector<MultiplexInput>& multiplexInputs)

@@ -55,6 +55,7 @@ protected:
     uint16_t mNodeType;
 
     template<typename type> type GetParameter(const char* parameterName, type defaultValue, ConTypes parameterType) const;
+    template<typename type> type* GetParameterPtr(const char* parameterName, type* defaultValue, ConTypes parameterType) const;
 
 };
 

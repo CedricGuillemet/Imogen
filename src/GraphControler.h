@@ -79,12 +79,6 @@ struct GraphControler : public GraphEditorDelegate
     EvaluationContext mEditingContext;
 	NodeIndex mBackgroundNode{InvalidNodeIndex};
     
-
-    /*EvaluationStage* Get(ASyncId id)
-    {
-        return GetByAsyncId(id, mModel.mEvaluationStages.mStages);
-    }
-    */
     void ApplyDirtyList();
     GraphModel mModel;
 

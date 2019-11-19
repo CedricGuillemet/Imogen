@@ -155,7 +155,7 @@ struct EvaluationStages
     std::vector<InputSamplers> mInputSamplers;
     std::vector<ParameterBlock> mParameterBlocks;
 
-    std::vector<AnimTrack> mAnimTrack;
+    std::shared_ptr<AnimationTracks> mAnimationTracks;
 
 	RuntimeId mMaterialUniqueId;
 

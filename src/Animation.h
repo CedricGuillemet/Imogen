@@ -294,3 +294,5 @@ struct AnimTrack
 };
 
 AnimationBase* AllocateAnimation(uint32_t valueType);
+
+typedef std::vector<AnimTrack> AnimationTracks;

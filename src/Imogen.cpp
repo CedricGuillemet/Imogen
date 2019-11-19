@@ -687,7 +687,7 @@ void CommitGraph(Library& library, GraphControler& nodeGraphControler, int mater
         rug.mColor = rugs[i].mColor;
         rug.mComment = rugs[i].mText;
     }
-    material.mAnimTrack = model.GetAnimTrack();
+    material.mAnimTrack = model.GetAnimationTracks();
     model.GetStartEndFrame(material.mFrameMin, material.mFrameMax);
     material.mPinnedParameters = model.GetParameterPins();
     material.mPinnedIO = model.GetIOPins();
@@ -794,9 +794,9 @@ void Imogen::UpdateNewlySelectedGraph()
         //mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode); TODO
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 		mNodeGraphControler->mEvaluationStages.SetMaterialUniqueId(material.mRuntimeUniqueId);
-
-        //mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
-        //mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
+        mNodeGraphControler->mEvaluationStages.mAnimationTracks = model.GetSharedAnimationTracks();
+        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
+        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
     }
 }
 
@@ -912,7 +912,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
     AnimCurveEdit(GraphControler& GraphControler,
                   ImVec2& min,
                   ImVec2& max,
-                  std::vector<AnimTrack>& animTrack,
+                  AnimationTracks& animTrack,
                   std::vector<bool>& visible,
                   int nodeIndex,
                   int currentTime)
@@ -933,7 +933,9 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             const std::string& parameterName = metaNode.mParams[parameterIndex].mName;
             CurveType curveType = GetCurveTypeForParameterType(type);
             if (curveType == CurveNone)
+            {
                 return;
+            }
             size_t curveCountPerParameter = GetCurveCountPerParameterType(type);
             parameterAddressed[parameterIndex] = true;
             for (size_t curveIndex = 0; curveIndex < curveCountPerParameter; curveIndex++)
@@ -970,17 +972,21 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             }
         };
 
-        for (auto& track : mAnimTrack)
+        for (auto& track : animTrack)
         {
             if (track.mNodeIndex != nodeIndex)
+            {
                 continue;
+            }
             curveForParameter(track.mParamIndex, ConTypes(track.mValueType), track.mAnimation);
         }
         // non keyed parameters
         for (size_t param = 0; param < metaNode.mParams.size(); param++)
         {
             if (parameterAddressed[param])
+            {
                 continue;
+            }
             curveForParameter(int(param), metaNode.mParams[param].mType, nullptr);
         }
     }
@@ -1004,7 +1010,9 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                     keyCount--;
             }
             if (!keyCount)
+            {
                 continue;
+            }
             auto anim = animTrack.mAnimation;
             anim->mFrames.resize(keyCount);
             anim->Allocate(keyCount);
@@ -1029,8 +1037,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
                 curve++;
             } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
         }
-        /*mNodeGraphControler.mModel.ApplyAnimationForNode( todo
-            &mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);*/
+        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(&mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);
     }
 
     virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const
@@ -1144,7 +1151,7 @@ struct AnimCurveEdit : public ImCurveEdit::Delegate
             uint32_t parameterIndex = mParameterIndex[curve];
             bool parameterFound = false;
             int index = 0;
-            for (auto& track : mNodeGraphControler.mModel.GetAnimTrack())
+            for (auto& track : mNodeGraphControler.mModel.GetAnimationTracks())
             {
                 if (track.mNodeIndex == mNodeGraphControler.mSelectedNodeIndex && track.mParamIndex == parameterIndex)
                 {
@@ -1393,7 +1400,7 @@ struct MySequence : public ImSequencer::SequenceInterface
         AnimCurveEdit curveEdit(mNodeGraphControler,
                                 curveMin,
                                 curveMax,
-                                const_cast<std::vector<AnimTrack>&>(mNodeGraphControler.mModel.GetAnimTrack()),
+                                const_cast<std::vector<AnimTrack>&>(mNodeGraphControler.mModel.GetAnimationTracks()),
                                 mbVisible,
                                 index,
                                 mCurrentTime);
@@ -1487,15 +1494,7 @@ void Imogen::Init(bool bDebugWindow)
     mbDebugWindow = bDebugWindow;
     SetStyle();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    /*
-    DiscoverNodes("glsl", "Nodes/GLSL/", EVALUATOR_GLSL, mEvaluatorFiles);
 
-#ifndef __EMSCRIPTEN__
-    DiscoverNodes("py", "Nodes/Python/", EVALUATOR_PYTHON, mEvaluatorFiles);
-    DiscoverNodes("glsl", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-    DiscoverNodes("glslc", "Nodes/GLSLCompute/", EVALUATOR_GLSLCOMPUTE, mEvaluatorFiles);
-#endif
-*/
     struct HotKeyFunction
     {
         const char* name;
@@ -2680,9 +2679,8 @@ void Imogen::Playback(bool timeHasChanged)
 
     if (timeHasChanged || mbIsPlaying)
     {
-        /*mNodeGraphControler->mModel.mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true); todo
-        mNodeGraphControler->mModel.mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
-        */
+        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
+        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
     }
 }
 

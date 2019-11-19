@@ -97,7 +97,6 @@ float ParameterBlock::GetParameterComponentValue(int parameterIndex, int compone
 template<typename type> type ParameterBlock::GetParameter(const char* parameterName, type defaultValue, ConTypes parameterType) const
 {
     const MetaNode& currentMeta = gMetaNodes[mNodeType];
-    const size_t paramsSize = ComputeNodeParametersSize(mNodeType);
     const unsigned char* paramBuffer = mDump.data();
     for (const MetaParameter& param : currentMeta.mParams)
     {
@@ -113,6 +112,24 @@ template<typename type> type ParameterBlock::GetParameter(const char* parameterN
     return defaultValue;
 }
 
+template<typename type> type* ParameterBlock::GetParameterPtr(const char* parameterName, type* defaultValue, ConTypes parameterType) const
+{
+    const MetaNode& currentMeta = gMetaNodes[mNodeType];
+    const unsigned char* paramBuffer = mDump.data();
+    for (const MetaParameter& param : currentMeta.mParams)
+    {
+        if (param.mType == parameterType)
+        {
+            if (parameterName == nullptr || (!strcmp(param.mName.c_str(), parameterName)))
+            {
+                return (type*)paramBuffer;
+            }
+        }
+        paramBuffer += GetParameterTypeSize(param.mType);
+    }
+    return defaultValue;
+}
+
 int ParameterBlock::GetIntParameter(const char* parameterName, int defaultValue) const
 {
     return GetParameter(parameterName, defaultValue, Con_Int);
@@ -120,7 +137,7 @@ int ParameterBlock::GetIntParameter(const char* parameterName, int defaultValue)
 
 Camera* ParameterBlock::GetCamera() const
 {
-    return GetParameter(nullptr, nullptr, Con_Camera);
+    return GetParameterPtr<Camera>(nullptr, nullptr, Con_Camera);
 }
 
 void* ParameterBlock::Data(size_t parameterIndex)

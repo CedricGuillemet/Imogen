@@ -74,7 +74,9 @@ void EvaluationStages::SetParameterBlock(NodeIndex nodeIndex, const ParameterBlo
     mParameterBlocks[nodeIndex] = parameters;
 #if USE_FFMPEG
     if (stage.mDecoder)
+    {
         stage.mDecoder = NULL;
+    }
 #endif
 }
 
@@ -84,7 +86,10 @@ void EvaluationStages::Clear()
     mInputs.clear();
     mInputSamplers.clear();
     mParameterBlocks.clear();
-    mAnimTrack.clear();
+    if (mAnimationTracks)
+    {
+        mAnimationTracks->clear();
+    }
     mOrderList.clear();
 }
 
@@ -136,7 +141,9 @@ FFMPEGCodec::Decoder* EvaluationStages::FindDecoder(const std::string& filename)
     for (auto& evaluation : mStages)
     {
         if (evaluation.mDecoder && evaluation.mDecoder->GetFilename() == filename)
+        {
             return evaluation.mDecoder.get();
+        }
     }
     auto decoder = new FFMPEGCodec::Decoder;
     decoder->Open(filename);
@@ -156,14 +163,17 @@ void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, NodeInd
     bool animatedNodes = false;
     EvaluationStage& stage = mStages[nodeIndex];
     ParameterBlock parameterBlock = mParameterBlocks[nodeIndex];
-    for (auto& animTrack : mAnimTrack)
+    if (mAnimationTracks)
     {
-        if (animTrack.mNodeIndex == nodeIndex)
+        for (auto& animTrack : *mAnimationTracks)
         {
-            //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-            animTrack.mAnimation->GetValue(frame, parameterBlock.Data(animTrack.mParamIndex));
+            if (animTrack.mNodeIndex == nodeIndex)
+            {
+                //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+                animTrack.mAnimation->GetValue(frame, parameterBlock.Data(animTrack.mParamIndex));
 
-            animatedNodes = true;
+                animatedNodes = true;
+            }
         }
     }
     if (animatedNodes)
@@ -177,13 +187,16 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
 {
     std::vector<bool> animatedNodes;
     animatedNodes.resize(mStages.size(), false);
-    for (auto& animTrack : mAnimTrack)
+    if (mAnimationTracks)
     {
-        EvaluationStage& stage = mStages[animTrack.mNodeIndex];
+        for (auto& animTrack : *mAnimationTracks)
+        {
+            EvaluationStage& stage = mStages[animTrack.mNodeIndex];
 
-        animatedNodes[animTrack.mNodeIndex] = true;
-        //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
-        animTrack.mAnimation->GetValue(frame, mParameterBlocks[animTrack.mNodeIndex].Data(animTrack.mParamIndex));
+            animatedNodes[animTrack.mNodeIndex] = true;
+            //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
+            animTrack.mAnimation->GetValue(frame, mParameterBlocks[animTrack.mNodeIndex].Data(animTrack.mParamIndex));
+        }
     }
     for (size_t i = 0; i < animatedNodes.size(); i++)
     {
@@ -238,6 +251,7 @@ void EvaluationStages::BuildEvaluationFromMaterial(Material& material)
     ComputeEvaluationOrder();
 	mMaterialUniqueId = material.mRuntimeUniqueId;
     //SetAnimTrack(material.mAnimTrack);
+    mAnimationTracks = std::make_shared<AnimationTracks>(material.mAnimTrack);
 }
 
 size_t EvaluationStages::PickBestNode(const std::vector<EvaluationStages::NodeOrder>& orders) const

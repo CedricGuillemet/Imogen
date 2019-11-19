@@ -35,18 +35,6 @@
 #include "MetaNodes.h"
 #include "Animation.h"
 
-struct MultiplexInput
-{
-    MultiplexInput()
-    {
-        for (auto& input : mInputs)
-		{
-			input = { InvalidNodeIndex };
-		}
-    }
-    NodeIndex mInputs[8];
-};
-
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
 // based on the unique id
@@ -71,39 +59,6 @@ T* GetByAsyncId(ASyncId id, std::vector<T>& items)
     }
     return NULL;
 }
-
-struct InputSampler
-{
-    InputSampler() : mWrapU(0), mWrapV(0), mFilterMin(0), mFilterMag(0)
-    {
-    }
-    uint32_t mWrapU;
-    uint32_t mWrapV;
-    uint32_t mFilterMin;
-    uint32_t mFilterMag;
-
-    bool operator!=(const InputSampler& other) const
-    {
-        return (mWrapU != other.mWrapU || mWrapV != other.mWrapV || mFilterMin != other.mFilterMin ||
-                mFilterMag != other.mFilterMag);
-    }
-    bool operator==(const InputSampler& other) const
-    {
-        return (mWrapU == other.mWrapU && mWrapV == other.mWrapV && mFilterMin == other.mFilterMin &&
-                mFilterMag == other.mFilterMag);
-    }
-
-    uint32_t Value() const
-    {
-        static const uint32_t wrapu[] = {0, BGFX_SAMPLER_U_CLAMP, BGFX_SAMPLER_U_BORDER, 0 };
-        static const uint32_t wrapv[] = { 0, BGFX_SAMPLER_V_CLAMP, BGFX_SAMPLER_V_BORDER, 0 };
-        static const uint32_t filterMin[] = {0, BGFX_SAMPLER_MIN_POINT };
-        static const uint32_t filterMag[] = {0, BGFX_SAMPLER_MIN_POINT };
-        return wrapu[mWrapU] + wrapv[mWrapV] + filterMin[mFilterMin] + filterMag[mFilterMag];
-    }
-
-};
-typedef std::vector<InputSampler> InputSamplers;
 
 struct MaterialNode
 {

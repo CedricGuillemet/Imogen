@@ -39,21 +39,6 @@ struct Library;
 struct Builder;
 struct MySequence;
 
-enum EVALUATOR_TYPE
-{
-    EVALUATOR_GLSL,
-    EVALUATOR_C,
-    EVALUATOR_PYTHON,
-    EVALUATOR_GLSLCOMPUTE,
-    EVALUATOR_JS,
-};
-
-struct EvaluatorFile
-{
-    std::string mDirectory;
-    std::string mFilename;
-    EVALUATOR_TYPE mEvaluatorType;
-};
 
 // plugins
 struct RegisteredPlugin
@@ -74,7 +59,6 @@ struct Imogen
     void Show(Builder* builder, Library& library, bool capturing);
     void CommitCurrentGraph(Library& library);
 
-    std::vector<EvaluatorFile> mEvaluatorFiles;
 
     void SetExistingMaterialActive(int materialIndex);
     void SetExistingMaterialActive(const char* materialName);

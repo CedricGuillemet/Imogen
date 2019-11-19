@@ -28,9 +28,39 @@
 #include <math.h>
 #include <float.h>
 #include <string.h>
+#include <vector>
 
 static const uint16_t InvalidNodeIndex = 0xFFFF;
 static const uint8_t InvalidSlotIndex = 0xFF;
+
+struct InputSampler
+{
+    InputSampler() : mWrapU(0), mWrapV(0), mFilterMin(0), mFilterMag(0)
+    {
+    }
+
+    bool operator!=(const InputSampler& other) const
+    {
+        return (mWrapU != other.mWrapU || mWrapV != other.mWrapV || mFilterMin != other.mFilterMin ||
+            mFilterMag != other.mFilterMag);
+    }
+
+    bool operator==(const InputSampler& other) const
+    {
+        return (mWrapU == other.mWrapU && mWrapV == other.mWrapV && mFilterMin == other.mFilterMin &&
+            mFilterMag == other.mFilterMag);
+    }
+
+    uint32_t Value() const;
+
+    uint32_t mWrapU;
+    uint32_t mWrapV;
+    uint32_t mFilterMin;
+    uint32_t mFilterMag;
+};
+
+typedef std::vector<InputSampler> InputSamplers;
+
 
 struct NodeIndex
 {
@@ -137,6 +167,14 @@ private:
 		return ++runtimeId;
 	}
 };
+
+struct MultiplexInput
+{
+    NodeIndex mInputs[8] = { InvalidNodeIndex, InvalidNodeIndex, InvalidNodeIndex, InvalidNodeIndex, InvalidNodeIndex, InvalidNodeIndex, InvalidNodeIndex, InvalidNodeIndex };
+};
+
+typedef std::vector<InputSampler> InputSamplers;
+
 
 struct Mat4x4;
 

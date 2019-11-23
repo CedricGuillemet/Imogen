@@ -34,6 +34,7 @@
 #include "JSGlue.h"
 #include "imgui_color_gradient.h"
 #include "Cam.h"
+#include "IconsFontAwesome5.h"
 
 void AddExtractedView(size_t nodeIndex);
 
@@ -62,17 +63,6 @@ void GraphControler::SetMaterialUniqueId(RuntimeId runtimeId)
 	mEvaluationStages.SetMaterialUniqueId(runtimeId);
 }
 
-void GraphControler::HandlePin(NodeIndex nodeIndex, size_t parameterIndex)
-{
-    bool checked = mModel.IsParameterPinned(nodeIndex, parameterIndex);
-    if (ImGui::Checkbox("", &checked))
-    {
-        mModel.BeginTransaction(true);
-        mModel.SetParameterPin(nodeIndex, parameterIndex, checked);
-        mModel.EndTransaction();
-    }
-}
-
 bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
                                              unsigned int parameterIndex,
                                              void* paramBuffer,
@@ -85,7 +75,7 @@ bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
     bool dirty = false;
     uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + parameterIndex;
     ImGui::PushID(parameterPair * 4);
-    HandlePin(nodeIndex, parameterIndex);
+    PinnedParameterUI(nodeIndex, parameterIndex);
     ImGui::SameLine();
     switch (param.mType)
     {
@@ -279,17 +269,6 @@ bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
                 dirty |= ImGui::Combo(param.mName.c_str(), (int*)paramBuffer, cbString.c_str());
             }
         break;
-		/*
-        case Con_ForceEvaluate:
-            if (ImGui::Button(param.mName.c_str()))
-            {
-                EvaluationInfo evaluationInfo;
-                //evaluationInfo.forcedDirty = 1;
-                evaluationInfo.uiPass = 0;
-                //mEditingContext.RunSingle(viewId_BuildEvaluation, nodeIndex, evaluationInfo); TODOEVA
-            }
-            break;
-			*/
         case Con_Bool:
             {
                 bool checked = (*(int*)paramBuffer) != 0;
@@ -381,31 +360,37 @@ void GraphControler::PinnedEdit()
         {
             continue;
         }
-        NodeIndex nodeIndex = uint16_t((pin >> 16) & 0xFFFF);
-        unsigned int parameterIndex = pin & 0xFFFF;
+        const NodeIndex nodeIndex = uint16_t((pin >> 16) & 0xFFFF);
+        const uint32_t parameterPinMask = pin & 0xFFFF;
 
-        size_t nodeType = mModel.GetNodeType(nodeIndex);
+        const size_t nodeType = mModel.GetNodeType(nodeIndex);
         const MetaNode& metaNode = gMetaNodes[nodeType];
-        if (parameterIndex >= metaNode.mParams.size())
-        {
-            continue;
-        }
 
-        ImGui::PushID(171717 + pin);
-        const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
-        auto parameters = mModel.GetParameterBlock(nodeIndex);
-        if (EditSingleParameter(nodeIndex, parameterIndex, parameters.Data(parameterIndex), metaParam))
+        for (uint32_t parameterIndex = 0; parameterIndex < metaNode.mParams.size(); parameterIndex ++)
         {
-            dirtyNode = nodeIndex;
-            dirtyParameterBlock = parameters;
-        }
+            if (!(parameterPinMask & (1 << parameterIndex)))
+            {
+                continue;
+            }
 
-        ImGui::PopID();
+            ImGui::PushID(171717 + parameterIndex);
+            const MetaParameter& metaParam = metaNode.mParams[parameterIndex];
+            auto parameters = mModel.GetParameterBlock(nodeIndex);
+            if (EditSingleParameter(nodeIndex, parameterIndex, parameters.Data(parameterIndex), metaParam))
+            {
+                dirtyNode = nodeIndex;
+                dirtyParameterBlock = parameters;
+            }
+
+            ImGui::PopID();
+        }
     }
 	ImGui::EndChild();
     if (dirtyNode != -1)
     {
+        mModel.BeginTransaction(true);
         mModel.SetParameterBlock(dirtyNode, dirtyParameterBlock);
+        mModel.EndTransaction();
     }
 }
 
@@ -422,7 +407,7 @@ void GraphControler::EditNodeParameters()
 	ImGui::BeginChild(655);
     // edit samplers
     auto samplers = mModel.GetSamplers(nodeIndex);
-    if (ImGui::CollapsingHeader("Samplers", 0))
+    if (samplers.size() && ImGui::CollapsingHeader("Samplers", 0))
     {
         for (size_t i = 0; i < samplers.size(); i++)
         {
@@ -431,8 +416,10 @@ void GraphControler::EditNodeParameters()
             static const char* filterModes = {"LINEAR\0NEAREST"};
             ImGui::PushItemWidth(80);
             ImGui::PushID(int(99 + i));
-            HandlePinIO(nodeIndex, SlotIndex(int(i)), false);
-            ImGui::SameLine();
+            if (!PinnedIOUI(nodeIndex, SlotIndex(int(i)), false))
+            {
+                ImGui::SameLine();
+            }
             ImGui::Text("Sampler %zu", i);
             samplerDirty |= ImGui::Combo("U", (int*)&inputSampler.mWrapU, wrapModes);
             ImGui::SameLine();
@@ -455,7 +442,9 @@ void GraphControler::EditNodeParameters()
         }
     }
     if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
+    {
         return;
+    }
 
     // edit parameters
     auto parameterBlock = mModel.GetParameterBlock(nodeIndex);
@@ -472,20 +461,17 @@ void GraphControler::EditNodeParameters()
     for (unsigned int slotIndex = 0; slotIndex < 8; slotIndex++)
     {
         const std::vector<NodeIndex>& inputs = mEvaluationStages.mMultiplex[nodeIndex].mMultiplexPerInputs[slotIndex];
-        //if (mModel.GetMultiplexedInputs(mEvaluationStages.mDirectInputs, nodeIndex, slotIndex, inputs))
-        {
-            NodeIndex currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
+        NodeIndex currentMultiplexedOveride = mModel.GetMultiplexed(nodeIndex, slotIndex); //
 
-            int selectedMultiplexIndex = ShowMultiplexed(inputs, currentMultiplexedOveride);
-            if (selectedMultiplexIndex != -1 && inputs[selectedMultiplexIndex] != currentMultiplexedOveride)
-            {
-                mModel.BeginTransaction(true);
-                mModel.SetMultiplexed(nodeIndex, slotIndex, int(inputs[selectedMultiplexIndex]));
-                mModel.EndTransaction();
-            }
-            break;
+        int selectedMultiplexIndex = ShowMultiplexed(inputs, currentMultiplexedOveride);
+        if (selectedMultiplexIndex != -1 && inputs[selectedMultiplexIndex] != currentMultiplexedOveride)
+        {
+            mModel.BeginTransaction(true);
+            mModel.SetMultiplexed(nodeIndex, slotIndex, int(inputs[selectedMultiplexIndex]));
+            mModel.EndTransaction();
         }
     }
+
 	ImGui::EndChild();
     if (dirty)
     {
@@ -495,21 +481,41 @@ void GraphControler::EditNodeParameters()
     }
 }
 
-void GraphControler::HandlePinIO(NodeIndex nodeIndex, SlotIndex slotIndex, bool forOutput)
+bool GraphControler::PinnedParameterUI(NodeIndex nodeIndex, size_t parameterIndex)
+{
+    bool pinned = mModel.IsParameterPinned(nodeIndex, parameterIndex);
+    ImGui::PushID(int(nodeIndex * 4096 + parameterIndex * 17));
+    ImGui::PushStyleColor(ImGuiCol_Text, pinned ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.4));
+    if (ImGui::Button(ICON_FA_THUMBTACK))
+    {
+        mModel.BeginTransaction(true);
+        mModel.SetParameterPin(nodeIndex, parameterIndex, !pinned);
+        mModel.EndTransaction();
+    }
+    ImGui::PopStyleColor();
+    ImGui::PopID();
+    return pinned;
+}
+
+bool GraphControler::PinnedIOUI(NodeIndex nodeIndex, SlotIndex slotIndex, bool forOutput)
 {
     if (mModel.IsIOUsed(nodeIndex, int(slotIndex), forOutput))
     {
-        return;
+        return true;
     }
     ImGui::PushID(int(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0)));
     bool pinned = mModel.IsIOPinned(nodeIndex, slotIndex, forOutput);
-    if (ImGui::Checkbox("", &pinned))
+
+    ImGui::PushStyleColor(ImGuiCol_Text, pinned ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.4));
+    if (ImGui::Button(ICON_FA_THUMBTACK))
     {
         mModel.BeginTransaction(true);
-        mModel.SetIOPin(nodeIndex, slotIndex, forOutput, pinned);
+        mModel.SetIOPin(nodeIndex, slotIndex, forOutput, !pinned);
         mModel.EndTransaction();
     }
+    ImGui::PopStyleColor();
     ImGui::PopID();
+    return false;
 }
 
 void GraphControler::NodeEdit()
@@ -529,8 +535,10 @@ void GraphControler::NodeEdit()
             }
             ImGui::PushID(int(1717171 + nodeIndex));
             uint32_t parameterPair = (uint32_t(nodeIndex) << 16) + 0xDEAD;
-            HandlePinIO(nodeIndex, 0, true);
-            ImGui::SameLine();
+            if (!PinnedIOUI(nodeIndex, 0, true))
+            {
+                ImGui::SameLine();
+            }
             Imogen::RenderPreviewNode(int(nodeIndex), *this);
             ImGui::PopID();
         }
@@ -542,14 +550,14 @@ void GraphControler::NodeEdit()
         {
             ImGui::PushID(1717171);
             ImGui::BeginGroup();
-            HandlePinIO(mSelectedNodeIndex, 0, true);
+            PinnedIOUI(mSelectedNodeIndex, 0, true);
 			bgfx::TextureHandle maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
             bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
             float ofs = selectedNodeAsBackground ? 0.5f : 0.f;
-            if (ImGui::ImageButton(
+            /*if (ImGui::ImageButton(
                     (ImTextureID)(uint64_t)maxiMini.idx, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
             {
-				if (selectedNodeAsBackground)
+				if (!selectedNodeAsBackground)
 				{
 					mBackgroundNode = mSelectedNodeIndex;
 				}
@@ -558,6 +566,7 @@ void GraphControler::NodeEdit()
 					mBackgroundNode.SetInvalid();
 				}
             }
+            */
             ImGui::EndGroup();
             ImGui::SameLine();
             Imogen::RenderPreviewNode(mSelectedNodeIndex, *this);
@@ -672,7 +681,6 @@ void GraphControler::ApplyDirtyList()
 		mEvaluationStages.DelEvaluation(nodeIndex);
 		mEditingContext.DelEvaluation(nodeIndex);
 	}
-    
 
     if (evaluationOrderChanged)
     {
@@ -799,7 +807,6 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
     }
 
     //
-    //paramBuffer = parameters.Data();
     if (input.mLButDown)
     {
         for (size_t i = 0; i < metaNode.mParams.size(); i++)

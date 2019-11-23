@@ -244,6 +244,9 @@ void GraphModel::AddLink(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, Nod
     auto ur = mUndoRedo ? std::make_unique<URAdd<Link>>(int(linkIndex), [&]() { return &mLinks; }, inputChanged, inputChanged)
                   : nullptr;
 
+    SetIOPin(inputNodeIndex, inputSlotIndex, true, false);
+    SetIOPin(outputNodeIndex, outputSlotIndex, false, false);
+
     AddLinkInternal(inputNodeIndex, inputSlotIndex, outputNodeIndex, outputSlotIndex);
     inputChanged(int(mLinks.size() - 1));
 }

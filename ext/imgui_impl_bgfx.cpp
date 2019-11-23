@@ -1028,10 +1028,10 @@ void ImGui_Implbgfx_RenderDrawData(bgfx::ViewId viewId, ImDrawData* _drawData)
                 if (NULL != cmd->TextureId)
                 {
                     union { ImTextureID ptr; struct { bgfx::TextureHandle handle; uint8_t flags; uint8_t mip; } s; } texture = { cmd->TextureId };
-                    state |= 0 != (IMGUI_FLAGS_ALPHA_BLEND & texture.s.flags)
+                    /*state |= 0 != (IMGUI_FLAGS_ALPHA_BLEND & texture.s.flags)
                         ? BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA)
                         : BGFX_STATE_NONE
-                        ;
+                        ;*/
                     th = texture.s.handle;
                     if (0 != texture.s.mip)
                     {
@@ -1040,10 +1040,7 @@ void ImGui_Implbgfx_RenderDrawData(bgfx::ViewId viewId, ImDrawData* _drawData)
                         program = m_imageProgram;
                     }
                 }
-                else
-                {
-                    state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
-                }
+                state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA);
 
                 const uint16_t xx = uint16_t(bx::max(cmd->ClipRect.x, 0.0f) );
                 const uint16_t yy = uint16_t(bx::max(cmd->ClipRect.y, 0.0f) );

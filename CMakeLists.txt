@@ -193,7 +193,7 @@ ADD_EXECUTABLE(${EXE_NAME} ${SRC_FILES} ${EXT_FILES} ${NFD_FILES} ${EXT_FILES_DE
 if (EMSCRIPTEN)
 add_definitions(-DEMSCRIPTEN)
 add_definitions(-D_X86_)
-set(EMS_OPTS "-s USE_SDL=2 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1 -s BINARYEN_TRAP_MODE=clamp --bind -O2 --no-heap-copy")
+set(EMS_OPTS "-s USE_SDL=2 -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1 --bind -O2 --no-heap-copy")
 add_definitions(${EMS_OPTS})
 set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 set(EMS_PRELOAD " --preload-file DefaultLibrary.imogen --preload-file imgui.ini --preload-file Nodes --preload-file Stock")

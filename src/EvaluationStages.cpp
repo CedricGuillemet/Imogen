@@ -169,9 +169,7 @@ void EvaluationStages::ApplyAnimationForNode(EvaluationContext* context, NodeInd
         {
             if (animTrack.mNodeIndex == nodeIndex)
             {
-                //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
                 animTrack.mAnimation->GetValue(frame, parameterBlock.Data(animTrack.mParamIndex));
-
                 animatedNodes = true;
             }
         }
@@ -192,9 +190,7 @@ void EvaluationStages::ApplyAnimation(EvaluationContext* context, int frame)
         for (auto& animTrack : *mAnimationTracks)
         {
             EvaluationStage& stage = mStages[animTrack.mNodeIndex];
-
             animatedNodes[animTrack.mNodeIndex] = true;
-            //size_t parameterOffset = GetParameterOffset(uint32_t(stage.mType), animTrack.mParamIndex);
             animTrack.mAnimation->GetValue(frame, mParameterBlocks[animTrack.mNodeIndex].Data(animTrack.mParamIndex));
         }
     }

@@ -96,8 +96,9 @@ protected:
                              const MetaParameter& param);
     void PinnedEdit();
     void EditNodeParameters();
-    void HandlePin(NodeIndex nodeIndex, size_t parameterIndex);
-    void HandlePinIO(NodeIndex nodeIndex, SlotIndex slotIndex, bool forOutput);
+    bool PinnedParameterUI(NodeIndex nodeIndex, size_t parameterIndex);
+    // return true if io is used and UI is not displayed
+    bool PinnedIOUI(NodeIndex nodeIndex, SlotIndex slotIndex, bool forOutput);
     int ShowMultiplexed(const std::vector<NodeIndex>& inputs, NodeIndex currentMultiplexedOveride) const;
     void ComputeGraphArrays();
 };

@@ -186,7 +186,7 @@ int Image::Free(Image* image)
 bgfx::TextureHandle Image::Upload(const Image* image, bgfx::TextureHandle textureHandle, int cubeFace, int mipmap)
 {
     bool allocTexture = false;
-    if (!textureHandle.idx)
+    if (textureHandle.idx == bgfx::kInvalidHandle)
     {
         textureHandle = bgfx::createTexture2D(
             uint16_t(image->mWidth)
@@ -199,7 +199,7 @@ bgfx::TextureHandle Image::Upload(const Image* image, bgfx::TextureHandle textur
         );
         allocTexture = true;
     }
-    assert(textureHandle.idx);
+    assert(textureHandle.idx != bgfx::kInvalidHandle);
 
     unsigned int texelSize = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat))/8;
     assert(texelSize == 4);
@@ -466,7 +466,7 @@ bgfx::TextureHandle ImageCache::GetTexture(const std::string& filename)
     if (Image::Read(filename.c_str(), &image) == EVAL_OK)
     {
         mImageSizes[filename] = std::make_pair<uint16_t, uint16_t>(uint16_t(image.mWidth), uint16_t(image.mHeight));
-        textureHandle = Image::Upload(&image, {0});
+        textureHandle = Image::Upload(&image, {bgfx::kInvalidHandle});
         Image::Free(&image);
     }
 

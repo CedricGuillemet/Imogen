@@ -354,15 +354,16 @@ void GraphControler::PinnedEdit()
     int dirtyNode = -1;
     ParameterBlock dirtyParameterBlock(-1);
 	ImGui::BeginChild(655);
-    for (const auto pin : mModel.GetParameterPins())
+    auto& pins = mModel.GetParameterPins();
+    for (NodeIndex nodeIndex = 0; nodeIndex < mNodes.size(); nodeIndex++)
     {
+        const auto pin = pins[nodeIndex];
         if (!pin)
         {
             continue;
         }
-        const NodeIndex nodeIndex = uint16_t((pin >> 16) & 0xFFFF);
-        const uint32_t parameterPinMask = pin & 0xFFFF;
 
+        const uint32_t parameterPinMask = pin & 0xFFFF;
         const size_t nodeType = mModel.GetNodeType(nodeIndex);
         const MetaNode& metaNode = gMetaNodes[nodeType];
 
@@ -381,7 +382,6 @@ void GraphControler::PinnedEdit()
                 dirtyNode = nodeIndex;
                 dirtyParameterBlock = parameters;
             }
-
             ImGui::PopID();
         }
     }

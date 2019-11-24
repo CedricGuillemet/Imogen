@@ -2169,12 +2169,12 @@ void Imogen::ShowTimeLine()
     bool dirtyFrame = ImGui::InputInt("", &startFrame, 0, 0);
     ImGui::PopID();
     ImGui::SameLine();
-    if (Button("AnimationFirstFrame", "|<", ImVec2(0, 0)))
+    if (Button("AnimationFirstFrame", ICON_FA_STEP_BACKWARD, ImVec2(0, 0)))
     {
         mCurrentTime = startFrame;
     }
     ImGui::SameLine();
-    if (Button("AnimationPreviousFrame", "<", ImVec2(0, 0)))
+    if (Button("AnimationPreviousFrame", ICON_FA_CARET_LEFT, ImVec2(0, 0)))
     {
         mCurrentTime--;
     }
@@ -2187,28 +2187,25 @@ void Imogen::ShowTimeLine()
     ImGui::PopID();
 
     ImGui::SameLine();
-    if (Button("AnimationNextFrame", ">", ImVec2(0, 0)))
+    if (Button("AnimationNextFrame", ICON_FA_CARET_RIGHT, ImVec2(0, 0)))
     {
         mCurrentTime++;
     }
     ImGui::SameLine();
-    if (ImGui::Button(">|"))
+    if (ImGui::Button(ICON_FA_STEP_FORWARD, ImVec2(0, 0)))
     {
         mCurrentTime = endFrame;
     }
     ImGui::SameLine();
 
-    if (Button("PlayPause", mbIsPlaying ? "Stop" : "Play", ImVec2(0, 0)))
+    if (Button("PlayPause", mbIsPlaying ? ICON_FA_PAUSE_CIRCLE : ICON_FA_PLAY_CIRCLE, ImVec2(0, 0)))
     {
         PlayPause();
     }
 
-	bgfx::TextureHandle playNoLoopTextureHandle = gImageCache.GetTexture("Stock/PlayNoLoop.png");
-	bgfx::TextureHandle playLoopTextureHandle = gImageCache.GetTexture("Stock/PlayLoop.png");
 
     ImGui::SameLine();
-    if (ImGui::ImageButton((ImTextureID)(uint64_t)(mbPlayLoop ? playLoopTextureHandle.idx : playNoLoopTextureHandle.idx),
-                           ImVec2(16.f, 16.f)))
+    if (ImGui::Button(mbPlayLoop ? ICON_FA_HISTORY : ICON_FA_ANGLE_DOUBLE_RIGHT, ImVec2(24, 20)))
     {
         mbPlayLoop = !mbPlayLoop;
     }
@@ -2226,7 +2223,7 @@ void Imogen::ShowTimeLine()
     ImGui::PopID();
     ImGui::SameLine();
     ImGui::SameLine(0, 40.f);
-    if (Button("AnimationSetKey", "Make Key", ImVec2(0, 0)) && selectedEntry.IsValid())
+    if (Button("AnimationSetKey", ICON_FA_KEY, ImVec2(0, 0)) && selectedEntry.IsValid())
     {
         model.BeginTransaction(true);
 		model.MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);

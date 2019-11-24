@@ -557,6 +557,22 @@ void GraphModel::SetIOPin(NodeIndex nodeIndex, size_t io, bool forOutput, bool p
     if (forOutput)
     {
         mask = (1 << io) & 0xFF;
+        // un set previous output
+        for (size_t i = 0; i < mNodes.size(); i++)
+        {
+            if (nodeIndex != NodeIndex(i))
+            {
+                if (mNodes[i].mPinnedIO & mask)
+                {
+                    auto ur2 = mUndoRedo ? std::make_unique<URChange<Node>>(
+                        int(i),
+                        [&](int index) { return &mNodes[index]; })
+                        : nullptr;
+                    mNodes[i].mPinnedIO &= ~mask;
+                }
+            }
+
+        }
     }
     else
     {

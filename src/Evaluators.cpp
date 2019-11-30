@@ -994,8 +994,10 @@ namespace EvaluationAPI
 
     int GetEvaluationSize(const EvaluationContext* evaluationContext, NodeIndex target, int* imageWidth, int* imageHeight)
     {
-        if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+        if ((!target.IsValid()) || target >= evaluationContext->mEvaluationStages.mStages.size())
+        {
             return EVAL_ERR;
+        }
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
 		{
@@ -1009,8 +1011,10 @@ namespace EvaluationAPI
 
     int SetEvaluationSize(EvaluationContext* evaluationContext, NodeIndex target, int imageWidth, int imageHeight)
     {
-        if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+        if ((!target.IsValid()) || target >= evaluationContext->mEvaluationStages.mStages.size())
+        {
             return EVAL_ERR;
+        }
         auto renderTarget = evaluationContext->GetRenderTarget(target);
         if (!renderTarget)
         {
@@ -1026,7 +1030,7 @@ namespace EvaluationAPI
 
 	int SetEvaluationPersistent(EvaluationContext* evaluationContext, NodeIndex target, int persistent)
 	{
-		if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+		if ((!target.IsValid()) || target >= evaluationContext->mEvaluationStages.mStages.size())
 		{
 			return EVAL_ERR;
 		}
@@ -1036,7 +1040,7 @@ namespace EvaluationAPI
 
     int SetEvaluationCubeSize(EvaluationContext* evaluationContext, NodeIndex target, int faceWidth, int hasMipmap)
     {
-        if (target < 0 || target >= evaluationContext->mEvaluationStages.mStages.size())
+        if ((!target.IsValid()) || target >= evaluationContext->mEvaluationStages.mStages.size())
 		{
             return EVAL_ERR;
 		}

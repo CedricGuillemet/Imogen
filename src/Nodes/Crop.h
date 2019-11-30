@@ -45,11 +45,12 @@ DECLARE_NODE(Crop)
 
 	int target = int(evaluation->targetIndex);
 	SetEvaluationPersistent(context, target, 1);
-    if (evaluation->uiPass)
+    /*if (evaluation->uiPass)
     {
         SetEvaluationSize(context, target, width, height);
     }
     else
+    */
     {
         SetEvaluationSize(context, target, croppedWidth, croppedHeight);
     }

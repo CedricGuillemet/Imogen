@@ -443,6 +443,7 @@ void GraphControler::EditNodeParameters()
     }
     if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
     {
+        ImGui::EndChild();
         return;
     }
 
@@ -546,7 +547,7 @@ void GraphControler::NodeEdit()
     }
     else
     {
-        if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
+        //if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
         {
             ImGui::PushID(1717171);
             ImGui::BeginGroup();
@@ -741,9 +742,9 @@ void GraphControler::ApplyDirtyList()
 	mModel.ClearDirtyList();
 }
 
-void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
+void GraphControler::SetKeyboardMouse(NodeIndex nodeIndex, const UIInput& input, bool bValidInput)
 {
-    if (!mSelectedNodeIndex.IsValid())
+    if (!nodeIndex.IsValid())
 	{
         return;
 	}
@@ -760,9 +761,9 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
     }
 
     size_t res = 0;
-    const MetaNode& metaNode = gMetaNodes[mModel.GetNodeType(mSelectedNodeIndex)];
+    const MetaNode& metaNode = gMetaNodes[mModel.GetNodeType(nodeIndex)];
 
-    ParameterBlock parameterBlock = mModel.GetParameterBlock(mSelectedNodeIndex);
+    ParameterBlock parameterBlock = mModel.GetParameterBlock(nodeIndex);
     bool parametersDirty = false;
 
     Camera* camera = parameterBlock.GetCamera();
@@ -864,7 +865,7 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
     }
     if (metaNode.mbHasUI || parametersDirty)
     {
-        mEditingContext.SetKeyboardMouse(mSelectedNodeIndex, input);
+        mEditingContext.SetKeyboardMouse(nodeIndex, input);
 
         if ((input.mLButDown || input.mRButDown) && !mModel.InTransaction() && parametersDirty && bValidInput)
         {
@@ -873,9 +874,9 @@ void GraphControler::SetKeyboardMouse(const UIInput& input, bool bValidInput)
         }
         if (parametersDirty && mModel.InTransaction() && bValidInput)
         {
-            mModel.SetParameterBlock(mSelectedNodeIndex, parameterBlock);
+            mModel.SetParameterBlock(nodeIndex, parameterBlock);
         }
-        mEditingContext.SetTargetDirty(mSelectedNodeIndex, Dirty::Mouse);
+        mEditingContext.SetTargetDirty(nodeIndex, Dirty::Mouse);
     }
 }
 

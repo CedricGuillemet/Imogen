@@ -125,6 +125,16 @@ void GraphModel::GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<In
     multiplexedInPuts = inputs;
 }
 
+const AnimationTracks& GraphModel::GetAnimationTracks() const 
+{ 
+    if (mAnimationTracks)
+    {
+        return *mAnimationTracks; 
+    }
+    static AnimationTracks emptyAnimationTracks;
+    return emptyAnimationTracks;
+}
+
 void GraphModel::Undo()
 {
     assert(!mbTransaction);

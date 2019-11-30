@@ -142,7 +142,7 @@ public:
     bool IsIOUsed(NodeIndex nodeIndex, int slotIndex, bool forOutput) const;
     bool IsIOPinned(NodeIndex nodeIndex, size_t io, bool forOutput) const;
     bool IsParameterPinned(NodeIndex nodeIndex, size_t parameterIndex) const;
-    const AnimationTracks& GetAnimationTracks() const { return *mAnimationTracks; }
+    const AnimationTracks& GetAnimationTracks() const;
     std::shared_ptr<AnimationTracks> GetSharedAnimationTracks() const { return mAnimationTracks; }
     void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const;
     const std::vector<uint32_t> GetParameterPins() const;

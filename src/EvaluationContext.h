@@ -101,6 +101,7 @@ struct EvaluationContext
 
     void Evaluate();
 
+    void RunSingle(NodeIndex nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo);
     void SetKeyboardMouse(NodeIndex nodeIndex, const UIInput& input);
     int GetCurrentTime() const { return mCurrentTime; }
     void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
@@ -224,7 +225,7 @@ protected:
 
     EvaluationThumbnails mThumbnails;
 
-    void EvaluateGLSL(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);
+    void EvaluateGLSL(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo, bgfx::ViewId baseViewId = 10);
     void EvaluateC(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);
 #ifdef USE_PYTHON
     void EvaluatePython(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);

@@ -171,7 +171,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
         EvaluationInfo evaluationInfo;
         //evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
+        //nodeGraphControler.mEditingContext.RunSingle(selNode, 1, evaluationInfo);
     }
     EvaluationAPI::GetEvaluationSize(&nodeGraphControler.mEditingContext, selNode, &imageWidth, &imageHeight);
     if (selNode.IsValid() && nodeGraphControler.mModel.NodeHasUI(selNode))
@@ -179,7 +179,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
         EvaluationInfo evaluationInfo;
         //evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 0;
-        //nodeGraphControler.mEditingContext.RunSingle(selNode, viewId_ImGui, evaluationInfo); TODOEVA
+        //nodeGraphControler.mEditingContext.RunSingle(selNode, 1, evaluationInfo);
     }
     ImTextureID displayedTexture = 0;
     ImRect rc;
@@ -191,6 +191,11 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
     {
         const float ratio = float(imageHeight) / float(imageWidth);
         h = w * ratio;
+
+        if (nodeGraphControler.mModel.NodeHasUI(selNode))
+        {
+            h = w;
+        }
 
         if (forceUI)
         {
@@ -319,7 +324,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
                              io.KeyCtrl,
                              io.KeyAlt,
                              io.KeyShift};
-            nodeGraphControler.SetKeyboardMouse(input, true);
+            nodeGraphControler.SetKeyboardMouse(selNode, input, true);
         }
         lastSentExit = -1;
     }
@@ -340,7 +345,7 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
                 false,
                 false
             };
-            nodeGraphControler.SetKeyboardMouse(input, false);
+            nodeGraphControler.SetKeyboardMouse(selNode, input, false);
         }
     }
 }
@@ -2168,18 +2173,20 @@ void Imogen::ShowTimeLine()
     ImGui::PushID(200);
     bool dirtyFrame = ImGui::InputInt("", &startFrame, 0, 0);
     ImGui::PopID();
+
     ImGui::SameLine();
     if (Button("AnimationFirstFrame", ICON_FA_STEP_BACKWARD, ImVec2(0, 0)))
     {
         mCurrentTime = startFrame;
     }
+
     ImGui::SameLine();
     if (Button("AnimationPreviousFrame", ICON_FA_CARET_LEFT, ImVec2(0, 0)))
     {
         mCurrentTime--;
     }
-    ImGui::SameLine();
 
+    ImGui::SameLine();
     ImGui::PushID(201);
     if (ImGui::InputInt("", &mCurrentTime, 0, 0, 0))
     {
@@ -2191,18 +2198,18 @@ void Imogen::ShowTimeLine()
     {
         mCurrentTime++;
     }
+
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_STEP_FORWARD, ImVec2(0, 0)))
     {
         mCurrentTime = endFrame;
     }
-    ImGui::SameLine();
 
+    ImGui::SameLine();
     if (Button("PlayPause", mbIsPlaying ? ICON_FA_PAUSE_CIRCLE : ICON_FA_PLAY_CIRCLE, ImVec2(0, 0)))
     {
         PlayPause();
     }
-
 
     ImGui::SameLine();
     if (ImGui::Button(mbPlayLoop ? ICON_FA_HISTORY : ICON_FA_ANGLE_DOUBLE_RIGHT, ImVec2(24, 20)))
@@ -2221,7 +2228,7 @@ void Imogen::ShowTimeLine()
         model.EndTransaction();
     }
     ImGui::PopID();
-    ImGui::SameLine();
+    
     ImGui::SameLine(0, 40.f);
     if (Button("AnimationSetKey", ICON_FA_KEY, ImVec2(0, 0)) && selectedEntry.IsValid())
     {
@@ -2231,13 +2238,13 @@ void Imogen::ShowTimeLine()
     }
 
     ImGui::SameLine(0, 50.f);
-
     int setf = (mSequence->getKeyFrameOrValue.x < FLT_MAX) ? int(mSequence->getKeyFrameOrValue.x) : 0;
     ImGui::PushID(203);
     if (ImGui::InputInt("", &setf, 0, 0))
     {
         mSequence->setKeyFrameOrValue.x = float(setf);
     }
+
     ImGui::SameLine();
     float setv = (mSequence->getKeyFrameOrValue.y < FLT_MAX) ? mSequence->getKeyFrameOrValue.y : 0.f;
     if (ImGui::InputFloat("Key", &setv))
@@ -2245,6 +2252,7 @@ void Imogen::ShowTimeLine()
         mSequence->setKeyFrameOrValue.y = setv;
     }
     ImGui::PopID();
+
     ImGui::SameLine();
     int timeMask[2] = {0, 0};
     if (selectedEntry.IsValid())

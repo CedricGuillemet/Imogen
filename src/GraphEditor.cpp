@@ -831,7 +831,9 @@ static bool DrawNode(ImDrawList* drawList,
     ImVec2 imageSize = delegate->GetEvaluationSize(nodeIndex);
     float imageRatio = 1.f;
     if (imageSize.x > 0.f && imageSize.y > 0.f)
+    {
         imageRatio = imageSize.y / imageSize.x;
+    }
     ImVec2 quadSize = imgPosMax - imgPos;
     ImVec2 marge(0.f, 0.f);
     if (imageRatio > 1.f)
@@ -993,14 +995,18 @@ void GraphEditor(GraphEditorDelegate* delegate, bool enabled)
         {
             const auto* node = &nodes[nodeIndex];
             if (node->mbSelected != (i != 0))
+            {
                 continue;
+            }
 
             // node view clipping
             ImRect nodeRect = GetNodeRect(*node, factor);
             nodeRect.Min += offset;
             nodeRect.Max += offset;
             if (!regionRect.Overlaps(nodeRect))
+            {
                 continue;
+            }
 
             ImGui::PushID(nodeIndex);
 

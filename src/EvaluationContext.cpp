@@ -527,9 +527,42 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 	mProxies[key] = currentFramebuffer;
 }
 
+void EvaluationContext::RunSingle(NodeIndex nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo)
+{
+    const auto& currentStage = mEvaluationStages.mStages[nodeIndex];
+    const Input& input = mEvaluationStages.mInputs[nodeIndex];
+
+    evaluationInfo.targetIndex = float(nodeIndex);
+    evaluationInfo.frame = float(mCurrentTime);
+    //mEvaluationInfo.dirtyFlag = evaluation.mDirtyFlag;
+    for (int i = 0; i < 8; i++)
+    {
+        evaluationInfo.inputIndices[i] = input.mInputs[i].IsValid() ? (float)input.mInputs[i] : -1.f;
+    }
+    SetKeyboardMouseInfos(evaluationInfo, nodeIndex);
+    int evaluationMask = gEvaluators.GetMask(currentStage.mType);
+
+    if (evaluationMask & EvaluationC)
+    {
+        EvaluateC(currentStage, nodeIndex, evaluationInfo);
+    }
+#ifdef USE_PYTHON
+    if (evaluationMask & EvaluationPython)
+    {
+        EvaluatePython(currentStage, nodeIndex, evaluationInfo);
+    }
+#endif
+
+    if (evaluationMask & EvaluationGLSL)
+    {
+        EvaluateGLSL(currentStage, nodeIndex, evaluationInfo, viewId);
+    }
+}
+
 void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 									NodeIndex nodeIndex,
-                                     EvaluationInfo& evaluationInfo)
+                                    EvaluationInfo& evaluationInfo,
+                                    bgfx::ViewId baseViewId)
 {
     const Input& input = mEvaluationStages.mInputs[nodeIndex];
     const auto& evaluation = mEvaluations[nodeIndex];
@@ -552,8 +585,11 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 
     int passCount = parameters.GetIntParameter("passCount", 1);
     
-	bgfx::FrameBufferHandle blitFramebuffer;
-	GetRenderProxy(blitFramebuffer, 16, 16, false);
+	bgfx::FrameBufferHandle blitFramebuffer{ bgfx::kInvalidHandle };
+    if (!evaluationInfo.uiPass)
+    {
+	    GetRenderProxy(blitFramebuffer, 16, 16, false);
+    }
 
     auto w = tgt->mImage.mWidth;
     auto h = tgt->mImage.mHeight;
@@ -567,14 +603,17 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
 			const int viewportWidth = w >> mip;
 			const int viewportHeight = h >> mip;
 
-			bgfx::FrameBufferHandle currentFramebuffer;
-			GetRenderProxy(currentFramebuffer, viewportWidth, viewportHeight, evaluation.mbDepthBuffer);
+            bgfx::FrameBufferHandle currentFramebuffer{ bgfx::kInvalidHandle };
+            if (!evaluationInfo.uiPass)
+            {
+			    GetRenderProxy(currentFramebuffer, viewportWidth, viewportHeight, evaluation.mbDepthBuffer);
+            }
 			
 			for (auto face = 0; face < faceCount; face++)
 			{
-				bgfx::ViewId viewId = 10;
+				bgfx::ViewId viewId = baseViewId;
 
-                if (!evaluation.mbClearBuffer)
+                if (!evaluation.mbClearBuffer && !evaluationInfo.uiPass)
                 {
                     bgfx::setViewName(viewId, "blit");
                     bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
@@ -584,11 +623,13 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                     bgfx::blit(viewId, bgfx::getTexture(currentFramebuffer), mip, 0, 0, face, tgt->mTexture, 0, 0, 0, 0, viewportWidth, viewportHeight, 0);
                 }
 
-
-				bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());
-				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
-				bgfx::setViewFrameBuffer(viewId, currentFramebuffer);
-				bgfx::setViewRect(viewId, 0, 0, viewportWidth , viewportHeight);
+                if (!evaluationInfo.uiPass)
+                {
+				    bgfx::setViewName(viewId, gMetaNodes[evaluator.mType].mName.c_str());
+				    bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+				    bgfx::setViewFrameBuffer(viewId, currentFramebuffer);
+				    bgfx::setViewRect(viewId, 0, 0, viewportWidth , viewportHeight);
+                }
 
                 memcpy(evaluationInfo.viewRot, rotMatrices[face], sizeof(float) * 16);
 				for (int i = 0; i < 8; i++)
@@ -617,24 +658,30 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                         ;
 
                     bgfx::setState(state);
-                    static const float uvt[4] = { 2.f, -2.f, -1.0f, 1.0f };
-                    bgfx::setUniform(gEvaluators.u_uvTransform, uvt);
+                    if (!evaluationInfo.uiPass)
+                    {
+                        static const float uvt[4] = { 2.f, -2.f, -1.0f, 1.0f };
+                        bgfx::setUniform(gEvaluators.u_uvTransform, uvt);
+                    }
                     evaluationStage.mGScene->Draw(evaluationInfo, viewId, program);
                 }
 
                 // copy from proxy to destination
-				viewId++;
-				bgfx::frame();
-				// blit
-				bgfx::setViewName(viewId, "blit");
-				bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
-				bgfx::setViewRect(viewId, 0, 0, viewportWidth, viewportHeight);
-				bgfx::setViewFrameBuffer(viewId, blitFramebuffer);
-				bgfx::touch(viewId);
-				bgfx::blit(viewId, tgt->mTexture, mip, 0, 0, face, bgfx::getTexture(currentFramebuffer), 0, 0, 0, 0, viewportWidth, viewportHeight, 0);
-				viewId++;
+                if (!evaluationInfo.uiPass)
+                {
+				    viewId++;
+				    bgfx::frame();
+				    // blit
+				    bgfx::setViewName(viewId, "blit");
+				    bgfx::setViewMode(viewId, bgfx::ViewMode::Sequential);
+				    bgfx::setViewRect(viewId, 0, 0, viewportWidth, viewportHeight);
+				    bgfx::setViewFrameBuffer(viewId, blitFramebuffer);
+				    bgfx::touch(viewId);
+				    bgfx::blit(viewId, tgt->mTexture, mip, 0, 0, face, bgfx::getTexture(currentFramebuffer), 0, 0, 0, 0, viewportWidth, viewportHeight, 0);
+				    viewId++;
 
-				bgfx::frame();
+				    bgfx::frame();
+                }
 			} // face
         } // mip
     } // passNumber
@@ -673,11 +720,10 @@ void EvaluationContext::GenerateThumbnail(NodeIndex nodeIndex)
 	bgfx::setViewFrameBuffer(viewId, thumbFrameBuffer);
 	auto h = sourceCoords[3] - sourceCoords[1];
 	bgfx::setViewRect(viewId, sourceCoords[0], sourceCoords[1], sourceCoords[2] - sourceCoords[0], h);
-	bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR /*| BGFX_CLEAR_DEPTH*/, 0x303030ff, 1.0f, 0);
+	bgfx::setViewClear(viewId, BGFX_CLEAR_COLOR /*| BGFX_CLEAR_DEPTH*/, 0xF08010ff, 1.0f, 0);
 	uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS;
-
+    bgfx::touch(viewId);
 	bgfx::setState(state);
-
 
 	static const float uvt[4] = { 2.f, -2.f, -1.0f, 1.0f };
 	bgfx::setUniform(gEvaluators.u_uvTransform, uvt);
@@ -1093,7 +1139,7 @@ namespace DrawUICallbacks
         EvaluationInfo evaluationInfo;
         //evaluationInfo.forcedDirty = 1;
         evaluationInfo.uiPass = 1;
-        //context->RunSingle(nodeIndex, viewId_ImGui, evaluationInfo); TODOEVA
+        context->RunSingle(nodeIndex, 0, evaluationInfo);
     }
 } // namespace DrawUICallbacks
 

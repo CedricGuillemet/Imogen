@@ -35,7 +35,7 @@ struct GraphControler : public GraphEditorDelegate
 
     void Clear();
 
-    void SetKeyboardMouse(const UIInput& input, bool bValidInput);
+    void SetKeyboardMouse(NodeIndex nodeIndex, const UIInput& input, bool bValidInput);
 
     // accessors
     int NodeIsProcesing(NodeIndex nodeIndex) const override { return mEditingContext.StageIsProcessing(nodeIndex); }

@@ -510,10 +510,16 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 		currentFramebuffer = iter->second;
 		return;
 	}
+    // limit the number of proxy RT
+    if (mProxies.size() >= 10)
+    {
+        auto proxy = mProxies.begin();
+        bgfx::destroy(proxy->second);
+        mProxies.erase(proxy);
+    }
 	if (!depthBuffer)
 	{
 		currentFramebuffer = bgfx::createFrameBuffer(width, height, GetRTTextureFormat(), BGFX_TEXTURE_BLIT_DST);
-		//Log("New proxy FB %d - %d %d\n", currentFramebuffer.idx, width, height);
 	}
 	else
 	{
@@ -521,7 +527,6 @@ void EvaluationContext::GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuff
 		fbTextures[0] = bgfx::createTexture2D(width, height, false, 1, GetRTTextureFormat(), BGFX_TEXTURE_RT_WRITE_ONLY);
 		fbTextures[1] = bgfx::createTexture2D(width, height, false, 1, bgfx::TextureFormat::D24S8, BGFX_TEXTURE_RT_WRITE_ONLY);
 		currentFramebuffer = bgfx::createFrameBuffer(2, fbTextures, true);
-		//Log("New proxy FB %d - %d %d depth\n", currentFramebuffer.idx, width, height);
 	}
 	assert(currentFramebuffer.idx != bgfx::kInvalidHandle);
 	mProxies[key] = currentFramebuffer;

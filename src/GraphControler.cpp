@@ -283,9 +283,19 @@ bool GraphControler::EditSingleParameter(NodeIndex nodeIndex,
             if (ImGui::Button("Reset"))
             {
                 Camera* cam = (Camera*)paramBuffer;
-                cam->mPosition = Vec4(0.f, 0.f, 0.f);
-                cam->mDirection = Vec4(0.f, 0.f, 1.f);
-                cam->mUp = Vec4(0.f, 1.f, 0.f);
+                auto *scene = mEvaluationStages.mStages[nodeIndex].mGScene.get();
+                if (scene)
+                {
+                    Bounds bound = scene->ComputeBounds();
+                    cam->LookAt(Vec4(bound.mMax.x, bound.mMax.y, bound.mMax.z), bound.Center(), Vec4(0.f, 1.f, 0.f, 0.f));
+                }
+                else
+                {
+                    cam->mPosition = Vec4(0.f, 0.f, 0.f);
+                    cam->mDirection = Vec4(0.f, 0.f, 1.f);
+                    cam->mUp = Vec4(0.f, 1.f, 0.f);
+                }
+                dirty = true;
             }
             break;
         case Con_Multiplexer:
@@ -394,7 +404,7 @@ void GraphControler::PinnedEdit()
     }
 }
 
-void GraphControler::EditNodeParameters()
+bool GraphControler::EditNodeParameters(ParameterBlock& parameterBlock)
 {
     NodeIndex nodeIndex = mSelectedNodeIndex;
 
@@ -444,11 +454,10 @@ void GraphControler::EditNodeParameters()
     if (!ImGui::CollapsingHeader(currentMeta.mName.c_str(), 0, ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::EndChild();
-        return;
+        return false;
     }
 
     // edit parameters
-    auto parameterBlock = mModel.GetParameterBlock(nodeIndex);
     for (size_t i = 0;i< currentMeta.mParams.size(); i++)
     {
         ImGui::PushID(667889 + i);
@@ -474,12 +483,7 @@ void GraphControler::EditNodeParameters()
     }
 
 	ImGui::EndChild();
-    if (dirty)
-    {
-        mModel.BeginTransaction(true);
-        mModel.SetParameterBlock(nodeIndex, parameterBlock);
-        mModel.EndTransaction();
-    }
+    return dirty;
 }
 
 bool GraphControler::PinnedParameterUI(NodeIndex nodeIndex, size_t parameterIndex)
@@ -540,41 +544,47 @@ void GraphControler::NodeEdit()
             {
                 ImGui::SameLine();
             }
-            Imogen::RenderPreviewNode(int(nodeIndex), *this);
+            ParameterBlock parameterBlock = mModel.GetParameterBlock(nodeIndex);
+            Imogen::RenderPreviewNode(int(nodeIndex), *this, parameterBlock);
             ImGui::PopID();
         }
         PinnedEdit();
     }
     else
     {
-        //if (ImGui::CollapsingHeader("Preview", 0, ImGuiTreeNodeFlags_DefaultOpen))
+        ParameterBlock parameterBlock = mModel.GetParameterBlock(mSelectedNodeIndex);
+        ImGui::PushID(1717171);
+        ImGui::BeginGroup();
+        PinnedIOUI(mSelectedNodeIndex, 0, true);
+		bgfx::TextureHandle maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
+        bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
+        float ofs = selectedNodeAsBackground ? 0.5f : 0.f;
+        /*if (ImGui::ImageButton(
+                (ImTextureID)(uint64_t)maxiMini.idx, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
         {
-            ImGui::PushID(1717171);
-            ImGui::BeginGroup();
-            PinnedIOUI(mSelectedNodeIndex, 0, true);
-			bgfx::TextureHandle maxiMini = gImageCache.GetTexture("Stock/MaxiMini.png");
-            bool selectedNodeAsBackground = mBackgroundNode == mSelectedNodeIndex;
-            float ofs = selectedNodeAsBackground ? 0.5f : 0.f;
-            /*if (ImGui::ImageButton(
-                    (ImTextureID)(uint64_t)maxiMini.idx, ImVec2(12, 13), ImVec2(0.f + ofs, 1.f), ImVec2(0.5f + ofs, 0.f)))
-            {
-				if (!selectedNodeAsBackground)
-				{
-					mBackgroundNode = mSelectedNodeIndex;
-				}
-				else
-				{
-					mBackgroundNode.SetInvalid();
-				}
-            }
-            */
-            ImGui::EndGroup();
-            ImGui::SameLine();
-            Imogen::RenderPreviewNode(mSelectedNodeIndex, *this);
-            ImGui::PopID();
+			if (!selectedNodeAsBackground)
+			{
+				mBackgroundNode = mSelectedNodeIndex;
+			}
+			else
+			{
+				mBackgroundNode.SetInvalid();
+			}
         }
+        */
+        ImGui::EndGroup();
+        ImGui::SameLine();
+        bool dirty = Imogen::RenderPreviewNode(mSelectedNodeIndex, *this, parameterBlock);
+        ImGui::PopID();
 
-        EditNodeParameters();
+        dirty |= EditNodeParameters(parameterBlock);
+
+        if (dirty)
+        {
+            mModel.BeginTransaction(true);
+            mModel.SetParameterBlock(mSelectedNodeIndex, parameterBlock);
+            mModel.EndTransaction();
+        }
     }
 }
 
@@ -1084,11 +1094,11 @@ void GraphControler::DrawNodeImage(ImDrawList* drawList,
 
 bool GraphControler::RenderBackground()
 {
-    if (mBackgroundNode.IsValid())
+    /*if (mBackgroundNode.IsValid())
     {
         Imogen::RenderPreviewNode(mBackgroundNode, *this, true);
         return true;
-    }
+    }*/
     return false;
 }
 

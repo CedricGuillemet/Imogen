@@ -46,6 +46,7 @@
 #include <bgfx/embedded_shader.h>
 #include "Scene.h"
 #include "Libraries.h"
+#include "ImGuizmo.h"
 
 // Emscripten requires to have full control over the main loop. We're going to store our SDL book-keeping variables globally.
 // Having a single function that acts as a loop prevents us to store state in the stack of said function. So we need some location for this.
@@ -486,7 +487,8 @@ void MainLoop(void* arg)
         ImGui_Implbgfx_NewFrame();
         ImGui_ImplSDL2_NewFrame(loopdata->mWindow);
         ImGui::NewFrame();
-
+        ImGuizmo::BeginFrame();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
         InitCallbackRects();
         loopdata->mImogen->HandleHotKeys();
 

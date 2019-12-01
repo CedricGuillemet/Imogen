@@ -43,6 +43,7 @@ void Camera::LookAt(const Vec4& eye, const Vec4& target, const Vec4& up)
     mPosition = eye;
     mDirection = (target - eye).Normalize();
     mUp = up;
+    mLens.y = (target - eye).Length();
 }
 
 float& Camera::operator[](int index)
@@ -65,12 +66,28 @@ float& Camera::operator[](int index)
 
 void Camera::ComputeViewProjectionMatrix(float* viewProj, float* viewInverse) const
 {
-    Mat4x4& vp = *(Mat4x4*)viewProj;
     Mat4x4 view, proj;
-    view.lookAtRH(mPosition, mPosition + mDirection, Vec4(0.f, 1.f, 0.f, 0.f));
+    Mat4x4& vi = *(Mat4x4*)viewInverse;
+    Mat4x4& vp = *(Mat4x4*)viewProj;
+    ComputeViewMatrix(view.m16, vi.m16);
+
     proj.glhPerspectivef2(53.f, 1.f, 0.01f, 100.f);
     vp = view * proj;
+}
 
+void Camera::ComputeViewMatrix(float* view, float* viewInverse) const
+{
+    Mat4x4& v = *(Mat4x4*)view;
+    v.lookAtRH(mPosition, mPosition + mDirection, Vec4(0.f, 1.f, 0.f, 0.f));
     Mat4x4& vi = *(Mat4x4*)viewInverse;
     vi.LookAt(mPosition, mPosition + mDirection, Vec4(0.f, 1.f, 0.f, 0.f));
+}
+
+void Camera::SetViewMatrix(float* view)
+{
+    Mat4x4 matrix = *(Mat4x4*)view;
+    matrix.Inverse();
+    mPosition.TransformPoint(Vec4(0.f, 0.f, 0.f), matrix);
+    mDirection.TransformVector(Vec4(0.f, 0.f, -1.f), matrix);
+    mUp.TransformVector(Vec4(0.f, 1.f, 0.f), matrix);
 }

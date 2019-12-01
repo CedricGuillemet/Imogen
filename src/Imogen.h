@@ -38,7 +38,7 @@ struct Evaluation;
 struct Library;
 struct Builder;
 struct MySequence;
-
+struct ParameterBlock;
 
 // plugins
 struct RegisteredPlugin
@@ -64,7 +64,7 @@ struct Imogen
     void SetExistingMaterialActive(const char* materialName);
     void DecodeThumbnailAsync(Material* material);
 
-    static void RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphControler, bool forceUI = false);
+    static bool RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphControler, ParameterBlock& parameterBlock, bool forceUI = false);
     void HandleHotKeys();
 
     Material& NewMaterial(const std::string& materialName = "Name_Of_New_Material");

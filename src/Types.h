@@ -919,3 +919,13 @@ inline void Mat4x4::RotationAxis(const Vec4& axis, float angle)
     m[3][2] = 0.f;
     m[3][3] = 1.f;
 }
+
+struct Bounds
+{
+    Vec3 mMin{FLT_MAX, FLT_MAX, FLT_MAX};
+    Vec3 mMax{-FLT_MAX, -FLT_MAX, -FLT_MAX};
+
+    void AddPoint(const Vec3 pt);
+    void AddBounds(const Bounds bounds, const Mat4x4& matrix);
+    Vec4 Center() const;
+};

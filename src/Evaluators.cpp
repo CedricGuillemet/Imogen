@@ -1537,10 +1537,12 @@ namespace EvaluationAPI
 
         JobMain(evaluationContext, [evaluationContext, sc, data]() {
             sc->mMeshes.resize(data->meshes_count);
+            sc->mBounds.resize(data->meshes_count);
             for (unsigned int i = 0; i < data->meshes_count; i++)
             {
                 auto& gltfMesh = data->meshes[i];
                 auto& mesh = sc->mMeshes[i];
+                auto& bounds = sc->mBounds[i];
                 mesh.mPrimitives.resize(gltfMesh.primitives_count);
                 // attributes
                 for (unsigned int j = 0; j < gltfMesh.primitives_count; j++)
@@ -1570,6 +1572,15 @@ namespace EvaluationAPI
                         const char* buffer = ((char*)attr.data->buffer_view->buffer->data) +
                                              attr.data->buffer_view->offset + attr.data->offset;
                         prim.AddBuffer(buffer, format, (unsigned int)attr.data->stride, (unsigned int)attr.data->count);
+                        if (format == Scene::Mesh::Format::POS)
+                        {
+                            const Vec3* pos = (Vec3*)buffer;
+                            const unsigned int posCount = ((unsigned int)attr.data->count * (unsigned int)attr.data->stride) / (3 * sizeof(float));
+                            for (size_t iBound = 0; iBound < posCount; iBound++)
+                            {
+                                bounds.AddPoint(pos[iBound]);
+                            }
+                        }
                     }
 
                     // indices

@@ -32,12 +32,14 @@ struct Camera
     Vec4 mPosition;
     Vec4 mDirection;
     Vec4 mUp;
-    Vec4 mLens; // fov,....
+    Vec4 mLens; // fov, distanceToTarget ....
 
     Camera Lerp(const Camera& target, float t);
     void LookAt(const Vec4& eye, const Vec4& target, const Vec4& up);
     float& operator[](int index);
+    void SetViewMatrix(float* view);
     void ComputeViewProjectionMatrix(float* viewProj, float* viewInverse) const;
+    void ComputeViewMatrix(float* view, float* viewInverse) const;
 };
 
 inline Camera Lerp(Camera a, Camera b, float t)

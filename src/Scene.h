@@ -67,10 +67,12 @@ struct Scene
         void Draw(bgfx::ViewId viewId, bgfx::ProgramHandle program) const;
     };
     std::vector<Mesh> mMeshes;
+    std::vector<Bounds> mBounds;
     std::vector<Mat4x4> mWorldTransforms;
     std::vector<int> mMeshIndex;
     std::string mName;
     void Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, bgfx::ProgramHandle program) const;
+    Bounds ComputeBounds() const;
 protected:
     static std::weak_ptr<Scene> mDefaultScene;
 };

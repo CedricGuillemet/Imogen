@@ -95,7 +95,7 @@ protected:
                              void* paramBuffer,
                              const MetaParameter& param);
     void PinnedEdit();
-    void EditNodeParameters();
+    bool EditNodeParameters(ParameterBlock& parameterBlock);
     bool PinnedParameterUI(NodeIndex nodeIndex, size_t parameterIndex);
     // return true if io is used and UI is not displayed
     bool PinnedIOUI(NodeIndex nodeIndex, SlotIndex slotIndex, bool forOutput);

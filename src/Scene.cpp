@@ -126,7 +126,6 @@ void Scene::Draw(EvaluationInfo& evaluationInfo, bgfx::ViewId viewId, bgfx::Prog
 
 Scene::~Scene()
 {
-    // todo : clear ia/va
 }
 
 std::shared_ptr<Scene> Scene::BuildDefaultScene()
@@ -137,6 +136,7 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     }
     auto defaultScene = std::make_shared<Scene>();
     defaultScene->mMeshes.resize(1);
+    defaultScene->mBounds.resize(1);
     auto& mesh = defaultScene->mMeshes.back();
     mesh.mPrimitives.resize(1);
     auto& prim = mesh.mPrimitives.back();
@@ -154,7 +154,10 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
 		1.f, 1.f, 0.f };
 
 	float *puv = bgfx::getCaps()->originBottomLeft ? fsUVInv : fsUV;
-
+    auto& bounds = defaultScene->mBounds.back();
+    bounds.AddPoint(*(Vec3*)&fsPos[0]);
+    bounds.AddPoint(*(Vec3*)&fsPos[1]);
+    bounds.AddPoint(*(Vec3*)&fsPos[2]);
     static const uint16_t fsIdx[] = { 0, 1, 2, 1, 3, 2 };
     prim.AddBuffer(puv, Scene::Mesh::Format::UV, 2 * sizeof(float), 4);
 	prim.AddBuffer(fsPos, Scene::Mesh::Format::POS, 3 * sizeof(float), 4);
@@ -166,4 +169,19 @@ std::shared_ptr<Scene> Scene::BuildDefaultScene()
     defaultScene->mMeshIndex.resize(1, 0);
     mDefaultScene = defaultScene;
     return defaultScene;
+}
+
+Bounds Scene::ComputeBounds() const
+{
+    Bounds bounds;
+    for (unsigned int i = 0; i < mMeshIndex.size(); i++)
+    {
+        int index = mMeshIndex[i];
+        if (index == -1)
+        {
+            continue;
+        }
+        bounds.AddBounds(mBounds[index], mWorldTransforms[index]);
+    }
+    return bounds;
 }

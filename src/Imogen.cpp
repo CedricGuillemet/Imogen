@@ -44,6 +44,9 @@
 #include <bx/allocator.h>
 #include <bx/readerwriter.h>
 #include "Libraries.h"
+#include "ImGuizmo.h"
+#include "Cam.h"
+
 Imogen* Imogen::instance = nullptr;
 
 extern TaskScheduler g_TS;
@@ -153,7 +156,7 @@ void ExtractedViewNodeInserted(size_t nodeIndex)
 }
 
 
-void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphControler, bool forceUI)
+bool Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphControler, ParameterBlock& parameterBlock, bool forceUI)
 {
     ImGuiIO& io = ImGui::GetIO();
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
@@ -348,6 +351,24 @@ void Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
             nodeGraphControler.SetKeyboardMouse(selNode, input, false);
         }
     }
+
+    // imView
+    Camera *camera = parameterBlock.GetCamera();
+    if (camera)
+    {
+        Mat4x4 view, viewInverse;
+        camera->ComputeViewMatrix(view.m16, viewInverse.m16);
+        static const float viewManipulatorSize = 80.f;
+        if (w > viewManipulatorSize * 1.5f)
+        {
+            if (ImGuizmo::ViewManipulate(view.m16, camera->mLens.y, p + ImVec2(w - viewManipulatorSize - 4, 4), ImVec2(viewManipulatorSize, viewManipulatorSize), 0x40404040))
+            {
+                camera->SetViewMatrix(view);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 template<typename T, typename Ty>
@@ -2528,7 +2549,8 @@ void Imogen::ShowExtractedViews()
         }
         if (ImGui::Begin(tmps, &open))
         {
-            RenderPreviewNode(extraction.mNodeIndex, *mNodeGraphControler, true);
+            ParameterBlock parameterBlock = mNodeGraphControler->mModel.GetParameterBlock(extraction.mNodeIndex);
+            RenderPreviewNode(extraction.mNodeIndex, *mNodeGraphControler, parameterBlock, true);
         }
         ImGui::End();
         if (!open)

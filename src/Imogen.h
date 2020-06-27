@@ -108,18 +108,14 @@ protected:
     void LibraryEdit(Library& library);
     void ClearAll();
     void UpdateNewlySelectedGraph();
-    void ShowTimeLine();
     void ShowNodeGraph();
     void BuildCurrentMaterial(Builder* builder);
-    void PlayPause();
     void ShowDebugWindow();
     void ShowExtractedViews();
     int EditRecentLibraries(RecentLibraries& recentLibraries);
     
     void ImportMaterial();
     void ExportMaterial();
-
-    void Playback(bool timeHasChanged);
 
     int GetFunctionByName(const char* functionName) const;
     bool ImageButton(const char* functionName, bgfx::TextureHandle icon, ImVec2 size);
@@ -132,7 +128,6 @@ protected:
     MySequence* mSequence;
     GraphControler* mNodeGraphControler;
     Builder* mBuilder;
-    bool mbShowTimeline = false;
     bool mbShowLibrary = false;
     bool mbShowNodes = false;
     bool mbShowLog = false;

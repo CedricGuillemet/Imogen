@@ -167,32 +167,6 @@ struct Serialize
         SerArray(data);
     }
 
-    void Ser(AnimationBase* animBase)
-    {
-        ADD(v_animation, animBase->mFrames);
-        if (doWrite)
-        {
-            fwrite(animBase->GetData(), animBase->GetValuesByteLength(), 1, fp);
-        }
-        else
-        {
-            animBase->Allocate(animBase->mFrames.size());
-            fread(animBase->GetData(), animBase->GetValuesByteLength(), 1, fp);
-        }
-    }
-
-    void Ser(AnimTrack* animTrack)
-    {
-        ADD(v_animation, animTrack->mNodeIndex);
-        ADD(v_animation, animTrack->mParamIndex);
-        ADD(v_animation, animTrack->mValueType);
-        if (!doWrite)
-        {
-            animTrack->mAnimation = AllocateAnimation(animTrack->mValueType);
-        }
-        ADD(v_animation, animTrack->mAnimation);
-    }
-
     void Ser(MultiplexInput* multiplexInput)
     {
         if (doWrite)
@@ -251,9 +225,6 @@ struct Serialize
         ADD(v_initial, material->mMaterialConnections);
         ADD(v_thumbnail, material->mThumbnail);
         ADD(v_rugs, material->mMaterialRugs);
-        ADD(v_animation, material->mAnimTrack);
-        ADD(v_animation, material->mFrameMin);
-        ADD(v_animation, material->mFrameMax);
         ADD(v_pinnedParameters, material->mPinnedParameters);
         ADD(v_pinnedIO, material->mPinnedIO);
         ADD(v_backgroundNode, material->mBackgroundNode);

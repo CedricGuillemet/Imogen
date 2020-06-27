@@ -33,7 +33,6 @@
 #include "Library.h"
 #include "tinydir.h"
 #include "imgui_stdlib.h"
-#include "ImSequencer.h"
 #include "Evaluators.h"
 #include "UI.h"
 #include "imgui_markdown/imgui_markdown.h"
@@ -44,7 +43,6 @@
 #include <bx/allocator.h>
 #include <bx/readerwriter.h>
 #include "Libraries.h"
-#include "ImGuizmo.h"
 #include "Cam.h"
 
 Imogen* Imogen::instance = nullptr;
@@ -361,11 +359,7 @@ bool Imogen::RenderPreviewNode(NodeIndex selNode, GraphControler& nodeGraphContr
         static const float viewManipulatorSize = 80.f;
         if (w > viewManipulatorSize * 1.5f)
         {
-            if (ImGuizmo::ViewManipulate(view.m16, camera->mLens.y, p + ImVec2(w - viewManipulatorSize - 4, 4), ImVec2(viewManipulatorSize, viewManipulatorSize), 0x40404040))
-            {
-                camera->SetViewMatrix(view);
-                return true;
-            }
+            
         }
     }
     return false;
@@ -665,7 +659,7 @@ void CommitGraph(Library& library, GraphControler& nodeGraphControler, int mater
 
     for (size_t i = 0; i < nodeCount; i++)
     {
-        auto nodeType = model.GetNodeType(i);
+        auto nodeType = model.GetNodeType(uint16_t(i));
         MaterialNode& dstNode = material.mMaterialNodes[i];
         MetaNode& metaNode = gMetaNodes[nodeType];
         if (metaNode.mbSaveTexture)
@@ -686,10 +680,6 @@ void CommitGraph(Library& library, GraphControler& nodeGraphControler, int mater
         ImVec2 nodePos = model.GetNodePos(i);
         dstNode.mPosX = int32_t(nodePos.x);
         dstNode.mPosY = int32_t(nodePos.y);
-        int times[2];
-        model.GetStartEndFrame(i, times[0], times[1]);
-        dstNode.mFrameStart = uint32_t(times[0]); // todo serialize time as signed values
-        dstNode.mFrameEnd = uint32_t(times[1]);
     }
     auto links = model.GetLinks();
     material.mMaterialConnections.resize(links.size());
@@ -713,8 +703,6 @@ void CommitGraph(Library& library, GraphControler& nodeGraphControler, int mater
         rug.mColor = rugs[i].mColor;
         rug.mComment = rugs[i].mText;
     }
-    material.mAnimTrack = model.GetAnimationTracks();
-    model.GetStartEndFrame(material.mFrameMin, material.mFrameMax);
     material.mPinnedParameters = model.GetParameterPins();
     material.mPinnedIO = model.GetIOPins();
     material.mMultiplexInputs = model.GetMultiplexInputs();
@@ -731,7 +719,6 @@ int Imogen::AddNode(const std::string& nodeType)
 	auto& model = mNodeGraphControler->mModel;
 	model.BeginTransaction(false);
     auto nodeIndex = model.AddNode(type, ImVec2(0, 0));
-	model.SetStartEndFrame(nodeIndex, 0, 1);
 	model.EndTransaction();
     return int(nodeIndex);
 }
@@ -763,11 +750,10 @@ void Imogen::UpdateNewlySelectedGraph()
 
             auto nodeIndex = model.AddNode(node.mNodeType, ImVec2(float(node.mPosX), float(node.mPosY)));
             model.SetParameterBlock(nodeIndex, ParameterBlock(node.mNodeType, node.mParameters));
-            model.SetStartEndFrame(nodeIndex, node.mFrameStart, node.mFrameEnd);
             model.SetSamplers(nodeIndex, node.mInputSamplers);
             if (!node.mImage.empty())
             {
-                nodeImages.push_back({i, &node.mImage });
+                nodeImages.push_back({NodeIndex(i), &node.mImage });
             }
         }
         for (size_t i = 0; i < material.mMaterialConnections.size(); i++)
@@ -791,8 +777,6 @@ void Imogen::UpdateNewlySelectedGraph()
         material.mMultiplexInputs.resize(model.GetNodeCount());
 
 
-        model.SetStartEndFrame(material.mFrameMin, material.mFrameMax);
-        model.SetAnimTrack(material.mAnimTrack);
         model.SetParameterPins(material.mPinnedParameters);
         model.SetIOPins(material.mPinnedIO);
         model.SetMultiplexInputs(material.mMultiplexInputs);
@@ -820,9 +804,6 @@ void Imogen::UpdateNewlySelectedGraph()
         //mNodeGraphControler->mBackgroundNode = *(int*)(&material.mBackgroundNode); TODO
         mNodeGraphControler->mEditingContext.SetMaterialUniqueId(material.mRuntimeUniqueId);
 		mNodeGraphControler->mEvaluationStages.SetMaterialUniqueId(material.mRuntimeUniqueId);
-        mNodeGraphControler->mEvaluationStages.mAnimationTracks = model.GetSharedAnimationTracks();
-        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
-        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
     }
 }
 
@@ -933,586 +914,6 @@ void Imogen::SetExistingMaterialActive(int materialIndex)
     UpdateNewlySelectedGraph();
 }
 
-struct AnimCurveEdit : public ImCurveEdit::Delegate
-{
-    AnimCurveEdit(GraphControler& GraphControler,
-                  ImVec2& min,
-                  ImVec2& max,
-                  AnimationTracks& animTrack,
-                  std::vector<bool>& visible,
-                  int nodeIndex,
-                  int currentTime)
-        : mNodeGraphControler(GraphControler)
-        , mMin(min)
-        , mMax(max)
-        , mAnimTrack(animTrack)
-        , mbVisible(visible)
-        , mNodeIndex(nodeIndex)
-        , mCurrentTime(currentTime)
-    {
-        const auto& model = mNodeGraphControler.mModel;
-        size_t type = model.GetNodeType(nodeIndex);
-        const MetaNode& metaNode = gMetaNodes[type];
-        std::vector<bool> parameterAddressed(metaNode.mParams.size(), false);
-
-        auto curveForParameter = [&](int parameterIndex, ConTypes type, AnimationBase* animation) {
-            const std::string& parameterName = metaNode.mParams[parameterIndex].mName;
-            CurveType curveType = GetCurveTypeForParameterType(type);
-            if (curveType == CurveNone)
-            {
-                return;
-            }
-            size_t curveCountPerParameter = GetCurveCountPerParameterType(type);
-            parameterAddressed[parameterIndex] = true;
-            for (size_t curveIndex = 0; curveIndex < curveCountPerParameter; curveIndex++)
-            {
-                std::vector<ImVec2> curvePts;
-                if (!animation || animation->mFrames.empty())
-                {
-                    curvePts.resize(2);
-
-                    int times[2];
-                    model.GetStartEndFrame(mNodeIndex, times[0], times[1]);
-                    const auto& parameters = model.GetParameterBlock(nodeIndex);
-                    float value = parameters.GetParameterComponentValue(parameterIndex, int(curveIndex));
-                    curvePts[0] = ImVec2(float(times[0]) + 0.5f, value);
-                    curvePts[1] = ImVec2(float(times[1]) + 0.5f, value);
-                }
-                else
-                {
-                    size_t ptCount = animation->mFrames.size();
-                    curvePts.resize(ptCount);
-                    for (size_t i = 0; i < ptCount; i++)
-                    {
-                        curvePts[i] = ImVec2(float(animation->mFrames[i] + 0.5f),
-                                             animation->GetFloatValue(uint32_t(i), int(curveIndex)));
-                    }
-                }
-                mPts.push_back(curvePts);
-                mValueType.push_back(type);
-                mParameterIndex.push_back(parameterIndex);
-                mComponentIndex.push_back(uint32_t(curveIndex));
-                mCurveType.push_back(ImCurveEdit::CurveType(curveType));
-                mLabels.push_back(parameterName + GetCurveParameterSuffix(type, int(curveIndex)));
-                mColors.push_back(GetCurveParameterColor(type, int(curveIndex)));
-            }
-        };
-
-        for (auto& track : animTrack)
-        {
-            if (track.mNodeIndex != nodeIndex)
-            {
-                continue;
-            }
-            curveForParameter(track.mParamIndex, ConTypes(track.mValueType), track.mAnimation);
-        }
-        // non keyed parameters
-        for (size_t param = 0; param < metaNode.mParams.size(); param++)
-        {
-            if (parameterAddressed[param])
-            {
-                continue;
-            }
-            curveForParameter(int(param), metaNode.mParams[param].mType, nullptr);
-        }
-    }
-
-    void BakeValuesToAnimationTrack()
-    {
-        size_t type = mNodeGraphControler.mModel.GetNodeType(mNodeIndex);
-        const MetaNode& metaNode = gMetaNodes[type];
-
-        for (size_t curve = 0; curve < mPts.size();)
-        {
-            AnimTrack& animTrack = *mNodeGraphControler.mModel.GetAnimTrack(mNodeIndex, mParameterIndex[curve]);
-            animTrack.mNodeIndex = mNodeIndex;
-            animTrack.mParamIndex = mParameterIndex[curve];
-            animTrack.mValueType = mValueType[curve];
-            animTrack.mAnimation = AllocateAnimation(mValueType[curve]);
-            size_t keyCount = mPts[curve].size();
-            for (auto& pt : mPts[curve])
-            {
-                if (pt.x >= FLT_MAX)
-                    keyCount--;
-            }
-            if (!keyCount)
-            {
-                continue;
-            }
-            auto anim = animTrack.mAnimation;
-            anim->mFrames.resize(keyCount);
-            anim->Allocate(keyCount);
-            for (size_t key = 0, pointIndex = 0; key < keyCount; pointIndex++)
-            {
-                ImVec2 keyValue = mPts[curve][pointIndex];
-                if (keyValue.x >= FLT_MAX)
-                    continue;
-                anim->mFrames[key] = uint32_t(keyValue.x);
-                key++;
-            }
-            do
-            {
-                for (size_t key = 0, pointIndex = 0; key < keyCount; pointIndex++)
-                {
-                    ImVec2 keyValue = mPts[curve][pointIndex];
-                    if (keyValue.x >= FLT_MAX)
-                        continue;
-                    anim->SetFloatValue(uint32_t(key), mComponentIndex[curve], keyValue.y);
-                    key++;
-                }
-                curve++;
-            } while (curve < mPts.size() && animTrack.mParamIndex == mParameterIndex[curve]);
-        }
-        mNodeGraphControler.mEvaluationStages.ApplyAnimationForNode(&mNodeGraphControler.mEditingContext, mNodeIndex, mCurrentTime);
-    }
-
-    virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const
-    {
-        return mCurveType[curveIndex];
-    }
-    virtual ImVec2& GetMax()
-    {
-        return mMax;
-    }
-    virtual ImVec2& GetMin()
-    {
-        return mMin;
-    }
-    virtual unsigned int GetBackgroundColor()
-    {
-        return 0x80202060;
-    }
-    virtual bool IsVisible(size_t curveIndex)
-    {
-        return mbVisible[curveIndex];
-    }
-    size_t GetCurveCount()
-    {
-        return mPts.size();
-    }
-    size_t GetPointCount(size_t curveIndex)
-    {
-        return mPts[curveIndex].size();
-    }
-    uint32_t GetCurveColor(size_t curveIndex)
-    {
-        return mColors[curveIndex];
-    }
-    ImVec2* GetPoints(size_t curveIndex)
-    {
-        return mPts[curveIndex].data();
-    }
-
-    virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
-    {
-        uint32_t parameterIndex = mParameterIndex[curveIndex];
-
-        mPts[curveIndex][pointIndex] = value;
-        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
-        {
-            if (mParameterIndex[curve] == parameterIndex)
-            {
-                mPts[curve][pointIndex].x = value.x;
-            }
-        }
-
-        SortValues(curveIndex);
-        BakeValuesToAnimationTrack();
-
-        for (size_t i = 0; i < GetPointCount(curveIndex); i++)
-        {
-            if (mPts[curveIndex][i].x == value.x)
-                return int(i);
-        }
-        return pointIndex;
-    }
-
-    virtual void AddPoint(size_t curveIndex, ImVec2 value)
-    {
-        uint32_t parameterIndex = mParameterIndex[curveIndex];
-
-        /*AnimTrack* animTrack = gNodeDelegate.GetAnimTrack(gNodeDelegate.mSelectedNodeIndex, parameterIndex);
-        unsigned char *tmp = new unsigned char[GetParameterTypeSize(ConTypes(mValueType[curveIndex]))];
-        animTrack->mAnimation->GetValue(uint32_t(value.x), tmp);
-        */
-        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
-        {
-            if (mParameterIndex[curve] == parameterIndex)
-            {
-                mPts[curve].push_back(value);
-            }
-        }
-        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
-        {
-            if (mParameterIndex[curve] == parameterIndex)
-            {
-                SortValues(curve);
-            }
-        }
-        // delete[] tmp;
-    }
-
-    void DeletePoints(const ImVector<ImCurveEdit::EditPoint>& points)
-    {
-        // tag point
-        for (int i = 0; i < points.size(); i++)
-        {
-            auto& selPoint = points[i];
-            uint32_t parameterIndex = mParameterIndex[selPoint.curveIndex];
-            for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
-            {
-                if (mParameterIndex[curve] == parameterIndex)
-                {
-                    mPts[curve][selPoint.pointIndex].x = FLT_MAX;
-                }
-            }
-        }
-        BakeValuesToAnimationTrack();
-    }
-
-    virtual void BeginEdit(int /*index*/)
-    {
-        for (size_t curve = 0; curve < mParameterIndex.size(); curve++)
-        {
-            uint32_t parameterIndex = mParameterIndex[curve];
-            bool parameterFound = false;
-            int index = 0;
-            for (auto& track : mNodeGraphControler.mModel.GetAnimationTracks())
-            {
-                if (track.mNodeIndex == mNodeGraphControler.mSelectedNodeIndex && track.mParamIndex == parameterIndex)
-                {
-                    parameterFound = true;
-                    break;
-                }
-                index++;
-            }
-            if (!parameterFound)
-            {
-                AnimTrack animTrack;
-                animTrack.mNodeIndex = mNodeIndex;
-                animTrack.mParamIndex = mParameterIndex[curve];
-                animTrack.mValueType = mValueType[curve];
-                animTrack.mAnimation = AllocateAnimation(mValueType[curve]);
-                mAnimTrack.push_back(animTrack);
-            }
-        }
-    }
-
-    virtual void EndEdit()
-    {
-    }
-
-    void MakeCurvesVisible()
-    {
-        float minY = FLT_MAX;
-        float maxY = -FLT_MAX;
-        bool somethingVisible = false;
-        for (size_t curve = 0; curve < mPts.size(); curve++)
-        {
-            if (!mbVisible[curve])
-                continue;
-            somethingVisible = true;
-            std::vector<ImVec2>& pts = mPts[curve];
-            for (auto& pt : pts)
-            {
-                minY = ImMin(minY, pt.y);
-                maxY = ImMax(maxY, pt.y);
-            }
-        }
-        if (somethingVisible)
-        {
-            if ((maxY - minY) <= FLT_EPSILON)
-            {
-                mMin.y = minY - 0.1f;
-                mMax.y = minY + 0.1f;
-            }
-            else
-            {
-                float marge = (maxY - minY) * 0.05f;
-                mMin.y = minY - marge;
-                mMax.y = maxY + marge;
-            }
-        }
-    }
-
-    std::vector<std::vector<ImVec2>> mPts;
-    std::vector<std::string> mLabels;
-    std::vector<uint32_t> mColors;
-    std::vector<AnimTrack>& mAnimTrack;
-    std::vector<uint32_t> mValueType;
-    std::vector<uint32_t> mParameterIndex;
-    std::vector<uint32_t> mComponentIndex;
-    std::vector<ImCurveEdit::CurveType> mCurveType;
-    std::vector<bool>& mbVisible;
-
-    ImVec2 &mMin, &mMax;
-    int mNodeIndex;
-    int mCurrentTime;
-    GraphControler& mNodeGraphControler;
-
-private:
-    void SortValues(size_t curveIndex)
-    {
-        auto b = std::begin(mPts[curveIndex]);
-        auto e = std::end(mPts[curveIndex]);
-        std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
-        BakeValuesToAnimationTrack();
-    }
-};
-
-struct MySequence : public ImSequencer::SequenceInterface
-{
-    MySequence(GraphControler& GraphControler)
-        : mNodeGraphControler(GraphControler), setKeyFrameOrValue(FLT_MAX, FLT_MAX)
-    {
-    }
-
-    void Clear()
-    {
-        mbExpansions.clear();
-        mbVisible.clear();
-        mLastCustomDrawIndex = -1;
-        setKeyFrameOrValue.x = setKeyFrameOrValue.y = FLT_MAX;
-        mCurveMin = 0.f;
-        mCurveMax = 1.f;
-    }
-
-    void SetCurrentTime(int currentTime)
-    {
-        mCurrentTime = currentTime;
-    }
-
-    virtual int GetFrameMin() const
-    {
-        int startFrame, endFrame;
-        mNodeGraphControler.mModel.GetStartEndFrame(startFrame, endFrame);
-        return startFrame;
-    }
-    virtual int GetFrameMax() const
-    {
-        int startFrame, endFrame;
-        mNodeGraphControler.mModel.GetStartEndFrame(startFrame, endFrame);
-        return endFrame;
-    }
-
-    virtual void BeginEdit(int index)
-    {
-        mCurrentIndex = index;
-        mNodeGraphControler.mModel.GetStartEndFrame(index, mCurrentStart, mCurrentEnd);
-    }
-
-    virtual void EndEdit()
-    {
-        mNodeGraphControler.mModel.BeginTransaction(true);
-        mNodeGraphControler.mModel.SetStartEndFrame(mCurrentIndex, mCurrentStart, mCurrentEnd);
-        mNodeGraphControler.mModel.EndTransaction();
-        mCurrentIndex = -1;
-    }
-
-    virtual int GetItemCount() const
-    {
-        return (int)mNodeGraphControler.mModel.GetNodeCount();
-    }
-
-    virtual int GetItemTypeCount() const
-    {
-        return 0;
-    }
-
-    virtual const char* GetItemTypeName(int typeIndex) const
-    {
-        return NULL;
-    }
-
-    virtual const char* GetItemLabel(int index) const
-    {
-        size_t nodeType = mNodeGraphControler.mModel.GetNodeType(index);
-        return gMetaNodes[nodeType].mName.c_str();
-    }
-
-    virtual void Get(int index, int** start, int** end, int* type, unsigned int* color)
-    {
-        const auto& model = mNodeGraphControler.mModel;
-        size_t nodeType = model.GetNodeType(index);
-        
-        if (index == mCurrentIndex)
-        {
-            mCurrentDisplayStart = mCurrentStart;
-            mCurrentDisplayEnd = mCurrentEnd;
-            if (start)
-            {
-                *start = &mCurrentStart;
-            }
-            if (end)
-            {
-                *end = &mCurrentEnd;
-            }
-        }
-        else
-        {
-            model.GetStartEndFrame(index, mCurrentDisplayStart, mCurrentDisplayEnd);
-            if (start)
-            {
-                *start = &mCurrentDisplayStart;
-            }
-            if (end)
-            {
-                *end = &mCurrentDisplayEnd;
-            }
-        }
-        if (color)
-        {
-            *color = gMetaNodes[nodeType].mHeaderColor;
-        }
-        if (type)
-        {
-            *type = int(nodeType);
-        }
-    }
-
-    virtual void Add(int type)
-    {
-    }
-
-    virtual void Del(int index)
-    {
-    }
-
-    virtual void Duplicate(int index)
-    {
-    }
-
-    virtual size_t GetCustomHeight(int index)
-    {
-        if (index >= mbExpansions.size())
-            return false;
-        return mbExpansions[index] ? 300 : 0;
-    }
-
-    virtual void DoubleClick(int index)
-    {
-        if (index >= mbExpansions.size())
-            mbExpansions.resize(index + 1, false);
-        if (mbExpansions[index])
-        {
-            mbExpansions[index] = false;
-            return;
-        }
-        for (auto i = 0;i<mbExpansions.size();i++)
-        {
-            mbExpansions[i] = false;
-        }
-        mbExpansions[index] = !mbExpansions[index];
-    }
-
-    virtual void CustomDraw(int index,
-                            ImDrawList* draw_list,
-                            const ImRect& rc,
-                            const ImRect& legendRect,
-                            const ImRect& clippingRect,
-                            const ImRect& legendClippingRect)
-    {
-        if (mLastCustomDrawIndex != index)
-        {
-            mLastCustomDrawIndex = index;
-            mbVisible.clear();
-        }
-
-        int startFrame, endFrame;
-        mNodeGraphControler.mModel.GetStartEndFrame(startFrame, endFrame);
-
-        ImVec2 curveMin(float(startFrame), mCurveMin);
-        ImVec2 curveMax(float(endFrame), mCurveMax);
-        AnimCurveEdit curveEdit(mNodeGraphControler,
-                                curveMin,
-                                curveMax,
-                                const_cast<std::vector<AnimTrack>&>(mNodeGraphControler.mModel.GetAnimationTracks()),
-                                mbVisible,
-                                index,
-                                mCurrentTime);
-        mbVisible.resize(curveEdit.GetCurveCount(), true);
-        draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
-        for (int i = 0; i < curveEdit.GetCurveCount(); i++)
-        {
-            ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
-            ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-            uint32_t curveColor = curveEdit.mColors[i];
-            draw_list->AddText(
-                pta, mbVisible[i] ? curveColor : ((curveColor & 0xFFFFFF) + 0x80000000), curveEdit.mLabels[i].c_str());
-            if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
-                mbVisible[i] = !mbVisible[i];
-        }
-        draw_list->PopClipRect();
-
-        ImGui::SetCursorScreenPos(rc.Min);
-        ImCurveEdit::Edit(curveEdit, rc.Max - rc.Min, 137 + index, &clippingRect, &mSelectedCurvePoints);
-        getKeyFrameOrValue = ImVec2(FLT_MAX, FLT_MAX);
-
-        if (focused || curveEdit.focused)
-        {
-            if (ImGui::IsKeyPressedMap(ImGuiKey_Delete))
-            {
-                curveEdit.DeletePoints(mSelectedCurvePoints);
-            }
-            if (ImGui::IsKeyPressed(SDL_SCANCODE_F))
-            {
-                curveEdit.MakeCurvesVisible();
-            }
-        }
-
-        if (setKeyFrameOrValue.x < FLT_MAX || setKeyFrameOrValue.y < FLT_MAX)
-        {
-            curveEdit.BeginEdit(0);
-            for (int i = 0; i < mSelectedCurvePoints.size(); i++)
-            {
-                auto& selPoint = mSelectedCurvePoints[i];
-                int keyIndex = selPoint.pointIndex;
-                ImVec2 keyValue = curveEdit.mPts[selPoint.curveIndex][keyIndex];
-                uint32_t parameterIndex = curveEdit.mParameterIndex[selPoint.curveIndex];
-                AnimTrack* animTrack =
-                    mNodeGraphControler.mModel.GetAnimTrack(mNodeGraphControler.mSelectedNodeIndex, parameterIndex);
-                // UndoRedo *undoRedo = nullptr;
-                // undoRedo = new URChange<AnimTrack>(int(animTrack - gNodeDelegate.GetAnimTrack().data()), [](int
-                // index) { return &gNodeDelegate.mAnimTrack[index]; });
-
-                if (setKeyFrameOrValue.x < FLT_MAX)
-                {
-                    keyValue.x = setKeyFrameOrValue.x;
-                }
-                else
-                {
-                    keyValue.y = setKeyFrameOrValue.y;
-                }
-                curveEdit.EditPoint(selPoint.curveIndex, selPoint.pointIndex, keyValue);
-                // delete undoRedo;
-            }
-            curveEdit.EndEdit();
-            setKeyFrameOrValue.x = setKeyFrameOrValue.y = FLT_MAX;
-        }
-        if (mSelectedCurvePoints.size() == 1)
-        {
-            getKeyFrameOrValue = curveEdit.mPts[mSelectedCurvePoints[0].curveIndex][mSelectedCurvePoints[0].pointIndex];
-        }
-
-        // set back visible bounds
-        mCurveMin = curveMin.y;
-        mCurveMax = curveMax.y;
-    }
-
-    int mCurrentStart, mCurrentEnd;
-    int mCurrentIndex{-1};
-    int mCurrentDisplayStart, mCurrentDisplayEnd;
-    GraphControler& mNodeGraphControler;
-    std::vector<bool> mbExpansions;
-    std::vector<bool> mbVisible;
-    ImVector<ImCurveEdit::EditPoint> mSelectedCurvePoints;
-    int mLastCustomDrawIndex;
-    ImVec2 setKeyFrameOrValue;
-    ImVec2 getKeyFrameOrValue;
-    float mCurveMin, mCurveMax;
-    int mCurrentTime;
-};
-
 std::vector<ImHotKey::HotKey> mHotkeys;
 
 void Imogen::Init(bool bDebugWindow)
@@ -1529,22 +930,11 @@ void Imogen::Init(bool bDebugWindow)
     };
     static const std::vector<HotKeyFunction> hotKeyFunctions = {
         {"Layout", "Reorder nodes in a simpler layout", [&]() { GetNodeGraphControler()->mModel.NodeGraphLayout(GetNodeGraphControler()->mEvaluationStages.GetForwardEvaluationOrder()); }},
-        {"PlayPause", "Play or Stop current animation", [&]() { PlayPause(); }},
-        {"AnimationFirstFrame",
-         "Set current time to the first frame of animation",
-         [&]() { 
-            int startFrame, endFrame;
-            GetNodeGraphControler()->mModel.GetStartEndFrame(startFrame, endFrame);
-            mCurrentTime = startFrame;
-         }},
-        {"AnimationNextFrame", "Move to the next animation frame", [&]() { mCurrentTime++; }},
-        {"AnimationPreviousFrame", "Move to previous animation frame", [&]() { mCurrentTime--; }},
         {"MaterialExport", "Export current material to a file", [&]() { ExportMaterial(); }},
         {"MaterialImport", "Import a material file in the library", [&]() { ImportMaterial(); }},
         {"ToggleLibrary", "Show or hide Libaray window", [&]() { mbShowLibrary = !mbShowLibrary; }},
         {"ToggleNodeGraph", "Show or hide Node graph window", [&]() { mbShowNodes = !mbShowNodes; }},
         {"ToggleLogger", "Show or hide Logger window", [&]() { mbShowLog = !mbShowLog; }},
-        {"ToggleSequencer", "Show or hide Sequencer window", [&]() { mbShowTimeline = !mbShowTimeline; }},
         {"ToggleParameters", "Show or hide Parameters window", [&]() { mbShowParameters = !mbShowParameters; }},
         {"MaterialNew", "Create a new graph", [&]() { NewMaterial(); }},
         /*{"ReloadShaders",
@@ -1554,9 +944,6 @@ void Imogen::Init(bool bDebugWindow)
              mNodeGraphControler->mEditingContext.RunAll();
          }},*/
         {"DeleteSelectedNodes", "Delete selected nodes in the current graph", []() {}},
-        {"AnimationSetKey",
-         "Make a new animation key with the current parameters values at the current time",
-         [&]() { mNodeGraphControler->mModel.MakeKey(mCurrentTime, uint32_t(mNodeGraphControler->mSelectedNodeIndex), 0); }},
         {"HotKeyEditor", "Open the Hotkey editor window", [&]() { ImGui::OpenPopup("HotKeys Editor"); }},
         {"NewNodePopup", "Open the new node menu", []() {}},
         {"Undo", "Undo the last operation", []() { Imogen::instance->GetNodeGraphControler()->mModel.Undo(); }},
@@ -1705,7 +1092,6 @@ void Imogen::ShowAppMainMenuBar()
         ImGui::Checkbox(GetShortCutLib("ToggleLibrary"), &mbShowLibrary);
         ImGui::Checkbox(GetShortCutLib("ToggleNodeGraph"), &mbShowNodes);
         ImGui::Checkbox(GetShortCutLib("ToggleLogger"), &mbShowLog);
-        ImGui::Checkbox(GetShortCutLib("ToggleSequencer"), &mbShowTimeline);
         ImGui::Checkbox(GetShortCutLib("ToggleParameters"), &mbShowParameters);
     }
 
@@ -2167,183 +1553,6 @@ void Imogen::ShowTitleBar(Builder* builder)
     // done
 }
 
-void Imogen::PlayPause()
-{
-    if (!mbIsPlaying)
-    {
-        int startFrame, endFrame;
-        auto& model = mNodeGraphControler->mModel;
-        model.GetStartEndFrame(startFrame, endFrame);
-        mCurrentTime = startFrame;
-    }
-    mbIsPlaying = !mbIsPlaying;
-}
-
-void Imogen::ShowTimeLine()
-{
-    NodeIndex selectedEntry = mNodeGraphControler->mSelectedNodeIndex;
-    static int firstFrame = 0;
-
-    mSequence->SetCurrentTime(mCurrentTime);
-
-    int startFrame, endFrame;
-    auto& model = mNodeGraphControler->mModel;
-    model.GetStartEndFrame(startFrame, endFrame);
-
-    ImGui::PushItemWidth(80);
-    ImGui::PushID(200);
-    bool dirtyFrame = ImGui::InputInt("", &startFrame, 0, 0);
-    ImGui::PopID();
-
-    ImGui::SameLine();
-    if (Button("AnimationFirstFrame", ICON_FA_STEP_BACKWARD, ImVec2(0, 0)))
-    {
-        mCurrentTime = startFrame;
-    }
-
-    ImGui::SameLine();
-    if (Button("AnimationPreviousFrame", ICON_FA_CARET_LEFT, ImVec2(0, 0)))
-    {
-        mCurrentTime--;
-    }
-
-    ImGui::SameLine();
-    ImGui::PushID(201);
-    if (ImGui::InputInt("", &mCurrentTime, 0, 0, 0))
-    {
-    }
-    ImGui::PopID();
-
-    ImGui::SameLine();
-    if (Button("AnimationNextFrame", ICON_FA_CARET_RIGHT, ImVec2(0, 0)))
-    {
-        mCurrentTime++;
-    }
-
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_STEP_FORWARD, ImVec2(0, 0)))
-    {
-        mCurrentTime = endFrame;
-    }
-
-    ImGui::SameLine();
-    if (Button("PlayPause", mbIsPlaying ? ICON_FA_PAUSE_CIRCLE : ICON_FA_PLAY_CIRCLE, ImVec2(0, 0)))
-    {
-        PlayPause();
-    }
-
-    ImGui::SameLine();
-    if (ImGui::Button(mbPlayLoop ? ICON_FA_HISTORY : ICON_FA_ANGLE_DOUBLE_RIGHT, ImVec2(24, 20)))
-    {
-        mbPlayLoop = !mbPlayLoop;
-    }
-
-    ImGui::SameLine();
-    ImGui::PushID(202);
-    dirtyFrame |= ImGui::InputInt("", &endFrame, 0, 0);
-
-    if (dirtyFrame)
-    {
-        model.BeginTransaction(true);
-        model.SetStartEndFrame(startFrame, endFrame);
-        model.EndTransaction();
-    }
-    ImGui::PopID();
-    
-    ImGui::SameLine(0, 40.f);
-    if (Button("AnimationSetKey", ICON_FA_KEY, ImVec2(0, 0)) && selectedEntry.IsValid())
-    {
-        model.BeginTransaction(true);
-		model.MakeKey(mCurrentTime, uint32_t(selectedEntry), 0);
-        model.EndTransaction();
-    }
-
-    ImGui::SameLine(0, 50.f);
-    int setf = (mSequence->getKeyFrameOrValue.x < FLT_MAX) ? int(mSequence->getKeyFrameOrValue.x) : 0;
-    ImGui::PushID(203);
-    if (ImGui::InputInt("", &setf, 0, 0))
-    {
-        mSequence->setKeyFrameOrValue.x = float(setf);
-    }
-
-    ImGui::SameLine();
-    float setv = (mSequence->getKeyFrameOrValue.y < FLT_MAX) ? mSequence->getKeyFrameOrValue.y : 0.f;
-    if (ImGui::InputFloat("Key", &setv))
-    {
-        mSequence->setKeyFrameOrValue.y = setv;
-    }
-    ImGui::PopID();
-
-    ImGui::SameLine();
-    int timeMask[2] = {0, 0};
-    if (selectedEntry.IsValid())
-    {
-		model.GetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
-    }
-    ImGui::PushItemWidth(120);
-    if (ImGui::InputInt2("Time Mask", timeMask) && selectedEntry.IsValid())
-    {
-        timeMask[1] = ImMax(timeMask[1], timeMask[0]);
-        timeMask[0] = ImMin(timeMask[1], timeMask[0]);
-		model.BeginTransaction(true);
-		model.SetStartEndFrame(selectedEntry, timeMask[0], timeMask[1]);
-		model.EndTransaction();
-    }
-    ImGui::PopItemWidth();
-    ImGui::PopItemWidth();
-
-	int tempSelectedEntry = selectedEntry.IsValid() ? selectedEntry.operator int() : -1;
-    Sequencer(mSequence,
-              &mCurrentTime,
-              NULL,
-              &tempSelectedEntry,
-              &firstFrame,
-              ImSequencer::SEQUENCER_EDIT_STARTEND | ImSequencer::SEQUENCER_CHANGE_FRAME);
-
-	if (tempSelectedEntry != -1)
-	{
-		selectedEntry = tempSelectedEntry;
-	}
-	else
-	{
-		selectedEntry.SetInvalid();
-	}
-
-    if (selectedEntry.IsValid() && !(selectedEntry == mNodeGraphControler->mSelectedNodeIndex))
-    {
-        auto& model = mNodeGraphControler->mModel;
-        /*if (mNodeGraphControler->mSelectedNodeIndex.IsValid())
-        {
-            model.SelectNode(mNodeGraphControler->mSelectedNodeIndex, false);
-        }
-        */
-        model.UnselectNodes();
-        mNodeGraphControler->mSelectedNodeIndex = selectedEntry;
-
-		if (mNodeGraphControler->mSelectedNodeIndex.IsValid())
-		{
-			model.SelectNode(mNodeGraphControler->mSelectedNodeIndex, true);
-		}
-#if 0
-		if (selectedEntry.IsValid())
-		{
-			model.SelectNode(selectedEntry, true);
-			int times[2];
-			model.GetStartEndFrame(selectedEntry, times[0], times[1]);
-			/*mNodeGraphControler->mModel.mEvaluationStages.SetStageLocalTime( todo
-				&mNodeGraphControler->mEditingContext,
-				selectedEntry,
-				ImClamp(mCurrentTime - times[0], 0, times[1] - times[0]),
-				true);*/
-		}
-#endif
-    }
-	else
-	{
-		mNodeGraphControler->mSelectedNodeIndex.SetInvalid();
-	}
-}
-
 void Imogen::DeleteCurrentMaterial()
 {
     library.mMaterials.erase(library.mMaterials.begin() + mSelectedMaterial);
@@ -2652,16 +1861,6 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
             ImGui::End();
         }
 
-        if (mbShowTimeline)
-        {
-            if (ImGui::Begin("Timeline", &mbShowTimeline))
-            {
-                ShowTimeLine();
-            }
-            interfacesRect["Timeline"] = ImRect(ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize());
-            ImGui::End();
-        }
-
         ImGui::End();
     }
 
@@ -2678,37 +1877,6 @@ void Imogen::Show(Builder* builder, Library& library, bool capturing)
     interfacesRect["FinalNode"] = ImRect(nodesWindowPos + rc.Min, nodesWindowPos + rc.Max);
 
     ImHotKey::Edit(mHotkeys.data(), mHotkeys.size(), "HotKeys Editor");
-
-    Playback(currentTime != mCurrentTime);
-}
-
-void Imogen::Playback(bool timeHasChanged)
-{
-    if (mbIsPlaying)
-    {
-        mCurrentTime++;
-        int startFrame, endFrame;
-        mNodeGraphControler->mModel.GetStartEndFrame(startFrame, endFrame);
-        if (mCurrentTime >= endFrame)
-        {
-            if (mbPlayLoop)
-            {
-                mCurrentTime = startFrame;
-            }
-            else
-            {
-                mbIsPlaying = false;
-            }
-        }
-    }
-
-    mNodeGraphControler->mEditingContext.SetCurrentTime(mCurrentTime);
-
-    if (timeHasChanged || mbIsPlaying)
-    {
-        mNodeGraphControler->mEvaluationStages.SetTime(&mNodeGraphControler->mEditingContext, mCurrentTime, true);
-        mNodeGraphControler->mEvaluationStages.ApplyAnimation(&mNodeGraphControler->mEditingContext, mCurrentTime);
-    }
 }
 
 void Imogen::CommitCurrentGraph(Library& library)
@@ -2766,11 +1934,7 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
     {
         int active;
 
-        if (sscanf(line_start, "ShowTimeline=%d", &active) == 1)
-        {
-            userdata->imogen->mbShowTimeline = active != 0;
-        }
-        else if (sscanf(line_start, "ShowLibrary=%d", &active) == 1)
+        if (sscanf(line_start, "ShowLibrary=%d", &active) == 1)
         {
             userdata->imogen->mbShowLibrary = active != 0;
         }
@@ -2813,7 +1977,6 @@ void Imogen::ReadLine(ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* en
 void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
 {
     buf->appendf("[%s][Imogen]\n", handler->TypeName);
-    buf->appendf("ShowTimeline=%d\n", instance->mbShowTimeline ? 1 : 0);
     buf->appendf("ShowLibrary=%d\n", instance->mbShowLibrary ? 1 : 0);
     buf->appendf("ShowNodes=%d\n", instance->mbShowNodes ? 1 : 0);
     buf->appendf("ShowLog=%d\n", instance->mbShowLog ? 1 : 0);
@@ -2829,7 +1992,6 @@ void Imogen::WriteAll(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTex
 
 Imogen::Imogen(GraphControler* nodeGraphControler, RecentLibraries& recentLibraries) : mNodeGraphControler(nodeGraphControler), mRecentLibraries(recentLibraries)
 {
-    mSequence = new MySequence(*nodeGraphControler);
     mdConfig.userData = this;
 
     ImGuiContext& g = *GImGui;
@@ -2845,7 +2007,6 @@ Imogen::Imogen(GraphControler* nodeGraphControler, RecentLibraries& recentLibrar
 
 Imogen::~Imogen()
 {
-    delete mSequence;
     instance = nullptr;
 }
 
@@ -2855,5 +2016,4 @@ void Imogen::ClearAll()
     GraphEditorClear();
     InitCallbackRects();
     ClearExtractedViews();
-    mSequence->Clear();
 }

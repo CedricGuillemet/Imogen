@@ -192,16 +192,6 @@ EvaluationContext::EvaluationContext(EvaluationStages& evaluation
 
 EvaluationContext::~EvaluationContext()
 {
-#ifdef USE_FFMPEG
-    for (auto& stream : mWriteStreams)
-    {
-        stream.second->Finish();
-        delete stream.second;
-    }
-    
-    mWriteStreams.clear();
-#endif
-
     Clear();
 }
 
@@ -268,8 +258,7 @@ void EvaluationContext::Evaluate()
             int nodeIndex = mRemaining.front();
             mRemaining.erase(mRemaining.begin()); //TODOEVA don't remove from remaining(or push it back after) when node needs more work to be done (raytracer)
             auto& evaluation = mEvaluations[nodeIndex];
-            evaluation.mbActive = mCurrentTime >= mEvaluationStages.mStages[nodeIndex].mStartFrame &&
-                mCurrentTime <= mEvaluationStages.mStages[nodeIndex].mEndFrame;
+            evaluation.mbActive = true;
             /*if (!evaluation.mbActive) TODOEVA
             {
                 continue;
@@ -888,25 +877,6 @@ void EvaluationContext::RunNode(NodeIndex nodeIndex)
     evaluation.mDirtyFlag = 0;
 }
 
-#if USE_FFMPEG
-FFMPEGCodec::Encoder* EvaluationContext::GetEncoder(const std::string& filename, int width, int height)
-{
-    FFMPEGCodec::Encoder* encoder;
-    auto iter = mWriteStreams.find(filename);
-    if (iter != mWriteStreams.end())
-    {
-        encoder = iter->second;
-    }
-    else
-    {
-        encoder = new FFMPEGCodec::Encoder;
-        mWriteStreams[filename] = encoder;
-        encoder->Init(filename, align(width, 4), align(height, 4), 25, 400000);
-    }
-    return encoder;
-}
-#endif
-
 void EvaluationContext::SetTargetDirty(NodeIndex target, uint32_t dirtyFlag, bool onlyChild)
 {
     assert(dirtyFlag != Dirty::AddedNode);
@@ -1068,12 +1038,6 @@ bool Builder::UpdateBuildInfo(std::vector<BuildInfo>& buildInfo)
 void Builder::DoBuild(Entry& entry)
 {
 	auto & evaluationStages = entry.mEvaluationStages;
-	int startFrame(INT_MAX), endFrame(INT_MIN);
-	for (auto& evaluation : evaluationStages.mStages)
-	{
-		startFrame = std::min(startFrame, evaluation.mStartFrame);
-		endFrame = std::max(endFrame, evaluation.mEndFrame);
-	}
     EvaluationContext writeContext(evaluationStages, true, true, 4096, 4096, false);
 
 	// dirty all or parameters might not be taken into consideration
@@ -1081,13 +1045,7 @@ void Builder::DoBuild(Entry& entry)
 	{
 		evaluation.mDirtyFlag = -1;
 	}
-    for (int frame = startFrame; frame < endFrame; frame++)
-    {
-        writeContext.SetCurrentTime(frame);
-        evaluationStages.SetTime(&writeContext, frame, false);
-        evaluationStages.ApplyAnimation(&writeContext, frame);
-        writeContext.Evaluate();
-    }
+    writeContext.Evaluate();
 }
 
 void MakeThreadContext();

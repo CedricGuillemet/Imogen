@@ -33,7 +33,6 @@
 #include <assert.h>
 #include "Types.h"
 #include "MetaNodes.h"
-#include "Animation.h"
 
 // used to retrieve structure in library. left is index. right is uniqueId
 // if item at index doesn't correspond to uniqueid, then a search is done
@@ -102,8 +101,6 @@ struct Material
     std::vector<MaterialNodeRug> mMaterialRugs;
     std::vector<MaterialConnection> mMaterialConnections;
     std::vector<uint8_t> mThumbnail;
-
-    std::vector<AnimTrack> mAnimTrack;
 
     int mFrameMin, mFrameMax;
 

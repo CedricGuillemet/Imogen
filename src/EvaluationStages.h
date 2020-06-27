@@ -56,9 +56,8 @@ struct Dirty
         Sampler = 1 << 5,
         AddedNode = 1 << 6,
         DeletedNode = 1 << 7,
-        StartEndTime = 1 << 8,
-        RugChanged = 1 << 9,
-        VisualGraph = 1 << 10, // node selection, node position
+        RugChanged = 1 << 8,
+        VisualGraph = 1 << 9, // node selection, node position
     };
 };
 
@@ -88,14 +87,10 @@ struct EvaluationStage
     //#ifdef _DEBUG needed for fur rendering
     std::string mTypename;
     //#endif
-#if USE_FFMPEG    
-    std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
-#endif
+
     uint16_t mType;
 	RuntimeId mRuntimeUniqueId;
 
-    int mStartFrame, mEndFrame;
-    
     // Camera
     Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
 
@@ -135,16 +130,6 @@ struct EvaluationStages
     size_t GetStagesCount() const { return mStages.size(); }
 	void SetMaterialUniqueId(RuntimeId runtimeId);
 
-    // animation
-    void ApplyAnimationForNode(EvaluationContext* context, NodeIndex nodeIndex, int frame);
-    void ApplyAnimation(EvaluationContext* context, int frame);
-
-    void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
-
-    // ffmpeg encoders
-#if USE_FFMPEG
-    FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
-#endif
     // Data
     const std::vector<size_t>& GetForwardEvaluationOrder() const { return mOrderList; }
     std::vector<EvaluationStage> mStages;
@@ -155,12 +140,9 @@ struct EvaluationStages
     std::vector<InputSamplers> mInputSamplers;
     std::vector<ParameterBlock> mParameterBlocks;
 
-    std::shared_ptr<AnimationTracks> mAnimationTracks;
-
 	RuntimeId mMaterialUniqueId;
 
     void ComputeEvaluationOrder();
-    void SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame) { mStages[nodeIndex].mStartFrame = startFrame; mStages[nodeIndex].mEndFrame = endFrame; }
 protected:
 
     std::vector<size_t> mOrderList;

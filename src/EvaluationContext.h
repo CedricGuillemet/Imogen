@@ -135,9 +135,6 @@ struct EvaluationContext
 		return mEvaluations[nodeIndex].mTarget;
 	}
 
-#if USE_FFMPEG
-    FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
-#endif
     bool IsSynchronous() const
     {
         return mbSynchronousEvaluation;
@@ -255,9 +252,6 @@ protected:
 
 
     std::vector<ImageTexture*> mAvailableRenderTargets;
-#if USE_FFMPEG    
-    std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
-#endif
 
     EvaluationInfo mEvaluationInfo;
 

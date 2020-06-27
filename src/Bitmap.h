@@ -34,13 +34,6 @@
 #include "Mem.h"
 #include <bimg/encode.h>
 
-#if USE_FFMPEG
-namespace FFMPEGCodec
-{
-    class Decoder;
-};
-#endif
-
 bimg::Quality::Enum GetQuality(int quality);
 struct InputSampler;
 struct Image
@@ -161,9 +154,7 @@ struct Image
     static int Write(const char* filename, Image* image, int format, int quality);
     static int EncodePng(Image* image, std::vector<unsigned char>& pngImage);
 	static int Resize(Image* image, int width, int height, const InputSampler& sampler);
-#if USE_FFMPEG
-    static Image DecodeImage(FFMPEGCodec::Decoder* decoder, int frame);
-#endif
+
 protected:
     unsigned char* mBits;
 };

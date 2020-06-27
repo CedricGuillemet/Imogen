@@ -490,7 +490,7 @@ bool GraphControler::PinnedParameterUI(NodeIndex nodeIndex, size_t parameterInde
 {
     bool pinned = mModel.IsParameterPinned(nodeIndex, parameterIndex);
     ImGui::PushID(int(nodeIndex * 4096 + parameterIndex * 17));
-    ImGui::PushStyleColor(ImGuiCol_Text, pinned ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.4));
+    ImGui::PushStyleColor(ImGuiCol_Text, pinned ? ImVec4(1.f, 1.f, 1.f, 1.f) : ImVec4(1.f, 1.f, 1.f, 0.4f));
     if (ImGui::Button(ICON_FA_THUMBTACK))
     {
         mModel.BeginTransaction(true);
@@ -511,7 +511,7 @@ bool GraphControler::PinnedIOUI(NodeIndex nodeIndex, SlotIndex slotIndex, bool f
     ImGui::PushID(int(nodeIndex * 256 + slotIndex * 2 + (forOutput ? 1 : 0)));
     bool pinned = mModel.IsIOPinned(nodeIndex, slotIndex, forOutput);
 
-    ImGui::PushStyleColor(ImGuiCol_Text, pinned ? ImVec4(1, 1, 1, 1) : ImVec4(1, 1, 1, 0.4));
+    ImGui::PushStyleColor(ImGuiCol_Text, pinned ? ImVec4(1.f, 1.f, 1.f, 1.f) : ImVec4(1.f, 1.f, 1.f, 0.4f));
     if (ImGui::Button(ICON_FA_THUMBTACK))
     {
         mModel.BeginTransaction(true);
@@ -629,8 +629,6 @@ void GraphControler::ApplyDirtyList()
                 break;
             case Dirty::AddedNode:
                 {
-                    int startFrame, endFrame;
-                    mModel.GetStartEndFrame(nodeIndex, startFrame, endFrame);
                     mEvaluationStages.AddEvaluation(nodeIndex, mModel.GetNodeType(nodeIndex));
                     mEditingContext.AddEvaluation(nodeIndex);
                     evaluationOrderChanged = true;
@@ -639,8 +637,6 @@ void GraphControler::ApplyDirtyList()
                     mEvaluationStages.SetParameterBlock(nodeIndex, mModel.GetParameterBlock(nodeIndex));
                     // samplers
                     mEvaluationStages.SetSamplers(nodeIndex, mModel.GetSamplers(nodeIndex));
-                    // time
-                    mEvaluationStages.SetStartEndFrame(nodeIndex, startFrame, endFrame);
                     //dirty
                     mEditingContext.SetTargetDirty(nodeIndex, Dirty::Parameter | Dirty::Sampler);
                     ExtractedViewNodeInserted(nodeIndex);
@@ -676,13 +672,6 @@ void GraphControler::ApplyDirtyList()
 						mBackgroundNode --;
 					}
 				}
-                break;
-            case Dirty::StartEndTime:
-                {
-                    int times[2];
-                    mModel.GetStartEndFrame(nodeIndex, times[0], times[1]);
-                    mEvaluationStages.SetStartEndFrame(nodeIndex, times[0], times[1]);
-                }
                 break;
         }
     }

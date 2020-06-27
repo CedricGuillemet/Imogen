@@ -117,16 +117,12 @@ public:
 	void SetSampler(NodeIndex nodeIndex, size_t input, const InputSampler& sampler);
     void SetParameter(NodeIndex nodeIndex, const std::string& parameterName, const std::string& parameterValue);
     void SetParameterBlock(NodeIndex nodeIndex, const ParameterBlock& parameterBlock);
-    void MakeKey(int frame, uint32_t nodeIndex, uint32_t parameterIndex);
     void SetIOPin(NodeIndex nodeIndex, size_t io, bool forOutput, bool pinned);
     void SetParameterPin(NodeIndex nodeIndex, size_t parameterIndex, bool pinned);
     void SetMultiplexed(NodeIndex nodeIndex, SlotIndex slotIndex, int multiplex);
     void SetMultiplexInputs(const std::vector<MultiplexInput>& multiplexInputs);
     void SetParameterPins(const std::vector<uint32_t>& pins);
     void SetIOPins(const std::vector<uint32_t>& pins);
-    void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
-    void SetStartEndFrame(int startFrame, int endFrame);
-    void SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame);
 	void SetCameraLookAt(NodeIndex nodeIndex, const Vec4& eye, const Vec4& target, const Vec4& up = Vec4(0.f, 1.f, 0.f, 0.f));
     // transaction is handled is the function
     void NodeGraphLayout(const std::vector<size_t>& orderList);
@@ -142,9 +138,6 @@ public:
     bool IsIOUsed(NodeIndex nodeIndex, int slotIndex, bool forOutput) const;
     bool IsIOPinned(NodeIndex nodeIndex, size_t io, bool forOutput) const;
     bool IsParameterPinned(NodeIndex nodeIndex, size_t parameterIndex) const;
-    const AnimationTracks& GetAnimationTracks() const;
-    std::shared_ptr<AnimationTracks> GetSharedAnimationTracks() const { return mAnimationTracks; }
-    void GetKeyedParameters(int frame, uint32_t nodeIndex, std::vector<bool>& keyed) const;
     const std::vector<uint32_t> GetParameterPins() const;
     const std::vector<uint32_t> GetIOPins() const;
     const std::vector<MultiplexInput> GetMultiplexInputs() const;
@@ -155,9 +148,6 @@ public:
     bool RecurseIsLinked(int from, int to) const;
     NodeIndex GetMultiplexed(NodeIndex nodeIndex, size_t slotIndex) const { return mNodes[nodeIndex].mMultiplexInput.mInputs[slotIndex]; }
     bool GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, SlotIndex slotIndex, std::vector<NodeIndex>& list) const;
-    AnimTrack* GetAnimTrack(uint32_t nodeIndex, uint32_t parameterIndex);
-    void GetStartEndFrame(int& startFrame, int& endFrame) const { startFrame = mStartFrame; endFrame = mEndFrame; }
-    void GetStartEndFrame(NodeIndex nodeIndex, int& startFrame, int& endFrame) const { startFrame = mNodes[nodeIndex].mStartFrame; endFrame = mNodes[nodeIndex].mEndFrame; }
     void GetInputs(std::vector<Input>& multiplexedInPuts, std::vector<Input>& directInputs) const;
     NodeIndex GetNodeIndex(RuntimeId runtimeUniqueId) const;
 
@@ -179,7 +169,6 @@ private:
     std::vector<Node> mNodes;
     std::vector<Link> mLinks;
     std::vector<Rug> mRugs;
-    std::shared_ptr<AnimationTracks> mAnimationTracks;
 
     // non ser data / runtime datas
     std::vector<Node> mNodesClipboard;
@@ -201,7 +190,6 @@ private:
 
     void DelLinkInternal(size_t linkIndex);
     void AddLinkInternal(NodeIndex inputNodeIndex, SlotIndex inputSlotIndex, NodeIndex outputNodeIndex, SlotIndex outputSlotIndex);
-    void RemoveAnimation(NodeIndex nodeIndex);
 
     void GetMultiplexedInputs(const std::vector<Input>& inputs, NodeIndex nodeIndex, std::set<NodeIndex>& list) const;
 

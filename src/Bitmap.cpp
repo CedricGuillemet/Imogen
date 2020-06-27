@@ -46,9 +46,7 @@
 #include "stb_image_resize.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#if USE_FFMPEG
-#include "ffmpegCodec.h"
-#endif
+
 ImageCache gImageCache;
 
 bx::AllocatorI* getDefaultAllocator()
@@ -86,36 +84,6 @@ void SaveCapture(const std::string& filename, int x, int y, int w, int h)
     bgfx::requestScreenShot(fbh, filenameInfos);
 }
 
-#if USE_FFMPEG
-Image Image::DecodeImage(FFMPEGCodec::Decoder* decoder, int frame)
-{
-    decoder->ReadFrame(frame);
-    Image image;
-    image.mDecoder = decoder;
-    image.mHasMipmaps = false;
-    image.mIsCubemap = false;
-    image.mFormat = bgfx::TextureFormat::RGB8; // todo:shoud be bgr8
-    image.mWidth = int(decoder->mWidth);
-    image.mHeight = int(decoder->mHeight);
-    size_t lineSize = image.mWidth * 3;
-    size_t imgDataSize = lineSize * image.mHeight;
-    image.Allocate(imgDataSize);
-
-    unsigned char* pdst = image.GetBits();
-    unsigned char* psrc = (unsigned char*)decoder->GetRGBData();
-    if (psrc && pdst)
-    {
-        psrc += imgDataSize - lineSize;
-        for (int j = 0; j < image.mHeight; j++)
-        {
-            memcpy(pdst, psrc, lineSize);
-            pdst += lineSize;
-            psrc -= lineSize;
-        }
-    }
-    return image;
-}
-#endif
 int Image::LoadSVG(const char* filename, Image* image, float dpi)
 {
     NSVGimage* svgImage;

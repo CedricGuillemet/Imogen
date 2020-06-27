@@ -31,6 +31,9 @@
 #include "MetaNodes.h"
 #include "Utils.h"
 #include "Cam.h"
+#include <algorithm>
+#include <iostream>
+#include <fstream>
 
 std::vector<MetaNode> gMetaNodes;
 std::map<std::string, size_t> gMetaNodesIndices;

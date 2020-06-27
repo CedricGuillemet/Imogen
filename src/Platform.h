@@ -84,12 +84,11 @@ struct TaskScheduler
 #include <fcntl.h>
 #include <Windows.h>
 #include <shellapi.h>
-#include "ffmpegCodec.h"
-#include "ffmpegCodec.h"
+#include <locale.h>
+
 #include "TaskScheduler.h"
 #include "nfd.h"
 
-#define USE_FFMPEG 1
 #define USE_PYTHON 1
 #define USE_SDL 1
 
@@ -109,10 +108,8 @@ typedef enki::TaskScheduler TaskScheduler;
 #include "nfd.h"
 #include <algorithm>
 #include <string.h>
-#include "ffmpegCodec.h"
 #include <libgen.h>
 
-#define USE_FFMPEG 1
 #define USE_PYTHON 1
 #define USE_SDL 1
 

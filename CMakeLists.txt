@@ -29,7 +29,6 @@ file(GLOB SRC_FILES
 file(GLOB EXT_FILES
     ${CMAKE_SOURCE_DIR}/ext/*.h
     ${CMAKE_SOURCE_DIR}/ext/*.cpp
-    ${CMAKE_SOURCE_DIR}/ext/Nvidia-SBVH/*.cpp
 )
 
 file(GLOB NODE_FILES
@@ -39,11 +38,8 @@ file(GLOB NODE_FILES
 
 if (NOT EMSCRIPTEN)
 file(GLOB EXT_FILES_DESKTOP
-    ${CMAKE_SOURCE_DIR}/ext/gl3w/GL/*.c
     ${CMAKE_SOURCE_DIR}/ext/enkiTS-C-11/src/*.cpp
     ${CMAKE_SOURCE_DIR}/ext/NativeFileDialog/src/nfd_common.c
-    ${CMAKE_SOURCE_DIR}/ext/ffmpegCodec/*.cpp
-    ${CMAKE_SOURCE_DIR}/ext/GLSL_Pathtracer/*.cpp
 )
 set(SDL2_LIBRARIES "SDL2" "SDL2main")
 endif()
@@ -65,11 +61,6 @@ include_directories(${SDL2_INCLUDE_DIRS})
 
 #find_package(FFmpeg REQUIRED)
 
-find_library(AVCODEC_LIBRARY avcodec)
-find_library(AVFORMAT_LIBRARY avformat)
-find_library(AVUTIL_LIBRARY avutil)
-find_library(AVDEVICE_LIBRARY avdevice)
-find_library(SWSCALE_LIBRARY swscale)
 find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 # Setup CMake to use GTK+, tell the compiler where to look for headers
@@ -87,10 +78,6 @@ set(IMOGEN_BGFX_DIR ${CMAKE_SOURCE_DIR}/ext/bgfx)
 
 if(WIN32)
 
-set(FFMPEG_LIBRARIES avcodec.lib avdevice.lib avfilter.lib avformat.lib avutil.lib swscale.lib swresample.lib postproc.lib)
-set(FFMPEG_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/lib)
-set(FFMPEG_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpeg/include)
-
 set(PYTHON37_LIBRARIES python3.lib python37.lib)
 set(PYTHON37_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/include)
 set(PYTHON37_LIBRARY_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ext/python37/libs)
@@ -104,8 +91,6 @@ else()
 
 PKG_CHECK_MODULES(PYTHON37 REQUIRED python3)
 PKG_CHECK_MODULES(SDL2_LIBRARIES REQUIRED sdl2)
-PKG_CHECK_MODULES(FFMPEG REQUIRED libavcodec libavdevice libavfilter libavformat libavutil libswscale libswresample libpostproc)
-#${AVCODEC_LIBRARY} ${AVUTIL_LIBRARY} ${AVDEVICE_LIBRARY} ${AVFORMAT_LIBRARY} ${SWSCALE_LIBRARY} ${PYTHON_LIBRARIES}
 
 endif()
 
@@ -119,22 +104,15 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/src/Nodes
   ${CMAKE_CURRENT_SOURCE_DIR}/ext
   ${SDL2_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/gl3w
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/NativeFileDialog/src/include/
   ${CMAKE_CURRENT_SOURCE_DIR}/ext/enkiTS-C-11/src/
-  ${FFMPEG_INCLUDE_DIRS}
   ${PYTHON37_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/glm/
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/Nvidia-SBVH
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/GLSL_Pathtracer/
-  ${CMAKE_CURRENT_SOURCE_DIR}/ext/ffmpegCodec/
   ${CMAKE_CURRENT_BINARY_DIR}
   ${BGFX_INCLUDE_DIRS}
 )
 
 link_directories(
   ${SDL2_LIBDIR}
-  ${FFMPEG_LIBRARY_DIRS}
   ${PYTHON37_LIBRARY_DIRS}
   bx bimg bgfx
 )
@@ -328,7 +306,7 @@ endif() # EMSCRIPTEN
 
 #########################################
 
-TARGET_LINK_LIBRARIES(${EXE_NAME} ${PYTHON37_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} ${FFMPEG_LIBRARIES} bx bimg bgfx)
+TARGET_LINK_LIBRARIES(${EXE_NAME} ${PYTHON37_LIBRARIES} ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} ${PLATFORM_LIBS} bx bimg bgfx)
 
 if(APPLE)
   find_library(CORE_FOUNDATION CoreFoundation)

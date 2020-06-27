@@ -31,14 +31,8 @@
 #include <map>
 #include <string>
 #include "Scene.h"
-#include "Loader.h"
-#include "TiledRenderer.h"
-#include "ProgressiveRenderer.h"
-#include "GPUBVH.h"
 #include "Cam.h"
 #include <fstream>
-#define CGLTF_IMPLEMENTATION
-#include "cgltf.h"
 #include "GraphControler.h"
 #include <functional>
 #include <bx/bx.h>
@@ -1230,125 +1224,10 @@ namespace EvaluationAPI
                 Image::Upload(image, tgt->mTexture, cubeFace, i);
             }
         }
-        
-#if USE_FFMPEG
-        if (stage.mDecoder.get() != (FFMPEGCodec::Decoder*)image->mDecoder)
-        {
-            stage.mDecoder = std::shared_ptr<FFMPEGCodec::Decoder>((FFMPEGCodec::Decoder*)image->mDecoder);
-        }
-#endif
+
         evaluationContext->SetTargetDirty(target, Dirty::Input, true);
         
         return EVAL_OK;
-    }
-
-    int LoadScene(const char* filename, void** pscene)
-    {
-        // todo: make a real good cache system
-        static std::map<std::string, GLSLPathTracer::Scene*> cachedScenes;
-        std::string sFilename(filename);
-        auto iter = cachedScenes.find(sFilename);
-        if (iter != cachedScenes.end())
-        {
-            *pscene = iter->second;
-            return EVAL_OK;
-        }
-
-        GLSLPathTracer::Scene* scene = GLSLPathTracer::LoadScene(sFilename);
-        if (!scene)
-        {
-            Log("Unable to load scene\n");
-            return EVAL_ERR;
-        }
-        cachedScenes.insert(std::make_pair(sFilename, scene));
-        *pscene = scene;
-
-        Log("Scene Loaded\n\n");
-
-        scene->buildBVH();
-
-        // --------Print info on memory usage ------------- //
-
-        Log("Triangles: %d\n", scene->triangleIndices.size());
-        Log("Triangle Indices: %d\n", scene->gpuBVH->bvhTriangleIndices.size());
-        Log("Vertices: %d\n", scene->vertexData.size());
-
-        long long scene_data_bytes = sizeof(GLSLPathTracer::GPUBVHNode) * scene->gpuBVH->bvh->getNumNodes() +
-                                     sizeof(GLSLPathTracer::TriangleData) * scene->gpuBVH->bvhTriangleIndices.size() +
-                                     sizeof(GLSLPathTracer::VertexData) * scene->vertexData.size() +
-                                     sizeof(GLSLPathTracer::NormalTexData) * scene->normalTexData.size() +
-                                     sizeof(GLSLPathTracer::MaterialData) * scene->materialData.size() +
-                                     sizeof(GLSLPathTracer::LightData) * scene->lightData.size();
-
-        Log("GPU Memory used for BVH and scene data: %d MB\n", scene_data_bytes / 1048576);
-
-        long long tex_data_bytes = scene->texData.albedoTextureSize.x * scene->texData.albedoTextureSize.y *
-                                       scene->texData.albedoTexCount * 3 +
-                                   scene->texData.metallicRoughnessTextureSize.x *
-                                       scene->texData.metallicRoughnessTextureSize.y *
-                                       scene->texData.metallicRoughnessTexCount * 3 +
-                                   scene->texData.normalTextureSize.x * scene->texData.normalTextureSize.y *
-                                       scene->texData.normalTexCount * 3 +
-                                   scene->hdrLoaderRes.width * scene->hdrLoaderRes.height * sizeof(float) * 3;
-
-        Log("GPU Memory used for Textures: %d MB\n", tex_data_bytes / 1048576);
-
-        Log("Total GPU Memory used: %d MB\n", (scene_data_bytes + tex_data_bytes) / 1048576);
-
-        return EVAL_OK;
-    }
-
-    int InitRenderer(EvaluationContext* evaluationContext, NodeIndex target, int mode, void* scene)
-    {
-        GLSLPathTracer::Scene* rdscene = (GLSLPathTracer::Scene*)scene;
-        evaluationContext->mEvaluationStages.mStages[target].mScene = scene;
-
-        GLSLPathTracer::Renderer* currentRenderer =
-            (GLSLPathTracer::Renderer*)evaluationContext->mEvaluationStages.mStages[target].renderer;
-        if (!currentRenderer)
-        {
-            // auto renderer = new GLSLPathTracer::TiledRenderer(rdscene, "Stock/PathTracer/Tiled/");
-            auto renderer = new GLSLPathTracer::ProgressiveRenderer(rdscene, "Stock/PathTracer/Progressive/");
-            renderer->init();
-            evaluationContext->mEvaluationStages.mStages[target].renderer = renderer;
-        }
-        return EVAL_OK;
-    }
-
-    int UpdateRenderer(EvaluationContext* evaluationContext, NodeIndex target)
-    {
-        /*auto& eval = evaluationContext->mEvaluationStages;
-        GLSLPathTracer::Renderer* renderer = (GLSLPathTracer::Renderer*)eval.mStages[target].renderer;
-        GLSLPathTracer::Scene* rdscene = (GLSLPathTracer::Scene*)eval.mStages[target].mScene;
-
-        const Camera* camera = GetCameraParameter(eval.mStages[target].mType, eval.mParameters[target]);
-        if (camera)
-        {
-            Vec4 pos = camera->mPosition;
-            Vec4 lk = camera->mPosition + camera->mDirection;
-            GLSLPathTracer::Camera newCam(glm::vec3(pos.x, pos.y, pos.z), glm::vec3(lk.x, lk.y, lk.z), 90.f);
-            newCam.updateCamera();
-            *rdscene->camera = newCam;
-        }
-
-        renderer->update(0.0166f);
-        auto tgt = evaluationContext->GetRenderTarget(target);
-        renderer->render();
-
-        //tgt->BindAsTarget();
-        renderer->present();
-
-        float progress = renderer->getProgress();
-        evaluationContext->StageSetProgress(target, progress);
-        bool renderDone = progress >= 1.f - FLT_EPSILON;
-
-        if (renderDone)
-        {
-            evaluationContext->StageSetProcessing(target, false);
-            return EVAL_OK;
-        } TODOEVA
-        */
-        return EVAL_DIRTY;
     }
 
     void SetProcessing(EvaluationContext* context, NodeIndex target, int processing)
@@ -1480,13 +1359,7 @@ namespace EvaluationAPI
     {
         if (Image::Read(filename, image) == EVAL_OK)
             return EVAL_OK;
-            #if USE_FFMPEG
-        // try to load movie
-        auto decoder = evaluationContext->mEvaluationStages.FindDecoder(filename);
-        *image = Image::DecodeImage(decoder, evaluationContext->GetCurrentTime());
-        if (!image->mWidth || !image->mHeight)
-            return EVAL_ERR;
-            #endif
+
         return EVAL_OK;
     }
 
@@ -1494,164 +1367,10 @@ namespace EvaluationAPI
     {
         if (format == 7)
         {
-            #if USE_FFMPEG
-            FFMPEGCodec::Encoder* encoder =
-                evaluationContext->GetEncoder(std::string(filename), image->mWidth, image->mHeight);
-            std::string fn(filename);
-            encoder->AddFrame(image->GetBits(), image->mWidth, image->mHeight);
-            #endif
             return EVAL_OK;
         }
 
         return Image::Write(filename, image, format, quality);
-    }
-
-    int ReadGLTF(EvaluationContext* evaluationContext, const char* filename, Scene** scene)
-    {
-        std::string strFilename(filename);
-        auto iter = gSceneCache.find(strFilename);
-        if (iter != gSceneCache.end() && (!iter->second.expired()))
-        {
-            *scene = iter->second.lock().get();
-            return EVAL_OK;
-        }
-        cgltf_options options;
-        memset(&options, 0, sizeof(options));
-        cgltf_data* data = NULL;
-        cgltf_result result = cgltf_parse_file(&options, filename, &data);
-        if (result != cgltf_result_success)
-        {
-            return EVAL_ERR;
-        }
-
-        result = cgltf_load_buffers(&options, data, filename);
-        if (result != cgltf_result_success)
-        {
-            cgltf_free(data);
-            return EVAL_ERR;
-        }
-
-        Scene* sc = new Scene;
-        sc->mName = strFilename;
-        *scene = sc;
-
-        JobMain(evaluationContext, [evaluationContext, sc, data]() {
-            sc->mMeshes.resize(data->meshes_count);
-            sc->mBounds.resize(data->meshes_count);
-            for (unsigned int i = 0; i < data->meshes_count; i++)
-            {
-                auto& gltfMesh = data->meshes[i];
-                auto& mesh = sc->mMeshes[i];
-                auto& bounds = sc->mBounds[i];
-                mesh.mPrimitives.resize(gltfMesh.primitives_count);
-                // attributes
-                for (unsigned int j = 0; j < gltfMesh.primitives_count; j++)
-                {
-                    auto& gltfPrim = gltfMesh.primitives[j];
-                    auto& prim = mesh.mPrimitives[j];
-
-                    for (unsigned int k = 0; k < gltfPrim.attributes_count; k++)
-                    {
-                        unsigned int format = 0;
-                        auto attr = gltfPrim.attributes[k];
-                        switch (attr.type)
-                        {
-                            case cgltf_attribute_type_position:
-                                format = Scene::Mesh::Format::POS;
-                                break;
-                            case cgltf_attribute_type_normal:
-                                format = Scene::Mesh::Format::NORM;
-                                break;
-                            case cgltf_attribute_type_texcoord:
-                                format = Scene::Mesh::Format::UV;
-                                break;
-                            case cgltf_attribute_type_color:
-                                format = Scene::Mesh::Format::COL;
-                                break;
-                        }
-                        const char* buffer = ((char*)attr.data->buffer_view->buffer->data) +
-                                             attr.data->buffer_view->offset + attr.data->offset;
-                        prim.AddBuffer(buffer, format, (unsigned int)attr.data->stride, (unsigned int)attr.data->count);
-                        if (format == Scene::Mesh::Format::POS)
-                        {
-                            const Vec3* pos = (Vec3*)buffer;
-                            const unsigned int posCount = ((unsigned int)attr.data->count * (unsigned int)attr.data->stride) / (3 * sizeof(float));
-                            for (size_t iBound = 0; iBound < posCount; iBound++)
-                            {
-                                bounds.AddPoint(pos[iBound]);
-                            }
-                        }
-                    }
-
-                    // indices
-                    const char* buffer = ((char*)gltfPrim.indices->buffer_view->buffer->data) +
-                                         gltfPrim.indices->buffer_view->offset + gltfPrim.indices->offset;
-                    prim.AddIndexBuffer(
-                        buffer, (unsigned int)gltfPrim.indices->stride, (unsigned int)gltfPrim.indices->count);
-                }
-            }
-
-            sc->mWorldTransforms.resize(data->nodes_count);
-            sc->mMeshIndex.resize(data->nodes_count, -1);
-
-            // transforms
-            for (unsigned int i = 0; i < data->nodes_count; i++)
-            {
-                cgltf_node_transform_world(&data->nodes[i], sc->mWorldTransforms[i]);
-            }
-
-            for (unsigned int i = 0; i < data->nodes_count; i++)
-            {
-                if (!data->nodes[i].mesh)
-                    continue;
-                sc->mMeshIndex[i] = int(data->nodes[i].mesh - data->meshes);
-            }
-
-
-            cgltf_free(data);
-            return EVAL_OK;
-        });
-        return EVAL_OK;
-    }
-
-    int GLTFReadAsync(EvaluationContext* context, const char* filename, NodeIndex target)
-    {
-        SetProcessing(context, target, 1);
-        std::string strFilename = filename;
-		RuntimeId runtimeId = context->GetStageRuntimeId(target);
-        Job(context, [context, runtimeId, strFilename](){
-            Scene *scene;
-            if (ReadGLTF(context, strFilename.c_str(), &scene) == EVAL_OK)
-            {
-                JobMain(context, [context, scene, runtimeId](){
-					int stageIndex = context->GetStageIndexFromRuntimeId(runtimeId);
-					if (stageIndex != -1)
-					{
-						SetEvaluationScene(context, stageIndex, scene);
-						SetProcessing(context, stageIndex, 0);
-
-                        Camera *camera = context->mEvaluationStages.mParameterBlocks[stageIndex].GetCamera();
-                        if (camera && camera->mLens.y < FLT_EPSILON)
-                        {
-                            Bounds bound = scene->ComputeBounds();
-                            camera->LookAt(Vec4(bound.mMax.x, bound.mMax.y, bound.mMax.z), bound.Center(), Vec4(0.f, 1.f, 0.f, 0.f));
-                        }
-
-					}
-                    return EVAL_OK;
-                });
-            }
-            else
-            {
-				int stageIndex = context->GetStageIndexFromRuntimeId(runtimeId);
-				if (stageIndex != -1)
-				{
-	                SetProcessing(context, stageIndex, 0);
-				}
-            }
-            return EVAL_OK;
-        });
-        return EVAL_OK;
     }
 
     int ReadImageAsync(EvaluationContext* context, const char *filename, NodeIndex target, int face)

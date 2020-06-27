@@ -28,12 +28,14 @@
 #include "UI.h"
 #include "Utils.h"
 #include "imgui_internal.h"
+#include "IconsFontAwesome5.h"
+#include "Evaluators.h"
 
 static inline ImVec4 operator*(const ImVec4& lhs, const float t)
 {
     return ImVec4(lhs.x * t, lhs.y * t, lhs.z * t, lhs.w * t);
 }
-
+/*
 ImVec4 GradientEdit::GetPoint(float t)
 {
     if (GetPointCount() == 0)
@@ -51,7 +53,7 @@ ImVec4 GradientEdit::GetPoint(float t)
     }
     return mPts[GetPointCount() - 1];
 }
-
+*/
 void ImguiAppLog::AddLog(const char* fmt, ...)
 {
     int old_size = Buf.size();
@@ -183,14 +185,31 @@ void SetStyle()
 }
 
 extern ImGui::MarkdownConfig mdConfig;
+ImFont *smallAF, *bigAF, *mediumAF;
 
 void InitFonts()
 {
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->Clear();
-    // Base font
+    static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+
+    ImFontConfig icons_config;
+    icons_config.MergeMode = true;
+    icons_config.PixelSnapH = true;
+
     float fontSize_ = 16.f;
-    io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-SemiBold.ttf", fontSize_);
+
+    static const char* defaultFontPath = "Stock/Fonts/OpenSans-SemiBold.ttf";
+    io.Fonts->AddFontFromFileTTF(defaultFontPath, fontSize_);
+    smallAF = io.Fonts->AddFontFromFileTTF("Stock/Fonts/" FONT_ICON_FILE_NAME_FAS, fontSize_, &icons_config, icons_ranges);
+
+    mediumAF = io.Fonts->AddFontFromFileTTF(defaultFontPath, 20.f);
+    io.Fonts->AddFontFromFileTTF("Stock/Fonts/" FONT_ICON_FILE_NAME_FAS, 20.f, &icons_config, icons_ranges);
+
+    bigAF = io.Fonts->AddFontFromFileTTF(defaultFontPath, 24.f);
+    io.Fonts->AddFontFromFileTTF("Stock/Fonts/" FONT_ICON_FILE_NAME_FAS, 24.f, &icons_config, icons_ranges);
+
+
     // Bold headings H2 and H3
     mdConfig.headingFormats[1].font = io.Fonts->AddFontFromFileTTF("Stock/Fonts/OpenSans-ExtraBold.ttf", fontSize_);
     mdConfig.headingFormats[2].font = mdConfig.headingFormats[1].font;
@@ -204,116 +223,75 @@ struct ImogenDrawCallback
     NodeUICallBackFunc mFunc;
     ImRect mClippedRect;
     ImRect mOrginalRect;
-    size_t mNodeIndex;
+    NodeIndex mNodeIndex;
     EvaluationContext* mEvaluationContext;
 };
 
 std::vector<ImogenDrawCallback> mCallbackRects;
 
+
+void UICallbackNodeDeleted(NodeIndex nodeIndex)
+{
+    auto iter = mCallbackRects.begin();
+    for (; iter != mCallbackRects.end(); )
+    {
+        if (iter->mNodeIndex == nodeIndex)
+        {
+            iter = mCallbackRects.erase(iter);
+            continue;
+        }
+        if (iter->mNodeIndex > nodeIndex)
+        {
+            iter->mNodeIndex--;
+        }
+        ++iter;
+    }
+}
+
+void UICallbackNodeInserted(NodeIndex nodeIndex)
+{
+    for (auto& extract : mCallbackRects)
+    {
+        if (extract.mNodeIndex >= nodeIndex)
+        {
+            extract.mNodeIndex++;
+        }
+    }
+}
+extern Evaluators gEvaluators;
 static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
 {
-    // Backup GL state
-    GLenum last_active_texture;
-    glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
-    glActiveTexture(GL_TEXTURE0);
-    GLint last_program;
-    glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_texture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-
-    GLint last_sampler;
-    glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
-    GLint last_array_buffer;
-    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    GLint last_vertex_array;
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-#ifdef GL_POLYGON_MODE
-    GLint last_polygon_mode[2];
-    glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
-#endif
-    GLint last_viewport[4];
-    glGetIntegerv(GL_VIEWPORT, last_viewport);
-    GLint last_scissor_box[4];
-    glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
-    GLenum last_blend_src_rgb;
-    glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
-    GLenum last_blend_dst_rgb;
-    glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
-    GLenum last_blend_src_alpha;
-    glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
-    GLenum last_blend_dst_alpha;
-    glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
-    GLenum last_blend_equation_rgb;
-    glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
-    GLenum last_blend_equation_alpha;
-    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
-    GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
-    GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
-    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
-    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
     ImGuiIO& io = ImGui::GetIO();
 
     if (!mCallbackRects.empty())
     {
         ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
 
-        ImRect cbRect = cb.mOrginalRect;
-        float h = cbRect.Max.y - cbRect.Min.y;
-        float w = cbRect.Max.x - cbRect.Min.x;
-        glViewport(int(cbRect.Min.x), int(io.DisplaySize.y - cbRect.Max.y), int(w), int(h));
-
-        cbRect.Min.x = ImMax(cbRect.Min.x, cmd->ClipRect.x);
-        ImRect clippedRect = cb.mClippedRect;
-        glScissor(int(clippedRect.Min.x),
-                  int(io.DisplaySize.y - clippedRect.Max.y),
-                  int(clippedRect.Max.x - clippedRect.Min.x),
-                  int(clippedRect.Max.y - clippedRect.Min.y));
-        glEnable(GL_SCISSOR_TEST);
+        ImRect cr = cb.mClippedRect;
+        /*bgfx::setScissor(int(cr.Min.x),
+                        int(cr.Min.y),
+                        int(cr.Max.x - cr.Min.x),
+                        int(cr.Max.y - cr.Min.y));
+          */              
+        bgfx::setScissor(0,0,100,100);
+        cr = cb.mOrginalRect;
+        float sx = (cr.Max.x - cr.Min.x) / io.DisplaySize.x * 2.f;
+        float sy = -(cr.Max.y - cr.Min.y) / io.DisplaySize.y * 2.f;
+        float tx = cr.Min.x / io.DisplaySize.x * 2.f - 1.f;
+        float ty = -cr.Min.y / io.DisplaySize.y * 2.f + 1.f;
+        float uvt[4] = {sx, sy, tx, ty };
+        bgfx::setUniform(gEvaluators.u_uvTransform, uvt);
 
         cb.mFunc(cb.mEvaluationContext, cb.mNodeIndex);
     }
-    // Restore modified GL state
-    glUseProgram(last_program);
-    glBindTexture(GL_TEXTURE_2D, last_texture);
-#ifdef GL_SAMPLER_BINDING
-    glBindSampler(0, last_sampler);
-#endif
-    glActiveTexture(last_active_texture);
-#ifdef GL_VERTEX_ARRAY_BINDING
-    glBindVertexArray(last_vertex_array);
-#endif
-    glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-    glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
-    glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha);
-    if (last_enable_blend)
-        glEnable(GL_BLEND);
-    else
-        glDisable(GL_BLEND);
-    if (last_enable_cull_face)
-        glEnable(GL_CULL_FACE);
-    else
-        glDisable(GL_CULL_FACE);
-    if (last_enable_depth_test)
-        glEnable(GL_DEPTH_TEST);
-    else
-        glDisable(GL_DEPTH_TEST);
-    if (last_enable_scissor_test)
-        glEnable(GL_SCISSOR_TEST);
-    else
-        glDisable(GL_SCISSOR_TEST);
-#ifdef GL_POLYGON_MODE
-    glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
-#endif
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
-    glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void InitCallbackRects()
 {
     mCallbackRects.clear();
 }
-size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t nodeIndex, EvaluationContext* context)
+
+size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, NodeIndex nodeIndex, EvaluationContext* context)
 {
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     ImVec2 mi = draw_list->GetClipRectMin();
@@ -326,7 +304,7 @@ size_t AddNodeUICallbackRect(NodeUICallBackFunc func, const ImRect& rect, size_t
 }
 
 void AddUICustomDraw(
-    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext* context)
+    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, NodeIndex nodeIndex, EvaluationContext* context)
 {
     drawList->AddCallback((ImDrawCallback)(NodeUICallBack),
                           (void*)(AddNodeUICallbackRect(func, rc, nodeIndex, context)));

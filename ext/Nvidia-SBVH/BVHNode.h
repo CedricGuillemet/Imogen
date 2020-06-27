@@ -59,15 +59,16 @@ public:
 	inline    AABB            operator+   (const AABB& aabb) const { AABB u(*this); u.grow(aabb); return u; }
 
 private:
-	Vec3f           m_mn; // AABB min bound 
+	Vec3f           m_mn; // AABB min bound
 	Vec3f           m_mx; // AABB max bound
 };
 
 class BVHNode
 {
 public:
-	BVHNode() : m_probability(1.f), m_parentProbability(1.f), m_treelet(-1), m_index(-1) {} 
-	virtual bool        isLeaf() const = 0;               
+	BVHNode() : m_probability(1.f), m_parentProbability(1.f), m_treelet(-1), m_index(-1) {}
+	virtual ~BVHNode() = default;
+	virtual bool        isLeaf() const = 0;
 	virtual S32         getNumChildNodes() const = 0;
 	virtual BVHNode*    getChildNode(S32 i) const = 0;
 	virtual S32         getNumTriangles() const { return 0; }

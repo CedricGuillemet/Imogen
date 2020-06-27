@@ -7,21 +7,19 @@
 
 # Nodes
 ## Generator
-![node picture](Pictures/Circle.png)|![node picture](Pictures/Square.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)|![node picture](Pictures/Hexagon.png)|![node picture](Pictures/CircleSplatter.png)
+![node picture](Pictures/Circle.png)|![node picture](Pictures/Checker.png)|![node picture](Pictures/Sine.png)|![node picture](Pictures/CircleSplatter.png)|![node picture](Pictures/NGon.png)|![node picture](Pictures/GradientBuilder.png)
 -|-|-|-|-|-
-[Circle](#Circle)|[Square](#Square)|[Checker](#Checker)|[Sine](#Sine)|[Hexagon](#Hexagon)|[CircleSplatter](#CircleSplatter)
-![node picture](Pictures/NGon.png)|![node picture](Pictures/GradientBuilder.png)|![node picture](Pictures/ReactionDiffusion.png)|![node picture](Pictures/Disolve.png)||
-[NGon](#NGon)|[GradientBuilder](#GradientBuilder)|[ReactionDiffusion](#ReactionDiffusion)|[Disolve](#Disolve)||
+[Circle](#Circle)|[Checker](#Checker)|[Sine](#Sine)|[CircleSplatter](#CircleSplatter)|[NGon](#NGon)|[GradientBuilder](#GradientBuilder)
+![node picture](Pictures/ReactionDiffusion.png)|![node picture](Pictures/Disolve.png)||||
+[ReactionDiffusion](#ReactionDiffusion)|[Disolve](#Disolve)||||
 
 
 ## Transform
-![node picture](Pictures/Transform.png)|![node picture](Pictures/Pixelize.png)|![node picture](Pictures/Tile.png)|![node picture](Pictures/PolarCoords.png)|![node picture](Pictures/Swirl.png)|![node picture](Pictures/Crop.png)
+![node picture](Pictures/Transform.png)|![node picture](Pictures/Tile.png)|![node picture](Pictures/PolarCoords.png)|![node picture](Pictures/Swirl.png)|![node picture](Pictures/Crop.png)|![node picture](Pictures/Warp.png)
 -|-|-|-|-|-
-[Transform](#Transform)|[Pixelize](#Pixelize)|[Tile](#Tile)|[PolarCoords](#PolarCoords)|[Swirl](#Swirl)|[Crop](#Crop)
-![node picture](Pictures/Warp.png)|![node picture](Pictures/EdgeDetect.png)|![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|![node picture](Pictures/Lens.png)
-[Warp](#Warp)|[EdgeDetect](#EdgeDetect)|[Kaleidoscope](#Kaleidoscope)|[Palette](#Palette)|[ChannelPacker](#ChannelPacker)|[Lens](#Lens)
-![node picture](Pictures/Distance.png)|||||
-[Distance](#Distance)|||||
+[Transform](#Transform)|[Tile](#Tile)|[PolarCoords](#PolarCoords)|[Swirl](#Swirl)|[Crop](#Crop)|[Warp](#Warp)
+![node picture](Pictures/EdgeDetect.png)|![node picture](Pictures/Kaleidoscope.png)|![node picture](Pictures/Palette.png)|![node picture](Pictures/ChannelPacker.png)|![node picture](Pictures/Lens.png)|![node picture](Pictures/Distance.png)
+[EdgeDetect](#EdgeDetect)|[Kaleidoscope](#Kaleidoscope)|[Palette](#Palette)|[ChannelPacker](#ChannelPacker)|[Lens](#Lens)|[Distance](#Distance)
 
 
 ## Filter
@@ -33,9 +31,9 @@
 
 
 ## Material
-![node picture](Pictures/LambertMaterial.png)|![node picture](Pictures/PBR.png)|![node picture](Pictures/TerrainPreview.png)|![node picture](Pictures/PathTracer.png)|![node picture](Pictures/PBR2.png)
--|-|-|-|-
-[LambertMaterial](#LambertMaterial)|[PBR](#PBR)|[TerrainPreview](#TerrainPreview)|[PathTracer](#PathTracer)|[PBR2](#PBR2)
+![node picture](Pictures/LambertMaterial.png)|![node picture](Pictures/PBR.png)
+-|-
+[LambertMaterial](#LambertMaterial)|[PBR](#PBR)
 
 
 ## Blend
@@ -51,15 +49,15 @@
 
 
 ## Noise
-![node picture](Pictures/iqnoise.png)|![node picture](Pictures/PerlinNoise.png)|![node picture](Pictures/Voronoi.png)
+![node picture](Pictures/Voronoi.png)|![node picture](Pictures/WorleyNoise.png)|![node picture](Pictures/PerlinNoise.png)
 -|-|-
-[iqnoise](#iqnoise)|[PerlinNoise](#PerlinNoise)|[Voronoi](#Voronoi)
+[Voronoi](#Voronoi)|[WorleyNoise](#WorleyNoise)|[PerlinNoise](#PerlinNoise)
 
 
 ## File
-![node picture](Pictures/ImageRead.png)|![node picture](Pictures/ImageWrite.png)|![node picture](Pictures/Thumbnail.png)|![node picture](Pictures/SVG.png)|![node picture](Pictures/SceneLoader.png)|![node picture](Pictures/GLTFRead.png)
--|-|-|-|-|-
-[ImageRead](#ImageRead)|[ImageWrite](#ImageWrite)|[Thumbnail](#Thumbnail)|[SVG](#SVG)|[SceneLoader](#SceneLoader)|[GLTFRead](#GLTFRead)
+![node picture](Pictures/ImageRead.png)|![node picture](Pictures/ImageWrite.png)|![node picture](Pictures/Thumbnail.png)|![node picture](Pictures/SVG.png)|![node picture](Pictures/GLTFRead.png)
+-|-|-|-|-
+[ImageRead](#ImageRead)|[ImageWrite](#ImageWrite)|[Thumbnail](#Thumbnail)|[SVG](#SVG)|[GLTFRead](#GLTFRead)
 
 
 ## Paint
@@ -74,10 +72,10 @@
 [PhysicalSky](#PhysicalSky)|[CubemapView](#CubemapView)|[EquirectConverter](#EquirectConverter)|[CubeRadiance](#CubeRadiance)
 
 
-## Fur
-![node picture](Pictures/FurGenerator.png)|![node picture](Pictures/FurDisplay.png)|![node picture](Pictures/FurIntegrator.png)
--|-|-
-[FurGenerator](#FurGenerator)|[FurDisplay](#FurDisplay)|[FurIntegrator](#FurIntegrator)
+## Tools
+![node picture](Pictures/Multiplex.png)
+-
+[Multiplex](#Multiplex)
 
 
 ## Circle
@@ -87,7 +85,7 @@ Category : Generator
 ### Description
 Renders a perfect Circle center in the view port.
 ### Parameters
-1. Radius
+1. radius
 Clip-space radius.
 1. T
 Interpolation factor between full white cirle (0.) and height of the hemisphere (1.).
@@ -102,28 +100,15 @@ Category : Transform
 ### Description
 Transform every source texel using the translation, rotation, scale.
 ### Parameters
-1. Translate
+1. translate
 2D vector translation.
-1. Scale
+1. scale
 2D vector scale.
-1. Rotation
+1. rotation
 Angle in degrees. Center of rotation is the center of the source.
 
 ### Example
 ![node example](Examples/Example_Transform.png)
-
-## Square
-![node picture](Pictures/Square.png)
-
-Category : Generator
-### Description
-Renders a square centered in the middle of the viewport. Deprecated node. Use the NGon node.
-### Parameters
-1. Width
-Clip-space side width.
-
-### Example
-![node example](Examples/Example_Square.png)
 
 ## Checker
 ![node picture](Pictures/Checker.png)
@@ -144,9 +129,11 @@ Category : Generator
 ### Description
 Renders a one directioned sine as a greyscale value.
 ### Parameters
-1. Frequency
+1. translation
+Translate the sine to adjust its start and end.
+1. frequency
 Basically, the number of bars.
-1. Angle
+1. angle
 Angle in degrees of the so called bars.
 
 ### Example
@@ -159,26 +146,13 @@ Category : Filter
 ### Description
 Performs a smoothstep operation. Hermite interpolation between 0 and 1 when Low < x < high. This is useful in cases where a threshold function with a smooth transition is desired.
 ### Parameters
-1. Low
+1. low
 Lower value for the Hermite interpolation.
-1. High
+1. high
 Higher value for the Hermite interpolation. Result is undertimined when high value < low value.
 
 ### Example
 ![node example](Examples/Example_SmoothStep.png)
-
-## Pixelize
-![node picture](Pictures/Pixelize.png)
-
-Category : Transform
-### Description
-Lower the resolution of the image using nearest filter.
-### Parameters
-1. scale
-Number of pixels on a side.
-
-### Example
-![node example](Examples/Example_Pixelize.png)
 
 ## Blur
 ![node picture](Pictures/Blur.png)
@@ -187,7 +161,7 @@ Category : Filter
 ### Description
 Performs a Directional of Box blur filter. Directional blur is a gaussian pass with 16 pixels. Box is 16x16.
 ### Parameters
-1. Type
+1. type
 Selection of the Blur type.
 1. angle
 angle in degrees for the directional blur.
@@ -208,7 +182,7 @@ Computes a normal map using the Red component of the source as the height.
 ### Parameters
 1. spread
 The bigger, the stronger the resulting normal will be.
-1. Invert
+1. invert
 Change the direction of the XY components of the normal.
 
 ### Example
@@ -219,7 +193,7 @@ Change the direction of the XY components of the normal.
 
 Category : Material
 ### Description
-Experimental node.
+simental node.
 ### Parameters
 1. view
 
@@ -234,25 +208,13 @@ Category : Blend
 ### Description
 For each source texel, multiply and and a color value.
 ### Parameters
-1. Mul Color
+1. mulColor
 The color to multiply the source with.
-1. Add Color
+1. addColor
 The color to add to the source.
 
 ### Example
 ![node example](Examples/Example_MADD.png)
-
-## Hexagon
-![node picture](Pictures/Hexagon.png)
-
-Category : Generator
-### Description
-Renders an hexagon. This node is deprecated. Use the NGon node instead.
-### Parameters
-No parameter for this node.
-
-### Example
-![node example](Examples/Example_Hexagon.png)
 
 ## Blend
 ![node picture](Pictures/Blend.png)
@@ -265,7 +227,7 @@ Blends to source together using a built-in operation. Each source can also be ma
 Color/mask to multiply A source with.
 1. B
 Color/mask to multiply A source with.
-1. Operation
+1. operation
 Built-ins operation used for blending. Check the examples below.
 
 ![node picture](Examples/Example_Blend_Add.png)|![node picture](Examples/Example_Blend_Multiply.png)|![node picture](Examples/Example_Blend_Darken.png)
@@ -300,13 +262,13 @@ Category : Generator
 ### Description
 Renders a bunch of circle with interpolated position and scales. For N circles the interpolation coefficient will be between [0/N....N/N].
 ### Parameters
-1. Distance
+1. distance
 First and Last value to interpolate between for the distance to the center of the viewport.
-1. Radius
+1. radius
 First and Last value for the interpolated circle radius.
-1. Angle
+1. angle
 First and Last value for the Angle. The circle position is computed using the angle and the distance.
-1. Count
+1. count
 The total number of circles to render.
 
 ### Example
@@ -319,7 +281,7 @@ Category : Filter
 ### Description
 Performs a Ramp on the source components. For each source value (X coord on the ramp graph), retrieve an intensity value (Y on the ramp graph). Optionnaly use an image instead of the editable graph.
 ### Parameters
-1. Ramp
+1. ramp
 Graph that can be edited.
 
 ### Example
@@ -332,14 +294,18 @@ Category : Transform
 ### Description
 Generate a tile map of the source image. With optional overlap. An optional Color input can be used to modulate the tiles color. Color is uniform per tile and picked at its center in the output image.
 ### Parameters
-1. Offset 0
-X,Y offset applied to even tiles. Offset in clipspace.
-1. Offset 1
-X,Y offset applied to odd tiles. Offset in clipspace.
-1. Overlap
-Amount of overlap between odd and even tiles.
-1. Scale
-The number of tiles in X and Y in the output.
+1. translation
+Translate the noise seeds so you can have virtualy infinite different noise.
+1. quincunx
+Offset line and/or column.
+1. noiseFactor
+position noise factor. A value of 0 means the grid cells are more tightly packed and with less size variation.
+1. rotationFactor
+Rotate sprite randomly. This factor limits the rotation amount.
+1. scale
+How many cells used per dimension.
+1. innerScale
+Sprite uniform scale.
 
 ### Example
 ![node example](Examples/Example_Tile.png)
@@ -351,7 +317,7 @@ Category : None
 ### Description
 Single plain color.
 ### Parameters
-1. Color
+1. color
 Single plain color.
 
 ### Example
@@ -364,30 +330,51 @@ Category : Blend
 ### Description
 Blend two normal maps into a single one. Choose the Technique that gives the best result.
 ### Parameters
-1. Technique
+1. mode
 Different techniques for blending. Check the examples below to see the differences.
 
 ### Example
 ![node example](Examples/Example_NormalMapBlending.png)
 
-## iqnoise
-![node picture](Pictures/iqnoise.png)
+## Voronoi
+![node picture](Pictures/Voronoi.png)
 
 Category : Noise
 ### Description
 Generate noise based on work by Inigo Quilez.
 ### Parameters
-1. Translation
+1. translation
 Translate the noise seeds so you can have virtualy infinite different noise.
-1. Size
+1. size
 
-1. U
+1. noise
 Interpolate between centered seed (checker) to jittered random position.
-1. V
+1. colorInterpolation
 Interpolation factor between full color to distance-like color per cell.
+1. distanceBlend
+Distance computation type interpolate between Euclydean distance (0.) and Manhattan Distance (1.)
 
 ### Example
-![node example](Examples/Example_iqnoise.png)
+![node example](Examples/Example_Voronoi.png)
+
+## WorleyNoise
+![node picture](Pictures/WorleyNoise.png)
+
+Category : Noise
+### Description
+Generate Worley noise with optional Manhattan distance.
+### Parameters
+1. translation
+Translate the noise seeds so you can have virtualy infinite different noise.
+1. scale
+
+1. jitter
+
+1. manhattan
+Mahattan or linear distance.
+
+### Example
+![node example](Examples/Example_WorleyNoise.png)
 
 ## PerlinNoise
 ![node picture](Pictures/PerlinNoise.png)
@@ -396,9 +383,9 @@ Category : Noise
 ### Description
 
 ### Parameters
-1. Translation
+1. translation
 Translate the noise seeds so you can have virtualy infinite different noise.
-1. Octaves
+1. octaves
 The number of noise with different scale for each.
 1. lacunarity
 Geoemtric scale applied for each octave.
@@ -415,11 +402,11 @@ Category : Material
 ### Description
 Experimental Node.
 ### Parameters
-1. View
+1. view
 
-1. Displacement Factor
+1. displacementFactor
 
-1. Geometry
+1. geometry
 
 
 ### Example
@@ -432,7 +419,7 @@ Category : Transform
 ### Description
 Transform the source using polar coordinates.
 ### Parameters
-1. Type
+1. type
 Change to direction of the transformation.
 
 ### Example
@@ -445,9 +432,9 @@ Category : Filter
 ### Description
 Performs a clamp for each component of the source. Basically, sets the min and max of each component.
 ### Parameters
-1. Min
+1. minimum
 The minimal value for each source component.
-1. Max
+1. maximum
 The maximal value for each source component.
 
 ### Example
@@ -460,19 +447,19 @@ Category : File
 ### Description
 Imports a file from the disk. Major formats are supported. Cubemaps can be imported using one image for each face of using a cubemap .DDS/.KTX. MP4 movies can be read as well.
 ### Parameters
-1. File name
+1. filename
 Single image frame or DDS/KTX cubemap.
-1. +X File name
+1. XPosFilename
 Cubemap image face for +X direction.
-1. -X File name
+1. XNegFilename
 Cubemap image face for -X direction.
-1. +Y File name
+1. YPosFilename
 Cubemap image face for +Y direction (Top).
-1. -Y File name
+1. YNegFilename
 Cubemap image face for -Y direction (Bottom).
-1. +Z File name
+1. ZPosFilename
 Cubemap image face for +Z direction.
-1. -Z File name
+1. ZNegFilename
 Cubemap image face for -Z direction.
 
 ### Example
@@ -485,19 +472,19 @@ Category : File
 ### Description
 
 ### Parameters
-1. File name
+1. filename
 
-1. Format
+1. format
 
-1. Quality
+1. quality
 
-1. Width
+1. width
 
-1. Height
+1. height
 
-1. Mode
+1. mode
 
-1. Export
+1. export
 
 
 ### Example
@@ -510,7 +497,7 @@ Category : File
 ### Description
 Create a thumbnail picture from the source input and applies it to the thumbnail library view.
 ### Parameters
-1. Make
+1. make
 Force the evaluation without building the graph.
 
 ### Example
@@ -523,7 +510,7 @@ Category : Paint
 ### Description
 Paint in the parameter viewport using the connected brush. Paint picture is saved in the graph.
 ### Parameters
-1. Size
+1. size
 Size of the output in pixels.
 
 ### Example
@@ -536,7 +523,7 @@ Category : Transform
 ### Description
 Performs a rotation on source based on distance to the viewport center.
 ### Parameters
-1. Angles
+1. angles
 Rotation for the inner pixels (closer to the center) and the outter pixels. Angles in degrees.
 
 ### Example
@@ -549,7 +536,7 @@ Category : Transform
 ### Description
 Set the output as a rectangle in the source.
 ### Parameters
-1. Quad
+1. quad
 X/Y Position and width/height of the selection rectangle.
 
 ### Example
@@ -568,25 +555,25 @@ Ambient aka minimal color within the cubemap. Ambient alpha is used to modulate 
 Light direction vector.
 1. Kr
 Kr component value.
-1. rayleigh brightness
+1. rayleighBrightness
 Rayleigh brightness
-1. mie brightness
+1. mieBrightness
 Mie brightness factor.
-1. spot brightness
+1. spotBrightness
 Spot/sun brightness.
-1. scatter strength
+1. scatterStrength
 Scatter strength.
-1. rayleigh strength
+1. rayleighStrength
 Rayleigh strength.
-1. mie strength
+1. mieStrength
 Mie strength.
-1. rayleigh collection power
+1. rayleighCollectionPower
 Rayleigh collection power.
-1. mie collection power
+1. mieCollectionPower
 Mie collection power.
-1. mie distribution
+1. mieDistribution
 Mie distribution.
-1. Size
+1. size
 Size of the cubemap face width in pixels.
 
 ### Example
@@ -601,7 +588,7 @@ Used to display a cubemap using various techniques.
 ### Parameters
 1. view
 Used by the Camera technique to rotate the eye direction.
-1. Mode
+1. mode
 Techniques for display. See below for examples.
 1. LOD
 Use a particular LOD (mipmap) for display. Radiance cube node can help produce cubemap mipmaps.
@@ -616,9 +603,9 @@ Category : Cubemap
 ### Description
 Converts an equirect source (one single picture containing all environment) into a cubemap output. The inverse (cubemap -> equirect) can also be performed with this node.
 ### Parameters
-1. Mode
+1. mode
 Select to operation to perform.
-1. Size
+1. size
 Size fo the ouput in pixels.
 
 ### Example
@@ -631,12 +618,14 @@ Category : Generator
 ### Description
 Compute N plans and color the texels behind every plan accordingly. Texels in front of any plan will be black.
 ### Parameters
-1. Sides
+1. sides
 Number of uniformly distributed plans.
-1. Radius
+1. radius
 Distance from the plan to the center of the viewport.
 1. T
 Interpolation factor between full white color and distance to the nearest plan.
+1. startAngle
+Angle in degrees of the first vertex.
 
 ### Example
 ![node example](Examples/Example_NGon.png)
@@ -648,7 +637,7 @@ Category : Generator
 ### Description
 Computes a linear gradient based on key values(position/color).
 ### Parameters
-1. Gradient
+1. gradient
 Double click to add a click. Click and drag a key to move it position. Modify the color for the selected key.
 
 ### Example
@@ -661,26 +650,13 @@ Category : Transform
 ### Description
 Displace each source texel using the Warp input.
 ### Parameters
-1. Strength
+1. strength
 How strong is the displacement. Clip-space value.
-1. Mode
+1. mode
 One of 2 modes. XY offset : R and G channels are used for X and Y displacement. Rotation-Distance: R is used as an angle (0..1 -> 0..2pi) and G is the length of the displacement.
 
 ### Example
 ![node example](Examples/Example_Warp.png)
-
-## TerrainPreview
-![node picture](Pictures/TerrainPreview.png)
-
-Category : Material
-### Description
-Experimental node.
-### Parameters
-1. Camera
-
-
-### Example
-![node example](Examples/Example_TerrainPreview.png)
 
 ## AO
 ![node picture](Pictures/AO.png)
@@ -701,46 +677,6 @@ Radius in clipspace used for the computation.
 ### Example
 ![node example](Examples/Example_AO.png)
 
-## FurGenerator
-![node picture](Pictures/FurGenerator.png)
-
-Category : Fur
-### Description
-Experimental node.
-### Parameters
-1. Hair count
-
-1. Length factor
-
-
-### Example
-![node example](Examples/Example_FurGenerator.png)
-
-## FurDisplay
-![node picture](Pictures/FurDisplay.png)
-
-Category : Fur
-### Description
-Experimental node.
-### Parameters
-1. Camera
-
-
-### Example
-![node example](Examples/Example_FurDisplay.png)
-
-## FurIntegrator
-![node picture](Pictures/FurIntegrator.png)
-
-Category : Fur
-### Description
-Experimental node.
-### Parameters
-No parameter for this node.
-
-### Example
-![node example](Examples/Example_FurIntegrator.png)
-
 ## SVG
 ![node picture](Pictures/SVG.png)
 
@@ -748,41 +684,13 @@ Category : File
 ### Description
 Import an SVG vector graphics image and rasterize it to an image output.
 ### Parameters
-1. File name
+1. filename
 Relative or absolute filepath of the SVG file.
-1. DPI
+1. dpi
 Resolution used for rendering the SVG. The higher value, the bigger the image will be.
 
 ### Example
 ![node example](Examples/Example_SVG.png)
-
-## SceneLoader
-![node picture](Pictures/SceneLoader.png)
-
-Category : File
-### Description
-Experimental node.
-### Parameters
-1. File name
-
-
-### Example
-![node example](Examples/Example_SceneLoader.png)
-
-## PathTracer
-![node picture](Pictures/PathTracer.png)
-
-Category : Material
-### Description
-Experimental node.
-### Parameters
-1. Mode
-
-1. Camera
-
-
-### Example
-![node example](Examples/Example_PathTracer.png)
 
 ## EdgeDetect
 ![node picture](Pictures/EdgeDetect.png)
@@ -791,30 +699,11 @@ Category : Transform
 ### Description
 Performs an edge detection on the source. Texels that are close in intensity with the neighbours will be white. Black if the difference is strong.
 ### Parameters
-1. Radius
+1. radius
 The radius size in clipspace used for detection. The higher value, the broader the search is.
 
 ### Example
 ![node example](Examples/Example_EdgeDetect.png)
-
-## Voronoi
-![node picture](Pictures/Voronoi.png)
-
-Category : Noise
-### Description
-Generates a Voronoi texture based on random seeds.
-### Parameters
-1. Point Count
-The number of seeds.
-1. Seed
-The seeds random position base value.
-1. Distance Blend
-Distance computation type interpolate between Euclydean distance (0.) and Manhattan Distance (1.)
-1. Square Width
-Size of each seed in clipspace size.
-
-### Example
-![node example](Examples/Example_Voronoi.png)
 
 ## Kaleidoscope
 ![node picture](Pictures/Kaleidoscope.png)
@@ -823,13 +712,13 @@ Category : Transform
 ### Description
 Duplicates portion of the source using rotation and symetry. Basically, computes N plans and duplicate what's in front of the plane to the other with or without symetry.
 ### Parameters
-1. Center
+1. center
 Center of the operation in clipspace coordinates [0..1]
-1. Start Angle
+1. startAngle
 Angle in degrees of the first plan. Total sum of plan angle is 360 deg.
-1. Splits
+1. splits
 How many split plans to use.
-1. Symetry
+1. symetry
 Enable symetry for even plans.
 
 ### Example
@@ -842,9 +731,9 @@ Category : Transform
 ### Description
 Find the closest color inside the predefined palette for each texel in the source. Using optional dithering.
 ### Parameters
-1. Palette
+1. palette
 Predefined palette. Check examples below for results.
-1. Dither Strength
+1. ditherStrength
 Bayer dithering strength (0 = none, 1 = full dither).
 
 ![node picture](Examples/Example_Palette_CGA0.png)|![node picture](Examples/Example_Palette_CGA1.png)
@@ -875,7 +764,7 @@ Reaction divisor.
 Component color step.
 1. passCount
 Multiple passes are supported by this node.
-1. Size
+1. size
 Size of the output in pixels
 
 ### Example
@@ -890,13 +779,13 @@ Apply a fluid dynamic-like process on the source image. A noise is computed and 
 ### Parameters
 1. passCount
 Multiple passes are supported by this node.
-1. Frequency
+1. frequency
 Noise frequency. The higher, the more noise you'll get.
-1. Strength
+1. strength
 Noise strength.
-1. Randomization
+1. randomization
 How much randomization is applied.
-1. VerticalShift
+1. verticalShift
 How much in clip-space is moved to the top. Somekind of force applied to texels.
 
 ### Example
@@ -909,9 +798,9 @@ Category : File
 ### Description
 Experimental node.
 ### Parameters
-1. File name
+1. filename
 
-1. Camera
+1. camera
 
 
 ### Example
@@ -924,9 +813,9 @@ Category : Paint
 ### Description
 Experimental node.
 ### Parameters
-1. Size
+1. size
 
-1. Camera
+1. camera
 
 
 ### Example
@@ -939,30 +828,15 @@ Category : Cubemap
 ### Description
 Compute cubemap radiance or irradiance and generate a cubemap with optional mipmaps
 ### Parameters
-1. Mode
+1. mode
 Radiance or Irradiance.
-1. Size
+1. size
 Size of the output cubemap face width in pixels.
-1. Sample Count
+1. sampleCount
 The samples count used for the blur. The more samplem the higher quality.
 
 ### Example
 ![node example](Examples/Example_CubeRadiance.png)
-
-## PBR2
-![node picture](Pictures/PBR2.png)
-
-Category : Material
-### Description
-Experimental node.
-### Parameters
-1. View
-
-1. Depth factor
-
-
-### Example
-![node example](Examples/Example_PBR2.png)
 
 ## ChannelPacker
 ![node picture](Pictures/ChannelPacker.png)
@@ -990,9 +864,9 @@ Category : Transform
 ### Description
 Deforms the source using a lens computation with an optionnal vignette shading.
 ### Parameters
-1. Factor
+1. factor
 Lens factor strength.
-1. Vignette
+1. vignette
 Vignette shading: Corners get darker. 0 to disable vignette.
 
 ### Example
@@ -1011,6 +885,19 @@ Generate a signed distance field from a black and white source image.
 ### Example
 ![node example](Examples/Example_Distance.png)
 
+## Multiplex
+![node picture](Pictures/Multiplex.png)
+
+Category : Tools
+### Description
+Route one input into the output. This choice can be propagated to further nodes.
+### Parameters
+1. multiplexer
+Input selection passed thru the output.
+
+### Example
+![node example](Examples/Example_Multiplex.png)
+
 # Default Hot Keys
 
 Action|Description|Hot key
@@ -1028,7 +915,6 @@ ToggleLogger|Show or hide Logger window|Ctrl + 3
 ToggleSequencer|Show or hide Sequencer window|Ctrl + 4
 ToggleParameters|Show or hide Parameters window|Ctrl + 5
 MaterialNew|Create a new graph|Ctrl + N
-ReloadShaders|Reload them|F7
 DeleteSelectedNodes|Delete selected nodes in the current graph|Del
 AnimationSetKey|Make a new animation key with the current parameters values at the current time|S
 HotKeyEditor|Open the Hotkey editor window|Ctrl + K
@@ -1039,5 +925,6 @@ Copy|Copy the selected nodes|Ctrl + C
 Cut|Cut the selected nodes|Ctrl + X
 Paste|Paste previously copy/cut nodes|Ctrl + V
 BuildMaterial|Build current material|Ctrl + B
+CloseLibrary|Close current library|Ctrl + W
 MouseState|Show Mouse State as a tooltip|Ctrl + M
 

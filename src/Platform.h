@@ -25,11 +25,24 @@
 
 #pragma once
 
-#ifdef EMSCRIPTEN
+
+#ifdef __EMSCRIPTEN__
+#define BUILDTYPE  " Web Edition"
+#else
+#define BUILDTYPE  " Desktop Edition"
+#endif
+#define IMOGENTITLE "Imogen 0.14 "
+#define IMOGENCOMPLETETITLE IMOGENTITLE BUILDTYPE
+
+#include <bgfx/bgfx.h>
+#include <bimg/bimg.h>
+
+#ifdef __EMSCRIPTEN__
 
 #include <emscripten.h>
 #include <SDL.h>
-#include <GLES3/gl3.h>
+
+#define USE_SDL 1
 
 typedef int TaskSetPartition;
 struct PinnedTask
@@ -63,8 +76,8 @@ struct TaskScheduler
 
 #elif WIN32
 
-#include <SDL.h>
-#include <GL/gl3w.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <io.h>
@@ -72,15 +85,36 @@ struct TaskScheduler
 #include <Windows.h>
 #include <shellapi.h>
 #include "ffmpegCodec.h"
-#include "libtcc/libtcc.h"
 #include "ffmpegCodec.h"
 #include "TaskScheduler.h"
 #include "nfd.h"
 
 #define USE_FFMPEG 1
 #define USE_PYTHON 1
-#define USE_GLDEBUG 1
-#define USE_LIBTCC 1
+#define USE_SDL 1
+
+typedef enki::IPinnedTask PinnedTask;
+typedef enki::ITaskSet TaskSet;
+typedef enki::TaskSetPartition TaskSetPartition;
+typedef enki::TaskScheduler TaskScheduler;
+
+#elif __linux__
+
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include "TaskScheduler.h"
+#include "nfd.h"
+#include <algorithm>
+#include <string.h>
+#include "ffmpegCodec.h"
+#include <libgen.h>
+
+#define USE_FFMPEG 1
+#define USE_PYTHON 1
+#define USE_SDL 1
 
 typedef enki::IPinnedTask PinnedTask;
 typedef enki::ITaskSet TaskSet;

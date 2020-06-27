@@ -22,13 +22,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-
 #pragma once
 
 #include "ImCurveEdit.h"
-#include "ImGradient.h"
 #include "imgui_markdown/imgui_markdown.h"
 #include <algorithm>
+#include "Types.h"
 
 void SetStyle();
 void InitFonts();
@@ -129,60 +128,16 @@ private:
     ImVec2 mMin, mMax;
 };
 
-struct GradientEdit : public ImGradient::Delegate
-{
-    GradientEdit()
-    {
-        mPointCount = 0;
-    }
-
-    size_t GetPointCount()
-    {
-        return mPointCount;
-    }
-
-    ImVec4* GetPoints()
-    {
-        return mPts;
-    }
-
-    virtual int EditPoint(int pointIndex, ImVec4 value)
-    {
-        mPts[pointIndex] = value;
-        SortValues();
-        for (size_t i = 0; i < GetPointCount(); i++)
-        {
-            if (mPts[i].w == value.w)
-                return int(i);
-        }
-        return pointIndex;
-    }
-    virtual void AddPoint(ImVec4 value)
-    {
-        if (mPointCount >= 8)
-            return;
-        mPts[mPointCount++] = value;
-        SortValues();
-    }
-    virtual ImVec4 GetPoint(float t);
-    ImVec4 mPts[8];
-    size_t mPointCount;
-
-private:
-    void SortValues()
-    {
-        auto b = std::begin(mPts);
-        auto e = std::begin(mPts) + GetPointCount();
-        std::sort(b, e, [](ImVec4 a, ImVec4 b) { return a.w < b.w; });
-    }
-};
-
 // draw callbacks
 struct ImRect;
 struct ImDrawList;
 struct EvaluationContext;
-typedef void (*NodeUICallBackFunc)(EvaluationContext* context, size_t nodeIndex);
+typedef void (*NodeUICallBackFunc)(EvaluationContext* context, NodeIndex nodeIndex);
 void AddUICustomDraw(
-    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, size_t nodeIndex, EvaluationContext* context);
+    ImDrawList* drawList, const ImRect& rc, NodeUICallBackFunc func, NodeIndex nodeIndex, EvaluationContext* context);
 void InitCallbackRects();
 
+void UICallbackNodeDeleted(NodeIndex nodeIndex);
+void UICallbackNodeInserted(NodeIndex nodeIndex);
+
+extern ImFont *smallAF, *bigAF, *mediumAF;

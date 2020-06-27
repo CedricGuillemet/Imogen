@@ -27,116 +27,63 @@
 #include <fstream>
 #include "Bitmap.h"
 #include "Utils.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "Mem.h"
+#include <bimg/decode.h>
+#include <bimg/encode.h>
+#include <bx/allocator.h>
+#include <bx/file.h>
+#include <bgfx/bgfx.h>
+#include "JSGlue.h"
+#include "Library.h"
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#include "stb_image_write.h"
 #define NANOSVG_ALL_COLOR_KEYWORDS // Include full list of color keywords.
 #define NANOSVG_IMPLEMENTATION     // Expands implementation
 #include "nanosvg.h"
 #define NANOSVGRAST_IMPLEMENTATION
 #include "nanosvgrast.h"
-
-#include "cmft/image.h"
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 #if USE_FFMPEG
 #include "ffmpegCodec.h"
 #endif
 ImageCache gImageCache;
-DefaultShaders gDefaultShader;
-#ifdef GL_BGR
-const unsigned int glInputFormats[] = {
-    GL_BGR,
-    GL_RGB,
-    GL_RGB16,
-    GL_RGB16F,
-    GL_RGB32F,
-    GL_RGBA, // RGBE
 
-    GL_BGRA,
-    GL_RGBA,
-    GL_RGBA16,
-    GL_RGBA16F,
-    GL_RGBA32F,
+bx::AllocatorI* getDefaultAllocator()
+{
+    static bx::DefaultAllocator s_allocator;
+    return &s_allocator;
+}
 
-    GL_RGBA, // RGBM
-};
-const unsigned int glInternalFormats[] = {
-    GL_RGB,
-    GL_RGB,
-    GL_RGB16,
-    GL_RGB16F,
-    GL_RGB32F,
-    GL_RGBA, // RGBE
+bimg::Quality::Enum GetQuality(int quality)
+{
+    switch (quality)
+    {
+    case 0:
+    case 1:
+    case 2:
+        return bimg::Quality::Highest;
+    case 7:
+    case 8:
+    case 9:
+        return bimg::Quality::Fastest;
+    default:
+        return bimg::Quality::Default;
+    }
+}
 
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA16,
-    GL_RGBA16F,
-    GL_RGBA32F,
-
-    GL_RGBA, // RGBM
-};
-#else
-const unsigned int glInputFormats[] = {
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGBA, // RGBE
-
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-
-    GL_RGBA, // RGBM
-};
-const unsigned int glInternalFormats[] = {
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGB,
-    GL_RGBA, // RGBE
-
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-    GL_RGBA,
-
-    GL_RGBA, // RGBM
-};
-
-#endif
-const unsigned int glCubeFace[] = {
-    GL_TEXTURE_CUBE_MAP_POSITIVE_X,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-    GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
-    GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
-};
-const unsigned int textureFormatSize[] = {3, 3, 6, 6, 12, 4, 4, 4, 8, 8, 16, 4};
-const unsigned int textureComponentCount[] = {3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4};
-
-void SaveCapture(const std::string& filemane, int x, int y, int w, int h)
+void SaveCapture(const std::string& filename, int x, int y, int w, int h)
 {
     w &= 0xFFFFFFFC;
     h &= 0xFFFFFFFC;
 
-    int viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
+    char filenameInfos[512];
+    sprintf(filenameInfos, "%d|%d|%d|%d|%s", x, y, w, h, filename.c_str());
 
-    unsigned char* imgBits = new unsigned char[w * h * 4];
-
-    glReadPixels(x, viewport[3] - y - h, w, h, GL_RGB, GL_UNSIGNED_BYTE, imgBits);
-
-    stbi_write_png(filemane.c_str(), w, h, 3, imgBits, w * 3);
-    delete[] imgBits;
+    bgfx::FrameBufferHandle fbh = BGFX_INVALID_HANDLE;
+    bgfx::requestScreenShot(fbh, filenameInfos);
 }
 
 #if USE_FFMPEG
@@ -145,9 +92,9 @@ Image Image::DecodeImage(FFMPEGCodec::Decoder* decoder, int frame)
     decoder->ReadFrame(frame);
     Image image;
     image.mDecoder = decoder;
-    image.mNumMips = 1;
-    image.mNumFaces = 1;
-    image.mFormat = TextureFormat::BGR8;
+    image.mHasMipmaps = false;
+    image.mIsCubemap = false;
+    image.mFormat = bgfx::TextureFormat::RGB8; // todo:shoud be bgr8
     image.mWidth = int(decoder->mWidth);
     image.mHeight = int(decoder->mHeight);
     size_t lineSize = image.mWidth * 3;
@@ -192,11 +139,12 @@ int Image::LoadSVG(const char* filename, Image* image, float dpi)
     image->SetBits(img, imgSize);
     image->mWidth = width;
     image->mHeight = height;
-    image->mNumMips = 1;
-    image->mNumFaces = 1;
-    image->mFormat = TextureFormat::RGBA8;
+    image->mHasMipmaps = false;
+    image->mIsCubemap = false;
+    image->mFormat = bgfx::TextureFormat::RGBA8;
     image->mDecoder = NULL;
 
+    free(img);
     Image::VFlip(image);
     nsvgDelete(svgImage);
     nsvgDeleteRasterizer(rast);
@@ -214,38 +162,19 @@ int Image::Read(const char* filename, Image* image)
     }
     FILE* fp = fopen(filename, "rb");
     if (!fp)
+    {
+        Log("Unable to open image %s\n", filename);
         return EVAL_ERR;
+    }
     fclose(fp);
 
-    int components;
-    unsigned char* bits = stbi_load(filename, &image->mWidth, &image->mHeight, &components, 0);
-    if (!bits)
-    {
-        cmft::Image img;
-        if (!cmft::imageLoad(img, filename))
-        {
-            return EVAL_ERR;
-        }
-        cmft::imageTransformUseMacroInstead(&img, cmft::IMAGE_OP_FLIP_X, UINT32_MAX);
-        image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-        image->mWidth = img.m_width;
-        image->mHeight = img.m_height;
-        image->mNumMips = img.m_numMips;
-        image->mNumFaces = img.m_numFaces;
-        image->mFormat = img.m_format;
-        image->mDecoder = NULL;
-        gImageCache.AddImage(filenameStr, image);
-        return EVAL_OK;
-    }
+    auto buffer = ReadFile(filename);
 
-    image->SetBits(bits, image->mWidth * image->mHeight * components);
-    image->mNumMips = 1;
-    image->mNumFaces = 1;
-    image->mFormat = (components == 3) ? TextureFormat::RGB8 : TextureFormat::RGBA8;
-    image->mDecoder = NULL;
-    stbi_image_free(bits);
-    gImageCache.AddImage(filenameStr, image);
-    return EVAL_OK;
+    if (buffer.size())
+    {
+        return ReadMem((unsigned char*)buffer.data(), buffer.size(), image, filename);
+    }
+    return EVAL_ERR;
 }
 
 int Image::Free(Image* image)
@@ -254,45 +183,103 @@ int Image::Free(Image* image)
     return EVAL_OK;
 }
 
-unsigned int Image::Upload(Image* image, unsigned int textureId, int cubeFace)
+bgfx::TextureHandle Image::Upload(const Image* image, bgfx::TextureHandle textureHandle, int cubeFace, int mipmap)
 {
-    if (!textureId)
-        glGenTextures(1, &textureId);
+    bool allocTexture = false;
+    if (textureHandle.idx == bgfx::kInvalidHandle)
+    {
+        textureHandle = bgfx::createTexture2D(
+            uint16_t(image->mWidth)
+            , uint16_t(image->mHeight)
+            , image->mHasMipmaps
+            , uint16_t(1)
+            , image->mFormat
+            , uint64_t(0)
+            , nullptr
+        );
+        allocTexture = true;
+    }
+    assert(textureHandle.idx != bgfx::kInvalidHandle);
 
-    unsigned int targetType = (cubeFace == -1) ? GL_TEXTURE_2D : GL_TEXTURE_CUBE_MAP;
-    glBindTexture(targetType, textureId);
+    unsigned int texelSize = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat))/8;
+    assert(texelSize == 4);
+    unsigned int offset = 0;
+    if (image->mIsCubemap)
+    {
+        for (int face = 0; face < cubeFace; face++)
+        {
+            for (size_t i = 0; i < image->GetMipmapCount(); i++)
+            {
+                offset += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
+            }
+        }
+    }
+    for (int i = 0; i < mipmap; i++)
+    {
+        offset += (image->mWidth >> i) * (image->mWidth >> i) * texelSize;
+    }
 
-    unsigned int inputFormat = glInputFormats[image->mFormat];
-    unsigned int internalFormat = glInternalFormats[image->mFormat];
-    glTexImage2D((cubeFace == -1) ? GL_TEXTURE_2D : glCubeFace[cubeFace],
-                 0,
-                 internalFormat,
-                 image->mWidth,
-                 image->mHeight,
-                 0,
-                 inputFormat,
-                 GL_UNSIGNED_BYTE,
-                 image->GetBits());
-    TexParam(GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, targetType);
+    uint16_t w = uint16_t(image->mWidth >> mipmap);
+    uint16_t h = uint16_t(image->mHeight >> mipmap);
+    
+    if (cubeFace != -1)
+    {
+        bgfx::updateTextureCube(textureHandle, 0, cubeFace, mipmap, 0, 0, image->mWidth, image->mWidth, 
+            bgfx::copy(image->GetBits() + offset, w * h * texelSize));
+    }
+    else
+    {
+        bgfx::updateTexture2D(
+            textureHandle
+            , 0
+            , mipmap
+            , 0
+            , 0
+            , w
+            , h
+            , bgfx::copy(image->GetBits() + offset, w * h * texelSize)
+        );
+    }
+    if (allocTexture)
+    {
+        vramTextureAlloc((image->mWidth >> mipmap) * (image->mHeight >> mipmap) * (bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat))/8));
+    }
 
-    glBindTexture(targetType, 0);
-    return textureId;
+    return textureHandle;
 }
 
-int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image)
+int Image::ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename)
 {
-    int components;
-    unsigned char* bits = stbi_load_from_memory(data, int(dataSize), &image->mWidth, &image->mHeight, &components, 0);
-    if (!bits)
-        return EVAL_ERR;
-    image->SetBits(bits, image->mWidth * image->mHeight * components);
-    stbi_image_free(bits);
+	if (!dataSize)
+	{
+		return EVAL_ERR;
+	}
+
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
+    bimg::ImageContainer* imageContainer = bimg::imageParse(g_allocator, data, (uint32_t)dataSize, bimg::TextureFormat::RGBA8); // todo handle HDR float
+
+    if (!imageContainer)
+    {
+		return EVAL_ERR;
+	}
+    image->SetBits((unsigned char*)imageContainer->m_data, imageContainer->m_size);
+    image->mWidth = imageContainer->m_width;
+    image->mHeight = imageContainer->m_height;
+    image->mHasMipmaps = imageContainer->m_numMips > 1;
+    image->mIsCubemap = imageContainer->m_cubeMap;
+    image->mFormat = (imageContainer->m_format == bgfx::TextureFormat::RGB8) ? bgfx::TextureFormat::RGB8 : bgfx::TextureFormat::RGBA8;
+    image->mDecoder = NULL;
+    if (filename)
+    {
+        gImageCache.AddImage(filename, image);
+    }
+    bimg::imageFree(imageContainer);
     return EVAL_OK;
 }
 
 void Image::VFlip(Image* image)
 {
-    int pixelSize = (image->mFormat == TextureFormat::RGB8) ? 3 : 4;
+    int pixelSize = (image->mFormat == bgfx::TextureFormat::RGB8) ? 3 : 4;
     int stride = image->mWidth * pixelSize;
     for (int y = 0; y < image->mHeight / 2; y++)
     {
@@ -305,128 +292,196 @@ void Image::VFlip(Image* image)
     }
 }
 
+template<typename Writer> void stbi_writer(void* context, void* data, int size)
+{
+    Writer* writer = static_cast<Writer*>(context);
+    bx::Error err;
+    writer->write(data, size, &err);
+}
+
 int Image::Write(const char* filename, Image* image, int format, int quality)
 {
-    int components = textureComponentCount[image->mFormat];
-    switch (format)
+    if (!image->mWidth || !image->mHeight)
     {
-        case 0:
-            if (!stbi_write_jpg(filename, image->mWidth, image->mHeight, components, image->GetBits(), quality))
-                return EVAL_ERR;
-            break;
-        case 1:
-            if (!stbi_write_png(
-                    filename, image->mWidth, image->mHeight, components, image->GetBits(), image->mWidth * components))
-                return EVAL_ERR;
-            break;
-        case 2:
-            if (!stbi_write_tga(filename, image->mWidth, image->mHeight, components, image->GetBits()))
-                return EVAL_ERR;
-            break;
-        case 3:
-            if (!stbi_write_bmp(filename, image->mWidth, image->mHeight, components, image->GetBits()))
-                return EVAL_ERR;
-            break;
-        case 4:
-            // if (stbi_write_hdr(filename, image->width, image->height, image->components, image->bits))
-            return EVAL_ERR;
-            break;
-        case 5:
-        {
-            cmft::Image img;
-            img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
-            img.m_width = image->mWidth;
-            img.m_height = image->mHeight;
-            img.m_numFaces = image->mNumFaces;
-            img.m_numMips = image->mNumMips;
-            img.m_data = image->GetBits();
-            img.m_dataSize = image->mDataSize;
-            if (img.m_format == cmft::TextureFormat::RGBA8)
-                cmft::imageConvert(img, cmft::TextureFormat::BGRA8);
-            else if (img.m_format == cmft::TextureFormat::RGB8)
-                cmft::imageConvert(img, cmft::TextureFormat::BGR8);
-            image->SetBits((unsigned char*)img.m_data, img.m_dataSize);
-            if (!cmft::imageSave(img, filename, cmft::ImageFileType::DDS))
-                return EVAL_ERR;
-        }
-        break;
-        case 6:
-        {
-            cmft::Image img;
-            img.m_format = (cmft::TextureFormat::Enum)image->mFormat;
-            img.m_width = image->mWidth;
-            img.m_height = image->mHeight;
-            img.m_numFaces = image->mNumFaces;
-            img.m_numMips = image->mNumMips;
-            img.m_data = image->GetBits();
-            img.m_dataSize = image->mDataSize;
-            if (!cmft::imageSave(img, filename, cmft::ImageFileType::KTX))
-                return EVAL_ERR;
-        }
-        break;
-        case 7:
-        {
-            assert(0);
-        }
-        break;
+        return EVAL_ERR;
     }
-    return EVAL_OK;
+
+    const int components = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat))/8;
+    
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
+    bx::Error err;
+#ifdef __EMSCRIPTEN__
+    bx::MemoryBlock mb(g_allocator);
+    bx::MemoryWriter writer(&mb);
+#else
+    bx::FileWriter writer;
+    if (bx::open(&writer, filename, false, &err))
+#endif
+    {
+        //auto texformat = image->mFormat;//GetBIMGFormat((TextureFormat::Enum)image->mFormat);
+
+        switch (format)
+        {
+        case 0: // jpeg
+            stbi_write_jpg_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits(), quality);
+            break;
+        case 1: // png
+            stbi_write_png_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
+            break;
+        case 2: // tga
+			stbi_write_tga_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits());
+            break;
+		case 3: // bmp
+			stbi_write_bmp_to_func(stbi_writer<bx::FileWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits());
+			break;
+        case 4: // hdr
+            bimg::imageWriteHdr(&writer
+				, image->mWidth
+				, image->mHeight
+				, image->mWidth * components
+				, image->GetBits()
+				, bimg::TextureFormat::RGBA8//, image->mFormat
+				, false/*_yflip*/
+				, &err);
+            break;
+        case 5: // dds
+            {
+                bimg::ImageContainer* imageContainer = bimg::imageAlloc(
+                    g_allocator
+                    , bimg::TextureFormat::RGBA8
+                    , image->mWidth
+                    , image->mHeight
+                    , 1
+                    , 1
+                    , image->mIsCubemap
+                    , image->mHasMipmaps
+                    , image->GetBits()
+                );
+
+                if (imageContainer)
+                {
+                    bimg::imageWriteDds(
+                        &writer
+                        , *imageContainer
+                        , image->GetBits()
+                        , image->mDataSize
+                        , &err
+                    );
+                    bimg::imageFree(imageContainer);
+                }
+            }
+            break;
+        case 6: // ktx
+            bimg::imageWriteKtx(
+                &writer
+				, bimg::TextureFormat::RGBA8//, image->mFormat
+                , image->mIsCubemap
+                , image->mWidth
+                , image->mHeight
+                , 1
+                , image->GetMipmapCount()
+                , 1
+                , image->GetBits()
+                , &err
+            );
+            break;
+        case 7: // exr
+            bimg::imageWriteExr(&writer, image->mWidth, image->mHeight, image->mWidth * components, image->GetBits(), bimg::TextureFormat::Enum(image->mFormat), false/*_yflip*/, &err);
+            break;
+        }
+#ifdef __EMSCRIPTEN__
+        DownloadImage(filename, strlen(filename), (const char*)mb.more(0), mb.getSize());
+#else
+        bx::close(&writer);
+#endif
+        return EVAL_OK;
+    }
+    return EVAL_ERR;
 }
 
 int Image::EncodePng(Image* image, std::vector<unsigned char>& pngImage)
 {
-    int outlen;
-    int components = 4; // TODO
-    unsigned char* bits = stbi_write_png_to_mem(
-        image->GetBits(), image->mWidth * components, image->mWidth, image->mHeight, components, &outlen);
-    if (!bits)
-        return EVAL_ERR;
-    pngImage.resize(outlen);
-    memcpy(pngImage.data(), bits, outlen);
+#if 0
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
+    bx::MemoryBlock mb(g_allocator);
+    bx::MemoryWriter writer(&mb);
+    bx::Error err;
 
-    free(bits);
+    bimg::imageWritePng(&writer, image->mWidth, image->mHeight, image->mWidth * 4, image->GetBits(), bimg::TextureFormat::RGBA8, false/*_yflip*/, &err);
+	pngImage.resize(mb.getSize());
+	memcpy(pngImage.data(), mb.more(), mb.getSize());
+#endif
+    const int components = bimg::getBitsPerPixel(bimg::TextureFormat::Enum(image->mFormat)) / 8;
+    bx::AllocatorI* g_allocator = getDefaultAllocator();
+    bx::MemoryBlock mb(g_allocator);
+    bx::MemoryWriter writer(&mb);
+    stbi_write_png_to_func(stbi_writer<bx::MemoryWriter>, &writer, image->mWidth, image->mHeight, components, image->GetBits(), 0);
+    pngImage.resize(mb.getSize());
+    memcpy(pngImage.data(), mb.more(), mb.getSize());
     return EVAL_OK;
 }
 
-void DefaultShaders::Init()
+int Image::Resize(Image* image, int width, int height, const InputSampler& sampler)
 {
-    std::ifstream prgStr("Stock/ProgressingNode.glsl");
-    std::ifstream cubStr("Stock/DisplayCubemap.glsl");
-    std::ifstream nodeErrStr("Stock/NodeError.glsl");
-
-    mProgressShader =
-        prgStr.good()
-            ? LoadShader(std::string(std::istreambuf_iterator<char>(prgStr), std::istreambuf_iterator<char>()),
-                         "progressShader")
-            : 0;
-    mDisplayCubemapShader =
-        cubStr.good()
-            ? LoadShader(std::string(std::istreambuf_iterator<char>(cubStr), std::istreambuf_iterator<char>()),
-                         "cubeDisplay")
-            : 0;
-    mNodeErrorShader =
-        nodeErrStr.good()
-            ? LoadShader(std::string(std::istreambuf_iterator<char>(nodeErrStr), std::istreambuf_iterator<char>()),
-                         "nodeError")
-            : 0;
+	if (image->mWidth == width && image->mHeight == height)
+	{
+		return EVAL_OK;
+	}
+	if (image->GetMipmapCount() > 1)
+	{
+		// don't resize images with mipmaps
+		return EVAL_ERR;
+	}
+	const int channelCount = 4;
+	const int faceCount = image->GetFaceCount();
+	const size_t sourceFaceSize = image->mWidth * image->mHeight * channelCount;
+	const size_t faceSize = width * height * channelCount;
+	size_t size = faceSize * faceCount;
+	const auto filter = sampler.mFilterMin ? STBIR_FILTER_BOX : STBIR_FILTER_DEFAULT;
+	unsigned char* output = new unsigned char [size];
+	for (int face = 0; face < faceCount; face++)
+	{
+		stbir__resize_arbitrary(NULL, &image->mBits[sourceFaceSize * face], image->mWidth, image->mHeight, image->mWidth * channelCount,
+			&output[faceSize * face], width, height, width * channelCount,
+			0, 0, 1, 1, NULL, channelCount, -1, 0, STBIR_TYPE_UINT8, filter, filter,
+			STBIR_EDGE_CLAMP, STBIR_EDGE_CLAMP, STBIR_COLORSPACE_LINEAR);
+	}
+	image->mWidth = width;
+	image->mHeight = height;
+	image->SetBits(output, size);
+	delete [] output;
+	return EVAL_OK;
 }
 
-unsigned int ImageCache::GetTexture(const std::string& filename)
+bgfx::TextureHandle ImageCache::GetTexture(const std::string& filename)
 {
     auto iter = mSynchronousTextureCache.find(filename);
     if (iter != mSynchronousTextureCache.end())
+    {
         return iter->second;
+    }
 
     Image image;
-    unsigned int textureId = 0;
+	bgfx::TextureHandle textureHandle{0};
     if (Image::Read(filename.c_str(), &image) == EVAL_OK)
     {
-        textureId = Image::Upload(&image, 0);
+        mImageSizes[filename] = std::make_pair<uint16_t, uint16_t>(uint16_t(image.mWidth), uint16_t(image.mHeight));
+        textureHandle = Image::Upload(&image, {bgfx::kInvalidHandle});
         Image::Free(&image);
     }
 
-    mSynchronousTextureCache[filename] = textureId;
-    return textureId;
+    mSynchronousTextureCache[filename] = textureHandle;
+    return textureHandle;
+}
+
+const std::pair<uint16_t, uint16_t> ImageCache::GetImageSize(const std::string& filename)
+{
+    auto iter = mImageSizes.find(filename);
+    if (iter != mImageSizes.end())
+    {
+        return iter->second;
+    }
+    return std::make_pair<uint16_t, uint16_t>(0, 0);
 }
 
 Image* ImageCache::GetImage(const std::string& filepath)
@@ -448,213 +503,84 @@ void ImageCache::AddImage(const std::string& filepath, Image* image)
     auto iter = mImageCache.find(filepath);
     if (iter == mImageCache.end())
     {
+        mImageSizes[filepath] = std::make_pair<uint16_t, uint16_t>(uint16_t(image->mWidth), uint16_t(image->mHeight));
         mImageCache.insert(std::make_pair(filepath, *image));
     }
     mCacheAccess.unlock();
 }
 
-void RenderTarget::BindAsTarget() const
+void ImageTexture::Destroy()
 {
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-    glViewport(0, 0, mImage->mWidth, mImage->mHeight);
-}
-
-void RenderTarget::BindAsCubeTarget() const
-{
-    glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-}
-
-void RenderTarget::BindCubeFace(size_t face, int mipmap, int faceWidth)
-{
-    glFramebufferTexture2D(
-        GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face), mGLTexID, mipmap);
-    glViewport(0, 0, faceWidth >> mipmap, faceWidth >> mipmap);
-}
-
-void RenderTarget::Destroy()
-{
-    if (mGLTexID)
-        glDeleteTextures(1, &mGLTexID);
-    if (mGLTexDepth)
-        glDeleteTextures(1, &mGLTexDepth);
-    if (mFbo)
+    if (mTexture.idx != bgfx::kInvalidHandle)
     {
-        if (glIsFramebuffer(mFbo))
-        {
-            glDeleteFramebuffers(1, &mFbo);
-        }
-        else
-        {
-            Log("Trying to delete FBO %d that is unknown to OpenGL\n", mFbo);
-        }
+        bgfx::destroy(mTexture);
+        mTexture = { bgfx::kInvalidHandle };
     }
-    if (mDepthBuffer)
-        glDeleteRenderbuffers(1, &mDepthBuffer);
-    mFbo = 0;
-    mImage->mWidth = mImage->mHeight = 0;
-    mGLTexID = 0;
+    mImage = Image();
 }
 
-void RenderTarget::Clone(const RenderTarget& other)
+bgfx::TextureFormat::Enum GetRTTextureFormat()
 {
-    // TODO: clone other type of render target
-    InitBuffer(other.mImage->mWidth, other.mImage->mHeight, other.mDepthBuffer);
+	bgfx::TextureFormat::Enum tft;
+	if (bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::BGRA8, BGFX_TEXTURE_RT))
+	{
+		tft = bgfx::TextureFormat::BGRA8;
+	}
+	else if (bgfx::isTextureValid(0, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT))
+	{
+		tft = bgfx::TextureFormat::RGBA8;
+	}
+	else
+	{
+		assert(0);
+	}
+	return tft;
 }
 
-void RenderTarget::Swap(RenderTarget& other)
+void ImageTexture::Init2D(int width, int height, bool depthBuffer)
 {
-    ::Swap(mImage, other.mImage);
-    ::Swap(mGLTexID, other.mGLTexID);
-    ::Swap(mGLTexDepth, other.mGLTexDepth);
-    ::Swap(mDepthBuffer, other.mDepthBuffer);
-    ::Swap(mFbo, other.mFbo);
-}
-
-void RenderTarget::InitBuffer(int width, int height, bool depthBuffer)
-{
-    if ((width == mImage->mWidth) && (mImage->mHeight == height) && mImage->mNumFaces == 1 &&
-        (!(depthBuffer ^ (mDepthBuffer != 0))))
+    if ((width == mImage.mWidth) && (mImage.mHeight == height) && !mImage.mIsCubemap /*&&
+        (!(depthBuffer ^ (mGLTexDepth.idx != 0)))*/)
+	{
         return;
+	}
     Destroy();
+
+    mImage.mWidth = width;
+    mImage.mHeight = height;
+    mImage.mHasMipmaps = false;
+    mImage.mIsCubemap = false;
+    mImage.mFormat = GetRTTextureFormat();
+
     if (!width || !height)
     {
         Log("Trying to init FBO with 0 sized dimension.\n");
-    }
-    mImage->mWidth = width;
-    mImage->mHeight = height;
-    mImage->mNumMips = 1;
-    mImage->mNumFaces = 1;
-    mImage->mFormat = TextureFormat::RGBA8;
-
-    glGenFramebuffers(1, &mFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-
-    // diffuse
-    glGenTextures(1, &mGLTexID);
-    glBindTexture(GL_TEXTURE_2D, mGLTexID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-    TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mGLTexID, 0);
-
-    if (depthBuffer)
-    {
-        // Z
-        glGenTextures(1, &mGLTexDepth);
-        glBindTexture(GL_TEXTURE_2D, mGLTexDepth);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-        TexParam(GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_2D);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mGLTexDepth, 0);
+        return;
     }
 
-    static const GLenum drawBuffers[] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(sizeof(drawBuffers) / sizeof(GLenum), drawBuffers);
-
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    CheckFBO();
-
-    GLint last_viewport[4];
-    glGetIntegerv(GL_VIEWPORT, last_viewport);
-    BindAsTarget();
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT | (depthBuffer ? GL_DEPTH_BUFFER_BIT : 0));
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
+	mTexture = bgfx::createTexture2D(width, height, false/*hasMipmaps*/, 1, mImage.mFormat, BGFX_TEXTURE_BLIT_DST);
 }
 
-void RenderTarget::InitCube(int width, int mipmapCount)
+void ImageTexture::InitCube(int width, bool hasMipmaps)
 {
-    if ((width == mImage->mWidth) && (mImage->mHeight == width) && mImage->mNumFaces == 6 &&
-        (mImage->mNumMips == mipmapCount))
+    if ((width == mImage.mWidth) && (mImage.mHeight == width) && mImage.mIsCubemap &&
+        (mImage.mHasMipmaps == hasMipmaps))
+	{
         return;
+	}
     Destroy();
+
+    mImage.mWidth = width;
+    mImage.mHeight = width;
+    mImage.mHasMipmaps = hasMipmaps;
+    mImage.mIsCubemap = true;
+    mImage.mFormat = GetRTTextureFormat();
 
     if (!width)
     {
         Log("Trying to init FBO with 0 sized dimension.\n");
+        return;
     }
 
-    mImage->mWidth = width;
-    mImage->mHeight = width;
-    mImage->mNumMips = mipmapCount;
-    mImage->mNumFaces = 6;
-    mImage->mFormat = TextureFormat::RGBA8;
-
-    glGenFramebuffers(1, &mFbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-
-    glGenTextures(1, &mGLTexID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, mGLTexID);
-
-    for (int mip = 0; mip < mipmapCount; mip++)
-    {
-        for (int i = 0; i < 6; i++)
-        {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                         mip,
-                         GL_RGBA,
-                         width >> mip,
-                         width >> mip,
-                         0,
-                         GL_RGBA,
-                         GL_UNSIGNED_BYTE,
-                         NULL);
-        }
-    }
-
-    TexParam(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_TEXTURE_CUBE_MAP);
-
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, mGLTexID, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    CheckFBO();
-}
-
-void RenderTarget::CheckFBO()
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
-
-    int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    switch (status)
-    {
-        case GL_FRAMEBUFFER_COMPLETE:
-            // Log("Framebuffer complete.\n");
-            break;
-
-        case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            Log("[ERROR] Framebuffer incomplete: Attachment is NOT complete.");
-            break;
-
-        case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            Log("[ERROR] Framebuffer incomplete: No image is attached to FBO.");
-            break;
-            /*
-            case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-            Log("[ERROR] Framebuffer incomplete: Attached images have different dimensions.");
-            break;
-
-            case GL_FRAMEBUFFER_INCOMPLETE_FORMATS:
-            Log("[ERROR] Framebuffer incomplete: Color attached images have different internal formats.");
-            break;
-            */
-#ifdef GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
-        case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-            Log("[ERROR] Framebuffer incomplete: Draw buffer.\n");
-            break;
-#endif
-#ifdef GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER
-        case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-            Log("[ERROR] Framebuffer incomplete: Read buffer.\n");
-            break;
-#endif
-        case GL_FRAMEBUFFER_UNSUPPORTED:
-            Log("[ERROR] Unsupported by FBO implementation.\n");
-            break;
-
-        default:
-            Log("[ERROR] Unknow error.\n");
-            break;
-    }
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    mTexture = bgfx::createTextureCube(width, hasMipmaps, 1, mImage.mFormat, BGFX_TEXTURE_BLIT_DST);
 }

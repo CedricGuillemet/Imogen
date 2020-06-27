@@ -23,87 +23,118 @@
 // SOFTWARE.
 //
 #pragma once
+
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include "Types.h"
 #include "EvaluationStages.h"
+#include "Evaluators.h"
 
-struct EvaluationInfo
+struct UIInput
 {
-    float viewRot[16];
-    float viewProjection[16];
-    float viewInverse[16];
-    float model[16];
-    float modelViewProjection[16];
-    float viewport[4];
-
-    int targetIndex;
-    int forcedDirty;
-    int uiPass;
-    int passNumber;
-    float mouse[4];
-    int keyModifier[4];
-    int inputIndices[8];
-
-    int mFrame;
-    int mLocalFrame;
-    int mVertexSpace;
-    int mDirtyFlag;
-
-    int mipmapNumber;
-    int mipmapCount;
+    float mRx;
+    float mRy;
+    float mDx;
+    float mDy;
+    float mWheel;
+    uint8_t mLButDown : 1;
+    uint8_t mRButDown : 1;
+    uint8_t mbCtrl : 1;
+    uint8_t mbAlt : 1;
+    uint8_t mbShift : 1;
 };
 
-struct Dirty
+struct EvaluationThumbnails
 {
-    enum
-    {
-        Input = 1 << 0,
-        Parameter = 1 << 1,
-        Mouse = 1 << 2,
-        Camera = 1 << 3,
-        Time = 1 << 4,
-        Sampler = 1 << 5,
-        All = 0xFF
-    };
+	struct Thumb
+	{
+		unsigned short mAtlasIndex = 0xFFFF;
+		unsigned short mThumbIndex = 0xFFFF;
+		bool Valid() const
+		{
+			return mAtlasIndex != 0xFFFF && mThumbIndex != 0xFFFF;
+		}
+	};
+
+	void Clear();
+	Thumb AddThumb();
+	void DelThumb(const Thumb thumb);
+	void GetThumb(const Thumb thumb, bgfx::TextureHandle& textureId, ImRect& uvs) const;
+	bgfx::FrameBufferHandle& GetThumbFrameBuffer(const Thumb thumb);
+	void GetThumbCoordinates(const Thumb thumb, int* coordinates) const;
+	std::vector<bgfx::TextureHandle> GetAtlasTextures() const;
+protected:
+
+	const uint16_t AtlasSize = 4096;
+	const uint16_t ThumbnailSize = 256;
+	const uint16_t ThumbnailsPerAtlas = (AtlasSize / ThumbnailSize) * (AtlasSize / ThumbnailSize);
+
+	ImRect ComputeUVFromIndexInAtlas(size_t thumbIndex) const;
+	Thumb AddThumbInAtlas(size_t atlasIndex);
+
+	struct ThumbAtlas
+	{
+		ThumbAtlas(size_t thumbnailsPerAtlas)
+		{
+			mbUsed.resize(thumbnailsPerAtlas, false);
+		}
+		bgfx::FrameBufferHandle mFrameBuffer;
+		std::vector<bool> mbUsed;
+		size_t mUsedCount = 0;
+	};
+
+	std::vector<ThumbAtlas> mAtlases;
+	std::vector<Thumb> mThumbs;
 };
-typedef unsigned char DirtyFlag;
+
 
 struct EvaluationContext
 {
-    EvaluationContext(EvaluationStages& evaluation, bool synchronousEvaluation, int defaultWidth, int defaultHeight);
+    EvaluationContext(EvaluationStages& evaluation, bool building, bool synchronousEvaluation, int defaultWidth, int defaultHeight, bool useThumbnail);
     ~EvaluationContext();
 
-    void RunAll();
-    // return true if any node is in processing state
-    bool RunBackward(size_t nodeIndex);
-    void RunSingle(size_t nodeIndex, EvaluationInfo& evaluationInfo);
-    void RunDirty();
+    // iterative editing
+    void AddEvaluation(NodeIndex nodeIndex);
+    void DelEvaluation(NodeIndex nodeIndex);
 
-    int GetCurrentTime() const
-    {
-        return mCurrentTime;
-    }
-    void SetCurrentTime(int currentTime)
-    {
-        mCurrentTime = currentTime;
-    }
+    void Evaluate();
 
-    unsigned int GetEvaluationTexture(size_t target);
-    std::shared_ptr<RenderTarget> GetRenderTarget(size_t target)
-    {
-        if (target >= mStageTarget.size())
-            return NULL;
-        return mStageTarget[target];
-    }
+    void RunSingle(NodeIndex nodeIndex, bgfx::ViewId viewId, EvaluationInfo& evaluationInfo);
+    void SetKeyboardMouse(NodeIndex nodeIndex, const UIInput& input);
+    int GetCurrentTime() const { return mCurrentTime; }
+    void SetCurrentTime(int currentTime) { mCurrentTime = currentTime; }
 
-    const std::shared_ptr<RenderTarget> GetRenderTarget(size_t target) const
-    {
-        if (target >= mStageTarget.size())
-            return NULL;
-        return mStageTarget[target];
+    void GetThumb(NodeIndex nodeIndex, bgfx::TextureHandle& textureHandle, ImRect& uvs) const
+    { 
+        assert(mUseThumbnail);
+        mThumbnails.GetThumb(mEvaluations[nodeIndex].mThumb, textureHandle, uvs); 
     }
+    void GenerateThumbnail(NodeIndex nodeIndex);
+
+	bgfx::TextureHandle GetEvaluationTexture(NodeIndex nodeIndex) const;
+
+    ImageTexture* GetRenderTarget(NodeIndex nodeIndex)
+    { 
+        assert(nodeIndex < mEvaluations.size());
+        return mEvaluations[nodeIndex].mTarget; 
+    }
+    
+    const ImageTexture* GetRenderTarget(NodeIndex nodeIndex) const
+    {
+        assert(nodeIndex < mEvaluations.size());
+        return mEvaluations[nodeIndex].mTarget;
+    }
+    
+	ImageTexture* CreateRenderTarget(NodeIndex nodeIndex)
+	{
+		assert(nodeIndex < mEvaluations.size());
+		assert(!mEvaluations[nodeIndex].mTarget);
+		mEvaluations[nodeIndex].mTarget = new ImageTexture;
+		return mEvaluations[nodeIndex].mTarget;
+	}
+
 #if USE_FFMPEG
     FFMPEGCodec::Encoder* GetEncoder(const std::string& filename, int width, int height);
 #endif
@@ -115,93 +146,136 @@ struct EvaluationContext
     {
         mbSynchronousEvaluation = synchronous;
     }
-    void SetTargetDirty(size_t target, DirtyFlag dirtyflag, bool onlyChild = false);
-    int StageIsProcessing(size_t target) const
+	bool IsBuilding() const { return mBuilding; }
+    void SetTargetDirty(NodeIndex target, uint32_t dirtyflag, bool onlyChild = false);
+	void SetTargetPersistent(NodeIndex nodeIndex, bool persistent);
+    int StageIsProcessing(NodeIndex target) const
     {
-        if (target >= mbProcessing.size())
-            return 0;
-        return mbProcessing[target];
+        assert (target < mEvaluations.size());
+        return mEvaluations[target].mProcessing;
     }
-    float StageGetProgress(size_t target) const
+    float StageGetProgress(NodeIndex target) const
     {
-        if (target >= mProgress.size())
-            return 0.f;
-        return mProgress[target];
+        assert(target < mEvaluations.size());
+        return mEvaluations[target].mProgress;
     }
-    void StageSetProcessing(size_t target, int processing);
-    void StageSetProgress(size_t target, float progress);
+    void StageSetProcessing(NodeIndex target, int processing);
+    void StageSetProgress(NodeIndex target, float progress);
 
-    void AllocRenderTargetsForEditingPreview();
+	int GetStageIndexFromRuntimeId(RuntimeId runtimeUniqueId) const;
+	RuntimeId GetStageRuntimeId(NodeIndex stageIndex) const;
 
-    void AllocateComputeBuffer(int target, int elementCount, int elementSize);
-    // edit context only
-    void UserAddStage();
-    void UserDeleteStage(size_t index);
+    const EvaluationThumbnails& GetThumbnails() const 
+    { 
+        assert(mUseThumbnail);
+        return mThumbnails; 
+    }
 
-    struct ComputeBuffer
-    {
-        unsigned int mBuffer{0};
-        unsigned int mElementCount;
-        unsigned int mElementSize;
-    };
-
-    const ComputeBuffer* GetComputeBuffer(size_t index) const;
     void Clear();
 
-    unsigned int GetMaterialUniqueId() const
-    {
-        return mRuntimeUniqueId;
-    }
-    void SetMaterialUniqueId(unsigned int uniqueId)
-    {
-        mRuntimeUniqueId = uniqueId;
-    }
+    RuntimeId GetMaterialUniqueId() const { return mRuntimeUniqueId; }
+    void SetMaterialUniqueId(RuntimeId runtimeId) { mRuntimeUniqueId = runtimeId; }
 
     EvaluationStages& mEvaluationStages;
-    FullScreenTriangle mFSQuad;
-    unsigned int mEvaluationStateGLSLBuffer;
-    void DirtyAll();
+    
+
+    struct Evaluation
+    {
+		Evaluation()
+            : mbDepthBuffer(false)
+            , mbClearBuffer(true)
+            , mbActive(false)
+            , mbPersistent(false)
+		{
+		}
+
+        ImageTexture* mTarget = nullptr;
+        
+        EvaluationThumbnails::Thumb mThumb;
+        float mProgress             = 0.f;
+
+        uint64_t mBlendingSrc        = BGFX_STATE_BLEND_ONE;
+        uint64_t mBlendingDst        = BGFX_STATE_BLEND_ZERO;
+        uint32_t mDirtyFlag = 0;
+        uint8_t mProcessing = false;
+        uint8_t mVertexSpace        = 0; // UV, worldspace
+        int mUseCount;
+		RuntimeId mRuntimeUniqueId;
+        union
+        {
+            uint8_t u;
+            struct
+            {
+                uint8_t mbDepthBuffer : 1;
+                uint8_t mbClearBuffer : 1;
+                uint8_t mbActive : 1;
+				uint8_t mbPersistent : 1; // target isn't deleted when not used anymore by subsequent nodes
+            };
+        };
+    };
+    
+    std::vector<Evaluation> mEvaluations;
+    
+
+
+    UIInput mUIInputs;
+    size_t mInputNodeIndex;
 
 protected:
-    void PreRun();
-    void EvaluateGLSL(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-    void EvaluateC(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-    void EvaluatePython(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
-    void EvaluateGLSLCompute(const EvaluationStage& evaluationStage, size_t index, EvaluationInfo& evaluationInfo);
+
+    EvaluationThumbnails mThumbnails;
+
+    void EvaluateGLSL(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo, bgfx::ViewId baseViewId = 10);
+    void EvaluateC(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);
+#ifdef USE_PYTHON
+    void EvaluatePython(const EvaluationStage& evaluationStage, NodeIndex nodeIndex, EvaluationInfo& evaluationInfo);
+#endif
     // return true if any node is still in processing state
-    bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
-    void RunNode(size_t nodeIndex);
+    //bool RunNodeList(const std::vector<size_t>& nodesToEvaluate);
 
-    void RecurseBackward(size_t target, std::vector<size_t>& usedNodes);
-
-    void BindTextures(const EvaluationStage& evaluationStage,
-                      unsigned int program,
-                      std::shared_ptr<RenderTarget> reusableTarget);
-    void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
+    void RunNode(NodeIndex nodeIndex);
 
 
-    int GetBindedComputeBuffer(const EvaluationStage& evaluationStage) const;
+    
+
+    //void RecurseBackward(size_t nodeIndex, std::vector<size_t>& usedNodes);
+
+    void BindTextures(EvaluationInfo& evaluationInfo, 
+					  const EvaluationStage& evaluationStage,
+					  NodeIndex nodeIndex,
+                      ImageTexture* reusableTarget);
+    //void AllocRenderTargetsForBaking(const std::vector<size_t>& nodesToEvaluate);
+
+    void ComputeTargetUseCount();
+    void ReleaseInputs(NodeIndex nodeIndex);
+
+    ImageTexture* AcquireRenderTarget(int width, int height, bool depthBuffer);
+    ImageTexture* AcquireClone(ImageTexture* source);
+    void ReleaseRenderTarget(ImageTexture* renderTarget);
 
 
-    std::vector<std::shared_ptr<RenderTarget>> mStageTarget; // 1 per stage
-    std::vector<ComputeBuffer> mComputeBuffers;
+    std::vector<ImageTexture*> mAvailableRenderTargets;
 #if USE_FFMPEG    
     std::map<std::string, FFMPEGCodec::Encoder*> mWriteStreams;
 #endif
-    std::vector<DirtyFlag> mDirtyFlags;
-    std::vector<int> mbProcessing;
-    std::vector<float> mProgress;
-    std::vector<bool> mActive;
+
     EvaluationInfo mEvaluationInfo;
 
-    std::vector<int> mStillDirty;
     int mDefaultWidth;
     int mDefaultHeight;
     bool mbSynchronousEvaluation;
-    unsigned int mRuntimeUniqueId; // material unique Id for thumbnail update
+    bool mUseThumbnail;
+	bool mBuilding;
+    RuntimeId mRuntimeUniqueId; // material unique Id for thumbnail update
     int mCurrentTime;
 
-    unsigned int mParametersGLSLBuffer;
+    std::vector<int> mRemaining;
+
+	std::map<uint32_t, bgfx::FrameBufferHandle> mProxies;
+	void GetRenderProxy(bgfx::FrameBufferHandle& currentFramebuffer, int16_t width, uint16_t height, bool depthBuffer);
+
+    void SetKeyboardMouseInfos(EvaluationInfo& evaluationInfo, NodeIndex nodeIndex) const;
+    void SetUniforms(NodeIndex nodeIndex);
 };
 
 struct Builder
@@ -239,7 +313,6 @@ private:
 
 namespace DrawUICallbacks
 {
-    void DrawUICubemap(EvaluationContext* context, size_t nodeIndex);
-    void DrawUISingle(EvaluationContext* context, size_t nodeIndex);
-    void DrawUIProgress(EvaluationContext* context, size_t nodeIndex);
+    void DrawUISingle(EvaluationContext* context, NodeIndex nodeIndex);
+    void DrawUIProgress(EvaluationContext* context, NodeIndex nodeIndex);
 } // namespace DrawUICallbacks

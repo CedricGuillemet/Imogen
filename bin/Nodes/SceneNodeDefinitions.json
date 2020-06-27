@@ -3,18 +3,19 @@
 		"name": "GLTFRead",
 		"category": 6,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.7843137979507446, 0.7843137979507446, 0.5882353186607361, 1.0],
 		"outputs": [{
 			"name": "",
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "File name",
+			"name": "filename",
 			"type": "FilenameRead",
             "description":""
 		},
 		{
-			"name": "Camera",
+			"name": "camera",
 			"type": "Camera",
 			"default":"",
             "description":""
@@ -23,6 +24,7 @@
 	"name": "Paint3D",
 		"category": 7,
         "description":"Experimental node.",
+        "experimental":true,
 		"color": [0.3921568989753723, 0.9803922176361084, 0.7058823704719544, 1.0],
 		"inputs": [{
 			"name": "Model",
@@ -36,13 +38,13 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "  256|  512| 1024| 2048| 4096|",
             "description":""
 		},
 		{
-			"name": "Camera",
+			"name": "camera",
 			"type": "Camera",
 			"default":"",
             "description":""
@@ -51,7 +53,7 @@
 		"saveTexture": true
 		}
 		,{
-		"name": "CubeRadiance",
+	"name": "CubeRadiance",
 		"category": 8,
         "description":"Compute cubemap radiance or irradiance and generate a cubemap with optional mipmaps",
 		"color": [0.5882353186607361, 0.7843137979507446, 0.5882353186607361, 1.0],
@@ -64,65 +66,25 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Mode",
+			"name": "mode",
 			"type": "Enum",
 			"enum": "Radiance|Irradiance|",
 			"default": "0",
             "description":"Radiance or Irradiance."
 		},{
-			"name": "Size",
+			"name": "size",
 			"type": "Enum",
 			"enum": "Source|   256|   512|  1024|  2048|  4096|",
 			"default":"0",
             "description":"Size of the output cubemap face width in pixels."
 		},{
-			"name": "Sample Count",
+			"name": "sampleCount",
 			"type": "Int",
 			"default":"100",
             "description":"The samples count used for the blur. The more samplem the higher quality."
 		}
 		]
 		}, {
-		"name": "PBR2",
-		"category": 2,
-        "description":"Experimental node.",
-		"color": [0.5882353186607361, 0.5882353186607361, 0.7843137979507446, 1.0],
-		"inputs": [{
-			"name": "Albedo",
-			"type": "Float4"
-		}, {
-			"name": "Normal",
-			"type": "Float4"
-		}, {
-			"name": "Depth",
-			"type": "Float4"
-		}, {
-			"name": "Roughness",
-			"type": "Float4"
-		}, {
-			"name": "Cubemap",
-			"type": "Float4"
-		}],
-		"outputs": [{
-			"name": "",
-			"type": "Float4"
-		}],
-		"parameters": [{
-			"name": "View",
-			"type": "Float2",
-			"rangeMinX": 1.0,
-			"rangeMaxX": 0.0,
-			"rangeMinY": 0.0,
-			"rangeMaxY": 1.0,
-			"relative": true,
-            "description":""
-		},{
-			"name": "Depth factor",
-			"type": "Float",
-			"default":"0.0",
-            "description":""
-		}]
-	}, {
 		"name": "ChannelPacker",
 		"category": 0,
         "description":"Pack channels from 1 to 4 inputs into a new output. This can be used to pack normal/roughness/metallic into a 4 channels image.",
@@ -173,8 +135,8 @@
             "description":"The source image and its channel used for Alpha in the output."
 			}
 			]
-	}, {
-		"name": "Lens",
+		}, {
+	"name": "Lens",
 		"category": 0,
         "description":"Deforms the source using a lens computation with an optionnal vignette shading.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
@@ -187,18 +149,18 @@
 			"type": "Float4"
 		}],
 		"parameters": [{
-			"name": "Factor",
+			"name": "factor",
 			"type": "Float",
 			"default":"0.32",
             "description":"Lens factor strength."
 		},{
-			"name": "Vignette",
+			"name": "vignette",
 			"type": "Float",
 			"default":"1.0",
             "description":"Vignette shading: Corners get darker. 0 to disable vignette."
 		}]
-	}, {
-		"name": "Distance",
+		}, {
+	"name": "Distance",
 		"category": 0,
         "description":"Generate a signed distance field from a black and white source image.",
 		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
@@ -214,7 +176,51 @@
 			"name": "passCount",
 			"type": "Int",
             "default": "1",
-            "description":""
+            "description":"",
+            "hidden": true
+		}]
+		}, {
+	"name": "Multiplex",
+		"category": 10,
+        "description":"Route one input into the output. This choice can be propagated to further nodes.",
+		"color": [0.7843137979507446, 0.7843137979507446, 0.7843137979507446, 1.0],
+        "width": 80,
+		"height": 200,
+		"thumbnail": false,
+		"inputs": [{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		},{
+			"name": "",
+			"type": "Float4"
+		}],
+		"outputs": [{
+			"name": "",
+			"type": "Float4"
+		}],
+		"parameters": [{
+			"name": "multiplexer",
+			"type": "Multiplexer",
+            "default": "-1",
+            "description":"Input selection passed thru the output."
 		}]
 	}
 ]

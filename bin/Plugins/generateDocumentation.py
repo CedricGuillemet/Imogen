@@ -30,11 +30,11 @@ def blendExample(filePath, operation, content):
     Imogen.NewGraph("GraphForBlend")
     blendNode = Imogen.AddNode("Blend")
     imageRead = Imogen.AddNode("ImageRead")
-    Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+    Imogen.SetParameter(imageRead, "filename", "Media/Pictures/PartyCat.jpg")
     sineNode = Imogen.AddNode("Sine")
     Imogen.Connect(imageRead, 0, blendNode, 0)
     Imogen.Connect(sineNode, 0, blendNode, 1)
-    Imogen.SetParameter(blendNode, "Operation", operation)
+    Imogen.SetParameter(blendNode, "operation", operation)
     saveScreen(filePath, content)
     Imogen.DeleteGraph()
 
@@ -42,9 +42,9 @@ def paletteExample(filePath, operation, content):
     Imogen.NewGraph("GraphForPalette")
     paletteNode = Imogen.AddNode("Palette")
     imageRead = Imogen.AddNode("ImageRead")
-    Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+    Imogen.SetParameter(imageRead, "filename", "Media/Pictures/PartyCat.jpg")
     Imogen.Connect(imageRead, 0, paletteNode, 0)
-    Imogen.SetParameter(paletteNode, "Palette", operation)
+    Imogen.SetParameter(paletteNode, "palette", operation)
     saveScreen(filePath, content)
     Imogen.DeleteGraph()
     
@@ -73,12 +73,12 @@ def appendTable(tab, lineSize, f, makeLink = False):
     f.write("\n\n")
 
 def setDefaultCubemap(node):
-    Imogen.SetParameter(node, "+X File name", "Media/EnvMaps/Fjaderholmarna/posx.jpg")
-    Imogen.SetParameter(node, "-X File name", "Media/EnvMaps/Fjaderholmarna/negx.jpg")
-    Imogen.SetParameter(node, "+Y File name", "Media/EnvMaps/Fjaderholmarna/posy.jpg")
-    Imogen.SetParameter(node, "-Y File name", "Media/EnvMaps/Fjaderholmarna/negy.jpg")
-    Imogen.SetParameter(node, "+Z File name", "Media/EnvMaps/Fjaderholmarna/posz.jpg")
-    Imogen.SetParameter(node, "-Z File name", "Media/EnvMaps/Fjaderholmarna/negz.jpg")
+    Imogen.SetParameter(node, "XPosFilename", "Media/EnvMaps/Fjaderholmarna/posx.jpg")
+    Imogen.SetParameter(node, "XNegFilename", "Media/EnvMaps/Fjaderholmarna/negx.jpg")
+    Imogen.SetParameter(node, "YPosFilename", "Media/EnvMaps/Fjaderholmarna/posy.jpg")
+    Imogen.SetParameter(node, "YNegFilename", "Media/EnvMaps/Fjaderholmarna/negy.jpg")
+    Imogen.SetParameter(node, "ZPosFilename", "Media/EnvMaps/Fjaderholmarna/posz.jpg")
+    Imogen.SetParameter(node, "ZNegFilename", "Media/EnvMaps/Fjaderholmarna/negz.jpg")
     
 def generateExample(nodeName, baseDir, f, node):
     exampleWithCatImage = ["Pixelize", "PolarCoords", "Swirl", "Crop", "Kaleidoscope", "Palette", "Blur", "Invert", "Lens", "MADD", "SmoothStep", "Clamp"]
@@ -132,11 +132,11 @@ def generateExample(nodeName, baseDir, f, node):
         
     elif nodeName == "ChannelPacker":
         circle = Imogen.AddNode("Circle")
-        square = Imogen.AddNode("Square")
+        ngon = Imogen.AddNode("NGon")
         checker = Imogen.AddNode("Checker")
         color = Imogen.AddNode("Color")
         Imogen.Connect(circle, 0, node, 0)
-        Imogen.Connect(square, 0, node, 1)
+        Imogen.Connect(ngon, 0, node, 1)
         Imogen.Connect(checker, 0, node, 2)
         Imogen.Connect(color, 0, node, 3)
         
@@ -153,7 +153,7 @@ def generateExample(nodeName, baseDir, f, node):
     elif nodeName == "Warp":
         circle = Imogen.AddNode("Circle")
         imageRead = Imogen.AddNode("ImageRead")
-        Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+        Imogen.SetParameter(imageRead, "filename", "Media/Pictures/PartyCat.jpg")
         Imogen.SetParameter(circle, "T", "1.0")
         Imogen.SetParameter(node, "Mode", "1")
         Imogen.Connect(imageRead, 0, node, 0)
@@ -184,13 +184,22 @@ def generateExample(nodeName, baseDir, f, node):
         Imogen.Connect(normal1, 0, node, 0)
         Imogen.Connect(normal2, 0, node, 1)
         
+    elif nodeName == "Multiplex":
+        circle = Imogen.AddNode("Circle")
+        ngon = Imogen.AddNode("NGon")
+        imageRead = Imogen.AddNode("ImageRead")
+        Imogen.SetParameter(imageRead, "filename", "Media/Pictures/PartyCat.jpg")
+        Imogen.Connect(circle, 0, node, 0)
+        Imogen.Connect(ngon, 0, node, 1)
+        Imogen.Connect(imageRead, 0, node, 4)
+        
     elif nodeName == "ImageRead" :
-        Imogen.SetParameter(node, "File name", "Media/Pictures/PartyCat.jpg")
+        Imogen.SetParameter(node, "filename", "Media/Pictures/PartyCat.jpg")
 
     elif nodeName == "EquirectConverter" :
         imageRead = Imogen.AddNode("ImageRead")
         view = Imogen.AddNode("CubemapView")
-        Imogen.SetParameter(imageRead, "File name", "Media/EnvMaps/Equirect/studio022.hdr")
+        Imogen.SetParameter(imageRead, "filename", "Media/EnvMaps/Equirect/studio022.hdr")
         Imogen.SetParameter(view, "Mode", "2")
         Imogen.Connect(imageRead, 0, node, 0)
         Imogen.Connect(node, 0, view, 0)
@@ -212,11 +221,11 @@ def generateExample(nodeName, baseDir, f, node):
         
     elif nodeName in exampleWithCatImage :
         imageRead = Imogen.AddNode("ImageRead")
-        Imogen.SetParameter(imageRead, "File name", "Media/Pictures/PartyCat.jpg")
+        Imogen.SetParameter(imageRead, "filename", "Media/Pictures/PartyCat.jpg")
         Imogen.Connect(imageRead, 0, node, 0)
 
     elif nodeName == "SVG" :
-        Imogen.SetParameter(node, "File name", "Media/Pictures/23.svg")
+        Imogen.SetParameter(node, "filename", "Media/Pictures/23.svg")
     
     finishGraph(f, nodeName, baseDir)
     

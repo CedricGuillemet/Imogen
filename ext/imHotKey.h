@@ -97,7 +97,7 @@ namespace ImHotKey
             int x = 0;
             while (Keys[y][x].lib)
             {
-#ifdef SDL_h_
+#ifdef USE_SDL
                 if (Keys[y][x].scanCodePage7 == scancode)
 #elif WIN32
                 if (Keys[y][x].scanCodePage1 == scancode)
@@ -207,7 +207,7 @@ namespace ImHotKey
             if (ImGui::IsKeyPressed(i, false))
             {
                 int imKey;
-#ifdef SDL_h_
+#ifdef USE_SDL
                 imKey = i;
 #elif WIN32
                 imKey = MapVirtualKeyA(i, MAPVK_VK_TO_VSC);
@@ -238,7 +238,7 @@ namespace ImHotKey
                         ImGui::Indent(ofs);
                     }
                 }
-#ifdef SDL_h_
+#ifdef USE_SDL
                 bool& butSwtch = keyDown[key.scanCodePage7];
 #elif WIN32
                 bool& butSwtch = keyDown[key.scanCodePage1];
@@ -315,7 +315,7 @@ namespace ImHotKey
             if (ImGui::IsKeyDown(i))
             {
                 int imKey;
-#ifdef SDL_h_
+#ifdef USE_SDL
                 imKey = i;
 #elif WIN32
                 imKey = MapVirtualKeyA(i, MAPVK_VK_TO_VSC);

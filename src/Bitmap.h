@@ -31,6 +31,8 @@
 #include <mutex>
 #include <memory>
 #include <stdlib.h>
+#include "Mem.h"
+#include <bimg/encode.h>
 
 #if USE_FFMPEG
 namespace FFMPEGCodec
@@ -38,35 +40,35 @@ namespace FFMPEGCodec
     class Decoder;
 };
 #endif
-struct TextureFormat
-{
-    enum Enum
-    {
-        BGR8,
-        RGB8,
-        RGB16,
-        RGB16F,
-        RGB32F,
-        RGBE,
 
-        BGRA8,
-        RGBA8,
-        RGBA16,
-        RGBA16F,
-        RGBA32F,
-
-        RGBM,
-
-        Count,
-        Null = -1,
-    };
-};
-
+bimg::Quality::Enum GetQuality(int quality);
+struct InputSampler;
 struct Image
 {
-    Image() : mDecoder(NULL), mWidth(0), mHeight(0), mNumMips(0), mNumFaces(0), mBits(NULL), mDataSize(0)
+    Image() : mDecoder(NULL), mWidth(0), mHeight(0), mHasMipmaps(false), mIsCubemap(false), mBits(NULL), mDataSize(0)
     {
     }
+    Image(Image&& other)
+    {
+        mDecoder = other.mDecoder;
+        mWidth = other.mWidth;
+        mHeight = other.mHeight;
+        mDataSize = other.mDataSize;
+        mHasMipmaps = other.mHasMipmaps;
+        mIsCubemap = other.mIsCubemap;
+        mFormat = other.mFormat;
+        mBits = other.mBits;
+
+        other.mDecoder = 0;
+        other.mWidth = 0;
+        other.mHeight = 0;
+        other.mDataSize = 0;
+        other.mHasMipmaps = false;
+        other.mIsCubemap = 0;
+        other.mFormat = bgfx::TextureFormat::Unknown;
+        other.mBits = 0;
+    }
+
     Image(const Image& other) : mBits(NULL), mDataSize(0)
     {
         *this = other;
@@ -79,114 +81,119 @@ struct Image
     void* mDecoder;
     int mWidth, mHeight;
     uint32_t mDataSize;
-    uint8_t mNumMips;
-    uint8_t mNumFaces;
-    uint8_t mFormat;
+    bool mHasMipmaps;
+    bool mIsCubemap;
+    bgfx::TextureFormat::Enum mFormat;
     Image& operator=(const Image& other)
     {
         mDecoder = other.mDecoder;
         mWidth = other.mWidth;
         mHeight = other.mHeight;
-        mNumMips = other.mNumMips;
-        mNumFaces = other.mNumFaces;
+        mHasMipmaps = other.mHasMipmaps;
+        mIsCubemap = other.mIsCubemap;
         mFormat = other.mFormat;
         SetBits(other.mBits, other.mDataSize);
         return *this;
     }
+    uint8_t GetMipmapCount() const 
+    {
+        if (!mHasMipmaps)
+        {
+            return 1;
+        }
+        return uint8_t(log2(mWidth));
+    }
+	uint8_t GetFaceCount() const
+    {
+        return mIsCubemap ? 6 : 1;
+    }
+
     unsigned char* GetBits() const
     {
         return mBits;
     }
+
     void SetBits(unsigned char* bits, size_t size)
     {
         Allocate(size);
         memcpy(mBits, bits, size);
     }
+
+	void SetBits(int width, int height, int component, unsigned char* ptr, int pitch)
+	{
+		Allocate(width * height * component);
+		for (int y = 0; y < height; y++)
+		{
+			memcpy(&mBits[(y * width) * component], &ptr[pitch * y], width * component);
+		}
+		mWidth = width;
+		mHeight = height;
+		mHasMipmaps = false;
+		mIsCubemap = false;
+		mFormat = (component == 3)?bgfx::TextureFormat::RGB8:bgfx::TextureFormat::RGBA8;
+	}
+
     void Allocate(size_t size)
     {
         if (mBits && mDataSize != size)
-            free(mBits);
+        {
+            imageFree(mBits);
+        }
         if (size)
-            mBits = (unsigned char*)malloc(size);
+        {
+            mBits = (unsigned char*)imageMalloc(size);
+        }
         mDataSize = uint32_t(size);
     }
     void DoFree()
     {
-        free(mBits);
+        imageFree(mBits);
         mBits = NULL;
         mDataSize = 0;
     }
 
     static int Read(const char* filename, Image* image);
     static int Free(Image* image);
-    static unsigned int Upload(Image* image, unsigned int textureId, int cubeFace = -1);
+    static bgfx::TextureHandle Upload(const Image* image, bgfx::TextureHandle textureHandle, int cubeFace = -1, int mipmap = 0);
     static int LoadSVG(const char* filename, Image* image, float dpi);
-    static int ReadMem(unsigned char* data, size_t dataSize, Image* image);
+    static int ReadMem(unsigned char* data, size_t dataSize, Image* image, const char* filename = nullptr);
     static void VFlip(Image* image);
     static int Write(const char* filename, Image* image, int format, int quality);
     static int EncodePng(Image* image, std::vector<unsigned char>& pngImage);
+	static int Resize(Image* image, int width, int height, const InputSampler& sampler);
 #if USE_FFMPEG
     static Image DecodeImage(FFMPEGCodec::Decoder* decoder, int frame);
 #endif
 protected:
     unsigned char* mBits;
 };
-
-extern const unsigned int glInternalFormats[];
-extern const unsigned int glInputFormats[];
-extern const unsigned int textureFormatSize[];
-
+bgfx::TextureFormat::Enum GetRTTextureFormat();
 struct ImageCache
 {
     // synchronous texture cache
     // use for simple textures(stock) or to replace with a more efficient one
-    unsigned int GetTexture(const std::string& filename);
+	bgfx::TextureHandle GetTexture(const std::string& filename);
     Image* GetImage(const std::string& filepath);
     void AddImage(const std::string& filepath, Image* image);
-
+    const std::pair<uint16_t, uint16_t> GetImageSize(const std::string& filename);
 protected:
-    std::map<std::string, unsigned int> mSynchronousTextureCache;
+    std::map<std::string, bgfx::TextureHandle> mSynchronousTextureCache;
     std::map<std::string, Image> mImageCache;
+    std::map < std::string, std::pair<uint16_t, uint16_t> > mImageSizes;
     std::mutex mCacheAccess;
 };
 extern ImageCache gImageCache;
 
-struct DefaultShaders
-{
-    // ui callback shaders
-    unsigned int mProgressShader;
-    unsigned int mDisplayCubemapShader;
-    // error shader
-    unsigned int mNodeErrorShader;
-
-    void Init();
-};
-
-extern DefaultShaders gDefaultShader;
 void SaveCapture(const std::string& filemane, int x, int y, int w, int h);
 
-class RenderTarget
+class ImageTexture
 {
 public:
-    RenderTarget() : mGLTexID(0), mGLTexDepth(0), mFbo(0), mDepthBuffer(0)
-    {
-        mImage = std::make_shared<Image>();
-    }
 
-    void InitBuffer(int width, int height, bool depthBuffer);
-    void InitCube(int width, int mipmapCount);
-    void BindAsTarget() const;
-    void BindAsCubeTarget() const;
-    void BindCubeFace(size_t face, int mipmap, int faceWidth);
+    void Init2D(int width, int height, bool depthBuffer);
+    void InitCube(int width, bool hasMipmaps);
     void Destroy();
-    void CheckFBO();
-    void Clone(const RenderTarget& other);
-    void Swap(RenderTarget& other);
 
-
-    std::shared_ptr<Image> mImage;
-    unsigned int mGLTexID;
-    unsigned int mGLTexDepth;
-    unsigned int mDepthBuffer;
-    unsigned int mFbo;
+    Image mImage;
+	bgfx::TextureHandle mTexture = { bgfx::kInvalidHandle };
 };

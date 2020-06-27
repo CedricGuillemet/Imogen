@@ -22,8 +22,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-
 #pragma once
+
 #include <string>
 #include <vector>
 #include <map>
@@ -34,92 +34,53 @@
 #include <memory>
 #include "Utils.h"
 #include "Bitmap.h"
+#include "Scene.h"
+#include "Types.h"
+#include "ParameterBlock.h"
+
 
 struct ImDrawList;
 struct ImDrawCmd;
 struct EvaluationContext;
 struct EvaluationInfo;
 
-enum BlendOp
+struct Dirty
 {
-    ZERO,
-    ONE,
-    SRC_COLOR,
-    ONE_MINUS_SRC_COLOR,
-    DST_COLOR,
-    ONE_MINUS_DST_COLOR,
-    SRC_ALPHA,
-    ONE_MINUS_SRC_ALPHA,
-    DST_ALPHA,
-    ONE_MINUS_DST_ALPHA,
-    CONSTANT_COLOR,
-    ONE_MINUS_CONSTANT_COLOR,
-    CONSTANT_ALPHA,
-    ONE_MINUS_CONSTANT_ALPHA,
-    SRC_ALPHA_SATURATE,
-    BLEND_LAST
+    enum Type
+    {
+        Input = 1 << 0,
+        Parameter = 1 << 1,
+        Mouse = 1 << 2,
+        Camera = 1 << 3,
+        Time = 1 << 4,
+        Sampler = 1 << 5,
+        AddedNode = 1 << 6,
+        DeletedNode = 1 << 7,
+        StartEndTime = 1 << 8,
+        RugChanged = 1 << 9,
+        VisualGraph = 1 << 10, // node selection, node position
+    };
 };
 
+struct DirtyList
+{
+    NodeIndex mNodeIndex;
+	SlotIndex mSlotIndex;
+    Dirty::Type mFlags;
+};
 
 struct Input
 {
     Input()
     {
-        memset(mInputs, -1, sizeof(int) * 8);
-        memset(mOverrideInputs, -1, sizeof(int) * 8);
+		for (auto i = 0; i < 8 ; i++)
+		{
+			mInputs[i] = { InvalidNodeIndex };
+			mOverrideInputs[i] = { InvalidNodeIndex };
+		}
     }
-    int mInputs[8];
-    int mOverrideInputs[8];
-};
-
-
-struct Scene
-{
-    Scene()
-    {
-    }
-    virtual ~Scene();
-    struct Mesh
-    {
-        struct Format
-        {
-            enum
-            {
-                POS = 1 << 0,
-                NORM = 1 << 1,
-                COL = 1 << 2,
-                UV = 1 << 3,
-            };
-        };
-        struct Buffer
-        {
-            unsigned int id;
-            unsigned int format;
-            unsigned int stride;
-            unsigned int count;
-        };
-        struct IndexBuffer
-        {
-            unsigned int id;
-            unsigned int stride;
-            unsigned int count;
-        };
-        struct Primitive
-        {
-            std::vector<Buffer> mBuffers;
-            IndexBuffer mIndexBuffer = {0, 0, 0};
-            void AddBuffer(const void* data, unsigned int format, unsigned int stride, unsigned int count);
-            void AddIndexBuffer(const void* data, unsigned int stride, unsigned int count);
-            void Draw() const;
-        };
-        std::vector<Primitive> mPrimitives;
-        void Draw() const;
-    };
-    std::vector<Mesh> mMeshes;
-    std::vector<Mat4x4> mWorldTransforms;
-    std::vector<int> mMeshIndex;
-    std::string mName;
-    void Draw(EvaluationContext* context, EvaluationInfo& evaluationInfo) const;
+    NodeIndex mInputs[8];
+	NodeIndex mOverrideInputs[8];
 };
 
 struct EvaluationStage
@@ -130,30 +91,13 @@ struct EvaluationStage
 #if USE_FFMPEG    
     std::shared_ptr<FFMPEGCodec::Decoder> mDecoder;
 #endif
-    size_t mType;
-    unsigned int mRuntimeUniqueId;
-    std::vector<unsigned char> mParameters;
-    Input mInput;
-    std::vector<InputSampler> mInputSamplers;
-    int gEvaluationMask; // see EvaluationMask
-    int mUseCountByOthers;
-    int mBlendingSrc;
-    int mBlendingDst;
-    int mLocalTime;
+    uint16_t mType;
+	RuntimeId mRuntimeUniqueId;
+
     int mStartFrame, mEndFrame;
-    int mVertexSpace; // UV, worldspace
-    bool mbDepthBuffer;
-    bool mbClearBuffer;
+    
     // Camera
     Mat4x4 mParameterViewMatrix = Mat4x4::GetIdentity();
-    // mouse
-    float mRx;
-    float mRy;
-    uint8_t mLButDown : 1;
-    uint8_t mRButDown : 1;
-    uint8_t mbCtrl : 1;
-    uint8_t mbAlt : 1;
-    uint8_t mbShift : 1;
 
     // scene render
     void* mScene; // for path tracer
@@ -161,115 +105,78 @@ struct EvaluationStage
     void* renderer;
     Image DecodeImage();
 
-    bool operator!=(const EvaluationStage& other) const
-    {
-        if (mType != other.mType)
-            return true;
-        if (mParameters != other.mParameters)
-            return true;
-        if (mRuntimeUniqueId != other.mRuntimeUniqueId)
-            return true;
-        if (mStartFrame != other.mStartFrame)
-            return true;
-        if (mEndFrame != other.mEndFrame)
-            return true;
-        if (mInputSamplers.size() != other.mInputSamplers.size())
-            return true;
-        /*
-        for (size_t i = 0; i < mInputSamplers.size(); i++)
-        {
-            if (mInputSamplers[i] != other.mInputSamplers[i])
-                return true;
-        }
-        */
-        if (mParameterViewMatrix != other.mParameterViewMatrix)
-            return true;
-        return false;
-    }
+    int mLocalTime;
+};
+
+struct MultiplexArray
+{
+	std::vector<NodeIndex> mMultiplexPerInputs[8];
 };
 
 // simple API
 struct EvaluationStages
 {
     EvaluationStages();
+    void BuildEvaluationFromMaterial(Material& material);
 
-    void AddSingleEvaluation(size_t nodeType);
-    void UserAddEvaluation(size_t nodeType);
-    void UserDeleteEvaluation(size_t target);
+    void AddEvaluation(NodeIndex nodeIndex, size_t nodeType);
+    void DelEvaluation(NodeIndex nodeIndex);
 
-    //
-    size_t GetStagesCount() const
-    {
-        return mStages.size();
-    }
-    size_t GetStageType(size_t target) const
-    {
-        return mStages[target].mType;
-    }
-    size_t GetEvaluationImageDuration(size_t target);
-
-    void SetEvaluationParameters(size_t target, const std::vector<unsigned char>& parameters);
-    void SetEvaluationSampler(size_t target, const std::vector<InputSampler>& inputSamplers);
-    void AddEvaluationInput(size_t target, int slot, int source);
-    void DelEvaluationInput(size_t target, int slot);
-    void SetEvaluationOrder(const std::vector<size_t> nodeOrderList);
-    void SetKeyboardMouse(int target, float rx, float ry, bool lButDown, bool rButDown, bool bCtrl, bool bAlt, bool bShift);
-    void SetStageLocalTime(EvaluationContext* evaluationContext, size_t target, int localTime, bool updateDecoder);
     void Clear();
+    size_t GetEvaluationImageDuration(NodeIndex target);
 
-    const std::vector<size_t>& GetForwardEvaluationOrder() const
-    {
-        return mEvaluationOrderList;
-    }
+    void SetStageLocalTime(EvaluationContext* evaluationContext, NodeIndex nodeIndex, int localTime, bool updateDecoder);
+    void SetSamplers(NodeIndex nodeIndex, InputSamplers samplers) { mInputSamplers[nodeIndex] = samplers; }
 
-
-    const EvaluationStage& GetEvaluationStage(size_t index) const
-    {
-        return mStages[index];
-    }
-
-
-    Camera* GetCameraParameter(size_t index);
-    int GetIntParameter(size_t index, const char* parameterName, int defaultValue);
-    Mat4x4* GetParameterViewMatrix(size_t index)
-    {
-        if (index >= mStages.size())
-            return NULL;
-        return &mStages[index].mParameterViewMatrix;
-    }
-    float GetParameterComponentValue(size_t index, int parameterIndex, int componentIndex);
+    Mat4x4* GetParameterViewMatrix(NodeIndex nodeIndex) { return &mStages[nodeIndex].mParameterViewMatrix; }
+    const ParameterBlock& GetParameterBlock(NodeIndex nodeIndex) const { return mParameterBlocks[nodeIndex]; }
+    void SetParameterBlock(NodeIndex nodeIndex, const ParameterBlock& parameterBlock);
+    uint16_t GetNodeType(NodeIndex nodeIndex) const { return mStages[nodeIndex].mType; }
+    size_t GetStagesCount() const { return mStages.size(); }
+	void SetMaterialUniqueId(RuntimeId runtimeId);
 
     // animation
-    const std::vector<AnimTrack>& GetAnimTrack() const
-    {
-        return mAnimTrack;
-    }
-    void ApplyAnimationForNode(EvaluationContext* context, size_t nodeIndex, int frame);
+    void ApplyAnimationForNode(EvaluationContext* context, NodeIndex nodeIndex, int frame);
     void ApplyAnimation(EvaluationContext* context, int frame);
-    void RemoveAnimation(size_t nodeIndex);
-    void SetAnimTrack(const std::vector<AnimTrack>& animTrack);
+
     void SetTime(EvaluationContext* evaluationContext, int time, bool updateDecoder);
 
-    // pins
-    void RemovePins(size_t nodeIndex);
-    bool IsIOPinned(size_t nodeIndex, size_t io, bool forOutput) const;
-    void SetIOPin(size_t nodeIndex, size_t io, bool forOutput, bool pinned);
-
     // ffmpeg encoders
-    #if USE_FFMPEG
+#if USE_FFMPEG
     FFMPEGCodec::Decoder* FindDecoder(const std::string& filename);
 #endif
     // Data
-    std::vector<AnimTrack> mAnimTrack;
+    const std::vector<size_t>& GetForwardEvaluationOrder() const { return mOrderList; }
     std::vector<EvaluationStage> mStages;
-    std::vector<size_t> mEvaluationOrderList;
-    std::vector<uint32_t> mPinnedParameters;
-    std::vector<uint32_t> mPinnedIO; // 24bits input, 8 bits output
-    int mFrameMin, mFrameMax;
+    std::vector<Input> mInputs; // merged with multiplexed
+    std::vector<Input> mDirectInputs; // without multiplexed
+	std::vector<MultiplexArray> mMultiplex; // multiplex list per node
 
+    std::vector<InputSamplers> mInputSamplers;
+    std::vector<ParameterBlock> mParameterBlocks;
+
+    std::shared_ptr<AnimationTracks> mAnimationTracks;
+
+	RuntimeId mMaterialUniqueId;
+
+    void ComputeEvaluationOrder();
+    void SetStartEndFrame(NodeIndex nodeIndex, int startFrame, int endFrame) { mStages[nodeIndex].mStartFrame = startFrame; mStages[nodeIndex].mEndFrame = endFrame; }
 protected:
 
-    void StageIsAdded(int index);
-    void StageIsDeleted(int index);
-    void InitDefaultParameters(EvaluationStage& stage);
+    std::vector<size_t> mOrderList;
+
+    // evaluation order
+    struct NodeOrder
+    {
+        size_t mNodeIndex;
+        size_t mNodePriority;
+        bool operator<(const NodeOrder& other) const
+        {
+            return other.mNodePriority < mNodePriority; // reverse order compared to priority value: lower last
+        }
+    };
+    
+    std::vector<NodeOrder> ComputeEvaluationOrders();
+    void RecurseSetPriority(std::vector<NodeOrder>& orders, size_t currentIndex, size_t currentPriority, size_t& undeterminedNodeCount) const;
+    size_t PickBestNode(const std::vector<NodeOrder>& orders) const;
 };

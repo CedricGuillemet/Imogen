@@ -1,0 +1,3 @@
+[submodule "ext/bgfx"]
+	path = ext/bgfx
+	url = https://github.com/JoshuaBrookover/bgfx.cmake.git

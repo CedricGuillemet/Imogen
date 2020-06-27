@@ -668,6 +668,7 @@ void EvaluationContext::EvaluateGLSL(const EvaluationStage& evaluationStage,
                         static const float uvt[4] = { 2.f, -2.f, -1.0f, 1.0f };
                         bgfx::setUniform(gEvaluators.u_uvTransform, uvt);
                     }
+
                     evaluationStage.mGScene->Draw(evaluationInfo, viewId, program);
                 }
 

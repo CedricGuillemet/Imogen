@@ -1629,6 +1629,14 @@ namespace EvaluationAPI
 					{
 						SetEvaluationScene(context, stageIndex, scene);
 						SetProcessing(context, stageIndex, 0);
+
+                        Camera *camera = context->mEvaluationStages.mParameterBlocks[stageIndex].GetCamera();
+                        if (camera && camera->mLens.y < FLT_EPSILON)
+                        {
+                            Bounds bound = scene->ComputeBounds();
+                            camera->LookAt(Vec4(bound.mMax.x, bound.mMax.y, bound.mMax.z), bound.Center(), Vec4(0.f, 1.f, 0.f, 0.f));
+                        }
+
 					}
                     return EVAL_OK;
                 });

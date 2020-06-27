@@ -10,7 +10,13 @@ void main()
 {
 	if (u_target.y > 0.5)
     {
-		gl_Position = mul(u_worldViewProjection, vec4(a_position.xyz, 1.0));
+		mat4 mvp = u_worldViewProjection;
+		mvp[0] *= u_uvTransform.x * 0.5;
+		mvp[1] *= u_uvTransform.y * 0.5;
+		gl_Position = mul(mvp, vec4(a_position.xyz, 1.0));
+
+		vec2 clipSpaceTr = u_uvTransform.zw + u_uvTransform.xy * vec2(0.5, 0.5);
+		gl_Position.xy += clipSpaceTr * gl_Position.w;
 	}
 	else
 	{

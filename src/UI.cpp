@@ -268,16 +268,17 @@ static void NodeUICallBack(const ImDrawList* parent_list, const ImDrawCmd* cmd)
         ImogenDrawCallback& cb = mCallbackRects[intptr_t(cmd->UserCallbackData)];
 
         ImRect cr = cb.mClippedRect;
-        bgfx::setScissor(int(cr.Min.x),
+        /*bgfx::setScissor(int(cr.Min.x),
                         int(cr.Min.y),
                         int(cr.Max.x - cr.Min.x),
                         int(cr.Max.y - cr.Min.y));
-                        
+          */              
+        bgfx::setScissor(0,0,100,100);
         cr = cb.mOrginalRect;
         float sx = (cr.Max.x - cr.Min.x) / io.DisplaySize.x * 2.f;
-        float sy = (cr.Max.y - cr.Min.y) / io.DisplaySize.y * 2.f;
+        float sy = -(cr.Max.y - cr.Min.y) / io.DisplaySize.y * 2.f;
         float tx = cr.Min.x / io.DisplaySize.x * 2.f - 1.f;
-        float ty = -cr.Max.y / io.DisplaySize.y * 2.f + 1.f;
+        float ty = -cr.Min.y / io.DisplaySize.y * 2.f + 1.f;
         float uvt[4] = {sx, sy, tx, ty };
         bgfx::setUniform(gEvaluators.u_uvTransform, uvt);
 
